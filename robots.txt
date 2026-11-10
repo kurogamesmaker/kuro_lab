@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://kuro-phi-gold.vercel.app/sitemap.xml
