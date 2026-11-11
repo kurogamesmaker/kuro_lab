@@ -188,7 +188,8 @@ a{color:inherit;text-decoration:none}
   border-bottom:1px solid var(--line);
 }
 .head{min-height:68px;display:flex;align-items:center;justify-content:space-between;gap:22px}
-.brand{font:950 23px/1 ui-monospace,SFMono-Regular,monospace;letter-spacing:-.08em}
+.brand{display:inline-flex;align-items:center;gap:8px;font:950 23px/1 ui-monospace,SFMono-Regular,monospace;letter-spacing:-.08em;white-space:nowrap}
+.brand-panda{width:34px;height:34px;object-fit:contain;flex:none}
 .brand span{color:var(--blue-deep)}
 nav{display:flex;gap:21px;align-items:center;font-size:14px;font-weight:700;color:#343a40}
 nav a{transition:color .18s ease}
@@ -316,21 +317,7 @@ a:focus-visible{outline:3px solid var(--blue-deep);outline-offset:4px}
 </head>
 <body>
 <section class="hero-stage" aria-labelledby="hero-title">
-  <svg class="hero-panda" viewBox="0 0 460 470" role="img" aria-label="Kuro Labのパンダロゴ">
-    <g fill="#050505">
-      <circle cx="116" cy="92" r="52"/>
-      <circle cx="344" cy="92" r="52"/>
-      <path d="M92 331C52 351 40 393 65 427c25 33 77 43 156 43 91 0 153-29 174-76 14-31 7-67-17-83-24-15-43-1-61 22-25 32-53 49-91 49-44 0-80-18-108-51-10-12-15-18-26-20z"/>
-      <path d="M274 374c42-12 75-51 99-100 12-25 34-34 51-20 19 15 13 45-2 76-20 41-57 75-104 89-23 7-45 2-55-12-11-16-5-27 11-33z"/>
-    </g>
-    <circle cx="230" cy="222" r="154" fill="#fff" stroke="#050505" stroke-width="18"/>
-    <ellipse cx="154" cy="211" rx="43" ry="58" fill="#050505" transform="rotate(29 154 211)"/>
-    <ellipse cx="306" cy="211" rx="43" ry="58" fill="#050505" transform="rotate(-29 306 211)"/>
-    <ellipse cx="164" cy="215" rx="10" ry="13" fill="#fff"/>
-    <ellipse cx="296" cy="215" rx="10" ry="13" fill="#fff"/>
-    <path d="M230 243c-9 0-18 6-18 14 0 8 11 14 18 14s18-6 18-14c0-8-9-14-18-14z" fill="#050505"/>
-    <path d="M230 269c-1 17-11 24-25 17m25-17c1 17 11 24 25 17" fill="none" stroke="#050505" stroke-width="7" stroke-linecap="round"/>
-  </svg>
+  <img class="hero-panda" src="/icon-192.png?v=20261111" width="390" height="390" alt="Kuro Labのパンダロゴ" fetchpriority="high">
 
   <div class="hero-copy">
     <span class="hero-welcome">Welcome to</span>
@@ -365,7 +352,7 @@ a:focus-visible{outline:3px solid var(--blue-deep);outline-offset:4px}
 
 <header class="site-header">
   <div class="wrap head">
-    <a class="brand" href="/" aria-label="Kuro Lab ホーム">KURO <span>LAB</span></a>
+    <a class="brand" href="/" aria-label="Kuro Lab ホーム"><img class="brand-panda" src="/icon-192.png?v=20261111" width="34" height="34" alt="">KURO <span>LAB</span></a>
     <nav aria-label="メインナビゲーション">
       <a href="#services">Services</a>
       <a href="#about">About</a>
