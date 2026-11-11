@@ -11,7 +11,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KURO｜短い投稿でつながるSNS</title>
     <meta name="description" content="KUROは、短い投稿やハッシュタグで話題を共有し、気になる人をフォローして交流できるSNSです。いいねや返信、チャットでつながれます。">
-    <link rel="canonical" href="https://kuro-phi-gold.vercel.app/sns/">
+    <link rel="canonical" href="https://kurolab.cc.cd/sns/">
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -20,7 +20,7 @@
           "@type": "WebSite",
           "name": "KURO",
           "alternateName": ["KURO SNS", "KURO - ひとことSNS"],
-          "url": "https://kuro-phi-gold.vercel.app/",
+          "url": "https://kurolab.cc.cd/",
           "description": "KUROは、短い投稿やハッシュタグで話題を共有し、気になる人をフォローして交流できるSNSです。いいねや返信、チャットでつながれます。",
           "inLanguage": "ja"
         },
@@ -29,12 +29,12 @@
           "name": "KURO",
           "applicationCategory": "SocialNetworkingApplication",
           "operatingSystem": "Web browser",
-          "url": "https://kuro-phi-gold.vercel.app/sns/",
+          "url": "https://kurolab.cc.cd/sns/",
           "description": "短い投稿、ハッシュタグ検索、プロフィール、フォロー、いいね、返信、個別チャット、グループチャットを提供するソーシャルネットワークサービス。",
           "creator": {
             "@type": "Person",
             "name": "kuro",
-            "url": "https://kuro-phi-gold.vercel.app/developer/"
+            "url": "https://kurolab.cc.cd/developer/"
           }
         }
       ]
@@ -44,7 +44,7 @@
     <meta property="og:site_name" content="KURO">
     <meta property="og:title" content="KURO｜短い投稿でつながるSNS">
     <meta property="og:description" content="短い投稿やハッシュタグで話題を共有。フォロー、いいね、返信、チャットで人とつながるSNSです。">
-    <meta property="og:url" content="https://kuro-phi-gold.vercel.app/sns/">
+    <meta property="og:url" content="https://kurolab.cc.cd/sns/">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -1335,7 +1335,7 @@
                 const options = {
                     shouldCreateUser: currentAuthMode === 'signup',
                     // Keep Supabase email confirmation links on the live Vercel site, not the retired GitHub Pages URL.
-                    emailRedirectTo: 'https://kuro-phi-gold.vercel.app/',
+                    emailRedirectTo: 'https://kurolab.cc.cd/',
                     data: currentAuthMode === 'signup' ? { name, handle, kuro_password_configured: false } : undefined
                 };
                 if (currentAuthMode === 'signup') {
@@ -1540,7 +1540,7 @@
                         options: {
                             data: { name, handle, kuro_password_configured: true },
                             // Send signup confirmation links back to the current production site.
-                            emailRedirectTo: 'https://kuro-phi-gold.vercel.app/'
+                            emailRedirectTo: 'https://kurolab.cc.cd/'
                         }
                     });
                 }

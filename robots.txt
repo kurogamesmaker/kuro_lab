@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://kuro-phi-gold.vercel.app/sitemap.xml
+Sitemap: https://kurolab.cc.cd/sitemap.xml
