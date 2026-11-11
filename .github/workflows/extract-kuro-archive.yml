@@ -1,0 +1,46 @@
+name: Extract KURO Lab site archive
+
+on:
+  push:
+    paths:
+      - "kuro-main.zip"
+      - ".github/workflows/extract-kuro-archive.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Extract site files
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f kuro-main.zip
+          mkdir -p .kuro-archive-tmp
+          unzip -q kuro-main.zip -d .kuro-archive-tmp
+          test -d .kuro-archive-tmp/kuro-main
+          cp -a .kuro-archive-tmp/kuro-main/. .
+          rm -rf .kuro-archive-tmp
+
+      - name: Commit extracted files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No extracted file changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Extract KURO Lab site pages from uploaded archive"
+          git push origin HEAD:main
