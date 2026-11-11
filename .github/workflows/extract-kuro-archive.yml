@@ -31,6 +31,17 @@ jobs:
           cp -a .kuro-archive-tmp/kuro-main/. .
           rm -rf .kuro-archive-tmp
 
+      - name: Set production domain metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          find . -path './.git' -prune -o -type f \( -name '*.html' -o -name '*.xml' -o -name '*.txt' \) -print0 |
+            xargs -0 -r sed -i 's#https://kuro-phi-gold.vercel.app#https://kurolab.cc.cd#g'
+          if grep -R -n --include='*.html' --include='*.xml' --include='*.txt' 'kuro-phi-gold.vercel.app' .; then
+            echo "Legacy production hostname remains."
+            exit 1
+          fi
+
       - name: Commit extracted files
         shell: bash
         run: |
@@ -42,5 +53,5 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Extract KURO Lab site pages from uploaded archive"
+          git commit -m "Set KURO Lab custom production domain"
           git push origin HEAD:main
