@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#35b8f4">
+<title>Kuro Lab公式サイト｜デジタルサービスとゲームをつくる</title>
+<meta name="description" content="Kuro Lab（クロラボ）の公式サイトです。KURO SNSやKURO GAMESなど、デジタルサービスとオリジナルゲームの企画・開発・運営を紹介します。">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://kuro-phi-gold.vercel.app/">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Kuro Lab">
+<meta property="og:title" content="Kuro Lab公式サイト｜デジタルサービスとゲームをつくる">
+<meta property="og:description" content="人と人をつなぐサービス、夢中になれるゲーム。Kuro Labのプロジェクトを紹介します。">
+<meta property="og:url" content="https://kuro-phi-gold.vercel.app/">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"Organization",
+  "name":"Kuro Lab",
+  "alternateName":"Kuro Lab公式",
+  "url":"https://kuro-phi-gold.vercel.app/",
+  "description":"KURO SNSやKURO Gamesなどのデジタルサービスを企画・開発・運営するプロジェクトブランド。",
+  "hasOfferCatalog":{
+    "@type":"OfferCatalog",
+    "name":"Kuro Lab Services",
+    "itemListElement":[
+      {"@type":"SoftwareApplication","name":"KURO SNS","applicationCategory":"SocialNetworkingApplication","url":"https://kuro-phi-gold.vercel.app/sns/"},
+      {"@type":"WebSite","name":"KURO Games","url":"https://sites.google.com/view/kurogamessite/ホーム/"}
+    ]
+  }
+}
+</script>
+<style>
+:root{
+  color-scheme:light;
+  --blue:#35b8f4;
+  --blue-deep:#168fd3;
+  --yellow:#ffe680;
+  --ink:#050505;
+  --muted:#5f6870;
+  --line:#e8edf0;
+  --paper:#fff;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;background:var(--paper)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Noto Sans JP",sans-serif;line-height:1.7}
+a{color:inherit;text-decoration:none}
+.wrap{width:min(1160px,calc(100% - 44px));margin-inline:auto}
+
+/* The opening graphic follows the blue / white / yellow Kuro Lab reference. */
+.hero-stage{
+  position:relative;
+  isolation:isolate;
+  min-height:590px;
+  overflow:hidden;
+  background:#fff;
+}
+.hero-stage::before{
+  content:"";
+  position:absolute;
+  z-index:-2;
+  inset:0;
+  background:var(--blue);
+  clip-path:polygon(61.5% 0,100% 0,100% 6.5%,33.5% 100%,0 100%,0 87%);
+}
+.hero-stage::after{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  width:33%;
+  height:100%;
+  left:0;
+  bottom:0;
+  background:linear-gradient(115deg,rgba(255,255,255,.14),transparent 70%);
+  pointer-events:none;
+}
+.hero-panda{
+  position:absolute;
+  left:4.5%;
+  top:72px;
+  width:min(32vw,390px);
+  height:auto;
+  filter:drop-shadow(0 8px 3px rgba(0,0,0,.04));
+}
+.hero-copy{
+  position:absolute;
+  left:37.2%;
+  right:4%;
+  top:88px;
+  z-index:2;
+}
+.hero-welcome{
+  display:block;
+  font-size:clamp(29px,4.8vw,58px);
+  line-height:1.04;
+  font-weight:900;
+  letter-spacing:-.055em;
+}
+.hero-title{
+  display:block;
+  margin-top:-1px;
+  font-size:clamp(66px,10.2vw,138px);
+  line-height:.98;
+  font-weight:950;
+  letter-spacing:-.075em;
+  white-space:nowrap;
+}
+.hero-subtitle{
+  margin:10px 0 0 5px;
+  font-size:clamp(13px,1.45vw,18px);
+  font-weight:750;
+  letter-spacing:.16em;
+}
+.platform-panel{
+  position:absolute;
+  z-index:3;
+  right:10.5%;
+  bottom:58px;
+  width:min(790px,59%);
+  min-height:218px;
+  padding:17px 28px 19px;
+  overflow:hidden;
+  background:var(--yellow);
+}
+.platform-panel::before{
+  content:"";
+  position:absolute;
+  inset:0 auto 0 0;
+  width:44%;
+  background:rgba(67,184,244,.72);
+  pointer-events:none;
+}
+.platform-content{position:relative;z-index:1}
+.powered{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  margin:0 0 13px;
+  font-size:clamp(23px,3.4vw,42px);
+  line-height:1.1;
+  font-weight:900;
+  letter-spacing:-.045em;
+}
+.github-mark{width:42px;height:42px;flex:none}
+.logo-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  align-items:center;
+  justify-items:center;
+  gap:13px 14px;
+}
+.logo-item{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-width:0;
+  min-height:34px;
+  white-space:nowrap;
+  font-size:clamp(15px,2.15vw,27px);
+  font-weight:800;
+  letter-spacing:-.055em;
+}
+.google-word{font-weight:600;letter-spacing:-.065em}
+.google-word span:nth-child(1){color:#4285f4}.google-word span:nth-child(2){color:#ea4335}.google-word span:nth-child(3){color:#fbbc05}.google-word span:nth-child(4){color:#4285f4}.google-word span:nth-child(5){color:#34a853}.google-word span:nth-child(6){color:#ea4335}
+.ms-mark{display:grid;grid-template-columns:repeat(2,12px);grid-template-rows:repeat(2,12px);gap:2px;flex:none}
+.ms-mark i:nth-child(1){background:#f35325}.ms-mark i:nth-child(2){background:#81bc06}.ms-mark i:nth-child(3){background:#05a6f0}.ms-mark i:nth-child(4){background:#ffba08}
+.edge-mark{
+  width:36px;height:36px;flex:none;border-radius:50%;
+  background:conic-gradient(from 215deg,#087bdc,#20c6b7,#46b96f,#087bdc);
+  position:relative;
+}
+.edge-mark::after{content:"";position:absolute;width:24px;height:13px;right:-1px;bottom:1px;border-radius:2px 15px 12px 2px;background:#087bdc;transform:rotate(-22deg)}
+.vercel-mark{width:0;height:0;border-left:20px solid transparent;border-right:20px solid transparent;border-bottom:34px solid #050505;flex:none}
+.supabase-mark{width:33px;height:37px;flex:none;background:linear-gradient(145deg,#42d99a 0 50%,#21a87a 50%);clip-path:polygon(67% 0,100% 0,40% 100%,38% 52%,0 52%)}
+.claude-mark{color:#d97757;font-size:36px;line-height:1}
+.openai-mark{width:34px;height:34px;flex:none}
+.site-header{
+  position:sticky;
+  top:0;
+  z-index:10;
+  background:rgba(255,255,255,.94);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+}
+.head{min-height:68px;display:flex;align-items:center;justify-content:space-between;gap:22px}
+.brand{font:950 23px/1 ui-monospace,SFMono-Regular,monospace;letter-spacing:-.08em}
+.brand span{color:var(--blue-deep)}
+nav{display:flex;gap:21px;align-items:center;font-size:14px;font-weight:700;color:#343a40}
+nav a{transition:color .18s ease}
+nav a:hover{color:var(--blue-deep)}
+nav .nav-cta{padding:8px 16px;border:2px solid var(--blue);border-radius:999px}
+main{padding:66px 0 86px}
+.section{padding-top:24px}
+.section-head{text-align:center;margin-bottom:25px}
+.section-kicker{font-size:11px;letter-spacing:.24em;font-weight:900;color:var(--blue-deep)}
+.section-head h2{font-size:clamp(29px,4vw,40px);line-height:1.15;letter-spacing:-.055em;margin:7px 0}
+.section-head p{color:var(--muted);margin:7px 0 0}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px}
+.card{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  min-height:275px;
+  padding:27px 25px 24px;
+  border:1px solid #dce8ee;
+  background:#fff;
+  overflow:hidden;
+  transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;
+}
+.card::before{
+  content:"";
+  position:absolute;
+  top:0;left:0;right:0;height:8px;
+  background:var(--accent);
+}
+.card::after{
+  content:"";
+  position:absolute;
+  width:150px;height:150px;
+  right:-70px;top:-75px;
+  border-radius:50%;
+  background:var(--accent);
+  opacity:.12;
+}
+.card:hover{transform:translateY(-4px);border-color:var(--accent);box-shadow:0 15px 32px rgba(22,79,105,.10)}
+.card.sns{--accent:#35b8f4;background:linear-gradient(145deg,#fff,#f2fbff)}
+.card.games{--accent:#f0c83c;background:linear-gradient(145deg,#fff,#fffbed)}
+.card.canva{--accent:#7b70e8;background:linear-gradient(145deg,#fff,#f7f6ff)}
+.tag{position:relative;z-index:1;font-size:10px;letter-spacing:.18em;font-weight:900;color:#4d6674}
+.card h3{position:relative;z-index:1;font-size:clamp(26px,3vw,34px);line-height:1.15;letter-spacing:-.06em;margin:15px 0 9px}
+.card p{position:relative;z-index:1;color:var(--muted);font-size:14px;margin:0 0 24px}
+.card .go{position:relative;z-index:1;margin-top:auto;color:#087fb8;font-weight:850}
+.card.games .go{color:#8a6a00}.card.canva .go{color:#5e50c3}
+.canva-note{text-align:center;margin:18px 0 0;color:var(--muted);font-size:13px}
+.canva-note a{color:#087fb8;font-weight:800;text-decoration:underline;text-underline-offset:3px}
+.about{
+  margin-top:30px;
+  padding:28px 30px;
+  border:1px solid #dbeaf1;
+  background:linear-gradient(110deg,#e9f8ff 0 48%,#fff8d9 48% 100%);
+}
+.about h2{font-size:22px;line-height:1.2;margin:0 0 9px;letter-spacing:-.04em}
+.about p{max-width:900px;color:#4e5b62;margin:0}
+.site-footer{border-top:1px solid var(--line);padding:23px 0;color:var(--muted);font-size:13px}
+.foot{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+a:focus-visible{outline:3px solid var(--blue-deep);outline-offset:4px}
+
+@media(max-width:900px){
+  .hero-stage{min-height:540px}
+  .hero-panda{left:2%;top:95px;width:33vw}
+  .hero-copy{left:34%;top:90px;right:2%}
+  .hero-title{font-size:clamp(61px,10.4vw,100px)}
+  .platform-panel{right:5%;width:66%;bottom:44px}
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:650px){
+  .wrap{width:min(100% - 30px,540px)}
+  .hero-stage{
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:3px;
+    padding:16px 15px 30px;
+  }
+  .hero-stage::before{clip-path:polygon(100% 0,100% 17%,0 76%,0 67%,72% 0)}
+  .hero-panda{position:relative;left:auto;top:auto;width:min(66vw,245px);margin:0 auto -5px}
+  .hero-copy{position:relative;left:auto;right:auto;top:auto;width:100%;text-align:center;padding:0 0 14px}
+  .hero-welcome{font-size:clamp(27px,7.5vw,39px)}
+  .hero-title{font-size:clamp(59px,15vw,86px);white-space:normal;letter-spacing:-.08em}
+  .hero-subtitle{font-size:11px;margin:7px 0 0;letter-spacing:.12em}
+  .platform-panel{position:relative;right:auto;bottom:auto;width:100%;min-height:0;padding:15px 12px 16px}
+  .platform-panel::before{width:45%}
+  .powered{font-size:25px;margin-bottom:12px}
+  .github-mark{width:31px;height:31px}
+  .logo-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 7px}
+  .logo-item{font-size:19px}
+  .ms-mark{grid-template-columns:repeat(2,9px);grid-template-rows:repeat(2,9px)}
+  .edge-mark{width:29px;height:29px}
+  .vercel-mark{border-left-width:16px;border-right-width:16px;border-bottom-width:27px}
+  .supabase-mark{width:27px;height:31px}
+  .claude-mark{font-size:30px}
+  .openai-mark{width:28px;height:28px}
+  .head{min-height:0;padding:13px 0;align-items:flex-start;flex-direction:column;gap:12px}
+  nav{gap:13px;flex-wrap:wrap;font-size:12px}
+  nav .nav-cta{padding:6px 11px}
+  main{padding:46px 0 65px}
+  .cards{grid-template-columns:1fr}
+  .card{min-height:220px;padding:25px 22px 22px}
+  .about{padding:23px 20px;background:linear-gradient(150deg,#e9f8ff 0 55%,#fff8d9 55% 100%)}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important}
+}
+</style>
+<script>
+(function () {
+  try {
+    var query = new URLSearchParams(window.location.search);
+    var hash = window.location.hash || "";
+    var hasAuthCallback = query.has("code") || query.has("token_hash") ||
+      /(?:^|[&#])(?:access_token|type)=/.test(hash);
+    if (window.location.pathname === "/" && hasAuthCallback) {
+      window.location.replace("/sns/" + window.location.search + hash);
+    }
+  } catch (error) {
+    console.warn("KURO auth callback handoff skipped:", error);
+  }
+})();
+</script>
+</head>
+<body>
+<section class="hero-stage" aria-labelledby="hero-title">
+  <svg class="hero-panda" viewBox="0 0 460 470" role="img" aria-label="Kuro Labのパンダロゴ">
+    <g fill="#050505">
+      <circle cx="116" cy="92" r="52"/>
+      <circle cx="344" cy="92" r="52"/>
+      <path d="M92 331C52 351 40 393 65 427c25 33 77 43 156 43 91 0 153-29 174-76 14-31 7-67-17-83-24-15-43-1-61 22-25 32-53 49-91 49-44 0-80-18-108-51-10-12-15-18-26-20z"/>
+      <path d="M274 374c42-12 75-51 99-100 12-25 34-34 51-20 19 15 13 45-2 76-20 41-57 75-104 89-23 7-45 2-55-12-11-16-5-27 11-33z"/>
+    </g>
+    <circle cx="230" cy="222" r="154" fill="#fff" stroke="#050505" stroke-width="18"/>
+    <ellipse cx="154" cy="211" rx="43" ry="58" fill="#050505" transform="rotate(29 154 211)"/>
+    <ellipse cx="306" cy="211" rx="43" ry="58" fill="#050505" transform="rotate(-29 306 211)"/>
+    <ellipse cx="164" cy="215" rx="10" ry="13" fill="#fff"/>
+    <ellipse cx="296" cy="215" rx="10" ry="13" fill="#fff"/>
+    <path d="M230 243c-9 0-18 6-18 14 0 8 11 14 18 14s18-6 18-14c0-8-9-14-18-14z" fill="#050505"/>
+    <path d="M230 269c-1 17-11 24-25 17m25-17c1 17 11 24 25 17" fill="none" stroke="#050505" stroke-width="7" stroke-linecap="round"/>
+  </svg>
+
+  <div class="hero-copy">
+    <span class="hero-welcome">Welcome to</span>
+    <span class="hero-title" id="hero-title">Kuro Lab</span>
+    <p class="hero-subtitle">IDEAS · TECHNOLOGY · CREATIVITY</p>
+  </div>
+
+  <div class="platform-panel" aria-label="Kuro Labの開発ツールとプラットフォーム">
+    <div class="platform-content">
+      <p class="powered">
+        <span>Powered by</span>
+        <svg class="github-mark" viewBox="0 0 24 24" aria-label="GitHub" role="img">
+          <path fill="#050505" d="M12 .9a11.1 11.1 0 0 0-3.51 21.63c.56.1.76-.24.76-.54v-2.08c-3.1.67-3.76-1.32-3.76-1.32-.5-1.3-1.24-1.65-1.24-1.65-1.01-.7.08-.69.08-.69 1.12.08 1.71 1.15 1.71 1.15.99 1.7 2.59 1.21 3.22.93.1-.72.39-1.21.7-1.49-2.47-.28-5.07-1.24-5.07-5.5 0-1.22.44-2.22 1.15-3-.12-.28-.5-1.42.11-2.95 0 0 .94-.3 3.05 1.15a10.6 10.6 0 0 1 5.55 0c2.11-1.45 3.05-1.15 3.05-1.15.61 1.53.23 2.67.11 2.95.72.78 1.15 1.78 1.15 3 0 4.27-2.6 5.21-5.08 5.49.4.35.76 1.02.76 2.06V22c0 .3.2.65.77.54A11.1 11.1 0 0 0 12 .9z"/>
+        </svg>
+        <span>GitHub</span>
+      </p>
+      <div class="logo-grid">
+        <div class="logo-item google-word" aria-label="Google"><span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span></div>
+        <div class="logo-item" aria-label="Microsoft"><span class="ms-mark"><i></i><i></i><i></i><i></i></span><span>Microsoft</span></div>
+        <div class="logo-item" aria-label="Microsoft Edge"><span class="edge-mark"></span><span>Edge</span></div>
+        <div class="logo-item" aria-label="Vercel"><span class="vercel-mark"></span><span>Vercel</span></div>
+        <div class="logo-item" aria-label="Supabase"><span class="supabase-mark"></span><span>supabase</span></div>
+        <div class="logo-item" aria-label="Claude"><span class="claude-mark">✳</span><span>Claude</span></div>
+        <div class="logo-item" aria-label="OpenAI">
+          <svg class="openai-mark" viewBox="0 0 40 40" role="img"><g fill="none" stroke="#050505" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6.5c4.2-2.4 9.6.6 9.6 5.5v2.1"/><path d="M29.6 14.1c4.2 2.4 4.2 8.5 0 10.9l-1.8 1"/><path d="M27.8 26c0 4.9-5.4 7.9-9.6 5.5l-1.8-1"/><path d="M16.4 30.5c-4.2 2.4-9.6-.6-9.6-5.5v-2.1"/><path d="M6.8 22.9c-4.2-2.4-4.2-8.5 0-10.9l1.8-1"/><path d="M8.6 11c0-4.9 5.4-7.9 9.6-5.5l1.8 1"/><path d="M20 6.5v5.2m9.6 2.4-4.5 2.6m2.7 11.3-4.5-2.6m-7.8 5.1v-5.2m-9.6-2.4 4.5-2.6m-2.7-11.3 4.5 2.6"/></g></svg>
+          <span>OpenAI</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<header class="site-header">
+  <div class="wrap head">
+    <a class="brand" href="/" aria-label="Kuro Lab ホーム">KURO <span>LAB</span></a>
+    <nav aria-label="メインナビゲーション">
+      <a href="#services">Services</a>
+      <a href="#about">About</a>
+      <a href="/developer/">Creator</a>
+      <a href="https://boar-j6blpr.my.canva.site/" target="_blank" rel="noopener noreferrer">KURO Canva ↗</a>
+      <a class="nav-cta" href="/contact/">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="section" id="services">
+    <div class="section-head">
+      <span class="section-kicker">WHAT WE CREATE</span>
+      <h2>Our Services</h2>
+      <p>Kuro Labが展開するサービス</p>
+    </div>
+    <div class="cards">
+      <a class="card sns" href="/sns/">
+        <span class="tag">SOCIAL NETWORK</span>
+        <h3>KURO SNS</h3>
+        <p>短い投稿やハッシュタグで話題を共有。フォロー、いいね、返信、チャットを通じて人とつながるソーシャルサービス。</p>
+        <span class="go">KURO SNSを開く →</span>
+      </a>
+      <a class="card games" href="https://sites.google.com/view/kurogamessite/%E3%83%9B%E3%83%BC%E3%83%A0/" target="_blank" rel="noopener noreferrer">
+        <span class="tag">GAMES &amp; PLAY</span>
+        <h3>KURO GAMES</h3>
+        <p>オリジナルゲームが集まるゲームサービス。アクション、パズル、アーケードなど、さまざまなゲームを楽しめます。</p>
+        <span class="go">KURO GAMESを見に行く ↗</span>
+      </a>
+      <a class="card canva" href="https://boar-j6blpr.my.canva.site/" target="_blank" rel="noopener noreferrer">
+        <span class="tag">CANVA PAGE</span>
+        <h3>KURO Canva</h3>
+        <p>KUROのCanvaページはこちら。リンクを開くとCanvaのページへ直接移動します。</p>
+        <span class="go">Canvaページを開く ↗</span>
+      </a>
+    </div>
+    <p class="canva-note">検索結果からも見つけやすいように、<a href="/canva/">KURO Canvaの案内ページ</a>も用意しています。</p>
+  </section>
+
+  <section class="about" id="about">
+    <h2>About Kuro Lab</h2>
+    <p>Kuro Labは、KURO SNSとKURO GAMESをはじめとするデジタルプロジェクトを運営するブランドです。それぞれのサービスの個性を大切にしながら、企画・開発・改善を続けていきます。</p>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap foot">
+    <span>© 2026 Kuro Lab</span>
+    <span><a href="/privacy/">Privacy</a>　·　<a href="/terms/">Terms</a>　·　<a href="/canva/">KURO Canva</a>　·　<a href="/contact/">お問い合わせ</a></span>
+  </div>
+</footer>
+</body>
+</html>
