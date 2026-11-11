@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="author" content="kuro">
+<meta name="robots" content="index,follow">
+<title>kuro - Independent Student Developer &amp; Creator｜KURO開発者</title>
+<meta name="description" content="kuroは、Webサービスやゲームなどの企画・開発に取り組む学生の個人開発者です。ソーシャルプラットフォーム「KURO」の企画・開発・運営を中心に活動しています。">
+<link rel="canonical" href="https://kuro-phi-gold.vercel.app/developer/">
+<meta name="theme-color" content="#09090d">
+<meta property="og:type" content="profile">
+<meta property="og:site_name" content="KURO">
+<meta property="og:title" content="kuro - Independent Student Developer &amp; Creator">
+<meta property="og:description" content="Ideas into Reality. — アイデアを、技術で形にする。Webサービスやゲームの企画・開発に取り組む個人開発者 kuro のプロフィール。">
+<meta property="og:url" content="https://kuro-phi-gold.vercel.app/developer/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ProfilePage",
+  "name": "kuro - Independent Student Developer & Creator",
+  "url": "https://kuro-phi-gold.vercel.app/developer/",
+  "dateModified": "2026-11-08",
+  "mainEntity": {
+    "@type": "Person",
+    "@id": "https://kuro-phi-gold.vercel.app/developer/#person",
+    "name": "kuro",
+    "jobTitle": "Independent Student Developer & Creator",
+    "description": "Webサービスやゲームなどの企画・開発に取り組む学生の個人開発者。ソーシャルプラットフォーム「KURO」の企画・開発・運営を中心に活動している。",
+    "url": "https://kuro-phi-gold.vercel.app/developer/",
+    "knowsAbout": [
+      "Web development",
+      "Game development",
+      "Web application development",
+      "Social platform development"
+    ]
+  }
+}
+</script>
+<style>
+:root{color-scheme:dark;--bg:#09090d;--panel:#13131a;--line:#292936;--muted:#a1a1aa;--accent:#c4b5fd;--text:#f4f4f5}
+*{box-sizing:border-box}
+html{background:var(--bg);scroll-behavior:smooth}
+body{margin:0;background:radial-gradient(ellipse at 50% -18rem,rgba(139,92,246,.17),transparent 38rem),var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Noto Sans JP",sans-serif;line-height:1.85}
+a{color:inherit;text-decoration:none}
+a:hover{color:#ddd6fe}
+.wrap{width:min(100% - 36px,980px);margin-inline:auto}
+header{position:sticky;top:0;z-index:5;border-bottom:1px solid rgba(255,255,255,.09);background:rgba(9,9,13,.86);backdrop-filter:blur(18px)}
+.head{min-height:68px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.logo{font:800 25px ui-monospace,monospace;letter-spacing:-.09em}
+nav{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:#c4c4ce}
+nav a{white-space:nowrap}
+main{padding:62px 0 88px}
+.breadcrumb{color:#858592;font-size:12px;margin-bottom:26px}
+.breadcrumb a,.inline-link{text-decoration:underline;text-underline-offset:4px}
+.eyebrow,.kicker{color:var(--accent);font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase}
+.hero{padding:25px 0 48px;border-bottom:1px solid var(--line)}
+h1{font-size:clamp(52px,10vw,86px);line-height:1.02;letter-spacing:-.075em;margin:12px 0 10px}
+.role{font-size:clamp(14px,2vw,18px);font-weight:700;letter-spacing:.08em;color:#d4d4dc}
+.tagline{font-size:clamp(17px,2.5vw,23px);font-weight:700;margin:22px 0 14px}
+.lead{max-width:780px;color:#c4c4ce;font-size:16px;line-height:2}
+.actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:27px}
+.button{display:inline-flex;align-items:center;justify-content:center;padding:11px 18px;border:1px solid #444454;border-radius:999px;font-weight:700;font-size:13px}
+.button.primary{background:#f4f4f5;border-color:#f4f4f5;color:#111}
+.button.primary:hover{background:#ddd6fe;color:#111}
+.section{padding:42px 0 0}
+.section-title{font-size:24px;letter-spacing:-.035em;margin:0 0 16px}
+.section-intro{color:#b9b9c4;margin:0 0 22px}
+.profile-grid,.project-grid,.value-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.panel{padding:22px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.015))}
+.panel h3{font-size:17px;margin:4px 0 8px}
+.panel p{font-size:14px;color:#b9b9c4;margin:0}
+dl{display:grid;grid-template-columns:120px 1fr;gap:9px 16px;margin:0;font-size:14px}
+dt{color:#9999a7}
+dd{margin:0;color:#e4e4e7}
+.timeline{display:grid;gap:0}
+.step{display:grid;grid-template-columns:82px 1fr;gap:18px;padding:22px 0;border-top:1px solid var(--line)}
+.step-number{color:var(--accent);font:700 13px ui-monospace,monospace;letter-spacing:.08em;padding-top:5px}
+.step h3{margin:0 0 8px;font-size:18px}
+.step p{margin:0 0 10px;color:#b9b9c4}
+.step p:last-child{margin-bottom:0}
+.panel .kicker{font-size:10px}
+.note{padding:20px 22px;border:1px solid rgba(196,181,253,.25);background:rgba(196,181,253,.06);border-radius:16px;color:#ddd6fe}
+.values{font-size:13px;color:#c4c4ce;margin:0;padding-left:18px}
+.values li{padding:5px 0}
+footer{border-top:1px solid var(--line);padding:28px 0;color:#8f8f9b;font-size:12px}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:4px}
+@media(max-width:680px){.head{align-items:flex-start;flex-direction:column;padding:12px 0}.head nav{gap:7px 14px}main{padding:42px 0 64px}.profile-grid,.project-grid,.value-grid{grid-template-columns:1fr}.hero{padding-top:8px}.step{grid-template-columns:58px 1fr;gap:10px}dl{grid-template-columns:100px 1fr}}
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "kuro - Independent Student Developer & Creator｜KURO開発者",
+  "url": "https://kuro-phi-gold.vercel.app/developer/",
+  "description": "kuroは、Webサービスやゲームなどの企画・開発に取り組む学生の個人開発者です。ソーシャルプラットフォーム「KURO」の企画・開発・運営を中心に活動しています。",
+  "inLanguage": "ja",
+  "isPartOf": {
+    "@type": "WebSite",
+    "name": "KURO",
+    "url": "https://kuro-phi-gold.vercel.app/"
+  },
+  "breadcrumb": {
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "ホーム",
+        "item": "https://kuro-phi-gold.vercel.app/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "kuro",
+        "item": "https://kuro-phi-gold.vercel.app/developer/"
+      }
+    ]
+  }
+}
+</script>
+</head>
+<body>
+<header><div class="wrap head">
+<a class="logo" href="/" aria-label="KUROホーム">KURO</a>
+<nav aria-label="メインナビゲーション">
+<a href="/">ホーム</a><a href="/sns/" class="nav-sns">SNSを開く</a><a href="/developer/">プロフィール</a><a href="/faq/">Q&amp;A</a><a href="/guide/">使い方</a><a href="/about/">KUROについて</a>
+</nav>
+</div></header>
+<main class="wrap">
+<div class="breadcrumb"><a href="/">ホーム</a> ／ 開発者プロフィール</div>
+<section class="hero">
+<div class="eyebrow">INDEPENDENT STUDENT DEVELOPER &amp; CREATOR</div>
+<h1>kuro</h1>
+<div class="role">Independent Student Developer &amp; Creator</div>
+<p class="tagline">Ideas into Reality. <span style="color:var(--muted)">— アイデアを、技術で形にする。</span></p>
+<p class="lead">kuroは、Webサービスやゲームなどの企画・開発に取り組む学生の個人開発者である。プログラミングを通じてアイデアを形にすることに関心を持ち、Webサイト制作やゲーム開発など、幅広い分野のものづくりに挑戦してきた。現在は、ソーシャルプラットフォーム「KURO」の企画・開発・運営を中心に活動している。</p>
+<div class="actions"><a class="button primary" href="/sns/">KUROを見てみる</a><a class="button" href="/about/">KUROについて</a></div>
+</section>
+<section class="section">
+<h2 class="section-title">Profile <span style="color:var(--muted);font-weight:400">／ 開発者について</span></h2>
+<div class="profile-grid">
+<div class="panel"><dl>
+<dt>開発者名</dt><dd>kuro</dd>
+<dt>肩書き</dt><dd>学生・個人開発者</dd>
+<dt>活動分野</dt><dd>Web開発・ゲーム制作・サービス開発</dd>
+<dt>主なプロジェクト</dt><dd><a class="inline-link" href="/">KURO</a></dd>
+<dt>開発の始まり</dt><dd>小学生の頃</dd>
+</dl></div>
+<div class="panel"><p>kuroは、学生として学びながら個人で開発活動を続けている。特定の分野に限定せず、Webサービスからゲームまで、興味を持ったアイデアを実際の作品として制作することに挑戦している。</p></div>
+</div>
+</section>
+<section class="section">
+<h2 class="section-title">Development History <span style="color:var(--muted);font-weight:400">／ 開発の歩み</span></h2>
+<div class="timeline">
+<article class="step"><div class="step-number">01 — BEGINNING</div><div><h3>プログラミングとの出会い</h3><p>小学生の頃にプログラミングを始めた。コードを書き、動作を確かめ、試行錯誤を繰り返す中で、プログラミングによってさまざまなものを作り出せる面白さに触れた。この経験が、その後の開発活動につながる原点となった。</p></div></article>
+<article class="step"><div class="step-number">02 — EXPLORATION</div><div><h3>Webサイト・ゲーム制作への挑戦</h3><p>プログラミングへの関心は、次第に実際の作品制作へと広がっていった。Webサイトの制作やゲーム開発など、異なるジャンルのものづくりに挑戦。ゲームのルールや仕組み、デザインを考え、アイデアを遊べる作品として形にする経験を積み重ねてきた。</p><p>コードを書くことだけでなく、利用する人がどのように感じるかを考えながら制作することにも取り組んでいる。</p></div></article>
+<article class="step"><div class="step-number">03 — EXPANSION</div><div><h3>本格的なWebサービス開発へ</h3><p>制作活動は、個別のWebページやゲームから、より多くの機能を持つWebサービスの開発へと発展していく。画面のデザインや操作性に加え、ユーザー登録、データ管理、認証、ユーザー同士のコミュニケーションなど、サービスを成立させるための仕組みにも取り組むようになった。</p></div></article>
+<article class="step"><div class="step-number">04 — KURO</div><div><h3>ソーシャルプラットフォームの企画・開発</h3><p>現在の中心的なプロジェクトが、ソーシャルプラットフォーム「KURO」である。KUROは、人と人がつながり、自由に交流できるオンラインサービスを目指して開発されている。</p><p>投稿、いいね、フォロー、返信、チャットなどの機能を備え、ユーザー同士の交流を支える仕組みを構築。企画、デザイン、フロントエンド開発、データベース連携、認証機能、公開後の改善まで、幅広い工程に取り組んでいる。</p><p>公開後も機能追加や改善を重ね、より使いやすく、安心して利用できるサービスを目指して開発を続けている。</p></div></article>
+</div>
+</section>
+<section class="section">
+<h2 class="section-title">Projects <span style="color:var(--muted);font-weight:400">／ 主な制作・開発分野</span></h2>
+<div class="project-grid">
+<article class="panel"><div class="kicker">SOCIAL PLATFORM</div><h3>KURO</h3><p>現在の中心的な開発プロジェクト。人と人とのつながりを大切にしたソーシャルプラットフォームとして、投稿・交流・ユーザー管理などの仕組みを開発・運営している。</p></article>
+<article class="panel"><div class="kicker">WEBSITE &amp; WEB APPLICATION</div><h3>Web Development</h3><p>WebサイトやWebアプリケーションの企画・制作に取り組む。デザインに加え、実際に動作する機能やデータ連携など、Webサービスの仕組みづくりにも挑戦している。</p></article>
+<article class="panel"><div class="kicker">INTERACTIVE EXPERIENCES</div><h3>Game Development</h3><p>ゲームの企画・開発にも取り組む。ゲームシステム、ルール、ステージ構成、操作性などを考え、アイデアを遊べる作品として形にしている。</p></article>
+</div>
+</section>
+<section class="section">
+<h2 class="section-title">Development Philosophy <span style="color:var(--muted);font-weight:400">／ 開発に対する考え方</span></h2>
+<p class="section-intro">大切にしているのは、アイデアを考えるだけで終わらせず、実際に動くものとして形にすること。</p>
+<div class="value-grid">
+<div class="panel"><div class="kicker">CREATIVITY</div><h3>創造</h3><p>新しいアイデアを考え、形にする。</p></div>
+<div class="panel"><div class="kicker">CHALLENGE</div><h3>挑戦</h3><p>未知の技術や分野にも積極的に取り組む。</p></div>
+<div class="panel"><div class="kicker">PRACTICALITY</div><h3>実用性</h3><p>実際に利用できる仕組みを構築する。</p></div>
+<div class="panel"><div class="kicker">IMPROVEMENT</div><h3>改善</h3><p>完成後も課題を見つけ、継続的に進化させる。</p></div>
+</div>
+</section>
+<section class="section">
+<h2 class="section-title">Vision <span style="color:var(--muted);font-weight:400">／ これからの展望</span></h2>
+<div class="note">kuroは、学生として学びながら個人開発者として活動を続けている。今後はKUROをより多くの人に利用されるサービスへと成長させることに加え、新しいWebサービスやデジタルコンテンツの開発にも挑戦していく。技術や創造力の幅を広げ、新しい価値を生み出すことを目指している。</div>
+</section>
+<section class="section">
+<h2 class="section-title">Official Identity</h2>
+<p class="section-intro"><strong>kuro</strong><br>Independent Student Developer &amp; Creator<br>Web Development / Game Development / Digital Projects<br><em>Creating possibilities through technology.</em><br><strong>Ideas into Reality.</strong></p>
+<p><a class="button" href="/contact/">KUROへのお問い合わせ</a></p>
+</section>
+</main>
+<footer><div class="wrap foot"><span>kuro · Independent Student Developer &amp; Creator</span><nav aria-label="フッターナビゲーション"><a href="/">KURO</a><a href="/about/">About</a><a href="/developer/">Developer</a><a href="/features/">Features</a><a href="/guide/">Guide</a><a href="/contact/">Contact</a></nav></div></footer>
+</body>
+</html>

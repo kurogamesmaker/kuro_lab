@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#09090d">
+<meta name="robots" content="index,follow">
+<title>お問い合わせ｜Kuro Lab</title>
+<meta name="description" content="Kuro Lab・KURO SNS・KURO GAMESに関するお問い合わせ窓口です。質問、不具合の報告、ご意見などを受け付けています。">
+<link rel="canonical" href="https://kuro-phi-gold.vercel.app/contact/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Kuro Lab">
+<meta property="og:title" content="お問い合わせ｜Kuro Lab">
+<meta property="og:description" content="Kuro Lab・KURO SNS・KURO GAMESへのお問い合わせはこちら。">
+<meta property="og:url" content="https://kuro-phi-gold.vercel.app/contact/">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"ContactPage",
+  "name":"お問い合わせ｜Kuro Lab",
+  "url":"https://kuro-phi-gold.vercel.app/contact/",
+  "inLanguage":"ja",
+  "mainEntity":{
+    "@type":"Organization",
+    "name":"Kuro Lab",
+    "contactPoint":{
+      "@type":"ContactPoint",
+      "contactType":"customer support",
+      "email":"kurogamesmaker+customersupport@gmail.com",
+      "availableLanguage":"Japanese"
+    }
+  }
+}
+</script>
+<style>
+:root{color-scheme:dark;--bg:#09090d;--panel:#13131b;--line:#292936;--muted:#aaaab7;--ink:#f4f4f5;--accent:#c4b5fd;--accent2:#8b5cf6}
+*{box-sizing:border-box}
+html{background:var(--bg);scroll-behavior:smooth}
+body{margin:0;background:radial-gradient(ellipse at 50% -18rem,rgba(139,92,246,.18),transparent 40rem),var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Noto Sans JP",sans-serif;line-height:1.8}
+a{color:inherit;text-underline-offset:4px}
+a:hover{color:#ddd6fe}
+button,input,select,textarea{font:inherit}
+.wrap{width:min(100% - 36px,900px);margin-inline:auto}
+header{position:sticky;top:0;z-index:5;border-bottom:1px solid rgba(255,255,255,.09);background:rgba(9,9,13,.9);backdrop-filter:blur(16px)}
+.head{min-height:68px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.brand{font:900 23px/1 ui-monospace,monospace;letter-spacing:-.07em;text-decoration:none}
+.brand span{color:var(--accent)}
+nav{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:#c4c4ce}
+main{padding:58px 0 86px}
+.eyebrow{color:var(--accent);font-size:11px;font-weight:800;letter-spacing:.2em}
+h1{font-size:clamp(34px,6vw,54px);line-height:1.18;letter-spacing:-.055em;margin:12px 0}
+.lead{max-width:690px;color:#c4c4ce;font-size:16px;margin:14px 0 30px}
+.panel{border:1px solid var(--line);border-radius:20px;background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.018));padding:24px;margin:18px 0}
+.mail-panel{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.small-label{font-size:11px;color:var(--accent);font-weight:800;letter-spacing:.14em}
+.email{font-size:clamp(15px,2vw,19px);font-weight:750;overflow-wrap:anywhere;margin-top:5px}
+.copy-btn,.submit-btn,.secondary-link{display:inline-flex;align-items:center;justify-content:center;min-height:43px;padding:9px 16px;border:1px solid #49465a;border-radius:11px;background:#1b1925;color:#f4f4f5;font-weight:700;text-decoration:none;cursor:pointer}
+.copy-btn:hover,.secondary-link:hover{border-color:var(--accent);color:#fff}
+h2{font-size:21px;letter-spacing:-.03em;margin:0 0 8px}
+.muted{color:var(--muted);font-size:14px;margin:0 0 18px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.field{display:flex;flex-direction:column;gap:7px;margin:0 0 18px}
+.field label{font-size:13px;font-weight:700;color:#e4e4eb}
+.field input,.field select,.field textarea{width:100%;min-height:46px;padding:11px 13px;border:1px solid #3a3948;border-radius:10px;background:#0d0d13;color:#f4f4f5;outline:none}
+.field textarea{min-height:170px;resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(196,181,253,.13)}
+.field input::placeholder,.field textarea::placeholder{color:#777786}
+.hint{font-size:12px;color:#9292a0;margin:0}
+.required{color:#d8b4fe;font-size:11px;margin-left:5px}
+.checkline{display:flex;align-items:flex-start;gap:10px;color:#c4c4ce;font-size:13px;margin:18px 0}
+.checkline input{margin-top:6px;accent-color:#8b5cf6}
+.submit-btn{width:100%;min-height:52px;border:0;background:linear-gradient(115deg,#7652cb,#5334a4);font-size:15px;box-shadow:0 8px 28px rgba(80,50,160,.22)}
+.submit-btn:hover{filter:brightness(1.12)}
+.status{min-height:26px;color:var(--accent);font-size:13px;margin:12px 0 0}
+.send-options{display:none;margin-top:17px;padding-top:17px;border-top:1px solid var(--line)}
+.send-options.show{display:block}
+.option-links{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.note{padding:17px 19px;border-left:3px solid var(--accent);background:rgba(196,181,253,.07);border-radius:0 12px 12px 0;color:#d4d4dc;font-size:13px;margin-top:22px}
+.links{display:flex;flex-wrap:wrap;gap:10px 18px;font-size:13px}
+footer{border-top:1px solid var(--line);padding:26px 0;color:#92929e;font-size:12px}
+.foot{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+@media(max-width:680px){.head{align-items:flex-start;flex-direction:column;padding:13px 0}.head nav{gap:8px 13px}main{padding:42px 0 60px}.panel{padding:19px}.grid{grid-template-columns:1fr;gap:0}.mail-panel{align-items:flex-start}.copy-btn{width:100%}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<header><div class="wrap head">
+<a class="brand" href="/" aria-label="Kuro Lab ホーム">KURO <span>LAB</span></a>
+<nav aria-label="メインナビゲーション">
+<a href="/">ホーム</a><a href="/sns/">KURO SNS</a><a href="/faq/">よくある質問</a><a href="/guide/">使い方</a><a href="/about/">Kuro Labについて</a>
+</nav>
+</div></header>
+<main class="wrap">
+<div class="eyebrow">CUSTOMER SUPPORT</div>
+<h1>お問い合わせ</h1>
+<p class="lead">Kuro Lab、KURO SNS、KURO GAMESについての質問・不具合報告・ご意見はこちらからお送りください。内容を整理してメールを作成できるようにしています。</p>
+
+<section class="panel mail-panel" aria-label="受付メールアドレス">
+<div><div class="small-label">SUPPORT EMAIL</div><div class="email" id="supportEmail">kurogamesmaker+customersupport@gmail.com</div></div>
+<button class="copy-btn" id="copyEmail" type="button">メールアドレスをコピー</button>
+</section>
+
+<section class="panel">
+<h2>お問い合わせフォーム</h2>
+<p class="muted">項目を入力して「メールを作成する」を押してください。メール作成画面が開くので、内容を確認して送信してください。</p>
+<form id="contactForm">
+<div class="field">
+<label for="category">お問い合わせの種類<span class="required">必須</span></label>
+<select id="category" name="category" required>
+<option value="">選択してください</option>
+<option value="サービス全般">サービス全般・使い方</option>
+<option value="アカウント・ログイン">アカウント・ログイン</option>
+<option value="不具合・表示の問題">不具合・表示の問題</option>
+<option value="投稿・ユーザーの報告">投稿・ユーザーに関する報告</option>
+<option value="プライバシー・データ">プライバシー・データに関する相談</option>
+<option value="セキュリティ">セキュリティに関する報告</option>
+<option value="アイデア・提案">アイデア・提案</option>
+<option value="その他">その他</option>
+</select>
+</div>
+<div class="grid">
+<div class="field">
+<label for="name">お名前・ユーザー名（任意）</label>
+<input id="name" name="name" type="text" maxlength="60" autocomplete="name" placeholder="例：KUROユーザー">
+</div>
+<div class="field">
+<label for="replyEmail">返信先メールアドレス（任意）</label>
+<input id="replyEmail" name="replyEmail" type="email" maxlength="254" autocomplete="email" placeholder="返信が必要な場合に入力">
+<p class="hint">入力した場合は、問い合わせメールに記載されます。</p>
+</div>
+</div>
+<div class="field">
+<label for="environment">利用環境（任意）</label>
+<input id="environment" name="environment" type="text" maxlength="120" placeholder="例：Windows 11 / Chrome、iPhone / Safari">
+<p class="hint">不具合の場合、端末やブラウザが分かると調査しやすくなります。</p>
+</div>
+<div class="field">
+<label for="message">お問い合わせ内容<span class="required">必須</span></label>
+<textarea id="message" name="message" maxlength="3000" minlength="5" required placeholder="困っていること、発生した画面や操作、提案したいことなどを具体的に書いてください。"></textarea>
+<p class="hint" id="charCount" aria-live="polite">0 / 3000文字</p>
+</div>
+<label class="checkline"><input id="privacyCheck" type="checkbox" required><span>パスワード、ログイン確認コード、秘密鍵、他人の個人情報などを入力していないことを確認しました。</span></label>
+<button class="submit-btn" type="submit">メールを作成する ↗</button>
+<p class="status" id="status" role="status" aria-live="polite"></p>
+<div class="send-options" id="sendOptions">
+<p class="muted">メール作成画面が開かない場合は、次のリンクを使ってください。</p>
+<div class="option-links">
+<a class="secondary-link" id="gmailFallback" href="#" target="_blank" rel="noopener noreferrer">Gmailで作成</a>
+<a class="secondary-link" id="mailFallback" href="#">端末のメールアプリで作成</a>
+</div>
+</div>
+</form>
+</section>
+
+<section class="panel">
+<h2>送信前に確認してください</h2>
+<ul class="muted">
+<li>このフォームは、入力内容をメールの下書きに引き継ぎます。サイト上で自動送信したり、入力内容をサイト内に保存したりはしません。</li>
+<li>メール作成画面で宛先・件名・本文を確認し、ご自身で送信してください。</li>
+<li>パスワード、確認コード、秘密鍵は絶対に送らないでください。</li>
+<li>不具合を報告するときは、発生した日時・操作・画面に表示された内容を、個人情報を含めずに書いてください。</li>
+</ul>
+<p class="muted">返信には時間がかかる場合があります。すべてのお問い合わせへの返信を保証するものではありません。</p>
+</section>
+
+<section class="panel">
+<h2>先にこちらも確認できます</h2>
+<div class="links">
+<a href="/faq/">よくある質問</a><a href="/guide/">使い方ガイド</a><a href="/privacy/">プライバシーポリシー</a><a href="/terms/">利用規約</a><a href="/security/">セキュリティ</a>
+</div>
+</section>
+<div class="note">安全のため、ログインできない場合でもパスワードや認証コードを問い合わせメールに書かないでください。アカウントの確認に必要な場合は、公開しても問題のないユーザー名など、必要最小限の情報だけをお知らせください。</div>
+</main>
+<footer><div class="wrap foot"><span>© 2026 Kuro Lab</span><span><a href="/privacy/">Privacy</a>　·　<a href="/terms/">Terms</a>　·　<a href="/security/">Security</a>　·　<a href="/contact/">お問い合わせ</a></span></div></footer>
+<script>
+(function(){
+  'use strict';
+  var address = 'kurogamesmaker+customersupport@gmail.com';
+  var form = document.getElementById('contactForm');
+  var message = document.getElementById('message');
+  var count = document.getElementById('charCount');
+  var status = document.getElementById('status');
+  var options = document.getElementById('sendOptions');
+  var gmailFallback = document.getElementById('gmailFallback');
+  var mailFallback = document.getElementById('mailFallback');
+
+  function updateCount(){
+    count.textContent = message.value.length + ' / 3000文字';
+  }
+  message.addEventListener('input', updateCount);
+
+  document.getElementById('copyEmail').addEventListener('click', function(){
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(address).then(function(){
+        status.textContent = 'メールアドレスをコピーしました。';
+      }).catch(function(){
+        window.prompt('メールアドレスをコピーしてください', address);
+      });
+    } else {
+      window.prompt('メールアドレスをコピーしてください', address);
+    }
+  });
+
+  form.addEventListener('submit', function(event){
+    event.preventDefault();
+    if (!form.reportValidity()) return;
+
+    var category = document.getElementById('category').value;
+    var name = document.getElementById('name').value.trim() || '未記入';
+    var replyEmail = document.getElementById('replyEmail').value.trim() || '未記入';
+    var environment = document.getElementById('environment').value.trim() || '未記入';
+    var details = message.value.trim();
+    var subject = '[Kuro Labお問い合わせ] ' + category;
+    var body = [
+      'Kuro Lab サポート担当者様',
+      '',
+      'お問い合わせありがとうございます。',
+      '',
+      '【お問い合わせ種別】' + category,
+      '【お名前・ユーザー名】' + name,
+      '【返信先メールアドレス】' + replyEmail,
+      '【利用環境】' + environment,
+      '',
+      '【お問い合わせ内容】',
+      details,
+      '',
+      '---',
+      'Kuro Lab公式サイトのお問い合わせフォームから作成'
+    ].join('\n');
+
+    var encodedSubject = encodeURIComponent(subject);
+    var encodedBody = encodeURIComponent(body);
+    var gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(address) + '&su=' + encodedSubject + '&body=' + encodedBody;
+    var mailtoUrl = 'mailto:' + address + '?subject=' + encodedSubject + '&body=' + encodedBody;
+
+    gmailFallback.href = gmailUrl;
+    mailFallback.href = mailtoUrl;
+    options.classList.add('show');
+    status.textContent = 'Gmailのメール作成画面を開きます。内容を確認してから送信してください。';
+
+    var opened = window.open(gmailUrl, '_blank');
+    if (opened) { opened.opener = null; }
+    if (!opened) {
+      status.textContent = '新しい画面がブロックされた場合は、下の「Gmailで作成」を押してください。';
+    }
+    options.scrollIntoView({behavior:'smooth',block:'nearest'});
+  });
+})();
+</script>
+</body>
+</html>

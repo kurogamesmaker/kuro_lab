@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KUROの機能紹介｜KURO</title>
+<meta name="description" content="KUROの短文投稿、ハッシュタグ検索、プロフィール、フォロー、いいね、返信、個別チャット、グループチャットなどの機能を紹介します。">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://kuro-phi-gold.vercel.app/features/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="KURO">
+<meta property="og:title" content="KUROの機能紹介｜KURO">
+<meta property="og:description" content="KUROの短文投稿、ハッシュタグ検索、プロフィール、フォロー、いいね、返信、個別チャット、グループチャットなどの機能を紹介します。">
+<meta property="og:url" content="https://kuro-phi-gold.vercel.app/features/">
+<meta name="theme-color" content="#09090d">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--bg:#09090d;--panel:#13131a;--line:#292936;--muted:#a1a1aa;--accent:#c4b5fd}
+*{box-sizing:border-box}
+html{background:var(--bg);scroll-behavior:smooth}
+body{margin:0;background:radial-gradient(ellipse at 50% -18rem,rgba(139,92,246,.16),transparent 38rem),var(--bg);color:#f4f4f5;font-family:Inter,system-ui,-apple-system,"Noto Sans JP",sans-serif;line-height:1.8}
+a{color:inherit;text-decoration:none}
+a:hover{color:#ddd6fe}
+.wrap{width:min(100% - 36px,980px);margin-inline:auto}
+header{position:sticky;top:0;z-index:5;border-bottom:1px solid rgba(255,255,255,.09);background:rgba(9,9,13,.86);backdrop-filter:blur(18px)}
+.head{min-height:68px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.logo{font:800 25px ui-monospace,monospace;letter-spacing:-.09em}
+nav{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:#c4c4ce}
+nav a{white-space:nowrap}
+main{padding:72px 0 88px}
+.eyebrow{color:var(--accent);font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase}
+h1{font-size:clamp(34px,6vw,58px);line-height:1.2;letter-spacing:-.055em;margin:14px 0 20px}
+.lead{max-width:760px;color:#c4c4ce;font-size:clamp(16px,2.2vw,19px);line-height:1.9}
+.hero{padding:34px 0 44px;border-bottom:1px solid var(--line)}
+.hero-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
+.button{display:inline-flex;align-items:center;justify-content:center;padding:12px 19px;border:1px solid #444454;border-radius:999px;font-weight:700;font-size:14px}
+.button.primary{background:#f4f4f5;border-color:#f4f4f5;color:#111}
+.button.primary:hover{background:#ddd6fe;color:#111}
+.section{padding:42px 0 0}
+.section h2{font-size:23px;letter-spacing:-.03em;margin:0 0 14px}
+.section p{color:#c4c4ce;margin:0 0 15px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:22px}
+.card{padding:22px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.015))}
+.card h2,.card h3{margin:0 0 8px;font-size:17px}
+.card p{margin:0;color:#b9b9c4;font-size:14px}
+.kicker{font-size:11px;color:var(--accent);font-weight:700;letter-spacing:.12em}
+ol.steps{padding-left:22px;color:#c4c4ce}
+ol.steps li{padding:0 0 14px 5px}
+.faq-item{padding:22px 0;border-bottom:1px solid var(--line)}
+.faq-item h2{font-size:17px;margin:0 0 8px}
+.faq-item p{margin:0;color:#c4c4ce}
+.note{margin-top:26px;padding:18px 20px;border-left:3px solid var(--accent);background:rgba(196,181,253,.07);color:#d4d4dc;border-radius:0 12px 12px 0}
+footer{border-top:1px solid var(--line);padding:28px 0;color:#8f8f9b;font-size:12px}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+.breadcrumb{color:#858592;font-size:12px;margin-bottom:22px}
+.breadcrumb a{text-decoration:underline;text-underline-offset:3px}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:4px}
+@media(max-width:680px){.head{align-items:flex-start;flex-direction:column;padding:12px 0}.head nav{gap:7px 14px}main{padding:48px 0 64px}.grid{grid-template-columns:1fr}.hero{padding-bottom:32px}}
+</style>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "KUROの機能紹介｜KURO",
+  "url": "https://kuro-phi-gold.vercel.app/features/",
+  "description": "KUROの短文投稿、ハッシュタグ検索、プロフィール、フォロー、いいね、返信、個別チャット、グループチャットなどの機能を紹介します。",
+  "inLanguage": "ja",
+  "isPartOf": {
+    "@type": "WebSite",
+    "name": "KURO",
+    "url": "https://kuro-phi-gold.vercel.app/"
+  },
+  "breadcrumb": {
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "ホーム",
+        "item": "https://kuro-phi-gold.vercel.app/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "KUROの機能紹介",
+        "item": "https://kuro-phi-gold.vercel.app/features/"
+      }
+    ]
+  }
+}
+</script>
+</head>
+<body>
+<header><div class="wrap head">
+<a class="logo" href="/" aria-label="KUROホーム">KURO</a>
+<nav aria-label="メインナビゲーション">
+<a href="/">ホーム</a><a href="/sns/" class="nav-sns">SNSを開く</a><a href="/developer/">プロフィール</a><a href="/faq/">Q&amp;A</a><a href="/guide/">使い方</a><a href="/about/">KUROについて</a>
+</nav>
+</div></header>
+<main class="wrap">
+<div class="breadcrumb"><a href="/">ホーム</a> ／ KUROの機能紹介</div>
+<section class="hero">
+<div class="eyebrow">FEATURES</div>
+<h1>KUROの機能紹介</h1>
+<p class="lead">投稿する、探す、つながる、会話する。KUROには、短い投稿を中心に交流を広げるための機能があります。</p>
+<div class="hero-actions"><a class="button primary" href="/sns/">KUROを開く</a><a class="button" href="/guide/">使い方を見る</a></div>
+</section>
+<section class="section"><div class="grid">
+<div class="card"><div class="kicker">POST</div><h3>短文投稿</h3><p>最大130文字のテキストを投稿できます。短いひとことだから、日々の小さな出来事も共有しやすい設計です。</p></div>
+<div class="card"><div class="kicker">HASHTAG</div><h3>ハッシュタグ検索</h3><p>投稿に「#日常」「#ゲーム」のようなタグを付けて、同じテーマの話題を探せます。</p></div>
+<div class="card"><div class="kicker">PROFILE</div><h3>プロフィール</h3><p>表示名、ユーザーID、プロフィール画像、自己紹介を設定して、自分のページを作れます。</p></div>
+<div class="card"><div class="kicker">FOLLOW</div><h3>フォロー</h3><p>気になるユーザーをフォローしたり、フォロワーやフォロー中のユーザーを確認したりできます。</p></div>
+<div class="card"><div class="kicker">REACTION</div><h3>いいね・返信</h3><p>気になった投稿にリアクションしたり、返信を送ったりして会話を始められます。</p></div>
+<div class="card"><div class="kicker">CHAT</div><h3>チャット</h3><p>ユーザーとの個別チャットに加えて、複数人で話せるグループチャットも利用できます。</p></div>
+<div class="card"><div class="kicker">NOTIFICATION</div><h3>通知</h3><p>フォローや投稿への反応など、アプリ内の通知を確認できます。対応環境ではプッシュ通知も設定できます。</p></div>
+<div class="card"><div class="kicker">SIGN IN</div><h3>アカウント</h3><p>メールアドレスまたはGoogleを使った認証に対応しています。アカウント設定からパスワードを管理できます。</p></div>
+</div></section>
+<section class="section"><h2>まずは投稿してみよう</h2><p>利用を始めるには、<a href="/guide/" style="text-decoration:underline;text-underline-offset:4px">使い方ガイド</a>を参考にしてください。各機能の表示や利用条件は、ログイン状態や端末・ブラウザによって異なる場合があります。</p></section>
+</main>
+<footer><div class="wrap foot"><span>KURO · 短い投稿でつながるSNS</span><nav aria-label="フッターナビゲーション"><a href="/about/">About</a><a href="/features/">Features</a><a href="/guide/">Guide</a><a href="/faq/">FAQ</a><a href="/guidelines/">Guidelines</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="/security/">Security</a><a href="/contact/">Contact</a></nav></div></footer>
+</body></html>
