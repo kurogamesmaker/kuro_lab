@@ -16,6 +16,32 @@
 <link rel="apple-touch-icon" href="/%E3%83%9F%E3%83%8B%E3%83%9E%E3%83%AB%E3%81%AA%E3%83%91%E3%83%B3%E3%83%80%E3%83%95%E3%82%A7%E3%82%A4%E3%82%B9%E3%83%AD%E3%82%B4.png?v=20261113b">
 <meta name="theme-color" content="#ffffff">
 <link rel="stylesheet" href="/site.css?v=20261113b">
+<style>
+/* Homepage cards: clear layout and readable spacing */
+.kuro-home-services .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;max-width:1040px}
+.kuro-home-services .card{display:flex;align-items:center;gap:20px;min-height:190px;padding:24px;text-decoration:none!important;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+.kuro-home-services .card:hover{transform:translateY(-3px);border-color:#b8dced!important;box-shadow:0 16px 34px rgba(22,55,82,.10)!important}
+.kuro-home-services .card img{width:92px;height:92px;flex:0 0 92px;object-fit:contain;border-radius:16px;background:#f3f8fc;padding:8px}
+.kuro-home-services .card-copy{display:block;min-width:0}
+.kuro-home-services .tag{display:block;color:#168fd3;font-size:10px;font-weight:900;letter-spacing:.15em}
+.kuro-home-services .card h3{margin:7px 0 8px;font-size:clamp(21px,2.5vw,27px);line-height:1.25}
+.kuro-home-services .card p{margin:0 0 13px;color:#607184;font-size:13px;line-height:1.75}
+.kuro-home-services .go{color:#0878b8;font-size:12px;font-weight:850}
+.kuro-home-services .section-head h2{margin:7px 0;font-size:clamp(24px,3vw,32px)}
+.kuro-home-services .section-head p{margin:0;color:#607184;font-size:14px}
+.kuro-home-about h2{margin:0 0 8px;font-size:20px}
+.kuro-home-about p{margin:0;color:#607184;font-size:14px;line-height:1.85}
+@media(max-width:760px){
+ .kuro-home-services .cards{grid-template-columns:1fr;gap:13px}
+ .kuro-home-services .card{min-height:0;padding:19px;gap:15px}
+ .kuro-home-services .card img{width:76px;height:76px;flex-basis:76px}
+ .kuro-home-about{padding:21px!important}
+}
+@media(max-width:420px){
+ .kuro-home-services .card{align-items:flex-start}
+ .kuro-home-services .card img{width:64px;height:64px;flex-basis:64px}
+}
+</style>
 <script type="application/ld+json">
 {
   "@context":"https://schema.org",
