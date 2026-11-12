@@ -3,14 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#35b8f4">
 <title>KURO Lab（クロラボ）公式サイト｜KURO SNS・KURO GAMES</title>
 <meta name="description" content="KURO Lab（クロラボ）は、KURO SNSとKURO GAMESを企画・開発・運営するデジタルプロジェクトブランドです。サービスの内容や各プロジェクトを公式サイトで紹介します。">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="https://kurolab.cc.cd/">
-<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
-<link rel="shortcut icon" type="image/png" href="https://kurolab.cc.cd/icon-192.png">
-<link rel="apple-touch-icon" href="/icon-192.png">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KURO Lab">
 <meta property="og:title" content="KURO Lab（クロラボ）公式サイト｜KURO SNS・KURO GAMES">
@@ -360,76 +356,54 @@ a:focus-visible{outline:3px solid var(--blue-deep);outline-offset:4px}
   }
 })();
 </script>
+
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png?v=20261112c">
+<link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png?v=20261112c">
+<link rel="apple-touch-icon" href="/icon-512.png?v=20261112c">
+<meta name="theme-color" content="#ffffff">
+<link rel="stylesheet" href="/site.css?v=20261112c">
 </head>
-<body>
-<section class="hero-stage" aria-labelledby="hero-title">
-  <img class="hero-panda" src="/icon-192.png?v=20261111" width="390" height="390" alt="Kuro Labのパンダロゴ" fetchpriority="high">
+<body class="kuro-page kuro-theme-light">
 
-  <div class="hero-copy">
-    <span class="hero-welcome">Welcome to</span>
-    <h1 class="hero-title" id="hero-title">KURO Lab</h1>
-    <p class="hero-subtitle">IDEAS · TECHNOLOGY · CREATIVITY</p>
+<header class="kuro-global-header">
+  <div class="kuro-header-main">
+    <a class="kuro-brand" href="/" aria-label="KURO Lab ホーム">
+      <img src="/icon-512.png?v=20261112c" width="48" height="48" alt="KURO Labのパンダロゴ" decoding="async">
+      <span class="kuro-brand-copy"><strong>KURO Lab</strong><small>IDEAS · TECHNOLOGY · CREATIVITY</small></span>
+    </a>
+    <nav class="kuro-service-links" aria-label="KURO Labのサービス">
+      <a href="/">ホーム</a>
+      <a href="/sns/" class="primary">KURO SNS</a>
+      <a href="https://sites.google.com/view/kurogamessite/%E3%83%9B%E3%83%BC%E3%83%A0/" target="_blank" rel="noopener noreferrer">KURO GAMES ↗</a>
+      <a href="/canva/">KURO Canva</a>
+    </nav>
   </div>
-
-  <div class="platform-panel" aria-label="Kuro Labの開発ツールとプラットフォーム">
-    <div class="platform-content">
-      <p class="powered">
-        <span>Powered by</span>
-        <svg class="github-mark" viewBox="0 0 24 24" aria-label="GitHub" role="img">
-          <path fill="#050505" d="M12 .9a11.1 11.1 0 0 0-3.51 21.63c.56.1.76-.24.76-.54v-2.08c-3.1.67-3.76-1.32-3.76-1.32-.5-1.3-1.24-1.65-1.24-1.65-1.01-.7.08-.69.08-.69 1.12.08 1.71 1.15 1.71 1.15.99 1.7 2.59 1.21 3.22.93.1-.72.39-1.21.7-1.49-2.47-.28-5.07-1.24-5.07-5.5 0-1.22.44-2.22 1.15-3-.12-.28-.5-1.42.11-2.95 0 0 .94-.3 3.05 1.15a10.6 10.6 0 0 1 5.55 0c2.11-1.45 3.05-1.15 3.05-1.15.61 1.53.23 2.67.11 2.95.72.78 1.15 1.78 1.15 3 0 4.27-2.6 5.21-5.08 5.49.4.35.76 1.02.76 2.06V22c0 .3.2.65.77.54A11.1 11.1 0 0 0 12 .9z"/>
-        </svg>
-        <span>GitHub</span>
-      </p>
-      <div class="logo-grid">
-        <div class="logo-item google-word" aria-label="Google"><span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span></div>
-        <div class="logo-item" aria-label="Microsoft"><span class="ms-mark"><i></i><i></i><i></i><i></i></span><span>Microsoft</span></div>
-        <div class="logo-item" aria-label="Microsoft Edge"><span class="edge-mark"></span><span>Edge</span></div>
-        <div class="logo-item" aria-label="Vercel"><span class="vercel-mark"></span><span>Vercel</span></div>
-        <div class="logo-item" aria-label="Supabase"><span class="supabase-mark"></span><span>supabase</span></div>
-        <div class="logo-item" aria-label="Claude"><span class="claude-mark">✳</span><span>Claude</span></div>
-        <div class="logo-item" aria-label="OpenAI">
-          <svg class="openai-mark" viewBox="0 0 40 40" role="img"><g fill="none" stroke="#050505" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6.5c4.2-2.4 9.6.6 9.6 5.5v2.1"/><path d="M29.6 14.1c4.2 2.4 4.2 8.5 0 10.9l-1.8 1"/><path d="M27.8 26c0 4.9-5.4 7.9-9.6 5.5l-1.8-1"/><path d="M16.4 30.5c-4.2 2.4-9.6-.6-9.6-5.5v-2.1"/><path d="M6.8 22.9c-4.2-2.4-4.2-8.5 0-10.9l1.8-1"/><path d="M8.6 11c0-4.9 5.4-7.9 9.6-5.5l1.8 1"/><path d="M20 6.5v5.2m9.6 2.4-4.5 2.6m2.7 11.3-4.5-2.6m-7.8 5.1v-5.2m-9.6-2.4 4.5-2.6m-2.7-11.3 4.5 2.6"/></g></svg>
-          <span>OpenAI</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<header class="site-header">
-  <div class="wrap head">
-    <a class="brand" href="/" aria-label="Kuro Lab ホーム"><img class="brand-panda" src="/icon-192.png?v=20261111" width="34" height="34" alt="">KURO <span>LAB</span></a>
-    <nav aria-label="メインナビゲーション">
-      <a href="#services">Services</a>
-      <a href="#about">About</a>
-      <a href="/developer/">Creator</a>
-      <a href="https://boar-j6blpr.my.canva.site/" target="_blank" rel="noopener noreferrer">KURO Canva ↗</a>
-      <a class="nav-cta" href="/contact/">Contact</a>
+  <div class="kuro-subnav">
+    <nav class="kuro-subnav-inner" aria-label="サイト内ページ">
+      <a href="/about/">KURO SNSについて</a>
+      <a href="/features/">機能紹介</a>
+      <a href="/guide/">使い方ガイド</a>
+      <a href="/faq/">よくある質問</a>
+      <a href="/guidelines/">コミュニティガイド</a>
+      <a href="/developer/">開発者プロフィール</a>
+      <a href="/privacy/">プライバシー</a>
+      <a href="/terms/">利用規約</a>
+      <a href="/security/">セキュリティ</a>
+      <a href="/contact/">お問い合わせ</a>
     </nav>
   </div>
 </header>
-<div class="kuro-site-nav-wrap" style="width:100%;border-top:1px solid rgba(127,127,127,.18);border-bottom:1px solid rgba(127,127,127,.18);background:rgba(127,127,127,.055);">
-<nav aria-label="KURO Lab 全ページナビゲーション" style="width:min(1160px,calc(100% - 30px));margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 14px;padding:10px 0;font-size:12px;line-height:1.5;">
-<a href="/" style="white-space:nowrap;">KURO Lab</a>
-<a href="/sns/" style="white-space:nowrap;">KURO SNS</a>
-<a href="https://sites.google.com/view/kurogamessite/%E3%83%9B%E3%83%BC%E3%83%A0/" target="_blank" rel="noopener noreferrer" style="white-space:nowrap;">KURO GAMES ↗</a>
-<a href="/canva/" style="white-space:nowrap;">KURO Canva</a>
-<a href="/about/" style="white-space:nowrap;">KURO SNSについて</a>
-<a href="/features/" style="white-space:nowrap;">機能紹介</a>
-<a href="/guide/" style="white-space:nowrap;">使い方ガイド</a>
-<a href="/faq/" style="white-space:nowrap;">FAQ</a>
-<a href="/guidelines/" style="white-space:nowrap;">コミュニティガイド</a>
-<a href="/developer/" style="white-space:nowrap;">開発者プロフィール</a>
-<a href="/privacy/" style="white-space:nowrap;">プライバシー</a>
-<a href="/terms/" style="white-space:nowrap;">利用規約</a>
-<a href="/security/" style="white-space:nowrap;">セキュリティ</a>
-<a href="/contact/" style="white-space:nowrap;">お問い合わせ</a>
-</nav>
-</div>
-
-
-<main class="wrap">
-  <section class="section" id="services">
+<main class="wrap kuro-home-main">
+  <section class="kuro-home-intro">
+    <div>
+      <span class="kuro-home-eyebrow">WELCOME TO KURO LAB</span>
+      <h1>アイデアを、<span>使える体験へ。</span></h1>
+      <p>KURO Labは、KURO SNSやKURO GAMESなどのデジタルサービスを企画・開発するプロジェクトブランドです。毎日使いたくなる、楽しくて便利な体験をつくっています。</p>
+      <div class="kuro-home-actions"><a class="primary" href="/sns/">KURO SNSを開く →</a><a href="https://sites.google.com/view/kurogamessite/%E3%83%9B%E3%83%BC%E3%83%A0/" target="_blank" rel="noopener noreferrer">KURO GAMESを見る ↗</a></div>
+    </div>
+    <div class="kuro-home-mark"><img src="/icon-512.png?v=20261112c" width="190" height="190" alt="KURO Labのパンダロゴ" decoding="async"></div>
+  </section>
+  <section class="section kuro-home-services" id="services">
     <div class="section-head">
       <span class="section-kicker">WHAT WE CREATE</span>
       <h2>Our Services</h2>
@@ -458,16 +432,38 @@ a:focus-visible{outline:3px solid var(--blue-deep);outline-offset:4px}
     <p class="canva-note">検索結果からも見つけやすいように、<a href="/canva/">KURO Canvaの案内ページ</a>も用意しています。</p>
   </section>
 
-  <section class="about" id="about">
+  <section class="about kuro-home-about" id="about">
     <h2>KURO Lab（クロラボ）とは</h2>
     <p>KURO Lab（クロラボ）は、KURO SNSとKURO GAMESを企画・開発・運営するデジタルプロジェクトブランドです。KURO SNSでは投稿やチャットを通じた交流を、KURO GAMESではオリジナルゲームを楽しめるサービスを提供しています。サービスごとの個性を大切にしながら、企画・開発・改善を続けています。</p>
   </section>
 </main>
 
-<footer class="site-footer">
-  <div class="wrap foot">
-    <span>© 2026 KURO Lab</span>
-    <span><a href="/">KURO Lab</a>　·　<a href="/sns/">KURO SNS</a>　·　<a href="https://sites.google.com/view/kurogamessite/%E3%83%9B%E3%83%BC%E3%83%A0/" target="_blank" rel="noopener noreferrer">KURO Games</a>　·　<a href="/canva/">KURO Canva</a>　·　<a href="/about/">About</a>　·　<a href="/developer/">Developer</a>　·　<a href="/features/">Features</a>　·　<a href="/guide/">Guide</a>　·　<a href="/faq/">FAQ</a>　·　<a href="/guidelines/">Guidelines</a>　·　<a href="/privacy/">Privacy</a>　·　<a href="/terms/">Terms</a>　·　<a href="/security/">Security</a>　·　<a href="/contact/">Contact</a></span>
+
+<footer class="kuro-global-footer">
+  <div class="kuro-footer-inner">
+    <div class="kuro-footer-top">
+      <a class="kuro-footer-brand" href="/" style="text-decoration:none">
+        <img src="/icon-192.png?v=20261112c" width="42" height="42" alt="">
+        <span><strong>KURO Lab</strong><small>KUROのデジタルプロジェクト</small></span>
+      </a>
+      <nav class="kuro-footer-links" aria-label="フッターナビゲーション">
+        <a href="/">KURO Lab</a>
+        <a href="/sns/">KURO SNS</a>
+        <a href="https://sites.google.com/view/kurogamessite/%E3%83%9B%E3%83%BC%E3%83%A0/" target="_blank" rel="noopener noreferrer">KURO GAMES ↗</a>
+        <a href="/canva/">KURO Canva</a>
+        <a href="/about/">KURO SNSについて</a>
+        <a href="/features/">機能紹介</a>
+        <a href="/guide/">使い方ガイド</a>
+        <a href="/faq/">よくある質問</a>
+        <a href="/guidelines/">コミュニティガイド</a>
+        <a href="/developer/">開発者プロフィール</a>
+        <a href="/privacy/">プライバシー</a>
+        <a href="/terms/">利用規約</a>
+        <a href="/security/">セキュリティ</a>
+        <a href="/contact/">お問い合わせ</a>
+      </nav>
+    </div>
+    <div class="kuro-footer-bottom"><span>© 2026 KURO Lab</span><span>KURO Lab · Digital projects & creative works</span></div>
   </div>
 </footer>
 </body>

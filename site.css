@@ -1,0 +1,353 @@
+
+/* KURO Lab unified site system — 2026-11-12 */
+:root{
+  --kl-blue:#168fd3;
+  --kl-blue-deep:#0878b8;
+  --kl-ink:#17283b;
+  --kl-muted:#607184;
+  --kl-line:#e5edf4;
+  --kl-soft:#f5f9fc;
+  --kl-card:#ffffff;
+  --kl-shadow:0 12px 34px rgba(22,55,82,.07);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body.kuro-theme-light{
+  color-scheme:light!important;
+  background:#fff!important;
+  color:var(--kl-ink)!important;
+  font-family:Inter,system-ui,-apple-system,"Noto Sans JP",sans-serif!important;
+}
+body.kuro-theme-light a{color:var(--kl-blue-deep);text-underline-offset:3px}
+body.kuro-theme-light a:hover{color:#075d92}
+body.kuro-theme-light main{
+  width:min(1040px,calc(100% - 40px))!important;
+  max-width:1040px!important;
+  margin:0 auto!important;
+  padding:clamp(34px,5vw,64px) 0 84px!important;
+  background:#fff!important;
+  color:var(--kl-ink)!important;
+  line-height:1.8!important;
+}
+body.kuro-theme-light main h1,
+body.kuro-theme-light main h2,
+body.kuro-theme-light main h3,
+body.kuro-theme-light main h4{
+  color:#14283d!important;
+  letter-spacing:-.035em;
+  line-height:1.28;
+}
+body.kuro-theme-light main h1{
+  font-size:clamp(30px,5vw,46px)!important;
+  font-weight:850!important;
+  margin:9px 0 16px!important;
+}
+body.kuro-theme-light main h2{font-size:clamp(20px,3vw,26px)!important;margin:30px 0 12px!important}
+body.kuro-theme-light main h3{font-size:18px!important;margin:22px 0 10px!important}
+body.kuro-theme-light main p,
+body.kuro-theme-light main li,
+body.kuro-theme-light main dd,
+body.kuro-theme-light main figcaption{
+  color:#586b7d!important;
+  line-height:1.85!important;
+}
+body.kuro-theme-light main strong,
+body.kuro-theme-light main b{color:#1a3046!important}
+body.kuro-theme-light main section,
+body.kuro-theme-light main article,
+body.kuro-theme-light main .panel,
+body.kuro-theme-light main .card,
+body.kuro-theme-light main .faq-item,
+body.kuro-theme-light main .feature-card,
+body.kuro-theme-light main .guide-card,
+body.kuro-theme-light main .content-card,
+body.kuro-theme-light main .info-card,
+body.kuro-theme-light main details{
+  color:var(--kl-ink)!important;
+  border-color:var(--kl-line)!important;
+}
+body.kuro-theme-light main .panel,
+body.kuro-theme-light main .card,
+body.kuro-theme-light main .faq-item,
+body.kuro-theme-light main .feature-card,
+body.kuro-theme-light main .guide-card,
+body.kuro-theme-light main .content-card,
+body.kuro-theme-light main .info-card,
+body.kuro-theme-light main details{
+  background:#fff!important;
+  background-image:none!important;
+  border:1px solid var(--kl-line)!important;
+  border-radius:18px!important;
+  box-shadow:var(--kl-shadow)!important;
+}
+body.kuro-theme-light main details{padding:16px 19px!important;margin:12px 0!important}
+body.kuro-theme-light main summary{color:#1a3046!important;font-weight:750;cursor:pointer}
+body.kuro-theme-light main input,
+body.kuro-theme-light main select,
+body.kuro-theme-light main textarea{
+  color:#1c3044!important;
+  background:#f8fbfd!important;
+  border:1px solid #dbe6ef!important;
+  border-radius:11px!important;
+}
+body.kuro-theme-light main input:focus,
+body.kuro-theme-light main select:focus,
+body.kuro-theme-light main textarea:focus{
+  outline:0!important;border-color:#65b9e8!important;box-shadow:0 0 0 3px rgba(22,143,211,.13)!important;
+}
+body.kuro-theme-light main button,
+body.kuro-theme-light main .button,
+body.kuro-theme-light main .btn{
+  border-radius:11px!important;
+}
+body.kuro-theme-light main .note,
+body.kuro-theme-light main .callout,
+body.kuro-theme-light main .notice{
+  background:#f0f8fd!important;
+  color:#42596c!important;
+  border-color:#b9dff3!important;
+  border-radius:14px!important;
+}
+body.kuro-theme-light table{border-collapse:collapse;width:100%;background:#fff!important}
+body.kuro-theme-light th,
+body.kuro-theme-light td{border-color:#e4ecf3!important;color:#455b6f!important;padding:11px 13px}
+body.kuro-theme-light th{background:#f3f8fc!important;color:#203b54!important}
+body.kuro-theme-light main img{max-width:100%;height:auto}
+body.kuro-theme-light main code,
+body.kuro-theme-light main pre{background:#f2f6fa!important;color:#28445e!important;border-color:#e2eaf1!important}
+.kuro-global-header{
+  position:relative;
+  z-index:20;
+  width:100%;
+  background:rgba(255,255,255,.97);
+  border-bottom:1px solid #e7edf3;
+  box-shadow:0 5px 22px rgba(18,44,68,.045);
+  backdrop-filter:blur(16px);
+}
+.kuro-header-main{
+  width:min(1160px,calc(100% - 40px));
+  min-height:76px;
+  margin:0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:24px;
+  padding:10px 0;
+}
+.kuro-brand{
+  display:flex;
+  align-items:center;
+  flex:0 0 auto;
+  gap:11px;
+  min-width:0;
+  color:#14283d!important;
+  text-decoration:none!important;
+}
+.kuro-brand img{
+  display:block;
+  width:48px;
+  height:48px;
+  flex:0 0 48px;
+  object-fit:contain;
+  border-radius:13px;
+  background:#fff;
+}
+.kuro-brand-copy{display:flex;flex-direction:column;line-height:1.1}
+.kuro-brand-copy strong{font-size:22px;font-weight:900;letter-spacing:-.055em;color:#14283d}
+.kuro-brand-copy small{margin-top:5px;font-size:9px;font-weight:750;letter-spacing:.17em;color:#8292a2}
+.kuro-service-links{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.kuro-service-links a{
+  display:inline-flex;
+  align-items:center;
+  min-height:38px;
+  padding:7px 13px;
+  border:1px solid #e4edf4;
+  border-radius:999px;
+  color:#29445c!important;
+  background:#fff;
+  font-size:12px;
+  font-weight:800;
+  text-decoration:none!important;
+  transition:background .16s ease,border-color .16s ease,transform .16s ease;
+}
+.kuro-service-links a:hover{
+  border-color:#a9d9f2;
+  background:#f0f9fe;
+  transform:translateY(-1px);
+}
+.kuro-service-links a.primary{
+  border-color:#168fd3;
+  color:#fff!important;
+  background:#168fd3;
+}
+.kuro-service-links a.primary:hover{background:#0878b8}
+.kuro-subnav{
+  border-top:1px solid #f0f3f6;
+  background:#fbfdff;
+}
+.kuro-subnav-inner{
+  width:min(1160px,calc(100% - 40px));
+  min-height:42px;
+  margin:0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:3px 17px;
+  padding:7px 0;
+}
+.kuro-subnav a{
+  color:#627487!important;
+  text-decoration:none!important;
+  font-size:11px;
+  font-weight:700;
+  white-space:nowrap;
+}
+.kuro-subnav a:hover{color:#0878b8!important}
+.kuro-global-footer{
+  margin-top:35px;
+  padding:32px 0 22px;
+  border-top:1px solid #e7edf3;
+  background:#f8fbfd;
+  color:#607184;
+}
+.kuro-footer-inner{width:min(1160px,calc(100% - 40px));margin:0 auto}
+.kuro-footer-top{display:flex;justify-content:space-between;align-items:flex-start;gap:28px;flex-wrap:wrap}
+.kuro-footer-brand{display:flex;gap:12px;align-items:center}
+.kuro-footer-brand img{width:42px;height:42px;object-fit:contain;border-radius:11px;background:#fff}
+.kuro-footer-brand strong{display:block;color:#172d43;font-size:17px;font-weight:900}
+.kuro-footer-brand small{display:block;margin-top:4px;color:#75879a;font-size:11px}
+.kuro-footer-links{display:flex;flex-wrap:wrap;gap:9px 16px;max-width:720px}
+.kuro-footer-links a{font-size:11px;font-weight:700;color:#607184!important;text-decoration:none}
+.kuro-footer-links a:hover{color:#0878b8!important}
+.kuro-footer-bottom{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:24px;padding-top:15px;border-top:1px solid #e5edf3;color:#8493a1;font-size:10px}
+body.kuro-theme-light .kuro-global-header{background:rgba(255,255,255,.97)}
+body.kuro-theme-light .kuro-subnav{background:#fbfdff}
+body.kuro-theme-light .kuro-global-footer{background:#f8fbfd}
+.kuro-home-main{width:min(1160px,calc(100% - 40px))!important;max-width:1160px!important}
+.kuro-home-intro{
+  display:grid;
+  grid-template-columns:minmax(0,1.5fr) minmax(190px,.5fr);
+  align-items:center;
+  gap:36px;
+  padding:34px 42px;
+  margin:0 0 44px;
+  border:1px solid #e1edf5;
+  border-radius:24px;
+  background:linear-gradient(115deg,#f4faff 0%,#fff 70%);
+  box-shadow:0 15px 42px rgba(20,75,110,.055);
+}
+.kuro-home-eyebrow{display:inline-flex;align-items:center;gap:8px;color:#147fb8;font-size:10px;font-weight:900;letter-spacing:.19em}
+.kuro-home-eyebrow:before{content:"";width:22px;height:2px;background:#35b8f4}
+.kuro-home-intro h1{margin:12px 0 13px!important;font-size:clamp(32px,5vw,54px)!important;line-height:1.12!important}
+.kuro-home-intro h1 span{color:#168fd3!important}
+.kuro-home-intro p{max-width:640px;margin:0 0 22px;color:#5c6f82!important;font-size:15px}
+.kuro-home-actions{display:flex;flex-wrap:wrap;gap:10px}
+.kuro-home-actions a{
+  display:inline-flex;align-items:center;justify-content:center;min-height:43px;padding:10px 17px;
+  border:1px solid #dce8f0;border-radius:12px;background:#fff;color:#21435d!important;
+  font-size:12px;font-weight:800;text-decoration:none!important;
+}
+.kuro-home-actions a.primary{background:#168fd3;border-color:#168fd3;color:#fff!important}
+.kuro-home-mark{
+  display:flex;justify-content:center;align-items:center;
+  min-height:190px;border-radius:20px;background:radial-gradient(circle at 50% 38%,#fff 0,#eff8fe 72%,#e5f4fc 100%);
+}
+.kuro-home-mark img{width:min(190px,80%);height:auto;object-fit:contain;filter:drop-shadow(0 10px 13px rgba(15,56,83,.09))}
+.kuro-home-services .section-head{text-align:left;margin-bottom:22px}
+.kuro-home-services .section-kicker{font-size:10px;letter-spacing:.2em;color:#168fd3}
+.kuro-home-services .cards{gap:18px}
+.kuro-home-services .card{border-radius:18px!important;box-shadow:0 10px 26px rgba(20,60,90,.055)!important}
+.kuro-home-services .card h3{color:#162c41!important}
+.kuro-home-services .card p{color:#607184!important}
+.kuro-home-about{margin-top:26px;padding:25px 28px;border:1px solid #e6edf3;border-radius:18px;background:#fbfdff!important}
+body.kuro-theme-dark .kuro-global-header{
+  background:rgba(12,13,20,.97);
+  border-bottom:1px solid #292936;
+  box-shadow:0 5px 22px rgba(0,0,0,.22);
+}
+body.kuro-theme-dark .kuro-brand,
+body.kuro-theme-dark .kuro-brand-copy strong{color:#f4f4f5!important}
+body.kuro-theme-dark .kuro-brand img{background:#fff}
+body.kuro-theme-dark .kuro-brand-copy small{color:#9999a8}
+body.kuro-theme-dark .kuro-service-links a{
+  border-color:#343443;background:#171720;color:#dedee7!important;
+}
+body.kuro-theme-dark .kuro-service-links a:hover{border-color:#8b5cf6;background:#211c30}
+body.kuro-theme-dark .kuro-service-links a.primary{background:#7652cb;border-color:#7652cb;color:#fff!important}
+body.kuro-theme-dark .kuro-subnav{background:#101018;border-color:#292936}
+body.kuro-theme-dark .kuro-subnav a{color:#b7b7c5!important}
+body.kuro-theme-dark .kuro-subnav a:hover{color:#ddd6fe!important}
+body.kuro-theme-dark .kuro-global-footer{background:#101018;border-color:#292936;color:#9999a8}
+body.kuro-theme-dark .kuro-footer-brand strong{color:#f4f4f5}
+body.kuro-theme-dark .kuro-footer-brand small,
+body.kuro-theme-dark .kuro-footer-links a{color:#a4a4b2!important}
+body.kuro-theme-dark .kuro-footer-bottom{border-color:#292936;color:#858593}
+@media(max-width:760px){
+  .kuro-header-main{width:calc(100% - 28px);align-items:flex-start;flex-direction:column;gap:10px;padding:12px 0}
+  .kuro-brand img{width:42px;height:42px;flex-basis:42px}
+  .kuro-brand-copy strong{font-size:20px}
+  .kuro-service-links{justify-content:flex-start}
+  .kuro-service-links a{min-height:34px;padding:6px 11px;font-size:11px}
+  .kuro-subnav-inner{width:calc(100% - 28px);justify-content:flex-start;gap:8px 14px}
+  .kuro-footer-inner{width:calc(100% - 28px)}
+  .kuro-home-main{width:calc(100% - 28px)!important}
+  .kuro-home-intro{grid-template-columns:1fr;padding:27px 22px;gap:16px;margin-bottom:34px}
+  .kuro-home-intro h1{font-size:clamp(32px,9vw,45px)!important}
+  .kuro-home-intro p{font-size:14px}
+  .kuro-home-mark{min-height:145px;grid-row:1}
+  .kuro-home-mark img{width:130px}
+  body.kuro-theme-light main{width:calc(100% - 28px)!important;padding:34px 0 60px!important}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.kuro-service-links a{transition:none}}
+
+
+/* Light-page normalization and homepage sizing refinements */
+html:has(body.kuro-theme-light){background:#fff!important;color-scheme:light!important}
+body.kuro-theme-light main section,
+body.kuro-theme-light main article,
+body.kuro-theme-light main [class*="panel"],
+body.kuro-theme-light main [class*="card"],
+body.kuro-theme-light main [class*="box"],
+body.kuro-theme-light main [class*="surface"]{
+  background:#fff!important;background-image:none!important;
+}
+body.kuro-theme-light main .note,
+body.kuro-theme-light main .callout,
+body.kuro-theme-light main .notice{background:#f2f9fd!important}
+body.kuro-theme-light main .lead,
+body.kuro-theme-light main .description,
+body.kuro-theme-light main .muted{color:#5e7184!important}
+body.kuro-theme-light main .button,
+body.kuro-theme-light main button,
+body.kuro-theme-light main input[type="submit"]{
+  background:#168fd3!important;border-color:#168fd3!important;color:#fff!important;
+}
+body.kuro-theme-light main button:hover,
+body.kuro-theme-light main .button:hover,
+body.kuro-theme-light main input[type="submit"]:hover{background:#0878b8!important}
+body.kuro-theme-light main input,
+body.kuro-theme-light main select,
+body.kuro-theme-light main textarea{background:#f8fbfd!important;color:#1c3044!important}
+body.kuro-theme-light main pre,
+body.kuro-theme-light main code{background:#f2f6fa!important;color:#28445e!important}
+body.kuro-theme-light main.kuro-home-main{
+  width:min(1160px,calc(100% - 40px))!important;max-width:1160px!important;
+}
+body.kuro-theme-light main.kuro-home-main > section{background:transparent}
+body.kuro-theme-light main.kuro-home-main .kuro-home-intro{
+  background:linear-gradient(115deg,#f4faff 0%,#fff 70%)!important;
+}
+body.kuro-theme-light main.kuro-home-main .kuro-home-mark{
+  background:radial-gradient(circle at 50% 38%,#fff 0,#eff8fe 72%,#e5f4fc 100%)!important;
+}
+body.kuro-theme-light main.kuro-home-main .kuro-home-about{background:#fbfdff!important}
+@media(max-width:760px){
+  body.kuro-theme-light main.kuro-home-main{width:calc(100% - 28px)!important}
+}

@@ -1,0 +1,52 @@
+
+/* Light-page normalization and homepage sizing refinements */
+html:has(body.kuro-theme-light){background:#fff!important;color-scheme:light!important}
+body.kuro-theme-light main section,
+body.kuro-theme-light main article,
+body.kuro-theme-light main [class*="panel"],
+body.kuro-theme-light main [class*="card"],
+body.kuro-theme-light main [class*="box"],
+body.kuro-theme-light main [class*="surface"]{
+  background:#fff!important;
+  background-image:none!important;
+}
+body.kuro-theme-light main .note,
+body.kuro-theme-light main .callout,
+body.kuro-theme-light main .notice{
+  background:#f2f9fd!important;
+}
+body.kuro-theme-light main .lead,
+body.kuro-theme-light main .description,
+body.kuro-theme-light main .muted{color:#5e7184!important}
+body.kuro-theme-light main .button,
+body.kuro-theme-light main button,
+body.kuro-theme-light main input[type="submit"]{
+  background:#168fd3!important;
+  border-color:#168fd3!important;
+  color:#fff!important;
+}
+body.kuro-theme-light main button:hover,
+body.kuro-theme-light main .button:hover,
+body.kuro-theme-light main input[type="submit"]:hover{background:#0878b8!important}
+body.kuro-theme-light main input,
+body.kuro-theme-light main select,
+body.kuro-theme-light main textarea{background:#f8fbfd!important;color:#1c3044!important}
+body.kuro-theme-light main pre,
+body.kuro-theme-light main code{background:#f2f6fa!important;color:#28445e!important}
+body.kuro-theme-light main.kuro-home-main{
+  width:min(1160px,calc(100% - 40px))!important;
+  max-width:1160px!important;
+}
+body.kuro-theme-light main.kuro-home-main > section{background:transparent}
+body.kuro-theme-light main.kuro-home-main .kuro-home-intro{
+  background:linear-gradient(115deg,#f4faff 0%,#fff 70%)!important;
+}
+body.kuro-theme-light main.kuro-home-main .kuro-home-mark{
+  background:radial-gradient(circle at 50% 38%,#fff 0,#eff8fe 72%,#e5f4fc 100%)!important;
+}
+body.kuro-theme-light main.kuro-home-main .kuro-home-about{
+  background:#fbfdff!important;
+}
+@media(max-width:760px){
+  body.kuro-theme-light main.kuro-home-main{width:calc(100% - 28px)!important}
+}

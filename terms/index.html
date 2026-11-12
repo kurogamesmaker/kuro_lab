@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="index,follow">
-<meta name="theme-color" content="#09090d">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -61,29 +60,40 @@ a:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius
   }
 }
 </script>
+
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png?v=20261112c">
+<link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png?v=20261112c">
+<link rel="apple-touch-icon" href="/icon-512.png?v=20261112c">
+<meta name="theme-color" content="#ffffff">
+<link rel="stylesheet" href="/site.css?v=20261112c">
 </head>
-<body>
-<header><div class="wrap head"><a class="logo" href="/" aria-label="KURO Labホーム">KURO Lab</a><nav aria-label="メインナビゲーション">
-<a href="/">ホーム</a><a href="/sns/" class="nav-sns">SNSを開く</a><a href="/developer/">プロフィール</a><a href="/faq/">Q&amp;A</a><a href="/guide/">使い方</a><a href="/about/">KUROについて</a>
-</nav></div></header>
-<div class="kuro-site-nav-wrap" style="width:100%;border-top:1px solid rgba(127,127,127,.18);border-bottom:1px solid rgba(127,127,127,.18);background:rgba(127,127,127,.055);">
-<nav aria-label="KURO Lab 全ページナビゲーション" style="width:min(1160px,calc(100% - 30px));margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 14px;padding:10px 0;font-size:12px;line-height:1.5;">
-<a href="/" style="white-space:nowrap;">KURO Lab</a>
-<a href="/sns/" style="white-space:nowrap;">KURO SNS</a>
-<a href="https://sites.google.com/view/kurogamessite/%E3%83%9B%E3%83%BC%E3%83%A0/" target="_blank" rel="noopener noreferrer" style="white-space:nowrap;">KURO GAMES ↗</a>
-<a href="/canva/" style="white-space:nowrap;">KURO Canva</a>
-<a href="/about/" style="white-space:nowrap;">KURO SNSについて</a>
-<a href="/features/" style="white-space:nowrap;">機能紹介</a>
-<a href="/guide/" style="white-space:nowrap;">使い方ガイド</a>
-<a href="/faq/" style="white-space:nowrap;">FAQ</a>
-<a href="/guidelines/" style="white-space:nowrap;">コミュニティガイド</a>
-<a href="/developer/" style="white-space:nowrap;">開発者プロフィール</a>
-<a href="/privacy/" style="white-space:nowrap;">プライバシー</a>
-<a href="/terms/" style="white-space:nowrap;">利用規約</a>
-<a href="/security/" style="white-space:nowrap;">セキュリティ</a>
-<a href="/contact/" style="white-space:nowrap;">お問い合わせ</a>
-</nav>
-</div>
+<body class="kuro-page kuro-theme-light">
+
+<header class="kuro-global-header">
+  <div class="kuro-header-main">
+    <a class="kuro-brand" href="/" aria-label="KURO Lab ホーム">
+      <img src="/icon-512.png?v=20261112c" width="48" height="48" alt="KURO Labのパンダロゴ" decoding="async">
+      <span class="kuro-brand-copy"><strong>KURO Lab</strong><small>IDEAS · TECHNOLOGY · CREATIVITY</small></span>
+    </a>
+    <nav class="kuro-service-links" aria-label="KURO Labのサービス">
+      <a href="/">ホーム</a><a href="/sns/" class="primary">KURO SNS</a>
+      <a href="https://sites.google.com/view/kurogamessite/%E3%83%9B%E3%83%BC%E3%83%A0/" target="_blank" rel="noopener noreferrer">KURO GAMES ↗</a>
+      <a href="/canva/">KURO Canva</a>
+    </nav>
+  </div>
+  <div class="kuro-subnav"><nav class="kuro-subnav-inner" aria-label="サイト内ページ">
+    <a href="/about/">KURO SNSについて</a>
+    <a href="/features/">機能紹介</a>
+    <a href="/guide/">使い方ガイド</a>
+    <a href="/faq/">よくある質問</a>
+    <a href="/guidelines/">コミュニティガイド</a>
+    <a href="/developer/">開発者プロフィール</a>
+    <a href="/privacy/">プライバシー</a>
+    <a href="/terms/">利用規約</a>
+    <a href="/security/">セキュリティ</a>
+    <a href="/contact/">お問い合わせ</a>
+  </nav></div>
+</header>
 
 <main class="wrap"><div class="eyebrow">KURO INFORMATION</div><h1>利用規約</h1><p class="updated">最終更新日：2026年11月8日</p>
 <p class="intro">この利用規約は、KURO（以下「本サービス」）の利用条件を定めるものです。本サービスを利用する方は、本規約とコミュニティガイドを守ってください。</p>
@@ -98,4 +108,29 @@ a:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius
 <section><h2>9. お問い合わせ</h2><p>本規約に関する質問は<a href="/contact/">お問い合わせページ</a>からご連絡ください。</p></section>
 <section><h2>10. 運営者</h2><p>本サービスKUROは、開発者 kuro が個人で開発・運営しています。お問い合わせ先は<a href="/contact/">お問い合わせページ</a>をご確認ください。</p></section>
 <div class="notice">本規約はKUROの現在のサービス内容と運営方針を案内するものです。サービス内容や適用されるルールに変更があった場合は、本ページを更新します。</div>
-</main><footer><div class="wrap foot"><span>KURO SNS · KURO Labのソーシャルサービス</span><nav aria-label="関連情報"><a href="/privacy/">プライバシー</a><a href="/terms/">利用規約</a><a href="/security/">セキュリティ</a><a href="/contact/">お問い合わせ</a><a href="/">KURO Lab</a><a href="/sns/">KURO SNS</a><a href="https://sites.google.com/view/kurogamessite/%E3%83%9B%E3%83%BC%E3%83%A0/" target="_blank" rel="noopener noreferrer">KURO Games</a><a href="/canva/">KURO Canva</a></nav></div></footer></body></html>
+</main>
+<footer class="kuro-global-footer"><div class="kuro-footer-inner">
+  <div class="kuro-footer-top">
+    <a class="kuro-footer-brand" href="/" style="text-decoration:none">
+      <img src="/icon-192.png?v=20261112c" width="42" height="42" alt="">
+      <span><strong>KURO Lab</strong><small>KUROのデジタルプロジェクト</small></span>
+    </a>
+    <nav class="kuro-footer-links" aria-label="フッターナビゲーション">
+      <a href="/">KURO Lab</a>
+      <a href="/sns/">KURO SNS</a>
+      <a href="https://sites.google.com/view/kurogamessite/%E3%83%9B%E3%83%BC%E3%83%A0/" target="_blank" rel="noopener noreferrer">KURO GAMES ↗</a>
+      <a href="/canva/">KURO Canva</a>
+      <a href="/about/">KURO SNSについて</a>
+      <a href="/features/">機能紹介</a>
+      <a href="/guide/">使い方ガイド</a>
+      <a href="/faq/">よくある質問</a>
+      <a href="/guidelines/">コミュニティガイド</a>
+      <a href="/developer/">開発者プロフィール</a>
+      <a href="/privacy/">プライバシー</a>
+      <a href="/terms/">利用規約</a>
+      <a href="/security/">セキュリティ</a>
+      <a href="/contact/">お問い合わせ</a>
+    </nav>
+  </div>
+  <div class="kuro-footer-bottom"><span>© 2026 KURO Lab</span><span>KURO Lab · Digital projects & creative works</span></div>
+</div></footer></body></html>
