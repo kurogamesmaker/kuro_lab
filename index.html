@@ -62,6 +62,52 @@
 @media(max-width:760px){.kuro-home-story{grid-template-columns:1fr;gap:20px;margin-top:38px;padding:23px}.kuro-values-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:440px){.kuro-story-points{grid-template-columns:1fr}.kuro-values-grid{grid-template-columns:1fr}}
 
+
+/* Make the two main service destinations unmistakable */
+.kuro-service-links a[href="/sns/"],
+.kuro-service-links a[href*="kurolab1/kurogame-top"]{
+  min-height:46px;padding:10px 19px;font-size:14px;font-weight:900;
+  border-width:2px;border-color:#c9ddeb;background:#f3f9fd;
+  color:#145579!important;box-shadow:0 3px 10px rgba(22,91,132,.08);
+}
+.kuro-service-links a[href="/sns/"]:hover,
+.kuro-service-links a[href*="kurolab1/kurogame-top"]:hover{
+  background:#e7f5fd;border-color:#78bfdf;transform:translateY(-2px);
+}
+.kuro-home-actions{gap:13px}
+.kuro-home-actions a{
+  min-height:56px;padding:14px 23px;border-radius:14px;
+  font-size:15px;font-weight:900;border-width:2px;
+  box-shadow:0 5px 14px rgba(22,55,82,.08);
+  transition:transform .18s ease,box-shadow .18s ease,background .18s ease;
+}
+.kuro-home-actions a:hover{transform:translateY(-2px);box-shadow:0 9px 20px rgba(22,55,82,.13)}
+.kuro-home-actions a.primary{
+  background:#087fbd!important;border-color:#087fbd!important;color:#fff!important;
+}
+.kuro-home-actions a[href*="kurolab1/kurogame-top"]{
+  background:#172f49!important;border-color:#172f49!important;color:#fff!important;
+}
+.kuro-home-actions a[href*="kurolab1/kurogame-top"]:hover{background:#244d70!important}
+.kuro-home-services .card{min-height:218px;padding:28px}
+.kuro-home-services .card img{width:104px;height:104px;flex-basis:104px}
+.kuro-home-services .card h3{font-size:30px}
+.kuro-home-services .card p{font-size:14px}
+.kuro-home-services .go{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:39px;margin-top:2px;padding:8px 15px;border-radius:10px;
+  background:#eaf6fd;color:#086da4;font-size:13px;font-weight:900;
+}
+.kuro-home-services .card:hover .go{background:#d8effb}
+@media(max-width:760px){
+  .kuro-service-links a[href="/sns/"],
+  .kuro-service-links a[href*="kurolab1/kurogame-top"]{min-height:42px;padding:9px 15px;font-size:13px}
+  .kuro-home-actions a{min-height:52px;padding:12px 17px;font-size:14px}
+  .kuro-home-services .card{min-height:0;padding:20px}
+  .kuro-home-services .card img{width:82px;height:82px;flex-basis:82px}
+  .kuro-home-services .card h3{font-size:25px}
+}
+
 </style>
 <script type="application/ld+json">
 {
