@@ -1969,7 +1969,9 @@ function finishGame(reason){
       ? `🎉 NEW RECORD！（${label} ベスト更新）`
       : `${label} ベスト: ${best}`)+(mode==="endless"?` ／ 難しさ ${Math.round(diffValue)}% まで到達`:"");
 
-    window.KUROPlayFab?.submitScore(score, "SushiTyping_" + mode + "_" + selected);\n\n    celebrate(score,isNew);
+    window.KUROPlayFab?.submitScore(score, "SushiTyping_" + mode + "_" + selected);
+
+    celebrate(score,isNew);
   },1300);
 }
 
