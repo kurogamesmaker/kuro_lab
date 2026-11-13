@@ -4629,5 +4629,25 @@
   }
 </style>
 
+
+<style id="kuro-chat-standalone-mode">
+  body.kuro-chat-standalone>header,
+  body.kuro-chat-standalone>#kuroGasStatusPanel,
+  body.kuro-chat-standalone>#homeFeedView,
+  body.kuro-chat-standalone>#myProfileView,
+  body.kuro-chat-standalone>footer{display:none!important}
+  body.kuro-chat-standalone{margin:0!important;padding:0!important;overflow:hidden!important;background:#f4f5f8!important}
+</style>
+<script id="kuro-chat-standalone-launch">
+(function(){
+  const params=new URLSearchParams(location.search);
+  if(!params.has('openChat')) return;
+  document.body.classList.add('kuro-chat-standalone');
+  const launch=()=>{ if(typeof window.openChat==='function') window.openChat(); };
+  if(document.readyState==='complete') launch();
+  else window.addEventListener('load',launch,{once:true});
+})();
+</script>
+
 </body>
 </html>
