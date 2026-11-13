@@ -676,6 +676,19 @@
   }
 </style>
 
+
+<style id="kuro-desktop-app-only">
+  @media (min-width: 900px) {
+    /* Desktop should open as a focused SNS app, without the marketing/site chrome. */
+    body.kuro-page > .kuro-global-header,
+    body.kuro-page > #kuroGasStatusPanel {
+      display: none !important;
+    }
+    body.kuro-page { padding-top: 0 !important; }
+    #homeFeedView, #myProfileView { padding-top: 34px !important; }
+  }
+</style>
+
 </head>
 
 <body class="kuro-page kuro-theme-dark">
