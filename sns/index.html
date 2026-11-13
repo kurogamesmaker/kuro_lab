@@ -3251,8 +3251,12 @@
         }
         function switchChatMode(mode) {
             const publicMode = mode === 'public';
-            document.getElementById('publicChatPane')?.classList.toggle('hidden', !publicMode);
-            document.getElementById('chatLayout')?.classList.toggle('hidden', publicMode);
+            const publicPane = document.getElementById('publicChatPane');
+            const privateLayout = document.getElementById('chatLayout');
+            publicPane?.classList.toggle('hidden', !publicMode);
+            privateLayout?.classList.toggle('hidden', publicMode);
+            if (publicMode) privateLayout?.style.setProperty('display','none','important');
+            else privateLayout?.style.removeProperty('display');
             const publicButton = document.getElementById('publicChatModeButton');
             const privateButton = document.getElementById('privateChatModeButton');
             publicButton?.classList.toggle('bg-white', publicMode); publicButton?.classList.toggle('text-black', publicMode);
