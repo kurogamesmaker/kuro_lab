@@ -3668,24 +3668,32 @@
             event.preventDefault();
             const nicknameInput = document.getElementById('publicChatNickname');
             const input = document.getElementById('publicChatInput');
-            const button = document.getElementById('publicChatSendButton');
+            const box = document.getElementById('publicChatMessages');
             const nickname = (nicknameInput?.value||'').trim().slice(0,20);
             const content = (input?.value||'').trim().slice(0,300);
             if (!nickname) { showToast('表示名を入力してください'); nicknameInput?.focus(); return; }
-            if (!content) return;
-            if (Date.now() - kuroPublicChatLastSentAt < 1800) { showToast('少し待ってから送信してください'); return; }
-            if (button) button.disabled = true;
+            if (!content || !box) return;
+            try { localStorage.setItem('kuro-public-chat-nickname',nickname); } catch (_) {}
+            input.value = '';
+            const pending = document.createElement('div');
+            pending.dataset.optimisticId = String(Date.now()) + Math.random().toString(36).slice(2);
+            pending.innerHTML = formatPublicChatMessage({nickname,content,created_at:new Date().toISOString()});
+            pending.style.opacity = '0.72';
+            const empty = box.querySelector('[data-chat-empty]');
+            if (empty) empty.remove();
+            box.appendChild(pending);
+            box.scrollTop = box.scrollHeight;
             try {
-                const {error} = await supabaseClient.from('public_chat_messages').insert({nickname,content});
-                if (error) throw error;
-                kuroPublicChatLastSentAt = Date.now();
-                try { localStorage.setItem('kuro-public-chat-nickname',nickname); } catch (_) {}
-                input.value = '';
-                await loadPublicChat();
+                const result = await supabaseClient.from('public_chat_messages').insert({nickname,content}).select('id,nickname,content,created_at').single();
+                if (result.error) throw result.error;
+                pending.remove();
+                if (result.data) appendPublicChatMessage(result.data);
             } catch (error) {
-                console.error('KURO GAS public chat send failed:',error);
-                showToast('送信できませんでした。少し待って再試行してください');
-            } finally { if (button) button.disabled = false; }
+                console.error('Public chat send failed:',error);
+                pending.remove();
+                if (!input.value) input.value = content;
+                showToast('送信できませんでした。入力内容を戻しました');
+            }
         }
         function closeChat() {
             document.getElementById('chatModal')?.classList.add('hidden');
