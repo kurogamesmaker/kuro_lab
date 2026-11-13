@@ -4606,70 +4606,26 @@
 <script>window.addEventListener('pageshow', checkKuroGasBridge);</script>
 
 <style id="kuro-public-chat-fullscreen-fix">
-  /* 公開チャット全画面 + 入力フォームを画面下に自然な2段で配置 */
-  #chatModal:not(.hidden){
-    position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;height:100dvh!important;
-    max-width:none!important;max-height:none!important;padding:0!important;margin:0!important;
-    display:flex!important;align-items:stretch!important;justify-content:stretch!important;
-    overflow:hidden!important;border:0!important;border-radius:0!important;z-index:9999!important;
-  }
-  #chatModal:not(.hidden)>section{
-    position:relative!important;display:flex!important;flex-direction:column!important;
-    flex:1 1 auto!important;width:100%!important;max-width:none!important;height:100%!important;
-    min-height:0!important;max-height:none!important;margin:0!important;padding:0!important;
-    border:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden!important;
-  }
-  #chatModal:not(.hidden)>section>header{
-    position:relative!important;z-index:2!important;display:flex!important;
-    flex:0 0 80px!important;height:80px!important;min-height:80px!important;box-sizing:border-box!important;
-  }
-  #chatModal #publicChatPane{
-    position:relative!important;display:block!important;flex:1 1 0!important;
-    width:100%!important;height:auto!important;min-height:0!important;min-width:0!important;
-    margin:0!important;padding:0!important;overflow:hidden!important;
-  }
-  #chatModal #publicChatMessages{
-    position:absolute!important;inset:0 0 142px 0!important;
-    display:flex!important;flex-direction:column!important;width:100%!important;
-    height:auto!important;min-height:0!important;max-height:none!important;flex:none!important;
-    margin:0!important;padding:16px clamp(12px,2.5vw,36px)!important;box-sizing:border-box!important;
-    overflow-x:hidden!important;overflow-y:auto!important;border:0!important;border-radius:0!important;
-  }
-  #chatModal #publicChatForm{
-    position:absolute!important;left:0!important;right:0!important;bottom:0!important;z-index:3!important;
-    display:flex!important;flex-direction:column!important;justify-content:flex-end!important;
-    width:100%!important;max-width:none!important;height:auto!important;min-height:0!important;
-    margin:0!important;padding:10px clamp(12px,2.5vw,36px) max(10px,env(safe-area-inset-bottom))!important;
-    box-sizing:border-box!important;border-radius:0!important;gap:7px!important;
-  }
-  #chatModal #publicChatForm>div{
-    display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;
-    grid-template-rows:auto auto!important;align-items:stretch!important;
-    width:100%!important;max-width:none!important;gap:7px 8px!important;
-  }
-  #chatModal #publicChatNickname{
-    grid-column:1/-1!important;grid-row:1!important;display:block!important;
-    width:100%!important;min-width:0!important;height:40px!important;min-height:40px!important;
-    box-sizing:border-box!important;
-  }
-  #chatModal #publicChatInput{
-    grid-column:1!important;grid-row:2!important;display:block!important;
-    width:100%!important;min-width:0!important;height:44px!important;min-height:44px!important;
-    box-sizing:border-box!important;
-  }
-  #chatModal #publicChatSendButton{
-    grid-column:2!important;grid-row:2!important;display:flex!important;align-items:center!important;
-    justify-content:center!important;height:44px!important;min-height:44px!important;
-    min-width:104px!important;box-sizing:border-box!important;white-space:nowrap!important;
-  }
-  #chatModal #publicChatForm>p{
-    display:block!important;margin:0!important;padding:0!important;line-height:14px!important;
-  }
+  /* 公開チャット：入力欄を画面下中央の1段レイアウトに統一 */
+  #chatModal:not(.hidden){position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;display:flex!important;align-items:stretch!important;justify-content:stretch!important;overflow:hidden!important;border:0!important;border-radius:0!important;z-index:9999!important}
+  #chatModal:not(.hidden)>section{position:relative!important;display:flex!important;flex-direction:column!important;flex:1 1 auto!important;width:100%!important;max-width:none!important;height:100%!important;min-height:0!important;max-height:none!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden!important}
+  #chatModal:not(.hidden)>section>header{position:relative!important;z-index:2!important;display:flex!important;flex:0 0 80px!important;height:80px!important;min-height:80px!important;box-sizing:border-box!important}
+  #chatModal #publicChatPane{position:relative!important;display:block!important;flex:1 1 0!important;width:100%!important;height:auto!important;min-height:0!important;min-width:0!important;margin:0!important;padding:0!important;overflow:hidden!important}
+  #chatModal #publicChatMessages{position:absolute!important;inset:0 0 82px 0!important;display:flex!important;flex-direction:column!important;width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;flex:none!important;margin:0!important;padding:16px clamp(12px,2.5vw,36px)!important;box-sizing:border-box!important;overflow-x:hidden!important;overflow-y:auto!important;border:0!important;border-radius:0!important}
+  #chatModal #publicChatForm{position:absolute!important;left:0!important;right:0!important;bottom:0!important;z-index:3!important;display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;max-width:none!important;height:82px!important;min-height:82px!important;margin:0!important;padding:10px 16px max(10px,env(safe-area-inset-bottom))!important;box-sizing:border-box!important;border-radius:0!important;border-top:1px solid rgba(255,255,255,.12)!important;background:#111116!important}
+  #chatModal #publicChatForm>div{display:grid!important;grid-template-columns:minmax(120px,190px) minmax(0,1fr) auto!important;grid-template-rows:1fr!important;align-items:center!important;width:min(100%,920px)!important;max-width:920px!important;margin:0 auto!important;gap:8px!important}
+  #chatModal #publicChatNickname{grid-column:1!important;grid-row:1!important;display:block!important;width:100%!important;min-width:0!important;height:44px!important;min-height:44px!important;box-sizing:border-box!important}
+  #chatModal #publicChatInput{grid-column:2!important;grid-row:1!important;display:block!important;width:100%!important;min-width:0!important;height:44px!important;min-height:44px!important;box-sizing:border-box!important}
+  #chatModal #publicChatSendButton{grid-column:3!important;grid-row:1!important;display:flex!important;align-items:center!important;justify-content:center!important;height:44px!important;min-height:44px!important;min-width:92px!important;box-sizing:border-box!important;white-space:nowrap!important}
+  #chatModal #publicChatForm>p{display:none!important}
   @media(max-width:640px){
     #chatModal:not(.hidden)>section>header{flex-basis:76px!important;height:76px!important;min-height:76px!important;padding:10px 14px!important}
-    #chatModal #publicChatMessages{inset:0 0 142px 0!important;padding:12px 8px!important}
-    #chatModal #publicChatForm{padding:8px 10px max(8px,env(safe-area-inset-bottom))!important}
-    #chatModal #publicChatSendButton{min-width:82px!important;padding-left:12px!important;padding-right:12px!important}
+    #chatModal #publicChatMessages{inset:0 0 76px 0!important;padding:12px 8px!important}
+    #chatModal #publicChatForm{height:76px!important;min-height:76px!important;padding:8px 10px max(8px,env(safe-area-inset-bottom))!important}
+    #chatModal #publicChatForm>div{grid-template-columns:minmax(76px,110px) minmax(0,1fr) auto!important;gap:6px!important}
+    #chatModal #publicChatNickname,#chatModal #publicChatInput{height:42px!important;min-height:42px!important;padding-left:8px!important;padding-right:8px!important;font-size:12px!important}
+    #chatModal #publicChatNickname::placeholder{font-size:11px!important}
+    #chatModal #publicChatSendButton{height:42px!important;min-height:42px!important;min-width:58px!important;padding:0 9px!important;font-size:12px!important}
   }
 </style>
 
