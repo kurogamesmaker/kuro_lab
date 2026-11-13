@@ -601,6 +601,7 @@ a{color:inherit;text-decoration:none}.top{height:64px;display:flex;align-items:c
         <h2 id="resultTitle" class="text-3xl font-black font-serif-jp text-stone-900">おつかれさまでした！</h2>
         <p id="rankTitle" class="text-lg font-bold text-amber-800 bg-amber-100/70 border border-amber-300 rounded-full px-4 py-1 inline-block backdrop-blur-sm">見習い職人</p>
         <p id="recordInfo" class="text-sm font-black text-stone-700"></p>
+        <p id="playfabInfo" class="text-xs font-bold text-slate-600" aria-live="polite">🌐 KUROランキングに接続準備中...</p>
       </div>
 
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 my-4">
@@ -1932,6 +1933,77 @@ function getRank(sc){
   return "🥚 ひよこ職人";
 }
 
+// ===== KURO GAMES 共通 PlayFab 接続（ブラウザ直接通信） =====
+const KURO_PLAYFAB_TITLE_ID = "1CB78B";
+let kuroPlayFabSession = null;
+let kuroPlayFabLoginPromise = null;
+
+function kuroPlayFabSetStatus(message, isError=false){
+  const el = $("playfabInfo");
+  if(!el) return;
+  el.textContent = message;
+  el.className = "text-xs font-bold " + (isError ? "text-rose-700" : "text-emerald-700");
+}
+
+function kuroPlayFabRequest(endpoint, body, sessionTicket){
+  const headers = {"Content-Type":"application/json"};
+  if(sessionTicket) headers["X-Authorization"] = sessionTicket;
+  return fetch("https://" + KURO_PLAYFAB_TITLE_ID.toLowerCase() + ".playfabapi.com/" + endpoint, {
+    method:"POST", headers, body:JSON.stringify(body)
+  }).then(async response=>{
+    const json = await response.json().catch(()=>({}));
+    if(!response.ok || json.error){
+      const message = json.errorMessage || json.error || ("HTTP " + response.status);
+      throw new Error(String(message));
+    }
+    return json.data || {};
+  });
+}
+
+async function kuroPlayFabLogin(){
+  if(kuroPlayFabSession) return kuroPlayFabSession;
+  if(kuroPlayFabLoginPromise) return kuroPlayFabLoginPromise;
+  kuroPlayFabLoginPromise = (async()=>{
+    let customId = "";
+    try{ customId = localStorage.getItem("kuro_playfab_custom_id") || ""; }catch(e){}
+    if(!customId){
+      customId = "kuro_" + (crypto.randomUUID ? crypto.randomUUID().replace(/-/g,"") : (Date.now().toString(36)+Math.random().toString(36).slice(2)));
+      try{ localStorage.setItem("kuro_playfab_custom_id", customId); }catch(e){}
+    }
+    const data = await kuroPlayFabRequest("Client/LoginWithCustomID", {
+      TitleId:KURO_PLAYFAB_TITLE_ID, CustomId:customId, CreateAccount:true
+    });
+    if(!data.SessionTicket || !data.PlayFabId) throw new Error("PlayFabログイン情報を取得できませんでした");
+    kuroPlayFabSession = {sessionTicket:data.SessionTicket, playFabId:data.PlayFabId};
+    return kuroPlayFabSession;
+  })();
+  try{return await kuroPlayFabLoginPromise;}
+  finally{kuroPlayFabLoginPromise=null;}
+}
+
+async function kuroPlayFabSubmitSushiScore(finalScore, gameMode, course){
+  const value = Math.max(0, Math.floor(Number(finalScore)||0));
+  if(value<=0) return;
+  kuroPlayFabSetStatus("🌐 KUROランキングへスコア送信中...");
+  try{
+    const session = await kuroPlayFabLogin();
+    const statisticName = "SushiTyping_" + String(gameMode) + "_" + String(course);
+    await kuroPlayFabRequest("Client/UpdatePlayerStatistics", {
+      Statistics:[{StatisticName:statisticName, Value:value}]
+    }, session.sessionTicket);
+    kuroPlayFabSetStatus("☁️ PlayFabにスコアを保存しました！");
+  }catch(error){
+    console.warn("[KURO PlayFab]", error);
+    kuroPlayFabSetStatus("⚠️ オンライン保存に失敗（端末内の記録は保存済み）", true);
+  }
+}
+
+// 起動時に匿名プレイヤーを準備。失敗してもゲーム本体は通常どおり遊べる
+kuroPlayFabLogin().then(()=>kuroPlayFabSetStatus("☁️ KUROランキング接続済み")).catch(error=>{
+  console.warn("[KURO PlayFab login]", error);
+  kuroPlayFabSetStatus("⚠️ オンライン未接続（ゲームはプレイ可能）", true);
+});
+
 function finishGame(reason){
   if(!running) return;
   running=false;
@@ -1967,7 +2039,7 @@ function finishGame(reason){
       ? `🎉 NEW RECORD！（${label} ベスト更新）`
       : `${label} ベスト: ${best}`)+(mode==="endless"?` ／ 難しさ ${Math.round(diffValue)}% まで到達`:"");
 
-    celebrate(score,isNew);
+    kuroPlayFabSubmitSushiScore(score, mode, selected);\n\n    celebrate(score,isNew);
   },1300);
 }
 
