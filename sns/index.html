@@ -3476,15 +3476,50 @@
         }
         let kuroPublicChatChannel = null;
         let kuroPublicChatLastSentAt = 0;
+        let kuroPublicChatSeenIds = new Set();
+        let kuroPublicChatLatestAt = '';
+        function appendPublicChatMessage(message) {
+            const box = document.getElementById('publicChatMessages');
+            if (!box || !message) return;
+            const id = String(message.id ?? '');
+            if (id && kuroPublicChatSeenIds.has(id)) return;
+            const empty = box.querySelector('[data-chat-empty]');
+            if (empty) empty.remove();
+            const wasNearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
+            const html = formatPublicChatMessage(message);
+            if (!html) return;
+            box.insertAdjacentHTML('beforeend', html);
+            if (id) kuroPublicChatSeenIds.add(id);
+            if (message.created_at && (!kuroPublicChatLatestAt || message.created_at > kuroPublicChatLatestAt)) kuroPublicChatLatestAt = message.created_at;
+            if (wasNearBottom) box.scrollTop = box.scrollHeight;
+        }
+        function renderPublicChatMessages(messages, box) {
+            kuroPublicChatSeenIds = new Set();
+            kuroPublicChatLatestAt = '';
+            const rows = messages || [];
+            box.innerHTML = rows.map(message => {
+                if (message.id != null) kuroPublicChatSeenIds.add(String(message.id));
+                if (message.created_at && (!kuroPublicChatLatestAt || message.created_at > kuroPublicChatLatestAt)) kuroPublicChatLatestAt = message.created_at;
+                return formatPublicChatMessage(message);
+            }).join('') || '<p data-chat-empty class="text-xs text-gray-500 text-center py-8">まだ投稿はありません。最初のメッセージを送ってみよう！</p>';
+        }
+        
         function stopPublicChatRealtime() {
             if (kuroPublicChatChannel) { try { supabaseClient.removeChannel(kuroPublicChatChannel); } catch (e) { console.warn(e); } }
             kuroPublicChatChannel = null;
         }
         function setupPublicChatRealtime() {
-            if (kuroPublicChatChannel) return;
+            if (kuroPublicChatChannel || !supabaseClient) return;
             kuroPublicChatChannel = supabaseClient.channel('kuro-public-chat-room')
-                .on('postgres_changes', {event:'INSERT', schema:'public', table:'public_chat_messages'}, () => loadPublicChat())
-                .subscribe(status => { if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') console.warn('KURO public chat realtime:', status); });
+                .on('postgres_changes', {event:'INSERT', schema:'public', table:'public_chat_messages'}, payload => {
+                    if (payload?.new) appendPublicChatMessage(payload.new);
+                })
+                .subscribe(status => {
+                    if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                        console.warn('KURO public chat realtime:', status);
+                        kuroPublicChatChannel = null;
+                    }
+                });
         }
         function switchChatMode(mode) {
             // KURO SNSはアカウント不要の公開チャットのみを提供する。
@@ -3519,9 +3554,9 @@
             const box = document.getElementById('publicChatMessages');
             if (!box) return;
             const {data,error} = await supabaseClient.from('public_chat_messages').select('id,nickname,content,created_at').order('created_at',{ascending:false}).limit(100);
-            if (error) { console.warn('Public chat load failed:',error); box.innerHTML='<p class="text-sm text-red-300 text-center py-8">公開チャットを読み込めませんでした。少し待って更新してください。</p>'; return; }
-            const messages = (data||[]).reverse();
-            box.innerHTML = messages.map(formatPublicChatMessage).join('') || '<p class="text-xs text-gray-500 text-center py-8">まだ投稿はありません。最初のメッセージを送ってみよう！</p>';
+            if (error) { console.warn('Public chat load failed:',error); if (!box.dataset.loaded) box.innerHTML='<p class="text-sm text-red-300 text-center py-8">公開チャットを読み込めませんでした。少し待って更新してください。</p>'; return; }
+            renderPublicChatMessages((data||[]).reverse(), box);
+            box.dataset.loaded = 'true';
             box.scrollTop = box.scrollHeight;
         }
         async function sendPublicChatMessage(event) {
