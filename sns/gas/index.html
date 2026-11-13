@@ -3571,6 +3571,51 @@
         let kuroPublicChatPollTimer = null;
         let kuroPublicChatLoading = false;
         let kuroPublicChatLastSentAt = 0;
+        let kuroPublicChatSeenIds = new Set();
+        let kuroPublicChatLatestAt = '';
+        function appendPublicChatMessage(message) {
+            const box = document.getElementById('publicChatMessages');
+            if (!box || !message) return;
+            const id = String(message.id ?? '');
+            if (id && kuroPublicChatSeenIds.has(id)) return;
+            const empty = box.querySelector('[data-chat-empty]');
+            if (empty) empty.remove();
+            const wasNearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
+            const html = formatPublicChatMessage(message);
+            if (!html) return;
+            box.insertAdjacentHTML('beforeend', html);
+            if (id) kuroPublicChatSeenIds.add(id);
+            if (message.created_at && (!kuroPublicChatLatestAt || message.created_at > kuroPublicChatLatestAt)) kuroPublicChatLatestAt = message.created_at;
+            if (wasNearBottom) box.scrollTop = box.scrollHeight;
+        }
+        function renderPublicChatMessages(messages, box) {
+            kuroPublicChatSeenIds = new Set();
+            kuroPublicChatLatestAt = '';
+            const rows = messages || [];
+            box.innerHTML = rows.map(message => {
+                if (message.id != null) kuroPublicChatSeenIds.add(String(message.id));
+                if (message.created_at && (!kuroPublicChatLatestAt || message.created_at > kuroPublicChatLatestAt)) kuroPublicChatLatestAt = message.created_at;
+                return formatPublicChatMessage(message);
+            }).join('') || '<p data-chat-empty class="text-xs text-gray-500 text-center py-8">まだ投稿はありません。最初のメッセージを送ってみよう！</p>';
+        }
+        
+        async function pollPublicChatUpdates() {
+            if (kuroPublicChatLoading || !kuroPublicChatLatestAt) return;
+            kuroPublicChatLoading = true;
+            try {
+                const {data,error} = await supabaseClient.from('public_chat_messages')
+                    .select('id,nickname,content,created_at')
+                    .gt('created_at', kuroPublicChatLatestAt)
+                    .order('created_at',{ascending:true}).limit(50);
+                if (error) throw error;
+                (data || []).forEach(appendPublicChatMessage);
+            } catch (error) { console.warn('KURO GAS public chat update failed:', error); }
+            finally { kuroPublicChatLoading = false; }
+        }
+        function setupPublicChatRealtime() {
+            if (kuroPublicChatPollTimer) return;
+            kuroPublicChatPollTimer = setInterval(pollPublicChatUpdates, 3000);
+        }
         function switchChatMode(mode) {
             // KURO SNSはアカウント不要の公開チャットのみを提供する。
             const modal = document.getElementById('chatModal');
@@ -3609,14 +3654,13 @@
                 if (error) throw error;
                 const messages = (data||[]).reverse();
                 const wasNearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 90;
-                box.innerHTML = messages.map(formatPublicChatMessage).join('') || '<p class="text-xs text-gray-500 text-center py-8">まだ投稿はありません。最初のメッセージを送ってみよう！</p>';
-                if (wasNearBottom) box.scrollTop = box.scrollHeight;
+                renderPublicChatMessages(messages, box);
+                if (wasNearBottom || !box.dataset.loaded) box.scrollTop = box.scrollHeight;
             } catch (error) {
                 console.warn('KURO GAS public chat load failed:',error);
                 if (!box.dataset.loaded) box.innerHTML='<p class="text-sm text-red-300 text-center py-8">公開チャットを読み込めませんでした。更新してね。</p>';
             } finally { kuroPublicChatLoading = false; }
-            const boxAfter = document.getElementById('publicChatMessages');
-            if (boxAfter) boxAfter.dataset.loaded = 'true';
+            box.dataset.loaded = 'true';
         }
         async function sendPublicChatMessage(event) {
             event.preventDefault();
