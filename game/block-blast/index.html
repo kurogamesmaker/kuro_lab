@@ -1,63 +1,126 @@
-<!doctype html>
-<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#10152b"><title>ブロックブラスト | KURO GAMES</title><meta name="description" content="ブロックを置いて縦横のラインを消そう。無料で遊べるブロックパズル。"><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
-*{box-sizing:border-box}body{margin:0;background:#f4f6fb;color:#f8fafc;font-family:system-ui,"Zen Maru Gothic",sans-serif}a{color:inherit;text-decoration:none}.sitebar{height:62px;background:#fff;color:#1d2b45;border-bottom:1px solid #e5eaf2;display:flex;align-items:center;padding:0 max(18px,calc((100vw - 1200px)/2));gap:12px}.brand{font-size:19px;font-weight:1000}.brand b{color:#347ce8}.back{margin-left:auto;font-size:12px;font-weight:850;padding:9px 13px;border:1px solid #e4eaf3;border-radius:10px;color:#61718b}.page{width:min(1120px,calc(100% - 28px));margin:22px auto 40px}.intro{display:flex;align-items:end;justify-content:space-between;gap:15px;margin:0 0 14px;color:#263550}.eyebrow{font-size:10px;font-weight:1000;letter-spacing:1.6px;color:#7788a5}.intro h1{font-size:clamp(23px,4vw,34px);margin:5px 0 2px}.intro p{margin:0;color:#77849a;font-size:13px}.tips{font-size:11px;color:#66748a;background:#fff;border:1px solid #e5eaf2;border-radius:12px;padding:10px 13px;white-space:nowrap}.game-frame{position:relative;overflow:hidden;border-radius:22px;background:radial-gradient(circle at 50% 0%,#26336b,#151b39 43%,#0b1023);box-shadow:0 20px 55px #1b2a4a24;border:1px solid #dce3ef;padding:clamp(12px,3vw,26px)}#game{--board-bg:rgba(15,23,42,.9);--board-border:rgba(6,182,212,.5);position:relative;width:min(100%,650px);margin:auto;height:min(790px,calc(100svh - 130px));min-height:660px;max-height:790px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:8px;padding:3px 0;overflow:hidden}.game-head{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px}.game-title{font-size:clamp(17px,3vw,23px);font-weight:1000}.game-title i{color:#fbbf24}.head-actions{display:flex;gap:7px}.control{border:1px solid #ffffff30;background:#202945;color:#e9edff;border-radius:11px;padding:9px 12px;font-size:11px;font-weight:900;cursor:pointer}.control.theme{color:#ffb6df;border-color:#d946ef66}.fever-wrap{width:100%;height:9px;border-radius:99px;background:#080d20;border:1px solid #ffffff22;padding:1px;overflow:hidden}.fever-fill{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#22d3ee,#ec4899,#fbbf24);transition:width .25s}.scores{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:10px}.scorebox{background:#ffffff10;border:1px solid #ffffff18;border-radius:13px;padding:6px 12px;text-align:center}.scorebox small{display:block;color:#a9b4ce;font-size:9px;font-weight:900;letter-spacing:1px}.scorebox strong{display:block;font:900 clamp(21px,4vw,28px)/1.25 ui-monospace,monospace;color:#ffc45c}.scorebox:last-child strong{color:#75ddf5}.board-wrap{position:relative;width:min(100%,min(68vw,490px));aspect-ratio:1;max-height:calc(100% - 240px);margin:auto;display:grid;place-items:center}.board{width:100%;height:100%;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr));gap:clamp(3px,.8vw,6px);padding:clamp(6px,1.5vw,10px);border:2px solid var(--board-border);border-radius:18px;background:var(--board-bg);box-shadow:0 18px 36px #0007,inset 0 0 18px #ffffff0a;transition:border-color .3s}.cell{min-width:0;min-height:0;border-radius:6px;background:#ffffff0d;position:relative}.tile{width:100%;height:100%;border-radius:6px;background:linear-gradient(135deg,var(--tile),#111a36);box-shadow:inset 0 2px 4px #ffffff88,inset 0 -3px 4px #0007,0 3px 7px #0006}.cell.highlight{background:#ffffff78!important;outline:2px solid white;outline-offset:-2px;box-shadow:0 0 12px #fff}.cell.invalid{background:#fb718566!important;outline:2px solid #fb7185;outline-offset:-2px}#combo{position:absolute;inset:0;pointer-events:none;display:grid;place-items:center}.combo{font-size:clamp(21px,5vw,43px);font-weight:1000;color:#ff9bd7;text-shadow:0 4px 18px #000,0 0 18px currentColor;animation:combo .95s ease-out forwards;white-space:nowrap}@keyframes combo{0%{opacity:0;transform:scale(.35) rotate(-8deg)}25%{opacity:1;transform:scale(1.15) rotate(4deg)}100%{opacity:0;transform:scale(.85) translateY(-55px)}}.toolbar{width:100%;display:flex;justify-content:space-between;gap:8px}.action-btn{border:1px solid #ffffff28;border-radius:11px;padding:9px 13px;background:#202945;color:#d8f5ff;font-size:11px;font-weight:900;cursor:pointer}.action-btn.shuffle{color:#ffd88b}.hand{width:100%;display:flex;justify-content:space-around;align-items:center;gap:7px;padding:10px 5px;border:1px solid #ffffff18;background:#080d2080;border-radius:16px;min-height:98px}.slot{width:30%;height:78px;display:grid;place-items:center;border:1px dashed #ffffff24;border-radius:12px}.shape{display:grid;gap:3px;touch-action:none;cursor:grab;user-select:none}.shape-cell{width:clamp(13px,3.5vw,21px);aspect-ratio:1;border-radius:5px;background:linear-gradient(135deg,var(--tile),#111a36);box-shadow:inset 0 2px 3px #ffffff88,inset 0 -2px 3px #0008,0 2px 4px #0006}.shape-cell.empty{background:transparent;box-shadow:none}.ghost{position:fixed;z-index:1000;pointer-events:none;opacity:.92;filter:drop-shadow(0 12px 18px #0009)}.ghost .shape-cell{width:clamp(22px,5.5vw,34px)}.ghost .shape-cell.empty{opacity:0}.particle{position:fixed;z-index:80;width:7px;height:7px;border-radius:2px;pointer-events:none;animation:burst .65s ease-out forwards}@keyframes burst{to{transform:translate(var(--dx),var(--dy)) rotate(250deg);opacity:0}}#feverBadge{display:none;font-size:9px;padding:4px 8px;border-radius:99px;background:linear-gradient(90deg,#ec4899,#8b5cf6,#06b6d4);font-weight:1000}#game.fever .board{animation:fever .55s linear infinite alternate}@keyframes fever{to{box-shadow:0 0 35px #ec489988,inset 0 0 25px #38bdf855;border-color:#ec4899}}.overlay{position:absolute;inset:0;z-index:120;display:grid;place-items:center;padding:18px;background:#080d20dc;backdrop-filter:blur(8px)}.overlay[hidden]{display:none}.modal{width:min(100%,330px);padding:24px;border-radius:22px;border:1px solid #ffffff2b;background:#151d37;text-align:center;box-shadow:0 20px 60px #0009}.modal h2{margin:0 0 8px;font-size:25px}.modal p{font-size:12px;color:#aebbd4;line-height:1.7}.modal button{margin-top:10px;border:0;border-radius:12px;padding:12px 20px;background:linear-gradient(90deg,#fbbf24,#ec4899,#22d3ee);color:#10152b;font-weight:1000;cursor:pointer}.theme-list{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.theme-choice{border:1px solid #ffffff24;border-radius:11px;padding:10px;background:#ffffff0b;color:white;font-size:11px;font-weight:900;cursor:pointer}.theme-choice.active{border-color:#f472b6;background:#ec489933}footer{padding:18px 0 0;text-align:center;color:#8b97ac;font-size:11px}@media(max-width:620px){.page{width:calc(100% - 16px);margin:12px auto 24px}.intro{display:block}.tips{display:inline-block;margin-top:9px}.game-frame{padding:9px;border-radius:16px}#game{height:calc(100svh - 115px);min-height:570px;max-height:760px}.board-wrap{width:min(100%,min(88vw,460px));max-height:calc(100% - 220px)}.control{padding:8px 9px}.game-title{font-size:16px}.action-btn{padding:8px 10px}.hand{min-height:84px;padding:6px 3px}.slot{height:68px}}@media(max-height:720px) and (min-width:621px){#game{height:680px;min-height:620px}.board-wrap{width:min(100%,420px)}}@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
-</style></head><body>
-<header class="sitebar"><a class="brand" href="/games/">KURO <b>GAMES</b></a><a class="back" href="/games/">← ゲーム一覧へ</a></header>
-<main class="page"><div class="intro"><div><div class="eyebrow">KURO GAMES · PUZZLE</div><h1>ブロックブラスト</h1><p>ブロックを配置して、縦・横のラインを消そう！</p></div><div class="tips">ドラッグして配置 · 1列そろうと消去</div></div>
-<section class="game-frame" aria-label="ブロックブラストゲーム"><div id="game">
-<div class="game-head"><div class="game-title"><i class="fa-solid fa-cubes"></i> BLOCK BLAST <span id="feverBadge">FEVER ×2</span></div><div class="head-actions"><button class="control theme" id="themeOpen"><i class="fa-solid fa-palette"></i> テーマ</button><button class="control" id="soundToggle" aria-label="効果音切り替え"><i class="fa-solid fa-volume-high"></i></button></div></div>
-<div class="fever-wrap"><div class="fever-fill" id="feverFill"></div></div><div class="scores"><div class="scorebox"><small>SCORE</small><strong id="score">0</strong></div><div class="scorebox"><small>BEST</small><strong id="best">0</strong></div></div>
-<div class="board-wrap"><div class="board" id="board"></div><div id="combo"></div></div>
-<div class="toolbar"><button class="action-btn" id="rotate"><i class="fa-solid fa-rotate-right"></i> 回転</button><button class="action-btn shuffle" id="shuffle"><i class="fa-solid fa-shuffle"></i> シャッフル <span id="shuffleCount">3</span></button></div>
-<div class="hand"><div class="slot" data-slot="0"></div><div class="slot" data-slot="1"></div><div class="slot" data-slot="2"></div></div>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#090d18"><title>ブロックブラスト | KURO GAMES</title><meta name="description" content="ブロックを置いてラインを消すパズルゲーム。"><style>.rail-card{display:block;overflow:hidden;border:1px solid #ffffffa8;border-radius:14px;background:#fff;color:#17243c;text-decoration:none;box-shadow:0 5px 14px #19536c25;transition:transform .18s,border-color .18s}
+.rail-card:hover{transform:translateY(-3px);border-color:#168fc3}
+.rail-art{aspect-ratio:1/1;display:grid;place-items:center;overflow:hidden;background:#d8f5ff}
+.rail-art img{width:100%;height:100%;object-fit:cover}
+.rail-copy{padding:9px 10px 11px}.rail-copy strong{display:block;font-size:11px;line-height:1.45}.rail-copy small{display:block;margin-top:4px;color:#718096;font-size:9px;line-height:1.4}
+.rail-note{padding:12px 11px;border:1px solid #ffffffa8;border-radius:13px;background:#ffffffeb;color:#26364e;font-size:10px;line-height:1.65;box-shadow:0 5px 14px #19536c18}.rail-note b{display:block;margin-bottom:4px;font-size:11px}
+.center{grid-column:2;grid-row:1;position:relative;min-width:0;width:100%;max-width:850px;margin:0 auto;border-radius:5px 5px 0 0;overflow:hidden;background:#f7f1e5;box-shadow:0 8px 22px #16465b38;border:1px solid #ffffffb8}
+.frame-head{height:30px;background:#e9f8ff;display:flex;align-items:center;justify-content:space-between;padding:0 12px;color:#4b6d7c;font-size:10px;font-weight:900;letter-spacing:.4px}
+.dots i{background:#91c8d9}
+#game-app{width:100%;min-height:0;overflow:hidden;background:#f7f1e5;padding-bottom:52px}
+#game-app #game{max-width:100%}
+.fullscreen-btn{position:absolute;right:12px;bottom:11px;z-index:50;display:inline-flex;align-items:center;gap:7px;padding:10px 14px;border:1px solid #ffffffa8;border-radius:9px;background:#ffffff;color:#1d4560;font-size:12px;font-weight:1000;cursor:pointer;box-shadow:0 3px 12px #0003}
+.fullscreen-btn:hover{background:#e8f8ff}.fullscreen-btn:focus-visible{outline:3px solid #168fc3;outline-offset:2px}
+.center:fullscreen{width:100vw;max-width:none;height:100vh;overflow:auto;border-radius:0;background:#f7f1e5}
+.center:fullscreen #game-app{min-height:calc(100vh - 30px)}
+.game-info{grid-column:2;grid-row:2;width:100%;max-width:850px;margin:0;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:15px 19px;border:1px solid #e5edf2;border-radius:0 0 5px 5px;background:#fff;color:#17243c;box-shadow:0 7px 18px #16465b25}
+.game-info h2{font-size:18px;margin:0 0 5px;letter-spacing:-.4px}.game-info p{margin:0;color:#718096;font-size:11px;line-height:1.7}.game-info .genre{display:inline-flex;margin-top:7px;padding:4px 8px;border-radius:6px;background:#edf7ff;color:#2778a6;font-size:9px;font-weight:900}
+.game-info a{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;padding:10px 12px;border-radius:8px;background:#eaf8ff;color:#176b91;font-size:11px;font-weight:1000}
+.game-strip{grid-column:1/-1;grid-row:3;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:12px;margin-top:4px}
+.game-tile{min-width:0;display:block;overflow:hidden;border:1px solid #ffffffa8;border-radius:13px;background:#fff;box-shadow:0 5px 14px #19536c25;color:#17243c}
+.game-tile img{display:block;width:100%;aspect-ratio:1.18/1;object-fit:cover}
+.game-tile span{display:block;padding:8px 9px;font-size:10px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.game-tile.soon{display:grid;place-items:center;min-height:115px;background:linear-gradient(145deg,#d8f5ff,#a9e7f7);border-style:dashed;color:#39748d;text-align:center}
+.game-tile.soon b{font-size:25px;display:block}.game-tile.soon span{white-space:normal;font-size:10px}
+@media(max-width:1080px){.layout{grid-template-columns:76px minmax(0,1fr)!important;max-width:900px!important;width:calc(100% - 28px)!important}.center{grid-column:2;grid-row:1}.rail.left{grid-column:1;grid-row:1}.rail.right{grid-column:1/-1;grid-row:3;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))}.rail.right .rail-note{display:none}.game-info{grid-column:2;grid-row:2}.game-strip{grid-row:4;grid-template-columns:repeat(4,minmax(0,1fr))}.rail.left .rail-note{font-size:9px;padding:9px}}
+@media(max-width:620px){.top{height:54px;padding:0 12px}.layout{display:flex!important;flex-direction:column;width:calc(100% - 16px)!important;padding:10px 0 24px!important;gap:9px!important}.center{order:1;width:100%;border-radius:10px}.game-info{order:2;width:100%;border-radius:9px;padding:13px;flex-direction:column;align-items:flex-start;gap:10px}.game-info a{width:100%}.rail.left{order:3;width:100%;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.rail.left .rail-note{display:none}.rail.right{order:4;width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.rail.right .rail-note{display:flex;grid-column:1/-1}.rail-art{aspect-ratio:1.3/1}.rail-copy{padding:7px}.rail-copy strong{font-size:10px}.game-strip{order:5;width:100%;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.game-tile.soon{min-height:85px}.fullscreen-btn{right:8px;bottom:8px;padding:8px 10px;font-size:11px}}
+@media(prefers-reduced-motion:reduce){.rail-card{transition:none}}
+
+/* 固定デザインステージ：内部レイアウトは850px基準、外側だけ等比縮小 */
+#game-app{position:relative;width:100%;height:auto;min-height:0;overflow:hidden;padding:0 0 52px}
+#game-stage{position:relative;width:850px;max-width:none;transform-origin:top left;will-change:transform}
+#game-stage>header,#game-stage>main,#game-stage>footer{width:100%;max-width:768px;margin-left:auto;margin-right:auto}
+#game-stage>header{padding:8px 0 12px!important;gap:12px}
+#game-stage>header h1{font-size:30px!important;line-height:1.25}
+#game-stage>main{padding:32px!important}
+#game-stage #conveyor{height:108px}
+#game-stage #sushiMachine{width:84px}
+#game-stage .mc-body{height:28px;font-size:10px}
+#game-stage .belt-plate .sushi-top{font-size:20px}
+#game-stage .play-row{gap:24px!important}
+#game-stage #platesLeft,#game-stage #platesRight{width:56px;height:200px}
+#game-stage #rightStackContainer{width:64px}
+#game-stage #promptBox{padding:32px 24px!important;min-height:240px}
+#game-stage #kana{font-size:48px!important}
+#game-stage #romajiBox{font-size:30px!important}
+#game-stage #typing{font-size:24px!important}
+#game-stage .fullscreen-btn{font-size:12px}
+.center:fullscreen #game-app{height:auto;min-height:0;max-height:none;overflow:hidden;padding-bottom:58px}
+.center:fullscreen #game-stage{width:850px}
+/* ゲーム画面の比率と全画面表示を最適化 */
+#game-app{min-width:0;max-width:100%;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain}
+#game-app>header{width:100%;max-width:1100px;padding-left:clamp(10px,2vw,26px);padding-right:clamp(10px,2vw,26px)}
+#game-app>main{width:100%;max-width:1100px;padding:clamp(10px,2vw,26px);min-width:0}
+#game-app #game{min-width:0;width:100%;max-width:100%}
+.center:fullscreen{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;max-width:none;margin:0;border:0;border-radius:0;display:flex;flex-direction:column;overflow:hidden;background:#f7f1e5}
+.center:fullscreen .frame-head{display:none}
+.center:fullscreen #game-app{flex:1 1 auto;width:100%;height:100%;min-height:0;max-height:100%;padding:0 0 58px;overflow-x:hidden;overflow-y:auto}
+.center:fullscreen #game-app>header{max-width:1180px;margin-left:auto;margin-right:auto;padding-top:8px;padding-bottom:8px}
+.center:fullscreen #game-app>main{max-width:1180px;margin-left:auto;margin-right:auto;padding:clamp(10px,2vh,22px) clamp(12px,2vw,30px)}
+.center:fullscreen .fullscreen-btn{position:fixed;right:18px;bottom:14px}
+@media(max-width:620px){
+  #game-app>header{gap:8px}
+  #game-app>header h1{font-size:clamp(16px,5vw,24px);line-height:1.25}
+  #game-app>header .text-3xl{font-size:25px}
+  #game-app>main{padding:10px}
+  .center:fullscreen #game-app{padding-bottom:64px}
+  .center:fullscreen .fullscreen-btn{right:10px;bottom:10px}
+}
+
+#game-app{width:100%;min-height:0;overflow:hidden;background:#10152b;position:relative}
+#game-stage{width:850px;height:760px;transform-origin:top left;position:relative;background:#10152b}
+#gameFrame{display:block;width:850px;height:760px;border:0;background:#10152b;overflow:hidden}
+.center:fullscreen{width:100vw;max-width:none;height:100vh;overflow:hidden;border-radius:0;background:#10152b}
+.center:fullscreen #game-app{height:100vh!important;min-height:100vh!important}
+@media(max-width:1050px){.layout{grid-template-columns:1fr;gap:14px;padding:16px}.center{grid-row:1}.rail{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.rail.left{grid-row:2}.rail.right{grid-row:3}}
+@media(max-width:560px){.top{height:56px;padding:0 14px}.layout{padding:10px;gap:10px}.rail{gap:7px}.center{border-radius:13px}.frame-head{height:34px}}
+</style></head>
+<body>
+<header class="top"><a class="logo" href="/games/">KURO<span>GAMES</span></a><a href="/games/">ゲーム一覧へ　↗</a></header>
+<div class="layout">
+<aside class="rail left" aria-label="おすすめゲーム">
+<a class="rail-card" href="/game/kaiten-sushi-typing/"><div class="rail-art"><img src="/games/sushi-cover.svg" alt="回転寿司タイピング"></div><div class="rail-copy"><strong>🍣 回転寿司タイピング</strong><small>無料でプレイ · タイピング</small></div></a>
+<a class="rail-card" href="/games/"><div class="rail-art puzzle"><span style="font-size:48px">🧩</span></div><div class="rail-copy"><strong>🎮 ゲーム一覧</strong><small>ほかのゲームを探そう</small></div></a>
+</aside>
+<section class="center" aria-label="ゲームプレイ画面">
+<div class="frame-head"><span>NOW PLAYING · BLOCK BLAST</span><span class="dots"><i></i><i></i><i></i></span></div>
+<div id="game-app"><div id="game-stage"><iframe id="gameFrame" src="play.html" title="ブロックブラスト" loading="eager" allow="fullscreen" scrolling="no"></iframe></div></div>
+<button class="fullscreen-btn" id="fullscreenButton" type="button" aria-label="全画面表示">⛶ 全画面</button>
+</section>
+<aside class="rail right" aria-label="ゲームを探す">
+<a class="rail-card" href="/games/"><div class="rail-art puzzle"><span style="font-size:48px">🧩</span></div><div class="rail-copy"><strong>ほかのゲームを探す ↗</strong><small>KURO GAMESのゲーム一覧へ</small></div></a>
+<div class="rail-note"><b>✨ KURO GAMES</b><span>すべてのゲームをここから探せます。インストール不要でプレイ！</span></div>
+</aside>
+<section class="game-info" aria-label="ゲーム情報">
+<div><h2>ブロックブラスト</h2><p>ブロックを盤面に配置し、縦・横のラインをそろえて消していくパズルゲーム。テーマを切り替えながらハイスコアを目指そう。</p><span class="genre">パズル · 無料 · ブラウザでプレイ</span></div><a href="/games/">ほかのゲームを探す →</a>
+</section>
+<section class="game-strip" aria-label="ゲーム一覧">
+<a class="game-tile" href="/game/kaiten-sushi-typing/"><img src="/games/sushi-cover.svg" alt="回転寿司タイピング"><span>🍣 回転寿司タイピング</span></a>
+<a class="game-tile" href="/game/block-blast/"><div class="rail-art puzzle" style="aspect-ratio:1.18/1"><span style="font-size:38px">🧩</span></div><span>🧩 ブロックブラスト</span></a>
+<div class="game-tile soon"><div><b>＋</b><span>新作ゲーム<br>COMING SOON</span></div></div><div class="game-tile soon"><div><b>＋</b><span>新作ゲーム<br>COMING SOON</span></div></div><div class="game-tile soon"><div><b>＋</b><span>新作ゲーム<br>COMING SOON</span></div></div><div class="game-tile soon"><div><b>＋</b><span>新作ゲーム<br>COMING SOON</span></div></div><div class="game-tile soon"><div><b>＋</b><span>新作ゲーム<br>COMING SOON</span></div></div><div class="game-tile soon"><div><b>＋</b><span>新作ゲーム<br>COMING SOON</span></div></div>
+</section>
 </div>
-<div class="overlay" id="gameOver" hidden><div class="modal"><div style="font-size:38px;color:#fb7185">✦</div><h2>GAME OVER</h2><p>置けるブロックがなくなりました。</p><div style="font-size:10px;color:#9eabc4;font-weight:900">YOUR SCORE</div><div id="finalScore" style="font-size:38px;color:#fbbf24;font-weight:1000">0</div><button id="restart">もう一度遊ぶ</button></div></div>
-<div class="overlay" id="themeModal" hidden><div class="modal"><div style="display:flex;align-items:center;justify-content:space-between"><h2 style="font-size:18px;margin:0">テーマを選択</h2><button id="themeClose" style="margin:0;padding:6px 10px;background:#ffffff18;color:#fff">✕</button></div><div class="theme-list" id="themeList"></div></div></div></section><footer>© 2026 KURO GAMES · 無料でプレイ</footer></main>
 <script>
-(function(){
-"use strict";
-var $=function(id){return document.getElementById(id)},N=8;
-var themes=[
-{id:"neon",name:"ネオンサイバー",bg:"radial-gradient(circle at center,#1e1b4b,#0f172a)",board:"rgba(15,23,42,.9)",border:"rgba(6,182,212,.5)",colors:["#06b6d4","#3b82f6","#a855f7","#ec4899","#f59e0b","#10b981"]},
-{id:"galaxy",name:"ギャラクシー",bg:"radial-gradient(circle at center,#311042,#030014)",board:"rgba(20,10,40,.9)",border:"rgba(192,132,252,.6)",colors:["#38bdf8","#818cf8","#c084fc","#f472b6","#34d399","#fbbf24"]},
-{id:"sweets",name:"スイーツ",bg:"radial-gradient(circle at center,#581c3d,#29061c)",board:"rgba(50,15,35,.9)",border:"rgba(251,113,133,.6)",colors:["#fb7185","#f43f5e","#fb923c","#facc15","#a3e635","#38bdf8"]},
-{id:"retro",name:"レトロRPG",bg:"radial-gradient(circle at center,#14361e,#051408)",board:"rgba(10,35,18,.9)",border:"rgba(52,211,153,.6)",colors:["#f87171","#fbbf24","#34d399","#60a5fa","#c084fc","#e879f9"]},
-{id:"sakura",name:"和風さくら",bg:"radial-gradient(circle at center,#4c1d24,#1a080c)",board:"rgba(40,15,20,.9)",border:"rgba(253,164,175,.6)",colors:["#fda4af","#f43f5e","#34d399","#38bdf8","#fbbf24","#c084fc"]},
-{id:"jungle",name:"ジャングル",bg:"radial-gradient(circle at center,#163820,#041408)",board:"rgba(12,35,18,.9)",border:"rgba(16,185,129,.6)",colors:["#10b981","#059669","#f59e0b","#d97706","#84cc16","#3b82f6"]}
-];
-var shapes=[[[1]],[[1,1]],[[1],[1]],[[1,1,1]],[[1],[1],[1]],[[1,1,1,1]],[[1],[1],[1],[1]],[[1,1],[1,1]],[[1,1,1],[1,1,1],[1,1,1]],[[1,0],[1,0],[1,1]],[[0,1],[0,1],[1,1]],[[1,1,1],[1,0,0]],[[1,1,1],[0,0,1]],[[1,1,1],[0,1,0]],[[1,1,0],[0,1,1]],[[1,0,0],[1,1,1]]];
-var board,hand,score,best=+(localStorage.getItem("kuro_block_best")||0),combo,fever,feverUntil,shuffleLeft,themeId=localStorage.getItem("kuro_block_theme")||"neon",drag=null,muted=false,audioCtx=null;
-function theme(){return themes.find(function(t){return t.id===themeId})||themes[0]}
-function applyTheme(){var t=theme();$("game").style.setProperty("--board-bg",t.board);$("game").style.setProperty("--board-border",t.border);$("board").style.background=t.board;$("board").style.borderColor=t.border}
-function sound(freq,duration){if(muted)return;try{audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==="suspended")audioCtx.resume();var o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.value=freq||440;g.gain.setValueAtTime(.12,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+(duration||.07));o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+(duration||.07))}catch(e){}}
-function renderBoard(){var t=theme(),el=$("board");el.innerHTML="";for(var r=0;r<N;r++)for(var c=0;c<N;c++){var cell=document.createElement("div");cell.className="cell";cell.dataset.r=r;cell.dataset.c=c;if(board[r][c]>=0){var tile=document.createElement("div");tile.className="tile";tile.style.setProperty("--tile",t.colors[board[r][c]%6]);cell.appendChild(tile)}el.appendChild(cell)}}
-function makeShape(data){var box=document.createElement("div");box.className="shape";box.style.gridTemplateColumns="repeat("+data.m[0].length+",1fr)";box.style.gridTemplateRows="repeat("+data.m.length+",1fr)";box.style.setProperty("--tile",theme().colors[data.color%6]);data.m.forEach(function(row){row.forEach(function(v){var e=document.createElement("div");e.className="shape-cell"+(v?"":" empty");box.appendChild(e)})});return box}
-function renderHand(){document.querySelectorAll(".slot").forEach(function(slot,i){slot.innerHTML="";if(hand[i]){var shape=makeShape(hand[i]);slot.appendChild(shape);shape.addEventListener("pointerdown",function(e){startDrag(e,i)})}})}
-function randomShape(){var m=shapes[Math.floor(Math.random()*shapes.length)].map(function(row){return row.slice()});return {m:m,color:Math.floor(Math.random()*6)}}
-function fillHand(){if(hand.every(function(x){return !x}))hand=[randomShape(),randomShape(),randomShape()];renderHand();checkGameOver()}
-function canPlace(m,r,c){for(var y=0;y<m.length;y++)for(var x=0;x<m[0].length;x++)if(m[y][x]){var yy=r+y,xx=c+x;if(yy<0||xx<0||yy>=N||xx>=N||board[yy][xx]!==-1)return false}return true}
-function clearMarks(){$("board").querySelectorAll(".cell").forEach(function(x){x.classList.remove("highlight","invalid")})}
-function startDrag(e,i){if(e.button!==undefined&&e.button!==0)return;var data=hand[i];if(!data)return;e.preventDefault();sound(320);var ghost=makeShape(data);ghost.classList.add("ghost");ghost.querySelectorAll(".shape-cell").forEach(function(x){x.style.width=Math.max(19,Math.min(32,$("board").getBoundingClientRect().width/N))+"px"});document.body.appendChild(ghost);var source=e.currentTarget;source.style.opacity=".18";drag={i:i,data:data,ghost:ghost,source:source,row:null,col:null};moveDrag(e);window.addEventListener("pointermove",moveDrag,{passive:false});window.addEventListener("pointerup",endDrag,{once:true});window.addEventListener("pointercancel",endDrag,{once:true})}
-function moveDrag(e){if(!drag)return;e.preventDefault();var x=e.clientX,y=e.clientY,off=e.pointerType==="touch"?75:0,w=drag.ghost.offsetWidth,h=drag.ghost.offsetHeight,left=x-w/2,top=y-off-h/2;drag.ghost.style.left=left+"px";drag.ghost.style.top=top+"px";clearMarks();var rect=$("board").getBoundingClientRect(),cs=rect.width/N,c=Math.round((left+w/2-rect.left)/cs-(drag.data.m[0].length-1)/2),r=Math.round((top+h/2-rect.top)/cs-(drag.data.m.length-1)/2),ok=canPlace(drag.data.m,r,c);drag.row=ok?r:null;drag.col=ok?c:null;drag.data.m.forEach(function(line,yy){line.forEach(function(v,xx){if(!v)return;var cell=$("board").querySelector('[data-r="'+(r+yy)+'"][data-c="'+(c+xx)+'"]');if(cell)cell.classList.add(ok?"highlight":"invalid")})})}
-function endDrag(){if(!drag)return;window.removeEventListener("pointermove",moveDrag);var d=drag;if(d.row!==null&&d.col!==null){place(d.data,d.row,d.col);hand[d.i]=null;renderBoard();if(hand.every(function(x){return !x}))fillHand();else{renderHand();checkGameOver()}}d.source.style.opacity="";d.ghost.remove();drag=null;clearMarks()}
-function place(data,r,c){var count=0;data.m.forEach(function(line,y){line.forEach(function(v,x){if(v){board[r+y][c+x]=data.color;count++}})});score+=count*(isFever()?20:10);sound(510);renderBoard();var lines=clearLines();if(!lines)combo=0;else{combo++;score+=(lines*150+combo*100)*(isFever()?2:1);fever=Math.min(100,fever+lines*35+combo*15);if(fever>=100)feverUntil=Date.now()+10000;themeId=themes[(themes.findIndex(function(t){return t.id===themeId})+1)%themes.length].id;localStorage.setItem("kuro_block_theme",themeId);applyTheme();renderBoard();popup(lines);sound(650+Math.min(combo,5)*70,.18);if(navigator.vibrate)navigator.vibrate([35,25,65])}updateScore();updateFever()}
-function clearLines(){var rows=[],cols=[];for(var r=0;r<N;r++)if(board[r].every(function(v){return v>=0}))rows.push(r);for(var c=0;c<N;c++)if(board.every(function(row){return row[c]>=0}))cols.push(c);if(!rows.length&&!cols.length)return 0;var set=new Set();rows.forEach(function(r){for(var c=0;c<N;c++)set.add(r+","+c)});cols.forEach(function(c){for(var r=0;r<N;r++)set.add(r+","+c)});set.forEach(function(key){var a=key.split(",").map(Number),r=a[0],c=a[1],el=$("board").querySelector('[data-r="'+r+'"][data-c="'+c+'"]');if(el){var b=el.getBoundingClientRect();burst(b.left+b.width/2,b.top+b.height/2,theme().colors[board[r][c]%6])}board[r][c]=-1});renderBoard();return rows.length+cols.length}
-function burst(x,y,color){for(var i=0;i<7;i++){var p=document.createElement("i");p.className="particle";p.style.left=x+"px";p.style.top=y+"px";p.style.background=color;p.style.setProperty("--dx",(Math.random()*90-45)+"px");p.style.setProperty("--dy",(Math.random()*90-45)+"px");document.body.appendChild(p);setTimeout(function(node){node.remove()},700,p)}}
-function popup(lines){var e=document.createElement("div");e.className="combo";e.textContent=lines>1?"MULTI CLEAR ×"+lines:combo+" COMBO!";$("combo").appendChild(e);setTimeout(function(){e.remove()},1000)}
-function updateScore(){$("score").textContent=score.toLocaleString();if(score>best){best=score;$("best").textContent=best.toLocaleString();localStorage.setItem("kuro_block_best",best)}}
-function isFever(){return Date.now()<feverUntil}
-function updateFever(){$("feverFill").style.width=(isFever()?Math.max(0,(feverUntil-Date.now())/10000*100):fever)+"%";$("feverBadge").style.display=isFever()?"inline-block":"none";$("game").classList.toggle("fever",isFever())}
-setInterval(updateFever,150);
-function checkGameOver(){var possible=hand.some(function(s){return s&&board.some(function(row,r){return row.some(function(v,c){return canPlace(s.m,r,c)})})});if(!possible){$("finalScore").textContent=score.toLocaleString();$("gameOver").hidden=false}}
-function rotate(m){return m[0].map(function(_,c){return m.map(function(row){return row[c]}).reverse()})}
-$("rotate").addEventListener("click",function(){hand=hand.map(function(s){return s?{m:rotate(s.m),color:s.color}:null});renderHand();sound(400)});
-$("shuffle").addEventListener("click",function(){if(!shuffleLeft)return;shuffleLeft--;$("shuffleCount").textContent=shuffleLeft;hand=hand.map(function(s){return s?randomShape():null});renderHand();checkGameOver();sound(350)});
-function restart(){board=Array.from({length:N},function(){return Array(N).fill(-1)});hand=[null,null,null];score=0;combo=0;fever=0;feverUntil=0;shuffleLeft=3;$("shuffleCount").textContent=3;$("gameOver").hidden=true;updateScore();updateFever();renderBoard();fillHand()}
-$("restart").addEventListener("click",restart);
-$("soundToggle").addEventListener("click",function(){muted=!muted;$("soundToggle").innerHTML=muted?'<i class="fa-solid fa-volume-xmark"></i>':'<i class="fa-solid fa-volume-high"></i>';if(!muted)sound(440)});
-function renderThemes(){$("themeList").innerHTML="";themes.forEach(function(t){var b=document.createElement("button");b.className="theme-choice"+(t.id===themeId?" active":"");b.textContent=t.name;b.addEventListener("click",function(){themeId=t.id;localStorage.setItem("kuro_block_theme",themeId);applyTheme();renderBoard();renderHand();renderThemes()});$("themeList").appendChild(b)})}
-$("themeOpen").addEventListener("click",function(){$("themeModal").hidden=false;renderThemes()});$("themeClose").addEventListener("click",function(){$("themeModal").hidden=true});$("themeModal").addEventListener("click",function(e){if(e.target===$("themeModal"))$("themeModal").hidden=true});
-board=Array.from({length:N},function(){return Array(N).fill(-1)});hand=[null,null,null];score=0;combo=0;fever=0;feverUntil=0;shuffleLeft=3;$("best").textContent=best.toLocaleString();applyTheme();renderBoard();fillHand();updateScore();updateFever();
+(()=>{
+ const button=document.getElementById("fullscreenButton"),target=document.querySelector(".center"),stage=document.getElementById("game-stage"),app=document.getElementById("game-app");
+ const refresh=()=>{const active=document.fullscreenElement||document.webkitFullscreenElement;button.textContent=active?"⤢ 全画面を終了":"⛶ 全画面";};
+ window.fitGameStage=()=>{
+  const base=850,avail=Math.max(1,app.clientWidth),full=!!(document.fullscreenElement||document.webkitFullscreenElement);
+  const scale=Math.min(avail/base,full?1:.82,full?Math.max(.35,(window.innerHeight-100)/760):1);
+  const offset=Math.max(0,(avail-base*scale)/2);
+  stage.style.transform="translateX("+offset+"px) scale("+scale+")";
+  app.style.height=(760*scale+52)+"px";
+ };
+ button.addEventListener("click",async()=>{
+  try{if(document.fullscreenElement||document.webkitFullscreenElement){if(document.exitFullscreen)await document.exitFullscreen();else document.webkitExitFullscreen();}
+  else if(target.requestFullscreen)await target.requestFullscreen({navigationUI:"hide"});else if(target.webkitRequestFullscreen)target.webkitRequestFullscreen();}
+  catch(e){refresh();}
+ });
+ document.addEventListener("fullscreenchange",()=>{refresh();requestAnimationFrame(window.fitGameStage);});
+ document.addEventListener("webkitfullscreenchange",()=>{refresh();requestAnimationFrame(window.fitGameStage);});
+ window.addEventListener("resize",()=>requestAnimationFrame(window.fitGameStage));
+ if("ResizeObserver" in window)new ResizeObserver(window.fitGameStage).observe(app);
+ window.addEventListener("load",window.fitGameStage);refresh();requestAnimationFrame(window.fitGameStage);
 })();
-</script></body></html>
+</script>
+</body></html>
