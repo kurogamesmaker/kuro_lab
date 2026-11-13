@@ -2090,6 +2090,17 @@ function fitPrompt(){
   fitEl($("romajiBox"),wide?30:20,10,avail);
 }
 window.addEventListener("resize",()=>{fitPrompt();fitGameStage();});
+
+/* 全画面の切替時は古い画面座標のクレーンを破棄して位置を取り直す */
+function resetCranePosition(){
+  gen++;
+  document.querySelectorAll(".crane-root").forEach(el=>el.remove());
+  craneActive=false;
+  isCraneBusy=false;
+  requestAnimationFrame(()=>{fitPrompt();fitGameStage();beltGeom();});
+}
+document.addEventListener("fullscreenchange",resetCranePosition);
+document.addEventListener("webkitfullscreenchange",resetCranePosition);
 if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{fitPrompt();fitGameStage();});
 requestAnimationFrame(fitGameStage);
 /* 通常表示は850pxのプレイヤー枠内でゲームだけを小さく中央配置。全画面も中央に配置 */
