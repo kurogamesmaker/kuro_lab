@@ -1104,7 +1104,7 @@ function pushPlate(container, color, opts = {}){
 
 function updateCounter(){ $("plateCounter").textContent = completed; }
 
-let nextLaunchAt = 0, craneCount = 0, craneActive = false;
+let nextLaunchAt = 0, craneCount = 0, craneActive = false, craneEpoch = 0;
 
 function resetPlates(){
   leftPlateColors = [];
@@ -1371,10 +1371,10 @@ function canDrop(g){
 // 右の山に皿が着いたら、一番上の皿を1枚ずつ掴んで、レーンの隙間に置く。皿がなくなったら待機→退場
 function ensureCrane(){
   if(craneActive) return;
-  craneWorker(gen);
+  craneWorker(gen, craneEpoch);
 }
 
-async function craneWorker(token){
+async function craneWorker(token, epoch){
   const g = beltGeom();
   if(!g) return;
   craneActive = true; isCraneBusy = true;
@@ -1441,7 +1441,7 @@ async function craneWorker(token){
   const fin = () => { done = true; root.remove(); craneActive = false; isCraneBusy = false; };
   function render(now){
     if(done) return;
-    if(token !== gen){ fin(); return; }
+    if(token !== gen || epoch !== craneEpoch){ fin(); return; }
     const dt = Math.max(.001, Math.min(.05, (now - prevT) / 1000)); prevT = now;
     const vx = (st.tx - prevTx) / dt, ax = (vx - prevVx) / dt;
     prevTx = st.tx; prevVx = vx;
@@ -1464,7 +1464,7 @@ async function craneWorker(token){
   const go = (dur, fn) => new Promise(res => {
     const t0 = performance.now();
     const step = now => {
-      if(token !== gen){ res(false); return; }
+      if(token !== gen || epoch !== craneEpoch){ res(false); return; }
       const u = clamp01((now - t0) / dur);
       fn(u);
       if(u >= 1){ res(true); return; }
@@ -1472,8 +1472,8 @@ async function craneWorker(token){
     };
     requestAnimationFrame(step);
   });
-  const nextFrame = () => new Promise(r => requestAnimationFrame(() => r(token === gen)));
-  const sleep = ms => new Promise(r => setTimeout(() => r(token === gen), ms));
+  const nextFrame = () => new Promise(r => requestAnimationFrame(() => r(token === gen && epoch === craneEpoch)));
+  const sleep = ms => new Promise(r => setTimeout(() => r(token === gen && epoch === craneEpoch), ms));
   // 山より上まで上がる → 横へ → 目標の高さへ下りる
   const via = (dur, tx0, tx1, L0, L1, Lm) => {
     Lm = Math.min(Lm, L0);
@@ -2093,7 +2093,7 @@ window.addEventListener("resize",()=>{fitPrompt();fitGameStage();});
 
 /* 全画面の切替時は古い画面座標のクレーンを破棄して位置を取り直す */
 function resetCranePosition(){
-  gen++;
+  craneEpoch++;
   document.querySelectorAll(".crane-root").forEach(el=>el.remove());
   craneActive=false;
   isCraneBusy=false;
