@@ -23,7 +23,9 @@
     });
     const json = await response.json().catch(() => ({}));
     if (!response.ok || json.error) {
-      throw new Error(json.errorMessage || json.error || ("HTTP " + response.status));
+      const code = json.errorCode ? " [" + json.errorCode + "]" : "";
+      const message = json.errorMessage || json.error || ("HTTP " + response.status);
+      throw new Error(String(message) + code);
     }
     return json.data || {};
   }
@@ -64,7 +66,8 @@
       return true;
     } catch (error) {
       console.warn("[KURO PlayFab]", error);
-      setStatus("⚠️ オンライン未保存（端末内の記録は保存済み）", true);
+      const reason = String(error && error.message || error || "Unknown error").slice(0, 110);
+      setStatus("⚠️ オンライン未保存: " + reason, true);
       return false;
     }
   }
