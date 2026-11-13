@@ -719,6 +719,38 @@
 @media(max-width:899px){#kuroDesktopVersionSwitch{display:none!important}}
 </style>
 
+
+<style id="kuro-public-chat-fullscreen">
+  #chatModal:not(.hidden){
+    position:fixed!important;inset:0!important;z-index:9999!important;
+    display:flex!important;align-items:stretch!important;justify-content:stretch!important;
+    width:100vw!important;height:100vh!important;height:100dvh!important;max-height:100dvh!important;
+    padding:0!important;margin:0!important;border:0!important;border-radius:0!important;
+    overflow:hidden!important;background:#0b0b0e!important;backdrop-filter:none!important;
+  }
+  #chatModal:not(.hidden)>section{
+    display:flex!important;flex-direction:column!important;
+    width:100%!important;max-width:none!important;height:100%!important;
+    min-height:0!important;max-height:100%!important;margin:0!important;
+    border:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden!important;
+  }
+  #chatModal #publicChatPane{display:flex!important;flex:1 1 auto!important;min-height:0!important;overflow:hidden!important;padding:12px!important;gap:0!important}
+  #chatModal #publicChatMessages{flex:1 1 auto!important;min-height:0!important;height:0!important;overflow-y:auto!important;overscroll-behavior:contain}
+  #chatModal #publicChatForm{flex:0 0 auto!important;margin-top:12px!important;padding-top:12px!important}
+  #chatModal #publicChatInput,#chatModal #publicChatNickname{min-height:48px!important;font-size:16px!important}
+  #chatModal #publicChatSendButton{min-height:48px!important;white-space:nowrap!important}
+  @media(min-width:641px){
+    #chatModal #publicChatPane{padding:20px 28px!important}
+    #chatModal #publicChatMessages{padding:24px!important}
+    #chatModal #publicChatForm{width:min(100%,1120px)!important;margin:14px auto 0!important}
+  }
+  @media(max-width:640px){
+    #chatModal #publicChatPane{padding:10px!important}
+    #chatModal #publicChatMessages{border-radius:12px!important;padding:12px!important}
+    #chatModal #publicChatForm>div{grid-template-columns:minmax(0,1fr) auto!important}
+    #chatModal #publicChatNickname{grid-column:1/-1!important}
+  }
+  </style>
 </head>
 
 <body class="kuro-page kuro-theme-dark">
@@ -1118,26 +1150,31 @@
     <style>
       body:has(#chatModal:not(.hidden)) #kuroComposeFloat { display:none !important; }
     </style>
-    <!-- チャット画面 -->
-    <div id="chatModal" class="fixed inset-0 z-[70] hidden bg-black/80 backdrop-blur-sm p-3 sm:p-4 flex items-center justify-center">
-      <section class="w-full max-w-2xl h-[82vh] overflow-hidden rounded-2xl border border-kuro-700 bg-kuro-950 shadow-2xl flex flex-col">
-        <div class="flex items-center justify-between border-b border-kuro-800 p-4"><h2 class="font-bold"><i class="fa-regular fa-paper-plane mr-2"></i>チャット</h2></div>
-        <div class="flex gap-2 p-3 border-b border-kuro-800">
-          <button id="publicChatModeButton" type="button" onclick="switchChatMode('public')" class="flex-1 rounded-xl bg-white text-black px-3 py-2.5 text-sm font-bold"><i class="fa-solid fa-earth-asia mr-1"></i>公開チャット</button>
-          <button id="privateChatModeButton" type="button" onclick="switchChatMode('private')" class="flex-1 rounded-xl bg-kuro-800 text-gray-300 px-3 py-2.5 text-sm font-semibold"><i class="fa-regular fa-message mr-1"></i>個別・グループ</button>
-        </div>
-        <section id="publicChatPane" class="flex flex-col flex-1 min-h-0 p-3">
-          <div class="flex items-center justify-between gap-3 mb-3"><div><h3 class="font-bold text-sm">KURO 公開チャット</h3><p class="text-[11px] text-gray-500">アカウント不要・全員に公開されます</p></div><button type="button" onclick="loadPublicChat()" class="text-xs text-gray-400 border border-kuro-700 rounded-lg px-3 py-2"><i class="fa-solid fa-rotate mr-1"></i>更新</button></div>
-          <div id="publicChatMessages" aria-live="polite" class="flex-1 min-h-0 overflow-y-auto rounded-xl border border-kuro-800 bg-kuro-900/60 p-3 space-y-3"><p class="text-xs text-gray-500 text-center py-8">メッセージを読み込み中…</p></div>
-          <form id="publicChatForm" onsubmit="sendPublicChatMessage(event)" class="mt-3 border-t border-kuro-800 pt-3 flex flex-col gap-2">
-            <div class="flex gap-2"><input id="publicChatNickname" maxlength="20" autocomplete="nickname" placeholder="表示名（1〜20文字）" class="w-36 shrink-0 bg-kuro-900 border border-kuro-700 rounded-xl px-3 py-2.5 text-sm"><input id="publicChatInput" maxlength="300" placeholder="公開メッセージを書く…" class="flex-1 min-w-0 bg-kuro-900 border border-kuro-700 rounded-xl px-3 py-2.5 text-sm"><button id="publicChatSendButton" class="rounded-xl bg-white text-black px-4 py-2.5 text-sm font-bold">送信</button></div>
-            <p class="text-[10px] text-gray-500">投稿は誰でも閲覧できます。個人情報や連絡先は書かないでください。</p>
+    <!-- アカウント不要の公開チャット専用画面 -->
+    <div id="chatModal" class="fixed inset-0 z-[110] hidden bg-kuro-950 flex items-stretch justify-stretch">
+      <section class="w-full h-full min-h-0 overflow-hidden bg-kuro-950 flex flex-col">
+        <header class="flex items-center justify-between shrink-0 border-b border-kuro-800 px-4 sm:px-7 py-4 bg-kuro-900">
+          <div class="min-w-0">
+            <h2 class="font-bold text-base sm:text-lg"><i class="fa-solid fa-earth-asia mr-2 text-violet-300"></i>KURO オープンチャット</h2>
+            <p class="text-[11px] text-gray-500 mt-1">アカウント不要・みんなで話せる公開チャット</p>
+          </div>
+          <button type="button" onclick="closeChat()" aria-label="チャットを閉じる" title="閉じる" class="w-10 h-10 shrink-0 rounded-full border border-kuro-700 text-gray-300 hover:bg-kuro-800"><i class="fa-solid fa-xmark"></i></button>
+        </header>
+        <section id="publicChatPane" class="flex flex-col flex-1 min-h-0 p-3 sm:p-6">
+          <div class="flex items-center justify-between gap-3 shrink-0 mb-3">
+            <div><h3 class="font-bold text-sm">みんなのチャット</h3><p class="text-[11px] text-gray-500">投稿は全員に公開されます</p></div>
+            <button type="button" onclick="loadPublicChat()" class="text-xs text-gray-400 border border-kuro-700 rounded-lg px-3 py-2 hover:bg-kuro-800"><i class="fa-solid fa-rotate mr-1"></i>更新</button>
+          </div>
+          <div id="publicChatMessages" aria-live="polite" class="flex-1 min-h-0 overflow-y-auto rounded-xl border border-kuro-800 bg-kuro-900/60 p-3 sm:p-5 space-y-3"><p class="text-xs text-gray-500 text-center py-8">メッセージを読み込み中…</p></div>
+          <form id="publicChatForm" onsubmit="sendPublicChatMessage(event)" class="shrink-0 mt-3 border-t border-kuro-800 pt-3 flex flex-col gap-2">
+            <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+              <input id="publicChatNickname" maxlength="20" placeholder="表示名（1〜20文字）" class="col-span-2 w-full bg-kuro-900 border border-kuro-700 rounded-xl px-3 py-2.5 text-sm">
+              <input id="publicChatInput" maxlength="300" placeholder="メッセージを書く…" class="min-w-0 w-full bg-kuro-900 border border-kuro-700 rounded-xl px-3 py-3 text-sm">
+              <button id="publicChatSendButton" class="rounded-xl bg-white text-black px-5 py-2.5 text-sm font-bold"><i class="fa-solid fa-paper-plane mr-1"></i>送信</button>
+            </div>
+            <p class="text-[10px] text-gray-500">誰でも閲覧できます。個人情報や連絡先は書かないでください。</p>
           </form>
         </section>
-        <div id="chatLayout" class="grid grid-cols-1 sm:grid-cols-[260px_1fr] min-h-0 flex-1">
-          <aside id="chatListPanel" class="border-b sm:border-b-0 sm:border-r border-kuro-800 p-3 min-h-0 overflow-y-auto"><label class="block text-xs text-gray-400 mb-2" for="chatUserHandle">メッセージを送る</label><div class="relative"><input id="chatUserHandle" maxlength="24" oninput="suggestChatUsers()" placeholder="名前・ユーザー名で検索" class="min-w-0 w-full bg-kuro-900 border border-kuro-700 rounded-xl px-3 py-3 text-sm"><div id="chatUserSuggestions" class="hidden absolute z-20 top-full left-0 right-0 bg-kuro-900 border border-kuro-700 rounded-xl mt-1 max-h-48 overflow-y-auto"></div></div><div class="flex items-center justify-between mt-5 mb-2"><div class="text-xs text-gray-200 font-semibold">チャット</div><button type="button" onclick="loadChatConversations(true)" class="text-xs text-gray-400 underline">更新</button></div><button type="button" onclick="createGroupChat()" class="w-full flex items-center gap-2 rounded-xl border border-violet-400/30 bg-violet-400/10 px-3 py-3 text-sm text-violet-200 mb-3"><i class="fa-solid fa-user-group"></i> グループチャットを作成</button><div id="groupConversationList" class="space-y-1 mb-3"></div><div class="text-xs text-gray-500 mb-2">1対1チャット</div><div id="chatConversationList" aria-live="polite" class="space-y-1"><p class="text-xs text-gray-500">チャット一覧を読み込み中…</p></div></aside>
-          <div id="chatConversationPanel" class="flex flex-col min-h-0 p-3"><div class="flex items-center gap-3 text-sm text-gray-400 border-b border-kuro-800 pb-3"><button type="button" id="groupChatSettingsButton" onclick="openGroupEditModal()" class="hidden rounded-lg border border-kuro-700 px-3 py-2 text-gray-200" aria-label="グループ設定" title="グループ設定"><i class="fa-solid fa-gear"></i></button><button type="button" onclick="showChatListOnMobile()" class="sm:hidden rounded-lg border border-kuro-700 px-3 py-2 text-gray-200" aria-label="チャット一覧に戻る"><i class="fa-solid fa-arrow-left"></i></button><div id="chatWithLabel" class="min-w-0 flex-1">チャット相手を選んでね</div></div><div id="chatMessages" class="flex-1 min-h-0 overflow-y-auto py-3 space-y-3"><p class="text-xs text-gray-600 text-center mt-8">相手を選ぶとメッセージが表示されるよ</p><div id="chatPullIndicator" class="kuro-pull-indicator" aria-live="polite"><i class="fa-solid fa-arrow-up"></i><span>一番下から上に引っ張って更新</span></div></div><form onsubmit="sendChatMessage(event)" class="relative flex gap-2 border-t border-kuro-800 pt-3"><div id="groupMentionSuggestions" class="hidden absolute bottom-full left-0 right-0 mb-2 max-h-56 overflow-y-auto rounded-xl border border-kuro-700 bg-kuro-900 shadow-xl z-30"></div><input id="chatMessageInput" maxlength="1000" placeholder="メッセージを書く…" oninput="handleGroupMentionInput()" onkeydown="if(event.key==='Escape')hideGroupMentionSuggestions()" class="flex-1 min-w-0 bg-kuro-900 border border-kuro-700 rounded-xl px-3 py-2 text-sm" disabled><button id="chatSendButton" disabled class="px-4 py-2 bg-white text-black rounded-xl text-sm font-bold disabled:opacity-40">送信</button></form></div>
-        </div>
       </section>
     </div>
 
@@ -3447,33 +3484,11 @@
         let kuroPublicChatLoading = false;
         let kuroPublicChatLastSentAt = 0;
         function switchChatMode(mode) {
-            const publicMode = mode === 'public';
-            const publicPane = document.getElementById('publicChatPane');
-            const privateLayout = document.getElementById('chatLayout');
-            publicPane?.classList.toggle('hidden', !publicMode);
-            privateLayout?.classList.toggle('hidden', publicMode);
-            if (publicMode) privateLayout?.style.setProperty('display','none','important');
-            else privateLayout?.style.removeProperty('display');
-            const publicButton = document.getElementById('publicChatModeButton');
-            const privateButton = document.getElementById('privateChatModeButton');
-            publicButton?.classList.toggle('bg-white', publicMode); publicButton?.classList.toggle('text-black', publicMode);
-            publicButton?.classList.toggle('bg-kuro-800', !publicMode); publicButton?.classList.toggle('text-gray-300', !publicMode);
-            privateButton?.classList.toggle('bg-white', !publicMode); privateButton?.classList.toggle('text-black', !publicMode);
-            privateButton?.classList.toggle('bg-kuro-800', publicMode); privateButton?.classList.toggle('text-gray-300', publicMode);
-            document.getElementById('chatModal')?.classList.remove('mobile-chat-open');
-            if (publicMode) {
-                loadPublicChat();
-                if (kuroPublicChatPollTimer) clearInterval(kuroPublicChatPollTimer);
-                kuroPublicChatPollTimer = setInterval(() => {
-                    const modal = document.getElementById('chatModal');
-                    if (modal && !modal.classList.contains('hidden') && !publicPane?.classList.contains('hidden')) loadPublicChat();
-                }, 8000);
-            } else {
-                if (kuroPublicChatPollTimer) clearInterval(kuroPublicChatPollTimer);
-                kuroPublicChatPollTimer = null;
-                if (currentUser?.id) loadChatConversations(true);
-                else { openAuthModal('signin'); switchChatMode('public'); }
-            }
+            // KURO SNSはアカウント不要の公開チャットのみを提供する。
+            const modal = document.getElementById('chatModal');
+            modal?.classList.remove('mobile-chat-open');
+            loadPublicChat();
+            setupPublicChatRealtime();
         }
         function formatPublicChatMessage(message) {
             const time = new Date(message.created_at).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',hour12:false});
@@ -3519,6 +3534,12 @@
                 console.error('KURO GAS public chat send failed:',error);
                 showToast('送信できませんでした。少し待って再試行してください');
             } finally { if (button) button.disabled = false; }
+        }
+        function closeChat() {
+            document.getElementById('chatModal')?.classList.add('hidden');
+            document.body.classList.remove('kuro-keyboard-open');
+            document.getElementById('publicChatInput')?.blur();
+            setActiveBottomTab('home');
         }
         async function openChat() {
             const modal = document.getElementById('chatModal');
