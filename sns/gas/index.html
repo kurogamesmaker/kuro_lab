@@ -1248,11 +1248,7 @@
             <button type="button" onclick="closeChat()" aria-label="チャットを閉じる" title="閉じる" class="w-10 h-10 shrink-0 rounded-full border border-kuro-700 text-gray-300 hover:bg-kuro-800"><i class="fa-solid fa-xmark"></i></button>
           </div>
         </header>
-        <section id="publicChatPane" class="flex flex-col flex-1 min-h-0 p-3 sm:p-6">
-          <div class="flex items-center justify-between gap-3 shrink-0 mb-3">
-            <div><h3 class="font-bold text-sm">みんなのチャット</h3><p class="text-[11px] text-gray-500">投稿は全員に公開されます</p></div>
-            <button type="button" onclick="loadPublicChat()" class="text-xs text-gray-400 border border-kuro-700 rounded-lg px-3 py-2 hover:bg-kuro-800"><i class="fa-solid fa-rotate mr-1"></i>更新</button>
-          </div>
+        <section id="publicChatPane" class="flex flex-col flex-1 min-h-0 p-2 sm:p-3">
           <div id="publicChatMessages" aria-live="polite" class="flex-1 min-h-0 overflow-y-auto rounded-xl border border-kuro-800 bg-kuro-900/60 p-3 sm:p-5 space-y-3"><p class="text-xs text-gray-500 text-center py-8">メッセージを読み込み中…</p></div>
           <form id="publicChatForm" onsubmit="sendPublicChatMessage(event)" class="shrink-0 mt-3 border-t border-kuro-800 pt-3 flex flex-col gap-2">
             <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
