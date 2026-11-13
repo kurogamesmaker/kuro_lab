@@ -606,77 +606,75 @@
 @media(max-width:640px){.kuro-gas-status-panel{margin:10px 12px 0;align-items:flex-start;font-size:11px}.kuro-gas-status-panel .kuro-gas-status-main{align-items:flex-start}.kuro-gas-status-panel a{white-space:nowrap}}
 </style>
 
-    <style id="kuro-desktop-layout">
-      /* Desktop: keep the existing compact/touch layout for phones, use a roomy app shell on PCs. */
-      @media (min-width: 900px) {
-        body.kuro-page { padding-bottom: 24px !important; }
-        .kuro-global-header .kuro-header-main,
-        .kuro-global-header .kuro-subnav-inner { max-width: 1440px; margin-left:auto; margin-right:auto; }
-        .kuro-global-header .kuro-header-main { padding-left: 32px; padding-right: 32px; }
-        .kuro-global-header .kuro-subnav-inner { padding-left: 32px; padding-right: 32px; }
-        #kuroGasStatusPanel { max-width: 1380px; margin: 14px auto 0; border-radius: 14px; }
-        #homeFeedView, #myProfileView {
-          max-width: 900px !important;
-          width: min(900px, calc(100vw - 190px)) !important;
-          margin-left: auto !important;
-          margin-right: auto !important;
-          padding-left: 28px !important;
-          padding-right: 28px !important;
-        }
-        #homeFeedView { padding-top: 38px !important; }
-        #postSearchInput { min-height: 58px; font-size: 15px; }
-        #postFeed { gap: 18px; }
-        #postFeed [data-post-card] { padding: 22px !important; border-radius: 22px !important; }
-        #kuroBottomNav {
-          top: 50% !important; bottom: auto !important; left: 22px !important; right: auto !important;
-          width: 76px !important; transform: translateY(-50%);
-          border: 1px solid rgba(255,255,255,.09) !important; border-radius: 22px !important;
-          padding: 10px 7px !important; background: rgba(18,18,24,.92) !important;
-          box-shadow: 0 16px 50px rgba(0,0,0,.35);
-        }
-        #kuroBottomNav > div {
-          display: flex !important; flex-direction: column !important; gap: 8px !important;
-          max-width: none !important; padding: 0 !important;
-        }
-        #kuroBottomNav [data-tab] {
-          min-height: 64px; width: 100%; border-radius: 15px !important;
-          gap: 6px !important; padding: 9px 3px !important;
-        }
-        #kuroBottomNav .kuro-tab-icon { font-size: 20px !important; }
-        #kuroBottomNav [data-tab] span { font-size: 10px !important; }
-        #chatModal {
-          padding: 28px !important;
-          align-items: center !important;
-          justify-content: center !important;
-        }
-        #chatModal > section {
-          width: min(1180px, calc(100vw - 120px)) !important;
-          max-width: 1180px !important;
-          height: min(820px, calc(100vh - 100px)) !important;
-          max-height: calc(100vh - 100px) !important;
-          border-radius: 24px !important;
-          border-color: rgba(255,255,255,.12) !important;
-          box-shadow: 0 30px 100px rgba(0,0,0,.6) !important;
-        }
-        #chatModal > section > div:first-child { padding: 19px 24px !important; }
-        #chatModal > section > div:nth-child(2) { padding: 12px 22px !important; }
-        #chatModal #publicChatPane { padding: 22px 26px !important; }
-        #chatModal #publicChatMessages { padding: 22px !important; border-radius: 18px !important; }
-        #chatModal #publicChatForm { padding-top: 18px !important; }
-        #chatModal #publicChatForm > div { gap: 12px !important; }
-        #chatModal #publicChatNickname { width: 190px !important; }
-        #chatModal #publicChatInput { min-height: 50px !important; padding-left: 16px !important; font-size: 15px !important; }
-        #chatModal #publicChatSendButton { min-width: 100px; }
-        #chatModal #chatLayout { grid-template-columns: 310px minmax(0,1fr) !important; }
-        #chatModal #chatListPanel { padding: 20px !important; }
-        #chatModal #chatConversationPanel { padding: 20px 24px !important; }
-        #chatModal #chatMessages { padding: 18px 8px !important; }
-      }
-      @media (min-width: 900px) and (max-width: 1100px) {
-        #kuroBottomNav { left: 10px !important; width: 68px !important; }
-        #homeFeedView, #myProfileView { width: calc(100vw - 130px) !important; }
-      }
-    </style>
+    
+
+
+<style id="kuro-responsive-device-layout">
+  /* KURO SNS responsive layout: adapt automatically to the available screen width. */
+  @media (min-width: 900px) {
+    body.kuro-page { padding-bottom: 24px !important; }
+    .kuro-global-header .kuro-header-main,
+    .kuro-global-header .kuro-subnav-inner { max-width: 1440px; margin-left:auto; margin-right:auto; }
+    .kuro-global-header .kuro-header-main,
+    .kuro-global-header .kuro-subnav-inner { padding-left: 32px; padding-right: 32px; }
+    #kuroGasStatusPanel { max-width: 1380px; margin: 14px auto 0; border-radius: 14px; }
+    #homeFeedView, #myProfileView {
+      max-width: 900px !important;
+      width: min(900px, calc(100vw - 190px)) !important;
+      margin-left: auto !important; margin-right: auto !important;
+      padding-left: 28px !important; padding-right: 28px !important;
+    }
+    #homeFeedView { padding-top: 38px !important; }
+    #postSearchInput { min-height: 58px; font-size: 15px; }
+    #postFeed { gap: 18px; }
+    #kuroBottomNav {
+      top: 50% !important; bottom: auto !important; left: 22px !important; right: auto !important;
+      width: 76px !important; transform: translateY(-50%);
+      border: 1px solid rgba(255,255,255,.09) !important; border-radius: 22px !important;
+      padding: 10px 7px !important; background: rgba(18,18,24,.92) !important;
+      box-shadow: 0 16px 50px rgba(0,0,0,.35);
+    }
+    #kuroBottomNav > div {
+      display: flex !important; flex-direction: column !important; gap: 8px !important;
+      max-width: none !important; padding: 0 !important;
+    }
+    #kuroBottomNav [data-tab] {
+      min-height: 64px; width: 100%; border-radius: 15px !important;
+      gap: 6px !important; padding: 9px 3px !important;
+    }
+    #kuroBottomNav .kuro-tab-icon { font-size: 20px !important; }
+    #kuroBottomNav [data-tab] span { font-size: 10px !important; }
+    #chatModal { padding: 28px !important; align-items: center !important; justify-content: center !important; }
+    #chatModal > section {
+      width: min(1180px, calc(100vw - 120px)) !important; max-width: 1180px !important;
+      height: min(820px, calc(100vh - 100px)) !important; max-height: calc(100vh - 100px) !important;
+      border-radius: 24px !important; border-color: rgba(255,255,255,.12) !important;
+      box-shadow: 0 30px 100px rgba(0,0,0,.6) !important;
+    }
+    #chatModal > section > div:first-child { padding: 19px 24px !important; }
+    #chatModal > section > div:nth-child(2) { padding: 12px 22px !important; }
+    #chatModal #publicChatPane { padding: 22px 26px !important; }
+    #chatModal #publicChatMessages { padding: 22px !important; border-radius: 18px !important; }
+    #chatModal #publicChatForm { padding-top: 18px !important; }
+    #chatModal #publicChatForm > div { gap: 12px !important; }
+    #chatModal #publicChatNickname { width: 190px !important; }
+    #chatModal #publicChatInput { min-height: 50px !important; padding-left: 16px !important; font-size: 15px !important; }
+    #chatModal #publicChatSendButton { min-width: 100px; }
+    #chatModal #chatLayout { grid-template-columns: 310px minmax(0,1fr) !important; }
+    #chatModal #chatListPanel { padding: 20px !important; }
+    #chatModal #chatConversationPanel { padding: 20px 24px !important; }
+    #chatModal #chatMessages { padding: 18px 8px !important; }
+  }
+  @media (min-width: 900px) and (max-width: 1100px) {
+    #kuroBottomNav { left: 10px !important; width: 68px !important; }
+    #homeFeedView, #myProfileView { width: calc(100vw - 130px) !important; }
+  }
+  @media (max-width: 899px) {
+    #kuroBottomNav { top: auto !important; bottom: 0 !important; left: 0 !important; right: 0 !important; width: auto !important; transform: none !important; }
+    #chatModal { padding: 12px !important; }
+    #chatModal > section { width: 100% !important; max-width: 720px !important; height: min(88dvh, 820px) !important; border-radius: 18px !important; }
+  }
+</style>
 
 </head>
 
