@@ -678,20 +678,44 @@
 
 
 <style id="kuro-desktop-app-only">
-  @media (min-width: 900px) {
-    /* Desktop should open as a focused SNS app, without the marketing/site chrome. */
-    body.kuro-page > .kuro-global-header,
-    body.kuro-page > #kuroGasStatusPanel {
-      display: none !important;
-    }
-    body.kuro-page { padding-top: 0 !important; }
-    #homeFeedView, #myProfileView { padding-top: 34px !important; }
-  }
+@media (min-width:900px) {
+  html,body.kuro-page{width:100%;height:100%;min-height:100%;overflow:hidden!important}
+  body.kuro-page{padding:0!important;margin:0!important}
+  body.kuro-page>.kuro-global-header,body.kuro-page>#kuroGasStatusPanel,#kuroBottomNav{display:none!important}
+  #homeFeedView,#myProfileView{box-sizing:border-box!important;height:100dvh!important;max-height:100dvh!important;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-width:none!important;padding-top:76px!important;padding-bottom:42px!important}
+  #homeFeedView::-webkit-scrollbar,#myProfileView::-webkit-scrollbar{display:none!important;width:0!important}
+  #homeFeedView,#myProfileView{width:min(980px,calc(100vw - 64px))!important;max-width:980px!important}
+  #kuroDesktopVersionSwitch{display:flex!important;position:fixed;z-index:120;top:14px;right:20px;align-items:center;gap:5px;padding:5px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(18,18,24,.94);box-shadow:0 8px 28px rgba(0,0,0,.3);backdrop-filter:blur(16px)}
+  #kuroDesktopVersionSwitch a,#kuroDesktopVersionSwitch span{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:0 13px;border-radius:9px;color:#a1a1aa;font-size:12px;font-weight:800;text-decoration:none}
+  #kuroDesktopVersionSwitch .is-current{color:#111;background:#fff}
+  #kuroComposeFloat{right:28px!important;bottom:28px!important;z-index:80}
+  #chatModal:not(.hidden){position:fixed!important;inset:0!important;z-index:110!important;display:flex!important;align-items:stretch!important;justify-content:stretch!important;width:100vw!important;height:100dvh!important;max-height:100dvh!important;padding:0!important;margin:0!important;border:0!important;border-radius:0!important;background:#0b0b0e!important;overflow:hidden!important;backdrop-filter:none!important}
+  #chatModal>section{display:flex!important;flex-direction:column!important;width:100vw!important;max-width:none!important;height:100dvh!important;min-height:0!important;max-height:100dvh!important;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden!important;background:#111116!important}
+  #chatModal>section>div:first-child{flex:0 0 64px!important;min-height:64px!important;padding:0 28px!important;background:#15151c!important}
+  #chatModal>section>div:nth-child(2){flex:0 0 58px!important;min-height:58px!important;padding:8px 24px!important;background:#17171e!important}
+  #chatModal>section>div:nth-child(2) button{max-width:240px;flex:0 0 220px!important;border-radius:10px!important}
+  #chatModal #publicChatPane{flex:1 1 auto!important;min-height:0!important;padding:0 28px 20px!important;gap:0!important;background:#111116!important}
+  #chatModal #publicChatPane>div:first-child{flex:0 0 68px!important;min-height:68px!important;margin:0!important;padding:0 8px!important;border-bottom:1px solid rgba(255,255,255,.08)}
+  #chatModal #publicChatPane>div:first-child h3{font-size:16px!important}
+  #chatModal #publicChatMessages{flex:1 1 auto!important;min-height:0!important;width:100%!important;margin:16px 0 0!important;padding:24px max(24px,calc((100% - 1040px)/2))!important;border:0!important;border-radius:14px!important;background:#191920!important;overflow-y:auto!important;overscroll-behavior:contain}
+  #chatModal #publicChatForm{flex:0 0 auto!important;width:100%!important;max-width:1100px!important;margin:16px auto 0!important;padding:14px 0 0!important;border-top:1px solid rgba(255,255,255,.08)!important}
+  #chatModal #publicChatForm>div{display:flex!important;gap:12px!important}
+  #chatModal #publicChatNickname{width:190px!important;min-width:150px!important}
+  #chatModal #publicChatInput{min-height:54px!important;padding:0 18px!important;font-size:15px!important}
+  #chatModal #publicChatSendButton{min-width:104px!important}
+  #chatModal #chatLayout{flex:1 1 auto!important;min-height:0!important;grid-template-columns:320px minmax(0,1fr)!important}
+  #chatModal #chatListPanel{min-height:0!important;overflow-y:auto!important;background:#17171e!important}
+  #chatModal #chatConversationPanel{min-height:0!important;overflow:hidden!important}
+  #chatModal #chatMessages{min-height:0!important;overflow-y:auto!important}
+  #chatModal *{scrollbar-width:thin;scrollbar-color:#34343f transparent}
+}
+@media(max-width:899px){#kuroDesktopVersionSwitch{display:none!important}}
 </style>
 
 </head>
 
 <body class="kuro-page kuro-theme-dark">
+<nav id="kuroDesktopVersionSwitch" aria-label="SNSバージョン切り替え"><span class="is-current">GAS版</span><a href="/sns/">通常版</a></nav>
 
 <header class="kuro-global-header">
  <div class="kuro-header-main">
