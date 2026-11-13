@@ -3600,12 +3600,15 @@
         }
         
         async function pollPublicChatUpdates() {
-            if (kuroPublicChatLoading || !kuroPublicChatLatestAt) return;
+            const modal = document.getElementById('chatModal');
+            if (kuroPublicChatLoading || !kuroPublicChatLatestAt || !modal || modal.classList.contains('hidden')) return;
             kuroPublicChatLoading = true;
             try {
+                // 直近2秒を重ねて取得し、同時刻投稿の取りこぼしを避ける（IDで重複排除）。
+                const since = new Date(Math.max(0, Date.parse(kuroPublicChatLatestAt) - 2000)).toISOString();
                 const {data,error} = await supabaseClient.from('public_chat_messages')
                     .select('id,nickname,content,created_at')
-                    .gt('created_at', kuroPublicChatLatestAt)
+                    .gte('created_at', since)
                     .order('created_at',{ascending:true}).limit(50);
                 if (error) throw error;
                 (data || []).forEach(appendPublicChatMessage);
