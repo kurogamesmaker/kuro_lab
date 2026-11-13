@@ -1577,7 +1577,17 @@
                 }
 
                 if (result.error) {
-                    showToast(result.error.message);
+                    if (mode === 'signin') {
+                        const authErrorCode = String(result.error.code || '').toLowerCase();
+                        const authErrorMessage = String(result.error.message || '').toLowerCase();
+                        if (authErrorCode === 'invalid_credentials' || authErrorMessage.includes('invalid login credentials')) {
+                            showToast('メールアドレスまたはパスワードが違います。入力内容を確認してください。');
+                        } else {
+                            showToast(result.error.message || 'ログインできませんでした。時間をおいて再度お試しください。');
+                        }
+                    } else {
+                        showToast(result.error.message || 'アカウントを作成できませんでした。');
+                    }
                     return;
                 }
 
