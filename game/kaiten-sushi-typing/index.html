@@ -1201,7 +1201,7 @@ let beltItems = [], beltRaf = 0, beltLast = 0;
 function beltGeom(){
   const c = $("conveyor");
   if(!c || !c.clientWidth) return null;
-  const wide = innerWidth >= 640;
+  const wide = c.clientWidth >= 520;
   const pw = wide ? 48 : 36, ph = wide ? 16 : 14;
   const MT = wide ? 40 : 34, Hb = wide ? 68 : 56, EW = pw + 16;
   const H = MT + Hb;
@@ -2063,12 +2063,25 @@ function fitPrompt(){
   const cs=getComputedStyle(pb);
   const avail=pb.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight)-2;
   if(avail<=0) return;
-  const wide=innerWidth>=640;
+  const wide=pb.clientWidth >= 500;
   fitEl($("kana"),wide?48:30,13,avail);
   fitEl($("romajiBox"),wide?30:20,10,avail);
 }
 window.addEventListener("resize",fitPrompt);
 if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fitPrompt);
+/* ブラウザ全体ではなく、実際のゲーム枠の幅変化に追従 */
+if("ResizeObserver" in window){
+  const gameSizeObserver=new ResizeObserver(()=>{
+    fitPrompt();
+    beltGeom();
+  });
+  const gameRoot=$("game-app");
+  const promptRoot=$("promptBox");
+  const conveyorRoot=$("conveyor");
+  if(gameRoot) gameSizeObserver.observe(gameRoot);
+  if(promptRoot) gameSizeObserver.observe(promptRoot);
+  if(conveyorRoot) gameSizeObserver.observe(conveyorRoot);
+}
 
 function processKey(key){
   if(!running||!current) return;
