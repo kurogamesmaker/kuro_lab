@@ -705,10 +705,10 @@
   #chatModal #publicChatPane>div:first-child{flex:0 0 68px!important;min-height:68px!important;margin:0!important;padding:0 8px!important;border-bottom:1px solid rgba(255,255,255,.08)}
   #chatModal #publicChatPane>div:first-child h3{font-size:16px!important}
   #chatModal #publicChatMessages{flex:1 1 auto!important;min-height:0!important;width:100%!important;margin:16px 0 0!important;padding:24px max(24px,calc((100% - 1040px)/2))!important;border:0!important;border-radius:14px!important;background:#191920!important;overflow-y:auto!important;overscroll-behavior:contain}
-  /* Desktop: dock the composer at the bottom; scroll only the message history. */
-  #chatModal #publicChatPane{display:flex!important;flex-direction:column!important;min-height:0!important;overflow:hidden!important}
-  #chatModal #publicChatMessages{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overscroll-behavior:contain!important}
-  #chatModal #publicChatForm{position:relative!important;inset:auto!important;z-index:5!important;flex:0 0 auto!important;width:100%!important;max-width:1100px!important;margin:0 auto!important;padding:14px 0 max(14px,env(safe-area-inset-bottom))!important;border-top:1px solid rgba(255,255,255,.08)!important;background:#111116!important}
+  /* Desktop: pin the public chat composer to the viewport bottom. */
+  #chatModal #publicChatPane{position:relative!important;display:flex!important;flex-direction:column!important;min-height:0!important;overflow:hidden!important}
+  #chatModal #publicChatMessages{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overscroll-behavior:contain!important;margin-bottom:168px!important}
+  #chatModal #publicChatForm{position:fixed!important;left:50%!important;right:auto!important;bottom:0!important;transform:translateX(-50%)!important;z-index:150!important;display:flex!important;flex-direction:column!important;flex:0 0 auto!important;width:min(1100px,calc(100vw - 56px))!important;max-width:1100px!important;margin:0!important;padding:14px 0 max(14px,env(safe-area-inset-bottom))!important;border-top:1px solid rgba(255,255,255,.12)!important;background:#111116!important;box-sizing:border-box!important}
   #chatModal #publicChatForm>div{display:flex!important;gap:12px!important}
   #chatModal #publicChatNickname{width:190px!important;min-width:150px!important}
   #chatModal #publicChatInput{min-height:54px!important;padding:0 18px!important;font-size:15px!important}
