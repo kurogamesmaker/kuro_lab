@@ -325,6 +325,28 @@
     background: #d4a373;
     border-radius: 4px;
   }
+
+  /* KURO GAMES：ゲーム画面の周囲に関連ゲームを表示 */
+  .kuro-game-layout{width:min(1420px,100%);margin:0 auto;display:grid;grid-template-columns:190px minmax(0,760px) 190px;gap:22px;align-items:stretch;justify-content:center;flex:1}
+  .kuro-game-layout>main{width:100%;max-width:760px;margin:0}
+  .game-rail{display:flex;flex-direction:column;gap:12px;padding-top:8px}
+  .rail-title{font-size:11px;font-weight:1000;letter-spacing:1.5px;color:#78350f;text-align:center}
+  .rail-card{display:block;border:2px solid #d6b77b;border-radius:16px;overflow:hidden;background:#fffaf0;box-shadow:0 5px 15px #5b351522;transition:.18s}
+  .rail-card:hover{transform:translateY(-3px);border-color:#b45309}
+  .rail-art{height:112px;display:grid;place-items:center;font-size:54px;background:radial-gradient(circle at 50% 35%,#fff1bd,#f5ad61 60%,#bd4b37);text-shadow:0 5px 8px #71351c55}
+  .rail-art.blue{background:radial-gradient(circle at 50% 35%,#d8f7ff,#7bc8e8 60%,#4160a4)}
+  .rail-art.purple{background:radial-gradient(circle at 50% 35%,#f4d5ff,#c18be8 60%,#65449e)}
+  .rail-info{padding:9px 10px;color:#422006}
+  .rail-info b{display:block;font-size:12px}.rail-info span{display:block;font-size:10px;color:#8b6544;margin-top:3px}
+  .rail-soon{opacity:.86}
+  .game-topbar{width:min(1420px,100%);margin:0 auto;display:flex;justify-content:space-between;align-items:center;padding:4px 0 14px;gap:12px}
+  .game-topbar a{font-size:12px;font-weight:900;color:#713f12;background:#fff7e6;border:1px solid #d6a85e;padding:9px 13px;border-radius:999px}
+  @media(max-width:1120px){.kuro-game-layout{display:block;width:100%}.game-rail{display:none}.mobile-game-strip{display:flex!important}}
+  .mobile-game-strip{display:none;gap:10px;overflow-x:auto;padding:4px 2px 14px;margin:0 auto 8px;width:min(760px,100%);scrollbar-width:thin}
+  .mobile-game-strip .rail-card{min-width:138px}
+  .mobile-game-strip .rail-art{height:74px;font-size:38px}
+  @media(max-width:640px){.game-topbar{padding-bottom:10px}.game-topbar a{font-size:11px;padding:8px 10px}}
+
 </style>
 </head>
 <body class="min-h-screen text-stone-900 flex flex-col justify-between p-3 sm:p-6 select-none">
@@ -338,6 +360,7 @@
       </h1>
     </div>
     <div class="flex items-center gap-2">
+      <a href="/game/" aria-label="ゲーム一覧へ" class="text-xs sm:text-sm font-black bg-white/80 border border-amber-500 text-amber-950 rounded-full px-3 py-2 shadow-sm">ゲーム一覧</a>
       <button id="sound" type="button" tabindex="-1" aria-label="サウンド切替" class="w-9 h-9 rounded-full bg-amber-100/90 border border-amber-500 shadow-md text-base cursor-pointer">🔊</button>
       <div class="text-xs sm:text-sm font-bold bg-amber-100/90 text-amber-950 px-3.5 py-1.5 rounded-full border border-amber-500 flex items-center gap-2 shadow-md">
         <i class="fa-solid fa-stopwatch text-amber-700"></i>
@@ -346,7 +369,21 @@
     </div>
   </header>
 
-  <!-- メインコンテンツカード (背景透過・ガラスモルフィズム適用) -->
+  <div class="game-topbar"><a href="/games/">← KURO GAMES トップ</a><a href="/game/">🎮 ほかのゲームを探す</a></div>
+  <div class="mobile-game-strip" aria-label="ほかのゲーム">
+    <a class="rail-card" href="/game/kaiten-sushi-typing/"><div class="rail-art">🍣</div><div class="rail-info"><b>回転寿司タイピング</b><span>PLAYING NOW</span></div></a>
+    <div class="rail-card rail-soon"><div class="rail-art blue">🧩</div><div class="rail-info"><b>パズルゲーム</b><span>COMING SOON</span></div></div>
+    <div class="rail-card rail-soon"><div class="rail-art purple">🚀</div><div class="rail-info"><b>アクションゲーム</b><span>COMING SOON</span></div></div>
+  </div>
+  <!-- ゲーム画面とサイドのゲーム一覧 -->
+  <div class="kuro-game-layout">
+    <aside class="game-rail" aria-label="おすすめゲーム 左">
+      <div class="rail-title">DISCOVER MORE</div>
+      <a class="rail-card" href="/game/"><div class="rail-art">🎮</div><div class="rail-info"><b>ゲーム一覧</b><span>すべてのゲームを見る ↗</span></div></a>
+      <a class="rail-card" href="/game/kaiten-sushi-typing/"><div class="rail-art">🍣</div><div class="rail-info"><b>回転寿司タイピング</b><span>PLAYING NOW</span></div></a>
+      <div class="rail-card rail-soon"><div class="rail-art blue">🧩</div><div class="rail-info"><b>パズルゲーム</b><span>COMING SOON</span></div></div>
+      <div class="rail-card rail-soon"><div class="rail-art purple">🚀</div><div class="rail-info"><b>アクションゲーム</b><span>COMING SOON</span></div></div>
+    </aside>
   <main class="w-full max-w-3xl mx-auto bg-white/20 backdrop-blur-md border-4 border-amber-400/70 shadow-2xl rounded-3xl p-4 sm:p-8 relative overflow-hidden flex-1 flex flex-col justify-center transition-all">
 
     <!-- バックグラウンド装飾 -->
@@ -599,6 +636,13 @@
     </section>
 
   </main>
+    <aside class="game-rail" aria-label="おすすめゲーム 右">
+      <div class="rail-title">MORE TO PLAY</div>
+      <div class="rail-card rail-soon"><div class="rail-art purple">🌳</div><div class="rail-info"><b>シミュレーション</b><span>COMING SOON</span></div></div>
+      <div class="rail-card rail-soon"><div class="rail-art blue">🏆</div><div class="rail-info"><b>スコアアタック</b><span>COMING SOON</span></div></div>
+      <a class="rail-card" href="/game/"><div class="rail-art">✨</div><div class="rail-info"><b>ゲームを探す</b><span>KURO GAMES LIBRARY ↗</span></div></a>
+    </aside>
+  </div>
 
   <!-- フッター -->
   <footer class="w-full max-w-3xl mx-auto text-center py-3 text-xs text-stone-600 font-bold">
