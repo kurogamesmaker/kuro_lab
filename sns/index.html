@@ -1581,7 +1581,7 @@
                         const authErrorCode = String(result.error.code || '').toLowerCase();
                         const authErrorMessage = String(result.error.message || '').toLowerCase();
                         if (authErrorCode === 'invalid_credentials' || authErrorMessage.includes('invalid login credentials')) {
-                            showToast('メールアドレスまたはパスワードが違います。入力内容を確認してください。');
+                            showToast('ログインできません。パスワードが違うか、未設定の可能性があります。メール確認コードでログインし、アカウント設定からパスワードを設定してください。', 'error');
                         } else {
                             showToast(result.error.message || 'ログインできませんでした。時間をおいて再度お試しください。');
                         }
@@ -3937,15 +3937,25 @@
         window.toggleFollowFromNotice = toggleFollowFromNotice;
         window.toggleFollowAndRefreshList = toggleFollowAndRefreshList;
 
-        function showToast(msg) {
+        function showToast(msg, type = 'info') {
             const toast = document.getElementById('toast');
-            document.getElementById('toastMsg').textContent = msg;
-
+            const toastIcon = toast?.querySelector('i');
+            const toastMsg = document.getElementById('toastMsg');
+            if (!toast || !toastMsg) return;
+            toastMsg.textContent = msg;
+            toast.classList.remove('bg-white', 'text-black', 'bg-red-950', 'text-white', 'border-red-700');
+            if (type === 'error') {
+                toast.classList.add('bg-red-950', 'text-white', 'border-red-700');
+                if (toastIcon) toastIcon.className = 'fa-solid fa-circle-exclamation text-base text-red-300';
+            } else {
+                toast.classList.add('bg-white', 'text-black');
+                if (toastIcon) toastIcon.className = 'fa-solid fa-circle-check text-base';
+            }
             toast.classList.remove('translate-y-20', 'opacity-0');
-
-            setTimeout(() => {
+            clearTimeout(window.kuroToastTimer);
+            window.kuroToastTimer = setTimeout(() => {
                 toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3000);
+            }, 6000);
         }
 
 
