@@ -1384,9 +1384,10 @@ async function craneWorker(token, epoch){
   const rc = rightC.getBoundingClientRect();
   const cx = rc.left + rc.width / 2;
   const cr = $("conveyor").getBoundingClientRect();
-  const sign = document.querySelector(".wooden-sign").getBoundingClientRect();
+  const signEl = document.querySelector(".wooden-sign");
+  const sign = signEl.getBoundingClientRect();
   const railY = Math.max(6, sign.top - 28);
-  const y0 = railY + 12;
+  let y0 = railY + 12;
   const HEAD_H = 16, GAP = 8, ARM_TOP = 9, LOAD_TOP = HEAD_H + GAP;
   const OPEN = 36, CLOSED = -3;
 
@@ -1424,6 +1425,18 @@ async function craneWorker(token, epoch){
     </div>`;
   // クレーンは画面座標で動く演出なので、クリップされないようbody直下に固定。
   document.body.appendChild(root);
+  /* ページ/全画面内スクロールでゲーム本体が動いた分だけ、固定クレーンも追従 */
+  let lastSignTop = sign.top;
+  const followGameOnScroll = () => {
+    const currentTop = signEl.getBoundingClientRect().top;
+    const delta = currentTop - lastSignTop;
+    if(Math.abs(delta) > 0.01){
+      root.style.top = (parseFloat(root.style.top || "0") + delta) + "px";
+      y0 += delta;
+      lastSignTop = currentTop;
+    }
+  };
+  document.addEventListener("scroll", followGameOnScroll, true);
   const q = s => root.querySelector(s);
   const hang = q(".crane-hang"), swing = q(".crane-swing"), cable = q(".crane-cable"), claw = q(".crane-claw");
   const load = q(".crane-load"), armL = q(".crane-arm-l"), armR = q(".crane-arm-r"), head = q(".crane-head");
@@ -1438,7 +1451,7 @@ async function craneWorker(token, epoch){
   // ---- 状態と描画（振り子の揺れ込み） ----
   const st = { tx: dX + 45, L: Math.min(34, Lclear()), arm: OPEN, op: 0 };
   let done = false, prevTx = st.tx, prevVx = 0, ang = 0, angV = 0, prevT = performance.now();
-  const fin = () => { done = true; root.remove(); craneActive = false; isCraneBusy = false; };
+  const fin = () => { done = true; document.removeEventListener("scroll", followGameOnScroll, true); root.remove(); craneActive = false; isCraneBusy = false; };
   function render(now){
     if(done) return;
     if(token !== gen || epoch !== craneEpoch){ fin(); return; }
