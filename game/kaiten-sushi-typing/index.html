@@ -388,8 +388,8 @@ body{background:#63c8e4!important;color:#17233a!important;background-image:radia
 @media(prefers-reduced-motion:reduce){.rail-card{transition:none}}
 
 /* 固定デザインステージ：内部レイアウトは850px基準、外側だけ等比縮小 */
-#game-app{position:relative;width:100%;height:auto;min-height:0;overflow:hidden;padding:0 0 52px}
-#game-stage{width:850px;max-width:none;transform-origin:top left;will-change:transform}
+#game-app{position:relative;display:flex;flex-direction:column;align-items:center;width:100%;height:auto;min-height:0;overflow:hidden;padding:0 0 52px}
+#game-stage{width:850px;max-width:none;flex:0 0 850px;transform-origin:top center;will-change:transform}
 #game-stage>header,#game-stage>main,#game-stage>footer{width:100%;max-width:768px;margin-left:auto;margin-right:auto}
 #game-stage>header{padding:8px 0 12px!important;gap:12px}
 #game-stage>header h1{font-size:30px!important;line-height:1.25}
@@ -1422,7 +1422,9 @@ async function craneWorker(token){
         </div>
       </div>
     </div>`;
-  document.body.appendChild(root);
+  // クレーンをゲーム枠内に置く。全画面表示でも描画対象から外れない。fixed座標は画面基準のまま。
+  const craneHost=document.querySelector(".center") || document.body;
+  craneHost.appendChild(root);
   const q = s => root.querySelector(s);
   const hang = q(".crane-hang"), swing = q(".crane-swing"), cable = q(".crane-cable"), claw = q(".crane-claw");
   const load = q(".crane-load"), armL = q(".crane-arm-l"), armR = q(".crane-arm-r"), head = q(".crane-head");
@@ -2097,9 +2099,16 @@ function fitGameStage(){
   if(!app||!stage) return;
   const baseWidth=850;
   const available=Math.max(1,app.clientWidth);
-  const scale=Math.min(1,available/baseWidth);
+  const fullscreen=!!(document.fullscreenElement || document.webkitFullscreenElement);
+  const widthScale=available/baseWidth;
+  const heightScale=fullscreen ? Math.max(.35,(window.innerHeight-110)/Math.max(1,stage.offsetHeight)) : 1;
+  // 通常時は画面いっぱいにせず82%を上限にして見やすくする。
+  // 全画面時は中央配置で、幅・高さの両方に収まる倍率にする。
+  const scale=Math.min(fullscreen?1:.82,widthScale,heightScale);
   stage.style.transform="scale("+scale+")";
-  app.style.height=(stage.offsetHeight*scale+52)+"px";
+  app.style.height=(stage.offsetHeight*scale+(fullscreen?58:52))+"px";
+  app.style.justifyContent="flex-start";
+  stage.style.marginLeft="0";
 }
 /* ブラウザ全体ではなく、実際のゲーム枠の幅変化に追従 */
 if("ResizeObserver" in window){
@@ -2250,8 +2259,8 @@ chooseMode("normal");
       setTimeout(refresh,2200);
     }
   });
-  document.addEventListener("fullscreenchange",refresh);
-  document.addEventListener("webkitfullscreenchange",refresh);
+  document.addEventListener("fullscreenchange",()=>{refresh();requestAnimationFrame(()=>{if(window.fitGameStage) window.fitGameStage();});});
+  document.addEventListener("webkitfullscreenchange",()=>{refresh();requestAnimationFrame(()=>{if(window.fitGameStage) window.fitGameStage();});});
   refresh();
 })();
 </script>
