@@ -351,24 +351,43 @@ a{color:inherit;text-decoration:none}.top{height:64px;display:flex;align-items:c
 
 
 
-/* KURO GAMES portal-style player layout */
+/* KURO GAMES player: compact game with side discovery cards */
 .top{position:sticky;top:0;z-index:100;background:#101827f2;backdrop-filter:blur(14px);border-bottom:1px solid #ffffff20}
 .top a:last-child{font-size:13px;padding:10px 16px;background:#ffffff14}
-.layout{display:grid!important;grid-template-columns:minmax(0,1fr)!important;max-width:1220px!important;width:min(1220px,calc(100% - 36px))!important;margin:0 auto!important;padding:24px 0 44px!important;gap:18px!important;align-items:start!important;min-height:0!important}
-.rail{display:none!important}
-.center{width:100%!important;max-width:1100px!important;margin:0 auto!important;border-radius:20px!important}
-.frame-head{height:45px!important;padding:0 18px!important;font-size:12px!important}
-#game-app{min-height:600px}
-.game-info{width:100%;max-width:1100px;margin:0 auto 10px;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:24px 27px;border:1px solid #ffffff25;border-radius:18px;background:linear-gradient(115deg,#172238,#202c47);color:#fff;box-shadow:0 12px 30px #0003}
-.game-info h2{font-size:20px;margin:0 0 7px;letter-spacing:-.4px}.game-info p{margin:0;color:#c2cde0;font-size:13px;line-height:1.8}.game-info .genre{display:inline-flex;margin-top:10px;padding:5px 9px;border-radius:7px;background:#ffffff16;color:#dce7ff;font-size:10px;font-weight:900}
-.game-info a{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;padding:12px 16px;border-radius:11px;background:#fff;color:#263a5d;font-size:12px;font-weight:1000}
-@media(max-width:760px){.layout{width:calc(100% - 20px)!important;padding:12px 0 24px!important;gap:12px!important}.center{border-radius:14px!important}.game-info{align-items:flex-start;flex-direction:column;padding:18px;gap:14px}.game-info a{width:100%}#game-app{min-height:560px}}
+.layout{display:grid!important;grid-template-columns:155px minmax(0,860px) 155px!important;max-width:1260px!important;width:calc(100% - 36px)!important;margin:0 auto!important;padding:22px 0 38px!important;gap:18px!important;align-items:center!important;min-height:0!important}
+.rail{display:flex!important;flex-direction:column;gap:13px;align-self:center;min-width:0}
+.rail-card{display:block;overflow:hidden;border:1px solid #ffffff25;border-radius:15px;background:#18243a;color:#fff;text-decoration:none;box-shadow:0 9px 24px #0004;transition:transform .18s,border-color .18s}
+.rail-card:hover{transform:translateY(-4px);border-color:#9fbaff}
+.rail-art{aspect-ratio:1.05/1;display:grid;place-items:center;overflow:hidden;background:linear-gradient(145deg,#fff0cf,#f49b62 60%,#b94b50)}
+.rail-art img{width:100%;height:100%;object-fit:cover}
+.rail-copy{padding:11px 12px 13px}.rail-copy strong{display:block;font-size:12px;line-height:1.5}.rail-copy small{display:block;margin-top:5px;color:#bdc9df;font-size:10px;line-height:1.5}
+.rail-note{padding:15px 13px;border:1px solid #ffffff1c;border-radius:14px;background:#ffffff0d;color:#e8eef9;font-size:11px;line-height:1.7}.rail-note b{display:block;margin-bottom:5px;font-size:12px}
+.center{position:relative;min-width:0;width:100%;max-width:860px;margin:0 auto;border-radius:18px;overflow:hidden;background:#f7f1e5;box-shadow:0 20px 65px #0009;border:1px solid #ffffff36}
+.frame-head{height:42px;background:#171d2d;display:flex;align-items:center;justify-content:space-between;padding:0 15px;color:#dce3f5;font-size:11px;font-weight:800;letter-spacing:.4px}
+#game-app{width:100%;min-height:0;overflow:hidden;background:#f7f1e5;padding-bottom:52px}
+#game-app #game{max-width:100%}
+.fullscreen-btn{position:absolute;right:13px;bottom:12px;z-index:50;display:inline-flex;align-items:center;gap:7px;padding:10px 14px;border:1px solid #ffffff35;border-radius:10px;background:#17243beF;color:#fff;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 5px 16px #0005}
+.fullscreen-btn:hover{background:#2a4268}.fullscreen-btn:focus-visible{outline:3px solid #9fc5ff;outline-offset:2px}
+.center:fullscreen{width:100vw;max-width:none;height:100vh;overflow:auto;border-radius:0;background:#f7f1e5}
+.center:fullscreen #game-app{min-height:calc(100vh - 42px)}
+.game-info{width:100%;max-width:860px;margin:0 auto 10px;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:22px 25px;border:1px solid #ffffff25;border-radius:17px;background:linear-gradient(115deg,#172238,#202c47);color:#fff;box-shadow:0 12px 30px #0003}
+.game-info h2{font-size:19px;margin:0 0 7px;letter-spacing:-.4px}.game-info p{margin:0;color:#c2cde0;font-size:12px;line-height:1.8}.game-info .genre{display:inline-flex;margin-top:9px;padding:5px 9px;border-radius:7px;background:#ffffff16;color:#dce7ff;font-size:10px;font-weight:900}
+.game-info a{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;padding:11px 14px;border-radius:10px;background:#fff;color:#263a5d;font-size:12px;font-weight:1000}
+@media(max-width:1050px){.layout{grid-template-columns:minmax(0,1fr)!important;max-width:860px!important;width:calc(100% - 28px)!important;gap:13px!important;padding:16px 0 30px!important}.center{grid-row:1}.rail{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.rail.left{grid-row:2}.rail.right{grid-row:3}.rail-art{aspect-ratio:2.2/1}.rail-note{display:flex;align-items:center;gap:10px}.rail-note b{margin:0}.game-info{flex-direction:column;align-items:flex-start;gap:13px}.game-info a{width:100%}}
+@media(max-width:560px){.top{height:56px;padding:0 14px}.layout{width:calc(100% - 18px)!important;padding:10px 0 22px!important;gap:10px!important}.center{border-radius:13px}.frame-head{height:34px}#game-app{padding-bottom:52px}.rail{gap:8px}.rail-card{border-radius:11px}.rail-copy{padding:8px 9px 10px}.rail-copy strong{font-size:11px}.rail-copy small{font-size:9px}.rail-note{font-size:10px;padding:10px}.fullscreen-btn{right:9px;bottom:8px;padding:9px 11px;font-size:11px}.game-info{padding:17px;border-radius:13px}}
+@media(prefers-reduced-motion:reduce){.rail-card{transition:none}}
 </style>
 </head>
 <body>
 <header class="top"><a class="logo" href="/games/">KURO<span>GAMES</span></a><a href="/games/">ゲーム一覧へ　↗</a></header>
 <div class="layout">
-
+<aside class="rail left" aria-label="おすすめゲーム">
+<a class="rail-card" href="/game/kaiten-sushi-typing/">
+<div class="rail-art"><img src="/games/sushi-cover.svg" alt="回転寿司タイピング"></div>
+<div class="rail-copy"><strong>🍣 回転寿司タイピング</strong><small>無料でプレイ · タイピング</small></div>
+</a>
+<div class="rail-note"><b>🎮 すぐに遊べる</b><span>インストール不要。ブラウザでそのままプレイ！</span></div>
+</aside>
 <section class="center" aria-label="ゲームプレイ画面">
 <div class="frame-head"><span>NOW PLAYING</span><span class="dots"><i></i><i></i><i></i></span></div>
 <div id="game-app"><!-- ヘッダー / ロゴ -->
@@ -646,7 +665,15 @@ a{color:inherit;text-decoration:none}.top{height:64px;display:flex;align-items:c
   <footer class="w-full max-w-3xl mx-auto text-center py-3 text-xs text-stone-600 font-bold">
     🍣 回転寿司タイピングゲーム &copy; All Rights Reserved.
   </footer></div>
+<button class="fullscreen-btn" id="fullscreenButton" type="button" aria-label="全画面表示">⛶ 全画面</button>
 </section>
+<aside class="rail right" aria-label="ゲームを探す">
+<a class="rail-card" href="/games/">
+<div class="rail-art"><img src="/games/sushi-cover.svg" alt=""></div>
+<div class="rail-copy"><strong>ほかのゲームを探す ↗</strong><small>KURO GAMESのゲーム一覧へ</small></div>
+</a>
+<div class="rail-note"><b>✨ 新作準備中</b><span>新しいゲームは完成しだい追加します。</span></div>
+</aside>
 
 <section class="game-info" aria-label="ゲーム情報">
 <div><h2>回転寿司タイピング</h2><p>流れてくるお寿司のネタをローマ字で入力するタイピングゲーム。コースやモードを選んで、自己ベスト更新を目指そう。</p><span class="genre">タイピング · 無料 · ブラウザでプレイ</span></div>
@@ -2114,5 +2141,25 @@ document.addEventListener("keydown", e=>{
 $("score").style.display = $("combo").style.display = "inline-block";
 updateBank();
 chooseMode("normal");
+
+const fullscreenButton = document.getElementById("fullscreenButton");
+const gameFrame = document.querySelector(".center");
+if(fullscreenButton && gameFrame){
+  fullscreenButton.addEventListener("click", async ()=>{
+    try{
+      if(document.fullscreenElement){
+        await document.exitFullscreen();
+      }else if(gameFrame.requestFullscreen){
+        await gameFrame.requestFullscreen();
+      }
+    }catch(error){
+      fullscreenButton.textContent = "全画面にできません";
+      setTimeout(()=>{fullscreenButton.textContent="⛶ 全画面";},1800);
+    }
+  });
+  document.addEventListener("fullscreenchange",()=>{
+    fullscreenButton.textContent=document.fullscreenElement ? "⤢ 全画面を終了" : "⛶ 全画面";
+  });
+}
 </script>
 </body></html>
