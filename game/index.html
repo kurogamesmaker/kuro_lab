@@ -1,38 +1,15 @@
 <!doctype html>
-<html lang="ja">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080b14">
-<meta name="description" content="KURO GAMESのゲーム一覧。画像から気になるゲームを選んですぐプレイ。">
-<title>ゲーム一覧 | KURO GAMES</title>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ゲーム一覧 | KURO GAMES</title>
 <style>
-:root{color-scheme:dark;--bg:#080b14;--panel:#121827;--line:#28334a;--muted:#aab5ca;--text:#f6f8ff;--purple:#9c7bff;--cyan:#64d9ed}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 75% -5%,#39276b 0,transparent 36%),radial-gradient(ellipse at 0 50%,#103047 0,transparent 32%),var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
-a{color:inherit;text-decoration:none}.wrap{width:min(1240px,calc(100% - 36px));margin:auto}
-header{position:sticky;top:0;z-index:10;border-bottom:1px solid #ffffff18;background:#080b14dd;backdrop-filter:blur(18px)}nav{height:72px;display:flex;align-items:center;justify-content:space-between}.brand{font-size:22px;font-weight:1000;letter-spacing:-.7px}.brand span{color:var(--purple)}.navright{display:flex;align-items:center;gap:12px}.navlink{padding:10px 15px;border:1px solid #ffffff25;border-radius:12px;font-size:13px;font-weight:800;background:#ffffff08}.navlink.primary{background:linear-gradient(110deg,#9875ff,#5f8cff);border:0}
-main{padding:54px 0 88px}.eyebrow{font-size:11px;letter-spacing:2px;font-weight:900;color:#c7b9ff}.hero{display:flex;justify-content:space-between;align-items:end;gap:24px}.hero h1{font-size:clamp(38px,6vw,62px);letter-spacing:-2.5px;margin:12px 0}.hero p{color:var(--muted);line-height:1.8;max-width:680px;margin:0}.count{border:1px solid #ffffff25;background:#ffffff0a;border-radius:999px;padding:10px 15px;color:#d7d0ff;font-size:12px;font-weight:900;white-space:nowrap}
-.toolbar{display:flex;justify-content:space-between;align-items:center;margin:42px 0 18px;gap:16px}.toolbar h2{font-size:20px;margin:0}.toolbar span{font-size:12px;color:var(--muted)}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:22px}.game{display:block;min-width:0;border:1px solid var(--line);border-radius:19px;overflow:hidden;background:linear-gradient(145deg,#171e30,#101522);transition:transform .2s,border-color .2s,box-shadow .2s}.game:hover{transform:translateY(-6px);border-color:#9e83ff;box-shadow:0 18px 44px #0007}.poster{height:158px;position:relative;display:grid;place-items:center;overflow:hidden;background:radial-gradient(circle at 50% 50%,#ffdc8b,#e65d43 48%,#6f1e35)}.poster:before,.poster:after{content:"";position:absolute;border:2px solid #ffffff55;border-radius:50%;width:220px;height:100px;transform:rotate(-18deg)}.poster:after{width:280px;height:130px;transform:rotate(20deg)}.poster .emoji{font-size:82px;filter:drop-shadow(0 12px 10px #34121c88);z-index:1}.poster .poster-label{position:absolute;left:13px;top:12px;z-index:2;padding:6px 9px;border-radius:7px;background:#101522d9;color:white;font-size:10px;font-weight:1000;letter-spacing:1px}.poster.blue{background:radial-gradient(circle at 50% 40%,#a5f3fc,#2563a8 55%,#14204b)}.poster.violet{background:radial-gradient(circle at 50% 40%,#f0abfc,#7c3aed 55%,#27104f)}.poster.green{background:radial-gradient(circle at 50% 40%,#bef264,#15803d 55%,#12352b)}.poster.gold{background:radial-gradient(circle at 50% 40%,#fde68a,#d97706 55%,#572c16)}
-.info{padding:16px 17px 18px}.info h3{font-size:17px;margin:0 0 7px}.info p{font-size:12px;color:var(--muted);line-height:1.7;margin:0;min-height:40px}.meta{display:flex;justify-content:space-between;align-items:center;margin-top:15px}.tag{font-size:10px;font-weight:900;color:#cfc2ff;background:#8d75ff24;padding:6px 9px;border-radius:7px}.play{font-size:12px;font-weight:900;color:#8ee9f5}
-footer{border-top:1px solid #ffffff18;padding:25px 0;color:#8792a8;font-size:12px}
-@media(max-width:700px){.hero{align-items:start;flex-direction:column}.count{white-space:normal}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.poster{height:125px}.poster .emoji{font-size:64px}.info{padding:13px}.info h3{font-size:14px}.info p{font-size:11px}.navlink{font-size:11px;padding:9px 10px}}
-@media(max-width:420px){.grid{grid-template-columns:1fr 1fr}.poster{height:108px}}
-</style>
-</head>
-<body>
-<header><div class="wrap"><nav><a class="brand" href="/games/">KURO<span>GAMES</span></a><div class="navright"><a class="navlink" href="/games/">トップ</a><a class="navlink primary" href="https://kurolab.cc.cd/">KURO Lab ↗</a></div></nav></div></header>
-<main class="wrap">
-<div class="hero"><div><span class="eyebrow">PICK YOUR GAME</span><h1>ゲームを選ぼう。</h1><p>気になるゲームを見つけたら、カードをクリック。インストール不要で、そのままブラウザで遊べます。</p></div><div class="count">🎮 1 GAME AVAILABLE</div></div>
-<div class="toolbar"><h2>おすすめゲーム</h2><span>NEW GAMES ARE COMING SOON</span></div>
-<div class="grid">
-<a class="game" href="/game/kaiten-sushi-typing/"><div class="poster"><span class="poster-label">POPULAR</span><span class="emoji">🍣</span></div><div class="info"><h3>回転寿司タイピング</h3><p>流れてくるお寿司のネタをローマ字で入力！3つのモードと3段階のコースに挑戦。</p><div class="meta"><span class="tag">タイピング</span><span class="play">PLAY NOW ↗</span></div></div></a>
-<div class="game" aria-label="新作ゲーム準備中"><div class="poster blue"><span class="poster-label">COMING SOON</span><span class="emoji">🧩</span></div><div class="info"><h3>パズルゲーム</h3><p>ひらめきと戦略でステージをクリア。新作を準備中です。</p><div class="meta"><span class="tag">パズル</span><span class="play">COMING SOON</span></div></div></div>
-<div class="game" aria-label="新作ゲーム準備中"><div class="poster violet"><span class="poster-label">COMING SOON</span><span class="emoji">🚀</span></div><div class="info"><h3>アクションゲーム</h3><p>スピード感あふれるチャレンジ。公開をお楽しみに。</p><div class="meta"><span class="tag">アクション</span><span class="play">COMING SOON</span></div></div></div>
-<div class="game" aria-label="新作ゲーム準備中"><div class="poster green"><span class="poster-label">COMING SOON</span><span class="emoji">🌳</span></div><div class="info"><h3>シミュレーション</h3><p>自分だけの世界を作って楽しむゲームを準備中。</p><div class="meta"><span class="tag">シミュレーション</span><span class="play">COMING SOON</span></div></div></div>
-<div class="game" aria-label="新作ゲーム準備中"><div class="poster gold"><span class="poster-label">COMING SOON</span><span class="emoji">🏆</span></div><div class="info"><h3>スコアアタック</h3><p>記録更新を目指して何度も挑戦するゲームを準備中。</p><div class="meta"><span class="tag">スコア</span><span class="play">COMING SOON</span></div></div></div>
-</div>
-</main>
-<footer><div class="wrap">© 2026 KURO Lab · KURO GAMES</div></footer>
-</body>
-</html>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -10%,#263b70,transparent 48%),#090d18;color:#fff;font-family:system-ui,sans-serif}
+header{height:68px;display:flex;align-items:center;justify-content:space-between;padding:0 max(20px,calc((100vw - 1200px)/2));border-bottom:1px solid #ffffff20}.logo{font-size:22px;font-weight:1000;text-decoration:none;color:#fff}.logo span{color:#9e82ff}header a:last-child{color:white;text-decoration:none;font-size:12px;font-weight:800;border:1px solid #ffffff35;border-radius:999px;padding:9px 14px}
+main{width:min(1200px,calc(100% - 32px));margin:38px auto 70px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:20px}
+.tile{display:block;aspect-ratio:1.22/1;border-radius:19px;overflow:hidden;border:1px solid #ffffff28;box-shadow:0 10px 26px #0006;transition:.18s}.tile:hover{transform:translateY(-5px) scale(1.02);border-color:#a995ff}
+.art{width:100%;height:100%;display:grid;place-items:center;font-size:clamp(55px,7vw,90px);text-shadow:0 9px 15px #0007;position:relative;isolation:isolate}.art:before{content:"";position:absolute;inset:12%;border:2px solid #ffffff50;border-radius:34% 66% 48% 52%;transform:rotate(-18deg);z-index:-1}
+.sushi{background:radial-gradient(circle at 50% 38%,#fff0b8,#f49b55 52%,#b53d4c)}.puzzle{background:radial-gradient(circle at 50% 38%,#d6f8ff,#499dd3 54%,#243b80)}.action{background:radial-gradient(circle at 50% 38%,#ffd0e8,#d64e8d 54%,#56245f)}.space{background:radial-gradient(circle at 50% 38%,#d5c9ff,#6b62d9 54%,#24265e)}.racing{background:radial-gradient(circle at 50% 38%,#ffe4a3,#e47a32 54%,#73331d)}.sim{background:radial-gradient(circle at 50% 38%,#d8ffc7,#5ba66d 54%,#194d43)}.arcade{background:radial-gradient(circle at 50% 38%,#fff0a8,#d8b43d 54%,#684b19)}.rhythm{background:radial-gradient(circle at 50% 38%,#e5d2ff,#9566db 54%,#39245d)}
+@media(max-width:600px){main{margin-top:20px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.tile{border-radius:13px}}
+</style></head><body><header><a class="logo" href="/games/">KURO<span>GAMES</span></a><a href="/games/">トップへ ↗</a></header><main><div class="grid">
+<a class="tile" href="/game/kaiten-sushi-typing/" aria-label="回転寿司タイピング"><div class="art sushi">🍣</div></a>
+<div class="tile"><div class="art puzzle">🧩</div></div><div class="tile"><div class="art action">⚔️</div></div><div class="tile"><div class="art space">🚀</div></div>
+<div class="tile"><div class="art racing">🏎️</div></div><div class="tile"><div class="art sim">🌳</div></div><div class="tile"><div class="art arcade">🏆</div></div><div class="tile"><div class="art rhythm">🎵</div></div>
+</div></main></body></html>
