@@ -387,6 +387,27 @@ body{background:#63c8e4!important;color:#17233a!important;background-image:radia
 @media(max-width:620px){.top{height:54px;padding:0 12px}.layout{display:flex!important;flex-direction:column;width:calc(100% - 16px)!important;padding:10px 0 24px!important;gap:9px!important}.center{order:1;width:100%;border-radius:10px}.game-info{order:2;width:100%;border-radius:9px;padding:13px;flex-direction:column;align-items:flex-start;gap:10px}.game-info a{width:100%}.rail.left{order:3;width:100%;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.rail.left .rail-note{display:none}.rail.right{order:4;width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.rail.right .rail-note{display:flex;grid-column:1/-1}.rail-art{aspect-ratio:1.3/1}.rail-copy{padding:7px}.rail-copy strong{font-size:10px}.game-strip{order:5;width:100%;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.game-tile.soon{min-height:85px}.fullscreen-btn{right:8px;bottom:8px;padding:8px 10px;font-size:11px}}
 @media(prefers-reduced-motion:reduce){.rail-card{transition:none}}
 
+/* 固定デザインステージ：内部レイアウトは850px基準、外側だけ等比縮小 */
+#game-app{position:relative;width:100%;height:auto;min-height:0;overflow:hidden;padding:0 0 52px}
+#game-stage{width:850px;max-width:none;transform-origin:top left;will-change:transform}
+#game-stage>header,#game-stage>main,#game-stage>footer{width:100%;max-width:768px;margin-left:auto;margin-right:auto}
+#game-stage>header{padding:8px 0 12px!important;gap:12px}
+#game-stage>header h1{font-size:30px!important;line-height:1.25}
+#game-stage>main{padding:32px!important}
+#game-stage #conveyor{height:108px}
+#game-stage #sushiMachine{width:84px}
+#game-stage .mc-body{height:28px;font-size:10px}
+#game-stage .belt-plate .sushi-top{font-size:20px}
+#game-stage .play-row{gap:24px!important}
+#game-stage #platesLeft,#game-stage #platesRight{width:56px;height:200px}
+#game-stage #rightStackContainer{width:64px}
+#game-stage #promptBox{padding:32px 24px!important;min-height:240px}
+#game-stage #kana{font-size:48px!important}
+#game-stage #romajiBox{font-size:30px!important}
+#game-stage #typing{font-size:24px!important}
+#game-stage .fullscreen-btn{font-size:12px}
+.center:fullscreen #game-app{height:auto;min-height:0;max-height:none;overflow:hidden;padding-bottom:58px}
+.center:fullscreen #game-stage{width:850px}
 /* ゲーム画面の比率と全画面表示を最適化 */
 #game-app{min-width:0;max-width:100%;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain}
 #game-app>header{width:100%;max-width:1100px;padding-left:clamp(10px,2vw,26px);padding-right:clamp(10px,2vw,26px)}
@@ -420,7 +441,7 @@ body{background:#63c8e4!important;color:#17233a!important;background-image:radia
 </aside>
 <section class="center" aria-label="ゲームプレイ画面">
 <div class="frame-head"><span>NOW PLAYING</span><span class="dots"><i></i><i></i><i></i></span></div>
-<div id="game-app"><!-- ヘッダー / ロゴ -->
+<div id="game-app"><div id="game-stage"><!-- 固定デザイン幅 850px。表示倍率だけを画面に合わせる --><!-- ヘッダー / ロゴ -->
   <header class="w-full max-w-3xl mx-auto flex items-center justify-between py-2 mb-2 sm:mb-4">
     <div class="flex items-center gap-2">
       <span class="text-3xl sm:text-4xl sushi-float">🍣</span>
@@ -678,7 +699,7 @@ body{background:#63c8e4!important;color:#17233a!important;background-image:radia
   <!-- フッター -->
   <footer class="w-full max-w-3xl mx-auto text-center py-3 text-xs text-stone-600 font-bold">
     🍣 回転寿司タイピングゲーム &copy; All Rights Reserved.
-  </footer></div>
+  </footer></div></div>
 <button class="fullscreen-btn" id="fullscreenButton" type="button" aria-label="全画面表示">⛶ 全画面</button>
 </section>
 <aside class="rail right" aria-label="ゲームを探す">
@@ -2067,18 +2088,32 @@ function fitPrompt(){
   fitEl($("kana"),wide?48:30,13,avail);
   fitEl($("romajiBox"),wide?30:20,10,avail);
 }
-window.addEventListener("resize",fitPrompt);
-if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fitPrompt);
+window.addEventListener("resize",()=>{fitPrompt();fitGameStage();});
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{fitPrompt();fitGameStage();});
+requestAnimationFrame(fitGameStage);
+/* 850pxの固定ステージを、ゲーム枠の幅に合わせて等比縮小 */
+function fitGameStage(){
+  const app=$("game-app"), stage=$("game-stage");
+  if(!app||!stage) return;
+  const baseWidth=850;
+  const available=Math.max(1,app.clientWidth);
+  const scale=Math.min(1,available/baseWidth);
+  stage.style.transform="scale("+scale+")";
+  app.style.height=(stage.offsetHeight*scale+52)+"px";
+}
 /* ブラウザ全体ではなく、実際のゲーム枠の幅変化に追従 */
 if("ResizeObserver" in window){
   const gameSizeObserver=new ResizeObserver(()=>{
     fitPrompt();
     beltGeom();
+    fitGameStage();
   });
   const gameRoot=$("game-app");
   const promptRoot=$("promptBox");
   const conveyorRoot=$("conveyor");
   if(gameRoot) gameSizeObserver.observe(gameRoot);
+  const stageRoot=$("game-stage");
+  if(stageRoot) gameSizeObserver.observe(stageRoot);
   if(promptRoot) gameSizeObserver.observe(promptRoot);
   if(conveyorRoot) gameSizeObserver.observe(conveyorRoot);
 }
