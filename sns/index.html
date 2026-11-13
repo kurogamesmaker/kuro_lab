@@ -736,6 +736,41 @@
     #chatModal #publicChatNickname{grid-column:1/-1!important}
   }
   </style>
+
+<style id="kuro-chat-line-theme">
+  #chatModal #publicChatMessages{display:flex!important;flex-direction:column!important;gap:12px!important;border:0!important;border-radius:0!important;background:transparent!important;padding:12px clamp(12px,3vw,42px)!important}
+  #chatModal .kuro-chat-row{display:flex;width:100%;margin:0!important;padding:0!important;border:0!important;background:transparent!important}
+  #chatModal .kuro-chat-row.is-mine{justify-content:flex-end}
+  #chatModal .kuro-chat-row.is-other{justify-content:flex-start}
+  #chatModal .kuro-chat-bubble-wrap{display:flex;flex-wrap:wrap;align-items:flex-end;gap:5px 8px;max-width:min(78%,720px)}
+  #chatModal .is-mine .kuro-chat-bubble-wrap{flex-direction:row-reverse}
+  #chatModal .kuro-chat-name{width:100%;font-size:11px;font-weight:700;opacity:.72;padding:0 8px}
+  #chatModal .kuro-chat-bubble{padding:11px 15px;border-radius:18px;background:#303039;color:#fff;font-size:14px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;box-shadow:0 1px 2px #0002}
+  #chatModal .is-other .kuro-chat-bubble{border-top-left-radius:5px}
+  #chatModal .is-mine .kuro-chat-bubble{background:#a7f36b;color:#17220f;border-top-right-radius:5px}
+  #chatModal .kuro-chat-time{font-size:10px;opacity:.55;white-space:nowrap;padding-bottom:2px}
+  #chatModal #publicChatForm{border-color:#383842!important}
+  #chatModal #publicChatNickname,#chatModal #publicChatInput{background:#202027!important;color:#f7f7fa!important;border-color:#41414b!important}
+  #chatModal #publicChatThemeSelect{color:inherit;border-color:#555}
+  #chatModal #publicChatThemeSelect option{color:#111;background:#fff}
+  #chatModal[data-chat-theme="light"]{background:#f4f5f8!important;color:#20212a!important}
+  #chatModal[data-chat-theme="light"]>section,
+  #chatModal[data-chat-theme="light"] header{background:#fff!important;color:#20212a!important}
+  #chatModal[data-chat-theme="light"] header{border-color:#e5e7eb!important}
+  #chatModal[data-chat-theme="light"] header p,
+  #chatModal[data-chat-theme="light"] #publicChatPane p{color:#6b7280!important}
+  #chatModal[data-chat-theme="light"] #publicChatMessages{background:#f4f5f8!important}
+  #chatModal[data-chat-theme="light"] .kuro-chat-bubble{background:#fff;color:#20212a;border:1px solid #e5e7eb;box-shadow:0 1px 2px #0001}
+  #chatModal[data-chat-theme="light"] .is-mine .kuro-chat-bubble{background:#d9f7c8;color:#20321a;border:0}
+  #chatModal[data-chat-theme="light"] .kuro-chat-name,
+  #chatModal[data-chat-theme="light"] .kuro-chat-time{color:#6b7280}
+  #chatModal[data-chat-theme="light"] #publicChatForm{border-color:#e5e7eb!important}
+  #chatModal[data-chat-theme="light"] #publicChatNickname,
+  #chatModal[data-chat-theme="light"] #publicChatInput{background:#fff!important;color:#20212a!important;border-color:#d1d5db!important}
+  #chatModal[data-chat-theme="light"] #publicChatThemeSelect{border-color:#d1d5db}
+  #chatModal[data-chat-theme="light"] header button{border-color:#d1d5db!important;color:#374151!important}
+  @media(max-width:640px){#chatModal .kuro-chat-bubble-wrap{max-width:88%}#chatModal #publicChatMessages{padding:10px 8px!important}}
+  </style>
 </head>
 
 <body class="kuro-page kuro-theme-dark">
@@ -1139,7 +1174,13 @@
             <h2 class="font-bold text-base sm:text-lg"><i class="fa-solid fa-earth-asia mr-2 text-violet-300"></i>KURO オープンチャット</h2>
             <p class="text-[11px] text-gray-500 mt-1">アカウント不要・みんなで話せる公開チャット</p>
           </div>
-          <button type="button" onclick="closeChat()" aria-label="チャットを閉じる" title="閉じる" class="w-10 h-10 shrink-0 rounded-full border border-kuro-700 text-gray-300 hover:bg-kuro-800"><i class="fa-solid fa-xmark"></i></button>
+          <div class="flex items-center gap-2 shrink-0">
+            <label class="text-xs opacity-70 hidden sm:block" for="publicChatThemeSelect">表示テーマ</label>
+            <select id="publicChatThemeSelect" aria-label="チャットの表示テーマ" onchange="setPublicChatTheme(this.value)" class="rounded-lg border px-2 py-2 text-xs bg-transparent">
+              <option value="dark">ダーク</option><option value="light">ホワイト</option>
+            </select>
+            <button type="button" onclick="closeChat()" aria-label="チャットを閉じる" title="閉じる" class="w-10 h-10 shrink-0 rounded-full border border-kuro-700 text-gray-300 hover:bg-kuro-800"><i class="fa-solid fa-xmark"></i></button>
+          </div>
         </header>
         <section id="publicChatPane" class="flex flex-col flex-1 min-h-0 p-3 sm:p-6">
           <div class="flex items-center justify-between gap-3 shrink-0 mb-3">
@@ -3407,7 +3448,25 @@
         }
         function formatPublicChatMessage(message) {
             const time = new Date(message.created_at).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',hour12:false});
-            return '<article class="rounded-xl border border-kuro-800 bg-kuro-950/70 p-3"><div class="flex items-center justify-between gap-2 mb-1"><b class="text-xs text-violet-200 break-all">'+socialEscape(message.nickname)+'</b><time class="text-[10px] text-gray-500 shrink-0">'+time+'</time></div><p class="text-sm text-gray-100 whitespace-pre-wrap break-words">'+socialEscape(message.content)+'</p></article>';
+            let ownName = '';
+            try { ownName = (localStorage.getItem('kuro-public-chat-nickname') || document.getElementById('publicChatNickname')?.value || '').trim(); } catch (_) {}
+            const mine = !!ownName && ownName === message.nickname;
+            return '<article class="kuro-chat-row '+(mine?'is-mine':'is-other')+'"><div class="kuro-chat-bubble-wrap">'+
+              (mine ? '' : '<b class="kuro-chat-name">'+socialEscape(message.nickname)+'</b>')+
+              '<div class="kuro-chat-bubble">'+socialEscape(message.content)+'</div><time class="kuro-chat-time">'+time+'</time></div></article>';
+        }
+        function setPublicChatTheme(theme) {
+            const modal = document.getElementById('chatModal');
+            const selected = theme === 'light' ? 'light' : 'dark';
+            if (modal) modal.dataset.chatTheme = selected;
+            const picker = document.getElementById('publicChatThemeSelect');
+            if (picker) picker.value = selected;
+            try { localStorage.setItem('kuro-public-chat-theme', selected); } catch (_) {}
+        }
+        function initPublicChatTheme() {
+            let theme = 'dark';
+            try { theme = localStorage.getItem('kuro-public-chat-theme') || 'dark'; } catch (_) {}
+            setPublicChatTheme(theme);
         }
         async function loadPublicChat() {
             const box = document.getElementById('publicChatMessages');
@@ -3455,6 +3514,7 @@
             setActiveBottomTab('chat');
             const nickname = document.getElementById('publicChatNickname');
             try { if (nickname && !nickname.value) nickname.value = localStorage.getItem('kuro-public-chat-nickname') || ''; } catch (_) {}
+            initPublicChatTheme();
             switchChatMode('public');
         }
         async function loadChatConversations(force = false) {
