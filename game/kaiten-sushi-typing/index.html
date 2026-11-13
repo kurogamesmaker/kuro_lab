@@ -386,6 +386,26 @@ body{background:#63c8e4!important;color:#17233a!important;background-image:radia
 @media(max-width:1080px){.layout{grid-template-columns:76px minmax(0,1fr)!important;max-width:900px!important;width:calc(100% - 28px)!important}.center{grid-column:2;grid-row:1}.rail.left{grid-column:1;grid-row:1}.rail.right{grid-column:1/-1;grid-row:3;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))}.rail.right .rail-note{display:none}.game-info{grid-column:2;grid-row:2}.game-strip{grid-row:4;grid-template-columns:repeat(4,minmax(0,1fr))}.rail.left .rail-note{font-size:9px;padding:9px}}
 @media(max-width:620px){.top{height:54px;padding:0 12px}.layout{display:flex!important;flex-direction:column;width:calc(100% - 16px)!important;padding:10px 0 24px!important;gap:9px!important}.center{order:1;width:100%;border-radius:10px}.game-info{order:2;width:100%;border-radius:9px;padding:13px;flex-direction:column;align-items:flex-start;gap:10px}.game-info a{width:100%}.rail.left{order:3;width:100%;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.rail.left .rail-note{display:none}.rail.right{order:4;width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.rail.right .rail-note{display:flex;grid-column:1/-1}.rail-art{aspect-ratio:1.3/1}.rail-copy{padding:7px}.rail-copy strong{font-size:10px}.game-strip{order:5;width:100%;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.game-tile.soon{min-height:85px}.fullscreen-btn{right:8px;bottom:8px;padding:8px 10px;font-size:11px}}
 @media(prefers-reduced-motion:reduce){.rail-card{transition:none}}
+
+/* ゲーム画面の比率と全画面表示を最適化 */
+#game-app{min-width:0;max-width:100%;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain}
+#game-app>header{width:100%;max-width:1100px;padding-left:clamp(10px,2vw,26px);padding-right:clamp(10px,2vw,26px)}
+#game-app>main{width:100%;max-width:1100px;padding:clamp(10px,2vw,26px);min-width:0}
+#game-app #game{min-width:0;width:100%;max-width:100%}
+.center:fullscreen{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;max-width:none;margin:0;border:0;border-radius:0;display:flex;flex-direction:column;overflow:hidden;background:#f7f1e5}
+.center:fullscreen .frame-head{display:none}
+.center:fullscreen #game-app{flex:1 1 auto;width:100%;height:100%;min-height:0;max-height:100%;padding:0 0 58px;overflow-x:hidden;overflow-y:auto}
+.center:fullscreen #game-app>header{max-width:1180px;margin-left:auto;margin-right:auto;padding-top:8px;padding-bottom:8px}
+.center:fullscreen #game-app>main{max-width:1180px;margin-left:auto;margin-right:auto;padding:clamp(10px,2vh,22px) clamp(12px,2vw,30px)}
+.center:fullscreen .fullscreen-btn{position:fixed;right:18px;bottom:14px}
+@media(max-width:620px){
+  #game-app>header{gap:8px}
+  #game-app>header h1{font-size:clamp(16px,5vw,24px);line-height:1.25}
+  #game-app>header .text-3xl{font-size:25px}
+  #game-app>main{padding:10px}
+  .center:fullscreen #game-app{padding-bottom:64px}
+  .center:fullscreen .fullscreen-btn{right:10px;bottom:10px}
+}
 </style>
 </head>
 <body>
@@ -506,7 +526,6 @@ body{background:#63c8e4!important;color:#17233a!important;background-image:radia
           <li>漢字の上の小さい文字が読みです。その読みをローマ字で打ちます。</li>
           <li>🔥 10コンボでFEVER（得点2倍）</li>
           <li>🏗️ 食べたお皿はクレーンが回転レールへ。10皿ごとにボーナス</li>
-          <li>✨ たまに金の皿が出るよ！</li>
         </ul>
       </div>
     </section>
