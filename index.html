@@ -108,6 +108,13 @@
   .kuro-home-services .card h3{font-size:25px}
 }
 
+
+/* Separate the new KUROGames page from the legacy Google Sites destination */
+.kuro-home-actions a[href="/games/"]{background:#172f49!important;border-color:#172f49!important;color:#fff!important}
+.kuro-home-actions a[href="/games/"]:hover{background:#244d70!important}
+.kuro-home-services .card .go{display:inline-flex;align-items:center;justify-content:center;min-height:39px;margin:2px 7px 0 0;padding:8px 15px;border-radius:10px;background:#eaf6fd;color:#086da4;font-size:13px;font-weight:900;text-decoration:none}
+.kuro-home-services .card .go:hover{background:#d8effb}
+
 </style>
 <script type="application/ld+json">
 {
@@ -116,7 +123,8 @@
     {"@type":"WebSite","@id":"https://kurolab.cc.cd/#website","name":"KURO Lab","alternateName":["クロラボ","Kuro Lab","KURO Lab公式サイト"],"url":"https://kurolab.cc.cd/","inLanguage":"ja","publisher":{"@id":"https://kurolab.cc.cd/#organization"}},
     {"@type":"Organization","@id":"https://kurolab.cc.cd/#organization","name":"KURO Lab","alternateName":"クロラボ","url":"https://kurolab.cc.cd/","logo":"https://kurolab.cc.cd/%E3%83%9F%E3%83%8B%E3%83%9E%E3%83%AB%E3%81%AA%E3%83%91%E3%83%B3%E3%83%80%E3%83%95%E3%82%A7%E3%82%A4%E3%82%B9%E3%83%AD%E3%82%B4.png","description":"KURO SNSとKURO GAMESを企画・開発・運営するデジタルプロジェクトブランド。","hasOfferCatalog":{"@type":"OfferCatalog","name":"KURO Lab Services","itemListElement":[
       {"@type":"Offer","itemOffered":{"@type":"SoftwareApplication","name":"KURO SNS","applicationCategory":"SocialNetworkingApplication","url":"https://kurolab.cc.cd/sns/"}},
-      {"@type":"Offer","itemOffered":{"@type":"WebSite","name":"KURO GAMES","url":"https://sites.google.com/view/kurolab1/kurogame-top"}}
+      {"@type":"Offer","itemOffered":{"@type":"WebSite","name":"KURO GAMES","url":"https://kurolab.cc.cd/games/"}},
+      {"@type":"Offer","itemOffered":{"@type":"WebSite","name":"KURO GAMES（Google Sites）","url":"https://sites.google.com/view/kurolab1/kurogame-top"}}
     ]}}
   ]
 }
@@ -141,7 +149,8 @@
     <nav class="kuro-service-links" aria-label="KURO Labのサービス">
       <a href="/" aria-current="page">ホーム</a>
       <a href="/sns/">KURO SNS</a>
-      <a href="https://sites.google.com/view/kurolab1/kurogame-top" target="_blank" rel="noopener noreferrer">KURO GAMES ↗</a>
+      <a href="/games/">KURO GAMES</a>
+      <a href="https://sites.google.com/view/kurolab1/kurogame-top" target="_blank" rel="noopener noreferrer">KURO GAMES（Google Sites）↗</a>
       <a href="/canva/">KURO Canva</a>
     </nav>
   </div>
@@ -162,7 +171,8 @@
       <p>KURO Labは、デジタルサービスやオリジナルゲームを企画・開発するプロジェクトブランドです。人とつながるKURO SNS、遊びを届けるKURO GAMESを展開しています。</p>
       <div class="kuro-home-actions">
         <a class="primary" href="/sns/">KURO SNSを開く</a>
-        <a href="https://sites.google.com/view/kurolab1/kurogame-top" target="_blank" rel="noopener noreferrer">KURO GAMESを見る ↗</a>
+        <a href="/games/">KURO GAMESを開く →</a>
+        <a href="https://sites.google.com/view/kurolab1/kurogame-top" target="_blank" rel="noopener noreferrer">KURO GAMES（Google Sites）↗</a>
         <a href="/about/">KURO Labについて</a>
       </div>
     </div>
@@ -184,15 +194,16 @@
           <span class="go">KURO SNSを開く →</span>
         </span>
       </a>
-      <a class="card" href="https://sites.google.com/view/kurolab1/kurogame-top" target="_blank" rel="noopener noreferrer">
+      <div class="card">
         <img src="/%E3%83%9F%E3%83%8B%E3%83%9E%E3%83%AB%E3%81%AA%E3%83%91%E3%83%B3%E3%83%80%E3%83%95%E3%82%A7%E3%82%A4%E3%82%B9%E3%83%AD%E3%82%B4.png?v=20261113b" width="104" height="104" alt="KURO GAMESのアイコン" loading="lazy">
         <span class="card-copy">
           <span class="tag">GAMES &amp; PLAY</span>
           <h3>KURO GAMES</h3>
           <p>オリジナルゲームが集まるゲームサービス。さまざまなゲームを楽しめます。</p>
-          <span class="go">KURO GAMESを見る ↗</span>
+          <span class="go">KURO GAMES</span>
+          <a class="go" href="https://sites.google.com/view/kurolab1/kurogame-top" target="_blank" rel="noopener noreferrer">Google Sites版を見る ↗</a>
         </span>
-      </a>
+      </div>
     </div>
   </section>
   <section class="kuro-home-about">
@@ -220,7 +231,7 @@
     </div>
     <div class="kuro-story-points">
       <article><span class="story-symbol">S</span><h3>つながる KURO SNS</h3><p>投稿やチャットを通じて、話題や好きなことを共有するための場所です。</p><a href="/sns/">KURO SNSへ →</a></article>
-      <article><span class="story-symbol">G</span><h3>遊ぶ KURO GAMES</h3><p>オリジナルゲームを楽しみ、新しい遊びに出会うための場所です。</p><a href="https://sites.google.com/view/kurolab1/kurogame-top" target="_blank" rel="noopener noreferrer">KURO GAMESへ ↗</a></article>
+      <article><span class="story-symbol">G</span><h3>遊ぶ KURO GAMES</h3><p>オリジナルゲームを楽しみ、新しい遊びに出会うための場所です。</p><a href="/games/">KURO GAMESへ →</a><a href="https://sites.google.com/view/kurolab1/kurogame-top" target="_blank" rel="noopener noreferrer">KURO GAMES（Google Sites）↗</a></article>
     </div>
   </section>
   <section class="kuro-home-values" aria-labelledby="values-title">
