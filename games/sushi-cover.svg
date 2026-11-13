@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 520" role="img" aria-labelledby="title desc">
+<title id="title">Sushi typing game cover</title><desc id="desc">A cheerful salmon nigiri sushi on a warm colored plate.</desc>
+<defs>
+ <radialGradient id="bg" cx="48%" cy="32%" r="78%"><stop offset="0" stop-color="#fff7d5"/><stop offset=".58" stop-color="#ffbd82"/><stop offset="1" stop-color="#e66d64"/></radialGradient>
+ <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff" /><stop offset=".55" stop-color="#f8f4e8"/><stop offset="1" stop-color="#d6d9df"/></linearGradient>
+ <linearGradient id="rice" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fffefa"/><stop offset=".7" stop-color="#fff2d9"/><stop offset="1" stop-color="#ddcbb4"/></linearGradient>
+ <linearGradient id="salmon" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffb28d"/><stop offset=".48" stop-color="#f47b61"/><stop offset="1" stop-color="#cf4e4c"/></linearGradient>
+ <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff" stop-opacity=".8"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feGaussianBlur stdDeviation="15"/></filter>
+ <pattern id="grain" width="32" height="24" patternUnits="userSpaceOnUse"><ellipse cx="7" cy="8" rx="3" ry="1.8" fill="#d9cdbd" opacity=".48"/><ellipse cx="23" cy="17" rx="3.5" ry="2" fill="#eadcc9" opacity=".6"/></pattern>
+</defs>
+<rect width="720" height="520" rx="34" fill="url(#bg)"/>
+<g fill="#fff" opacity=".8"><path d="M112 102l7 18 18 7-18 7-7 18-7-18-18-7 18-7z"/><path d="M578 94l5 13 13 5-13 5-5 13-5-13-13-5 13-5z"/><circle cx="600" cy="383" r="7"/><circle cx="134" cy="367" r="5"/></g>
+<ellipse cx="360" cy="404" rx="235" ry="46" fill="#9a4a3e" opacity=".25" filter="url(#shadow)"/>
+<ellipse cx="360" cy="348" rx="246" ry="105" fill="#b94f48" opacity=".35"/>
+<ellipse cx="360" cy="326" rx="248" ry="106" fill="url(#plate)" stroke="#fff" stroke-width="12"/>
+<ellipse cx="360" cy="321" rx="220" ry="82" fill="#fff" stroke="#e5e0d5" stroke-width="5"/>
+<ellipse cx="360" cy="321" rx="203" ry="68" fill="none" stroke="#f2b8a0" stroke-width="4" opacity=".8"/>
+<g transform="translate(0 -4)">
+ <path d="M208 281c11-48 69-81 153-80 82 1 142 33 153 81l-20 77c-8 34-60 58-134 58s-126-24-134-58z" fill="url(#rice)" stroke="#dfd2c2" stroke-width="5"/>
+ <path d="M208 281c11-48 69-81 153-80 82 1 142 33 153 81l-20 77c-8 34-60 58-134 58s-126-24-134-58z" fill="url(#grain)" opacity=".72"/>
+ <path d="M199 265c11-56 76-96 164-96 84 0 149 38 160 92 7 31-26 56-69 63-30 5-55-4-90-4-36 0-66 10-99 5-42-7-73-29-66-60z" fill="url(#salmon)" stroke="#c94d4e" stroke-width="6"/>
+ <path d="M229 249c42-45 90-60 143-59 64 1 113 20 144 61" fill="none" stroke="#ffd0ae" stroke-width="13" stroke-linecap="round" opacity=".85"/>
+ <path d="M224 272c47-28 101-39 155-34 53 4 102 21 136 41" fill="none" stroke="#e85d55" stroke-width="9" stroke-linecap="round" opacity=".75"/>
+ <path d="M245 294c50-18 95-23 135-19 46 4 87 16 119 32" fill="none" stroke="#ffc09e" stroke-width="11" stroke-linecap="round" opacity=".8"/>
+ <path d="M230 233c38-44 90-64 147-63 54 0 101 17 133 50" fill="none" stroke="url(#shine)" stroke-width="14" stroke-linecap="round"/>
+</g>
+<g fill="#fff" opacity=".85"><circle cx="268" cy="385" r="4"/><circle cx="293" cy="396" r="3"/><circle cx="431" cy="392" r="4"/><circle cx="458" cy="381" r="3"/></g>
+<path d="M170 153c20-18 43-22 64-13" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".6"/>
+</svg>
