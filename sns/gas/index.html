@@ -786,6 +786,53 @@
   #chatModal[data-chat-theme="light"] header button{border-color:#d1d5db!important;color:#374151!important}
   @media(max-width:640px){#chatModal .kuro-chat-bubble-wrap{max-width:88%}#chatModal #publicChatMessages{padding:10px 8px!important}}
   </style>
+
+<style id="kuro-chat-theme-complete">
+  #chatModal{color-scheme:dark}
+  #chatModal[data-chat-theme="dark"]{color-scheme:dark!important;background:#0b0b0e!important;color:#f5f5f7!important}
+  #chatModal[data-chat-theme="dark"]>section,
+  #chatModal[data-chat-theme="dark"] header,
+  #chatModal[data-chat-theme="dark"] #publicChatPane{background:#111116!important;color:#f5f5f7!important}
+  #chatModal[data-chat-theme="dark"] #publicChatMessages{background:#191920!important;color:#f5f5f7!important;border-color:#30303a!important}
+  #chatModal[data-chat-theme="dark"] #publicChatForm{background:#111116!important;border-color:#383842!important}
+  #chatModal[data-chat-theme="dark"] #publicChatForm p,
+  #chatModal[data-chat-theme="dark"] #publicChatPane p{color:#a1a1aa!important}
+  #chatModal[data-chat-theme="dark"] #publicChatNickname,
+  #chatModal[data-chat-theme="dark"] #publicChatInput{background:#202027!important;color:#f7f7fa!important;border-color:#41414b!important}
+  #chatModal[data-chat-theme="dark"] #publicChatNickname::placeholder,
+  #chatModal[data-chat-theme="dark"] #publicChatInput::placeholder{color:#858590!important}
+  #chatModal[data-chat-theme="dark"] #publicChatThemeSelect{background:#202027!important;color:#f7f7fa!important;border-color:#555!important}
+  #chatModal[data-chat-theme="dark"] header button,
+  #chatModal[data-chat-theme="dark"] #publicChatPane button:not(#publicChatSendButton){background:#202027!important;color:#e5e7eb!important;border-color:#41414b!important}
+  #chatModal[data-chat-theme="dark"] .kuro-chat-bubble{background:#303039!important;color:#fff!important;border-color:#41414b!important}
+  #chatModal[data-chat-theme="dark"] .is-mine .kuro-chat-bubble{background:#a7f36b!important;color:#17220f!important;border-color:transparent!important}
+  #chatModal[data-chat-theme="dark"] .kuro-chat-name,
+  #chatModal[data-chat-theme="dark"] .kuro-chat-time{color:#a1a1aa!important}
+  #chatModal[data-chat-theme="light"]{color-scheme:light!important;background:#f4f5f8!important;color:#20212a!important}
+  #chatModal[data-chat-theme="light"]>section,
+  #chatModal[data-chat-theme="light"] header,
+  #chatModal[data-chat-theme="light"] #publicChatPane,
+  #chatModal[data-chat-theme="light"] #publicChatForm{background:#fff!important;color:#20212a!important}
+  #chatModal[data-chat-theme="light"] header{border-color:#e5e7eb!important}
+  #chatModal[data-chat-theme="light"] #publicChatMessages{background:#f4f5f8!important;color:#20212a!important;border-color:#e5e7eb!important}
+  #chatModal[data-chat-theme="light"] #publicChatPane p,
+  #chatModal[data-chat-theme="light"] #publicChatForm p{color:#6b7280!important}
+  #chatModal[data-chat-theme="light"] #publicChatNickname,
+  #chatModal[data-chat-theme="light"] #publicChatInput{background:#fff!important;color:#20212a!important;border-color:#d1d5db!important}
+  #chatModal[data-chat-theme="light"] #publicChatNickname::placeholder,
+  #chatModal[data-chat-theme="light"] #publicChatInput::placeholder{color:#9ca3af!important}
+  #chatModal[data-chat-theme="light"] #publicChatThemeSelect{background:#fff!important;color:#20212a!important;border-color:#d1d5db!important}
+  #chatModal[data-chat-theme="light"] header button,
+  #chatModal[data-chat-theme="light"] #publicChatPane button:not(#publicChatSendButton){background:#f9fafb!important;color:#374151!important;border-color:#d1d5db!important}
+  #chatModal[data-chat-theme="light"] #publicChatSendButton{background:#20212a!important;color:#fff!important}
+  #chatModal[data-chat-theme="light"] .kuro-chat-bubble{background:#fff!important;color:#20212a!important;border:1px solid #e5e7eb!important;box-shadow:0 1px 2px #0001}
+  #chatModal[data-chat-theme="light"] .is-mine .kuro-chat-bubble{background:#d9f7c8!important;color:#20321a!important;border:0!important}
+  #chatModal[data-chat-theme="light"] .kuro-chat-name,
+  #chatModal[data-chat-theme="light"] .kuro-chat-time{color:#6b7280!important}
+  #chatModal[data-chat-theme="light"] #publicChatThemeSelect option{background:#fff!important;color:#20212a!important}
+  @media(prefers-reduced-motion:no-preference){#chatModal[data-chat-theme] *{transition:background-color .16s ease,color .16s ease,border-color .16s ease}}
+</style>
+
 </head>
 
 <body class="kuro-page kuro-theme-dark">
