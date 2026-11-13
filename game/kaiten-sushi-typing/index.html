@@ -2166,24 +2166,45 @@ $("score").style.display = $("combo").style.display = "inline-block";
 updateBank();
 chooseMode("normal");
 
-const fullscreenButton = document.getElementById("fullscreenButton");
-const gameFrame = document.querySelector(".center");
-if(fullscreenButton && gameFrame){
-  fullscreenButton.addEventListener("click", async ()=>{
+</script>
+<script>
+/* 全画面ボタンはゲーム本体だけを対象にする */
+(()=>{
+  const button=document.getElementById("fullscreenButton");
+  const target=document.querySelector(".center");
+  if(!button || !target) return;
+  const refresh=()=>{
+    const active=document.fullscreenElement || document.webkitFullscreenElement;
+    button.textContent=active ? "⤢ 全画面を終了" : "⛶ 全画面";
+    button.setAttribute("aria-label",active ? "全画面を終了" : "全画面表示");
+  };
+  button.addEventListener("click",async(event)=>{
+    event.preventDefault();
+    event.stopPropagation();
     try{
-      if(document.fullscreenElement){
-        await document.exitFullscreen();
-      }else if(gameFrame.requestFullscreen){
-        await gameFrame.requestFullscreen();
+      const active=document.fullscreenElement || document.webkitFullscreenElement;
+      if(active){
+        if(document.exitFullscreen) await document.exitFullscreen();
+        else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+        else throw new Error("fullscreen exit unavailable");
+        return;
+      }
+      if(target.requestFullscreen) await target.requestFullscreen({navigationUI:"hide"});
+      else if(target.webkitRequestFullscreen) target.webkitRequestFullscreen();
+      else {
+        const game=document.getElementById("game-app");
+        if(game && game.requestFullscreen) await game.requestFullscreen();
+        else if(game && game.webkitRequestFullscreen) game.webkitRequestFullscreen();
+        else throw new Error("fullscreen unavailable");
       }
     }catch(error){
-      fullscreenButton.textContent = "全画面にできません";
-      setTimeout(()=>{fullscreenButton.textContent="⛶ 全画面";},1800);
+      button.textContent="全画面にできません";
+      setTimeout(refresh,2200);
     }
   });
-  document.addEventListener("fullscreenchange",()=>{
-    fullscreenButton.textContent=document.fullscreenElement ? "⤢ 全画面を終了" : "⛶ 全画面";
-  });
-}
+  document.addEventListener("fullscreenchange",refresh);
+  document.addEventListener("webkitfullscreenchange",refresh);
+  refresh();
+})();
 </script>
 </body></html>
