@@ -1366,7 +1366,7 @@
                 const options = {
                     shouldCreateUser: currentAuthMode === 'signup',
                     // Keep Supabase email confirmation links on the live Vercel site, not the retired GitHub Pages URL.
-                    emailRedirectTo: 'https://kurolab.cc.cd/',
+                    emailRedirectTo: 'https://kurolab.cc.cd/sns/',
                     data: currentAuthMode === 'signup' ? { name, handle, kuro_password_configured: false } : undefined
                 };
                 if (currentAuthMode === 'signup') {
@@ -1571,7 +1571,7 @@
                         options: {
                             data: { name, handle, kuro_password_configured: true },
                             // Send signup confirmation links back to the current production site.
-                            emailRedirectTo: 'https://kurolab.cc.cd/'
+                            emailRedirectTo: 'https://kurolab.cc.cd/sns/'
                         }
                     });
                 }
