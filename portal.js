@@ -186,30 +186,31 @@ function bindDashboard(){
  }
  function applyResize(x,y){
   if(!resize)return;
-  var delta=((x-resize.startX)+(y-resize.startY))*0.5,step=Math.max(36,resize.gridWidth/12*0.95),idx=Math.max(0,Math.min(3,resize.startIndex+Math.round(delta/step)));
+  var dx=x-resize.startX,dy=y-resize.startY,delta=Math.abs(dx)>=Math.abs(dy)?dx:dy;
+  var step=Math.max(22,resize.gridWidth/24),idx=Math.max(0,Math.min(3,resize.startIndex+Math.round(delta/step)));
   var size=["small","half","wide","full"][idx];resize.size=size;resize.item.dataset.size=size;
  }
  grid.addEventListener("pointerdown",function(e){
   if(!st.dashboardEditing)return;
   var item=e.target.closest("[data-widget-id]");
-  if(!item||!grid.contains(item))return;
-  if(e.target.closest("button,a,input,select,textarea,[contenteditable=true]"))return;
+  if(!item||!grid.contains(item)||e.target.closest("[data-widget-remove]"))return;
   e.preventDefault();e.stopPropagation();
   if(st.dashboardResizeMode){
    var sizes=["small","half","wide","full"],current=item.dataset.size||"half",rect=grid.getBoundingClientRect();
-   resize={id:item.dataset.widgetId,item:item,startX:e.clientX,startY:e.clientY,startIndex:Math.max(0,sizes.indexOf(current)),size:current,gridWidth:rect.width};
+   resize={id:item.dataset.widgetId,item:item,startX:e.clientX,startY:e.clientY,startIndex:Math.max(0,sizes.indexOf(current)),size:current,gridWidth:rect.width,pointerId:e.pointerId};
    item.classList.add("resizing");
   }else{
-   drag={id:item.dataset.widgetId};item.classList.add("drag-active");
+   if(e.target.closest("button,a,input,select,textarea,[contenteditable=true]"))return;
+   drag={id:item.dataset.widgetId,pointerId:e.pointerId};item.classList.add("drag-active");
   }
   try{grid.setPointerCapture(e.pointerId);}catch(err){}
  });
- grid.addEventListener("pointermove",function(e){
-  if(drag){e.preventDefault();moveBeforePoint(e.clientX,e.clientY);}
-  else if(resize){e.preventDefault();applyResize(e.clientX,e.clientY);}
- });
- grid.addEventListener("pointerup",finishPointer);
- grid.addEventListener("pointercancel",finishPointer);
+ document.addEventListener("pointermove",function(e){
+  if(drag&&e.pointerId===drag.pointerId){e.preventDefault();moveBeforePoint(e.clientX,e.clientY);}
+  else if(resize&&e.pointerId===resize.pointerId){e.preventDefault();applyResize(e.clientX,e.clientY);}
+ },{passive:false});
+ document.addEventListener("pointerup",function(e){if((drag&&e.pointerId===drag.pointerId)||(resize&&e.pointerId===resize.pointerId))finishPointer();});
+ document.addEventListener("pointercancel",function(e){if((drag&&e.pointerId===drag.pointerId)||(resize&&e.pointerId===resize.pointerId))finishPointer();});
  if($("#portal-clock-time")){function tick(){var n=new Date(),t=$("#portal-clock-time"),d=$("#portal-clock-date");if(t)t.textContent=new Intl.DateTimeFormat("ja-JP",{hour:"2-digit",minute:"2-digit"}).format(n);if(d)d.textContent=new Intl.DateTimeFormat("ja-JP",{year:"numeric",month:"long",day:"numeric",weekday:"long"}).format(n);}tick();if(!window.kuroClockTimer)window.kuroClockTimer=setInterval(tick,15000);}
 }
 function updateNetworkStatus(){var e=$("#portal-network-status");if(!e)return;var off=!navigator.onLine,busy=(window.__kuroPendingRequests||0)>0;e.dataset.state=off?"offline":busy?"busy":"online";e.innerHTML='<i></i><span>'+(off?"オフライン":busy?"通信中":"オンライン")+'</span>';e.title=off?"ネットワーク未接続":busy?"データを読み込み中":"通信できます";}
