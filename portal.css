@@ -158,3 +158,15 @@ body[data-motion=reduced] .portal-widget.is-editing{animation:none}
 .portal-widget.is-editing .portal-widget-head{cursor:grab}
 .portal-widget.is-editing .portal-widget-resize-handle{display:block}
 @media(max-width:700px){.portal-widget-resize-handle{width:48px!important;height:48px!important}}
+
+
+/* Whole-card pointer resizing */
+.portal-dashboard-grid.is-resize-mode .portal-widget.is-editing{cursor:nwse-resize!important}
+.portal-dashboard-grid.is-resize-mode .portal-widget.is-editing *{cursor:nwse-resize!important}
+.portal-widget.is-editing .portal-widget-body{pointer-events:none}
+.portal-widget.is-editing .portal-widget-tools{display:none!important}
+.portal-widget.is-editing .portal-widget-resize-handle{display:none!important}
+.portal-widget.resizing{cursor:nwse-resize!important}
+.portal-widget.is-editing .portal-widget-head{cursor:inherit}
+.portal-dashboard-toolbar .portal-dashboard-actions #portal-dashboard-mode{min-width:105px}
+@media(max-width:700px){.portal-dashboard-toolbar .portal-dashboard-actions #portal-dashboard-mode{min-width:0}}
