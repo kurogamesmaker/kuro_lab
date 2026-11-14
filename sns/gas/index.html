@@ -10,7 +10,836 @@
     <meta name="description" content="KUROは、短い投稿やハッシュタグで話題を共有し、気になる人をフォローして交流できるSNSです。いいねや返信、チャットでつながれます。">
         <meta name="robots" content="index,follow">
 <link rel="canonical" href="https://kurolab.cc.cd/sns/gas/">
-  <!-- Google Analytics 4 -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "name": "KURO Lab",
+          "alternateName": ["Kuro Lab", "KURO Lab公式サイト"],
+          "url": "https://kurolab.cc.cd/",
+          "description": "KUROは、短い投稿やハッシュタグで話題を共有し、気になる人をフォローして交流できるSNSです。いいねや返信、チャットでつながれます。",
+          "inLanguage": "ja"
+        },
+        {
+          "@type": "SoftwareApplication",
+          "name": "KURO SNS",
+          "applicationCategory": "SocialNetworkingApplication",
+          "operatingSystem": "Web browser",
+          "url": "https://kurolab.cc.cd/sns/gas/",
+          "description": "短い投稿、ハッシュタグ検索、プロフィール、フォロー、いいね、返信、個別チャット、グループチャットを提供するソーシャルネットワークサービス。",
+          "creator": {
+            "@type": "Person",
+            "name": "kuro",
+            "url": "https://kurolab.cc.cd/developer/"
+          }
+        }
+      ]
+    }
+    </script>
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="KURO Lab">
+    <meta property="og:title" content="KURO SNS 新バージョン｜GAS中継版｜KURO Lab公式">
+    <meta property="og:description" content="短い投稿やハッシュタグで話題を共有。フォロー、いいね、返信、チャットで人とつながるSNSです。">
+    <meta property="og:url" content="https://kurolab.cc.cd/sns/gas/">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        kuro: {
+                            950: '#050505',
+                            900: '#0a0a0a',
+                            800: '#121212',
+                            700: '#1f1f1f',
+                            600: '#2d2d2d',
+                            500: '#525252',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .glow-effect {
+            box-shadow: 0 0 40px -10px rgba(255, 255, 255, 0.05);
+        }
+
+        .card-glow:hover {
+            box-shadow: 0 0 30px -5px rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        body { padding-bottom: calc(5.1rem + env(safe-area-inset-bottom)); }
+        .kuro-bottom-tab { color: #777; transition: color .15s ease, background .15s ease; }
+        .kuro-bottom-tab[aria-current=page] { color: #fff; }
+        .kuro-bottom-tab[aria-current=page] .kuro-tab-icon { transform: translateY(-1px); }
+        /* Subtle, reduced-motion-aware KURO interactions */
+        @keyframes kuroViewEnter {
+            from { opacity: 0; transform: translateY(7px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes kuroCardEnter {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes kuroLikePop {
+            0% { transform: scale(1); }
+            32% { transform: scale(1.18); }
+            62% { transform: scale(.96); }
+            100% { transform: scale(1); }
+        }
+        @keyframes kuroModalEnter {
+            from { opacity: 0; transform: translateY(8px) scale(.99); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .kuro-view-enter { animation: kuroViewEnter .3s cubic-bezier(.22,1,.36,1) both; }
+        #postFeed [data-post-card] { animation: kuroCardEnter .32s cubic-bezier(.22,1,.36,1) both; }
+        #postFeed [data-post-card]:nth-child(2) { animation-delay: 25ms; }
+        #postFeed [data-post-card]:nth-child(3) { animation-delay: 45ms; }
+        #postFeed [data-post-card]:nth-child(n+4) { animation-delay: 60ms; }
+        #postFeed [data-like-post-id] i { display: inline-block; }
+        #postFeed [data-like-post-id].kuro-like-pop i { animation: kuroLikePop .2s cubic-bezier(.2,.8,.2,1); }
+        #chatModal:not(.hidden) > section { animation: kuroModalEnter .3s cubic-bezier(.22,1,.36,1) both; }
+        #chatModal #chatConversationList > [data-chat-row] > button:not([aria-label]) { transition: background-color .18s ease, border-color .18s ease, transform .18s ease; }
+        #chatModal #chatConversationList > [data-chat-row] > button:not([aria-label]):active { transform: scale(.99); }
+        #kuroBottomNav [data-tab] { transition: color .18s ease, background-color .18s ease, transform .18s ease; }
+        #kuroBottomNav [data-tab]:active { transform: scale(.96); }
+        button, a { -webkit-tap-highlight-color: transparent; }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+        }
+        .kuro-tab-icon { transition: transform .15s ease; }
+        #kuroBottomNav { padding-bottom: max(.45rem, env(safe-area-inset-bottom)); }
+
+        /* Comfortable Instagram-like touch targets on phones */
+        @media (max-width: 640px) {
+            /* Refined, understated chat header controls */
+            #chatModal #chatConversationPanel > div:first-child button[aria-label="チャット一覧に戻る"] {
+                box-sizing: border-box !important;
+                width: 44px !important; height: 44px !important;
+                min-width: 44px !important; min-height: 44px !important;
+                display: inline-flex !important; align-items: center !important; justify-content: center !important;
+                padding: 0 !important; flex: 0 0 44px !important;
+                border-radius: 9999px; background: transparent !important;
+                transition: background-color .15s ease, color .15s ease;
+            }
+            #chatModal #chatConversationPanel > div:first-child button[aria-label="チャット一覧に戻る"] i {
+                font-size: 1.125rem !important; line-height: 1 !important;
+            }
+            #chatModal #chatConversationPanel > div:first-child button[aria-label="チャット一覧に戻る"]:active {
+                background: #27272a !important;
+            }
+        }
+        @media (max-width: 640px) {
+            #kuroBottomNav [data-tab] { min-height: 56px; padding-top: .65rem; padding-bottom: .65rem; }
+            #kuroBottomNav .kuro-tab-icon { font-size: 1.35rem; }
+            #kuroBottomNav [data-tab] span { font-size: 11px; }
+            #chatModal button, #notificationsModal button, #followListModal button,
+            #publicProfileModal button, #userProfileArea button,
+            #homeFeedView button, #myProfileView button { min-height: 44px; }
+            #chatModal button { padding-top: .65rem; padding-bottom: .65rem; }
+            #chatModal #chatSendButton { min-width: 76px; min-height: 48px; font-size: 1rem; }
+            #chatModal #chatMessageInput { min-height: 48px; font-size: 1rem; }
+            #homeFeedView button[data-like-post-id], #homeFeedView button[data-reply-post-id] {
+                min-height: 44px; padding: .6rem .45rem; font-size: .95rem;
+            }
+            #homeFeedView button[data-follow-user-id] { min-height: 40px; padding: .45rem .8rem; }
+            #chatModal #chatConversationList > [data-chat-row] > button:not([aria-label]) { min-height: 48px; }
+            #chatModal #chatUserHandle { min-height: 48px; font-size: 1rem; }
+        }
+        .kuro-pull-indicator { display:none; align-items:center; justify-content:center; gap:.5rem; color:#9ca3af; font-size:.75rem; overflow:hidden; height:0; transition:height .15s ease; }
+        .kuro-pull-indicator.is-loading { height:44px; min-height:44px; }
+        .kuro-pull-indicator.is-loading i { animation:kuro-pull-spin .75s linear infinite; }
+        #postPullIndicator { margin-bottom:.5rem; }
+        #chatPullIndicator { width:100%; flex:0 0 auto; }
+        .kuro-pull-indicator.is-visible { display:flex; }
+        .kuro-pull-indicator i { transition:transform .15s ease; }
+        .kuro-pull-indicator.is-loading i { animation:kuro-pull-spin .8s linear infinite; }
+        @keyframes kuro-pull-spin { to { transform:rotate(360deg); } }
+
+        /* Keep the chat composer visible while the iOS keyboard is open. */
+        @media (max-width: 640px) {
+            body.kuro-keyboard-open #kuroBottomNav {
+                display: none !important;
+                visibility: hidden !important;
+                pointer-events: none !important;
+            }
+            #kuroBottomNav { transition: none !important; }
+            /* Keep the chat as an opaque, full-screen layer above the feed and post composer. */
+            body.kuro-keyboard-open #chatModal {
+                position: fixed !important;
+                top: var(--kuro-visual-top, 0px) !important;
+                right: 0 !important;
+                left: 0 !important;
+                bottom: auto !important;
+                z-index: 9999 !important;
+                padding: 0 !important;
+                height: var(--kuro-visual-height, 100dvh) !important;
+                max-height: var(--kuro-visual-height, 100dvh) !important;
+                background: #0b0b0e !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+            }
+            body.kuro-keyboard-open #chatModal > section {
+                display: flex !important;
+                flex-direction: column !important;
+                height: var(--kuro-visual-height, 100dvh) !important;
+                min-height: 0 !important;
+                max-height: var(--kuro-visual-height, 100dvh) !important;
+                overflow: hidden !important;
+            }
+            body.kuro-keyboard-open #chatModal #chatLayout {
+                display: flex !important;
+                flex: 1 1 auto !important;
+                flex-direction: column !important;
+                height: 0 !important;
+                min-height: 0 !important;
+                overflow: hidden !important;
+            }
+            body.kuro-keyboard-open #chatModal #chatConversationPanel {
+                display: flex !important;
+                flex: 1 1 auto !important;
+                height: 0 !important;
+                min-height: 0 !important;
+                padding: .75rem !important;
+                overflow: hidden !important;
+            }
+            body.kuro-keyboard-open #chatModal #chatMessages {
+                flex: 1 1 auto !important;
+                min-height: 0 !important;
+                height: 0 !important;
+                overflow-y: auto !important;
+                overscroll-behavior: contain;
+            }
+            body.kuro-keyboard-open #chatModal #chatConversationPanel > form {
+                flex: 0 0 auto !important;
+                margin-top: 0 !important;
+                padding-bottom: max(.5rem, env(safe-area-inset-bottom)) !important;
+            }
+            body.kuro-keyboard-open #chatModal #chatMessageInput {
+                scroll-margin-bottom: 0;
+                transform: none !important;
+            }
+        }
+
+        @media (max-width: 640px) {
+            #chatModal { padding: 0 !important; align-items: stretch !important; bottom: calc(64px + env(safe-area-inset-bottom)) !important; }
+            #chatModal > section { width: 100%; max-width: none; height: 100%; max-height: none; border-radius: 0; }
+            #chatModal #chatLayout { display: block; position: relative; }
+            #chatModal #chatListPanel { height: 100%; overflow-y: auto; }
+            #chatModal #chatConversationPanel { display: none; height: 100%; }
+            #chatModal.mobile-chat-open #chatListPanel { display: none; }
+            #chatModal.mobile-chat-open #chatConversationPanel { display: flex; }
+            #chatModal #chatConversationList > [data-chat-row] > button:not([aria-label]) { padding: .9rem .65rem; }
+        }
+
+        @media (max-width: 640px) {
+            body {
+                overflow-wrap: anywhere;
+            }
+
+            #userProfileArea button {
+                max-width: 42vw;
+                white-space: nowrap;
+            }
+
+            #userProfileArea button span {
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            #toast {
+                left: 1rem;
+                right: 1rem;
+                bottom: 1rem;
+                justify-content: center;
+            }
+
+            #submitModal,
+            #authModal,
+            #profileModal {
+                padding: .65rem;
+                align-items: center;
+            }
+
+            #submitForm {
+                padding: 1rem;
+            }
+
+            footer .flex.space-x-6 {
+                gap: 1rem;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+    </style>
+    <style id="kuro-visual-refresh">
+        :root {
+            color-scheme: dark;
+            --kuro-bg: #0b0b0e;
+            --kuro-panel: #131318;
+            --kuro-panel-raised: #19191f;
+            --kuro-line: rgba(255,255,255,.085);
+            --kuro-muted: #a1a1aa;
+            --kuro-accent: #c4b5fd;
+            --kuro-accent-strong: #a78bfa;
+        }
+        html { scroll-behavior: smooth; background: var(--kuro-bg); }
+        body {
+            background:
+                radial-gradient(ellipse at 50% -18rem, rgba(139,92,246,.12), transparent 38rem),
+                var(--kuro-bg) !important;
+            color: #f4f4f5;
+            letter-spacing: -.01em;
+        }
+        ::selection { background: rgba(196,181,253,.35); color: #fff; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #353540; border-radius: 999px; }
+        :where(button, a, input, textarea, select, [role="button"]):focus-visible {
+            outline: 2px solid var(--kuro-accent) !important;
+            outline-offset: 3px;
+        }
+        header.sticky {
+            background: rgba(11,11,14,.84) !important;
+            border-color: var(--kuro-line) !important;
+            box-shadow: 0 8px 30px rgba(0,0,0,.12);
+        }
+        header.sticky > div { min-height: 4.75rem; }
+        header a .w-9.h-9 {
+            border-radius: 13px !important;
+            background: linear-gradient(145deg,#fff,#d4d4d8) !important;
+            box-shadow: 0 4px 18px rgba(255,255,255,.08);
+        }
+        header a span { letter-spacing: -.075em; }
+        header button, #socialHeaderActions button {
+            border-radius: 13px !important;
+            transition: transform .18s ease, background .18s ease, border-color .18s ease;
+        }
+        header button:active, #socialHeaderActions button:active { transform: scale(.96); }
+        header button[onclick="openModal()"] {
+            background: #f4f4f5 !important;
+            color: #18181b !important;
+            box-shadow: 0 4px 18px rgba(255,255,255,.07);
+            padding-left: 1.1rem !important;
+            padding-right: 1.1rem !important;
+        }
+        #socialHeaderActions button {
+            border-color: var(--kuro-line) !important;
+            background: rgba(255,255,255,.035) !important;
+            color: #d4d4d8;
+        }
+        #homeFeedView, #myProfileView, #publicProfileModal, #followListModal { isolation: isolate; }
+        #homeFeedView { padding-top: 2rem !important; }
+        #postSearchInput {
+            min-height: 52px;
+            background: rgba(255,255,255,.045) !important;
+            border: 1px solid var(--kuro-line) !important;
+            border-radius: 17px !important;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.02);
+        }
+        #postSearchInput:focus {
+            border-color: rgba(196,181,253,.65) !important;
+            box-shadow: 0 0 0 4px rgba(167,139,250,.09);
+        }
+        #homeFeedView h2 { color: #f4f4f5 !important; letter-spacing: -.035em; }
+        #homeFeedView h2 i { color: var(--kuro-accent); }
+        #homeFeedView button[onclick="loadPostsFromSupabase()"] {
+            border: 1px solid var(--kuro-line);
+            border-radius: 999px;
+            padding: .5rem .8rem;
+            background: rgba(255,255,255,.035);
+        }
+        #postFeed { gap: 14px; }
+        #postFeed [data-post-card] {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.018)) !important;
+            border: 1px solid var(--kuro-line) !important;
+            border-radius: 21px !important;
+            padding: 1.15rem !important;
+            box-shadow: 0 8px 28px rgba(0,0,0,.13);
+            transition: border-color .2s ease, transform .2s ease, background .2s ease, box-shadow .2s ease;
+        }
+        #postFeed [data-post-card]:hover {
+            border-color: rgba(196,181,253,.22) !important;
+            box-shadow: 0 12px 34px rgba(0,0,0,.2);
+        }
+        #postFeed [data-post-card] p { line-height: 1.75; overflow-wrap: anywhere; }
+        #postFeed [data-post-card] button { transition: color .16s ease, background .16s ease, transform .16s ease; }
+        #postFeed [data-post-card] button:active { transform: scale(.96); }
+        #postFeed [data-like-post-id], #postFeed [data-reply-post-id] {
+            border-radius: 10px;
+            padding: .45rem .6rem;
+        }
+        #postFeed [data-like-post-id]:hover, #postFeed [data-reply-post-id]:hover { background: rgba(255,255,255,.06); }
+        #postEmptyState {
+            margin-top: 1rem;
+            padding: 3rem 1.25rem;
+            border: 1px dashed rgba(255,255,255,.13);
+            border-radius: 22px;
+            background: rgba(255,255,255,.018);
+        }
+        #myProfileView > section { border-color: var(--kuro-line) !important; }
+        #myProfileView > section:first-of-type > div:first-child > div:first-child {
+            background: linear-gradient(135deg,rgba(196,181,253,.45),rgba(255,255,255,.05)) !important;
+            border-color: rgba(196,181,253,.35) !important;
+        }
+        #myProfileView button, #userProfileArea button {
+            border-radius: 12px;
+        }
+        #kuroBottomNav {
+            background: rgba(13,13,17,.91) !important;
+            border-color: var(--kuro-line) !important;
+            box-shadow: 0 -12px 35px rgba(0,0,0,.2);
+            backdrop-filter: blur(24px) saturate(140%);
+            -webkit-backdrop-filter: blur(24px) saturate(140%);
+        }
+        #kuroBottomNav > div { max-width: 34rem; padding-top: .45rem; }
+        #kuroBottomNav [data-tab] {
+            position: relative;
+            border-radius: 15px !important;
+            color: #858590;
+        }
+        #kuroBottomNav [data-tab][aria-current="page"] {
+            color: #f4f4f5 !important;
+            background: rgba(196,181,253,.095) !important;
+        }
+        #kuroBottomNav [data-tab][aria-current="page"] .kuro-tab-icon { color: var(--kuro-accent); }
+        #kuroBottomNav [data-tab] span { letter-spacing: .01em; }
+        #submitModal, #authModal, #profileModal, #notificationsModal, #followListModal, #publicProfileModal, #chatModal {
+            background: rgba(0,0,0,.72) !important;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        #submitModal > div, #authModal > div, #profileModal > div,
+        #notificationsModal > section, #followListModal > section, #publicProfileModal > section,
+        #chatModal > section {
+            border: 1px solid rgba(255,255,255,.1) !important;
+            border-radius: 24px !important;
+            box-shadow: 0 24px 90px rgba(0,0,0,.55) !important;
+            background: #111116 !important;
+        }
+        #chatModal #chatListPanel, #chatModal #chatConversationPanel { background: #111116; }
+        #chatModal #chatConversationPanel > div:first-child,
+        #chatModal #chatListPanel > div:first-child { border-color: var(--kuro-line) !important; }
+        #chatModal #chatMessages { scroll-behavior: smooth; }
+        #chatModal #chatMessageInput, #chatModal input,
+        #submitModal input, #submitModal textarea, #authModal input,
+        #profileModal input, #profileModal textarea {
+            border-color: rgba(255,255,255,.1) !important;
+            border-radius: 14px !important;
+            background: rgba(255,255,255,.045) !important;
+        }
+        #chatModal #chatMessageInput:focus, #submitModal input:focus, #submitModal textarea:focus,
+        #authModal input:focus, #profileModal input:focus, #profileModal textarea:focus {
+            border-color: rgba(196,181,253,.6) !important;
+            box-shadow: 0 0 0 3px rgba(167,139,250,.08);
+            outline: none;
+        }
+        #chatModal #chatSendButton {
+            border-radius: 14px !important;
+            background: #f4f4f5 !important;
+            color: #18181b !important;
+        }
+        /* Keep the profile avatar and conversation action as separate controls. */
+        #chatModal #chatConversationList > [data-chat-row] > button[aria-label] {
+            box-sizing: border-box !important;
+            flex: 0 0 44px !important;
+            width: 44px !important;
+            min-width: 44px !important;
+            height: 44px !important;
+            min-height: 44px !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border-radius: 50% !important;
+        }
+        #chatModal #chatConversationList > [data-chat-row] > button:not([aria-label]) {
+            flex: 1 1 0%;
+            width: auto;
+            min-width: 0;
+            margin: 0;
+            padding: .55rem .5rem;
+            border-radius: 12px;
+            text-align: left;
+        }
+        #chatModal #chatConversationList > [data-chat-row] > button:not([aria-label]):hover {
+            background: rgba(255,255,255,.055) !important;
+        }
+        #toast {
+            border: 1px solid rgba(255,255,255,.12);
+            border-radius: 15px !important;
+            box-shadow: 0 12px 35px rgba(0,0,0,.35) !important;
+        }
+        @media (min-width: 768px) {
+            #homeFeedView { padding-top: 2.75rem !important; }
+            #postFeed [data-post-card] { padding: 1.4rem !important; }
+        }
+        @media (max-width: 640px) {
+            header.sticky > div { min-height: 4.15rem; padding-top: .65rem; padding-bottom: .65rem; }
+            header a .w-9.h-9 { width: 2.15rem; height: 2.15rem; }
+            header a .text-2xl { font-size: 1.45rem; }
+            #homeFeedView { padding-top: 1.35rem !important; padding-left: 1rem; padding-right: 1rem; }
+            #postFeed [data-post-card] { padding: 1rem !important; border-radius: 18px !important; }
+            #kuroBottomNav > div { padding-left: .65rem; padding-right: .65rem; }
+            #kuroBottomNav [data-tab] { border-radius: 13px !important; }
+        }
+    </style>
+    <style id="kuro-x-inspired-layout">
+        body { background:#000 !important; color:#e7e9ea !important; }
+        header.sticky { background:rgba(0,0,0,.94) !important; border-bottom:1px solid #2f3336 !important; box-shadow:none !important; }
+        header.sticky > div { min-height:4rem !important; }
+        header a .w-9.h-9 { display:none; }
+        header a .text-2xl { font-size:1.75rem !important; font-weight:800; letter-spacing:-.08em; }
+        header a .text-2xl::before { content:""; }
+        header .hidden.sm\:inline-block { display:none !important; }
+        header button[onclick="openModal()"] { display:none !important; }
+        #socialHeaderActions button[onclick="enableKuroPushNotifications()"] { display:none !important; }
+        #socialHeaderActions button { background:transparent !important; border:0 !important; color:#e7e9ea !important; }
+        #homeFeedView { max-width:680px !important; padding:0 !important; }
+        #homeFeedView > .mb-6 { padding: .75rem 1rem .5rem; margin:0 !important; }
+        #homeFeedView > .flex.justify-between.items-center { display:none !important; }
+        #postSearchInput { min-height:44px !important; border-radius:999px !important; background:#202327 !important; border:1px solid transparent !important; }
+        #postFeed { gap:0 !important; }
+        #postFeed [data-post-card] {
+            background:#000 !important; border:0 !important; border-bottom:1px solid #2f3336 !important;
+            border-radius:0 !important; box-shadow:none !important; padding:1rem !important;
+            animation:none !important;
+        }
+        #postFeed [data-post-card]:hover { background:rgba(255,255,255,.018) !important; box-shadow:none !important; }
+        #postFeed [data-post-card] p { line-height:1.5 !important; font-size:15px; }
+        #postFeed [data-post-card] img { border-radius:16px; }
+        #postFeed [data-like-post-id], #postFeed [data-reply-post-id] { border-radius:999px; }
+        #kuroBottomNav { background:rgba(0,0,0,.96) !important; border-top:1px solid #2f3336 !important; box-shadow:none !important; padding-bottom:env(safe-area-inset-bottom) !important; }
+        #kuroBottomNav > div { max-width:680px !important; padding:.25rem .4rem .35rem !important; gap:.1rem; }
+        #kuroBottomNav [data-tab] { min-height:52px !important; color:#e7e9ea !important; border-radius:999px !important; }
+        #kuroBottomNav [data-tab] span { display:none !important; }
+        #kuroBottomNav [data-tab] .kuro-tab-icon { font-size:1.35rem !important; color:#e7e9ea !important; }
+        #kuroBottomNav [data-tab][aria-current="page"] { background:transparent !important; }
+        #kuroBottomNav [data-tab][aria-current="page"] .kuro-tab-icon { color:#fff !important; }
+        #kuroBottomNav [data-tab="profile"] { display:none !important; }
+        #submitModal, #authModal, #profileModal, #notificationsModal, #followListModal, #publicProfileModal, #chatModal { background:rgba(0,0,0,.78) !important; }
+        #submitModal > div, #authModal > div, #profileModal > div, #notificationsModal > section, #followListModal > section, #publicProfileModal > section, #chatModal > section { background:#000 !important; border:1px solid #2f3336 !important; border-radius:18px !important; }
+        #chatModal #chatListPanel, #chatModal #chatConversationPanel { background:#000 !important; }
+        #toast { bottom:calc(5rem + env(safe-area-inset-bottom)) !important; }
+        #kuroComposeFloat { position:fixed; right:max(1.15rem,calc((100vw - 680px)/2 + 1.15rem)); bottom:calc(5.4rem + env(safe-area-inset-bottom)); z-index:80; width:58px; height:58px; border:0; border-radius:50%; background:#1d9bf0; color:white; box-shadow:0 5px 18px #0008; display:flex; align-items:center; justify-content:center; font-size:1.35rem; transition:transform .16s ease,background .16s ease; }
+        #kuroComposeFloat:active { transform:scale(.94); background:#1685cf; }
+        @media (min-width:768px) { #homeFeedView { border-left:1px solid #2f3336; border-right:1px solid #2f3336; min-height:calc(100vh - 4rem); } }
+        @media (max-width:640px) {
+            body { padding-bottom:calc(4.5rem + env(safe-area-inset-bottom)) !important; }
+            header.sticky > div { padding:.5rem 1rem !important; min-height:3.5rem !important; }
+            header a .text-2xl { font-size:1.6rem !important; }
+            #homeFeedView > .mb-6 { padding:.65rem .8rem .45rem; }
+            #postFeed [data-post-card] { padding:.9rem .85rem !important; }
+            #kuroBottomNav > div { padding-left:.45rem !important; padding-right:.45rem !important; }
+            #kuroComposeFloat { width:58px; height:58px; right:1rem; bottom:calc(5.3rem + env(safe-area-inset-bottom)); }
+        }
+    </style>
+    <style id="kuro-header-profile-refinement">
+        #kuroTopHeader { transition:transform .2s ease,opacity .2s ease; }
+        #kuroTopHeader.kuro-header-scrolled { transform:translateY(-105%); opacity:0; pointer-events:none; }
+        #kuroHeaderAvatarButton { display:inline-flex !important; }
+        #kuroBottomNav [data-tab="profile"] { display:flex !important; }
+        #kuroBottomNav [data-tab] span { display:none !important; }
+        #kuroBottomNav > div { grid-template-columns:repeat(5,minmax(0,1fr)) !important; }
+        #kuroBottomNav [data-tab] { min-height:56px !important; }
+        #kuroBottomNav [data-tab] .kuro-tab-icon { font-size:1.45rem !important; }
+        #kuroBottomNav [data-tab][aria-current="page"] { background:transparent !important; }
+        #kuroBottomNav [data-tab][aria-current="page"] .kuro-tab-icon { color:#fff !important; }
+        @media (max-width:640px) {
+            #kuroTopHeader > div { min-height:3.6rem !important; padding:.45rem 1rem !important; }
+            #kuroHeaderAvatarButton { width:34px !important;height:34px !important; }
+        }
+    </style>
+    <style id="ios-safari-input-zoom-fix">
+        /* iOS Safari may zoom on focus if any form control computes below 16px. */
+        @media screen and (max-width: 768px) {
+            html body input,
+            html body textarea,
+            html body select,
+            html body [contenteditable="true"] {
+                font-size: 16px !important;
+                -webkit-text-size-adjust: 100%;
+            }
+        }
+    </style>
+
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png?v=20261112c">
+<link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png?v=20261112c">
+<link rel="apple-touch-icon" href="/icon-512.png?v=20261112c">
+<meta name="theme-color" content="#09090d">
+<link rel="stylesheet" href="/site.css?v=20261112c">
+<link rel="stylesheet" href="/site-fixes.css?v=20261112c">
+
+<style id="kuro-gas-version-button-style">
+.kuro-version-link{display:inline-flex!important;align-items:center;justify-content:center;gap:7px;padding:9px 14px!important;border:1px solid #67b8e8!important;border-radius:999px!important;background:linear-gradient(135deg,#12324a,#075985)!important;color:#fff!important;font-size:12px!important;font-weight:900!important;letter-spacing:.01em;white-space:nowrap;text-decoration:none!important;box-shadow:0 4px 16px rgba(14,165,233,.18);transition:transform .18s ease,box-shadow .18s ease,background .18s ease}
+.kuro-version-link:hover{transform:translateY(-1px);box-shadow:0 7px 20px rgba(14,165,233,.28);background:linear-gradient(135deg,#164e70,#0369a1)!important}
+.kuro-version-label{display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;border-radius:5px;background:#bae6fd;color:#082f49;font-size:9px;font-weight:950;letter-spacing:.08em}
+@media(max-width:760px){.kuro-version-link{padding:8px 11px!important;font-size:11px!important}}
+</style>
+
+<style id="kuro-gas-version-style">
+.kuro-gas-status-panel{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:980px;margin:16px auto 0;padding:11px 15px;border:1px solid #334155;border-radius:13px;background:#101820;color:#dbeafe;font-size:12px}
+.kuro-gas-status-panel .kuro-gas-status-main{display:flex;align-items:center;gap:9px;min-width:0}
+.kuro-gas-status-panel #kuroGasStatusText{color:#aebed0}
+.kuro-gas-status-panel[data-state="ready"]{border-color:#166534;background:#0b2117}
+.kuro-gas-status-panel[data-state="ready"] #kuroGasStatusText{color:#86efac}
+.kuro-gas-status-panel[data-state="error"],.kuro-gas-status-panel[data-state="setup"]{border-color:#854d0e;background:#241a0b}
+.kuro-gas-status-panel[data-state="error"] #kuroGasStatusText,.kuro-gas-status-panel[data-state="setup"] #kuroGasStatusText{color:#fcd34d}
+.kuro-gas-status-panel a{flex:none;color:#bae6fd;text-decoration:underline;text-underline-offset:3px;font-weight:800}
+@media(max-width:640px){.kuro-gas-status-panel{margin:10px 12px 0;align-items:flex-start;font-size:11px}.kuro-gas-status-panel .kuro-gas-status-main{align-items:flex-start}.kuro-gas-status-panel a{white-space:nowrap}}
+</style>
+
+    
+
+
+<style id="kuro-responsive-device-layout">
+  /* KURO SNS responsive layout: adapt automatically to the available screen width. */
+  @media (min-width: 900px) {
+    body.kuro-page { padding-bottom: 24px !important; }
+    .kuro-global-header .kuro-header-main,
+    .kuro-global-header .kuro-subnav-inner { max-width: 1440px; margin-left:auto; margin-right:auto; }
+    .kuro-global-header .kuro-header-main,
+    .kuro-global-header .kuro-subnav-inner { padding-left: 32px; padding-right: 32px; }
+    #kuroGasStatusPanel { max-width: 1380px; margin: 14px auto 0; border-radius: 14px; }
+    #homeFeedView, #myProfileView {
+      max-width: 900px !important;
+      width: min(900px, calc(100vw - 190px)) !important;
+      margin-left: auto !important; margin-right: auto !important;
+      padding-left: 28px !important; padding-right: 28px !important;
+    }
+    #homeFeedView { padding-top: 38px !important; }
+    #postSearchInput { min-height: 58px; font-size: 15px; }
+    #postFeed { gap: 18px; }
+    #kuroBottomNav {
+      top: 50% !important; bottom: auto !important; left: 22px !important; right: auto !important;
+      width: 76px !important; transform: translateY(-50%);
+      border: 1px solid rgba(255,255,255,.09) !important; border-radius: 22px !important;
+      padding: 10px 7px !important; background: rgba(18,18,24,.92) !important;
+      box-shadow: 0 16px 50px rgba(0,0,0,.35);
+    }
+    #kuroBottomNav > div {
+      display: flex !important; flex-direction: column !important; gap: 8px !important;
+      max-width: none !important; padding: 0 !important;
+    }
+    #kuroBottomNav [data-tab] {
+      min-height: 64px; width: 100%; border-radius: 15px !important;
+      gap: 6px !important; padding: 9px 3px !important;
+    }
+    #kuroBottomNav .kuro-tab-icon { font-size: 20px !important; }
+    #kuroBottomNav [data-tab] span { font-size: 10px !important; }
+    #chatModal { padding: 28px !important; align-items: center !important; justify-content: center !important; }
+    #chatModal > section {
+      width: min(1180px, calc(100vw - 120px)) !important; max-width: 1180px !important;
+      height: min(820px, calc(100vh - 100px)) !important; max-height: calc(100vh - 100px) !important;
+      border-radius: 24px !important; border-color: rgba(255,255,255,.12) !important;
+      box-shadow: 0 30px 100px rgba(0,0,0,.6) !important;
+    }
+    #chatModal > section > div:first-child { padding: 19px 24px !important; }
+    #chatModal > section > div:nth-child(2) { padding: 12px 22px !important; }
+    #chatModal #publicChatPane { padding: 22px 26px !important; }
+    #chatModal #publicChatMessages { padding: 22px !important; border-radius: 18px !important; }
+    #chatModal #publicChatForm { padding-top: 18px !important; }
+    #chatModal #publicChatForm > div { gap: 12px !important; }
+    #chatModal #publicChatNickname { width: 190px !important; }
+    #chatModal #publicChatInput { min-height: 50px !important; padding-left: 16px !important; font-size: 15px !important; }
+    #chatModal #publicChatSendButton { min-width: 100px; }
+    #chatModal #chatLayout { grid-template-columns: 310px minmax(0,1fr) !important; }
+    #chatModal #chatListPanel { padding: 20px !important; }
+    #chatModal #chatConversationPanel { padding: 20px 24px !important; }
+    #chatModal #chatMessages { padding: 18px 8px !important; }
+  }
+  @media (min-width: 900px) and (max-width: 1100px) {
+    #kuroBottomNav { left: 10px !important; width: 68px !important; }
+    #homeFeedView, #myProfileView { width: calc(100vw - 130px) !important; }
+  }
+  @media (max-width: 899px) {
+    #kuroBottomNav { top: auto !important; bottom: 0 !important; left: 0 !important; right: 0 !important; width: auto !important; transform: none !important; }
+    #chatModal { padding: 12px !important; }
+    #chatModal > section { width: 100% !important; max-width: 720px !important; height: min(88dvh, 820px) !important; border-radius: 18px !important; }
+  }
+</style>
+
+
+<style id="kuro-desktop-app-only">
+@media (min-width:900px) {
+  html,body.kuro-page{width:100%;height:100%;min-height:100%;overflow:hidden!important}
+  body.kuro-page{padding:0!important;margin:0!important}
+  body.kuro-page>.kuro-global-header,body.kuro-page>#kuroGasStatusPanel{display:none!important}
+  /* Keep the app menu on desktop, but dock it vertically on the left instead of at the bottom. */
+  #kuroBottomNav{display:flex!important;position:fixed!important;top:50%!important;bottom:auto!important;left:16px!important;right:auto!important;width:76px!important;transform:translateY(-50%)!important;z-index:100!important;border:1px solid rgba(255,255,255,.1)!important;border-radius:20px!important;padding:8px 6px!important;background:rgba(18,18,24,.96)!important;box-shadow:0 14px 44px rgba(0,0,0,.35)!important}
+  #kuroBottomNav>div{display:flex!important;flex-direction:column!important;gap:7px!important;width:100%!important;max-width:none!important;padding:0!important}
+  #kuroBottomNav [data-tab]{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:5px!important;width:100%!important;min-height:62px!important;padding:8px 2px!important;border-radius:13px!important}
+  #kuroBottomNav .kuro-tab-icon{font-size:20px!important}
+  #kuroBottomNav [data-tab] span{font-size:10px!important;white-space:nowrap!important}
+
+  #homeFeedView,#myProfileView{box-sizing:border-box!important;height:100dvh!important;max-height:100dvh!important;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-width:none!important;padding-top:76px!important;padding-bottom:42px!important}
+  #homeFeedView::-webkit-scrollbar,#myProfileView::-webkit-scrollbar{display:none!important;width:0!important}
+  #homeFeedView,#myProfileView{width:min(1100px,calc(100vw - 150px))!important;max-width:1100px!important;margin-left:108px!important;margin-right:auto!important}
+  #kuroDesktopVersionSwitch{display:flex!important;position:fixed;z-index:120;top:14px;right:20px;align-items:center;gap:5px;padding:5px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(18,18,24,.94);box-shadow:0 8px 28px rgba(0,0,0,.3);backdrop-filter:blur(16px)}
+  #kuroDesktopVersionSwitch a,#kuroDesktopVersionSwitch span{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:0 13px;border-radius:9px;color:#a1a1aa;font-size:12px;font-weight:800;text-decoration:none}
+  #kuroDesktopVersionSwitch .is-current{color:#111;background:#fff}
+  #kuroComposeFloat{right:28px!important;bottom:28px!important;z-index:80}
+  #chatModal:not(.hidden){position:fixed!important;inset:0!important;z-index:110!important;display:flex!important;align-items:stretch!important;justify-content:stretch!important;width:100vw!important;height:100dvh!important;max-height:100dvh!important;padding:0!important;margin:0!important;border:0!important;border-radius:0!important;background:#0b0b0e!important;overflow:hidden!important;backdrop-filter:none!important}
+  #chatModal>section{display:flex!important;flex-direction:column!important;width:100vw!important;max-width:none!important;height:100dvh!important;min-height:0!important;max-height:100dvh!important;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden!important;background:#111116!important}
+  #chatModal>section>div:first-child{flex:0 0 64px!important;min-height:64px!important;padding:0 28px!important;background:#15151c!important}
+  #chatModal>section>div:nth-child(2){flex:0 0 58px!important;min-height:58px!important;padding:8px 24px!important;background:#17171e!important}
+  #chatModal>section>div:nth-child(2) button{max-width:240px;flex:0 0 220px!important;border-radius:10px!important}
+  #chatModal #publicChatPane{flex:1 1 auto!important;min-height:0!important;padding:0 28px 20px!important;gap:0!important;background:#111116!important}
+  #chatModal #publicChatPane>div:first-child{flex:0 0 68px!important;min-height:68px!important;margin:0!important;padding:0 8px!important;border-bottom:1px solid rgba(255,255,255,.08)}
+  #chatModal #publicChatPane>div:first-child h3{font-size:16px!important}
+  #chatModal #publicChatMessages{flex:1 1 auto!important;min-height:0!important;width:100%!important;margin:16px 0 0!important;padding:24px max(24px,calc((100% - 1040px)/2))!important;border:0!important;border-radius:14px!important;background:#191920!important;overflow-y:auto!important;overscroll-behavior:contain}
+  /* Desktop: pin the public chat composer to the viewport bottom. */
+  #chatModal #publicChatPane{position:relative!important;display:flex!important;flex-direction:column!important;min-height:0!important;overflow:hidden!important}
+  #chatModal #publicChatMessages{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overscroll-behavior:contain!important;margin-bottom:168px!important}
+  #chatModal #publicChatForm{position:fixed!important;left:50%!important;right:auto!important;bottom:0!important;transform:translateX(-50%)!important;z-index:150!important;display:flex!important;flex-direction:column!important;flex:0 0 auto!important;width:min(1100px,calc(100vw - 56px))!important;max-width:1100px!important;margin:0!important;padding:14px 0 max(14px,env(safe-area-inset-bottom))!important;border-top:1px solid rgba(255,255,255,.12)!important;background:#111116!important;box-sizing:border-box!important}
+  #chatModal #publicChatForm>div{display:flex!important;gap:12px!important}
+  #chatModal #publicChatNickname{width:190px!important;min-width:150px!important}
+  #chatModal #publicChatInput{min-height:54px!important;padding:0 18px!important;font-size:15px!important}
+  #chatModal #publicChatSendButton{min-width:104px!important}
+  #chatModal #chatLayout{flex:1 1 auto!important;min-height:0!important;grid-template-columns:320px minmax(0,1fr)!important}
+  #chatModal #chatListPanel{min-height:0!important;overflow-y:auto!important;background:#17171e!important}
+  #chatModal #chatConversationPanel{min-height:0!important;overflow:hidden!important}
+  #chatModal #chatMessages{min-height:0!important;overflow-y:auto!important}
+  #chatModal *{scrollbar-width:thin;scrollbar-color:#34343f transparent}
+}
+@media(max-width:899px){#kuroDesktopVersionSwitch{display:none!important}}
+</style>
+
+
+<style id="kuro-public-chat-fullscreen">
+  #chatModal:not(.hidden){
+    position:fixed!important;inset:0!important;z-index:9999!important;
+    display:flex!important;align-items:stretch!important;justify-content:stretch!important;
+    width:100vw!important;height:100vh!important;height:100dvh!important;max-height:100dvh!important;
+    padding:0!important;margin:0!important;border:0!important;border-radius:0!important;
+    overflow:hidden!important;background:#0b0b0e!important;backdrop-filter:none!important;
+  }
+  #chatModal:not(.hidden)>section{
+    display:flex!important;flex-direction:column!important;
+    width:100%!important;max-width:none!important;height:100%!important;
+    min-height:0!important;max-height:100%!important;margin:0!important;
+    border:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden!important;
+  }
+  #chatModal #publicChatPane{display:flex!important;flex:1 1 auto!important;min-height:0!important;overflow:hidden!important;padding:12px!important;gap:0!important}
+  #chatModal #publicChatMessages{flex:1 1 auto!important;min-height:0!important;height:0!important;overflow-y:auto!important;overscroll-behavior:contain}
+  #chatModal #publicChatForm{flex:0 0 auto!important;margin-top:12px!important;padding-top:12px!important}
+  #chatModal #publicChatInput,#chatModal #publicChatNickname{min-height:48px!important;font-size:16px!important}
+  #chatModal #publicChatSendButton{min-height:48px!important;white-space:nowrap!important}
+  @media(min-width:641px){
+    #chatModal #publicChatPane{padding:20px 28px!important}
+    #chatModal #publicChatMessages{padding:24px!important}
+    #chatModal #publicChatForm{width:min(100%,1120px)!important;margin:14px auto 0!important}
+  }
+  @media(max-width:640px){
+    #chatModal #publicChatPane{padding:10px!important}
+    #chatModal #publicChatMessages{border-radius:12px!important;padding:12px!important}
+    #chatModal #publicChatForm>div{grid-template-columns:minmax(0,1fr) auto!important}
+    #chatModal #publicChatNickname{grid-column:1/-1!important}
+  }
+  </style>
+
+<style id="kuro-chat-line-theme">
+  #chatModal #publicChatMessages{display:flex!important;flex-direction:column!important;gap:12px!important;border:0!important;border-radius:0!important;background:transparent!important;padding:12px clamp(12px,3vw,42px)!important}
+  #chatModal .kuro-chat-row{display:flex;width:100%;margin:0!important;padding:0!important;border:0!important;background:transparent!important}
+  #chatModal .kuro-chat-row.is-mine{justify-content:flex-end}
+  #chatModal .kuro-chat-row.is-other{justify-content:flex-start}
+  #chatModal .kuro-chat-bubble-wrap{display:flex;flex-wrap:wrap;align-items:flex-end;gap:5px 8px;max-width:min(78%,720px)}
+  #chatModal .is-mine .kuro-chat-bubble-wrap{flex-direction:row-reverse}
+  #chatModal .kuro-chat-name{width:100%;font-size:11px;font-weight:700;opacity:.72;padding:0 8px}
+  #chatModal .kuro-chat-bubble{padding:11px 15px;border-radius:18px;background:#303039;color:#fff;font-size:14px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;box-shadow:0 1px 2px #0002}
+  #chatModal .is-other .kuro-chat-bubble{border-top-left-radius:5px}
+  #chatModal .is-mine .kuro-chat-bubble{background:#a7f36b;color:#17220f;border-top-right-radius:5px}
+  #chatModal .kuro-chat-time{font-size:10px;opacity:.55;white-space:nowrap;padding-bottom:2px}
+  #chatModal #publicChatForm{border-color:#383842!important}
+  #chatModal #publicChatNickname,#chatModal #publicChatInput{background:#202027!important;color:#f7f7fa!important;border-color:#41414b!important}
+  #chatModal #publicChatThemeSelect{color:inherit;border-color:#555}
+  #chatModal #publicChatThemeSelect option{color:#111;background:#fff}
+  #chatModal[data-chat-theme="light"]{background:#f4f5f8!important;color:#20212a!important}
+  #chatModal[data-chat-theme="light"]>section,
+  #chatModal[data-chat-theme="light"] header{background:#fff!important;color:#20212a!important}
+  #chatModal[data-chat-theme="light"] header{border-color:#e5e7eb!important}
+  #chatModal[data-chat-theme="light"] header p,
+  #chatModal[data-chat-theme="light"] #publicChatPane p{color:#6b7280!important}
+  #chatModal[data-chat-theme="light"] #publicChatMessages{background:#f4f5f8!important}
+  #chatModal[data-chat-theme="light"] .kuro-chat-bubble{background:#fff;color:#20212a;border:1px solid #e5e7eb;box-shadow:0 1px 2px #0001}
+  #chatModal[data-chat-theme="light"] .is-mine .kuro-chat-bubble{background:#d9f7c8;color:#20321a;border:0}
+  #chatModal[data-chat-theme="light"] .kuro-chat-name,
+  #chatModal[data-chat-theme="light"] .kuro-chat-time{color:#6b7280}
+  #chatModal[data-chat-theme="light"] #publicChatForm{border-color:#e5e7eb!important}
+  #chatModal[data-chat-theme="light"] #publicChatNickname,
+  #chatModal[data-chat-theme="light"] #publicChatInput{background:#fff!important;color:#20212a!important;border-color:#d1d5db!important}
+  #chatModal[data-chat-theme="light"] #publicChatThemeSelect{border-color:#d1d5db}
+  #chatModal[data-chat-theme="light"] header button{border-color:#d1d5db!important;color:#374151!important}
+  @media(max-width:640px){#chatModal .kuro-chat-bubble-wrap{max-width:88%}#chatModal #publicChatMessages{padding:10px 8px!important}}
+  </style>
+
+<style id="kuro-chat-theme-complete">
+  #chatModal{color-scheme:dark}
+  #chatModal[data-chat-theme="dark"]{color-scheme:dark!important;background:#0b0b0e!important;color:#f5f5f7!important}
+  #chatModal[data-chat-theme="dark"]>section,
+  #chatModal[data-chat-theme="dark"] header,
+  #chatModal[data-chat-theme="dark"] #publicChatPane{background:#111116!important;color:#f5f5f7!important}
+  #chatModal[data-chat-theme="dark"] #publicChatMessages{background:#191920!important;color:#f5f5f7!important;border-color:#30303a!important}
+  #chatModal[data-chat-theme="dark"] #publicChatForm{background:#111116!important;border-color:#383842!important}
+  #chatModal[data-chat-theme="dark"] #publicChatForm p,
+  #chatModal[data-chat-theme="dark"] #publicChatPane p{color:#a1a1aa!important}
+  #chatModal[data-chat-theme="dark"] #publicChatNickname,
+  #chatModal[data-chat-theme="dark"] #publicChatInput{background:#202027!important;color:#f7f7fa!important;border-color:#41414b!important}
+  #chatModal[data-chat-theme="dark"] #publicChatNickname::placeholder,
+  #chatModal[data-chat-theme="dark"] #publicChatInput::placeholder{color:#858590!important}
+  #chatModal[data-chat-theme="dark"] #publicChatThemeSelect{background:#202027!important;color:#f7f7fa!important;border-color:#555!important}
+  #chatModal[data-chat-theme="dark"] header button,
+  #chatModal[data-chat-theme="dark"] #publicChatPane button:not(#publicChatSendButton){background:#202027!important;color:#e5e7eb!important;border-color:#41414b!important}
+  #chatModal[data-chat-theme="dark"] .kuro-chat-bubble{background:#303039!important;color:#fff!important;border-color:#41414b!important}
+  #chatModal[data-chat-theme="dark"] .is-mine .kuro-chat-bubble{background:#a7f36b!important;color:#17220f!important;border-color:transparent!important}
+  #chatModal[data-chat-theme="dark"] .kuro-chat-name,
+  #chatModal[data-chat-theme="dark"] .kuro-chat-time{color:#a1a1aa!important}
+  #chatModal[data-chat-theme="light"]{color-scheme:light!important;background:#f4f5f8!important;color:#20212a!important}
+  #chatModal[data-chat-theme="light"]>section,
+  #chatModal[data-chat-theme="light"] header,
+  #chatModal[data-chat-theme="light"] #publicChatPane,
+  #chatModal[data-chat-theme="light"] #publicChatForm{background:#fff!important;color:#20212a!important}
+  #chatModal[data-chat-theme="light"] header{border-color:#e5e7eb!important}
+  #chatModal[data-chat-theme="light"] #publicChatMessages{background:#f4f5f8!important;color:#20212a!important;border-color:#e5e7eb!important}
+  #chatModal[data-chat-theme="light"] #publicChatPane p,
+  #chatModal[data-chat-theme="light"] #publicChatForm p{color:#6b7280!important}
+  #chatModal[data-chat-theme="light"] #publicChatNickname,
+  #chatModal[data-chat-theme="light"] #publicChatInput{background:#fff!important;color:#20212a!important;border-color:#d1d5db!important}
+  #chatModal[data-chat-theme="light"] #publicChatNickname::placeholder,
+  #chatModal[data-chat-theme="light"] #publicChatInput::placeholder{color:#9ca3af!important}
+  #chatModal[data-chat-theme="light"] #publicChatThemeSelect{background:#fff!important;color:#20212a!important;border-color:#d1d5db!important}
+  #chatModal[data-chat-theme="light"] header button,
+  #chatModal[data-chat-theme="light"] #publicChatPane button:not(#publicChatSendButton){background:#f9fafb!important;color:#374151!important;border-color:#d1d5db!important}
+  #chatModal[data-chat-theme="light"] #publicChatSendButton{background:#20212a!important;color:#fff!important}
+  #chatModal[data-chat-theme="light"] .kuro-chat-bubble{background:#fff!important;color:#20212a!important;border:1px solid #e5e7eb!important;box-shadow:0 1px 2px #0001}
+  #chatModal[data-chat-theme="light"] .is-mine .kuro-chat-bubble{background:#d9f7c8!important;color:#20321a!important;border:0!important}
+  #chatModal[data-chat-theme="light"] .kuro-chat-name,
+  #chatModal[data-chat-theme="light"] .kuro-chat-time{color:#6b7280!important}
+  #chatModal[data-chat-theme="light"] #publicChatThemeSelect option{background:#fff!important;color:#20212a!important}
+  @media(prefers-reduced-motion:no-preference){#chatModal[data-chat-theme] *{transition:background-color .16s ease,color .16s ease,border-color .16s ease}}
+</style>
+
+<script type="text/javascript">
+(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y)})(window,document,"clarity","script","zdcsg0zt0b");
+</script>
+<!-- Google Analytics 4 -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MMV6DL5ZBJ"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
