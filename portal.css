@@ -146,3 +146,15 @@ body[data-motion=reduced] .portal-widget.is-editing{animation:none}
 .portal-widget-drag-handle:active{cursor:grabbing}
 @media(max-width:900px){.portal-widget[data-size=small],.portal-widget[data-size=half],.portal-widget[data-size=wide]{grid-column:span 6}}
 @media(max-width:700px){.portal-widget,.portal-widget[data-size=small],.portal-widget[data-size=half],.portal-widget[data-size=wide],.portal-widget[data-size=full]{grid-column:1/-1}.portal-widget-size-control input{width:70px;max-width:20vw}}
+
+/* Direct manipulation handles for dashboard widgets */
+.portal-widget-resize-handle{position:absolute;right:0;bottom:0;z-index:5;width:30px;height:30px;padding:0;border:0;border-radius:0 0 15px 0;background:linear-gradient(135deg,transparent 48%,var(--blue) 49%,var(--blue) 55%,transparent 56%),linear-gradient(135deg,transparent 63%,var(--blue) 64%,var(--blue) 70%,transparent 71%);cursor:nwse-resize;touch-action:none;opacity:.82}
+.portal-widget-resize-handle:hover{opacity:1;filter:drop-shadow(0 0 3px var(--blue))}
+.portal-widget-resize-handle:focus-visible{outline:2px solid var(--blue);outline-offset:-3px}
+.portal-widget.is-editing{touch-action:none;user-select:none;-webkit-user-select:none}
+.portal-widget.is-editing .portal-widget-body{pointer-events:none}
+.portal-widget.drag-active{cursor:grabbing;z-index:35}
+.portal-widget.resizing{z-index:34;border-color:var(--blue);box-shadow:0 0 0 2px color-mix(in srgb,var(--blue) 22%,transparent)}
+.portal-widget.is-editing .portal-widget-head{cursor:grab}
+.portal-widget.is-editing .portal-widget-resize-handle{display:block}
+@media(max-width:700px){.portal-widget-resize-handle{width:34px;height:34px}}
