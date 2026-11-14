@@ -93,69 +93,25 @@ async function sync(){if(!st.user||st.sync)return;st.sync=true;try{var id=st.use
 async function sendRequest(e){e.preventDefault();var msg=$("#portal-request-message").value.trim(),s=$("#portal-request-status");if($("#portal-request-website").value){s.textContent="送信できませんでした。";return;}var last=Number(localStorage.getItem("kuro_portal_request_at")||0);if(Date.now()-last<60000){s.textContent="送信は1分ほど空けてからお試しください。";return;}var a=await db.auth.getUser(),data={message:msg,guest_id:guest()};if(a.data&&a.data.user)data.user_id=a.data.user.id;var r=await db.from("portal_requests").insert(data);if(r.error){s.textContent="送信できませんでした。時間をおいて再度お試しください。";return;}localStorage.setItem("kuro_portal_request_at",Date.now());$("#portal-request-message").value="";s.textContent="送信しました。ありがとうございます。";}
 function openLogin(){var modal=$("#portal-login-modal");if(!modal)return;modal.hidden=false;var email=$("#portal-login-email");if(email)email.focus();}
 function setRecoveryMode(active){
- $("#portal-login-form").hidden=active;$("#portal-auth-help").hidden=active;$("#portal-register-switch").hidden=active;$(".portal-oauth").hidden=active;$(".portal-oauth-note").hidden=active;$("#portal-recovery-form").hidden=!active;
- if(active){$("#portal-login-title").textContent="新しいパスワードを設定";$("#portal-login-error").textContent="";$("#portal-recovery-error").textContent="メールのリンクを確認しました。新しいパスワードを入力してください。";}
+ ["portal-login-form","portal-auth-help","portal-register-switch","portal-recovery-form"].forEach(function(id){var el=$("#"+id);if(el)el.hidden=id==="portal-recovery-form"?!active:active;});
+ document.querySelectorAll(".portal-oauth,.portal-oauth-note").forEach(function(el){el.hidden=active;});
+ var title=$("#portal-login-title"),loginError=$("#portal-login-error"),recoveryError=$("#portal-recovery-error");
+ if(active){if(title)title.textContent="新しいパスワードを設定";if(loginError)loginError.textContent="";if(recoveryError)recoveryError.textContent="メールのリンクを確認しました。新しいパスワードを入力してください。";}
 }
 function initLogin(){
- $("#portal-account-button").onclick=function(){if(st.user)location.href="/mypage/";else openLogin();};
- $("#portal-transport-button").textContent=useGas?"通常版":"GAS版";
- $("#portal-transport-button").onclick=function(){var next=useGas?"direct":"gas";localStorage.setItem("kuro_portal_transport",next);var u=new URL(location.href);u.searchParams.set("transport",next);location.href=u.pathname+u.search;};
- $("#portal-login-close").onclick=function(){$("#portal-login-modal").hidden=true;};
- function showLoginError(message){$("#portal-login-error").textContent=message;}
- $("#portal-forgot-password").onclick=async function(){
-  var email=$("#portal-login-email").value.trim();if(!email){showLoginError("先にメールアドレスを入力してください。");$("#portal-login-email").focus();return;}
-  var b=this;b.disabled=true;showLoginError("");
-  try{var r=await db.auth.resetPasswordForEmail(email,{redirectTo:location.origin+"/mypage/"});if(r.error)throw r.error;showLoginError("パスワード再設定メールを送信しました。メール内のリンクを開いてください。");}
-  catch(e){showLoginError("再設定メールを送信できませんでした："+(e.message||"時間をおいて再度お試しください。"));}
-  b.disabled=false;
- };
- $("#portal-email-link").onclick=async function(){
-  var email=$("#portal-login-email").value.trim();if(!email){showLoginError("先にメールアドレスを入力してください。");$("#portal-login-email").focus();return;}
-  var b=this;b.disabled=true;showLoginError("");
-  try{var r=await db.auth.signInWithOtp({email:email,options:{shouldCreateUser:false,emailRedirectTo:location.origin+"/mypage/"}});if(r.error)throw r.error;showLoginError("ログイン用リンクを送信しました。メールを確認してください。");}
-  catch(e){showLoginError("メールリンクを送信できませんでした："+(e.message||"時間をおいて再度お試しください。"));}
-  b.disabled=false;
- };
- $("#portal-recovery-form").onsubmit=async function(e){
-  e.preventDefault();var b=$("#portal-recovery-submit"),password=$("#portal-new-password").value;b.disabled=true;$("#portal-recovery-error").textContent="";
-  try{var r=await db.auth.updateUser({password:password});if(r.error)throw r.error;$("#portal-login-modal").hidden=true;setRecoveryMode(false);toast("パスワードを更新しました。");}
-  catch(err){$("#portal-recovery-error").textContent=err.message||"パスワードを更新できませんでした。";}
-  b.disabled=false;
- };
- $("#portal-open-login")?.addEventListener("click",function(){$("#portal-login-modal").hidden=false;});
- async function oauth(provider){
-  var id=provider==="google"?"portal-google-login":"portal-apple-login",button=$("#"+id);
-  button.disabled=true;$("#portal-login-error").textContent="";
-  try{
-   var r=await db.auth.signInWithOAuth({provider:provider,options:{redirectTo:location.origin+"/"}});
-   if(r.error)throw r.error;
-  }catch(e){
-   var msg=String(e&&e.message||"");
-   $("#portal-login-error").textContent=provider==="apple"&&/provider is not enabled|unsupported provider|apple/i.test(msg)?"AppleログインはSupabase側で未設定です。Googleまたはメールでログインしてください。":(msg||"ログインを開始できませんでした。");
-   button.disabled=false;
-  }
- }
- $("#portal-google-login").onclick=function(){oauth("google");};
- $("#portal-apple-login").onclick=function(){oauth("apple");};
-
- $("#portal-login-modal").onclick=function(e){if(e.target.id==="portal-login-modal")e.currentTarget.hidden=true;};
- $("#portal-register-switch").onclick=function(){var form=$("#portal-login-form"),reg=form.dataset.mode!=="register";$("#portal-auth-help").hidden=reg;$("#portal-google-login").hidden=reg;$("#portal-apple-login").hidden=reg;$("#portal-login-modal .portal-oauth-note").hidden=reg;form.dataset.mode=reg?"register":"login";$("#portal-login-title").textContent=reg?"KURO Labに新規登録":"KURO Labにログイン";$("#portal-login-submit").textContent=reg?"アカウントを作成":"ログイン";$("#portal-register-switch").textContent=reg?"ログインに戻る":"新規アカウント作成";$("#portal-login-password").autocomplete=reg?"new-password":"current-password";$("#portal-login-password").minLength=reg?8:1;$("#portal-login-error").textContent=reg?"メールアドレスと8文字以上のパスワードで登録できます。":"";};
- $("#portal-login-form").onsubmit=async function(e){
-  e.preventDefault();var b=$("#portal-login-submit"),reg=this.dataset.mode==="register",email=$("#portal-login-email").value.trim(),password=$("#portal-login-password").value;
-  b.disabled=true;$("#portal-login-error").textContent="";
-  try{
-   if(!db)throw new Error("認証ライブラリを読み込めませんでした。ページを再読み込みしてお試しください。");
-   var r=reg?await db.auth.signUp({email:email,password:password,options:{emailRedirectTo:location.origin+"/mypage/"}}):await db.auth.signInWithPassword({email:email,password:password});
-   if(r.error)throw r.error;
-   $("#portal-login-password").value="";
-   if(reg&&!r.data.session){$("#portal-login-error").textContent="確認メールを送信しました。メール内のリンクから登録を完了してください。";return;}
-   $("#portal-login-modal").hidden=true;toast(reg?"アカウントを作成しました。同期しています…":"ログインしました。同期しています…");
-  }catch(err){
-   var msg=String(err&&err.message||err||"通信エラー");
-   $("#portal-login-error").textContent=(reg?"新規登録できませんでした：":"ログインできませんでした：")+msg+(useGas?"（GAS中継通信）":"");
-   console.error("KURO portal auth error",err);
-  }finally{b.disabled=false;}
- };
+ var account=$("#portal-account-button");if(account)account.onclick=function(){if(st.user)location.href="/mypage/";else openLogin();};
+ var transport=$("#portal-transport-button");if(transport){transport.textContent=useGas?"GAS版（使用中）":"通常版";transport.onclick=function(){var next=useGas?"direct":"gas";localStorage.setItem("kuro_portal_transport",next);var u=new URL(location.href);u.searchParams.set("transport",next);location.href=u.pathname+u.search;};}
+ var close=$("#portal-login-close");if(close)close.onclick=function(){var m=$("#portal-login-modal");if(m)m.hidden=true;};
+ function showLoginError(message){var el=$("#portal-login-error");if(el)el.textContent=message;}
+ var forgot=$("#portal-forgot-password");if(forgot)forgot.onclick=async function(){var e=$("#portal-login-email"),email=e?e.value.trim():"";if(!email){showLoginError("先にメールアドレスを入力してください。");if(e)e.focus();return;}var b=this;b.disabled=true;showLoginError("");try{var r=await db.auth.resetPasswordForEmail(email,{redirectTo:location.origin+"/mypage/"});if(r.error)throw r.error;showLoginError("パスワード再設定メールを送信しました。メール内のリンクを開いてください。");}catch(err){showLoginError("再設定メールを送信できませんでした："+(err.message||"時間をおいて再度お試しください。"));}b.disabled=false;};
+ var emailLink=$("#portal-email-link");if(emailLink)emailLink.onclick=async function(){var e=$("#portal-login-email"),email=e?e.value.trim():"";if(!email){showLoginError("先にメールアドレスを入力してください。");if(e)e.focus();return;}var b=this;b.disabled=true;showLoginError("");try{var r=await db.auth.signInWithOtp({email:email,options:{shouldCreateUser:false,emailRedirectTo:location.origin+"/mypage/"}});if(r.error)throw r.error;showLoginError("ログイン用リンクを送信しました。メールを確認してください。");}catch(err){showLoginError("メールリンクを送信できませんでした："+(err.message||"時間をおいて再度お試しください。"));}b.disabled=false;};
+ var recovery=$("#portal-recovery-form");if(recovery)recovery.onsubmit=async function(e){e.preventDefault();var b=$("#portal-recovery-submit"),p=$("#portal-new-password"),er=$("#portal-recovery-error");if(!b||!p)return;b.disabled=true;if(er)er.textContent="";try{var r=await db.auth.updateUser({password:p.value});if(r.error)throw r.error;var m=$("#portal-login-modal");if(m)m.hidden=true;setRecoveryMode(false);toast("パスワードを更新しました。");}catch(err){if(er)er.textContent=err.message||"パスワードを更新できませんでした。";}b.disabled=false;};
+ var open=$("#portal-open-login");if(open)open.addEventListener("click",openLogin);
+ async function oauth(provider){var id=provider==="google"?"portal-google-login":"portal-apple-login",b=$("#"+id),er=$("#portal-login-error");if(!b)return;b.disabled=true;if(er)er.textContent="";try{var r=await db.auth.signInWithOAuth({provider:provider,options:{redirectTo:location.origin+"/"}});if(r.error)throw r.error;}catch(err){var msg=String(err&&err.message||"");if(er)er.textContent=provider==="apple"&&/provider is not enabled|unsupported provider|apple/i.test(msg)?"AppleログインはSupabase側で未設定です。Googleまたはメールでログインしてください。":(msg||"ログインを開始できませんでした。");b.disabled=false;}}
+ var google=$("#portal-google-login");if(google)google.onclick=function(){oauth("google");};var apple=$("#portal-apple-login");if(apple)apple.onclick=function(){oauth("apple");};
+ var modal=$("#portal-login-modal");if(modal)modal.onclick=function(e){if(e.target.id==="portal-login-modal")e.currentTarget.hidden=true;};
+ var sw=$("#portal-register-switch");if(sw)sw.onclick=function(){var form=$("#portal-login-form");if(!form)return;var reg=form.dataset.mode!=="register",help=$("#portal-auth-help"),g=$("#portal-google-login"),a=$("#portal-apple-login"),note=document.querySelector("#portal-login-modal .portal-oauth-note");if(help)help.hidden=reg;if(g)g.hidden=reg;if(a)a.hidden=reg;if(note)note.hidden=reg;form.dataset.mode=reg?"register":"login";var title=$("#portal-login-title"),submit=$("#portal-login-submit"),pw=$("#portal-login-password");if(title)title.textContent=reg?"KURO Labに新規登録":"KURO Labにログイン";if(submit)submit.textContent=reg?"アカウントを作成":"ログイン";sw.textContent=reg?"ログインに戻る":"新規アカウント作成";if(pw){pw.autocomplete=reg?"new-password":"current-password";pw.minLength=reg?8:1;}showLoginError(reg?"メールアドレスと8文字以上のパスワードで登録できます。":"");};
+ var login=$("#portal-login-form");if(login)login.onsubmit=async function(e){e.preventDefault();var b=$("#portal-login-submit"),em=$("#portal-login-email"),pw=$("#portal-login-password"),er=$("#portal-login-error");if(!b||!em||!pw)return;var reg=this.dataset.mode==="register",email=em.value.trim(),password=pw.value;b.disabled=true;if(er)er.textContent="";try{if(!db)throw new Error("認証ライブラリを読み込めませんでした。ページを再読み込みしてお試しください。");var r=reg?await db.auth.signUp({email:email,password:password,options:{emailRedirectTo:location.origin+"/mypage/"}}):await db.auth.signInWithPassword({email:email,password:password});if(r.error)throw r.error;pw.value="";if(reg&&!r.data.session){if(er)er.textContent="確認メールを送信しました。メール内のリンクから登録を完了してください。";return;}if(modal)modal.hidden=true;toast(reg?"アカウントを作成しました。同期しています…":"ログインしました。同期しています…");}catch(err){var msg=String(err&&err.message||err||"通信エラー");if(er)er.textContent=(reg?"新規登録できませんでした：":"ログインできませんでした：")+msg+(useGas?"（GAS中継通信）":"");console.error("KURO portal auth error",err);}finally{b.disabled=false;}};
 }
 async function init(){st.data=load();guest();document.body.dataset.theme=st.data.preferences.theme||"light";document.body.dataset.transport=useGas?"gas":"direct";document.title=titles[page][0]+"｜KURO Lab";var md=$('meta[name="description"]');if(md)md.content=titles[page][1];$("#portal-desktop-nav").innerHTML=nav.map(function(x){return '<a href="'+x[3]+'" '+(x[0]===page?'aria-current="page"':"")+'>'+x[1]+'</a>';}).join("");$("#portal-mobile-nav").innerHTML=nav.filter(function(x){return ["home","search","favorites","notifications","mypage"].indexOf(x[0])>=0;}).map(function(x){return '<a href="'+x[3]+'" '+(x[0]===page?'aria-current="page"':"")+'><span>'+x[2]+'</span><span>'+x[1]+'</span></a>';}).join("");initLogin();render();if(!db){console.error("KURO Supabase SDK could not be loaded");return;}var a=await db.from("portal_announcements").select("id,title,body,href,created_at").eq("published",true).order("created_at",{ascending:false}).limit(20);if(!a.error)st.ann=a.data||[];var ss=await db.auth.getSession();st.user=ss.data&&ss.data.session?ss.data.session.user:null;if(st.user)await sync();db.auth.onAuthStateChange(function(ev,session){st.user=session?session.user:null;if(ev==="PASSWORD_RECOVERY"){setRecoveryMode(true);$("#portal-login-modal").hidden=false;}if(ev==="SIGNED_IN"&&st.user)setTimeout(sync,0);render();});function recordVisit(item){var h={item_key:item.key,title:item.title,href:item.href,visited_at:new Date().toISOString()},i=st.data.history.findIndex(function(x){return x.item_key===item.key;});if(i>=0)st.data.history.splice(i,1);st.data.history.unshift(h);st.data.history=st.data.history.slice(0,100);save();if(st.user)db.from("portal_history").upsert(Object.assign({user_id:st.user.id},h),{onConflict:"user_id,item_key"});}
 var item=catalog.find(function(x){return x.href.slice(0,-1)===path;});if(item)recordVisit(item);document.addEventListener("click",function(e){var a=e.target.closest("a[href]");if(!a)return;var u=new URL(a.href,location.href);if(u.origin!==location.origin)return;var destination=catalog.find(function(x){return x.href===u.pathname;});if(destination)recordVisit(destination);});render();}
