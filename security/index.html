@@ -40,23 +40,6 @@ a:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius
     "@type": "WebSite",
     "name": "KURO",
     "url": "https://kurolab.cc.cd/"
-  },
-  "breadcrumb": {
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-      {
-        "@type": "ListItem",
-        "position": 1,
-        "name": "ホーム",
-        "item": "https://kurolab.cc.cd/"
-      },
-      {
-        "@type": "ListItem",
-        "position": 2,
-        "name": "セキュリティ",
-        "item": "https://kurolab.cc.cd/security/"
-      }
-    ]
   }
 }
 </script>
@@ -74,6 +57,25 @@ a:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
   gtag('config', 'G-MMV6DL5ZBJ');
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "ホーム",
+      "item": "https://kurolab.cc.cd/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "セキュリティ"
+    }
+  ]
+}
 </script>
 </head>
 <body class="kuro-page kuro-theme-light">
@@ -95,7 +97,9 @@ a:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius
   </nav></div>
 </header>
 
-<main class="wrap"><div class="eyebrow">KURO INFORMATION</div><h1>セキュリティ</h1><p class="updated">最終更新日：2026年11月8日</p>
+<main class="wrap">
+<nav class="kuro-breadcrumb" aria-label="パンくずリスト" style="max-width:1040px;margin:0 auto 18px;padding:14px 0 4px;font-size:13px;color:#718096;display:flex;flex-wrap:wrap;gap:8px;align-items:center"><a href="/" style="color:inherit;text-decoration:underline;text-underline-offset:3px">ホーム</a><span aria-hidden="true">›</span><span aria-current="page">セキュリティ</span></nav>
+<div class="eyebrow">KURO INFORMATION</div><h1>セキュリティ</h1><p class="updated">最終更新日：2026年11月8日</p>
 <p class="intro">KUROは、利用者が安心してサービスを利用できるよう、セキュリティ設定の見直しと安全な運用に取り組みます。</p>
 <section><h2>現在の取り組み</h2><ul><li>HTTPSによる暗号化通信を利用</li><li>ホスティング側でセキュリティ関連HTTPヘッダーを設定</li><li>認証・データ保存にSupabaseを利用</li><li>不正利用や不審なリンクへの注意喚起</li><li>公開ページ・依存サービス・アクセス制御の継続的な確認</li></ul></section>
 <section><h2>利用者自身でできること</h2><ul><li>他サービスと異なる推測されにくいパスワードを設定する</li><li>パスワードやメールの確認コードを他人に共有しない</li><li>不審なリンクやファイルを開かない</li><li>共有端末では利用後にログアウトする</li><li>プロフィールや投稿に個人情報を載せない</li></ul></section>
