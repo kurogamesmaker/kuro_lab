@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://kurolab.cc.cd/</loc><lastmod>2026-11-14</lastmod></url>
+  <url><loc>https://kurolab.cc.cd/search/</loc><lastmod>2026-11-14</lastmod></url>
+  <url><loc>https://kurolab.cc.cd/notifications/</loc><lastmod>2026-11-14</lastmod></url>
+  <url><loc>https://kurolab.cc.cd/mypage/</loc><lastmod>2026-11-14</lastmod></url>
+  <url><loc>https://kurolab.cc.cd/favorites/</loc><lastmod>2026-11-14</lastmod></url>
+  <url><loc>https://kurolab.cc.cd/history/</loc><lastmod>2026-11-14</lastmod></url>
+  <url><loc>https://kurolab.cc.cd/achievements/</loc><lastmod>2026-11-14</lastmod></url>
+  <url><loc>https://kurolab.cc.cd/request/</loc><lastmod>2026-11-14</lastmod></url>
+  <url><loc>https://kurolab.cc.cd/settings/</loc><lastmod>2026-11-14</lastmod></url>
   <url><loc>https://kurolab.cc.cd/sns/</loc><lastmod>2026-11-14</lastmod></url>
   <url><loc>https://kurolab.cc.cd/sns/gas/</loc><lastmod>2026-11-14</lastmod></url>
   <url><loc>https://kurolab.cc.cd/chat/</loc><lastmod>2026-11-14</lastmod></url>
