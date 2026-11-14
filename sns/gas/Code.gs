@@ -11,7 +11,7 @@ const KURO_ALLOWED_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD'];
 const KURO_ALLOWED_REQUEST_HEADERS = [
   'accept', 'accept-profile', 'authorization', 'cache-control',
   'content-profile', 'content-type', 'prefer', 'range', 'range-unit',
-  'x-client-info', 'x-upsert', 'content-range', 'x-signature'
+  'x-client-info', 'x-supabase-api-version', 'x-application-name', 'x-upsert', 'content-range', 'x-signature'
 ];
 const KURO_ALLOWED_RESPONSE_HEADERS = [
   'content-type', 'content-range', 'cache-control', 'etag',

@@ -31,3 +31,7 @@ Google/Appleログインを利用する場合は、Authentication → URL Config
 - GASの実行時間・URL Fetch割当、Vercelのリクエストサイズ上限がある。大きなファイル・高負荷用途には適さない。
 - 学校などがGASドメインも遮断している場合、この経路も利用できない。
 - 旧版は /sns/ に残し、新版画面からいつでも戻れる。
+
+
+## KURO LabポータルのGAS認証更新
+KURO Labポータルもこの同じGAS Webアプリを中継先として使用します。`Code.gs` を更新した場合は、Apps Scriptで「デプロイ」→「デプロイを管理」→既存Webアプリの編集（鉛筆）→バージョン「新バージョン」→「デプロイ」を実行してください。コードを保存しただけでは公開中のWebアプリには反映されません。更新後、`https://kurolab.cc.cd/api/kuro-gas-proxy?health=1` が `ready:true` になることを確認してください。
