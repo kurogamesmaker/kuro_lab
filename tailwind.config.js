@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ["./sns/index.html"],
+  content: ["./sns/index.html", "./sns/gas/index.html", "./game/kaiten-sushi-typing/index.html"],
   darkMode: "class",
   theme: {
     extend: {
