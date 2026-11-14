@@ -183,9 +183,9 @@ function bindDashboard(){
   if(after){if(target.nextElementSibling!==moving)grid.insertBefore(moving,target.nextElementSibling);}
   else if(target!==moving.nextElementSibling){grid.insertBefore(moving,target);}
  }
- function applyResize(x){
+ function applyResize(x,y){
   if(!resize)return;
-  var delta=x-resize.startX,step=Math.max(44,resize.gridWidth/12*1.65),idx=Math.max(0,Math.min(3,resize.startIndex+Math.round(delta/step)));
+  var delta=((x-resize.startX)+(y-resize.startY))*0.5,step=Math.max(36,resize.gridWidth/12*0.95),idx=Math.max(0,Math.min(3,resize.startIndex+Math.round(delta/step)));
   var size=["small","half","wide","full"][idx];resize.size=size;resize.item.dataset.size=size;
  }
  grid.addEventListener("pointerdown",function(e){
@@ -195,7 +195,7 @@ function bindDashboard(){
   if(grip){
    e.preventDefault();e.stopPropagation();
    var sizes=["small","half","wide","full"],current=item.dataset.size||"half",rect=grid.getBoundingClientRect();
-   resize={id:item.dataset.widgetId,item:item,startX:e.clientX,startIndex:Math.max(0,sizes.indexOf(current)),size:current,gridWidth:rect.width};
+   resize={id:item.dataset.widgetId,item:item,startX:e.clientX,startY:e.clientY,startIndex:Math.max(0,sizes.indexOf(current)),size:current,gridWidth:rect.width};
    item.classList.add("resizing");
   }else{
    if(e.target.closest("button,a,input,select,textarea,[contenteditable=true],[data-widget-drag]"))return;
@@ -205,7 +205,7 @@ function bindDashboard(){
  });
  grid.addEventListener("pointermove",function(e){
   if(drag){e.preventDefault();moveBeforePoint(e.clientX,e.clientY);}
-  else if(resize){e.preventDefault();applyResize(e.clientX);}
+  else if(resize){e.preventDefault();applyResize(e.clientX,e.clientY);}
  });
  grid.addEventListener("pointerup",finishPointer);
  grid.addEventListener("pointercancel",finishPointer);
