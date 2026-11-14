@@ -50,3 +50,38 @@ body.kuro-portal[data-density=compact] .portal-widget{padding:12px}body.kuro-por
 body.kuro-portal[data-theme=light]{--bg:#f4f7fb;--surface:#fff;--surface2:#f7faff;--ink:#17283c;--muted:#6c7c90;--line:#e3eaf2;--blue:#087fbd;--blue2:#e9f6fd;--nav:#fff;background:var(--bg);color:var(--ink)}body.kuro-portal[data-theme=light] .portal-header{background:#ffffffed;border-color:var(--line)}body.kuro-portal[data-theme=light] .portal-brand strong{color:var(--ink)}body.kuro-portal[data-theme=light] .portal-topnav a{color:var(--muted)}body.kuro-portal[data-theme=light] .portal-topnav a[aria-current=page]{background:var(--blue2);color:var(--blue)}body.kuro-portal[data-theme=light] .portal-card,body.kuro-portal[data-theme=light] .portal-widget,body.kuro-portal[data-theme=light] .portal-dashboard-editor{background:var(--surface);border-color:var(--line);color:var(--ink)}body.kuro-portal[data-theme=light] .portal-card p,body.kuro-portal[data-theme=light] .portal-muted{color:var(--muted)}body.kuro-portal[data-theme=light] .portal-btn{background:var(--surface);border-color:var(--line);color:var(--ink)}body.kuro-portal[data-theme=light] .portal-btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}body.kuro-portal[data-theme=light] .portal-footer{background:var(--surface);border-color:var(--line)}body.kuro-portal[data-theme=light] .portal-dashboard-hero{background:linear-gradient(125deg,#fff,#eef6fc)}body.kuro-portal[data-theme=light] .portal-back-button,body.kuro-portal[data-theme=light] .portal-quick-button{background:var(--surface2);color:var(--ink);border-color:var(--line)}body.kuro-portal[data-theme=light] .portal-widget-picker button{background:var(--surface2);color:var(--ink)}body.kuro-portal[data-theme=light] .portal-widget-picker button.selected{background:var(--blue2);border-color:var(--blue)}
 @media(max-width:900px){.portal-dashboard-hero{align-items:flex-start;flex-direction:column}.portal-dashboard-actions{justify-content:flex-start}.portal-widget-picker{grid-template-columns:repeat(3,minmax(0,1fr))}.portal-shortcut-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.portal-dashboard-grid{grid-template-columns:1fr;gap:11px}.portal-widget,.portal-widget[data-size=full]{grid-column:1/-1;padding:14px}.portal-dashboard-hero{padding:21px}.portal-dashboard-hero h1{font-size:30px}.portal-dashboard-actions{width:100%}.portal-dashboard-actions button{flex:1;min-width:0;font-size:11px;padding:8px 9px}.portal-widget-picker{grid-template-columns:repeat(2,minmax(0,1fr))}.portal-widget-head{gap:6px}.portal-widget-tools{gap:2px}.portal-widget-tools button{width:28px;height:30px}.portal-network-status{padding:3px 5px}.portal-network-status span{display:none}.portal-quick-button,.portal-back-button{padding:6px 8px;font-size:11px}.portal-brand{gap:6px}.portal-brand strong{font-size:14px!important}.portal-header-inner{gap:6px!important}.portal-error-panel{bottom:calc(78px + env(safe-area-inset-bottom))}.portal-dashboard-game-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* KURO personal design controls */
+.portal-dashboard-grid .portal-widget[data-size=small]{grid-column:span 4}
+.portal-dashboard-grid .portal-widget[data-size=half]{grid-column:span 6}
+.portal-dashboard-grid .portal-widget[data-size=wide]{grid-column:span 8}
+.portal-dashboard-grid .portal-widget[data-size=full]{grid-column:1/-1}
+.portal-dashboard-grid[data-layout=three] .portal-widget[data-size=half]{grid-column:span 4}
+.portal-dashboard-grid[data-layout=single] .portal-widget{grid-column:1/-1}
+.portal-editor-layout{display:flex;align-items:center;gap:12px;margin:14px 0}
+.portal-editor-layout label{font-size:12px;font-weight:800}
+.portal-editor-layout select{max-width:200px;min-height:40px}
+.portal-custom-link-form{display:grid;gap:9px;margin-top:17px;padding:15px;border:1px dashed var(--line);border-radius:13px;background:var(--surface2)}
+.portal-custom-link-form>b{font-size:13px}
+.portal-custom-link-fields{display:grid;grid-template-columns:1fr 1.4fr .55fr;gap:8px}
+.portal-custom-link-fields .portal-input{min-width:0;min-height:42px;font-size:12px}
+.portal-custom-link-form>small{font-size:10px;color:var(--muted)}
+.portal-custom-link-list{display:grid;gap:5px;margin-top:10px}
+.portal-custom-link-list:empty{display:none}
+.portal-custom-link-row{display:flex;align-items:center;gap:9px;padding:7px 9px;border:1px solid var(--line);border-radius:9px}
+.portal-custom-link-row span{font-size:18px}
+.portal-custom-link-row b{flex:1;min-width:0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.portal-custom-link-row small{max-width:42%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:10px}
+.portal-custom-link-row button{width:30px;height:30px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);cursor:pointer}
+.portal-custom-link-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.portal-custom-link-grid a{display:flex;align-items:center;gap:8px;min-height:58px;padding:10px;border:1px solid var(--line);border-radius:11px;background:var(--surface2);text-decoration:none;min-width:0}
+.portal-custom-link-grid a span{font-size:20px}
+.portal-custom-link-grid a b{flex:1;min-width:0;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.portal-custom-link-grid a i{font-style:normal;color:var(--muted)}
+body.kuro-portal[data-background=plain]{background:var(--bg)!important}
+body.kuro-portal[data-background=grid]{background-color:var(--bg)!important;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px)!important;background-size:34px 34px!important}
+body.kuro-portal[data-background=aurora]{background:radial-gradient(ellipse at 48% -12rem,#282047 0,transparent 43rem),repeating-linear-gradient(145deg,#0c0d14 0 36px,#10111a 37px 70px)!important}
+body.kuro-portal[data-theme=light][data-background=aurora]{background:radial-gradient(ellipse at 48% -12rem,#e3dafa 0,transparent 43rem),linear-gradient(145deg,#f4f7fb,#eef3f9)!important}
+@media(max-width:900px){.portal-dashboard-grid .portal-widget[data-size=small],.portal-dashboard-grid .portal-widget[data-size=half],.portal-dashboard-grid .portal-widget[data-size=wide],.portal-dashboard-grid[data-layout=three] .portal-widget[data-size=half]{grid-column:span 6}.portal-custom-link-fields{grid-template-columns:1fr 1fr}.portal-custom-link-fields input:first-child{grid-column:1/-1}}
+@media(max-width:700px){.portal-dashboard-grid .portal-widget[data-size=small],.portal-dashboard-grid .portal-widget[data-size=half],.portal-dashboard-grid .portal-widget[data-size=wide],.portal-dashboard-grid .portal-widget[data-size=full],.portal-dashboard-grid[data-layout=three] .portal-widget[data-size=half]{grid-column:1/-1}.portal-custom-link-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.portal-custom-link-fields{grid-template-columns:1fr}.portal-custom-link-fields input:first-child{grid-column:auto}.portal-editor-layout{align-items:stretch;flex-direction:column}.portal-editor-layout select{max-width:none}}
