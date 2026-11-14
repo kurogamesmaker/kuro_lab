@@ -15,9 +15,9 @@ async function ensureSupabaseSdk(){
 }
 var supabaseReady=await ensureSupabaseSdk();
 var requestedTransport=new URLSearchParams(location.search).get("transport");
-if(requestedTransport==="gas")localStorage.setItem("kuro_portal_transport","gas");
-if(requestedTransport==="direct")localStorage.setItem("kuro_portal_transport","direct");
-var useGas=(requestedTransport||localStorage.getItem("kuro_portal_transport")||"direct")==="gas";
+// KURO portal defaults to GAS relay. Direct mode is only enabled explicitly.
+var useGas=requestedTransport!=="direct";
+localStorage.setItem("kuro_portal_transport",useGas?"gas":"direct");
 function gasFetch(input,init){
  var req=new Request(input,init),url=new URL(req.url);
  if(url.origin!==SUPABASE_URL)return fetch(req);
@@ -36,7 +36,8 @@ function gasFetch(input,init){
    });
  });
 }
-var db=supabaseReady?window.supabase.createClient(SUPABASE_URL,PUBLISHABLE_KEY,useGas?{global:{fetch:gasFetch}}:{}):null;
+var db=supabaseReady?window.supabase.createClient(SUPABASE_URL,PUBLISHABLE_KEY,{global:{fetch:useGas?gasFetch:window.fetch}}):null;
+console.info("KURO portal transport:",useGas?"GAS relay":"direct");
 var S="kuro_portal_v1",G="kuro_portal_guest_id",path=location.pathname.replace(/\/+$/,"")||"/";
 var page=path==="/"?"home":path.split("/")[1];
 var titles={home:["KURO Lab ポータル","サービス、ゲーム、お知らせにすぐアクセス。"],search:["KURO Lab内を検索","サービス、ゲーム、ガイドをまとめて検索できます。"],notifications:["お知らせ","KURO Labからのお知らせを確認できます。"],mypage:["マイページ","アカウントと利用状況を確認できます。"],favorites:["お気に入り","保存したサービスやゲームを確認できます。"],history:["閲覧履歴","最近開いたサービスやゲームを確認できます。"],achievements:["実績","利用状況に応じた実績を確認できます。"],request:["リクエストBOX","機能やサービスのリクエストを送信できます。"],settings:["設定","ポータルの表示設定を変更できます。"]};
@@ -98,7 +99,7 @@ function setRecoveryMode(active){
 function initLogin(){
  $("#portal-account-button").onclick=function(){if(st.user)location.href="/mypage/";else openLogin();};
  $("#portal-transport-button").textContent=useGas?"通常版":"GAS版";
- $("#portal-transport-button").onclick=function(){var next=useGas?"direct":"gas";localStorage.setItem("kuro_portal_transport",next);var u=new URL(location.href);if(next==="gas")u.searchParams.set("transport","gas");else u.searchParams.delete("transport");location.href=u.pathname+u.search;};
+ $("#portal-transport-button").onclick=function(){var next=useGas?"direct":"gas";localStorage.setItem("kuro_portal_transport",next);var u=new URL(location.href);u.searchParams.set("transport",next);location.href=u.pathname+u.search;};
  $("#portal-login-close").onclick=function(){$("#portal-login-modal").hidden=true;};
  function showLoginError(message){$("#portal-login-error").textContent=message;}
  $("#portal-forgot-password").onclick=async function(){
