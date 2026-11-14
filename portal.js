@@ -186,9 +186,12 @@ function bindDashboard(){
  }
  function applyResize(x,y){
   if(!resize)return;
-  var dx=x-resize.startX,dy=y-resize.startY,delta=Math.abs(dx)>=Math.abs(dy)?dx:dy;
-  var step=Math.max(22,resize.gridWidth/24),idx=Math.max(0,Math.min(3,resize.startIndex+Math.round(delta/step)));
-  var size=["small","half","wide","full"][idx];resize.size=size;resize.item.dataset.size=size;
+  var dx=x-resize.startX,dy=y-resize.startY;
+  var delta=Math.abs(dx)>=Math.abs(dy)?dx:dy;
+  var step=Math.max(18,Math.min(42,resize.gridWidth/30));
+  var idx=Math.max(0,Math.min(3,resize.startIndex+Math.round(delta/step)));
+  var size=["small","half","wide","full"][idx];
+  if(size!==resize.size){resize.size=size;resize.item.dataset.size=size;}
  }
  grid.addEventListener("pointerdown",function(e){
   if(!st.dashboardEditing)return;
@@ -203,14 +206,14 @@ function bindDashboard(){
    if(e.target.closest("button,a,input,select,textarea,[contenteditable=true]"))return;
    drag={id:item.dataset.widgetId,pointerId:e.pointerId};item.classList.add("drag-active");
   }
-  try{grid.setPointerCapture(e.pointerId);}catch(err){}
+  try{item.setPointerCapture(e.pointerId);}catch(err){}
  });
- document.addEventListener("pointermove",function(e){
+ grid.addEventListener("pointermove",function(e){
   if(drag&&e.pointerId===drag.pointerId){e.preventDefault();moveBeforePoint(e.clientX,e.clientY);}
   else if(resize&&e.pointerId===resize.pointerId){e.preventDefault();applyResize(e.clientX,e.clientY);}
  },{passive:false});
- document.addEventListener("pointerup",function(e){if((drag&&e.pointerId===drag.pointerId)||(resize&&e.pointerId===resize.pointerId))finishPointer();});
- document.addEventListener("pointercancel",function(e){if((drag&&e.pointerId===drag.pointerId)||(resize&&e.pointerId===resize.pointerId))finishPointer();});
+ grid.addEventListener("pointerup",function(e){if((drag&&e.pointerId===drag.pointerId)||(resize&&e.pointerId===resize.pointerId))finishPointer();});
+ grid.addEventListener("pointercancel",function(e){if((drag&&e.pointerId===drag.pointerId)||(resize&&e.pointerId===resize.pointerId))finishPointer();});
  if($("#portal-clock-time")){function tick(){var n=new Date(),t=$("#portal-clock-time"),d=$("#portal-clock-date");if(t)t.textContent=new Intl.DateTimeFormat("ja-JP",{hour:"2-digit",minute:"2-digit"}).format(n);if(d)d.textContent=new Intl.DateTimeFormat("ja-JP",{year:"numeric",month:"long",day:"numeric",weekday:"long"}).format(n);}tick();if(!window.kuroClockTimer)window.kuroClockTimer=setInterval(tick,15000);}
 }
 function updateNetworkStatus(){var e=$("#portal-network-status");if(!e)return;var off=!navigator.onLine,busy=(window.__kuroPendingRequests||0)>0;e.dataset.state=off?"offline":busy?"busy":"online";e.innerHTML='<i></i><span>'+(off?"オフライン":busy?"通信中":"オンライン")+'</span>';e.title=off?"ネットワーク未接続":busy?"データを読み込み中":"通信できます";}
