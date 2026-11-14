@@ -133,3 +133,16 @@ body.kuro-portal[data-theme=light][data-background=aurora]{background:radial-gra
 }
 @media(prefers-reduced-motion:reduce){.portal-widget.is-editing{animation:none}}
 body[data-motion=reduced] .portal-widget.is-editing{animation:none}
+
+
+.portal-widget-size-control{display:flex;align-items:center;gap:6px;padding:0 4px;color:var(--muted);font-size:10px;white-space:nowrap}
+.portal-widget-size-control input{width:82px;max-width:13vw;margin:0;accent-color:var(--blue);cursor:ew-resize;touch-action:pan-x}
+.portal-widget-tools{align-items:center}
+.portal-widget[data-size=small]{grid-column:span 4}
+.portal-widget[data-size=half]{grid-column:span 6}
+.portal-widget[data-size=wide]{grid-column:span 8}
+.portal-widget[data-size=full]{grid-column:1/-1}
+.portal-widget-drag-handle{cursor:grab;touch-action:none}
+.portal-widget-drag-handle:active{cursor:grabbing}
+@media(max-width:900px){.portal-widget[data-size=small],.portal-widget[data-size=half],.portal-widget[data-size=wide]{grid-column:span 6}}
+@media(max-width:700px){.portal-widget,.portal-widget[data-size=small],.portal-widget[data-size=half],.portal-widget[data-size=wide],.portal-widget[data-size=full]{grid-column:1/-1}.portal-widget-size-control input{width:70px;max-width:20vw}}
