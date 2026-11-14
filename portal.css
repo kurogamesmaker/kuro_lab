@@ -187,3 +187,12 @@ body[data-motion=reduced] .portal-widget.is-editing{animation:none}
   #portal-dashboard-grid .portal-widget[data-size="wide"]{grid-column:span 7}
   #portal-dashboard-grid .portal-widget[data-size="full"]{grid-column:1/-1}
 }
+
+/* Preserve chosen dashboard layout while allowing per-widget sizes */
+#portal-dashboard-grid[data-layout="three"] .portal-widget[data-size="half"]{grid-column:span 4}
+#portal-dashboard-grid[data-layout="single"] .portal-widget{grid-column:1/-1}
+#portal-dashboard-grid.is-resize-mode .portal-widget[data-widget-id] [data-widget-remove]{cursor:pointer!important}
+@media(max-width:700px){
+  #portal-dashboard-grid[data-layout="three"] .portal-widget[data-size="half"]{grid-column:span 4}
+  #portal-dashboard-grid[data-layout="single"] .portal-widget{grid-column:1/-1}
+}
