@@ -17,28 +17,28 @@
 
   var groups = [
     { label: "WORKSPACE", items: [
-      { href: "/", label: "ホーム", icon: "⌂" },
-      { href: "/search/", label: "全体検索", icon: "⌕" }
+      { href: "/", label: "KURO HOME", icon: "⌂" },
+      { href: "/search/", label: "KURO EXPLORE", icon: "⌕" }
     ] },
     { label: "DISCOVER", items: [
-      { href: "/games/", label: "ゲーム", icon: "🎮" },
+      { href: "/games/", label: "KURO GAMES", icon: "🎮" },
       { href: "/game/kaiten-sushi-typing/", label: "回転寿司タイピング", icon: "🍣" },
       { href: "/game/block-blast/", label: "ブロックブラスト", icon: "🧩" }
     ] },
     { label: "COMMUNITY", items: [
       { href: "/sns/", label: "KURO SNS", icon: "💬" },
-      { href: "/chat/", label: "オープンチャット", icon: "🗨️" }
+      { href: "/chat/", label: "KURO CHAT", icon: "🗨️" }
     ] },
     { label: "LIBRARY", items: [
       { href: "/favorites/", label: "お気に入り", icon: "☆" },
       { href: "/history/", label: "閲覧履歴", icon: "◷" },
-      { href: "/notifications/", label: "お知らせ", icon: "♧", badge: true },
+      { href: "/notifications/", label: "KURO NOTIFICATIONS", icon: "♧", badge: true },
       { href: "/achievements/", label: "実績", icon: "✧" }
     ] },
     { label: "PREFERENCES", items: [
       { href: "/request/", label: "リクエストBOX", icon: "✉" },
       { href: "/settings/", label: "表示設定", icon: "⚙" },
-      { href: "/mypage/", label: "マイページ", icon: "◎" }
+      { href: "/mypage/", label: "KURO ID", icon: "◎" }
     ] }
   ];
 
