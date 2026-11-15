@@ -535,6 +535,53 @@ Deno.serve(async (req: Request) => {
       return reply({ ok: true }, 200, origin);
     }
 
+    if (action === "update_user_email") {
+      const targetUserId = typeof body.userId === "string" ? body.userId : "";
+      const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(targetUserId)) return reply({ error: "Invalid user ID" }, 400, origin);
+      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || email.length > 254) return reply({ error: "Invalid email address" }, 400, origin);
+      if (targetUserId === caller.id) return reply({ error: "Change your own administrator email through account settings" }, 409, origin);
+      const { data: protectedAdmin, error: protectedError } = await admin.from("admin_users").select("user_id").eq("user_id", targetUserId).maybeSingle();
+      if (protectedError) throw protectedError;
+      if (protectedAdmin) return reply({ error: "Administrator email changes are protected" }, 409, origin);
+      const { data: targetData, error: targetError } = await admin.auth.admin.getUserById(targetUserId);
+      if (targetError || !targetData?.user) return reply({ error: "User not found" }, 404, origin);
+      const previousEmail = targetData.user.email || "";
+      const { data: updated, error: updateError } = await admin.auth.admin.updateUserById(targetUserId, { email });
+      if (updateError) throw updateError;
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id, action: "account.email_update", target_user_id: targetUserId,
+        metadata: { previous_email: previousEmail, new_email: email }
+      });
+      if (auditError) throw auditError;
+      return reply({ ok: true, email: updated.user?.email || email }, 200, origin);
+    }
+
+    if (action === "set_user_plan") {
+      const targetUserId = typeof body.userId === "string" ? body.userId : "";
+      const plan = body.plan === "pro" ? "pro" : body.plan === "free" ? "free" : "";
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(targetUserId)) return reply({ error: "Invalid user ID" }, 400, origin);
+      if (!plan) return reply({ error: "Plan must be pro or free" }, 400, origin);
+      if (targetUserId === caller.id) return reply({ error: "You cannot change your own administrator plan" }, 409, origin);
+      const { data: protectedAdmin, error: protectedError } = await admin.from("admin_users").select("user_id").eq("user_id", targetUserId).maybeSingle();
+      if (protectedError) throw protectedError;
+      if (protectedAdmin) return reply({ error: "Administrator plans are protected" }, 409, origin);
+      const { data: targetData, error: targetError } = await admin.auth.admin.getUserById(targetUserId);
+      if (targetError || !targetData?.user) return reply({ error: "User not found" }, 404, origin);
+      const currentMetadata = targetData.user.app_metadata || {};
+      const nextMetadata = { ...currentMetadata };
+      if (plan === "pro") nextMetadata.plan = "pro";
+      else delete nextMetadata.plan;
+      const { error: updateError } = await admin.auth.admin.updateUserById(targetUserId, { app_metadata: nextMetadata });
+      if (updateError) throw updateError;
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id, action: "account.plan_update", target_user_id: targetUserId,
+        metadata: { previous_plan: currentMetadata.plan || "free", new_plan: plan, manual_override: true }
+      });
+      if (auditError) throw auditError;
+      return reply({ ok: true, plan }, 200, origin);
+    }
+
     if (action === "list_users") {
       const page = Math.max(1, Math.min(200, Number(body.page) || 1));
       const perPage = 500;
