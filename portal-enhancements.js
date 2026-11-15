@@ -34,6 +34,8 @@
     ] },
     { label: "アカウント", items: [
       { href: "/mypage/", label: "KURO ID", icon: "◎" },
+      { href: "/pro/", label: "KUROLAB Pro", icon: "✦" },
+      { href: "/pro-tools/", label: "Pro専用ツール", icon: "⚡" },
       { href: "/settings/", label: "設定", icon: "⚙" },
       { href: "/request/", label: "リクエストBOX", icon: "✉" }
     ] },
@@ -347,8 +349,9 @@
   function createWorkspace() {
     var a = getApi(), p = getPrefs();
     if (!a || !p || !p.dashboardWorkspaces) return;
-    if (Object.keys(p.dashboardWorkspaces).length >= 6) {
-      a.toast("ワークスペースは最大6個まで作成できます");
+    var workspaceLimit = a.hasProFeature && a.hasProFeature("workspace_plus") ? 20 : 6;
+    if (Object.keys(p.dashboardWorkspaces).length >= workspaceLimit) {
+      a.toast(workspaceLimit > 6 ? "Proのワークスペース上限（20個）に達しました" : "Freeの上限は6個です。Proで最大20個まで拡張できます");
       return;
     }
     var name = window.prompt("新しいワークスペース名を入力してください（最大16文字）");
@@ -513,8 +516,9 @@
   function importSharedTemplate() {
     var a = getApi(), p = getPrefs(), payload = readIncomingTemplate();
     if (!a || !p || !payload || !p.dashboardWorkspaces) return;
-    if (Object.keys(p.dashboardWorkspaces).length >= 6) {
-      a.toast("ワークスペースは最大6個です。不要なワークスペースを削除してから追加してください");
+    var workspaceLimit = a.hasProFeature && a.hasProFeature("workspace_plus") ? 20 : 6;
+    if (Object.keys(p.dashboardWorkspaces).length >= workspaceLimit) {
+      a.toast(workspaceLimit > 6 ? "Proのワークスペース上限（20個）に達しました" : "Freeの上限は6個です。Proで最大20個まで拡張できます");
       return;
     }
     captureWorkspace();
