@@ -376,11 +376,11 @@
       updateBadges();
       return;
     }
-    var bar = document.querySelector(".portal-workspace-bar");
     var actions = dash.querySelector(".portal-dashboard-actions");
-    if (!bar) {
-      if (actions) actions.insertAdjacentHTML("beforeend", workspaceBar(p));
-      bar = dash.querySelector(".portal-workspace-bar");
+    var bar = dash.querySelector(".portal-workspace-bar");
+    if (!bar && actions) {
+      actions.insertAdjacentHTML("beforeend", workspaceBar(p));
+      bar = actions.querySelector(".portal-workspace-bar");
     }
     if (bar && actions && bar.parentElement !== actions) {
       var editButton = actions.querySelector("#portal-dashboard-edit");
