@@ -347,6 +347,7 @@
     if (!window.confirm("「" + w.name + "」を削除しますか？")) return;
     delete p.dashboardWorkspaces[id];
     if (p.activeWorkspace === id) {
+      window.__kuroCanvasScroll = null;
       var personal = p.dashboardWorkspaces.personal || { widgets: ["shortcuts", "games", "favorites", "activity", "recent", "achievements", "clock"], layout: "balanced", sizes: {}, spans: {}, heights: {} };
       var fallback = cloneSnapshot(personal);
       p.activeWorkspace = "personal";
