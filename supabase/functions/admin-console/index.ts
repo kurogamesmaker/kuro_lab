@@ -461,6 +461,164 @@ Deno.serve(async (req: Request) => {
       return reply({ ok: true }, 200, origin);
     }
 
+
+    if (action === "list_pro_management") {
+      const [appsResult, membersResult, invitesResult] = await Promise.all([
+        admin.from("pro_applications").select("id,user_id,reason,status,admin_note,reviewed_by,reviewed_at,created_at").order("created_at",{ascending:false}).limit(300),
+        admin.from("pro_memberships").select("user_id,status,source,starts_at,expires_at,features,approved_by,approved_at,updated_at").order("updated_at",{ascending:false}).limit(500),
+        admin.from("pro_invitations").select("id,invited_user_id,status,expires_at,membership_expires_at,created_at,accepted_at,created_by").order("created_at",{ascending:false}).limit(300)
+      ]);
+      for (const r of [appsResult,membersResult,invitesResult]) if(r.error) throw r.error;
+      const ids=[...new Set([...(appsResult.data||[]).map(x=>x.user_id),...(membersResult.data||[]).map(x=>x.user_id),...(invitesResult.data||[]).map(x=>x.invited_user_id)])];
+      const profileResult=ids.length?await admin.from("profiles").select("id,username,display_name").in("id",ids):{data:[],error:null};
+      if(profileResult.error) throw profileResult.error;
+      const profileMap=new Map((profileResult.data||[]).map(x=>[x.id,x]));
+      const emails=new Map<string,string>();
+      for(const id of ids){
+        const u=await admin.auth.admin.getUserById(id);
+        if(u.data?.user?.email) emails.set(id,u.data.user.email);
+      }
+      const decorate=(x:any,id:string)=>({...x,email:emails.get(id)||"",profile:profileMap.get(id)||null});
+      return reply({
+        applications:(appsResult.data||[]).map(x=>decorate(x,x.user_id)),
+        memberships:(membersResult.data||[]).map(x=>decorate(x,x.user_id)),
+        invitations:(invitesResult.data||[]).map(x=>decorate(x,x.invited_user_id))
+      },200,origin);
+    }
+
+    if (action === "review_pro_application") {
+      const applicationId=typeof body.applicationId==="string"?body.applicationId:"";
+      const approve=body.approve===true;
+      const adminNote=typeof body.adminNote==="string"?body.adminNote.trim().slice(0,1000):"";
+      const expiresAt=body.expiresAt?new Date(body.expiresAt):null;
+      if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(applicationId)) return reply({error:"Invalid application ID"},400,origin);
+      if(body.expiresAt && (!expiresAt || Number.isNaN(expiresAt.getTime()) || expiresAt.getTime()<=Date.now())) return reply({error:"有効期限は未来の日時にしてください。"},400,origin);
+      const {data:application,error:appError}=await admin.from("pro_applications").select("id,user_id,status").eq("id",applicationId).maybeSingle();
+      if(appError) throw appError;
+      if(!application) return reply({error:"Application not found"},404,origin);
+      if(application.status!=="pending") return reply({error:"この申請はすでに審査済みです。"},409,origin);
+      const {data:protectedAdmin,error:protectedError}=await admin.from("admin_users").select("user_id").eq("user_id",application.user_id).maybeSingle();
+      if(protectedError) throw protectedError;
+      if(protectedAdmin) return reply({error:"Administrator accounts are not eligible for Pro membership"},409,origin);
+      const now=new Date().toISOString();
+      if(approve){
+        const {error:memberError}=await admin.from("pro_memberships").upsert({
+          user_id:application.user_id,status:"active",source:"application",starts_at:now,
+          expires_at:expiresAt?expiresAt.toISOString():null,
+          features:{workspace_plus:true,pro_tools:true,customization_plus:true,early_access:true},
+          approved_by:caller.id,approved_at:now,updated_at:now
+        },{onConflict:"user_id"});
+        if(memberError) throw memberError;
+      }
+      const {data:updated,error:updateError}=await admin.from("pro_applications").update({
+        status:approve?"approved":"rejected",admin_note:adminNote||null,reviewed_by:caller.id,reviewed_at:now,updated_at:now
+      }).eq("id",applicationId).eq("status","pending").select("id,user_id,status").maybeSingle();
+      if(updateError) throw updateError;
+      if(!updated) return reply({error:"申請状態が更新されました。再読み込みしてください。"},409,origin);
+      if(!approve){
+        const allow=body.reapplyAllowed!==false;
+        const reapplyAfter=body.reapplyAfter?new Date(body.reapplyAfter):null;
+        if(body.reapplyAfter && (!reapplyAfter || Number.isNaN(reapplyAfter.getTime()))) return reply({error:"Invalid reapply date"},400,origin);
+        const {error:controlError}=await admin.from("pro_user_controls").upsert({
+          user_id:application.user_id,reapply_allowed:allow,reapply_after:reapplyAfter?reapplyAfter.toISOString():null,
+          admin_note:adminNote||null,updated_by:caller.id,updated_at:now
+        },{onConflict:"user_id"});
+        if(controlError) throw controlError;
+      }
+      const {error:auditError}=await admin.from("admin_audit_logs").insert({
+        actor_user_id:caller.id,action:approve?"pro.application.approve":"pro.application.reject",
+        target_user_id:application.user_id,metadata:{application_id:applicationId,expires_at:approve?(expiresAt?expiresAt.toISOString():null):null,reapply_allowed:approve?null:body.reapplyAllowed!==false}
+      });
+      if(auditError) throw auditError;
+      return reply({ok:true,application:updated},200,origin);
+    }
+
+    if (action === "create_pro_invitation") {
+      const targetUserId=typeof body.userId==="string"?body.userId:"";
+      const inviteExpiry=body.inviteExpiresAt?new Date(body.inviteExpiresAt):null;
+      const membershipExpiry=body.membershipExpiresAt?new Date(body.membershipExpiresAt):null;
+      if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(targetUserId)) return reply({error:"Invalid user ID"},400,origin);
+      if(!inviteExpiry||Number.isNaN(inviteExpiry.getTime())||inviteExpiry.getTime()<=Date.now()) return reply({error:"招待の有効期限を未来に設定してください。"},400,origin);
+      if(body.membershipExpiresAt && (!membershipExpiry||Number.isNaN(membershipExpiry.getTime())||membershipExpiry.getTime()<=Date.now())) return reply({error:"Pro利用期限を未来に設定してください。"},400,origin);
+      if(targetUserId===caller.id) return reply({error:"管理者自身への招待はできません。"},409,origin);
+      const {data:target,error:targetError}=await admin.auth.admin.getUserById(targetUserId);
+      if(targetError||!target?.user||target.user.is_anonymous) return reply({error:"User not found"},404,origin);
+      const {data:protectedAdmin,error:protectedError}=await admin.from("admin_users").select("user_id").eq("user_id",targetUserId).maybeSingle();
+      if(protectedError) throw protectedError;
+      if(protectedAdmin) return reply({error:"Administrator accounts are not eligible for Pro membership"},409,origin);
+      const {data:existing,error:existingError}=await admin.from("pro_memberships").select("status,expires_at").eq("user_id",targetUserId).maybeSingle();
+      if(existingError) throw existingError;
+      if(existing?.status==="active" && (!existing.expires_at||new Date(existing.expires_at).getTime()>Date.now())) return reply({error:"この利用者はすでにProです。"},409,origin);
+      const {data:invite,error}=await admin.from("pro_invitations").insert({
+        invited_user_id:targetUserId,status:"pending",expires_at:inviteExpiry.toISOString(),
+        membership_expires_at:membershipExpiry?membershipExpiry.toISOString():null,created_by:caller.id
+      }).select("id,invited_user_id,status,expires_at,membership_expires_at,created_at").single();
+      if(error) throw error;
+      const {error:auditError}=await admin.from("admin_audit_logs").insert({
+        actor_user_id:caller.id,action:"pro.invitation.create",target_user_id:targetUserId,
+        metadata:{invitation_id:invite.id,invite_expires_at:invite.expires_at,membership_expires_at:invite.membership_expires_at}
+      });
+      if(auditError) throw auditError;
+      return reply({ok:true,invitation:invite},200,origin);
+    }
+
+    if (action === "update_pro_invitation") {
+      const invitationId=typeof body.invitationId==="string"?body.invitationId:"";
+      if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(invitationId)) return reply({error:"Invalid invitation ID"},400,origin);
+      const {data,error}=await admin.from("pro_invitations").update({status:"revoked"}).eq("id",invitationId).eq("status","pending").select("id,invited_user_id").maybeSingle();
+      if(error) throw error;
+      if(!data) return reply({error:"招待が見つからないか、すでに処理済みです。"},409,origin);
+      const {error:auditError}=await admin.from("admin_audit_logs").insert({actor_user_id:caller.id,action:"pro.invitation.revoke",target_user_id:data.invited_user_id,metadata:{invitation_id:invitationId}});
+      if(auditError) throw auditError;
+      return reply({ok:true},200,origin);
+    }
+
+    if (action === "update_pro_membership") {
+      const targetUserId=typeof body.userId==="string"?body.userId:"";
+      const operation=String(body.operation||"");
+      if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(targetUserId)) return reply({error:"Invalid user ID"},400,origin);
+      if(targetUserId===caller.id) return reply({error:"自分自身の管理者Pro権限は変更できません。"},409,origin);
+      const {data:protectedAdmin,error:protectedError}=await admin.from("admin_users").select("user_id").eq("user_id",targetUserId).maybeSingle();
+      if(protectedError) throw protectedError;
+      if(protectedAdmin) return reply({error:"Administrator accounts are protected"},409,origin);
+      const {data:current,error:currentError}=await admin.from("pro_memberships").select("status,expires_at").eq("user_id",targetUserId).maybeSingle();
+      if(currentError) throw currentError;
+      if(!current) return reply({error:"Pro membership not found"},404,origin);
+      const now=new Date().toISOString();
+      let patch:any={updated_at:now};
+      if(operation==="suspend") patch.status="suspended";
+      else if(operation==="resume") {
+        if(current.expires_at&&new Date(current.expires_at).getTime()<=Date.now()) return reply({error:"期限切れのProは期限を更新してから再開してください。"},409,origin);
+        patch.status="active";
+      } else if(operation==="revoke") patch.status="revoked";
+      else if(operation==="set_expiry") {
+        const expiry=body.expiresAt?new Date(body.expiresAt):null;
+        if(body.expiresAt && (!expiry||Number.isNaN(expiry.getTime())||expiry.getTime()<=Date.now())) return reply({error:"期限は未来の日時にしてください。"},400,origin);
+        patch.expires_at=expiry?expiry.toISOString():null;
+        if(current.status==="expired" && !expiry) patch.status="active";
+        else if(current.status==="expired" && expiry) patch.status="active";
+      } else return reply({error:"Invalid membership operation"},400,origin);
+      const {data:updated,error:updateError}=await admin.from("pro_memberships").update(patch).eq("user_id",targetUserId).select("user_id,status,source,expires_at,features,updated_at").single();
+      if(updateError) throw updateError;
+      const {error:auditError}=await admin.from("admin_audit_logs").insert({actor_user_id:caller.id,action:"pro.membership."+operation,target_user_id:targetUserId,metadata:patch});
+      if(auditError) throw auditError;
+      return reply({ok:true,membership:updated},200,origin);
+    }
+
+    if (action === "set_pro_user_control") {
+      const targetUserId=typeof body.userId==="string"?body.userId:"";
+      const allowed=body.reapplyAllowed!==false;
+      const reapplyAfter=body.reapplyAfter?new Date(body.reapplyAfter):null;
+      const note=typeof body.adminNote==="string"?body.adminNote.trim().slice(0,1000):"";
+      if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(targetUserId)) return reply({error:"Invalid user ID"},400,origin);
+      if(body.reapplyAfter && (!reapplyAfter||Number.isNaN(reapplyAfter.getTime()))) return reply({error:"Invalid reapply date"},400,origin);
+      const {error}=await admin.from("pro_user_controls").upsert({user_id:targetUserId,reapply_allowed:allowed,reapply_after:reapplyAfter?reapplyAfter.toISOString():null,admin_note:note||null,updated_by:caller.id,updated_at:new Date().toISOString()},{onConflict:"user_id"});
+      if(error) throw error;
+      const {error:auditError}=await admin.from("admin_audit_logs").insert({actor_user_id:caller.id,action:"pro.reapply_control",target_user_id:targetUserId,metadata:{reapply_allowed:allowed,reapply_after:reapplyAfter?reapplyAfter.toISOString():null}});
+      if(auditError) throw auditError;
+      return reply({ok:true},200,origin);
+    }
+
     if (action === "list_user_reports") {
       const status = typeof body.status === "string" ? body.status : "open";
       const limit = Math.max(1, Math.min(300, Number(body.limit) || 250));
