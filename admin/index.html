@@ -36,6 +36,7 @@
 "use strict";
 const SUPABASE_URL="https://cprvpphlfpmiegjiutjn.supabase.co";
 const PUBLISHABLE_KEY="sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
+const $=s=>document.querySelector(s);
 const MODE_KEY="kuro-admin-connection-mode";
 const mode=localStorage.getItem(MODE_KEY)==="gas"?"gas":"supabase";
 async function gasFetch(input,init={}){
@@ -70,7 +71,6 @@ function setMode(next){if(next!=="gas"&&next!=="supabase")return;localStorage.se
 if(modeSelect)modeSelect.addEventListener("change",()=>setMode(modeSelect.value));
 if(modeSelectTop)modeSelectTop.addEventListener("change",()=>setMode(modeSelectTop.value));
 syncModeSelectors();
-const $=s=>document.querySelector(s);
 let rows=[],filter="all",channel=null,seen=new Set(),firstLoad=true;
 const labels={pending:"未対応",reviewing:"確認中",done:"対応済み"};
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -109,6 +109,7 @@ async function saveStatus(id,button){
  const row=rows.find(x=>x.id===id);if(row)row.status=status;render();
 }
 function subscribe(){
+ if(mode==="gas"){$("#connection").textContent="GAS経由（45秒ごとに更新）";return;}
  if(channel)db.removeChannel(channel);
  channel=db.channel("admin-portal-requests").on("postgres_changes",{event:"INSERT",schema:"public",table:"portal_requests"},payload=>{
   const r=payload.new;if(!r||rows.some(x=>x.id===r.id))return;
@@ -119,7 +120,7 @@ function subscribe(){
  }).subscribe(s=>{$("#connection").textContent=s==="SUBSCRIBED"?"リアルタイム接続中":"再接続待機中";});
 }
 async function enter(user){
- try{await checkAdmin(user);showApp(user);await load();subscribe();setInterval(()=>{if(!$("#appView").hidden)load();},45000);}
+ try{await checkAdmin(user);showApp(user);syncModeSelectors();await load();subscribe();setInterval(()=>{if(!$("#appView").hidden)load();},45000);}
  catch(e){await db.auth.signOut();showLogin(e.message||"管理者認証に失敗しました。");}
 }
 $("#loginForm").addEventListener("submit",async e=>{
