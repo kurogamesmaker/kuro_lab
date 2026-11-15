@@ -145,7 +145,10 @@ function bindPanel(){
  if(active==="convert"){fxConvert();unitConvert();}
 }
 function mount(){
- var node=document.getElementById("kuro-toolbox-root");if(!node)return;
+ var path=location.pathname.replace(/\\/+$/,"")||"/";
+ var node=document.getElementById("kuro-toolbox-root");
+ if(!node&&path==="/tools")node=document.getElementById("portal-main");
+ if(!node)return;
  if(clockTimer){clearInterval(clockTimer);clockTimer=null;}
  root=node;feeds=loadFeeds();root.innerHTML=shell();
  if(isToolPage){
