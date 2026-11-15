@@ -41,13 +41,14 @@
     if (host === "api.open-meteo.com" || host === "geocoding-api.open-meteo.com") return "weather";
     if (host === "api.microlink.io") return "ogp";
     if (u.origin === location.origin && path === "/api/workspace-rss") return "rss";
+    if (host === "script.google.com" || (u.origin === location.origin && path === "/api/kuro-gas-proxy")) return "gas_proxy";
     if (host.endsWith(".supabase.co")) {
       if (path.startsWith("/auth/")) return "supabase_auth";
       if (path.startsWith("/storage/")) return "supabase_storage";
       if (path.startsWith("/functions/")) return "supabase_edge";
       return "supabase_data_api";
     }
-    if (u.origin === location.origin && path.startsWith("/api/") && path !== "/api/kuro-gas-proxy") return "other_api";
+    if (u.origin === location.origin && path.startsWith("/api/")) return "other_api";
     return null;
   }
 
