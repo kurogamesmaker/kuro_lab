@@ -6,7 +6,7 @@
 const KURO_SUPABASE_URL = 'https://cprvpphlfpmiegjiutjn.supabase.co';
 const KURO_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn';
 const KURO_SECRET_PROPERTY = 'KURO_GAS_PROXY_SECRET';
-const KURO_ALLOWED_PREFIXES = ['/rest/v1/', '/auth/v1/', '/storage/v1/'];
+const KURO_ALLOWED_PREFIXES = ['/rest/v1/', '/auth/v1/', '/storage/v1/', '/functions/v1/'];
 const KURO_ALLOWED_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD'];
 const KURO_ALLOWED_REQUEST_HEADERS = [
   'accept', 'accept-profile', 'authorization', 'cache-control',
