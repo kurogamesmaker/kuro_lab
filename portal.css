@@ -312,3 +312,64 @@ body.kuro-portal{
     grid-template-columns:repeat(8,minmax(0,1fr));
   }
 }
+
+
+/* KURO header: keep navigation and utility buttons inside the viewport */
+.portal-header,
+.portal-header-inner{
+  box-sizing:border-box;
+  max-width:100%;
+}
+.portal-header-inner{
+  width:min(1440px,calc(100% - 32px));
+  min-width:0;
+  gap:8px 12px;
+}
+.portal-brand,
+.portal-back-button,
+.portal-quick-button,
+.portal-transport-button,
+.portal-network-status,
+.portal-account-button{
+  flex:0 0 auto;
+  min-width:0;
+}
+.portal-topnav{
+  min-width:0;
+  flex:1 1 auto;
+  flex-wrap:wrap;
+  align-items:center;
+}
+.portal-topnav a{
+  padding:8px 8px;
+  font-size:12px;
+}
+@media (max-width:1500px) and (min-width:701px){
+  .portal-header-inner{
+    flex-wrap:wrap;
+    padding:8px 0;
+    row-gap:7px;
+  }
+  .portal-back-button{order:0}
+  .portal-brand{order:1}
+  .portal-quick-button{order:2;margin-left:auto}
+  .portal-transport-button{order:3}
+  .portal-network-status{order:4}
+  .portal-account-button{order:5}
+  .portal-topnav{
+    order:6;
+    flex:1 0 100%;
+    width:100%;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap:4px;
+  }
+}
+@media(max-width:700px){
+  .portal-header-inner{
+    width:calc(100% - 26px);
+    max-width:calc(100% - 26px);
+    flex-wrap:nowrap;
+    padding:0;
+  }
+}
