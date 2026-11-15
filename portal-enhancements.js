@@ -16,36 +16,40 @@
   };
 
   var groups = [
-    { label: "WORKSPACE", items: [
-      { href: "/", label: "KURO HOME", icon: "⌂" },
-      { href: "/search/", label: "KURO EXPLORE", icon: "⌕" }
+    { label: "メイン", items: [
+      { href: "/", label: "ホーム", icon: "⌂" },
+      { href: "/search/", label: "探す", icon: "⌕" }
     ] },
-    { label: "DISCOVER", items: [
+    { label: "サービス", items: [
       { href: "/games/", label: "KURO GAMES", icon: "🎮" },
-      { href: "/game/kaiten-sushi-typing/", label: "回転寿司タイピング", icon: "🍣" },
-      { href: "/game/block-blast/", label: "ブロックブラスト", icon: "🧩" }
-    ] },
-    { label: "COMMUNITY", items: [
       { href: "/sns/", label: "KURO SNS", icon: "💬" },
-      { href: "/chat/", label: "KURO CHAT", icon: "🗨️" }
+      { href: "/chat/", label: "チャット", icon: "🗨️" }
     ] },
-    { label: "LIBRARY", items: [
+    { label: "マイライブラリ", items: [
       { href: "/favorites/", label: "お気に入り", icon: "☆" },
       { href: "/history/", label: "閲覧履歴", icon: "◷" },
-      { href: "/notifications/", label: "KURO NOTIFICATIONS", icon: "♧", badge: true },
       { href: "/achievements/", label: "実績", icon: "✧" }
     ] },
-    { label: "PREFERENCES", items: [
-      { href: "/request/", label: "リクエストBOX", icon: "✉" },
-      { href: "/settings/", label: "表示設定", icon: "⚙" },
-      { href: "/mypage/", label: "KURO ID", icon: "◎" }
+    { label: "お知らせ", items: [
+      { href: "/notifications/", label: "お知らせ一覧", icon: "♧", badge: true }
+    ] },
+    { label: "アカウント", items: [
+      { href: "/mypage/", label: "KURO ID", icon: "◎" },
+      { href: "/settings/", label: "設定", icon: "⚙" },
+      { href: "/request/", label: "リクエストBOX", icon: "✉" }
+    ] },
+    { label: "ヘルプ", items: [
+      { href: "/guide/", label: "使い方ガイド", icon: "📘" },
+      { href: "/faq/", label: "よくある質問", icon: "❔" },
+      { href: "/about/", label: "KURO Labについて", icon: "ⓘ" },
+      { href: "/contact/", label: "お問い合わせ", icon: "✉" }
     ] }
   ];
 
   var mobilePrimary = [
     { href: "/", label: "ホーム", icon: "⌂" },
     { href: "/games/", label: "ゲーム", icon: "🎮" },
-    { href: "/search/", label: "検索", icon: "⌕", action: "search" },
+    { href: "/search/", label: "探す", icon: "⌕", action: "search" },
     { href: "/sns/", label: "SNS", icon: "💬" }
   ];
 
@@ -110,8 +114,7 @@
       return '<div class="portal-sidebar-group"><div class="portal-sidebar-group-label">' +
         group.label + "</div>" + group.items.map(navItem).join("") + "</div>";
     }).join("");
-    return '<div class="portal-sidebar-brand"><span class="portal-sidebar-logo">K</span><span><b>KURO Lab</b><small>YOUR DIGITAL SPACE</small></span></div>' +
-      '<button type="button" class="portal-sidebar-search" data-open-quick="true"><span>⌕</span><b>機能・ページを検索</b><kbd>Ctrl K</kbd></button>' +
+    return '<div class="portal-sidebar-heading">ナビゲーション</div>' +
       '<div class="portal-sidebar-nav">' + blocks + "</div>" +
       '<div class="portal-sidebar-bottom"><div class="portal-sidebar-workspace"><span class="portal-sidebar-workspace-dot"></span><span><small>ACTIVE WORKSPACE</small><b id="portal-sidebar-workspace-name">普段使い</b></span></div>' +
       '<a class="portal-sidebar-settings" href="/settings/">⚙ <span>設定をカスタマイズ</span><i>↗</i></a></div>';
