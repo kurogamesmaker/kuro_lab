@@ -1113,20 +1113,47 @@ function drawOverviewTrend(points){
 }
 function renderOverviewBars(target,items,color,empty){const max=Math.max(1,...items.map(x=>Number(x.value||0)));$(target).innerHTML=items.length?items.map(x=>'<div class="ops-overview-bar-row"><span title="'+esc(x.label)+'">'+esc(x.label)+'</span><div class="ops-overview-bar-track"><div class="ops-overview-bar-fill" style="width:'+Math.max(0,Math.min(100,Number(x.value||0)/max*100))+'%;background:'+color+'"></div></div><b>'+Number(x.value||0).toLocaleString("ja-JP")+'</b></div>').join(""):'<div class="analytics-empty">'+empty+'</div>';}
 async function loadOpsOverview(){
- $("#opsOverviewUpdated").textContent="集計中…";$("#opsOverviewTrend").innerHTML='<text x="30" y="120">集計中…</text>';
+ $("#opsOverviewUpdated").textContent="集計中…";
+ $("#opsOverviewTrend").innerHTML='<text x="30" y="120">集計中…</text>';
+ $("#opsOverviewTrendNote").textContent="管理者APIからデータを取得しています。";
  try{
-  const since=new Date();since.setHours(0,0,0,0);since.setDate(since.getDate()-29);const sinceIso=since.toISOString();
-  const [usage,profileCount,postCount,posts,replies,chats]=await Promise.all([opsInvoke({action:"get_usage_analytics"}),db.from("profiles").select("id",{count:"exact",head:true}),db.from("posts").select("id",{count:"exact",head:true}),fetchAllAdminRows(()=>db.from("posts").select("id,created_at").gte("created_at",sinceIso).order("created_at",{ascending:true})),fetchAllAdminRows(()=>db.from("post_replies").select("id,created_at").gte("created_at",sinceIso).order("created_at",{ascending:true})),fetchAllAdminRows(()=>db.from("public_chat_messages").select("id,created_at").gte("created_at",sinceIso).order("created_at",{ascending:true}))]);
-  if(profileCount.error)throw profileCount.error;if(postCount.error)throw postCount.error;const n=v=>Number(v||0).toLocaleString("ja-JP");
-  $("#ovDau").textContent=n(usage.dau);$("#ovMau").textContent=n(usage.mau);$("#ovSnsUsers").textContent=n(profileCount.count);$("#ovSnsPosts").textContent=n(postCount.count);$("#ovApiErrors").textContent=n(usage.api_errors_24h);$("#ovPageViews").textContent=n(usage.page_views_30d);
-  const points=Array.from({length:30},(_,i)=>{const d=new Date(since);d.setDate(d.getDate()+i);return {key:overviewDateKey(d),label:d.toLocaleDateString("ja-JP",{month:"numeric",day:"numeric"}),dau:0,posts:0,replies:0,chat:0};}),map=new Map(points.map(p=>[p.key,p]));
-  (usage.daily||[]).forEach(x=>{const p=map.get(x.date);if(p)p.dau=Number(x.active_users||0);});posts.data.forEach(x=>{const p=map.get(overviewDateKey(x.created_at));if(p)p.posts++;});replies.data.forEach(x=>{const p=map.get(overviewDateKey(x.created_at));if(p)p.replies++;});chats.data.forEach(x=>{const p=map.get(overviewDateKey(x.created_at));if(p)p.chat++;});drawOverviewTrend(points);
-  const parts=[{label:"KUROLAB閲覧",value:Number(usage.page_views_30d||0),color:"#55b5f2"},{label:"SNS投稿",value:posts.data.length,color:"#a78bfa"},{label:"SNS返信",value:replies.data.length,color:"#55cda5"},{label:"公開チャット",value:chats.data.length,color:"#e7b65c"}],total=parts.reduce((a,p)=>a+p.value,0);let cursor=0;const stops=parts.map(p=>{const start=cursor;cursor+=total?p.value/total*100:0;return p.color+" "+start+"% "+cursor+"%";}).join(",");
-  $("#opsOverviewDonut").style.background=total?"conic-gradient("+stops+")":"conic-gradient(#314157 0 100%)";$("#opsOverviewDonutTotal").textContent=n(total);$("#opsOverviewDonutLegend").innerHTML=parts.map(p=>'<div><i style="background:'+p.color+'"></i><span>'+p.label+'</span><b>'+n(p.value)+'</b></div>').join("");
-  renderOverviewBars("#opsOverviewWidgets",(usage.widgets||[]).map(x=>({label:x.widget_key,value:Number(x.views||0)+Number(x.adds||0)+Number(x.removes||0)})).sort((a,b)=>b.value-a.value).slice(0,8),"linear-gradient(90deg,#3973d6,#55b5f2)","ウィジェット利用データはまだありません。");
-  renderOverviewBars("#opsOverviewApi",(usage.apis||[]).map(x=>({label:x.service_key,value:Number(x.errors||0)})).sort((a,b)=>b.value-a.value).slice(0,8),"linear-gradient(90deg,#a34d62,#ef7777)","APIエラーはまだ記録されていません。");
-  $("#opsOverviewTrendNote").textContent="30日間：SNS投稿 "+n(posts.data.length)+" 件・返信 "+n(replies.data.length)+" 件・公開チャット "+n(chats.data.length)+" 件"+([posts,replies,chats].some(x=>x.truncated)?" · SNSデータは取得上限に達している可能性があります。":"");$("#opsOverviewUpdated").textContent="最終更新："+new Date().toLocaleTimeString("ja-JP");
- }catch(e){$("#opsOverviewTrend").innerHTML='<text x="30" y="120">全体集計に失敗しました。</text>';$("#opsOverviewTrendNote").textContent=e.message||"データを取得できませんでした。";$("#opsOverviewUpdated").textContent="取得失敗";}
+  const data=await opsInvoke({action:"get_admin_overview"});
+  const n=v=>Number(v||0).toLocaleString("ja-JP");
+  $("#ovDau").textContent=n(data.dau);
+  $("#ovMau").textContent=n(data.mau);
+  $("#ovSnsUsers").textContent=n(data.profile_count);
+  $("#ovSnsPosts").textContent=n(data.post_count);
+  $("#ovApiErrors").textContent=n(data.api_errors_24h);
+  $("#ovPageViews").textContent=n(data.page_views_30d);
+  const points=(data.daily||[]).map(p=>({
+   key:p.date,
+   label:new Date(p.date+"T00:00:00+09:00").toLocaleDateString("ja-JP",{month:"numeric",day:"numeric",timeZone:"Asia/Tokyo"}),
+   dau:Number(p.active_users||0),posts:Number(p.posts||0),replies:Number(p.replies||0),chat:Number(p.chat||0)
+  }));
+  drawOverviewTrend(points);
+  const parts=[
+   {label:"KUROLAB閲覧",value:Number(data.page_views_30d||0),color:"#55b5f2"},
+   {label:"SNS投稿",value:(data.daily||[]).reduce((s,p)=>s+Number(p.posts||0),0),color:"#a78bfa"},
+   {label:"SNS返信",value:(data.daily||[]).reduce((s,p)=>s+Number(p.replies||0),0),color:"#55cda5"},
+   {label:"公開チャット",value:(data.daily||[]).reduce((s,p)=>s+Number(p.chat||0),0),color:"#e7b65c"}
+  ];
+  const total=parts.reduce((s,p)=>s+p.value,0);
+  let cursor=0;
+  const stops=parts.map(p=>{const begin=cursor;cursor+=total?p.value/total*100:0;return p.color+" "+begin+"% "+cursor+"%";}).join(",");
+  $("#opsOverviewDonut").style.background=total?"conic-gradient("+stops+")":"conic-gradient(#314157 0 100%)";
+  $("#opsOverviewDonutTotal").textContent=n(total);
+  $("#opsOverviewDonutLegend").innerHTML=parts.map(p=>'<div><i style="background:'+p.color+'"></i><span>'+p.label+'</span><b>'+n(p.value)+'</b></div>').join("");
+  renderOverviewBars("#opsOverviewWidgets",(data.widgets||[]).map(x=>({label:x.widget_key,value:Number(x.views||0)+Number(x.adds||0)+Number(x.removes||0)})).sort((a,b)=>b.value-a.value).slice(0,8),"linear-gradient(90deg,#3973d6,#55b5f2)","ウィジェット利用データはまだありません。");
+  renderOverviewBars("#opsOverviewApi",(data.apis||[]).map(x=>({label:x.service_key,value:Number(x.errors||0)})).sort((a,b)=>b.value-a.value).slice(0,8),"linear-gradient(90deg,#a34d62,#ef7777)","APIエラーはまだ記録されていません。");
+  const sums=key=>(data.daily||[]).reduce((s,p)=>s+Number(p[key]||0),0);
+  $("#opsOverviewTrendNote").textContent="過去30日：SNS投稿 "+n(sums("posts"))+" 件・返信 "+n(sums("replies"))+" 件・公開チャット "+n(sums("chat"))+" 件"+(data.truncated?" · 一部データは表示上限に達しています。":"");
+  $("#opsOverviewUpdated").textContent="最終更新："+new Date(data.generated_at||Date.now()).toLocaleTimeString("ja-JP");
+ }catch(e){
+  $("#opsOverviewTrend").innerHTML='<text x="30" y="120">全体集計に失敗しました。</text>';
+  $("#opsOverviewTrendNote").textContent=e.message||"データを取得できませんでした。";
+  $("#opsOverviewUpdated").textContent="取得失敗";
+  console.error("KUROLAB admin overview load failed:",e);
+ }
 }
 
 async function loadOpsAnalytics(){
