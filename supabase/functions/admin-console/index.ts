@@ -276,9 +276,12 @@ Deno.serve(async (req: Request) => {
 
     if (action === "list_admin_messages") {
       const limit = Math.max(1, Math.min(300, Number(body.limit) || 100));
-      const { data: messages, error } = await admin.from("admin_messages")
-        .select("id,title,body,href,audience,recipient_id,published,created_at")
+      let query = admin.from("admin_messages")
+        .select("id,title,body,href,audience,recipient_id,published,created_at,service_scope,portal_announcement_id")
         .order("created_at", { ascending: false }).limit(limit);
+      const requestedScope = typeof body.serviceScope === "string" ? body.serviceScope : "";
+      if (requestedScope === "lab" || requestedScope === "sns" || requestedScope === "both") query = query.eq("service_scope", requestedScope);
+      const { data: messages, error } = await query;
       if (error) throw error;
       const rows = messages || [];
       const ids = rows.map((m) => m.id);
@@ -304,6 +307,7 @@ Deno.serve(async (req: Request) => {
       const content = typeof body.content === "string" ? body.content.trim() : "";
       const href = typeof body.href === "string" ? body.href.trim() : "";
       const audience = body.audience === "user" ? "user" : "all";
+      const serviceScope = ["lab","sns","both"].includes(body.serviceScope) ? body.serviceScope : "both";
       const targetUserId = typeof body.userId === "string" ? body.userId : "";
       if (!title || title.length > 120) return reply({ error: "Title must be 1-120 characters" }, 400, origin);
       if (!content || content.length > 8000) return reply({ error: "Body must be 1-8000 characters" }, 400, origin);
@@ -324,16 +328,29 @@ Deno.serve(async (req: Request) => {
         if (targetError || !target?.user || target.user.is_anonymous) return reply({ error: "User not found" }, 404, origin);
         recipientId = targetUserId;
       }
+      let portalAnnouncementId: string | null = null;
+      if ((serviceScope === "lab" || serviceScope === "both") && audience === "all") {
+        const { data: portalAnnouncement, error: portalError } = await admin.from("portal_announcements").insert({
+          title, body: content, href: href || null, published: true,
+          starts_at: new Date().toISOString(), ends_at: null
+        }).select("id").single();
+        if (portalError) throw portalError;
+        portalAnnouncementId = portalAnnouncement.id;
+      }
       const { data: saved, error } = await admin.from("admin_messages").insert({
-        title, body: content, href: href || null, audience,
+        title, body: content, href: href || null, audience, service_scope: serviceScope,
+        portal_announcement_id: portalAnnouncementId,
         recipient_id: recipientId, created_by: caller.id, published: true
-      }).select("id,title,audience,recipient_id,created_at").single();
-      if (error) throw error;
+      }).select("id,title,audience,recipient_id,created_at,service_scope,portal_announcement_id").single();
+      if (error) {
+        if (portalAnnouncementId) await admin.from("portal_announcements").delete().eq("id", portalAnnouncementId);
+        throw error;
+      }
       const { error: auditError } = await admin.from("admin_audit_logs").insert({
         actor_user_id: caller.id,
         action: "admin_message.send",
         target_user_id: recipientId,
-        metadata: { message_id: saved.id, title, audience }
+        metadata: { message_id: saved.id, title, audience, service_scope: serviceScope }
       });
       if (auditError) throw auditError;
       return reply({ ok: true, message: saved }, 200, origin);
@@ -344,9 +361,15 @@ Deno.serve(async (req: Request) => {
       if (!id) return reply({ error: "Message ID required" }, 400, origin);
       const { data, error } = await admin.from("admin_messages")
         .update({ published: false }).eq("id", id)
-        .select("id,title").maybeSingle();
+        .select("id,title,portal_announcement_id").maybeSingle();
       if (error) throw error;
       if (!data) return reply({ error: "Message not found" }, 404, origin);
+      if (data.portal_announcement_id) {
+        const { error: portalError } = await admin.from("portal_announcements")
+          .update({ published: false, ends_at: new Date().toISOString() })
+          .eq("id", data.portal_announcement_id);
+        if (portalError) throw portalError;
+      }
       const { error: auditError } = await admin.from("admin_audit_logs").insert({
         actor_user_id: caller.id,
         action: "admin_message.unpublish",
