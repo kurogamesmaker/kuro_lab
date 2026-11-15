@@ -103,6 +103,7 @@
 .ops-error-search{grid-template-columns:minmax(0,1fr) auto;align-items:center}.ops-error-item{padding:12px 16px;border-bottom:1px solid var(--line);font-size:12px}.ops-error-item b{color:#ffb5b5}.ops-error-item small{display:block;color:var(--muted);margin-top:3px}
 @media(max-width:900px){.ops-analytics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ops-analytics-columns{grid-template-columns:1fr}}
 @media(max-width:520px){.ops-retention-grid{grid-template-columns:1fr}.ops-error-search{grid-template-columns:1fr}}
+.request-reply-editor{grid-column:1/-1;display:grid;gap:8px;padding-top:12px;border-top:1px solid var(--line)}.request-reply-editor label{font-size:12px;color:var(--muted)}.request-reply-editor textarea{width:100%;min-height:76px;resize:vertical;background:#0b1524;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit}.request-reply-editor .btn{justify-self:start}.request-reply-preview{margin-top:12px;padding:12px;border-radius:10px;background:#12263a;border-left:3px solid #5aa9e6}.request-reply-preview p{white-space:pre-wrap;margin:6px 0}.request-reply-preview small{color:var(--muted)}@media(max-width:650px){.item{grid-template-columns:minmax(0,1fr)}.actions{flex-wrap:wrap}.request-reply-editor{grid-column:1}}
 </style>
 </head>
 <body>
@@ -364,7 +365,7 @@ async function checkAdmin(user){
 }
 async function load(){
  $("#requestList").innerHTML='<div class="empty">読み込み中…</div>';
- const {data,error}=await db.from("portal_requests").select("id,message,status,created_at,user_id").order("created_at",{ascending:false}).limit(300);
+ const {data,error}=await db.from("portal_requests").select("id,message,status,created_at,user_id,admin_reply,replied_at").order("created_at",{ascending:false}).limit(300);
  if(error){$("#requestList").innerHTML='<div class="error">読み込みに失敗しました：'+esc(error.message)+'</div>';return;}
  rows=data||[];
  if(!firstLoad){rows.forEach(r=>{if(!seen.has(r.id)){seen.add(r.id);}});}
@@ -375,10 +376,21 @@ function render(){
  const counts={pending:0,reviewing:0,done:0};rows.forEach(r=>counts[r.status]=(counts[r.status]||0)+1);
  $("#totalCount").textContent=rows.length;$("#pendingCount").textContent=counts.pending||0;$("#reviewCount").textContent=counts.reviewing||0;
  const q=$("#search").value.trim().toLowerCase();
- const shown=rows.filter(r=>(filter==="all"||r.status===filter)&&(!q||r.message.toLowerCase().includes(q)));
+ const shown=rows.filter(r=>(filter==="all"||r.status===filter)&&(!q||r.message.toLowerCase().includes(q)||(r.admin_reply||"").toLowerCase().includes(q)));
  if(!shown.length){$("#requestList").innerHTML='<div class="empty">該当するリクエストはありません。</div>';return;}
- $("#requestList").innerHTML=shown.map(r=>'<article class="item"><div><div class="meta"><span class="pill '+esc(r.status)+'">'+esc(labels[r.status]||r.status)+'</span><span>'+esc(date(r.created_at))+'</span><span>'+(r.user_id?'ログイン利用者':'ゲスト')+'</span></div><p class="message">'+esc(r.message)+'</p></div><div class="actions"><select aria-label="ステータス" data-status="'+esc(r.id)+'"><option value="pending" '+(r.status==="pending"?"selected":"")+'>未対応</option><option value="reviewing" '+(r.status==="reviewing"?"selected":"")+'>確認中</option><option value="done" '+(r.status==="done"?"selected":"")+'>対応済み</option></select><button class="btn primary" data-save="'+esc(r.id)+'">保存</button></div></article>').join("");
+ $("#requestList").innerHTML=shown.map(r=>'<article class="item"><div><div class="meta"><span class="pill '+esc(r.status)+'">'+esc(labels[r.status]||r.status)+'</span><span>'+esc(date(r.created_at))+'</span><span>'+(r.user_id?'ログイン利用者':'ゲスト')+'</span></div><p class="message">'+esc(r.message)+'</p>'+(r.admin_reply?'<div class="request-reply-preview"><b>現在の返信</b><p>'+esc(r.admin_reply)+'</p><small>'+(r.replied_at?esc(date(r.replied_at)):"")+'</small></div>':'')+'</div><div class="actions"><select aria-label="ステータス" data-status="'+esc(r.id)+'"><option value="pending" '+(r.status==="pending"?"selected":"")+'>未対応</option><option value="reviewing" '+(r.status==="reviewing"?"selected":"")+'>確認中</option><option value="done" '+(r.status==="done"?"selected":"")+'>対応済み</option></select><button class="btn primary" data-save="'+esc(r.id)+'">保存</button></div><div class="request-reply-editor"><label>運営からの返信</label><textarea maxlength="2000" rows="3" data-reply="'+esc(r.id)+'" placeholder="利用者への返信を入力…">'+esc(r.admin_reply||"")+'</textarea><button class="btn primary" data-send-reply="'+esc(r.id)+'">'+(r.admin_reply?"返信を更新":"返信を送信")+'</button></div></article>').join("");
  $("#requestList").querySelectorAll("[data-save]").forEach(b=>b.addEventListener("click",()=>saveStatus(b.dataset.save,b)));
+ $("#requestList").querySelectorAll("[data-send-reply]").forEach(b=>b.addEventListener("click",()=>saveReply(b.dataset.sendReply,b)));
+}
+async function saveReply(id,button){
+ const field=$("#requestList [data-reply='"+CSS.escape(id)+"']"),reply=field.value.trim();
+ if(!reply){alert("返信内容を入力してください。");return;}
+ button.disabled=true;
+ const {error}=await db.from("portal_requests").update({admin_reply:reply,replied_at:new Date().toISOString()}).eq("id",id);
+ button.disabled=false;
+ if(error){alert("返信を保存できませんでした："+error.message);return;}
+ const row=rows.find(x=>x.id===id);if(row){row.admin_reply=reply;row.replied_at=new Date().toISOString();}
+ render();
 }
 async function saveStatus(id,button){
  const select=$("#requestList [data-status='"+CSS.escape(id)+"']");
