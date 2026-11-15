@@ -28,7 +28,6 @@
     { label: "マイライブラリ", items: [
       { href: "/favorites/", label: "お気に入り", icon: "☆" },
       { href: "/history/", label: "閲覧履歴", icon: "◷" },
-      { href: "/achievements/", label: "実績", icon: "✧" }
     ] },
     { label: "お知らせ", items: [
       { href: "/notifications/", label: "お知らせ一覧", icon: "♧", badge: true }
@@ -237,7 +236,7 @@
 
   function cloneSnapshot(x) {
     return {
-      widgets: Array.isArray(x && x.widgets) ? x.widgets.slice() : ["shortcuts", "games", "favorites", "activity", "recent", "achievements", "clock"],
+      widgets: Array.isArray(x && x.widgets) ? x.widgets.slice() : ["shortcuts", "games", "weather"],
       layout: x && ["balanced", "three", "single"].indexOf(x.layout) >= 0 ? x.layout : "balanced",
       viewMode: x && x.viewMode === "canvas" ? "canvas" : "grid",
       sizes: JSON.parse(JSON.stringify(x && x.sizes || {})),
@@ -257,12 +256,12 @@
     p.dashboardWorkspaces = {
       personal: Object.assign({ name: "普段使い" }, cloneSnapshot(current)),
       gaming: {
-        name: "ゲーム", widgets: ["games", "shortcuts", "recent", "achievements", "clock"],
-        layout: "balanced", sizes: { games: "wide", shortcuts: "half", recent: "half", achievements: "half", clock: "small" }, spans: {}, heights: {}
+        name: "ゲーム", widgets: ["games", "shortcuts", "clock"],
+        layout: "balanced", sizes: { games: "wide", shortcuts: "half", clock: "small" }, spans: {}, heights: {}
       },
       creation: {
-        name: "制作・開発", widgets: ["shortcuts", "custom", "favorites", "activity", "recent", "clock"],
-        layout: "balanced", sizes: { shortcuts: "half", custom: "wide", favorites: "half", activity: "half", recent: "half", clock: "small" }, spans: {}, heights: {}
+        name: "制作・開発", widgets: ["shortcuts", "custom", "activity", "clock"],
+        layout: "balanced", sizes: { shortcuts: "half", custom: "wide", activity: "half", clock: "small" }, spans: {}, heights: {}
       }
     };
     p.activeWorkspace = "personal";
@@ -348,7 +347,7 @@
     delete p.dashboardWorkspaces[id];
     if (p.activeWorkspace === id) {
       window.__kuroCanvasScroll = null;
-      var personal = p.dashboardWorkspaces.personal || { widgets: ["shortcuts", "games", "favorites", "activity", "recent", "achievements", "clock"], layout: "balanced", sizes: {}, spans: {}, heights: {} };
+      var personal = p.dashboardWorkspaces.personal || { widgets: ["shortcuts", "games", "weather"], layout: "balanced", sizes: {}, spans: {}, heights: {} };
       var fallback = cloneSnapshot(personal);
       p.activeWorkspace = "personal";
       p.dashboardWidgets = fallback.widgets;
@@ -376,7 +375,7 @@
   }
 
 
-  var TEMPLATE_WIDGETS = ["shortcuts","games","favorites","activity","recent","achievements","clock","weather","market","smartlinks","groups","searchbox","qr","rss","notes","todo","pomodoro","worldclock","countdown","utilities","photo","media","custom"];
+  var TEMPLATE_WIDGETS = ["shortcuts","games","activity","clock","weather","market","smartlinks","groups","searchbox","qr","rss","notes","todo","pomodoro","worldclock","countdown","utilities","photo","media","custom"];
   var pendingSharedTemplate = null;
 
   function cleanTemplatePayload(input) {
@@ -612,9 +611,34 @@
     document.body.dataset.viewport = width <= 760 ? "mobile" : width <= 1120 ? "tablet" : "desktop";
   }
 
+  function normalizeRetiredDashboardWidgets() {
+    var a = getApi(), p = getPrefs(), s = getState();
+    if (!a || !p) return false;
+    var retired = { favorites: true, recent: true, achievements: true };
+    var changed = false;
+    function clean(list) {
+      if (!Array.isArray(list)) return list;
+      var next = list.filter(function (id) { return !retired[id]; });
+      if (next.length !== list.length) changed = true;
+      return next;
+    }
+    p.dashboardWidgets = clean(p.dashboardWidgets);
+    Object.keys(p.dashboardWorkspaces || {}).forEach(function (id) {
+      var workspace = p.dashboardWorkspaces[id];
+      if (workspace && Array.isArray(workspace.widgets)) workspace.widgets = clean(workspace.widgets);
+    });
+    if (changed) {
+      a.save();
+      if (s && s.user && typeof a.sync === "function") a.sync(false);
+    }
+    return changed;
+  }
+
   function updateMain() {
     if (!getApi()) return;
     decorateDashboard();
+    var migrated = normalizeRetiredDashboardWidgets();
+    if (migrated && pathNow() === "/" && typeof getApi().render === "function") getApi().render();
     addThemeOptions();
     updateBadges();
     if (pathNow() === "/notifications/") markAnnouncementsRead();
@@ -661,7 +685,6 @@
       ["notifications", "お知らせ", "KURO Labからの更新情報", "/notifications/", "♧", "お知らせ 更新 通知"],
       ["mypage", "マイページ", "アカウントと利用データ", "/mypage/", "◎", "アカウント ログイン"],
       ["settings", "表示設定", "テーマやホーム画面を変更", "/settings/", "⚙", "設定 テーマ"],
-      ["achievements", "実績", "利用状況と達成記録", "/achievements/", "🏅", "実績 記録"],
       ["request", "リクエストBOX", "機能や改善をリクエスト", "/request/", "💡", "提案 改善 リクエスト"]
     ];
     more.forEach(function (x) {
