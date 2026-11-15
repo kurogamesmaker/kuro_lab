@@ -1108,7 +1108,7 @@ async function loadOpsUserErrors(event){
 
 function startAdminPolling(){
  if(refreshTimer)clearInterval(refreshTimer);
- const interval=activeProduct==="sns"&&mode==="gas"?15000:45000;
+ const interval=activeProduct==="ops"&&opsView==="overview"?300000:(activeProduct==="sns"&&mode==="gas"?15000:45000);
  refreshTimer=setInterval(()=>{
   if($("#appView").hidden)return;
   if(activeProduct==="lab")load();
