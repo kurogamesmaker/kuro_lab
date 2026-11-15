@@ -73,18 +73,26 @@ Deno.serve(async (req: Request) => {
       const since30 = new Date(now.getTime() - 30 * 86400000).toISOString();
       const since7 = new Date(now.getTime() - 7 * 86400000).toISOString();
       const since24 = new Date(now.getTime() - 24 * 3600000).toISOString();
-      const maxRows = 20000;
-
-      const { data: events, error: eventsError } = await admin
-        .from("usage_events")
-        .select("user_id,event_name,created_at,widget_key,service_key,status_code,error_code")
-        .gte("created_at", since32)
-        .order("created_at", { ascending: false })
-        .limit(maxRows);
-      if (eventsError) throw eventsError;
-
-      const rows = events || [];
-      const truncated = rows.length >= maxRows;
+      const maxRows = 100000;
+      const pageSize = 1000;
+      const rows: Array<{ user_id: string; event_name: string; created_at: string; widget_key: string | null; service_key: string | null; status_code: number | null; error_code: string | null }> = [];
+      let eventTotal: number | null = null;
+      let truncated = false;
+      for (let offset = 0; offset < maxRows; offset += pageSize) {
+        const selectOptions = offset === 0 ? { count: "exact" as const } : {};
+        const { data: eventPage, error: eventsError, count } = await admin
+          .from("usage_events")
+          .select("user_id,event_name,created_at,widget_key,service_key,status_code,error_code", selectOptions)
+          .gte("created_at", since32)
+          .order("created_at", { ascending: false })
+          .range(offset, offset + pageSize - 1);
+        if (eventsError) throw eventsError;
+        if (offset === 0 && Number.isFinite(count)) eventTotal = count;
+        const batch = eventPage || [];
+        rows.push(...batch);
+        if (batch.length < pageSize) break;
+        if (offset + pageSize >= maxRows) truncated = eventTotal === null || eventTotal > rows.length;
+      }
       const rows30 = rows.filter((e) => e.created_at >= since30);
       const rows7 = rows.filter((e) => e.created_at >= since7);
       const rows24 = rows.filter((e) => e.created_at >= since24);
@@ -502,7 +510,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "list_users") {
-      const page = Math.max(1, Math.min(20, Number(body.page) || 1));
+      const page = Math.max(1, Math.min(200, Number(body.page) || 1));
       const perPage = 500;
       const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
       if (error) throw error;
@@ -542,7 +550,7 @@ Deno.serve(async (req: Request) => {
         };
       });
 
-      return reply({ users: result, page, perPage, hasMore: users.length === perPage }, 200, origin);
+      return reply({ users: result, page, perPage, total: Number(data.total) || null, hasMore: users.length === perPage }, 200, origin);
     }
 
     if (action === "set_ban") {
