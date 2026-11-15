@@ -131,7 +131,7 @@ var catalog=[
 {key:"guide",type:"page",title:"使い方ガイド",desc:"各サービスの基本的な使い方",href:"/guide/",icon:"📘",tags:"ガイド ヘルプ"},
 {key:"faq",type:"page",title:"よくある質問",desc:"利用時の疑問や困ったときの案内",href:"/faq/",icon:"❔",tags:"質問 ヘルプ"}];
 var nav=[["home","ホーム","⌂","/"],["search","検索","⌕","/search/"],["tools","ツールボックス","▦","/tools/"],["games","ゲーム","▣","/games/"],["sns","SNS","◉","/sns/"],["chat","チャット","☷","/chat/"],["favorites","お気に入り","☆","/favorites/"],["history","履歴","◷","/history/"],["notifications","お知らせ","♧","/notifications/"],["mypage","マイページ","◎","/mypage/"],["settings","設定","⚙","/settings/"]];
-var st={user:null,ann:[],data:null,sync:false,requestNotifications:[],requestUnread:0};var portalNotificationTopId=null,portalNotificationTimer=null,portalNotificationChannel=null,portalNotificationEventsBound=false;window.__kuroPortal={state:st,catalog:catalog,save:save,render:render,sync:sync,toast:toast,openQuick:openQuick,closeQuick:closeQuick,applyDisplayPrefs:applyDisplayPrefs};window.dispatchEvent(new Event("kuro:portal-api-ready"));
+var st={user:null,ann:[],data:null,sync:false,requestNotifications:[],requestUnread:0,adminMessages:[],adminMessageReads:[],adminMessageUnread:0};var portalNotificationTopId=null,portalNotificationTimer=null,portalNotificationChannel=null,portalNotificationEventsBound=false,portalAdminMessageTopId=null;window.__kuroPortal={state:st,catalog:catalog,save:save,render:render,sync:sync,toast:toast,openQuick:openQuick,closeQuick:closeQuick,applyDisplayPrefs:applyDisplayPrefs};window.dispatchEvent(new Event("kuro:portal-api-ready"));
 function $(s,r){return (r||document).querySelector(s);}
 function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
 function fmt(v){try{return new Intl.DateTimeFormat("ja-JP",{year:"numeric",month:"short",day:"numeric"}).format(new Date(v));}catch(e){return "";}}
@@ -150,6 +150,56 @@ function announcements(){if(!st.ann.length)return '<div class="portal-empty"><st
 function profileSummary(){return st.user?'<p><strong>ログイン中</strong><br>'+esc(st.user.email||"KURO Labアカウント")+'<br>お気に入りや履歴はアカウントに同期されます。</p><a href="/mypage/" class="portal-btn primary small">アカウントを確認 →</a>':'<p>ゲストのままでも利用できます。ログインするとお気に入りや履歴を複数端末で同期できます。</p><a href="/mypage/" class="portal-btn primary small">ログイン・アカウント設定 →</a>';}
 function home(){return '<div class="portal-dashboard"><aside class="portal-side"><a class="portal-side-brand" href="/"><img src="/icon-192.png" alt=""><span><b>KURO Lab</b><small>PLAY · CREATE · CONNECT</small></span></a><div class="portal-side-label">MENU</div><a class="portal-side-link active" href="/"><span>⌂</span>ダッシュボード</a><a class="portal-side-link" href="/games/"><span>▣</span>ゲーム</a><a class="portal-side-link" href="/search/"><span>⌕</span>検索</a><a class="portal-side-link" href="/favorites/"><span>☆</span>お気に入り</a><a class="portal-side-link" href="/notifications/"><span>♧</span>お知らせ</a><div class="portal-side-spacer"></div><a class="portal-side-link" href="/about/"><span>ⓘ</span>KURO Labについて</a><a class="portal-side-link" href="/settings/"><span>⚙</span>設定</a><div class="portal-side-support"><a href="/contact/">SUPPORT</a><a href="/chat/">CHAT</a></div></aside><div class="portal-center"><div class="portal-welcome"><div><span class="portal-eyebrow">WELCOME TO KURO LAB</span><h1>好きなことを、<em>ここから。</em></h1><p>ゲームもサービスも、KURO Labの楽しさをひとつの場所に。</p></div><a class="portal-btn primary" href="/games/">ゲームを探す ↗</a></div><div class="portal-feature-row"><a class="portal-feature-card feature-sushi" href="/game/kaiten-sushi-typing/"><span class="portal-feature-tag">PICK UP GAME</span><strong>回転寿司<br>タイピング</strong><small>回して、打って、ハイスコアへ。</small><b class="feature-go">PLAY NOW ↗</b><span class="feature-art">🍣</span></a><a class="portal-feature-card feature-quest" href="/game/block-blast/"><span class="portal-feature-tag">DAILY CHALLENGE</span><strong>ブロックを<br>並べて消そう！</strong><small>今日の気分でパズルに挑戦。</small><b class="feature-go">PLAY NOW ↗</b><span class="feature-art">🧩</span></a></div><div class="portal-section portal-home-games"><div class="portal-section-head"><div><h2>お気に入りのゲームを見つけよう</h2><p>PLAY SOMETHING FUN TODAY</p></div><a class="portal-text-link" href="/games/">すべて見る →</a></div><div class="portal-game-grid"><a class="portal-game-tile tile-sushi" href="/game/kaiten-sushi-typing/"><span class="tile-art">🍣</span><b>回転寿司タイピング</b><small>タイピング · GAME</small></a><a class="portal-game-tile tile-block" href="/game/block-blast/"><span class="tile-art">🧩</span><b>ブロックブラスト</b><small>パズル · GAME</small></a><a class="portal-game-tile tile-sns" href="/sns/"><span class="tile-art">💬</span><b>KURO SNS</b><small>COMMUNITY</small></a><a class="portal-game-tile tile-chat" href="/chat/"><span class="tile-art">🗨️</span><b>オープンチャット</b><small>CHAT</small></a></div></div><div class="portal-section portal-home-bottom"><div class="portal-section-head"><div><h2>KURO Labからのお知らせ</h2><p>WHAT IS NEW</p></div><a class="portal-text-link" href="/notifications/">一覧を見る →</a></div>'+announcements()+'</div></div><aside class="portal-right"><div class="portal-right-section"><div class="portal-right-heading"><b>クイックアクセス</b><span>SHORTCUTS</span></div><a class="portal-quick-link" href="/sns/"><span>💬</span><b>KURO SNS</b><i>↗</i></a><a class="portal-quick-link" href="/chat/"><span>🗨️</span><b>オープンチャット</b><i>↗</i></a><a class="portal-quick-link" href="/request/"><span>✉️</span><b>リクエストBOX</b><i>↗</i></a></div><div class="portal-right-section"><div class="portal-right-heading"><b>最近使ったページ</b><a href="/history/">すべて</a></div>'+hist(st.data.history.slice(0,3))+'</div><div class="portal-right-promo"><span>KURO LAB COMMUNITY</span><b>アイデアを、<br>かたちにしよう。</b><a href="/about/">KURO Labについて ↗</a></div></aside></div>';}
 
+function renderPortalAdminMessageList(){
+ if(!st.user)return '<div class="portal-empty">共通メッセージを確認するにはログインしてください。<a href="/mypage/">ログインする →</a></div>';
+ var items=st.adminMessages||[];
+ if(!items.length)return '<div class="portal-empty">共通メッセージはまだありません。</div>';
+ var reads=new Set((st.adminMessageReads||[]).map(function(x){return x.message_id;}));
+ return '<div class="portal-request-notification-list">'+items.map(function(m){
+  var unread=!reads.has(m.id);
+  return '<article class="portal-request-notification '+(unread?'is-unread':'is-read')+'"><div class="portal-request-notification-mark">✉</div><div class="portal-request-notification-body"><div class="portal-request-notification-top"><strong>'+esc(m.title)+'</strong><time>'+new Date(m.created_at).toLocaleString("ja-JP")+'</time></div><p>'+esc(m.body)+'</p>'+(m.href?'<a class="portal-btn small" href="'+esc(m.href)+'" target="_blank" rel="noopener noreferrer">リンクを開く ↗</a>':'')+(unread?'<button type="button" class="portal-btn small" data-portal-read-admin-message="'+esc(m.id)+'">既読にする</button>':'<small>既読</small>')+'</div>'+(unread?'<span class="portal-request-notification-dot" aria-label="未読"></span>':'')+'</article>';
+ }).join("")+'</div>';
+}
+async function refreshPortalAdminMessages(showNew){
+ if(!db||!st.user)return;
+ try{
+  var result=await db.from("admin_messages").select("id,title,body,href,audience,recipient_id,created_at").eq("published",true).order("created_at",{ascending:false}).limit(100);
+  if(result.error)throw result.error;
+  var items=result.data||[],ids=items.map(function(x){return x.id;}),reads=[];
+  if(ids.length){
+   var rr=await db.from("admin_message_reads").select("message_id,read_at").eq("user_id",st.user.id).in("message_id",ids);
+   if(rr.error)throw rr.error;
+   reads=rr.data||[];
+  }
+  var top=items.length?items[0].id:null;
+  if(showNew&&portalAdminMessageTopId&&top&&top!==portalAdminMessageTopId&&typeof toast==="function")toast("運営から新しい共通メッセージが届きました");
+  if(top)portalAdminMessageTopId=top;
+  st.adminMessages=items;st.adminMessageReads=reads;
+  var readIds=new Set(reads.map(function(x){return x.message_id;}));
+  st.adminMessageUnread=items.filter(function(x){return !readIds.has(x.id);}).length;
+  updatePortalNotificationBadge();
+  if(page==="notifications"&&$("#portal-main"))render();
+ }catch(e){console.warn("KURO shared admin message sync failed",e);}
+}
+async function markPortalAdminMessageRead(id){
+ if(!st.user||!id)return;
+ var now=new Date().toISOString();
+ var result=await db.from("admin_message_reads").upsert({message_id:id,user_id:st.user.id,read_at:now},{onConflict:"message_id,user_id"});
+ if(result.error){if(typeof toast==="function")toast("共通メッセージを既読にできませんでした");return;}
+ var old=(st.adminMessageReads||[]).find(function(x){return x.message_id===id;});
+ if(old)old.read_at=now;else st.adminMessageReads.push({message_id:id,read_at:now});
+ st.adminMessageUnread=Math.max(0,st.adminMessageUnread-(old?0:1));
+ updatePortalNotificationBadge();render();
+}
+async function markAllPortalAdminMessagesRead(){
+ var ids=(st.adminMessages||[]).filter(function(x){return !(st.adminMessageReads||[]).some(function(r){return r.message_id===x.id;});}).map(function(x){return x.id;});
+ if(!st.user||!ids.length)return;
+ var now=new Date().toISOString();
+ var result=await db.from("admin_message_reads").upsert(ids.map(function(id){return {message_id:id,user_id:st.user.id,read_at:now};}),{onConflict:"message_id,user_id"});
+ if(result.error){if(typeof toast==="function")toast("既読にできませんでした");return;}
+ ids.forEach(function(id){st.adminMessageReads.push({message_id:id,read_at:now});});
+ st.adminMessageUnread=0;updatePortalNotificationBadge();render();
+}
 function renderPortalRequestNotificationList(){
  if(!st.user)return '<div class="portal-empty">返信通知を受け取るにはログインしてください。<a href="/mypage/">ログインする →</a></div>';
  var items=st.requestNotifications||[];
@@ -172,19 +222,24 @@ async function refreshPortalRequestNotifications(showNew){
 }
 function updatePortalNotificationBadge(){
  var badge=$("#portal-notification-badge"),bell=$("#portal-notification-bell");
- if(badge){badge.textContent=st.requestUnread>99?"99+":String(st.requestUnread);badge.hidden=!st.requestUnread;}
- if(bell){bell.setAttribute("aria-label",st.requestUnread?"未読通知 "+st.requestUnread+" 件":"お知らせ");bell.classList.toggle("has-unread",!!st.requestUnread);}
- document.querySelectorAll('a[href="/notifications/"]').forEach(function(a){a.classList.toggle("has-notification-unread",!!st.requestUnread);});
+ var unread=st.requestUnread+st.adminMessageUnread;
+ if(badge){badge.textContent=unread>99?"99+":String(unread);badge.hidden=!unread;}
+ if(bell){bell.setAttribute("aria-label",unread?"未読通知 "+unread+" 件":"お知らせ");bell.classList.toggle("has-unread",!!unread);}
+ document.querySelectorAll('a[href="/notifications/"]').forEach(function(a){a.classList.toggle("has-notification-unread",!!unread);});
+ window.dispatchEvent(new Event("kuro:portal-notifications-updated"));
 }
 function startPortalRequestNotificationSync(){
  if(portalNotificationChannel&&db){try{db.removeChannel(portalNotificationChannel);}catch(e){}portalNotificationChannel=null;}
  if(portalNotificationTimer)clearInterval(portalNotificationTimer);
- portalNotificationTopId=null;
- if(!st.user||!db){st.requestNotifications=[];st.requestUnread=0;updatePortalNotificationBadge();return;}
- refreshPortalRequestNotifications(false);
- portalNotificationTimer=setInterval(function(){if(document.visibilityState!=="hidden")refreshPortalRequestNotifications(true);},25000);
+ portalNotificationTopId=null;portalAdminMessageTopId=null;
+ if(!st.user||!db){st.requestNotifications=[];st.requestUnread=0;st.adminMessages=[];st.adminMessageReads=[];st.adminMessageUnread=0;updatePortalNotificationBadge();return;}
+ refreshPortalRequestNotifications(false);refreshPortalAdminMessages(false);
+ portalNotificationTimer=setInterval(function(){if(document.visibilityState!=="hidden"){refreshPortalRequestNotifications(true);refreshPortalAdminMessages(true);}},25000);
  if(db.channel){
-  portalNotificationChannel=db.channel("portal-request-notifications-"+st.user.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"portal_request_notifications",filter:"user_id=eq."+st.user.id},function(){refreshPortalRequestNotifications(true);}).subscribe();
+  portalNotificationChannel=db.channel("portal-request-notifications-"+st.user.id)
+   .on("postgres_changes",{event:"INSERT",schema:"public",table:"portal_request_notifications",filter:"user_id=eq."+st.user.id},function(){refreshPortalRequestNotifications(true);})
+   .on("postgres_changes",{event:"INSERT",schema:"public",table:"admin_messages"},function(){refreshPortalAdminMessages(true);})
+   .subscribe();
  }
  if(!portalNotificationEventsBound){
   portalNotificationEventsBound=true;
@@ -200,6 +255,9 @@ async function markPortalRequestNotificationRead(id){
  item.read_at=new Date().toISOString();st.requestUnread=Math.max(0,st.requestUnread-1);updatePortalNotificationBadge();
 }
 function bindPortalNotificationActions(){
+ document.querySelectorAll("[data-portal-read-admin-message]").forEach(function(b){b.onclick=function(){b.disabled=true;markPortalAdminMessageRead(b.dataset.portalReadAdminMessage);};});
+ var markAdmin=document.querySelector("[data-portal-mark-all-admin]");
+ if(markAdmin)markAdmin.onclick=markAllPortalAdminMessagesRead;
  document.querySelectorAll("[data-portal-open-request-notification]").forEach(function(b){b.onclick=async function(){b.disabled=true;await markPortalRequestNotificationRead(b.dataset.portalOpenRequestNotification);location.href="/request/";};});
  var all=document.querySelector("[data-portal-mark-all]");
  if(all)all.onclick=async function(){if(!st.user||!st.requestUnread)return;all.disabled=true;var ids=(st.requestNotifications||[]).filter(function(x){return !x.read_at;}).map(function(x){return x.id;});if(!ids.length)return;var result=await db.from("portal_request_notifications").update({read_at:new Date().toISOString()}).in("id",ids).eq("user_id",st.user.id);if(result.error){all.disabled=false;if(typeof toast==="function")toast("既読にできませんでした");return;}st.requestNotifications.forEach(function(x){if(!x.read_at)x.read_at=new Date().toISOString();});st.requestUnread=0;updatePortalNotificationBadge();render();};
@@ -207,7 +265,8 @@ function bindPortalNotificationActions(){
 function render(){var m=$("#portal-main");if(m){document.querySelectorAll("#portal-dashboard-editor").forEach(function(panel){if(!m.contains(panel))panel.remove();});}var v={
 home:home,
 search:function(){return head("KURO Lab内を検索","サービス・ゲーム・ガイドをまとめて検索できます。","DISCOVER")+'<form id="portal-search-form" class="portal-search"><input id="portal-search-input" class="portal-input" type="search" placeholder="例：タイピング、チャット、ゲーム…"><button class="portal-btn primary">検索する</button></form><section class="portal-section"><div id="portal-search-results" class="portal-grid">'+catalog.map(card).join("")+'</div></section>';},
-notifications:function(){return head("KURO NOTIFICATIONS","リクエストBOXへの運営からの返信や、KURO Labからのお知らせを確認できます。","NOTIFICATION CENTER")+
+notifications:function(){return head("KURO NOTIFICATIONS","共通メッセージ、リクエストBOXへの返信、KURO Lab専用のお知らせを確認できます。","NOTIFICATION CENTER")+
+'<section class="portal-section"><div class="portal-section-head"><div><h2>KURO SNS・KUROLAB 共通メッセージ</h2><p>管理者からの個別メッセージ・一斉お知らせ。両サービスで共通です。</p></div><button type="button" class="portal-btn small" data-portal-mark-all-admin '+(st.adminMessageUnread?'':'disabled')+'>すべて既読にする</button></div>'+renderPortalAdminMessageList()+'</section>'+
 '<section class="portal-section"><div class="portal-section-head"><div><h2>リクエストBOXへの返信</h2><p>運営から返信が届くと、ここに通知されます。</p></div><button type="button" class="portal-btn small" data-portal-mark-all '+(st.requestUnread?'':'disabled')+'>すべて既読にする</button></div>'+renderPortalRequestNotificationList()+'</section>'+announcements()+
 '<section class="portal-section portal-notification-channels"><div class="portal-section-head"><div><h2>サービス別の通知</h2><p>通知の種類に応じて、各サービスを確認できます。</p></div></div><div class="portal-notification-channel-grid">'+
 '<a class="portal-notification-channel" href="/sns/"><span>💬</span><div><b>KURO SNS</b><small>コメント・返信・フォローなどの通知</small></div><i>↗</i></a>'+
@@ -788,7 +847,7 @@ function loadDashboardRssFeed(id,force){
 function updateNetworkStatus(){var e=$("#portal-network-status");if(!e)return;var off=!navigator.onLine,busy=(window.__kuroPendingRequests||0)>0;e.dataset.state=off?"offline":busy?"busy":"online";e.innerHTML='<i></i><span>'+(off?"オフライン":busy?"通信中":"オンライン")+'</span>';e.title=off?"ネットワーク未接続":busy?"データを読み込み中":"通信できます";}
 function showErrorPanel(t,m){var p=$("#portal-error-panel");if(!p)return;$("#portal-error-title").textContent=t;$("#portal-error-message").textContent=m;p.hidden=false;}
 function initGlobalUI(){
- if(!$("#portal-notification-style")){var style=document.createElement("style");style.id="portal-notification-style";style.textContent=".portal-header-notification{position:relative;display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border:1px solid var(--portal-border,rgba(120,130,150,.25));border-radius:12px;background:var(--portal-card,rgba(255,255,255,.75));color:inherit;text-decoration:none;font-size:19px;margin-right:8px;flex:0 0 auto}.portal-header-notification.has-unread{border-color:var(--portal-accent,#7865dc)}.portal-header-notification-count{position:absolute;right:-5px;top:-5px;min-width:17px;height:17px;padding:0 4px;border-radius:99px;background:#e5484d;color:white;font-size:10px;font-weight:800;line-height:17px;text-align:center}.portal-request-notification-list{display:grid;gap:10px}.portal-request-notification{position:relative;display:flex;gap:12px;align-items:flex-start;padding:16px;border:1px solid var(--portal-border,rgba(120,130,150,.2));border-radius:14px;background:var(--portal-card,rgba(255,255,255,.72))}.portal-request-notification.is-unread{border-color:var(--portal-accent,#7865dc);background:var(--portal-accent-soft,rgba(120,100,220,.07))}.portal-request-notification-mark{width:36px;height:36px;flex:0 0 36px;border-radius:11px;display:grid;place-items:center;background:var(--portal-accent-soft,rgba(120,100,220,.12));font-size:18px}.portal-request-notification-body{min-width:0;flex:1}.portal-request-notification-top{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.portal-request-notification-top time,.portal-request-notification-body small{font-size:12px;opacity:.7}.portal-request-notification-body p{margin:8px 0;white-space:pre-wrap;overflow-wrap:anywhere}.portal-request-notification-body small{display:block;white-space:pre-wrap;overflow-wrap:anywhere;margin-bottom:10px}.portal-request-notification-dot{width:8px;height:8px;border-radius:50%;background:#e5484d;flex:0 0 8px;margin-top:6px}.portal-notification-note{font-size:13px;opacity:.75}@media(max-width:700px){.portal-header-notification{width:34px;height:34px;margin-right:4px}.portal-request-notification{padding:12px;gap:9px}.portal-request-notification-top{display:grid;gap:4px}}";document.head.appendChild(style);}
+ if(!$("#portal-notification-style")){var style=document.createElement("style");style.id="portal-notification-style";style.textContent=".portal-header-notification{position:relative;display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border:1px solid var(--portal-border,rgba(120,130,150,.25));border-radius:12px;background:var(--portal-card,rgba(255,255,255,.75));color:inherit;text-decoration:none;font-size:19px;margin-right:8px;flex:0 0 auto}.portal-header-notification.has-unread{border-color:var(--portal-accent,#7865dc)}.portal-header-notification-count{position:absolute;right:-5px;top:-5px;min-width:17px;height:17px;padding:0 4px;border-radius:99px;background:#e5484d;color:white;font-size:10px;font-weight:800;line-height:17px;text-align:center}.portal-request-notification-list{display:grid;gap:10px}.portal-request-notification{position:relative;display:flex;gap:12px;align-items:flex-start;padding:16px;border:1px solid var(--portal-border,rgba(120,130,150,.2));border-radius:14px;background:var(--portal-card,rgba(255,255,255,.72))}.portal-request-notification.is-unread{border-color:var(--portal-accent,#7865dc);background:var(--portal-accent-soft,rgba(120,100,220,.07))}.portal-request-notification-mark{width:36px;height:36px;flex:0 0 36px;border-radius:11px;display:grid;place-items:center;background:var(--portal-accent-soft,rgba(120,100,220,.12));font-size:18px}.portal-request-notification-body{min-width:0;flex:1}.portal-request-notification-top{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.portal-request-notification-top time,.portal-request-notification-body small{font-size:12px;opacity:.7}.portal-request-notification-body p{margin:8px 0;white-space:pre-wrap;overflow-wrap:anywhere}.portal-request-notification-body small{display:block;white-space:pre-wrap;overflow-wrap:anywhere;margin-bottom:10px}.portal-request-notification-dot{width:8px;height:8px;border-radius:50%;background:#e5484d;flex:0 0 8px;margin-top:6px}.portal-notification-note{font-size:13px;opacity:.75}.portal-request-notification-body .portal-btn{margin:5px 6px 0 0}@media(max-width:700px){.portal-header-notification{width:34px;height:34px;margin-right:4px}.portal-request-notification{padding:12px;gap:9px}.portal-request-notification-top{display:grid;gap:4px}}";document.head.appendChild(style);}
  var h=$(".portal-header-inner");
  if(h){var brand=$(".portal-brand",h);if(brand&&!$("#portal-back-button")){var back=document.createElement("button");back.id="portal-back-button";back.className="portal-back-button";back.type="button";back.textContent="← 戻る";back.onclick=function(){var prev;try{prev=new URL(document.referrer);}catch(e){}if(history.length>1&&prev&&prev.origin===location.origin)history.back();else location.href="/";};h.insertBefore(back,brand);}
  if(!$("#portal-notification-bell")){var bell=document.createElement("a");bell.id="portal-notification-bell";bell.className="portal-header-notification";bell.href="/notifications/";bell.innerHTML="♧ <span id=\"portal-notification-badge\" class=\"portal-header-notification-count\" hidden>0</span>";bell.setAttribute("aria-label","お知らせ");h.insertBefore(bell,$("#portal-quick-button")||$("#portal-account-button")||null);}
