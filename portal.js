@@ -122,6 +122,7 @@ var titles={home:["KURO Lab ポータル","サービス、ゲーム、お知ら�
 if(!titles[page])page="home";
 var catalog=[
 {key:"games",type:"service",title:"KURO GAMES",desc:"ブラウザゲームをまとめて遊べるゲームコーナー",href:"/games/",icon:"🎮",tags:"ゲーム ブラウザ 遊ぶ"},
+{key:"tools",type:"page",title:"ツールボックス",desc:"天気・ニュース・世界時計・為替・単位変換・RSS・サイト稼働状況",href:"/tools/",icon:"🧰",tags:"ツール 天気 ニュース 世界時計 為替 単位変換 RSS 稼働状況"},
 {key:"sns",type:"service",title:"KURO SNS",desc:"投稿・フォロー・チャットでつながるソーシャルサービス",href:"/sns/",icon:"💬",tags:"SNS 投稿 フォロー"},
 {key:"chat",type:"service",title:"オープンチャット",desc:"アカウント登録なしで参加できる公開チャット",href:"/chat/",icon:"🗨️",tags:"チャット 会話"},
 {key:"sushi",type:"game",title:"回転寿司タイピング",desc:"回転寿司をモチーフにしたタイピングゲーム",href:"/game/kaiten-sushi-typing/",icon:"🍣",tags:"タイピング 寿司"},
