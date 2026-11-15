@@ -517,10 +517,10 @@ Deno.serve(async (req: Request) => {
       }).eq("id",applicationId).eq("status","pending").select("id,user_id,status").maybeSingle();
       if(updateError) throw updateError;
       if(!updated) return reply({error:"申請状態が更新されました。再読み込みしてください。"},409,origin);
+      const allow=body.reapplyAllowed!==false;
+      const reapplyAfter=body.reapplyAfter?new Date(body.reapplyAfter):null;
+      if(!approve && body.reapplyAfter && (!reapplyAfter || Number.isNaN(reapplyAfter.getTime()))) return reply({error:"Invalid reapply date"},400,origin);
       if(!approve){
-        const allow=body.reapplyAllowed!==false;
-        const reapplyAfter=body.reapplyAfter?new Date(body.reapplyAfter):null;
-        if(body.reapplyAfter && (!reapplyAfter || Number.isNaN(reapplyAfter.getTime()))) return reply({error:"Invalid reapply date"},400,origin);
         const {error:controlError}=await admin.from("pro_user_controls").upsert({
           user_id:application.user_id,reapply_allowed:allow,reapply_after:reapplyAfter?reapplyAfter.toISOString():null,
           admin_note:adminNote||null,updated_by:caller.id,updated_at:now
