@@ -183,6 +183,17 @@ export default {
       return new Response(PRO_HTML, { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store, max-age=0", "X-Content-Type-Options": "nosniff" } });
     }
 
+    if (url.hostname === "kurolab.cc.cd" && (url.pathname === "/pro-tools" || url.pathname === "/pro-tools/")) {
+      const assetUrl = new URL("/pro-tools/index.html", request.url);
+      const assetResponse = await env.ASSETS.fetch(new Request(assetUrl, { method: "GET", headers: request.headers }));
+      const headers = new Headers(assetResponse.headers);
+      headers.set("Cache-Control", "private, no-store, max-age=0");
+      headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+      headers.set("X-Content-Type-Options", "nosniff");
+      if (assetResponse.status !== 404) return new Response(assetResponse.body, { status: assetResponse.status, statusText: assetResponse.statusText, headers });
+      return new Response("Not Found", { status: 404, headers });
+    }
+
     if (url.hostname === "kurolab.cc.cd" && url.pathname === "/portal.css") {
       const assetResponse = await env.ASSETS.fetch(request);
       if (assetResponse.status !== 404) {
