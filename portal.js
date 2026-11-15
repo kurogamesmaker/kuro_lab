@@ -195,8 +195,8 @@ function bindDashboard(){
   var dx=x-resize.startX,dy=y-resize.startY,dir=resize.dir;
   var cols=resize.gridColumns||12,gap=resize.gridGap||0,track=(resize.gridWidth-gap*(cols-1))/cols;
   if(dir.indexOf("e")>=0||dir.indexOf("w")>=0){
-   var delta=dir.indexOf("w")>=0?-dx:dx,step=track+gap,maxSpan=Math.max(3,Math.min(12,cols));
-   resize.span=Math.max(3,Math.min(maxSpan,resize.startSpan+Math.round(delta/step)));
+   var delta=dir.indexOf("w")>=0?-dx:dx,step=track+gap,maxSpan=Math.max(2,Math.min(12,cols)),minSpan=Math.min(2,maxSpan);
+   resize.span=Math.max(minSpan,Math.min(maxSpan,resize.startSpan+Math.round(delta/step)));
    resize.size=resize.span<=4?"small":resize.span<=6?"half":resize.span<=9?"wide":"full";
    var width=resize.span*track+(resize.span-1)*gap;
    resize.item.style.width=Math.max(0,width)+"px";
@@ -219,9 +219,9 @@ function bindDashboard(){
    if(!handle||!item.contains(handle))return;
    e.preventDefault();e.stopPropagation();
    var current=item.dataset.size||"half",rect=grid.getBoundingClientRect(),itemRect=item.getBoundingClientRect(),gridStyle=getComputedStyle(grid);
-   var cols=Math.max(1,gridStyle.gridTemplateColumns.split(/\\s+/).length),gap=parseFloat(gridStyle.columnGap)||0;
+   var cols=Math.max(1,gridStyle.gridTemplateColumns.trim().split(/\s+/).filter(Boolean).length),gap=parseFloat(gridStyle.columnGap)||0;
    var savedHeight=(st.data.preferences.dashboardHeights||{})[item.dataset.widgetId],savedSpan=Number((st.data.preferences.dashboardSpans||{})[item.dataset.widgetId]),baseSpan=savedSpan>=3&&savedSpan<=12?savedSpan:({small:4,half:6,wide:8,full:12}[current]||6);
-   baseSpan=Math.min(baseSpan,cols);
+   baseSpan=Math.max(Math.min(2,cols),Math.min(baseSpan,cols));
    var placeholder=document.createElement("div");
    placeholder.className="portal-widget-resize-placeholder";
    placeholder.style.gridColumn=getComputedStyle(item).gridColumn;
