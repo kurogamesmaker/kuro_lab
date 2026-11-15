@@ -192,6 +192,11 @@ function positionDashboardToolbar(){
  if(!toolbar)return;
  if(toolbar!==oldHeaderToolbar&&oldHeaderToolbar)oldHeaderToolbar.remove();
  var mobile=window.matchMedia&&window.matchMedia("(max-width:760px)").matches;
+ var side=main.querySelector(".portal-side"),panel=main.querySelector("#portal-dashboard-editor");
+ if(side&&panel&&panel.parentNode!==side){
+  var sideNav=side.querySelector(".portal-side-link:last-of-type");
+  side.appendChild(panel);
+ }
  var brand=headerInner.querySelector(".portal-brand"),topnav=$("#portal-desktop-nav");
  if(mobile){
   toolbar.classList.remove("portal-dashboard-toolbar-in-header");
@@ -215,7 +220,7 @@ function bindDashboard(){
  var edit=$("#portal-dashboard-edit"),mode=$("#portal-dashboard-mode"),add=$("#portal-dashboard-add"),reset=$("#portal-dashboard-reset"),panel=$("#portal-dashboard-editor"),grid=$("#portal-dashboard-grid"),layout=$("#portal-dashboard-layout"),form=$("#portal-custom-link-form");
  if(edit)edit.onclick=function(){st.dashboardEditing=!st.dashboardEditing;if(!st.dashboardEditing)st.dashboardResizeMode=false;render();};
  if(mode)mode.onclick=function(){st.dashboardResizeMode=!st.dashboardResizeMode;render();};
- if(add)add.onclick=function(){if(panel){panel.hidden=!panel.hidden;add.setAttribute("aria-expanded",String(!panel.hidden));}};
+ if(add)add.onclick=function(){if(panel){panel.hidden=!panel.hidden;add.setAttribute("aria-expanded",String(!panel.hidden));if(!panel.hidden){panel.scrollIntoView({behavior:"smooth",block:"nearest"});}}};
  if(reset)reset.onclick=function(){if(!confirm("ホーム画面の配置を初期状態に戻しますか？"))return;st.data.preferences.dashboardWidgets=DASHBOARD_WIDGETS.filter(function(x){return x.id!=="custom";}).map(function(x){return x.id;});st.data.preferences.dashboardSizes={};st.data.preferences.dashboardSpans={};st.data.preferences.dashboardHeights={};st.data.preferences.dashboardLayout="balanced";st.dashboardEditing=false;persistDisplayPrefs();render();toast("ホーム画面を初期配置に戻しました");};
  if(layout)layout.onchange=function(){st.data.preferences.dashboardLayout=this.value;persistDisplayPrefs();render();};
  if(form)form.onsubmit=function(e){e.preventDefault();var title=$("#portal-custom-link-title").value.trim(),raw=$("#portal-custom-link-url").value.trim(),icon=$("#portal-custom-link-icon").value.trim()||"🔗",href=safeDashboardUrl(raw),links=st.data.preferences.customLinks||[];if(!title||!href){toast("表示名と有効なHTTPS URLまたはサイト内パスを入力してください");return;}if(links.length>=16){toast("マイリンクは最大16件です");return;}links.push({id:uuid(),title:title.slice(0,32),href:href,icon:icon.slice(0,8)});st.data.preferences.customLinks=links;var ids=getDashboardIds();if(ids.indexOf("custom")<0)ids.push("custom");st.data.preferences.dashboardWidgets=ids;st.dashboardEditing=true;persistDisplayPrefs();render();toast("マイリンクを追加しました");};
