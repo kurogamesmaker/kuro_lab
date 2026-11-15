@@ -183,16 +183,34 @@ function home(){var ids=getDashboardIds(),edit=!!st.dashboardEditing,resizeMode=
 function applyDisplayPrefs(){var p=st.data&&st.data.preferences||{},themes={violet:["#8b5cf6","#30254b"],blue:["#087fbd","#e9f6fd"],green:["#15966d","#e4f7ef"],rose:["#db5475","#fceaf0"],amber:["#c17a16","#fff4df"]},a=themes[p.accent]||themes.violet;document.body.dataset.theme=p.theme==="auto"?(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):p.theme==="dark"?"dark":"light";document.body.dataset.density=p.density==="compact"?"compact":"comfortable";document.body.dataset.motion=p.motion==="reduced"?"reduced":"normal";document.body.dataset.background=["aurora","plain","grid"].indexOf(p.background)>=0?p.background:"aurora";document.body.style.setProperty("--blue",a[0]);document.body.style.setProperty("--blue2",a[1]);var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=p.theme==="dark"?"#090a10":"#f4f7fb";}
 function persistDisplayPrefs(){save();if(st.user){if(st.sync)st.syncAgain=true;else sync(false);}}
 function bindDisplaySettings(){var x=$("#portal-theme");if(x)x.onchange=function(){st.data.preferences.theme=this.value;persistDisplayPrefs();};x=$("#portal-density");if(x)x.onchange=function(){st.data.preferences.density=this.value;persistDisplayPrefs();};x=$("#portal-motion");if(x)x.onchange=function(){st.data.preferences.motion=this.value;persistDisplayPrefs();};x=$("#portal-accent");if(x)x.onchange=function(){st.data.preferences.accent=this.value;persistDisplayPrefs();};x=$("#portal-background");if(x)x.onchange=function(){st.data.preferences.background=this.value;persistDisplayPrefs();};}
+function positionDashboardToolbar(){
+ var main=$("#portal-main"),headerInner=document.querySelector(".portal-header-inner");
+ if(!main||!headerInner)return;
+ var toolbar=main.querySelector(".portal-dashboard-toolbar");
+ var oldHeaderToolbar=headerInner.querySelector(".portal-dashboard-toolbar-in-header");
+ if(!toolbar)toolbar=oldHeaderToolbar;
+ if(!toolbar)return;
+ if(toolbar!==oldHeaderToolbar&&oldHeaderToolbar)oldHeaderToolbar.remove();
+ var mobile=window.matchMedia&&window.matchMedia("(max-width:760px)").matches;
+ var brand=headerInner.querySelector(".portal-brand"),topnav=$("#portal-desktop-nav");
+ if(mobile){
+  toolbar.classList.remove("portal-dashboard-toolbar-in-header");
+  toolbar.classList.add("portal-dashboard-toolbar-mobile");
+  if(toolbar.parentNode!==main)main.insertBefore(toolbar,main.firstChild);
+ }else{
+  toolbar.classList.remove("portal-dashboard-toolbar-mobile");
+  toolbar.classList.add("portal-dashboard-toolbar-in-header");
+  if(toolbar.parentNode!==headerInner){
+   if(brand&&brand.parentNode===headerInner)brand.insertAdjacentElement("afterend",toolbar);
+   else headerInner.insertBefore(toolbar,topnav||headerInner.firstChild);
+  }
+ }
+}
 function bindDashboard(){
- var main=$("#portal-main"),toolbar=main&&main.querySelector(".portal-dashboard-toolbar"),headerInner=document.querySelector(".portal-header-inner"),topnav=$("#portal-desktop-nav"),brand=headerInner&&headerInner.querySelector(".portal-brand");
- if(headerInner){
-   var oldHeaderToolbar=headerInner.querySelector(".portal-dashboard-toolbar-in-header");
-   if(oldHeaderToolbar)oldHeaderToolbar.remove();
-   if(toolbar){
-     toolbar.classList.add("portal-dashboard-toolbar-in-header");
-     if(brand&&brand.parentNode===headerInner)brand.insertAdjacentElement("afterend",toolbar);
-     else headerInner.insertBefore(toolbar,topnav||headerInner.firstChild);
-   }
+ positionDashboardToolbar();
+ if(!window.kuroDashboardToolbarResizeBound){
+  window.addEventListener("resize",positionDashboardToolbar,{passive:true});
+  window.kuroDashboardToolbarResizeBound=true;
  }
  var edit=$("#portal-dashboard-edit"),mode=$("#portal-dashboard-mode"),add=$("#portal-dashboard-add"),reset=$("#portal-dashboard-reset"),panel=$("#portal-dashboard-editor"),grid=$("#portal-dashboard-grid"),layout=$("#portal-dashboard-layout"),form=$("#portal-custom-link-form");
  if(edit)edit.onclick=function(){st.dashboardEditing=!st.dashboardEditing;if(!st.dashboardEditing)st.dashboardResizeMode=false;render();};
