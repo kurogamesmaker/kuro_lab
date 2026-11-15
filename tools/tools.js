@@ -73,6 +73,24 @@ function articleMarkup(x,source){
  var searchText=(source+" "+x.title+" "+x.summary).toLowerCase();
  return '<article class="tb-news-item" data-search="'+esc(searchText)+'"><div><span class="tb-news-source">'+esc(source)+'</span>'+(x.date?'<time>'+esc(x.date.slice(0,32))+'</time>':"")+'</div><a href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer">'+esc(x.title)+'</a>'+(x.summary?'<p>'+esc(x.summary)+'</p>':"")+'</article>';
 }
+function hasJapanese(text){return /[ぁ-ゖァ-ヺー]/.test(String(text||""));}
+function translateNewsItem(item){
+ if(hasJapanese(item.title))return Promise.resolve(item);
+ var marker="\n---KURO-SUMMARY---\n";
+ var text=String(item.title||"")+(item.summary?marker+item.summary:"");
+ var url="https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=ja&dt=t&q="+encodeURIComponent(text);
+ return fetch(url,{cache:"force-cache"}).then(function(r){if(!r.ok)throw new Error("翻訳サービスに接続できません");return r.json();}).then(function(data){
+  var translated=(data[0]||[]).map(function(part){return part[0]||"";}).join("");
+  if(!translated)return item;
+  var pieces=translated.split(marker);
+  return Object.assign({},item,{title:pieces[0]||item.title,summary:pieces.length>1?pieces.slice(1).join(marker):item.summary});
+ }).catch(function(){return item;});
+}
+function translateNewsItems(items){
+ var next=0,workers=[];
+ for(var w=0;w<3;w++)workers.push((function(){return new Promise(function(resolve){function run(){if(next>=items.length){resolve();return;}var i=next++;translateNewsItem(items[i]).then(function(result){items[i]=result;run();});}run();});})());
+ return Promise.all(workers).then(function(){return items;});
+}
 function loadNews(force){
  var box=document.getElementById("tb-news-result");if(!box)return;
  if(newsCache&&!force&&Date.now()-newsCache.at<300000){box.innerHTML=newsCache.html;filterNews();return;}
@@ -82,9 +100,13 @@ function loadNews(force){
   results.forEach(function(r){if(r.data)r.data.items.forEach(function(x){all.push({item:x,source:r.data.title||r.name});});else errors.push(r.name+"： "+(r.error&&r.error.message||"取得できませんでした"));});
   all.sort(function(a,b){var da=Date.parse(a.item.date)||0,db=Date.parse(b.item.date)||0;return db-da;});
   var errorHtml=errors.length?'<div class="tb-feed-warning">'+errors.map(esc).join(" / ")+'</div>':"";
-  var html=all.length?'<div class="tb-news-summary"><b>最新 '+all.length+' 件</b><span>公開フィードを新着順に表示</span></div>'+errorHtml+all.slice(0,24).map(function(x){return articleMarkup(x.item,x.source);}).join(""):errorHtml+'<div class="tb-empty">ニュースを取得できませんでした。時間をおいて再試行してください。</div>';
-  newsCache={at:Date.now(),html:html};
-  var current=document.getElementById("tb-news-result");if(current){current.innerHTML=html;filterNews();}
+  var current=document.getElementById("tb-news-result");
+  if(current)current.innerHTML='<div class="tb-loading">英語の記事を日本語に翻訳しています…</div>';
+  translateNewsItems(all.slice(0,24).map(function(x){return x.item;})).then(function(translated){
+   var html=all.length?'<div class="tb-news-summary"><b>最新 '+all.length+' 件</b><span>英語記事は日本語訳で表示</span></div>'+errorHtml+all.slice(0,24).map(function(x,i){return articleMarkup(translated[i],x.source);}).join(""):errorHtml+'<div class="tb-empty">ニュースを取得できませんでした。時間をおいて再試行してください。</div>';
+   newsCache={at:Date.now(),html:html};
+   var box=document.getElementById("tb-news-result");if(box){box.innerHTML=html;filterNews();}
+  });
  });
 }
 function filterNews(){
