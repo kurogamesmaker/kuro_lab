@@ -611,7 +611,10 @@ Deno.serve(async (req: Request) => {
         if(current.expires_at&&new Date(current.expires_at).getTime()<=Date.now()) return reply({error:"期限切れのProは期限を更新してから再開してください。"},409,origin);
         patch.status="active";
       } else if(operation==="revoke") patch.status="revoked";
-      else if(operation==="set_features") {\n        const incoming=body.features&&typeof body.features==="object"?body.features:{};\n        patch.features={workspace_plus:incoming.workspace_plus===true,pro_tools:incoming.pro_tools===true,customization_plus:incoming.customization_plus===true,early_access:incoming.early_access===true};\n      else if(operation==="set_expiry") {
+      else if(operation==="set_features") {
+        const incoming=body.features&&typeof body.features==="object"?body.features:{};
+        patch.features={workspace_plus:incoming.workspace_plus===true,pro_tools:incoming.pro_tools===true,customization_plus:incoming.customization_plus===true,early_access:incoming.early_access===true};
+      } else if(operation==="set_expiry") {
         const expiry=body.expiresAt?new Date(body.expiresAt):null;
         if(body.expiresAt && (!expiry||Number.isNaN(expiry.getTime())||expiry.getTime()<=Date.now())) return reply({error:"期限は未来の日時にしてください。"},400,origin);
         patch.expires_at=expiry?expiry.toISOString():null;
