@@ -40,6 +40,7 @@
     var host = u.hostname.toLowerCase(), path = u.pathname.toLowerCase();
     if (host === "api.open-meteo.com" || host === "geocoding-api.open-meteo.com") return "weather";
     if (host === "api.microlink.io") return "ogp";
+    if (/youtube|googleapis/.test(host)) return "youtube";
     if (u.origin === location.origin && path === "/api/workspace-rss") return "rss";
     if (host === "script.google.com" || (u.origin === location.origin && path === "/api/kuro-gas-proxy")) return "gas_proxy";
     if (host.endsWith(".supabase.co")) {
