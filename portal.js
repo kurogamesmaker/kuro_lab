@@ -221,6 +221,18 @@ function positionDashboardToolbar(){
 }
 function bindDashboard(){
  positionDashboardToolbar();
+ if(!window.kuroDashboardAddDelegationBound){
+  document.addEventListener("click",function(e){
+   var trigger=e.target&&e.target.closest?e.target.closest("#portal-dashboard-add"):null;
+   if(!trigger)return;
+   e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();
+   var panel=$("#portal-dashboard-editor");if(!panel)return;
+   if(panel.hidden){panel.hidden=false;trigger.setAttribute("aria-expanded","true");positionDashboardEditor();}
+   else{restoreDashboardEditor(panel,trigger);}
+  },true);
+  window.kuroDashboardAddDelegationBound=true;
+ }
+
  window.addEventListener("resize",positionDashboardEditor,{passive:true});
  window.addEventListener("scroll",positionDashboardEditor,{passive:true,capture:true});
  if(!window.kuroDashboardToolbarResizeBound){
