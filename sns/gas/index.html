@@ -4,7 +4,7 @@
     <meta name="google-site-verification" content="BMArXsjqD0CUAD34vqFv8qDjq1wuOZdtZRPZ-Y_8pIc">
     <link rel="manifest" href="/manifest.json">
 <meta charset="UTF-8">
-    <meta name="kuro-build-version" content="2026-11-16-x-layout-03">
+    <meta name="kuro-build-version" content="2026-11-16-x-layout-04">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KURO SNS 新バージョン｜GAS中継版｜KURO Lab公式</title>
     <meta name="description" content="KUROは、短い投稿やハッシュタグで話題を共有し、気になる人をフォローして交流できるSNSです。いいねや返信、チャットでつながれます。">
@@ -671,14 +671,7 @@
 
   #homeFeedView,#myProfileView{box-sizing:border-box!important;height:100dvh!important;max-height:100dvh!important;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-width:none!important;padding-top:76px!important;padding-bottom:42px!important}
   #homeFeedView::-webkit-scrollbar,#myProfileView::-webkit-scrollbar{display:none!important;width:0!important}
-  #homeFeedView{
-    width:min(680px,calc(100vw - 160px))!important;max-width:680px!important;
-    margin-left:calc((100vw - min(680px,calc(100vw - 160px)))/2 + 54px)!important;margin-right:auto!important;
-  }
-  #myProfileView{
-    width:min(900px,calc(100vw - 160px))!important;max-width:900px!important;
-    margin-left:calc((100vw - min(900px,calc(100vw - 160px)))/2 + 54px)!important;margin-right:auto!important;
-  }
+  #homeFeedView,#myProfileView{width:min(1100px,calc(100vw - 150px))!important;max-width:1100px!important;margin-left:108px!important;margin-right:auto!important}
   #kuroDesktopVersionSwitch{display:flex!important;position:fixed;z-index:120;top:14px;right:20px;align-items:center;gap:5px;padding:5px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(18,18,24,.94);box-shadow:0 8px 28px rgba(0,0,0,.3);backdrop-filter:blur(16px)}
   #kuroDesktopVersionSwitch a,#kuroDesktopVersionSwitch span{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:0 13px;border-radius:9px;color:#a1a1aa;font-size:12px;font-weight:800;text-decoration:none}
   #kuroDesktopVersionSwitch .is-current{color:#111;background:#fff}
@@ -860,7 +853,7 @@
 
 
 <style id="kuro-x-desktop-layout">
-@media (any-hover:hover) and (any-pointer:fine) {
+@media (min-width:768px) {
   :root { --kuro-desktop-rail-width:clamp(72px,6vw,96px); }
   html,body.kuro-page { width:100%!important;height:100%!important;height:100dvh!important;min-height:100%!important;overflow:hidden!important;background:#000!important; }
   body.kuro-page { margin:0!important;padding:0!important;color:#e7e9ea!important; }
@@ -911,8 +904,8 @@
   }
   #postSearchInput:focus { border-color:#71767b!important;box-shadow:none!important;outline:none!important; }
   #postFeed {
-    display:block!important;width:100%!important;max-width:1320px!important;gap:0!important;
-    margin:0 auto!important;padding:0!important;
+    display:block!important;width:100%!important;max-width:none!important;gap:0!important;
+    margin:0!important;padding:0!important;
   }
   #postFeed>* { width:100%!important;max-width:none!important;margin:0!important; }
   #postFeed [data-post-card] {
@@ -934,7 +927,7 @@
 
 
 <style id="kuro-x-mobile-layout">
-@media (hover:none) and (pointer:coarse) {
+@media (max-width:767px) {
   html,body.kuro-page { width:100%!important;height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important;background:#000!important; }
   body.kuro-page { overflow-y:auto!important;margin:0!important;padding-bottom:calc(66px + env(safe-area-inset-bottom))!important;color:#e7e9ea!important; }
   body.kuro-page,body.kuro-page * { text-shadow:none!important; }
@@ -983,7 +976,7 @@
   #toast { box-shadow:none!important; }
 }
 </style>
-<meta name="kuro-layout-version" content="2026-11-16-x-layout-03">
+<meta name="kuro-layout-version" content="2026-11-16-x-layout-04">
 </head>
 
 <body class="kuro-page kuro-theme-dark">
