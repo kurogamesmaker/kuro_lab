@@ -2588,3 +2588,11 @@ body:has(.portal-dashboard-v2) #portal-quick-button{display:none!important}
  .portal-canvas-zoom-slider{width:68px}
  .portal-canvas-zoom-value{min-width:36px;font-size:9px}
 }
+
+
+/* Saved favorites are shown inside Quick Access instead of a duplicate dashboard widget. */
+.portal-shortcut-saved{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.portal-shortcut-saved-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
+.portal-shortcut-saved-head b{font-size:12px}
+.portal-shortcut-saved-head a{color:var(--blue);font-size:11px;font-weight:800;text-decoration:none;white-space:nowrap}
+.portal-shortcut-empty{margin-top:13px;color:var(--muted);font-size:11px}
