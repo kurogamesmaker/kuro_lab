@@ -94,7 +94,7 @@
     var readSet = new Set(read);
     return (s.ann || []).filter(function (item) {
       return item && item.id && !readSet.has(item.id);
-    }).length;
+    }).length + Number(s.requestUnread || 0) + Number(s.adminMessageUnread || 0);
   }
 
   function badgeHtml() {
@@ -701,6 +701,7 @@
     captureWorkspace();
     updateBadges();
   });
+  window.addEventListener("kuro:portal-notifications-updated", updateBadges);
 
   document.addEventListener("click", function (event) {
     var quick = event.target.closest("[data-open-quick]");
