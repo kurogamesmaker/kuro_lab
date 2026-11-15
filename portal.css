@@ -373,3 +373,60 @@ body.kuro-portal{
     padding:0;
   }
 }
+
+
+/* Dashboard widgets: keep content inside resized cards */
+#portal-dashboard-grid .portal-widget{
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  min-height:0;
+  box-sizing:border-box;
+}
+#portal-dashboard-grid .portal-widget-head{
+  flex:0 0 auto;
+  min-width:0;
+}
+#portal-dashboard-grid .portal-widget-body{
+  flex:1 1 auto;
+  min-width:0;
+  min-height:0;
+  overflow:auto;
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+}
+#portal-dashboard-grid .portal-widget:not(.is-editing){
+  overflow:hidden;
+}
+#portal-dashboard-grid .portal-widget-body > *{
+  min-width:0;
+  max-width:100%;
+}
+#portal-dashboard-grid .portal-widget-link-list a{
+  min-width:0;
+  max-width:100%;
+}
+#portal-dashboard-grid .portal-widget-link-list a > b{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#portal-dashboard-grid .portal-widget-link-list a > small{
+  flex:0 0 auto;
+  white-space:nowrap;
+}
+@media(max-width:700px){
+  #portal-dashboard-grid .portal-widget{
+    padding:14px;
+  }
+  #portal-dashboard-grid .portal-widget-head{
+    gap:8px;
+  }
+  #portal-dashboard-grid .portal-widget-title{
+    min-width:0;
+  }
+  #portal-dashboard-grid .portal-widget-title > div{
+    min-width:0;
+  }
+}
