@@ -10,6 +10,15 @@ export default {
       return Response.redirect("https://admin.kurolab.cc.cd/", 302);
     }
 
+    if (url.hostname === "kurolab.cc.cd" && url.pathname === "/") {
+      const response = await env.ASSETS.fetch(request);
+      const html = await response.text();
+      const updated = html.includes("href=\"/admin/\"") ? html : html.replace("<a href=\"/contact/\">お問い合わせ</a>", "<a href=\"/contact/\">お問い合わせ</a><a href=\"/admin/\">管理者</a>");
+      const headers = new Headers(response.headers);
+      headers.set("Cache-Control", "no-store");
+      return new Response(updated, { status: response.status, statusText: response.statusText, headers });
+    }
+
     if (url.hostname === "admin.kurolab.cc.cd") {
       if (url.pathname === "/" || url.pathname === "/admin/index.html") {
         return new Response(ADMIN_HTML, {
