@@ -2207,3 +2207,25 @@ body:has(.portal-dashboard-v2) #portal-quick-button{display:none!important}
 @media(max-width:700px){
  .portal-side .portal-dashboard-editor{max-height:35vh!important}
 }
+
+
+/* Dashboard display mode selector in the top action bar */
+.portal-dashboard-actions .portal-dashboard-layout-label{
+ display:inline-flex!important;align-items:center!important;margin:0 0 0 4px!important;
+ color:var(--muted)!important;font-size:11px!important;font-weight:700!important;
+ white-space:nowrap!important;
+}
+.portal-dashboard-actions .portal-dashboard-layout-select{
+ display:inline-flex!important;align-items:center!important;min-width:86px!important;
+ min-height:36px!important;padding:6px 28px 6px 10px!important;
+ border:1px solid var(--line)!important;border-radius:10px!important;
+ background:var(--surface)!important;color:var(--text)!important;
+ font:inherit!important;font-size:12px!important;font-weight:700!important;
+ cursor:pointer!important;
+}
+.portal-dashboard-toolbar-in-header .portal-dashboard-actions{flex-wrap:nowrap!important}
+@media(max-width:760px){
+ .portal-dashboard-toolbar-mobile .portal-dashboard-actions{flex-wrap:wrap!important}
+ .portal-dashboard-actions .portal-dashboard-layout-label{font-size:10px!important}
+ .portal-dashboard-actions .portal-dashboard-layout-select{min-width:76px!important;min-height:34px!important;font-size:11px!important}
+}
