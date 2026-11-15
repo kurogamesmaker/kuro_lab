@@ -584,15 +584,15 @@
 
 
 
-  // Force vertical trackpad scrolling to the document when the pointer is over tabs.
-  // Capture before interactive buttons/links receive the wheel event.
+  // Keep vertical trackpad scrolling on the page when the pointer is over navigation or dashboard widgets.
+  // Capture before nested widget scroll areas and interactive elements receive the wheel event.
   window.addEventListener("wheel", function (event) {
     if (event.ctrlKey || event.metaKey || event.defaultPrevented) return;
     var target = event.target;
     if (target && target.nodeType !== 1) target = target.parentElement;
     if (!target || !target.closest) return;
     var tab = target.closest(
-      ".portal-topnav, .portal-workspace-tabs, .portal-workspace-tab, .portal-workspace-create, .portal-workspace-delete"
+      ".portal-topnav, .portal-workspace-tabs, .portal-workspace-tab, .portal-workspace-create, .portal-workspace-delete, .portal-widget, .portal-widget-body"
     );
     if (!tab) return;
 
