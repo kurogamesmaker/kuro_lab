@@ -499,6 +499,11 @@ Deno.serve(async (req: Request) => {
       if(appError) throw appError;
       if(!application) return reply({error:"Application not found"},404,origin);
       if(application.status!=="pending") return reply({error:"この申請はすでに審査済みです。"},409,origin);
+      if(approve){
+        const {data:existingMembership,error:existingMembershipError}=await admin.from("pro_memberships").select("status").eq("user_id",application.user_id).maybeSingle();
+        if(existingMembershipError) throw existingMembershipError;
+        if(existingMembership?.status==="suspended") return reply({error:"Proが停止中の利用者は、停止解除後に審査してください。"},409,origin);
+      }
       const {data:protectedAdmin,error:protectedError}=await admin.from("admin_users").select("user_id").eq("user_id",application.user_id).maybeSingle();
       if(protectedError) throw protectedError;
       if(protectedAdmin) return reply({error:"Administrator accounts are not eligible for Pro membership"},409,origin);
@@ -557,6 +562,7 @@ Deno.serve(async (req: Request) => {
       const {data:existing,error:existingError}=await admin.from("pro_memberships").select("status,expires_at").eq("user_id",targetUserId).maybeSingle();
       if(existingError) throw existingError;
       if(existing?.status==="active" && (!existing.expires_at||new Date(existing.expires_at).getTime()>Date.now())) return reply({error:"この利用者はすでにProです。"},409,origin);
+      if(existing?.status==="suspended") return reply({error:"Proが停止中の利用者には招待を発行できません。"},409,origin);
       const {data:invite,error}=await admin.from("pro_invitations").insert({
         invited_user_id:targetUserId,status:"pending",expires_at:inviteExpiry.toISOString(),
         membership_expires_at:membershipExpiry?membershipExpiry.toISOString():null,created_by:caller.id
