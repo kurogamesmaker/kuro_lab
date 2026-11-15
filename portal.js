@@ -201,15 +201,15 @@ function positionDashboardEditor(){
   top=Math.max(12,r.top-above-gap);
   available=window.innerHeight-top-12;
  }
- panel.style.position="fixed";
- panel.style.top=Math.round(top)+"px";
- panel.style.left=Math.round(left)+"px";
- panel.style.right="auto";
- panel.style.bottom="auto";
- panel.style.width=Math.round(w)+"px";
- panel.style.maxHeight=Math.max(150,Math.min(480,available))+"px";
- panel.style.overflowY="auto";
- panel.style.zIndex="2147483647";
+ panel.style.setProperty("position","fixed","important");
+ panel.style.setProperty("top",Math.round(top)+"px","important");
+ panel.style.setProperty("left",Math.round(left)+"px","important");
+ panel.style.setProperty("right","auto","important");
+ panel.style.setProperty("bottom","auto","important");
+ panel.style.setProperty("width",Math.round(w)+"px","important");
+ panel.style.setProperty("max-height",Math.max(150,Math.min(480,available))+"px","important");
+ panel.style.setProperty("overflow-y","auto","important");
+ panel.style.setProperty("z-index","2147483647","important");
 }
 function restoreDashboardEditor(panel,add){
  var actions=document.querySelector(".portal-dashboard-actions");
