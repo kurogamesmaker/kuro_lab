@@ -280,7 +280,9 @@ Deno.serve(async (req: Request) => {
         .select("id,title,body,href,audience,recipient_id,published,created_at,service_scope,portal_announcement_id")
         .order("created_at", { ascending: false }).limit(limit);
       const requestedScope = typeof body.serviceScope === "string" ? body.serviceScope : "";
-      if (requestedScope === "lab" || requestedScope === "sns" || requestedScope === "both") query = query.eq("service_scope", requestedScope);
+      if (requestedScope === "sns") query = query.in("service_scope", ["sns", "both"]);
+      else if (requestedScope === "lab") query = query.in("service_scope", ["lab", "both"]);
+      else if (requestedScope === "both") query = query.eq("service_scope", "both");
       const { data: messages, error } = await query;
       if (error) throw error;
       const rows = messages || [];
