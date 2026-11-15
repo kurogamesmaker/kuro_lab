@@ -2487,3 +2487,29 @@ body:has(.portal-dashboard-v2) #portal-quick-button{display:none!important}
 @media(prefers-reduced-motion:reduce){.portal-weather-scene *{animation:none!important}}
 
 .portal-widget-hint{display:block;margin-top:6px;color:var(--muted);font-size:9px;line-height:1.5}
+
+/* Weather scene visibility/placement hardening */
+.portal-widget[data-widget-id="weather"] .portal-weather{position:relative;min-height:146px}
+.portal-widget[data-widget-id="weather"] .portal-weather-scene{right:8px;top:24px;left:auto;bottom:auto;z-index:1}
+.portal-widget[data-widget-id="weather"] .portal-weather-scene>.weather-rain,
+.portal-widget[data-widget-id="weather"] .portal-weather-scene>.weather-snow,
+.portal-widget[data-widget-id="weather"] .portal-weather-scene>.weather-lightning{display:none!important}
+.portal-widget[data-widget-id="weather"] .portal-weather-scene.weather-state-rain>.weather-rain,
+.portal-widget[data-widget-id="weather"] .portal-weather-scene.weather-state-storm>.weather-rain,
+.portal-widget[data-widget-id="weather"] .portal-weather-scene.weather-state-snow>.weather-snow{display:block!important;opacity:1}
+.portal-widget[data-widget-id="weather"] .portal-weather-scene.weather-state-storm>.weather-lightning{display:block!important}
+.portal-widget[data-widget-id="weather"] .portal-weather-scene.weather-state-sun>.weather-sun,
+.portal-widget[data-widget-id="weather"] .portal-weather-scene.weather-state-partly>.weather-sun{opacity:1}
+.portal-widget[data-widget-id="weather"] .portal-weather-scene.weather-state-cloud>.weather-sun,
+.portal-widget[data-widget-id="weather"] .portal-weather-scene.weather-state-rain>.weather-sun,
+.portal-widget[data-widget-id="weather"] .portal-weather-scene.weather-state-snow>.weather-sun,
+.portal-widget[data-widget-id="weather"] .portal-weather-scene.weather-state-storm>.weather-sun{opacity:0}
+.portal-widget[data-widget-id="weather"] .portal-weather-scene.weather-state-cloud>.weather-cloud,
+.portal-widget[data-widget-id="weather"] .portal-weather-scene.weather-state-partly>.weather-cloud,
+.portal-widget[data-widget-id="weather"] .portal-weather-scene.weather-state-rain>.weather-cloud,
+.portal-widget[data-widget-id="weather"] .portal-weather-scene.weather-state-snow>.weather-cloud,
+.portal-widget[data-widget-id="weather"] .portal-weather-scene.weather-state-storm>.weather-cloud{opacity:1}
+.portal-widget[data-widget-id="weather"] .portal-weather-status,
+.portal-widget[data-widget-id="weather"] .portal-weather-main,
+.portal-widget[data-widget-id="weather"] .portal-weather-details{max-width:62%}
+@media(max-width:520px){.portal-widget[data-widget-id="weather"] .portal-weather-scene{right:2px;top:26px;transform:scale(.82);transform-origin:top right}}
