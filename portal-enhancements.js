@@ -18,7 +18,7 @@
   var groups = [
     { label: "WORKSPACE", items: [
       { href: "/", label: "ホーム", icon: "⌂" },
-      { href: "/search/", label: "全体検索", icon: "⌕", action: "search" }
+      { href: "/search/", label: "全体検索", icon: "⌕" }
     ] },
     { label: "DISCOVER", items: [
       { href: "/games/", label: "ゲーム", icon: "🎮" },
@@ -414,7 +414,7 @@
         accent.parentElement.appendChild(swatches);
       }
     }
-    var row = document.querySelector(".portal-settings-row:has(#portal-theme)");
+    var row = Array.from(document.querySelectorAll(".portal-settings-row")).find(function (x) { return !!x.querySelector("#portal-theme"); });
     if (row && !row.querySelector(".portal-theme-auto-note")) {
       var note = document.createElement("small");
       note.className = "portal-theme-auto-note";
@@ -537,6 +537,12 @@
   });
 
   window.addEventListener("resize", updateViewportClass, { passive: true });
+  if (window.matchMedia) {
+    var scheme = window.matchMedia("(prefers-color-scheme: dark)");
+    var applySystemTheme = function () { var p = getPrefs(), a = getApi(); if (p && p.theme === "auto" && a && a.applyDisplayPrefs) a.applyDisplayPrefs(); };
+    if (scheme.addEventListener) scheme.addEventListener("change", applySystemTheme);
+    else if (scheme.addListener) scheme.addListener(applySystemTheme);
+  }
   window.addEventListener("kuro:portal-api-ready", function () {
     api = window.__kuroPortal || null;
     setupShell();
