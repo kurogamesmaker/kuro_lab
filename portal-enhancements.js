@@ -350,9 +350,10 @@
     var items = Object.keys(p.dashboardWorkspaces || {}).map(function (id) {
       var w = p.dashboardWorkspaces[id];
       var active = (p.activeWorkspace || "personal") === id;
+      var displayName = id === "gaming" ? "ゲームモード" : id === "creation" ? "仕事モード" : (w.name || "ワークスペース");
       return '<div class="portal-workspace-tab-wrap"><button type="button" class="portal-workspace-tab' +
         (active ? " is-active" : "") + '" data-workspace-switch="' + esc(id) + '" aria-pressed="' + active + '">' +
-        '<span class="portal-workspace-tab-dot"></span><span>' + esc(w.name || "ワークスペース") + "</span></button>" +
+        '<span class="portal-workspace-tab-dot"></span><span>' + esc(displayName) + "</span></button>" +
         (id.indexOf("custom_") === 0 ? '<button type="button" class="portal-workspace-delete" data-workspace-delete="' + esc(id) + '" aria-label="削除">×</button>' : "") +
         "</div>";
     }).join("");
@@ -366,15 +367,31 @@
     ensureWorkspaces();
     p = getPrefs();
     var dash = document.querySelector(".portal-dashboard-v2");
+    var header = document.querySelector(".portal-header-inner");
     if (!dash) {
+      if (header) {
+        var staleBar = header.querySelector(".portal-workspace-bar");
+        if (staleBar) staleBar.remove();
+      }
       updateBadges();
       return;
     }
-    var bar = dash.querySelector(".portal-workspace-bar");
+    var bar = document.querySelector(".portal-workspace-bar");
     if (!bar) {
-      var toolbar = dash.querySelector(".portal-dashboard-toolbar");
-      if (toolbar) toolbar.insertAdjacentHTML("beforebegin", workspaceBar(p));
-    } else {
+      if (header) {
+        var account = header.querySelector("#portal-account-button");
+        var notice = header.querySelector("#portal-notification-button");
+        var anchor = notice || account;
+        if (anchor) anchor.insertAdjacentHTML("beforebegin", workspaceBar(p));
+        else header.insertAdjacentHTML("beforeend", workspaceBar(p));
+      }
+    } else if (header && bar.parentElement !== header) {
+      var accountAnchor = header.querySelector("#portal-notification-button") || header.querySelector("#portal-account-button");
+      if (accountAnchor) accountAnchor.insertAdjacentElement("beforebegin", bar);
+      else header.appendChild(bar);
+    }
+    bar = document.querySelector(".portal-header-inner .portal-workspace-bar") || document.querySelector(".portal-workspace-bar");
+    if (bar) {
       var activeId = p.activeWorkspace || "personal";
       bar.querySelectorAll("[data-workspace-switch]").forEach(function (button) {
         var active = button.dataset.workspaceSwitch === activeId;
