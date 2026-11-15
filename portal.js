@@ -305,8 +305,18 @@ function bindDashboard(){
  if(edit)edit.onclick=function(){st.dashboardEditing=!st.dashboardEditing;if(!st.dashboardEditing)st.dashboardResizeMode=false;render();};
  if(mode)mode.onclick=function(){st.dashboardResizeMode=!st.dashboardResizeMode;render();};
  if(add)add.onclick=function(){if(panel){if(panel.hidden){panel.hidden=false;add.setAttribute("aria-expanded","true");positionDashboardEditor();}else{restoreDashboardEditor(panel,add);}}};
- if(reset)reset.onclick=function(){if(!confirm("ホーム画面の配置を初期状態に戻しますか？"))return;st.data.preferences.dashboardWidgets=["shortcuts","games","favorites","activity","recent","achievements","clock","weather","market"];st.data.preferences.dashboardSizes={};st.data.preferences.dashboardSpans={};st.data.preferences.dashboardHeights={};st.data.preferences.dashboardLayout="balanced";st.dashboardEditing=false;persistDisplayPrefs();render();toast("ホーム画面を初期配置に戻しました");};
+ if(reset)reset.onclick=function(){if(!confirm("ホーム画面の配置を初期状態に戻しますか？"))return;st.data.preferences.dashboardWidgets=["shortcuts","games","favorites","activity","recent","achievements","clock","weather","market"];st.data.preferences.dashboardSizes={};st.data.preferences.dashboardSpans={};st.data.preferences.dashboardHeights={};st.data.preferences.dashboardLayout="balanced";st.data.preferences.dashboardViewMode="grid";st.data.preferences.dashboardCanvasPositions={};st.data.preferences.dashboardCanvasBounds={width:4800,height:3200};st.data.preferences.dashboardCanvasZoom=1;window.__kuroCanvasScroll=null;localStorage.removeItem("kuro_canvas_view");st.dashboardEditing=false;persistDisplayPrefs();render();toast("ホーム画面を初期配置に戻しました");};
  if(layout)layout.onchange=function(){st.data.preferences.dashboardLayout=this.value;persistDisplayPrefs();render();};
+
+ var viewToggle=$("[data-dashboard-view-toggle]");
+ if(viewToggle)viewToggle.onclick=function(){st.data.preferences.dashboardViewMode=st.data.preferences.dashboardViewMode==="canvas"?"grid":"canvas";persistDisplayPrefs();render();};
+ var zoomIn=$("[data-canvas-zoom-in]"),zoomOut=$("[data-canvas-zoom-out]");
+ function changeCanvasZoom(delta){var viewport=$("#portal-canvas-viewport"),old=Math.max(.55,Math.min(1.5,Number(st.data.preferences.dashboardCanvasZoom)||1)),next=Math.max(.55,Math.min(1.5,Math.round((old+delta)*100)/100));if(next===old)return;var cx=viewport?(viewport.scrollLeft+viewport.clientWidth/2)/old:0,cy=viewport?(viewport.scrollTop+viewport.clientHeight/2)/old:0;st.data.preferences.dashboardCanvasZoom=next;window.__kuroCanvasScroll=viewport?{left:Math.max(0,cx*next-viewport.clientWidth/2),top:Math.max(0,cy*next-viewport.clientHeight/2)}:null;persistDisplayPrefs();render();}
+ if(zoomIn)zoomIn.onclick=function(){changeCanvasZoom(.1);};
+ if(zoomOut)zoomOut.onclick=function(){changeCanvasZoom(-.1);};
+ var centerCanvas=$("[data-canvas-center]");
+ if(centerCanvas)centerCanvas.onclick=function(){var viewport=$("#portal-canvas-viewport");if(!viewport)return;var ids=getDashboardIds(),minX=Infinity,minY=Infinity,maxX=0,maxY=0;ids.forEach(function(id,i){var p=getDashboardCanvasPosition(id,i);minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x+p.width);maxY=Math.max(maxY,p.y+(Number((st.data.preferences.dashboardHeights||{})[id])||260));});if(!Number.isFinite(minX))return;var z=Math.max(.55,Math.min(1.5,Number(st.data.preferences.dashboardCanvasZoom)||1));viewport.scrollLeft=Math.max(0,(minX+maxX)*z/2-viewport.clientWidth/2);viewport.scrollTop=Math.max(0,(minY+maxY)*z/2-viewport.clientHeight/2);};
+
  if(form)form.onsubmit=function(e){e.preventDefault();var title=$("#portal-custom-link-title").value.trim(),raw=$("#portal-custom-link-url").value.trim(),icon=$("#portal-custom-link-icon").value.trim()||"🔗",href=safeDashboardUrl(raw),links=st.data.preferences.customLinks||[];if(!title||!href){toast("表示名とHTTPS URL・サイト内パス・Slack / Notion / VS Code のアプリURLを入力してください");return;}if(links.length>=16){toast("マイリンクは最大16件です");return;}links.push({id:uuid(),title:title.slice(0,32),href:href,icon:icon.slice(0,8)});st.data.preferences.customLinks=links;var ids=getDashboardIds();if(ids.indexOf("custom")<0)ids.push("custom");st.data.preferences.dashboardWidgets=ids;st.dashboardEditing=true;persistDisplayPrefs();render();toast("マイリンクを追加しました");};
  if(panel)panel.addEventListener("click",function(e){var close=e.target.closest(".portal-editor-close");if(close){restoreDashboardEditor(panel,add);return;}var choice=e.target.closest("[data-widget-toggle]");if(!choice)return;e.preventDefault();e.stopPropagation();var id=choice.dataset.widgetToggle,ids=getDashboardIds();if(ids.indexOf(id)>=0){restoreDashboardEditor(panel,add);var existing=grid&&grid.querySelector('[data-widget-id="'+id+'"]');if(existing){existing.scrollIntoView({behavior:"smooth",block:"center"});existing.classList.add("portal-widget-focus");window.setTimeout(function(){existing.classList.remove("portal-widget-focus");},1400);}toast("この項目はホームに追加済みです");return;}ids.push(id);panel.remove();if(add)add.setAttribute("aria-expanded","false");setDashboardIds(ids);st.dashboardEditing=true;render();toast("ホームに追加しました");});
  if(!grid)return;
@@ -318,6 +328,13 @@ function bindDashboard(){
  
  grid.addEventListener("click",function(e){
   var b=e.target.closest("button");if(!b)return;
+  if(b.dataset.canvasRotate||b.dataset.canvasFront||b.dataset.canvasBack){
+   var id=b.dataset.canvasRotate||b.dataset.canvasFront||b.dataset.canvasBack,ids=getDashboardIds(),positions=st.data.preferences.dashboardCanvasPositions||{},pos=getDashboardCanvasPosition(id,Math.max(0,ids.indexOf(id))),zValues=ids.map(function(x,i){return getDashboardCanvasPosition(x,i).z;});
+   if(b.dataset.canvasRotate)pos.rotation=pos.rotation>=165?-180:pos.rotation+15;
+   if(b.dataset.canvasFront)pos.z=Math.min(999,Math.max.apply(null,zValues)+1);
+   if(b.dataset.canvasBack)pos.z=Math.max(1,Math.min.apply(null,zValues)-1);
+   saveDashboardCanvasPosition(id,pos);persistDisplayPrefs();render();return;
+  }
   if(b.hasAttribute("data-smart-add")){addSmartDashboardLink();return;}
   if(b.hasAttribute("data-group-add")){addDashboardLinkGroup();return;}
   if(b.dataset.groupOpen){openDashboardLinkGroup(b.dataset.groupOpen);return;}
@@ -355,8 +372,15 @@ function bindDashboard(){
  if(!window.kuroCountdownTimer)window.kuroCountdownTimer=setInterval(updateDashboardCountdown,1000);
  if(!window.kuroPomodoroTimer)window.kuroPomodoroTimer=setInterval(updatePomodoroClock,250);
 
- var drag=null,resize=null;
+ var drag=null,resize=null,canvasDrag=null;
  function finishPointer(){
+  if(canvasDrag){
+   var r=canvasDrag;canvasDrag=null;
+   r.item.classList.remove("canvas-dragging");
+   var positions=st.data.preferences.dashboardCanvasPositions||{},pos=getDashboardCanvasPosition(r.id,Math.max(0,getDashboardIds().indexOf(r.id)));
+   pos.x=Math.round(r.x);pos.y=Math.round(r.y);saveDashboardCanvasPosition(r.id,pos);
+   persistDisplayPrefs();render();return;
+  }
   if(drag){
    var ids=Array.from(grid.querySelectorAll("[data-widget-id]")).map(function(x){return x.dataset.widgetId;});
    grid.querySelectorAll(".drag-active").forEach(function(x){x.classList.remove("drag-active");});
@@ -402,6 +426,17 @@ function bindDashboard(){
   }
  }
  grid.addEventListener("pointerdown",function(e){
+  if(grid.classList.contains("is-canvas")){
+   if(!st.dashboardEditing)return;
+   var canvasItem=e.target.closest("[data-widget-id]");
+   if(!canvasItem||!grid.contains(canvasItem)||e.target.closest("button,a,input,select,textarea,[contenteditable=true]"))return;
+   e.preventDefault();e.stopPropagation();
+   var ids=getDashboardIds(),id=canvasItem.dataset.widgetId,position=getDashboardCanvasPosition(id,Math.max(0,ids.indexOf(id))),zoom=Math.max(.55,Math.min(1.5,Number(st.data.preferences.dashboardCanvasZoom)||1));
+   canvasDrag={id:id,item:canvasItem,pointerId:e.pointerId,startX:e.clientX,startY:e.clientY,x:position.x,y:position.y,zoom:zoom};
+   canvasItem.classList.add("canvas-dragging");
+   try{grid.setPointerCapture(e.pointerId);}catch(err){}
+   return;
+  }
   if(!st.dashboardEditing)return;
   var item=e.target.closest("[data-widget-id]");
   if(!item||!grid.contains(item)||e.target.closest("[data-widget-remove]"))return;
@@ -430,11 +465,50 @@ function bindDashboard(){
   try{grid.setPointerCapture(e.pointerId);}catch(err){}
  });
  grid.addEventListener("pointermove",function(e){
-  if(drag&&e.pointerId===drag.pointerId){e.preventDefault();moveBeforePoint(e.clientX,e.clientY);}
+  if(canvasDrag&&e.pointerId===canvasDrag.pointerId){
+   e.preventDefault();
+   var p=canvasDrag,zoom=p.zoom;
+   p.x=Math.max(-50000,Math.min(50000,p.x+(e.clientX-p.startX)/zoom));
+   p.y=Math.max(-50000,Math.min(50000,p.y+(e.clientY-p.startY)/zoom));
+   p.startX=e.clientX;p.startY=e.clientY;
+   p.item.style.left=Math.round(p.x)+"px";p.item.style.top=Math.round(p.y)+"px";
+  }else if(drag&&e.pointerId===drag.pointerId){e.preventDefault();moveBeforePoint(e.clientX,e.clientY);}
   else if(resize&&e.pointerId===resize.pointerId){e.preventDefault();applyResize(e.clientX,e.clientY);}
  },{passive:false});
- grid.addEventListener("pointerup",function(e){if((drag&&e.pointerId===drag.pointerId)||(resize&&e.pointerId===resize.pointerId))finishPointer();});
- grid.addEventListener("pointercancel",function(e){if((drag&&e.pointerId===drag.pointerId)||(resize&&e.pointerId===resize.pointerId))finishPointer();});
+ grid.addEventListener("pointerup",function(e){if((canvasDrag&&e.pointerId===canvasDrag.pointerId)||(drag&&e.pointerId===drag.pointerId)||(resize&&e.pointerId===resize.pointerId))finishPointer();});
+ grid.addEventListener("pointercancel",function(e){if((canvasDrag&&e.pointerId===canvasDrag.pointerId)||(drag&&e.pointerId===drag.pointerId)||(resize&&e.pointerId===resize.pointerId))finishPointer();});
+
+ var viewport=$("#portal-canvas-viewport"),stage=$("#portal-canvas-stage");
+ if(viewport&&stage){
+  var zoom=Math.max(.55,Math.min(1.5,Number(st.data.preferences.dashboardCanvasZoom)||1)),bounds=getDashboardCanvasBounds(),savedView=window.__kuroCanvasScroll;
+  if(!savedView){try{savedView=JSON.parse(localStorage.getItem("kuro_canvas_view")||"null");}catch(err){}}
+  if(savedView&&Number.isFinite(savedView.left)&&Number.isFinite(savedView.top)){viewport.scrollLeft=Math.max(0,savedView.left);viewport.scrollTop=Math.max(0,savedView.top);}
+  else{viewport.scrollLeft=900*zoom;viewport.scrollTop=480*zoom;}
+  var growing=false;
+  function updateCanvasView(){var view={left:viewport.scrollLeft,top:viewport.scrollTop};window.__kuroCanvasScroll=view;try{localStorage.setItem("kuro_canvas_view",JSON.stringify(view));}catch(err){}}
+  function setCanvasDimensions(){var b=getDashboardCanvasBounds(),z=Math.max(.55,Math.min(1.5,Number(st.data.preferences.dashboardCanvasZoom)||1));stage.style.width=Math.round(b.width*z)+"px";stage.style.height=Math.round(b.height*z)+"px";grid.style.width=b.width+"px";grid.style.height=b.height+"px";grid.style.transform="scale("+z+")";}
+  viewport.addEventListener("scroll",function(){
+   updateCanvasView();if(growing)return;var leftGrow=viewport.scrollLeft<220,topGrow=viewport.scrollTop<220,rightGrow=viewport.scrollLeft+viewport.clientWidth>viewport.scrollWidth-260,bottomGrow=viewport.scrollTop+viewport.clientHeight>viewport.scrollHeight-260;
+   if(!leftGrow&&!topGrow&&!rightGrow&&!bottomGrow)return;
+   growing=true;var grow=1800,pos=st.data.preferences.dashboardCanvasPositions||{};
+   if(leftGrow){Object.keys(pos).forEach(function(id){pos[id].x=Number(pos[id].x||0)+grow;});viewport.scrollLeft+=grow*zoom;bounds.width+=grow;}
+   if(topGrow){Object.keys(pos).forEach(function(id){pos[id].y=Number(pos[id].y||0)+grow;});viewport.scrollTop+=grow*zoom;bounds.height+=grow;}
+   if(rightGrow)bounds.width+=grow;if(bottomGrow)bounds.height+=grow;
+   st.data.preferences.dashboardCanvasPositions=pos;st.data.preferences.dashboardCanvasBounds=bounds;setCanvasDimensions();updateCanvasView();persistDisplayPrefs();growing=false;
+  },{passive:true});
+  var pan=null;
+  viewport.addEventListener("pointerdown",function(e){
+   var target=e.target;if(target&&target.nodeType!==1)target=target.parentElement;
+   if(e.button!==0||!target||target.closest("[data-widget-id]"))return;
+   pan={pointerId:e.pointerId,x:e.clientX,y:e.clientY,left:viewport.scrollLeft,top:viewport.scrollTop};
+   viewport.classList.add("is-panning");try{viewport.setPointerCapture(e.pointerId);}catch(err){}
+   e.preventDefault();
+  });
+  viewport.addEventListener("pointermove",function(e){if(!pan||e.pointerId!==pan.pointerId)return;e.preventDefault();viewport.scrollLeft=pan.left-(e.clientX-pan.x);viewport.scrollTop=pan.top-(e.clientY-pan.y);},{passive:false});
+  function finishPan(e){if(!pan||e.pointerId!==pan.pointerId)return;pan=null;viewport.classList.remove("is-panning");}
+  viewport.addEventListener("pointerup",finishPan);viewport.addEventListener("pointercancel",finishPan);
+ }
+
  if($("#portal-clock-time")){function tick(){var n=new Date(),t=$("#portal-clock-time"),d=$("#portal-clock-date");if(t)t.textContent=new Intl.DateTimeFormat("ja-JP",{hour:"2-digit",minute:"2-digit"}).format(n);if(d)d.textContent=new Intl.DateTimeFormat("ja-JP",{year:"numeric",month:"long",day:"numeric",weekday:"long"}).format(n);}tick();if(!window.kuroClockTimer)window.kuroClockTimer=setInterval(tick,15000);}
  var weatherInput=$("[data-weather-city]"),weatherSearch=$("[data-weather-search]"),weatherEditor=$("[data-weather-editor]"),weatherLocationToggle=$("[data-weather-location-toggle]");
  if(weatherLocationToggle)weatherLocationToggle.onclick=function(){if(!weatherEditor)return;weatherEditor.hidden=!weatherEditor.hidden;if(!weatherEditor.hidden&&weatherInput){weatherInput.focus();weatherInput.select();}};
