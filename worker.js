@@ -7,7 +7,18 @@ export default {
     const url = new URL(request.url);
 
     if (url.hostname === "kurolab.cc.cd" && (url.pathname === "/admin" || url.pathname === "/admin/")) {
-      return Response.redirect("https://admin.kurolab.cc.cd/", 302);
+      return new Response(ADMIN_HTML, {
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "private, no-store, max-age=0",
+          "X-Robots-Tag": "noindex, nofollow, noarchive",
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "same-origin",
+          "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+          "X-Frame-Options": "DENY",
+          "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
+        }
+      });
     }
 
     if (url.hostname === "kurolab.cc.cd" && url.pathname === "/") {
