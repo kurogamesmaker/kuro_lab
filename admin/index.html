@@ -124,9 +124,19 @@
 <div class="heading"><div><h1>リクエストBOX</h1><p>利用者から届いたリクエストを確認・管理します。</p></div><div class="statusline" id="connection">接続中…</div></div>
 <div class="stats"><div class="stat"><span>すべて</span><strong id="totalCount">—</strong></div><div class="stat"><span>未対応</span><strong id="pendingCount">—</strong></div><div class="stat"><span>確認中</span><strong id="reviewCount">—</strong></div></div>
 <section class="panel"><div class="toolbar"><div class="filters" id="filters"><button class="active" data-filter="all">すべて</button><button data-filter="pending">未対応</button><button data-filter="reviewing">確認中</button><button data-filter="done">対応済み</button></div><input class="search" id="search" type="search" placeholder="内容を検索…"></div><div class="list" id="requestList"><div class="empty">読み込み中…</div></div></section>
+<section class="panel" style="margin-top:18px">
+ <div class="toolbar"><div><strong>KUROLAB専用お知らせ</strong><div class="sns-muted">KUROLAB利用者だけに表示されます。KURO SNSには配信されません。</div></div><button class="btn" id="labAnnRefresh">更新</button></div>
+ <form id="labAnnForm" class="ops-form">
+  <input id="labAnnTitle" maxlength="120" required placeholder="お知らせのタイトル">
+  <textarea id="labAnnBody" maxlength="8000" rows="3" required placeholder="本文"></textarea>
+  <input id="labAnnHref" type="url" placeholder="リンク（任意・HTTPSのみ）">
+  <label class="ops-check"><input id="labAnnPublished" type="checkbox" checked> 保存後すぐ公開する</label>
+  <div class="ops-form-actions"><button class="btn primary" id="labAnnSave">KUROLABに配信</button></div>
+  <div class="sns-muted" id="labAnnStatus">KUROLAB専用のお知らせとして配信されます。</div>
+ </form>
+ <div class="list" id="labAnnList"><div class="empty">読み込み中…</div></div>
+</section>
 </main>
-
-
 
 <main id="opsAdminSection" class="wrap main" hidden>
  <div class="eyebrow">KURO Lab / Operations</div>
@@ -194,14 +204,15 @@
  </div>
  <div id="opsMessagesView" hidden>
   <section class="panel">
-   <div class="toolbar"><div><strong>SNS・KUROLAB 共通メッセージ</strong><div class="sns-muted">個別または全利用者へ配信。両方のサービスで同じ内容を確認できます。</div></div><button class="btn" id="opsMessagesRefresh">更新</button></div>
+   <div class="toolbar"><div><strong>サービス別お知らせ配信</strong><div class="sns-muted">配信先サービスを選択して、それぞれの利用者へお知らせを届けます。</div></div><button class="btn" id="opsMessagesRefresh">更新</button></div>
    <form id="opsMessageForm" class="ops-form">
+    <label>配信先サービス<select id="opsMessageScope"><option value="both">KUROLAB ＋ KURO SNS</option><option value="lab">KUROLABのみ</option><option value="sns">KURO SNSのみ</option></select></label>
     <label>送信先<select id="opsMessageTarget"><option value="all">全利用者（一斉配信）</option></select></label>
     <input id="opsMessageTitle" maxlength="120" required placeholder="メッセージのタイトル">
     <textarea id="opsMessageBody" maxlength="8000" rows="4" required placeholder="メッセージ本文"></textarea>
     <input id="opsMessageHref" type="url" placeholder="リンク（任意・HTTPSのみ）">
     <div class="ops-form-actions"><button type="submit" class="btn primary" id="opsMessageSend">メッセージを送信</button></div>
-    <div class="sns-muted" id="opsMessageStatus">送信するとKURO SNSとKUROLABの両方に表示されます。既存のKUROLAB専用お知らせには影響しません。</div>
+    <div class="sns-muted" id="opsMessageStatus">配信先で選んだサービスだけに表示されます。両方を選ぶと両サービスへ配信します。</div>
    </form>
    <div class="list" id="opsMessagesList"><div class="empty">読み込み中…</div></div>
   </section>
@@ -274,6 +285,17 @@
   <div class="stat"><span>フォロー</span><strong id="snsFollowsCount">—</strong></div>
   <div class="stat"><span>公開チャット</span><strong id="snsChatCount">—</strong></div>
  </div>
+ <section class="panel" style="margin-bottom:16px">
+  <div class="toolbar"><div><strong>KURO SNS専用お知らせ</strong><div class="sns-muted">KURO SNS利用者の通知画面に表示。KUROLABには配信されません。</div></div><button class="btn" id="snsAnnRefresh">更新</button></div>
+  <form id="snsAnnForm" class="ops-form">
+   <input id="snsAnnTitle" maxlength="120" required placeholder="お知らせのタイトル">
+   <textarea id="snsAnnBody" maxlength="8000" rows="3" required placeholder="本文"></textarea>
+   <input id="snsAnnHref" type="url" placeholder="リンク（任意・HTTPSのみ）">
+   <div class="ops-form-actions"><button class="btn primary" id="snsAnnSend">KURO SNSに配信</button></div>
+   <div class="sns-muted" id="snsAnnStatus">配信するとKURO SNSの通知欄に表示されます。</div>
+  </form>
+  <div class="list" id="snsAnnList"><div class="empty">読み込み中…</div></div>
+ </section>
  <section class="panel">
   <div class="toolbar">
    <div class="sns-tabs" id="snsTabs">
@@ -796,6 +818,47 @@ async function loadOpsAnnouncements(){
   ).join(""):'<div class="empty">お知らせはまだありません。</div>';
  }catch(e){$("#opsAnnouncementsList").innerHTML='<div class="error">読み込みに失敗しました：'+esc(e.message)+'</div>';}
 }
+async function loadLabAnnouncements(){
+ const box=$("#labAnnList");if(!box)return;
+ box.innerHTML='<div class="empty">読み込み中…</div>';
+ try{
+  const data=await opsInvoke({action:"list_announcements"});
+  const rows=data.announcements||[];
+  box.innerHTML=rows.length?rows.map(m=>'<article class="ops-ann-item"><div class="ops-ann-copy"><div class="meta"><strong>'+esc(m.title)+'</strong><span class="ops-status '+(m.published?'':'banned')+'">'+(m.published?'公開中':'停止')+'</span><span>'+esc(date(m.created_at))+'</span></div><p>'+esc(m.body)+'</p></div><div class="ops-inline-actions">'+(m.published?'<button class="btn" data-lab-ann-stop="'+esc(m.id)+'">配信停止</button>':'')+'</div></article>').join(''):'<div class="empty">お知らせはまだありません。</div>';
+ }catch(e){box.innerHTML='<div class="error">読み込みに失敗しました：'+esc(e.message)+'</div>';}
+}
+async function saveLabAnnouncement(event){
+ event.preventDefault();const title=$("#labAnnTitle").value.trim(),content=$("#labAnnBody").value.trim(),href=$("#labAnnHref").value.trim();
+ if(!title||!content)return;
+ const button=$("#labAnnSave");button.disabled=true;
+ try{
+  await opsInvoke({action:"save_announcement",title,content,href,published:$("#labAnnPublished").checked});
+  $("#labAnnForm").reset();$("#labAnnPublished").checked=true;$("#labAnnStatus").textContent="KUROLAB専用のお知らせを保存しました。";
+  await loadLabAnnouncements();await loadOpsAudit();
+ }catch(e){alert("配信できませんでした："+e.message);}
+ finally{button.disabled=false;}
+}
+async function loadSnsAnnouncements(){
+ const box=$("#snsAnnList");if(!box)return;
+ box.innerHTML='<div class="empty">読み込み中…</div>';
+ try{
+  const data=await opsInvoke({action:"list_admin_messages",limit:200,serviceScope:"sns"});
+  const rows=(data.messages||[]).filter(m=>m.service_scope==="sns"||m.service_scope==="both");
+  box.innerHTML=rows.length?rows.map(m=>'<article class="ops-ann-item"><div class="ops-ann-copy"><div class="meta"><strong>'+esc(m.title)+'</strong><span class="ops-status '+(m.published?'':'banned')+'">'+(m.published?'配信中':'停止')+'</span><span>'+esc(date(m.created_at))+'</span><span>既読 '+Number(m.read_count||0)+' 件</span></div><p>'+esc(m.body)+'</p></div><div class="ops-inline-actions">'+(m.published?'<button class="btn" data-sns-ann-stop="'+esc(m.id)+'">配信停止</button>':'')+'</div></article>').join(''):'<div class="empty">KURO SNSのお知らせはまだありません。</div>';
+ }catch(e){box.innerHTML='<div class="error">読み込みに失敗しました：'+esc(e.message)+'</div>';}
+}
+async function sendSnsAnnouncement(event){
+ event.preventDefault();const title=$("#snsAnnTitle").value.trim(),content=$("#snsAnnBody").value.trim(),href=$("#snsAnnHref").value.trim();
+ if(!title||!content)return;
+ if(!confirm("KURO SNSの利用者全員にお知らせを配信しますか？"))return;
+ const button=$("#snsAnnSend");button.disabled=true;
+ try{
+  await opsInvoke({action:"send_admin_message",audience:"all",serviceScope:"sns",title,content,href});
+  $("#snsAnnForm").reset();$("#snsAnnStatus").textContent="KURO SNS利用者向けに配信しました。";
+  await loadSnsAnnouncements();await loadOpsAudit();
+ }catch(e){alert("配信できませんでした："+e.message);}
+ finally{button.disabled=false;}
+}
 async function ensureOpsMessageTargets(){
  const select=$("#opsMessageTarget");
  if(!select)return;
@@ -823,8 +886,9 @@ async function loadOpsMessages(){
   opsMessages=data.messages||[];
   $("#opsMessagesList").innerHTML=opsMessages.length?opsMessages.map(m=>{
    const target=m.audience==="all"?"全利用者":(m.recipient?.display_name||m.recipient?.username||"個別利用者");
+   const scopeLabel=m.service_scope==="both"?"両サービス":m.service_scope==="lab"?"KUROLAB":"KURO SNS";
    const targetExtra=m.recipient_id?" · "+m.recipient_id:"";
-   return '<article class="ops-ann-item"><div class="ops-ann-copy"><div class="meta"><strong>'+esc(m.title)+'</strong><span class="ops-status '+(m.published?"":"banned")+'">'+(m.published?"配信中":"停止")+'</span><span>'+esc(date(m.created_at))+'</span></div><div class="sns-muted">送信先：'+esc(target)+esc(targetExtra)+' · 既読 '+Number(m.read_count||0)+' 件</div><p>'+esc(m.body)+'</p>'+(m.href?'<a href="'+esc(m.href)+'" target="_blank" rel="noopener noreferrer">リンクを開く ↗</a>':'')+'</div><div class="ops-inline-actions">'+(m.published?'<button class="btn" data-message-unpublish="'+esc(m.id)+'">配信停止</button>':'')+'</div></article>';
+   return '<article class="ops-ann-item"><div class="ops-ann-copy"><div class="meta"><strong>'+esc(m.title)+'</strong><span class="ops-status '+(m.published?"":"banned")+'">'+(m.published?"配信中":"停止")+'</span><span>'+esc(date(m.created_at))+'</span></div><div class="sns-muted">配信先：'+esc(scopeLabel)+' · 送信先：'+esc(target)+esc(targetExtra)+' · 既読 '+Number(m.read_count||0)+' 件</div><p>'+esc(m.body)+'</p>'+(m.href?'<a href="'+esc(m.href)+'" target="_blank" rel="noopener noreferrer">リンクを開く ↗</a>':'')+'</div><div class="ops-inline-actions">'+(m.published?'<button class="btn" data-message-unpublish="'+esc(m.id)+'">配信停止</button>':'')+'</div></article>';
   }).join(""):'<div class="empty">共通メッセージはまだありません。</div>';
  }catch(e){$("#opsMessagesList").innerHTML='<div class="error">読み込みに失敗しました：'+esc(e.message)+'</div>';}
 }
@@ -837,13 +901,15 @@ async function sendOpsMessage(event){
  if(!title||!content){alert("タイトルと本文を入力してください。");return;}
  const audience=target==="all"?"all":"user";
  const userId=audience==="user"?target.slice(5):"";
+ const serviceScope=$("#opsMessageScope").value;
+ const scopeLabel=serviceScope==="both"?"KUROLAB ＋ KURO SNS":serviceScope==="lab"?"KUROLABのみ":"KURO SNSのみ";
  const targetLabel=audience==="all"?"全利用者":($("#opsMessageTarget").selectedOptions[0]?.textContent||"指定ユーザー");
- if(!confirm(targetLabel+" に共通メッセージを送信しますか？\nKURO SNSとKUROLABの両方に配信されます。"))return;
+ if(!confirm(scopeLabel+" の "+targetLabel+" にお知らせを配信しますか？"))return;
  const button=$("#opsMessageSend");button.disabled=true;
  try{
-  await opsInvoke({action:"send_admin_message",audience,userId,title,content,href});
+  await opsInvoke({action:"send_admin_message",audience,userId,title,content,href,serviceScope});
   $("#opsMessageForm").reset();$("#opsMessageTarget").value="all";
-  $("#opsMessageStatus").textContent="送信しました。KURO SNSとKUROLABの両方に配信されました。";
+  $("#opsMessageStatus").textContent=scopeLabel+" に配信しました。";
   await loadOpsMessages();await loadOpsAudit();
  }catch(e){alert("送信できませんでした："+e.message);}
  finally{button.disabled=false;}
@@ -972,7 +1038,7 @@ function startAdminPolling(){
   if($("#appView").hidden)return;
   if(activeProduct==="lab")load();
   else if(activeProduct==="sns"){
-   loadSns();
+   loadSns();loadSnsAnnouncements();
    if(snsTab==="analytics")loadAnalytics();
   }else if(activeProduct==="ops"){
    if(opsView==="users")loadOpsUsers();
@@ -993,9 +1059,10 @@ async function switchProduct(){
  $("#labAdminSection").hidden=activeProduct!=="lab";
  $("#snsAdminSection").hidden=activeProduct!=="sns";
  $("#opsAdminSection").hidden=activeProduct!=="ops";
- if(activeProduct==="lab"){await load();subscribe();}
+ if(activeProduct==="lab"){await load();subscribe();await loadLabAnnouncements();}
  else if(activeProduct==="sns"){
   await loadSns();
+  await loadSnsAnnouncements();
   startSnsRealtime();
   if(snsTab==="analytics")await loadAnalytics();
  }else setOpsView(opsView);
@@ -1034,6 +1101,11 @@ $("#opsReportsList").addEventListener("click",e=>{const b=e.target.closest("[dat
 $("#opsAnnouncementsRefresh").addEventListener("click",loadOpsAnnouncements);
 $("#opsMessagesRefresh").addEventListener("click",loadOpsMessages);
 $("#opsMessageForm").addEventListener("submit",sendOpsMessage);
+$("#labAnnForm").addEventListener("submit",saveLabAnnouncement);
+$("#labAnnRefresh").addEventListener("click",loadLabAnnouncements);
+$("#snsAnnForm").addEventListener("submit",sendSnsAnnouncement);
+$("#snsAnnRefresh").addEventListener("click",loadSnsAnnouncements);
+
 $("#opsMessagesList").addEventListener("click",e=>{const b=e.target.closest("[data-message-unpublish]");if(b)unpublishOpsMessage(b.dataset.messageUnpublish,b);});
 $("#opsFlagsRefresh").addEventListener("click",loadOpsFlags);
 $("#opsAnalyticsRefresh").addEventListener("click",loadOpsAnalytics);
