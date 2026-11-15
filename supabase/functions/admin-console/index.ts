@@ -463,13 +463,14 @@ Deno.serve(async (req: Request) => {
 
 
     if (action === "list_pro_management") {
-      const [appsResult, membersResult, invitesResult] = await Promise.all([
+      const [appsResult, membersResult, invitesResult, controlsResult] = await Promise.all([
         admin.from("pro_applications").select("id,user_id,reason,status,admin_note,reviewed_by,reviewed_at,created_at").order("created_at",{ascending:false}).limit(300),
         admin.from("pro_memberships").select("user_id,status,source,starts_at,expires_at,features,approved_by,approved_at,updated_at").order("updated_at",{ascending:false}).limit(500),
-        admin.from("pro_invitations").select("id,invited_user_id,status,expires_at,membership_expires_at,created_at,accepted_at,created_by").order("created_at",{ascending:false}).limit(300)
+        admin.from("pro_invitations").select("id,invited_user_id,status,expires_at,membership_expires_at,created_at,accepted_at,created_by").order("created_at",{ascending:false}).limit(300),
+        admin.from("pro_user_controls").select("user_id,reapply_allowed,reapply_after,admin_note,updated_at").limit(500)
       ]);
-      for (const r of [appsResult,membersResult,invitesResult]) if(r.error) throw r.error;
-      const ids=[...new Set([...(appsResult.data||[]).map(x=>x.user_id),...(membersResult.data||[]).map(x=>x.user_id),...(invitesResult.data||[]).map(x=>x.invited_user_id)])];
+      for (const r of [appsResult,membersResult,invitesResult,controlsResult]) if(r.error) throw r.error;
+      const ids=[...new Set([...(appsResult.data||[]).map(x=>x.user_id),...(membersResult.data||[]).map(x=>x.user_id),...(invitesResult.data||[]).map(x=>x.invited_user_id),...(controlsResult.data||[]).map(x=>x.user_id)])];
       const profileResult=ids.length?await admin.from("profiles").select("id,username,display_name").in("id",ids):{data:[],error:null};
       if(profileResult.error) throw profileResult.error;
       const profileMap=new Map((profileResult.data||[]).map(x=>[x.id,x]));
@@ -482,7 +483,8 @@ Deno.serve(async (req: Request) => {
       return reply({
         applications:(appsResult.data||[]).map(x=>decorate(x,x.user_id)),
         memberships:(membersResult.data||[]).map(x=>decorate(x,x.user_id)),
-        invitations:(invitesResult.data||[]).map(x=>decorate(x,x.invited_user_id))
+        invitations:(invitesResult.data||[]).map(x=>decorate(x,x.invited_user_id)),
+        controls:(controlsResult.data||[]).map(x=>decorate(x,x.user_id))
       },200,origin);
     }
 
