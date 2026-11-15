@@ -2005,3 +2005,65 @@ body:has(.portal-dashboard-v2) #portal-quick-button{display:none!important}
   .portal-dashboard-toolbar-mobile .portal-btn.subtle{min-width:36px!important;padding:6px!important}
   .portal-app-shell:has(.portal-dashboard-v2) .portal-app-main{padding-top:14px!important}
 }
+
+
+/* Sidebar stability hotfix: neutralize the legacy hover-expand rail. */
+@media(min-width:761px){
+  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar,
+  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:hover,
+  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:focus,
+  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:focus-within{
+    position:sticky!important;
+    inset:auto!important;
+    top:88px!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    height:calc(100vh - 108px)!important;
+    height:calc(100dvh - 108px)!important;
+    min-height:520px!important;
+    max-height:none!important;
+    margin:20px 0 28px!important;
+    padding:14px 11px 12px!important;
+    display:flex!important;
+    flex-direction:column!important;
+    gap:10px!important;
+    overflow:hidden!important;
+    border:1px solid var(--line)!important;
+    border-radius:18px!important;
+    box-shadow:0 10px 32px #00000012!important;
+    background:var(--surface)!important;
+    transform:none!important;
+    animation:none!important;
+    transition:none!important;
+  }
+  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar > *,
+  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:hover > *,
+  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:focus-within > *{
+    opacity:1!important;
+    visibility:visible!important;
+    pointer-events:auto!important;
+    transform:none!important;
+    animation:none!important;
+    transition:none!important;
+  }
+  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar .portal-sidebar-item,
+  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar .portal-sidebar-item:hover{
+    transform:none!important;
+    transition:none!important;
+    animation:none!important;
+  }
+}
+.portal-app-sidebar{
+  transform:none!important;
+  animation:none!important;
+  transition:none!important;
+}
+.portal-app-sidebar .portal-sidebar-item{
+  transform:none!important;
+  transition:background-color .16s ease,color .16s ease,border-color .16s ease!important;
+  animation:none!important;
+}
+@media(prefers-reduced-motion:reduce){
+  .portal-app-sidebar,.portal-app-sidebar *{transition:none!important;animation:none!important}
+}
