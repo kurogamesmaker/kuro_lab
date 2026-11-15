@@ -82,6 +82,10 @@ Deno.serve(async (req: Request) => {
       const {data:currentMembership,error:currentMembershipError}=await admin.from("pro_memberships").select("status").eq("user_id",user.id).maybeSingle();
       if(currentMembershipError) throw currentMembershipError;
       if(currentMembership?.status==="suspended") return reply({error:"Proが停止中のため招待を承諾できません。管理者にお問い合わせください。"},403,origin);
+      if(invitation.membership_expires_at && new Date(invitation.membership_expires_at).getTime()<=Date.now()) {
+        await admin.from("pro_invitations").update({status:"expired"}).eq("id",invitationId).eq("status","pending");
+        return reply({error:"Pro利用期間の開始期限を過ぎています。管理者に新しい招待を依頼してください。"},410,origin);
+      }
       if(new Date(invitation.expires_at).getTime()<=Date.now()) {
         await admin.from("pro_invitations").update({status:"expired"}).eq("id",invitationId).eq("status","pending");
         return reply({error:"招待の有効期限が切れています。"},410,origin);
