@@ -864,7 +864,7 @@ body.kuro-page>.kuro-global-header,body.kuro-page>#kuroGasStatusPanel{display:no
 #kuroBottomNav .kuro-tab-icon,#kuroBottomNav [data-tab] i{display:inline-block!important;width:auto!important;height:auto!important;font-size:19px!important;line-height:1!important;color:inherit!important}
 #kuroBottomNav [data-tab]:hover{background:#181818!important}
 #kuroBottomNav [data-tab][aria-current=page]{background:#16181c!important;color:#fff!important}
-#homeFeedView,#myProfileView{position:fixed!important;top:0!important;right:0!important;bottom:0!important;left:88px!important;display:block!important;width:calc(100vw - 88px)!important;min-width:0!important;max-width:none!important;height:100vh!important;height:100dvh!important;min-height:0!important;max-height:100dvh!important;margin:0!important;padding:58px 24px 24px!important;box-sizing:border-box!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain!important;background:#000!important;border:0!important;border-left:1px solid #2f3336!important;border-radius:0!important}
+#homeFeedView,#myProfileView{position:fixed!important;top:0!important;right:0!important;bottom:0!important;left:112px!important;display:block!important;width:calc(100vw - 112px)!important;min-width:0!important;max-width:none!important;height:100vh!important;height:100dvh!important;min-height:0!important;max-height:100dvh!important;margin:0!important;padding:58px 32px 24px!important;box-sizing:border-box!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain!important;background:#000!important;border:0!important;border-left:1px solid #2f3336!important;border-radius:0!important}
 #homeFeedView>.mb-6,#myProfileView>*{display:block!important;width:100%!important;max-width:760px!important;min-width:0!important;margin-left:auto!important;margin-right:auto!important;box-sizing:border-box!important}
 #homeFeedView>.mb-6{padding:12px 20px!important}
 #homeFeedView>.mb-6>div{width:100%!important;max-width:none!important;min-width:0!important;margin:0!important}
@@ -881,6 +881,9 @@ body.kuro-page>.kuro-global-header,body.kuro-page>#kuroGasStatusPanel{display:no
 #kuroDesktopVersionSwitch a,#kuroDesktopVersionSwitch span{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-height:34px!important;padding:0 13px!important;border-radius:9px!important;color:#a1a1aa!important;font-size:12px!important;font-weight:800!important;text-decoration:none!important}
 #kuroDesktopVersionSwitch .is-current{color:#111!important;background:#fff!important}
 #homeFeedView.hidden,#myProfileView.hidden{display:none!important}
+
+/* Keep the feed physically clear of the fixed left navigation on every desktop width. */
+@media (min-width:768px){#homeFeedView,#myProfileView{left:112px!important;width:calc(100vw - 112px)!important;padding-left:32px!important}#postFeed,#postFeed>*{min-width:0!important;max-width:100%!important;box-sizing:border-box!important}}
 </style>
 
 <meta name="kuro-layout-version" content="2026-11-16-gas-layout-06">
