@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-var root=null,active="weather",clockTimer=null,feeds=[],newsCache=null;
+var root=null,active="weather",clockTimer=null,feeds=[],newsCache=null,isToolPage=false;
 var defaults=[
  {id:"weather",icon:"🌦️",name:"天気予報",desc:"地域ごとの現在の天気と今日の予報"},
  {id:"news",icon:"📰",name:"ニュースまとめ",desc:"複数メディアの最新記事をまとめて確認"},
@@ -9,6 +9,8 @@ var defaults=[
  {id:"rss",icon:"📡",name:"RSSリーダー",desc:"好きなサイトのフィードを登録して読む"},
  {id:"status",icon:"📶",name:"サイト稼働状況",desc:"Webサイトの応答状態と速度を確認"}
 ];
+var requestedTool=new URLSearchParams(location.search).get("tool");
+if(defaults.some(function(x){return x.id===requestedTool;})){active=requestedTool;isToolPage=true;}
 var newsSources=[
  {name:"NHK 主要ニュース",url:"https://www3.nhk.or.jp/rss/news/cat0.xml"},
  {name:"BBC World",url:"https://feeds.bbci.co.uk/news/world/rss.xml"}
@@ -17,7 +19,12 @@ function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){retur
 function safeUrl(v){try{var u=new URL(String(v||"").trim());return (u.protocol==="https:"||u.protocol==="http:")&&!u.username&&!u.password?u.href:"";}catch(e){return "";}}
 function loadFeeds(){try{var x=JSON.parse(localStorage.getItem("kuro_toolbox_rss")||"[]");return Array.isArray(x)?x.filter(function(f){return f&&safeUrl(f.url);}).slice(0,12):[];}catch(e){return [];}}
 function saveFeeds(){localStorage.setItem("kuro_toolbox_rss",JSON.stringify(feeds));}
-function shell(){return '<section class="tb-hero"><div><span class="tb-eyebrow">KURO LAB / TOOLBOX</span><h2>必要な情報を、ひとつの場所に。</h2><p>毎日使う情報収集ツールをまとめました。ツールを選んで、すぐに使えます。</p></div><div class="tb-hero-mark">⌘</div></section><div class="tb-tool-grid" role="list">'+defaults.map(function(x){return '<button type="button" class="tb-tool-card" data-tool="'+x.id+'" aria-pressed="'+(active===x.id)+'"><span class="tb-tool-icon">'+x.icon+'</span><span class="tb-tool-copy"><b>'+x.name+'</b><small>'+x.desc+'</small></span><span class="tb-tool-arrow">↗</span></button>';}).join("")+'</div><section class="tb-panel" id="tb-panel" aria-live="polite"></section><p class="tb-footnote">一部の情報は外部サービスから取得します。取得できない場合は、時間をおいて再試行してください。</p>';}
+function shell(){
+ var panel='<section class="tb-panel" id="tb-panel" aria-live="polite"></section>';
+ var note='<p class="tb-footnote">一部の情報は外部サービスから取得します。取得できない場合は、時間をおいて再試行してください。</p>';
+ if(isToolPage)return '<a class="tb-back-link" href="/tools/">← ツール一覧に戻る</a>'+panel+note;
+ return '<section class="tb-hero"><div><span class="tb-eyebrow">KURO LAB / TOOLBOX</span><h2>必要な情報を、ひとつの場所に。</h2><p>毎日使う情報収集ツールをまとめました。ツールを選んで、すぐに使えます。</p></div><div class="tb-hero-mark">⌘</div></section><div class="tb-tool-grid" role="list">'+defaults.map(function(x){return '<a href="/tools/?tool='+x.id+'" class="tb-tool-card"><span class="tb-tool-icon">'+x.icon+'</span><span class="tb-tool-copy"><b>'+x.name+'</b><small>'+x.desc+'</small></span><span class="tb-tool-arrow">↗</span></a>';}).join("")+'</div>'+panel+note;
+}
 function panelHead(icon,title,desc){return '<div class="tb-panel-head"><div class="tb-panel-icon">'+icon+'</div><div><h3>'+title+'</h3><p>'+desc+'</p></div></div>';}
 function renderPanel(){
  if(clockTimer){clearInterval(clockTimer);clockTimer=null;}
@@ -68,7 +75,7 @@ function bindPanel(){
  if(active==="weather")getWeather();
  if(active==="convert"){fxConvert();unitConvert();}
 }
-function mount(){var node=document.getElementById("kuro-toolbox-root");if(!node)return;root=node;feeds=loadFeeds();root.innerHTML=shell();root.addEventListener("click",function(e){var b=e.target.closest("[data-tool]");if(!b)return;active=b.dataset.tool;renderPanel();});renderPanel();}
+function mount(){var node=document.getElementById("kuro-toolbox-root");if(!node)return;root=node;feeds=loadFeeds();if(isToolPage){var selected=defaults.find(function(x){return x.id===active;});if(selected)document.title=selected.name+"｜ツールボックス｜KURO Lab";}root.innerHTML=shell();renderPanel();}
 window.addEventListener("kuro:portal-rendered",mount);
 window.addEventListener("kuro:portal-api-ready",mount);
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",mount);else mount();
