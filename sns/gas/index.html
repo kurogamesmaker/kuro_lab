@@ -853,28 +853,30 @@
 
 
 <style id="kuro-gas-layout-final">
-/* One layout authority for the GAS project. Desktop selection uses pointer capability
-   as well as viewport width, so Windows scaling and narrow desktop windows stay usable. */
-@media (min-width:900px), (any-hover:hover) and (any-pointer:fine) {
-  :root { --kuro-gas-rail:clamp(76px,6vw,96px); }
+/* PC and mobile are intentionally separate layouts.
+   PC: fixed left navigation rail + independent feed column.
+   Mobile: normal document flow + bottom navigation. */
+@media (min-width:768px) {
+  :root { --kuro-gas-rail:88px; }
   html, body.kuro-page {
     width:100%!important; min-width:0!important; max-width:100%!important;
-    height:100%!important; height:100dvh!important; min-height:100%!important;
-    margin:0!important; padding:0!important; overflow:hidden!important; background:#000!important;
+    height:100%!important; min-height:100%!important; margin:0!important; padding:0!important;
+    overflow:hidden!important; background:#000!important;
   }
   body.kuro-page, body.kuro-page * { text-shadow:none!important; filter:none!important; }
   body.kuro-page > .kuro-global-header,
   body.kuro-page > #kuroGasStatusPanel { display:none!important; }
 
+  /* Navigation is its own fixed 88px rail. */
   #kuroBottomNav {
-    position:fixed!important; top:0!important; right:auto!important; bottom:0!important; left:0!important;
+    position:fixed!important; inset:0 auto 0 0!important;
     display:flex!important; flex-direction:column!important; align-items:center!important;
     width:var(--kuro-gas-rail)!important; min-width:var(--kuro-gas-rail)!important;
     height:100vh!important; height:100dvh!important; max-height:100dvh!important;
-    box-sizing:border-box!important; margin:0!important; padding:clamp(42px,7vh,64px) 8px 16px!important;
+    box-sizing:border-box!important; margin:0!important; padding:28px 8px 16px!important;
     transform:none!important; border:0!important; border-right:1px solid #2f3336!important;
     border-radius:0!important; background:#000!important; box-shadow:none!important;
-    backdrop-filter:none!important; overflow-x:hidden!important; overflow-y:auto!important; z-index:300!important;
+    overflow-x:hidden!important; overflow-y:auto!important; z-index:300!important;
   }
   #kuroBottomNav > div {
     display:flex!important; flex:0 0 auto!important; flex-direction:column!important;
@@ -885,30 +887,35 @@
     display:flex!important; flex:0 0 48px!important; align-items:center!important; justify-content:center!important;
     width:48px!important; min-width:48px!important; height:48px!important; min-height:48px!important;
     margin:0!important; padding:0!important; gap:0!important; border:0!important; border-radius:50%!important;
-    background:transparent!important; color:#e7e9ea!important; box-shadow:none!important;
+    background:transparent!important; color:#e7e9ea!important;
   }
   #kuroBottomNav [data-tab] span { display:none!important; }
-  #kuroBottomNav .kuro-tab-icon,
-  #kuroBottomNav [data-tab] i {
+  #kuroBottomNav .kuro-tab-icon, #kuroBottomNav [data-tab] i {
     display:inline-block!important; width:auto!important; height:auto!important;
     font-size:19px!important; line-height:1!important; color:inherit!important;
   }
   #kuroBottomNav [data-tab]:hover { background:#181818!important; }
   #kuroBottomNav [data-tab][aria-current="page"] { background:#16181c!important; color:#fff!important; }
 
+  /* Feed/profile occupy only the area to the RIGHT of the rail. */
   #homeFeedView, #myProfileView {
-    position:fixed!important; top:0!important; right:0!important; bottom:0!important; left:var(--kuro-gas-rail)!important;
-    display:block!important; width:auto!important; min-width:0!important; max-width:none!important;
-    height:100vh!important; height:100dvh!important; min-height:0!important; max-height:100dvh!important;
-    margin:0!important; padding:64px 0 24px!important; box-sizing:border-box!important;
+    position:fixed!important; top:0!important; right:0!important; bottom:0!important;
+    left:var(--kuro-gas-rail)!important;
+    display:block!important; width:calc(100vw - var(--kuro-gas-rail))!important;
+    min-width:0!important; max-width:none!important; height:100vh!important; height:100dvh!important;
+    min-height:0!important; max-height:100dvh!important; margin:0!important;
+    padding:58px 24px 24px!important; box-sizing:border-box!important;
     overflow-x:hidden!important; overflow-y:auto!important; overscroll-behavior:contain!important;
     background:#000!important; border:0!important; border-radius:0!important;
   }
-  #homeFeedView > .mb-6 {
-    display:block!important; width:100%!important; min-width:0!important; max-width:none!important;
-    margin:0!important; padding:12px clamp(16px,2.4vw,36px)!important; box-sizing:border-box!important;
+  #homeFeedView { border-left:1px solid #2f3336!important; }
+  #homeFeedView > .mb-6, #myProfileView > * {
+    display:block!important; width:100%!important; max-width:760px!important;
+    min-width:0!important; margin-left:auto!important; margin-right:auto!important;
+    box-sizing:border-box!important;
   }
-  #homeFeedView > .mb-6 > div { width:100%!important; min-width:0!important; max-width:none!important; margin:0!important; }
+  #homeFeedView > .mb-6 { padding:12px 20px!important; }
+  #homeFeedView > .mb-6 > div { width:100%!important; max-width:none!important; min-width:0!important; margin:0!important; }
   #postSearchInput {
     display:block!important; width:100%!important; min-width:0!important; max-width:none!important;
     height:44px!important; min-height:44px!important; box-sizing:border-box!important;
@@ -916,30 +923,26 @@
     background:#202327!important; color:#e7e9ea!important; box-shadow:none!important; font-size:14px!important;
   }
   #postFeed {
-    display:block!important; width:100%!important; min-width:0!important; max-width:none!important;
-    margin:0!important; padding:0!important; gap:0!important; box-sizing:border-box!important;
+    display:block!important; width:100%!important; max-width:800px!important; min-width:0!important;
+    margin:0 auto!important; padding:0!important; box-sizing:border-box!important;
   }
   #postFeed > *, #postFeed [data-post-card] {
     display:block!important; width:100%!important; min-width:0!important; max-width:none!important;
     margin:0!important; box-sizing:border-box!important;
   }
   #postFeed [data-post-card] {
-    padding:18px clamp(16px,2.4vw,36px)!important;
-    border:0!important; border-bottom:1px solid #2f3336!important;
+    padding:18px 20px!important; border:0!important; border-bottom:1px solid #2f3336!important;
     border-radius:0!important; background:#000!important; box-shadow:none!important; animation:none!important;
   }
   #postFeed [data-post-card] p { color:#e7e9ea!important; text-shadow:none!important; overflow-wrap:anywhere!important; }
   #postFeed [data-post-card] button { box-shadow:none!important; }
   #postFeed [data-like-post-id] i, #postFeed [data-reply-post-id] i { font-size:16px!important; }
-  #myProfileView > * { width:100%!important; max-width:1100px!important; margin-left:auto!important; margin-right:auto!important; }
   #kuroComposeFloat {
     right:24px!important; bottom:24px!important; width:52px!important; height:52px!important;
     font-size:18px!important; box-shadow:none!important;
   }
   #kuroComposeFloat i { font-size:18px!important; }
-  #kuroDesktopVersionSwitch {
-    display:flex!important; position:fixed!important; top:12px!important; right:16px!important; z-index:400!important;
-  }
+  #kuroDesktopVersionSwitch { display:flex!important; position:fixed!important; top:12px!important; right:16px!important; z-index:400!important; }
   #kuroDesktopVersionSwitch a, #kuroDesktopVersionSwitch span {
     display:inline-flex!important; align-items:center!important; justify-content:center!important;
     min-height:34px!important; padding:0 13px!important; border-radius:9px!important;
@@ -948,24 +951,22 @@
   #kuroDesktopVersionSwitch .is-current { color:#111!important; background:#fff!important; }
 }
 
-/* Touch-first screens use a separate document flow and bottom navigation. */
-@media (max-width:899px) and (any-hover:none) and (any-pointer:coarse) {
+/* Mobile is not a compressed desktop: it uses full-width content and a bottom bar. */
+@media (max-width:767px) {
   html, body.kuro-page {
     width:100%!important; min-width:0!important; max-width:100%!important;
     height:auto!important; min-height:100%!important; overflow-x:hidden!important; overflow-y:auto!important;
   }
-  body.kuro-page {
-    margin:0!important; padding:0 0 calc(66px + env(safe-area-inset-bottom))!important;
-  }
+  body.kuro-page { margin:0!important; padding:0 0 calc(66px + env(safe-area-inset-bottom))!important; }
   body.kuro-page > .kuro-global-header { display:block!important; }
+  #kuroDesktopVersionSwitch { display:none!important; }
   #kuroBottomNav {
     position:fixed!important; top:auto!important; right:0!important; bottom:0!important; left:0!important;
-    display:flex!important; width:100%!important; min-width:0!important;
+    display:flex!important; flex-direction:row!important; width:100%!important; min-width:0!important;
     height:calc(62px + env(safe-area-inset-bottom))!important; max-height:none!important;
     margin:0!important; padding:0 8px env(safe-area-inset-bottom)!important;
     transform:none!important; border:0!important; border-top:1px solid #2f3336!important;
-    border-radius:0!important; background:#000!important; box-shadow:none!important;
-    backdrop-filter:none!important; z-index:300!important;
+    border-radius:0!important; background:#000!important; box-shadow:none!important; z-index:300!important;
   }
   #kuroBottomNav > div {
     display:grid!important; grid-template-columns:repeat(5,minmax(0,1fr))!important;
@@ -988,7 +989,7 @@
     padding:0 14px 10px!important; box-sizing:border-box!important;
   }
   #homeFeedView > .mb-6 > div, #postSearchInput, #postFeed, #postFeed > *,
-  #postFeed [data-post-card] { width:100%!important; min-width:0!important; max-width:none!important; }
+  #postFeed [data-post-card] { width:100%!important; min-width:0!important; max-width:none!important; box-sizing:border-box!important; }
   #postFeed [data-post-card] {
     padding:16px 14px!important; border-radius:0!important; box-shadow:none!important; animation:none!important;
   }
@@ -998,7 +999,7 @@
   }
 }
 
-/* Keep view switching functional despite the desktop fixed-position shell. */
+/* Keep view switching functional when a view is hidden. */
 #homeFeedView.hidden, #myProfileView.hidden { display:none!important; }
 </style>
 
