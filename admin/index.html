@@ -860,7 +860,8 @@ async function handleOpsProClick(e){
  const control=e.target.closest("[data-pro-control-save]");
  if(control){const id=control.dataset.proControlSave,allowed=$("[data-pro-control-value='"+id+"']").value==="true",date=$("[data-pro-control-date='"+id+"']").value;control.disabled=true;try{await opsInvoke({action:"set_pro_user_control",userId:id,reapplyAllowed:allowed,reapplyAfter:date?new Date(date).toISOString():null});await loadOpsPro();}catch(err){control.disabled=false;alert(err.message);}}
 }
-\nfunction setOpsView(view){
+
+function setOpsView(view){
  opsView=view;
  ["overview","users","audit","reports","announcements","messages","flags","analytics","pro"].forEach(name=>{
   const target=$("#ops"+name.charAt(0).toUpperCase()+name.slice(1)+"View");
