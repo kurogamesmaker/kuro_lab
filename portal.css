@@ -430,3 +430,305 @@ body.kuro-portal{
     min-width:0;
   }
 }
+
+
+/* Responsive widget interiors: layout follows each card's own width */
+#portal-dashboard-grid .portal-widget{
+  container-name:portal-widget;
+  container-type:inline-size;
+}
+#portal-dashboard-grid .portal-widget-head,
+#portal-dashboard-grid .portal-widget-title,
+#portal-dashboard-grid .portal-widget-body{
+  min-width:0;
+}
+#portal-dashboard-grid .portal-widget-title>div{
+  min-width:0;
+}
+#portal-dashboard-grid .portal-widget-body{
+  overflow-x:hidden;
+  overflow-y:auto;
+}
+#portal-dashboard-grid .portal-widget-link-list a{
+  min-width:0;
+}
+#portal-dashboard-grid .portal-widget-link-list a>b{
+  min-width:0;
+}
+#portal-dashboard-grid .portal-shortcut-grid,
+#portal-dashboard-grid .portal-dashboard-game-grid,
+#portal-dashboard-grid .portal-custom-link-grid{
+  min-width:0;
+}
+
+/* Compact cards */
+@container portal-widget (max-width:300px){
+  #portal-dashboard-grid .portal-widget{
+    padding:11px;
+  }
+  #portal-dashboard-grid .portal-widget-head{
+    gap:7px;
+    margin-bottom:9px;
+  }
+  #portal-dashboard-grid .portal-widget-title{
+    gap:7px;
+  }
+  #portal-dashboard-grid .portal-widget-title>span{
+    width:32px;
+    height:32px;
+    flex:0 0 32px;
+    border-radius:10px;
+    font-size:16px;
+  }
+  #portal-dashboard-grid .portal-widget-title b{
+    font-size:12px;
+    line-height:1.35;
+    overflow-wrap:anywhere;
+  }
+  #portal-dashboard-grid .portal-widget-title small{
+    font-size:9px;
+    line-height:1.35;
+  }
+  #portal-dashboard-grid .portal-widget-more{
+    width:23px;
+    height:26px;
+    flex:0 0 23px;
+  }
+  #portal-dashboard-grid .portal-widget-link-list a{
+    display:grid;
+    grid-template-columns:16px minmax(0,1fr);
+    grid-template-rows:auto auto;
+    align-items:start;
+    column-gap:7px;
+    row-gap:2px;
+    min-height:0;
+    padding:8px 1px;
+  }
+  #portal-dashboard-grid .portal-widget-link-list a>span{
+    grid-column:1;
+    grid-row:1 / span 2;
+    padding-top:1px;
+    font-size:12px;
+  }
+  #portal-dashboard-grid .portal-widget-link-list a>b{
+    grid-column:2;
+    grid-row:1;
+    overflow:visible;
+    text-overflow:clip;
+    white-space:normal;
+    overflow-wrap:anywhere;
+    font-size:11px;
+    line-height:1.4;
+  }
+  #portal-dashboard-grid .portal-widget-link-list a>small{
+    grid-column:2;
+    grid-row:2;
+    justify-self:start;
+    font-size:9px;
+  }
+  #portal-dashboard-grid .portal-widget-link-list a>i{
+    grid-column:2;
+    grid-row:2;
+    justify-self:end;
+    font-size:9px;
+  }
+  #portal-dashboard-grid .portal-shortcut-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:6px;
+  }
+  #portal-dashboard-grid .portal-shortcut-grid a{
+    min-height:78px;
+    padding:9px 7px;
+    gap:3px;
+  }
+  #portal-dashboard-grid .portal-shortcut-grid a>span{
+    font-size:19px;
+  }
+  #portal-dashboard-grid .portal-shortcut-grid b{
+    font-size:10px;
+    line-height:1.35;
+    overflow-wrap:anywhere;
+  }
+  #portal-dashboard-grid .portal-shortcut-grid small{
+    font-size:9px;
+  }
+  #portal-dashboard-grid .portal-dashboard-game-grid{
+    grid-template-columns:1fr;
+    gap:6px;
+  }
+  #portal-dashboard-grid .portal-dashboard-game{
+    min-height:70px;
+    display:grid;
+    grid-template-columns:42px minmax(0,1fr);
+    grid-template-rows:auto auto;
+    align-content:center;
+    justify-content:stretch;
+    column-gap:8px;
+    padding:8px;
+  }
+  #portal-dashboard-grid .portal-dashboard-game>span{
+    grid-column:1;
+    grid-row:1 / span 2;
+    align-self:center;
+    font-size:27px;
+  }
+  #portal-dashboard-grid .portal-dashboard-game>b{
+    font-size:11px;
+    line-height:1.35;
+    overflow-wrap:anywhere;
+  }
+  #portal-dashboard-grid .portal-dashboard-game>small{
+    font-size:9px;
+  }
+  #portal-dashboard-grid .portal-activity-list a{
+    padding:8px 0;
+    gap:2px;
+  }
+  #portal-dashboard-grid .portal-activity-list time{
+    font-size:9px;
+  }
+  #portal-dashboard-grid .portal-activity-list b{
+    font-size:11px;
+    line-height:1.4;
+    overflow-wrap:anywhere;
+  }
+  #portal-dashboard-grid .portal-activity-list span{
+    font-size:10px;
+  }
+  #portal-dashboard-grid .portal-achievement-summary{
+    grid-template-columns:auto minmax(0,1fr);
+    gap:4px 8px;
+  }
+  #portal-dashboard-grid .portal-achievement-summary>strong{
+    font-size:27px;
+  }
+  #portal-dashboard-grid .portal-achievement-summary>span{
+    font-size:10px;
+  }
+  #portal-dashboard-grid .portal-achievement-icons{
+    gap:6px;
+    margin-top:9px;
+  }
+  #portal-dashboard-grid .portal-achievement-icons span{
+    width:27px;
+    height:27px;
+    font-size:14px;
+  }
+  #portal-dashboard-grid .portal-dashboard-clock strong{
+    font-size:clamp(28px,16cqi,42px);
+  }
+  #portal-dashboard-grid .portal-dashboard-clock span{
+    font-size:10px;
+  }
+  #portal-dashboard-grid .portal-custom-link-grid{
+    grid-template-columns:1fr;
+    gap:6px;
+  }
+  #portal-dashboard-grid .portal-custom-link-grid a{
+    min-height:43px;
+    padding:7px 8px;
+  }
+}
+
+/* Medium cards */
+@container portal-widget (min-width:301px) and (max-width:440px){
+  #portal-dashboard-grid .portal-shortcut-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  #portal-dashboard-grid .portal-dashboard-game-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  #portal-dashboard-grid .portal-dashboard-game{
+    min-height:105px;
+    padding:9px;
+  }
+  #portal-dashboard-grid .portal-dashboard-game>span{
+    font-size:29px;
+  }
+  #portal-dashboard-grid .portal-dashboard-game>b{
+    font-size:11px;
+  }
+  #portal-dashboard-grid .portal-dashboard-game>small{
+    font-size:9px;
+  }
+  #portal-dashboard-grid .portal-custom-link-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+/* Wide cards use horizontal rows and more columns */
+@container portal-widget (min-width:441px){
+  #portal-dashboard-grid .portal-widget-head{
+    gap:12px;
+    margin-bottom:15px;
+  }
+  #portal-dashboard-grid .portal-widget-title>span{
+    width:42px;
+    height:42px;
+    flex-basis:42px;
+    font-size:20px;
+  }
+  #portal-dashboard-grid .portal-widget-title b{
+    font-size:15px;
+  }
+  #portal-dashboard-grid .portal-widget-title small{
+    font-size:11px;
+  }
+  #portal-dashboard-grid .portal-shortcut-grid{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+  }
+  #portal-dashboard-grid .portal-dashboard-game-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+  #portal-dashboard-grid .portal-custom-link-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+  #portal-dashboard-grid .portal-widget-link-list a{
+    gap:12px;
+    padding:10px 3px;
+  }
+  #portal-dashboard-grid .portal-widget-link-list a>b{
+    font-size:13px;
+  }
+  #portal-dashboard-grid .portal-widget-link-list a>small,
+  #portal-dashboard-grid .portal-widget-link-list a>i{
+    font-size:10px;
+  }
+  #portal-dashboard-grid .portal-activity-list a{
+    padding:12px 0;
+  }
+  #portal-dashboard-grid .portal-activity-list b{
+    font-size:14px;
+  }
+  #portal-dashboard-grid .portal-activity-list span{
+    font-size:12px;
+  }
+  #portal-dashboard-grid .portal-dashboard-clock strong{
+    font-size:clamp(42px,12cqi,58px);
+  }
+}
+
+/* Extra-wide cards: use the space without stretching text lines excessively */
+@container portal-widget (min-width:700px){
+  #portal-dashboard-grid .portal-widget-body{
+    max-width:100%;
+  }
+  #portal-dashboard-grid .portal-widget-link-list{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    column-gap:24px;
+  }
+  #portal-dashboard-grid .portal-widget-link-list a:nth-child(2){
+    border-top:0;
+  }
+  #portal-dashboard-grid .portal-shortcut-grid a{
+    min-height:116px;
+    padding:15px;
+  }
+  #portal-dashboard-grid .portal-dashboard-game{
+    min-height:145px;
+    padding:15px;
+  }
+  #portal-dashboard-grid .portal-custom-link-grid{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+  }
+}
