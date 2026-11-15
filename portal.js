@@ -312,6 +312,46 @@ function bindDashboard(){
    if(b.dataset.widgetRemove){setDashboardIds(getDashboardIds().filter(function(x){return x!==b.dataset.widgetRemove;}));render();return;}
  });
  
+ 
+ grid.addEventListener("click",function(e){
+  var b=e.target.closest("button");if(!b)return;
+  if(b.hasAttribute("data-smart-add")){addSmartDashboardLink();return;}
+  if(b.hasAttribute("data-group-add")){addDashboardLinkGroup();return;}
+  if(b.dataset.groupOpen){openDashboardLinkGroup(b.dataset.groupOpen);return;}
+  if(b.dataset.groupDelete){var groups=st.data.preferences.linkGroups||[];st.data.preferences.linkGroups=groups.filter(function(x){return x.id!==b.dataset.groupDelete;});persistDisplayPrefs();render();return;}
+  if(b.hasAttribute("data-qr-generate")){generateDashboardQr();return;}
+  if(b.hasAttribute("data-todo-add")){addDashboardTodo();return;}
+  if(b.dataset.todoDelete){st.data.preferences.todos=(st.data.preferences.todos||[]).filter(function(x){return x.id!==b.dataset.todoDelete;});persistDisplayPrefs();render();return;}
+  if(b.dataset.pomoMode){setPomodoroMode(b.dataset.pomoMode);return;}
+  if(b.hasAttribute("data-pomo-start")){startPomodoro();return;}
+  if(b.hasAttribute("data-pomo-pause")){pausePomodoro();return;}
+  if(b.hasAttribute("data-pomo-reset")){resetPomodoro();return;}
+  if(b.hasAttribute("data-countdown-save")){saveDashboardCountdown();return;}
+  if(b.hasAttribute("data-calc-run")){runDashboardCalculator();return;}
+  if(b.hasAttribute("data-color-copy")){copyDashboardColor();return;}
+  if(b.hasAttribute("data-photo-save")){saveDashboardPhoto();return;}
+  if(b.hasAttribute("data-media-save")){saveDashboardMedia();return;}
+  if(b.hasAttribute("data-rss-add")){addDashboardRssFeed();return;}
+  if(b.dataset.rssDelete){st.data.preferences.rssFeeds=(st.data.preferences.rssFeeds||[]).filter(function(x){return x.id!==b.dataset.rssDelete;});persistDisplayPrefs();render();return;}
+  if(b.dataset.rssRefresh){loadDashboardRssFeed(b.dataset.rssRefresh,true);return;}
+ });
+ grid.addEventListener("submit",function(e){if(e.target.matches("[data-site-search-form]")){e.preventDefault();runDashboardSearch();}});
+ grid.addEventListener("change",function(e){
+  var t=e.target;
+  if(t.matches("[data-todo-toggle]")){var list=st.data.preferences.todos||[];list.forEach(function(x){if(x.id===t.dataset.todoToggle)x.done=t.checked;});st.data.preferences.todos=list;persistDisplayPrefs();render();return;}
+  if(t.matches("[data-color-value]")){var code=grid.querySelector("[data-color-hex]");if(code)code.textContent=t.value;return;}
+ });
+ grid.addEventListener("input",function(e){
+  var t=e.target;
+  if(t.matches("[data-quick-note]")){var preview=grid.querySelector("[data-note-preview]");if(preview)preview.innerHTML=t.value?dashboardSafeMarkdown(t.value):"プレビューはここに表示されます";clearTimeout(window.kuroNoteSaveTimer);window.kuroNoteSaveTimer=setTimeout(function(){st.data.preferences.quickNote=t.value;persistDisplayPrefs();},600);}
+  if(t.matches("[data-color-value]")){var code=grid.querySelector("[data-color-hex]");if(code)code.textContent=t.value;}
+ });
+ (st.data.preferences.rssFeeds||[]).forEach(function(feed){if(feed&&feed.id)loadDashboardRssFeed(feed.id,false);});
+ updateDashboardWorldClocks();updateDashboardCountdown();updatePomodoroClock();
+ if(!window.kuroWorldClockTimer)window.kuroWorldClockTimer=setInterval(updateDashboardWorldClocks,15000);
+ if(!window.kuroCountdownTimer)window.kuroCountdownTimer=setInterval(updateDashboardCountdown,1000);
+ if(!window.kuroPomodoroTimer)window.kuroPomodoroTimer=setInterval(updatePomodoroClock,250);
+
  var drag=null,resize=null;
  function finishPointer(){
   if(drag){
@@ -444,6 +484,117 @@ function loadDashboardWeather(force){
  }).finally(function(){if(requestId===window.__kuroWeatherRequestId)window.__kuroWeatherLoading=false;});
 }
 function applyWeatherData(result){var data=result&&result.data||{},current=data.current||{},daily=data.daily||{};var put=function(id,value){var el=$("#"+id);if(el)el.textContent=value;};put("portal-weather-status",result.city+" の現在の天気");put("portal-weather-temp",Number.isFinite(current.temperature_2m)?Math.round(current.temperature_2m)+"°":"--°");put("portal-weather-label",weatherCodeLabel(current.weather_code));put("portal-weather-max",daily.temperature_2m_max&&daily.temperature_2m_max.length?Math.round(daily.temperature_2m_max[0])+"°":"--°");put("portal-weather-min",daily.temperature_2m_min&&daily.temperature_2m_min.length?Math.round(daily.temperature_2m_min[0])+"°":"--°");put("portal-weather-rain",daily.precipitation_probability_max&&daily.precipitation_probability_max.length?Math.round(daily.precipitation_probability_max[0])+"%":"--%");}
+
+function addSmartDashboardLink(){
+ var input=$("[data-smart-url]"),href=safeDashboardUrl(input&&input.value);if(!href||!/^https:\/\//i.test(href)){toast("HTTPSのURLを入力してください");return;}
+ var list=st.data.preferences.smartLinks||[];if(list.some(function(x){return x.href===href;})){toast("このリンクは追加済みです");return;}if(list.length>=20){toast("スマートリンクは最大20件です");return;}
+ var fallback={href:href,title:new URL(href).hostname,description:"",image:"",logo:""};list.unshift(fallback);st.data.preferences.smartLinks=list;persistDisplayPrefs();render();
+ fetch("https://api.microlink.io/?url="+encodeURIComponent(href)).then(function(r){if(!r.ok)throw new Error("メタデータを取得できません");return r.json();}).then(function(json){
+  var data=json&&json.data||{},items=st.data.preferences.smartLinks||[],item=items.find(function(x){return x.href===href;});if(!item)return;
+  item.title=String(data.title||item.title).slice(0,140);item.description=String(data.description||"").slice(0,240);item.image=data.image&&data.image.url?String(data.image.url):"";item.logo=data.logo&&data.logo.url?String(data.logo.url):"";
+  persistDisplayPrefs();render();toast("スマートリンクを追加しました");
+ }).catch(function(){toast("基本カードを追加しました（詳細情報は取得できませんでした）");});
+}
+function addDashboardLinkGroup(){
+ var titleEl=$("[data-group-title]"),urlsEl=$("[data-group-urls]"),title=titleEl&&titleEl.value.trim(),raw=urlsEl&&urlsEl.value||"",links=raw.split(/\r?\n/).map(function(x){return safeDashboardUrl(x);}).filter(Boolean).slice(0,12);
+ if(!title||!links.length){toast("グループ名と有効なURLを入力してください");return;}
+ var groups=st.data.preferences.linkGroups||[];if(groups.length>=12){toast("リンクグループは最大12個です");return;}
+ groups.push({id:uuid(),title:title.slice(0,32),links:links});st.data.preferences.linkGroups=groups;persistDisplayPrefs();render();toast("リンクグループを作成しました");
+}
+function openDashboardLinkGroup(id){
+ var g=(st.data.preferences.linkGroups||[]).find(function(x){return x.id===id;});if(!g)return;
+ var opened=0;(g.links||[]).forEach(function(href){var u=safeDashboardUrl(href);if(!u)return;var w=window.open(u,"_blank","noopener,noreferrer");if(w)opened++;});
+ toast(opened+"件のタブを開きました。ブロックされた場合はポップアップを許可してください");
+}
+function runDashboardSearch(){
+ var q=$("[data-site-search-query]"),engine=$("[data-search-engine]"),word=q&&q.value.trim();if(!word){toast("検索ワードを入力してください");return;}
+ var bases={google:"https://www.google.com/search?q=",youtube:"https://www.youtube.com/results?search_query=",amazon:"https://www.amazon.co.jp/s?k=",chatgpt:"https://chatgpt.com/?q="};
+ window.open((bases[engine&&engine.value]||bases.google)+encodeURIComponent(word),"_blank","noopener,noreferrer");
+}
+function generateDashboardQr(){
+ var input=$("[data-qr-value]"),value=input&&input.value.trim();if(!value||!/^https:\/\//i.test(value)){toast("HTTPSのURLを入力してください");return;}
+ st.data.preferences.qrValue=value;persistDisplayPrefs();render();toast("QRコードを生成しました");
+}
+function addDashboardTodo(){
+ var input=$("[data-todo-text]"),textValue=input&&input.value.trim();if(!textValue){toast("タスクを入力してください");return;}
+ var todos=st.data.preferences.todos||[];if(todos.length>=40){toast("ToDoは最大40件です");return;}
+ todos.push({id:uuid(),text:textValue.slice(0,100),done:false});st.data.preferences.todos=todos;persistDisplayPrefs();render();
+}
+function setPomodoroMode(mode){
+ var p=st.data.preferences.pomodoroState||{};p.mode=mode==="break"?"break":"work";p.remaining=p.mode==="break"?300:1500;p.endAt=0;p.running=false;st.data.preferences.pomodoroState=p;persistDisplayPrefs();render();
+}
+function startPomodoro(){
+ var p=st.data.preferences.pomodoroState||{mode:"work",remaining:1500};if(p.running)return;
+ p.remaining=Math.max(0,Number(p.remaining)||0);if(!p.remaining)p.remaining=p.mode==="break"?300:1500;
+ p.endAt=Date.now()+p.remaining*1000;p.running=true;st.data.preferences.pomodoroState=p;persistDisplayPrefs();updatePomodoroClock();
+}
+function pausePomodoro(){
+ var p=st.data.preferences.pomodoroState;if(!p||!p.running)return;
+ p.remaining=Math.max(0,Math.ceil((p.endAt-Date.now())/1000));p.endAt=0;p.running=false;st.data.preferences.pomodoroState=p;persistDisplayPrefs();updatePomodoroClock();
+}
+function resetPomodoro(){
+ var p=st.data.preferences.pomodoroState||{mode:"work"};p.remaining=p.mode==="break"?300:1500;p.endAt=0;p.running=false;st.data.preferences.pomodoroState=p;persistDisplayPrefs();render();
+}
+function updatePomodoroClock(){
+ var p=st.data&&st.data.preferences&&st.data.preferences.pomodoroState;if(!p)return;
+ if(p.running&&p.endAt&&Date.now()>=p.endAt){p.running=false;p.remaining=0;p.endAt=0;persistDisplayPrefs();}
+ var remain=p.running?Math.max(0,Math.ceil((p.endAt-Date.now())/1000)):Math.max(0,Number(p.remaining)||0);
+ var t=$("#portal-pomo-time"),status=$("#portal-pomo-status");if(t)t.textContent=dashboardFormatTime(remain);
+ if(status)status.textContent=remain===0?"時間です":p.running?"計測中":p.mode==="break"?"休憩モード":"作業モード";
+}
+function updateDashboardWorldClocks(){
+ document.querySelectorAll("[data-worldclock]").forEach(function(el){try{el.textContent=new Intl.DateTimeFormat("ja-JP",{hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false,timeZone:el.dataset.worldclock}).format(new Date());}catch(e){}});
+}
+function saveDashboardCountdown(){
+ var input=$("[data-countdown-input]"),value=input&&input.value;if(!value){toast("目標日時を設定してください");return;}
+ var date=new Date(value);if(Number.isNaN(date.getTime())){toast("日時を確認してください");return;}
+ st.data.preferences.countdownTarget=value;persistDisplayPrefs();updateDashboardCountdown();toast("カウントダウンを設定しました");
+}
+function updateDashboardCountdown(){
+ var el=$("#portal-countdown-display");if(!el)return;var raw=st.data.preferences.countdownTarget;if(!raw){el.textContent="日時を設定してください";return;}
+ var target=new Date(raw).getTime();if(!Number.isFinite(target)){el.textContent="日時を確認してください";return;}
+ var diff=target-Date.now();if(diff<=0){el.textContent="予定の時刻になりました";return;}
+ var days=Math.floor(diff/86400000),hours=Math.floor(diff%86400000/3600000),minutes=Math.floor(diff%3600000/60000),seconds=Math.floor(diff%60000/1000);
+ el.textContent=days+"日 "+hours+"時間 "+minutes+"分 "+seconds+"秒";
+}
+function runDashboardCalculator(){
+ var a=$("[data-calc-a]"),b=$("[data-calc-b]"),op=$("[data-calc-op]"),out=$("[data-calc-result]");if(!a||!b||!op||!out)return;
+ var x=Number(a.value),y=Number(b.value),v;if(!Number.isFinite(x)||!Number.isFinite(y)){out.textContent="数値を入力してください";return;}
+ if(op.value==="+")v=x+y;else if(op.value==="-")v=x-y;else if(op.value==="*")v=x*y;else{if(y===0){out.textContent="0では割れません";return;}v=x/y;}
+ out.textContent=Number.isFinite(v)?String(Number(v.toPrecision(12))):"計算できません";
+}
+function copyDashboardColor(){
+ var input=$("[data-color-value]"),value=input&&input.value;if(!value)return;
+ var done=function(){toast("カラーコードをコピーしました");};if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(value).then(done).catch(function(){toast(value);});else toast(value);
+}
+function saveDashboardPhoto(){
+ var input=$("[data-photo-url]"),url=safeDashboardUrl(input&&input.value);if(!url||!/^https:\/\//i.test(url)){toast("画像のHTTPS URLを入力してください");return;}
+ st.data.preferences.photoFrameUrl=url;persistDisplayPrefs();render();toast("フォトフレームを更新しました");
+}
+function saveDashboardMedia(){
+ var input=$("[data-media-url]"),raw=input&&input.value.trim(),embed=raw&&dashboardMediaEmbed(raw);if(!embed){toast("対応するYouTubeまたはSpotifyのURLを入力してください");return;}
+ st.data.preferences.mediaEmbedUrl=raw;persistDisplayPrefs();render();toast("メディアを埋め込みました");
+}
+function addDashboardRssFeed(){
+ var input=$("[data-rss-url]"),url=safeDashboardUrl(input&&input.value);if(!url||!/^https:\/\//i.test(url)){toast("HTTPSのRSS / Atom URLを入力してください");return;}
+ var feeds=st.data.preferences.rssFeeds||[];if(feeds.some(function(x){return x.url===url;})){toast("このフィードは登録済みです");return;}if(feeds.length>=8){toast("RSSは最大8件です");return;}
+ var id=uuid();feeds.push({id:id,url:url,title:new URL(url).hostname});st.data.preferences.rssFeeds=feeds;persistDisplayPrefs();render();
+}
+function loadDashboardRssFeed(id,force){
+ var feed=(st.data.preferences.rssFeeds||[]).find(function(x){return x.id===id;});if(!feed)return;
+ var box=$("#rss-items-"+id);if(box)box.textContent="読み込み中…";
+ var cache=window.__kuroRssCache||(window.__kuroRssCache={}),entry=cache[id];
+ if(!force&&entry&&Date.now()-entry.at<300000){if(box)box.innerHTML=entry.html;if(entry.title)feed.title=entry.title;return;}
+ fetch("/api/workspace-rss?url="+encodeURIComponent(feed.url)).then(function(r){if(!r.ok)throw new Error("フィードを取得できません（"+r.status+"）");return r.text();}).then(function(xml){
+  var doc=new DOMParser().parseFromString(xml,"application/xml");if(doc.querySelector("parsererror"))throw new Error("RSS / Atomの形式を読み取れません");
+  var titles=doc.getElementsByTagName("title"),feedTitle=titles.length?String(titles[0].textContent||"").trim().slice(0,100):"";
+  var nodes=Array.from(doc.getElementsByTagName("item")).concat(Array.from(doc.getElementsByTagNameNS("*","entry"))).slice(0,6);
+  var items=nodes.map(function(n){var titleEl=n.getElementsByTagName("title")[0],linkEl=n.getElementsByTagName("link")[0],href=linkEl&&(linkEl.getAttribute("href")||linkEl.textContent.trim()),dateEl=n.getElementsByTagName("pubDate")[0]||n.getElementsByTagName("published")[0]||n.getElementsByTagName("updated")[0];return {title:titleEl?titleEl.textContent.trim():"（タイトルなし）",href:safeDashboardUrl(href),date:dateEl?dateEl.textContent.trim():""};}).filter(function(x){return x.href;});
+  var html=items.length?items.map(function(x){return '<a href="'+esc(x.href)+'" target="_blank" rel="noopener noreferrer"><b>'+esc(x.title)+'</b><small>'+esc(x.date)+'</small></a>';}).join(""):'<span>新着記事がありません</span>';
+  cache[id]={at:Date.now(),html:html,title:feedTitle};if(feedTitle)feed.title=feedTitle;if(box)box.innerHTML=html;
+ }).catch(function(err){if(box)box.textContent=err.message||"フィードを読み込めませんでした";});
+}
+
 function updateNetworkStatus(){var e=$("#portal-network-status");if(!e)return;var off=!navigator.onLine,busy=(window.__kuroPendingRequests||0)>0;e.dataset.state=off?"offline":busy?"busy":"online";e.innerHTML='<i></i><span>'+(off?"オフライン":busy?"通信中":"オンライン")+'</span>';e.title=off?"ネットワーク未接続":busy?"データを読み込み中":"通信できます";}
 function showErrorPanel(t,m){var p=$("#portal-error-panel");if(!p)return;$("#portal-error-title").textContent=t;$("#portal-error-message").textContent=m;p.hidden=false;}
 function initGlobalUI(){
