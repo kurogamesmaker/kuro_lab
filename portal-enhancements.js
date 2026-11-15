@@ -306,6 +306,7 @@
     var a = getApi(), p = getPrefs();
     if (!a || !p || !p.dashboardWorkspaces || !p.dashboardWorkspaces[id]) return;
     captureWorkspace();
+    window.__kuroCanvasScroll = null;
     var w = p.dashboardWorkspaces[id];
     p.activeWorkspace = id;
     var snap = cloneSnapshot(w);
@@ -497,6 +498,7 @@
     var snap = cloneSnapshot(payload);
     p.dashboardWorkspaces[id] = Object.assign({name:payload.name},snap);
     p.activeWorkspace = id;
+    window.__kuroCanvasScroll = null;
     p.dashboardWidgets = snap.widgets;
     p.dashboardLayout = snap.layout;
     p.dashboardViewMode = snap.viewMode;
@@ -666,6 +668,11 @@
       }
     });
   }
+
+  window.addEventListener("kuro:canvas-layout-changed", function () {
+    captureWorkspace();
+    updateBadges();
+  });
 
   document.addEventListener("click", function (event) {
     var quick = event.target.closest("[data-open-quick]");
