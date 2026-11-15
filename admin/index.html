@@ -145,9 +145,9 @@
  </div>
  <div id="opsUsersView">
   <div class="stats">
-   <div class="stat"><span>登録ユーザー</span><strong id="opsTotalUsers">—</strong></div>
-   <div class="stat"><span>利用可能</span><strong id="opsActiveUsers">—</strong></div>
-   <div class="stat"><span>停止中</span><strong id="opsBannedUsers">—</strong></div>
+   <div class="stat"><span>このページのユーザー</span><strong id="opsTotalUsers">—</strong></div>
+   <div class="stat"><span>このページの利用可能</span><strong id="opsActiveUsers">—</strong></div>
+   <div class="stat"><span>このページの停止中</span><strong id="opsBannedUsers">—</strong></div>
   </div>
   <section class="panel">
    <div class="toolbar"><strong>ユーザー・アカウント管理</strong><button class="btn" id="opsUsersRefresh">更新</button></div>
@@ -699,7 +699,7 @@ async function loadOpsUsers(page=opsUsersPage){
   return;
  }
  opsUsers=Array.isArray(data?.users)?data.users:[];
- opsUsersTotal=Number.isFinite(Number(data?.total))?Number(data.total):null;
+ opsUsersTotal=data?.total!==null&&data?.total!==undefined&&Number.isFinite(Number(data.total))?Number(data.total):null;
  renderOpsUsers();
  $("#opsConnection").textContent="接続済み · "+new Date().toLocaleTimeString("ja-JP");
 }
