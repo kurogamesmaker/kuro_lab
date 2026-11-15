@@ -2579,3 +2579,12 @@ body:has(.portal-dashboard-v2) #portal-quick-button{display:none!important}
  .portal-template-actions{justify-content:flex-start}
  .portal-workspace-share{font-size:10px;padding:6px 8px}
 }
+
+
+/* Infinite canvas zoom controls */
+.portal-canvas-zoom-slider{width:clamp(76px,9vw,124px);height:4px;accent-color:var(--blue);cursor:pointer;vertical-align:middle}
+.portal-canvas-zoom-value{min-width:42px;color:var(--muted);font-size:10px;font-weight:800;font-variant-numeric:tabular-nums;text-align:center}
+@media(max-width:760px){
+ .portal-canvas-zoom-slider{width:68px}
+ .portal-canvas-zoom-value{min-width:36px;font-size:9px}
+}
