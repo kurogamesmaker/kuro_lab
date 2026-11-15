@@ -990,3 +990,39 @@ body.portal-drawer-open{overflow:hidden}
   .portal-settings-row{align-items:flex-start}
   .portal-settings-row>div:first-child{min-width:0}
 }
+
+
+/* Remove the redundant Home / widget-placement banner; keep its useful controls */
+.portal-dashboard-v2 > .portal-dashboard-toolbar{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  min-height:0;
+  margin:0 0 14px;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  backdrop-filter:none;
+}
+.portal-dashboard-v2 > .portal-dashboard-toolbar > div:first-child{
+  display:none!important;
+}
+.portal-dashboard-v2 > .portal-dashboard-toolbar .portal-dashboard-actions{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:8px;
+  width:100%;
+}
+@media(max-width:760px){
+  .portal-dashboard-v2 > .portal-dashboard-toolbar{
+    top:auto;
+    position:static;
+    margin-bottom:10px;
+  }
+  .portal-dashboard-v2 > .portal-dashboard-toolbar .portal-dashboard-actions{
+    width:100%;
+  }
+}
