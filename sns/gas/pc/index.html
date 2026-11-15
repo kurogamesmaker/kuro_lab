@@ -4,7 +4,7 @@
     <meta name="google-site-verification" content="BMArXsjqD0CUAD34vqFv8qDjq1wuOZdtZRPZ-Y_8pIc">
     <link rel="manifest" href="/manifest.json">
 <meta charset="UTF-8">
-    <meta name="kuro-build-version" content="2026-11-16-gas-layout-06">
+    <meta name="kuro-build-version" content="2026-11-16-gas-layout-07">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KURO SNS 新バージョン｜GAS中継版｜KURO Lab公式</title>
     <meta name="description" content="KUROは、短い投稿やハッシュタグで話題を共有し、気になる人をフォローして交流できるSNSです。いいねや返信、チャットでつながれます。">
@@ -4834,6 +4834,190 @@ body.kuro-page>.kuro-global-header,body.kuro-page>#kuroGasStatusPanel{display:no
   else window.addEventListener('load',launch,{once:true});
 })();
 </script>
+
+
+<style id="kuro-pc-layout-single-source">
+/*
+ * KURO SNS PC layout — single source of truth.
+ * The sidebar and the active page occupy separate CSS Grid columns.
+ * This removes all dependence on guessed left offsets or body padding.
+ */
+@media (min-width:768px) {
+  html, body.kuro-page {
+    width:100% !important;
+    height:100% !important;
+    min-width:0 !important;
+    min-height:100% !important;
+    max-width:100% !important;
+    margin:0 !important;
+    padding:0 !important;
+    overflow:hidden !important;
+    background:#000 !important;
+  }
+  body.kuro-page {
+    display:grid !important;
+    grid-template-columns:88px minmax(0,1fr) !important;
+    grid-template-rows:minmax(0,1fr) !important;
+    align-items:stretch !important;
+    position:relative !important;
+    box-sizing:border-box !important;
+  }
+  body.kuro-page > .kuro-global-header,
+  body.kuro-page > #kuroGasStatusPanel {
+    display:none !important;
+  }
+  /* Sidebar is a real grid column, never an overlay above the feed. */
+  body.kuro-page > #kuroBottomNav {
+    grid-column:1 !important;
+    grid-row:1 !important;
+    position:relative !important;
+    inset:auto !important;
+    align-self:stretch !important;
+    justify-self:stretch !important;
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:center !important;
+    width:88px !important;
+    min-width:88px !important;
+    max-width:88px !important;
+    height:100dvh !important;
+    min-height:0 !important;
+    max-height:100dvh !important;
+    margin:0 !important;
+    padding:28px 8px 16px !important;
+    box-sizing:border-box !important;
+    transform:none !important;
+    border:0 !important;
+    border-right:1px solid #2f3336 !important;
+    border-radius:0 !important;
+    background:#000 !important;
+    box-shadow:none !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    z-index:20 !important;
+  }
+  body.kuro-page > #kuroBottomNav > div {
+    display:flex !important;
+    flex:0 0 auto !important;
+    flex-direction:column !important;
+    align-items:center !important;
+    justify-content:flex-start !important;
+    gap:8px !important;
+    width:100% !important;
+    max-width:none !important;
+    margin:0 !important;
+    padding:0 !important;
+  }
+  body.kuro-page > #kuroBottomNav [data-tab] {
+    display:flex !important;
+    flex:0 0 48px !important;
+    align-items:center !important;
+    justify-content:center !important;
+    width:48px !important;
+    min-width:48px !important;
+    height:48px !important;
+    min-height:48px !important;
+    margin:0 !important;
+    padding:0 !important;
+    gap:0 !important;
+    border:0 !important;
+    border-radius:50% !important;
+    background:transparent !important;
+    color:#e7e9ea !important;
+  }
+  body.kuro-page > #kuroBottomNav [data-tab] span { display:none !important; }
+  body.kuro-page > #kuroBottomNav .kuro-tab-icon,
+  body.kuro-page > #kuroBottomNav [data-tab] i {
+    display:inline-block !important;
+    width:auto !important;
+    height:auto !important;
+    font-size:19px !important;
+    line-height:1 !important;
+    color:inherit !important;
+  }
+  body.kuro-page > #kuroBottomNav [data-tab]:hover { background:#181818 !important; }
+  body.kuro-page > #kuroBottomNav [data-tab][aria-current=page] {
+    background:#16181c !important;
+    color:#fff !important;
+  }
+
+  /* Both views share the content grid cell; the inactive one is removed. */
+  body.kuro-page > #homeFeedView,
+  body.kuro-page > #myProfileView {
+    grid-column:2 !important;
+    grid-row:1 !important;
+    position:relative !important;
+    inset:auto !important;
+    align-self:stretch !important;
+    justify-self:stretch !important;
+    display:block !important;
+    float:none !important;
+    clear:none !important;
+    width:100% !important;
+    min-width:0 !important;
+    max-width:none !important;
+    height:100dvh !important;
+    min-height:0 !important;
+    max-height:100dvh !important;
+    margin:0 !important;
+    padding:58px clamp(16px,3vw,40px) 28px !important;
+    box-sizing:border-box !important;
+    transform:none !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    overscroll-behavior:contain !important;
+    scrollbar-width:thin !important;
+    background:#000 !important;
+    border:0 !important;
+    border-left:1px solid #2f3336 !important;
+    border-radius:0 !important;
+  }
+  body.kuro-page > #homeFeedView.hidden,
+  body.kuro-page > #myProfileView.hidden { display:none !important; }
+
+  body.kuro-page > #homeFeedView > .mb-6,
+  body.kuro-page > #myProfileView > * {
+    display:block !important;
+    width:100% !important;
+    min-width:0 !important;
+    max-width:760px !important;
+    margin-left:auto !important;
+    margin-right:auto !important;
+    box-sizing:border-box !important;
+  }
+  body.kuro-page > #homeFeedView > .mb-6 { padding:12px 20px !important; }
+  body.kuro-page > #homeFeedView > .mb-6 > div {
+    width:100% !important;
+    min-width:0 !important;
+    max-width:none !important;
+    margin:0 !important;
+  }
+  #postFeed {
+    display:block !important;
+    width:100% !important;
+    min-width:0 !important;
+    max-width:760px !important;
+    margin:0 auto !important;
+    padding:0 !important;
+    box-sizing:border-box !important;
+  }
+  #postFeed > *,
+  #postFeed [data-post-card] {
+    width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
+    box-sizing:border-box !important;
+  }
+  #kuroDesktopVersionSwitch {
+    display:flex !important;
+    position:fixed !important;
+    top:12px !important;
+    right:16px !important;
+    z-index:400 !important;
+  }
+  #kuroComposeFloat { right:24px !important; bottom:24px !important; }
+}
+</style>
 
 </body>
 </html>
