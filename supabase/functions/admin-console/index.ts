@@ -532,6 +532,12 @@ Deno.serve(async (req: Request) => {
         target_user_id:application.user_id,metadata:{application_id:applicationId,expires_at:approve?(expiresAt?expiresAt.toISOString():null):null,reapply_allowed:approve?null:body.reapplyAllowed!==false}
       });
       if(auditError) throw auditError;
+      const {error:notifyError}=await admin.from("admin_messages").insert({
+        title:approve?"KUROLAB Proが承認されました":"KUROLAB Pro申請について",
+        body:approve?"Pro権限が有効になりました。Proページで利用状況を確認できます。":(adminNote||"今回のPro申請は承認されませんでした。再申請が許可されている場合は、内容を見直して再度申請できます。"),
+        href:"https://kurolab.cc.cd/pro/",audience:"user",recipient_id:application.user_id,created_by:caller.id,published:true,service_scope:"lab"
+      });
+      if(notifyError) console.warn("Pro review notification failed",notifyError.message);
       return reply({ok:true,application:updated},200,origin);
     }
 
@@ -561,6 +567,12 @@ Deno.serve(async (req: Request) => {
         metadata:{invitation_id:invite.id,invite_expires_at:invite.expires_at,membership_expires_at:invite.membership_expires_at}
       });
       if(auditError) throw auditError;
+      const {error:notifyError}=await admin.from("admin_messages").insert({
+        title:"KUROLAB Proへの招待が届きました",
+        body:"管理者からKUROLAB Proへの招待が届きました。Proページを開き、招待内容を確認して承諾してください。",
+        href:"https://kurolab.cc.cd/pro/",audience:"user",recipient_id:targetUserId,created_by:caller.id,published:true,service_scope:"lab"
+      });
+      if(notifyError) console.warn("Pro invitation notification failed",notifyError.message);
       return reply({ok:true,invitation:invite},200,origin);
     }
 
@@ -604,6 +616,9 @@ Deno.serve(async (req: Request) => {
       if(updateError) throw updateError;
       const {error:auditError}=await admin.from("admin_audit_logs").insert({actor_user_id:caller.id,action:"pro.membership."+operation,target_user_id:targetUserId,metadata:patch});
       if(auditError) throw auditError;
+      const message=operation==="suspend"?"KUROLAB Proの利用が一時停止されました。":operation==="revoke"?"KUROLAB Proの利用権限が解除されました。":operation==="resume"?"KUROLAB Proの利用が再開されました。":"KUROLAB Proの有効期限が更新されました。";
+      const {error:notifyError}=await admin.from("admin_messages").insert({title:"KUROLAB Proの状態が更新されました",body:message,href:"https://kurolab.cc.cd/pro/",audience:"user",recipient_id:targetUserId,created_by:caller.id,published:true,service_scope:"lab"});
+      if(notifyError) console.warn("Pro membership notification failed",notifyError.message);
       return reply({ok:true,membership:updated},200,origin);
     }
 
