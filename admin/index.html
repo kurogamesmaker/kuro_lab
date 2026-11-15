@@ -88,6 +88,21 @@
 .ops-flag-key{font:12px ui-monospace,monospace;color:#9bd9ff}
 @media(max-width:680px){.ops-form-grid{grid-template-columns:1fr}.ops-ann-item,.ops-flag-item{flex-direction:column}.ops-inline-actions{width:100%}}
 
+.ops-analytics-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:14px 0 18px}
+.ops-metric{background:linear-gradient(145deg,rgba(23,36,56,.96),rgba(15,26,42,.96));border:1px solid var(--line);border-radius:13px;padding:14px 16px;min-width:0}
+.ops-metric small{display:block;color:var(--muted);font-size:11px}.ops-metric strong{display:block;font-size:26px;font-variant-numeric:tabular-nums;margin-top:4px}
+.ops-analytics-panel{margin-bottom:16px}.ops-active-chart{padding:18px;display:flex;align-items:end;gap:5px;min-height:190px;overflow-x:auto}
+.ops-chart-day{flex:1;min-width:14px;display:flex;flex-direction:column;align-items:center;justify-content:end;height:150px;gap:6px}
+.ops-chart-bar{width:min(100%,22px);min-height:2px;border-radius:5px 5px 2px 2px;background:linear-gradient(180deg,#55b5f2,#3973d6)}
+.ops-chart-day small{font-size:9px;color:var(--muted);white-space:nowrap;writing-mode:vertical-rl}
+.ops-analytics-columns{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.ops-analytics-panel .ops-tablewrap{padding:0 14px 14px}
+.ops-analytics-table{width:100%;border-collapse:collapse;font-size:12px}.ops-analytics-table th,.ops-analytics-table td{padding:9px 7px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.ops-analytics-table th{color:var(--muted);font-weight:650;white-space:nowrap}
+.ops-retention-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:16px}
+.ops-retention-card{background:rgba(7,15,27,.45);border:1px solid var(--line);border-radius:11px;padding:14px}.ops-retention-card strong{display:block;font-size:24px}.ops-retention-card small{color:var(--muted)}
+.ops-error-search{grid-template-columns:minmax(0,1fr) auto;align-items:center}.ops-error-item{padding:12px 16px;border-bottom:1px solid var(--line);font-size:12px}.ops-error-item b{color:#ffb5b5}.ops-error-item small{display:block;color:var(--muted);margin-top:3px}
+@media(max-width:900px){.ops-analytics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ops-analytics-columns{grid-template-columns:1fr}}
+@media(max-width:520px){.ops-retention-grid{grid-template-columns:1fr}.ops-error-search{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -123,6 +138,7 @@
   <button data-ops-tab="audit">監査ログ</button>
   <button data-ops-tab="announcements">お知らせ</button>
   <button data-ops-tab="flags">機能ON/OFF</button>
+  <button data-ops-tab="analytics">利用分析</button>
  </div>
  <div id="opsUsersView">
   <div class="stats">
@@ -175,6 +191,46 @@
     <div class="ops-form-actions"><button type="submit" class="btn primary">フラグを保存</button><button class="btn" type="reset">入力をクリア</button></div>
    </form>
    <div class="list" id="opsFlagsList"><div class="empty">読み込み中…</div></div>
+  </section>
+ </div>
+ <div id="opsAnalyticsView" hidden>
+  <div class="toolbar" style="padding-left:0;padding-right:0;border:0">
+   <div><strong>KURO Lab 利用状況</strong><div class="sns-muted">ログイン中ユーザーのページ閲覧・ウィジェット利用・APIエラーを集計します。</div></div>
+   <button class="btn" id="opsAnalyticsRefresh">更新</button>
+  </div>
+  <div class="ops-analytics-grid">
+   <div class="ops-metric"><small>DAU（今日）</small><strong id="opsDau">—</strong></div>
+   <div class="ops-metric"><small>MAU（30日）</small><strong id="opsMau">—</strong></div>
+   <div class="ops-metric"><small>DAU / MAU</small><strong id="opsDauMau">—</strong></div>
+   <div class="ops-metric"><small>ページ閲覧（30日）</small><strong id="opsPageViews">—</strong></div>
+   <div class="ops-metric"><small>セッション（30日）</small><strong id="opsSessions">—</strong></div>
+   <div class="ops-metric"><small>APIエラー（24時間）</small><strong id="opsApiErrors">—</strong></div>
+   <div class="ops-metric"><small>画面エラー（24時間）</small><strong id="opsClientErrors">—</strong></div>
+   <div class="ops-metric"><small>記録イベント（30日）</small><strong id="opsEvents">—</strong></div>
+  </div>
+  <section class="panel ops-analytics-panel">
+   <div class="toolbar"><div><strong>日別アクティブユーザー</strong><div class="sns-muted">日本時間・過去30日</div></div><span class="sns-muted" id="opsAnalyticsUpdated">集計準備中…</span></div>
+   <div id="opsActiveChart" class="ops-active-chart"><div class="empty">読み込み中…</div></div>
+  </section>
+  <div class="ops-analytics-columns">
+   <section class="panel ops-analytics-panel">
+    <div class="toolbar"><div><strong>ウィジェット利用ランキング</strong><div class="sns-muted">閲覧・追加・削除（過去30日）</div></div></div>
+    <div class="ops-tablewrap" id="opsWidgetRanking"><div class="empty">読み込み中…</div></div>
+   </section>
+   <section class="panel ops-analytics-panel">
+    <div class="toolbar"><div><strong>外部API・通信エラー</strong><div class="sns-muted">成功率と失敗件数（過去7日）</div></div></div>
+    <div class="ops-tablewrap" id="opsApiHealth"><div class="empty">読み込み中…</div></div>
+   </section>
+  </div>
+  <section class="panel ops-analytics-panel">
+   <div class="toolbar"><div><strong>定着率</strong><div class="sns-muted">登録後1日・7日・30日以内に再訪した割合。計測開始後に登録したユーザーが対象です。</div></div></div>
+   <div class="ops-retention-grid" id="opsRetention"><div class="empty">読み込み中…</div></div>
+   <div class="ops-meta" id="opsTrackingNote"></div>
+  </section>
+  <section class="panel ops-analytics-panel">
+   <div class="toolbar"><div><strong>ユーザー別エラーログ</strong><div class="sns-muted">対象ユーザーのUUIDを入力。直近30日・最大100件。</div></div></div>
+   <form id="opsUserErrorsForm" class="ops-form ops-error-search"><input id="opsErrorUserId" placeholder="ユーザーID（UUID）" required><button class="btn primary">エラーを検索</button></form>
+   <div class="list" id="opsUserErrors"><div class="empty">ユーザーIDを入力して検索してください。</div></div>
   </section>
  </div>
 </main>
@@ -628,7 +684,7 @@ async function runOpsUserAction(button){
 
 function setOpsView(view){
  opsView=view;
- ["users","audit","announcements","flags"].forEach(name=>{
+ ["users","audit","announcements","flags","analytics"].forEach(name=>{
   const target=$("#ops"+name.charAt(0).toUpperCase()+name.slice(1)+"View");
   if(target)target.hidden=name!==view;
   const button=$("#opsTabs [data-ops-tab='"+name+"']");
@@ -638,6 +694,7 @@ function setOpsView(view){
  if(view==="audit")loadOpsAudit();
  if(view==="announcements")loadOpsAnnouncements();
  if(view==="flags")loadOpsFlags();
+ if(view==="analytics")loadOpsAnalytics();
 }
 async function opsInvoke(body){
  if(mode==="gas")throw new Error("この運営機能はSupabase版で使用してください。");
@@ -733,6 +790,51 @@ async function deleteFeatureFlag(key){
  catch(e){alert("削除できませんでした："+e.message);}
 }
 
+async function loadOpsAnalytics(){
+ $("#opsActiveChart").innerHTML='<div class="empty">集計中…</div>';
+ try{
+  const data=await opsInvoke({action:"get_usage_analytics"});
+  const n=v=>Number(v||0).toLocaleString("ja-JP");
+  $("#opsDau").textContent=n(data.dau);
+  $("#opsMau").textContent=n(data.mau);
+  $("#opsDauMau").textContent=Number(data.dau_mau_rate||0).toFixed(1)+"%";
+  $("#opsPageViews").textContent=n(data.page_views_30d);
+  $("#opsSessions").textContent=n(data.sessions_30d);
+  $("#opsApiErrors").textContent=n(data.api_errors_24h);
+  $("#opsClientErrors").textContent=n(data.client_errors_24h);
+  $("#opsEvents").textContent=n(data.events_30d);
+  $("#opsAnalyticsUpdated").textContent="更新："+new Date(data.generated_at).toLocaleString("ja-JP");
+  const daily=Array.isArray(data.daily)?data.daily:[];
+  const max=Math.max(1,...daily.map(x=>Number(x.active_users||0)));
+  $("#opsActiveChart").innerHTML=daily.length?daily.map(x=>{
+   const v=Number(x.active_users||0),h=Math.max(2,Math.round(v/max*126));
+   return '<div class="ops-chart-day" title="'+esc(x.date)+'：'+n(v)+'人"><b style="font-size:10px;color:var(--muted)">'+n(v)+'</b><div class="ops-chart-bar" style="height:'+h+'px"></div><small>'+esc(x.date.slice(5))+'</small></div>';
+  }).join(""):'<div class="empty">まだ閲覧データがありません。ログインしてポータルを利用すると記録されます。</div>';
+  const widgets=Array.isArray(data.widgets)?data.widgets:[];
+  $("#opsWidgetRanking").innerHTML=widgets.length?'<table class="ops-analytics-table"><thead><tr><th>ウィジェット</th><th>閲覧</th><th>追加</th><th>削除</th></tr></thead><tbody>'+widgets.map(x=>'<tr><td>'+esc(x.widget_key)+'</td><td>'+n(x.views)+'</td><td>'+n(x.adds)+'</td><td>'+n(x.removes)+'</td></tr>').join("")+'</tbody></table>':'<div class="empty">ウィジェット利用データはまだありません。</div>';
+  const apis=Array.isArray(data.apis)?data.apis:[];
+  $("#opsApiHealth").innerHTML=apis.length?'<table class="ops-analytics-table"><thead><tr><th>サービス</th><th>要求</th><th>失敗</th><th>失敗率</th></tr></thead><tbody>'+apis.map(x=>'<tr><td>'+esc(x.service_key)+'</td><td>'+n(x.requests)+'</td><td>'+n(x.errors)+'</td><td>'+Number(x.error_rate||0).toFixed(1)+'%</td></tr>').join("")+'</tbody></table>':'<div class="empty">API通信データはまだありません。</div>';
+  const retention=data.retention||{};
+  const rcard=(label,x)=>'<div class="ops-retention-card"><small>'+label+' 継続率</small><strong>'+(x&&x.rate!==null&&x.rate!==undefined?Number(x.rate).toFixed(1)+"%":"—")+'</strong><small>対象 '+n(x&&x.eligible)+' 人 · 再訪 '+n(x&&x.retained)+' 人</small></div>';
+  $("#opsRetention").innerHTML=rcard("翌日",retention.day1)+rcard("7日後",retention.day7)+rcard("30日後",retention.day30);
+  $("#opsTrackingNote").textContent="計測開始："+(data.tracking_started_at?new Date(data.tracking_started_at).toLocaleString("ja-JP"):"まだ記録なし")+(data.truncated?" · イベント数が上限に達したため一部省略":"")+(data.user_list_truncated?" · ユーザー一覧は上限まで取得":"");
+ }catch(e){
+  $("#opsActiveChart").innerHTML='<div class="error">分析データを取得できませんでした：'+esc(e.message)+'</div>';
+  $("#opsAnalyticsUpdated").textContent="取得失敗";
+ }
+}
+async function loadOpsUserErrors(event){
+ event.preventDefault();
+ const id=$("#opsErrorUserId").value.trim();
+ if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)){alert("正しいUUIDを入力してください。");return;}
+ $("#opsUserErrors").innerHTML='<div class="empty">検索中…</div>';
+ try{
+  const data=await opsInvoke({action:"get_user_error_log",userId:id});
+  const logs=Array.isArray(data.logs)?data.logs:[];
+  $("#opsUserErrors").innerHTML=logs.length?logs.map(x=>'<article class="ops-error-item"><b>'+esc(x.event_name)+'</b> · '+esc(x.error_code||"エラー")+'<small>'+esc(date(x.created_at))+' · '+esc(x.page_key||"")+' · '+esc(x.widget_key||"")+' · '+esc(x.service_key||"")+' · '+esc(x.status_code||"")+'</small></article>').join(""):'<div class="empty">直近30日に記録されたエラーはありません。</div>';
+ }catch(e){$("#opsUserErrors").innerHTML='<div class="error">検索に失敗しました：'+esc(e.message)+'</div>';}
+}
+
 function startAdminPolling(){
  if(refreshTimer)clearInterval(refreshTimer);
  const interval=activeProduct==="sns"&&mode==="gas"?15000:45000;
@@ -746,7 +848,8 @@ function startAdminPolling(){
    if(opsView==="users")loadOpsUsers();
    else if(opsView==="audit")loadOpsAudit();
    else if(opsView==="announcements")loadOpsAnnouncements();
-   else loadOpsFlags();
+   else if(opsView==="flags")loadOpsFlags();
+   else loadOpsAnalytics();
   }
  },interval);
 }
@@ -794,6 +897,8 @@ $("#opsTabs").addEventListener("click",e=>{const b=e.target.closest("button[data
 $("#opsAuditRefresh").addEventListener("click",loadOpsAudit);
 $("#opsAnnouncementsRefresh").addEventListener("click",loadOpsAnnouncements);
 $("#opsFlagsRefresh").addEventListener("click",loadOpsFlags);
+$("#opsAnalyticsRefresh").addEventListener("click",loadOpsAnalytics);
+$("#opsUserErrorsForm").addEventListener("submit",loadOpsUserErrors);
 $("#opsAnnouncementForm").addEventListener("submit",saveAnnouncement);
 $("#opsAnnCancel").addEventListener("click",resetAnnouncementForm);
 $("#opsAnnouncementsList").addEventListener("click",e=>{const edit=e.target.closest("[data-ann-edit]"),off=e.target.closest("[data-ann-unpublish]");if(edit)editAnnouncement(edit.dataset.annEdit);if(off)unpublishAnnouncement(off.dataset.annUnpublish);});
