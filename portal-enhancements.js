@@ -20,9 +20,6 @@
       { href: "/", label: "ホーム", icon: "⌂" },
       { href: "/search/", label: "探す", icon: "⌕" }
     ] },
-    { label: "ツール", items: [
-      { href: "/tools/", label: "ツールボックス", icon: "▦" }
-    ] },
     { label: "サービス", items: [
       { href: "/games/", label: "KURO GAMES", icon: "🎮" },
       { href: "/sns/", label: "KURO SNS", icon: "💬" },
@@ -161,15 +158,38 @@
 
   function setupHeaderActions() {
     var header = document.querySelector(".portal-header-inner");
-    if (!header || document.getElementById("portal-notification-button")) return;
-    var button = document.createElement("a");
-    button.id = "portal-notification-button";
-    button.className = "portal-notification-button";
-    button.href = "/notifications/";
-    button.setAttribute("aria-label", "お知らせ");
-    button.innerHTML = '<span>♧</span><i class="portal-notification-badge" hidden></i>';
-    var account = document.getElementById("portal-account-button");
-    header.insertBefore(button, account || null);
+    if (!header) return;
+    if (!document.getElementById("portal-toolbox-menu-wrap")) {
+      var toolbox = document.createElement("div");
+      toolbox.id = "portal-toolbox-menu-wrap";
+      toolbox.className = "portal-toolbox-menu-wrap";
+      toolbox.innerHTML =
+        '<button type="button" class="portal-toolbox-trigger" data-toolbox-toggle aria-expanded="false" aria-controls="portal-toolbox-menu">' +
+          '<span class="portal-toolbox-trigger-icon">▦</span><span>ツールボックス</span><span class="portal-toolbox-chevron">⌄</span>' +
+        '</button>' +
+        '<div class="portal-toolbox-menu" id="portal-toolbox-menu" hidden>' +
+          '<div class="portal-toolbox-menu-heading"><b>ツールボックス</b><small>使いたいツールを選択</small></div>' +
+          '<a href="/tools/?tool=weather"><span>🌦️</span><b>天気予報</b><i>↗</i></a>' +
+          '<a href="/tools/?tool=news"><span>📰</span><b>ニュースまとめ</b><i>↗</i></a>' +
+          '<a href="/tools/?tool=worldclock"><span>🌐</span><b>世界時計</b><i>↗</i></a>' +
+          '<a href="/tools/?tool=convert"><span>💱</span><b>為替・単位変換</b><i>↗</i></a>' +
+          '<a href="/tools/?tool=rss"><span>📡</span><b>RSSリーダー</b><i>↗</i></a>' +
+          '<a href="/tools/?tool=status"><span>📶</span><b>サイト稼働状況</b><i>↗</i></a>' +
+          '<a class="portal-toolbox-all" href="/tools/">すべてのツールを見る <i>→</i></a>' +
+        '</div>';
+      var accountButton = document.getElementById("portal-account-button");
+      header.insertBefore(toolbox, accountButton || null);
+    }
+    if (!document.getElementById("portal-notification-button")) {
+      var button = document.createElement("a");
+      button.id = "portal-notification-button";
+      button.className = "portal-notification-button";
+      button.href = "/notifications/";
+      button.setAttribute("aria-label", "お知らせ");
+      button.innerHTML = '<span>♧</span><i class="portal-notification-badge" hidden></i>';
+      var account = document.getElementById("portal-account-button");
+      header.insertBefore(button, account || null);
+    }
   }
 
   function setupMobileNavigation() {
@@ -704,6 +724,26 @@
   window.addEventListener("kuro:portal-notifications-updated", updateBadges);
 
   document.addEventListener("click", function (event) {
+    var toolboxToggle = event.target.closest("[data-toolbox-toggle]");
+    var toolboxWrap = document.getElementById("portal-toolbox-menu-wrap");
+    var toolboxMenu = document.getElementById("portal-toolbox-menu");
+    if (toolboxToggle && toolboxMenu) {
+      event.preventDefault();
+      var opening = toolboxMenu.hidden;
+      toolboxMenu.hidden = !opening;
+      toolboxToggle.setAttribute("aria-expanded", String(opening));
+      return;
+    }
+    if (toolboxMenu && toolboxWrap && !toolboxWrap.contains(event.target)) {
+      toolboxMenu.hidden = true;
+      var toolboxButton = toolboxWrap.querySelector("[data-toolbox-toggle]");
+      if (toolboxButton) toolboxButton.setAttribute("aria-expanded", "false");
+    }
+    if (toolboxMenu && event.target.closest("#portal-toolbox-menu a")) {
+      toolboxMenu.hidden = true;
+      var menuButton = toolboxWrap && toolboxWrap.querySelector("[data-toolbox-toggle]");
+      if (menuButton) menuButton.setAttribute("aria-expanded", "false");
+    }
     var quick = event.target.closest("[data-open-quick]");
     if (quick) {
       event.preventDefault();
@@ -763,7 +803,14 @@
   });
 
   document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape") hideMobileDrawer();
+    if (event.key === "Escape") {
+      hideMobileDrawer();
+      var toolboxMenu = document.getElementById("portal-toolbox-menu");
+      var toolboxWrap = document.getElementById("portal-toolbox-menu-wrap");
+      if (toolboxMenu) toolboxMenu.hidden = true;
+      var toolboxButton = toolboxWrap && toolboxWrap.querySelector("[data-toolbox-toggle]");
+      if (toolboxButton) toolboxButton.setAttribute("aria-expanded", "false");
+    }
   });
 
   window.addEventListener("resize", updateViewportClass, { passive: true });
