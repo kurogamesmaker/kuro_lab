@@ -51,6 +51,18 @@ jobs:
               catch { return false; }
             });
 
+          // Notify IndexNow about account pages changed to noindex as well,
+          // so search engines can refresh any previously discovered versions.
+          const noindexUrls = [
+            '/mypage/',
+            '/favorites/',
+            '/history/',
+            '/achievements/',
+            '/settings/'
+          ].map(path => new URL(path, site).href);
+
+          const submittedUrls = [...new Set([...urls, ...noindexUrls])];
+
           if (!urls.length) throw new Error('No valid URLs found in sitemap');
 
           const response = await fetch('https://api.indexnow.org/indexnow', {
@@ -60,7 +72,7 @@ jobs:
               host: new URL(site).hostname,
               key,
               keyLocation: new URL(`/${key}.txt`, site).href,
-              urlList: urls
+              urlList: submittedUrls
             })
           });
 
@@ -68,5 +80,5 @@ jobs:
           if (![200, 202].includes(response.status)) {
             throw new Error(`IndexNow rejected the request: HTTP ${response.status} ${body}`);
           }
-          console.log(`IndexNow accepted ${urls.length} URLs. HTTP ${response.status}`);
+          console.log(`IndexNow accepted ${submittedUrls.length} URLs. HTTP ${response.status}`);
           NODE
