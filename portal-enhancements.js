@@ -583,4 +583,40 @@
   }
 
 
+
+  // Force vertical trackpad scrolling to the document when the pointer is over tabs.
+  // Capture before interactive buttons/links receive the wheel event.
+  window.addEventListener("wheel", function (event) {
+    if (event.ctrlKey || event.metaKey || event.defaultPrevented) return;
+    var target = event.target;
+    if (target && target.nodeType !== 1) target = target.parentElement;
+    if (!target || !target.closest) return;
+    var tab = target.closest(
+      ".portal-topnav, .portal-workspace-tabs, .portal-workspace-tab, .portal-workspace-create, .portal-workspace-delete"
+    );
+    if (!tab) return;
+
+    var delta = Number(event.deltaY) || 0;
+    if (!delta) return;
+    if (event.deltaMode === 1) delta *= 16;
+    else if (event.deltaMode === 2) delta *= Math.max(1, window.innerHeight);
+
+    var root = document.scrollingElement || document.documentElement;
+    var body = document.body;
+    var maxScroll = Math.max(
+      0,
+      Math.max(root ? root.scrollHeight : 0, body ? body.scrollHeight : 0) - window.innerHeight
+    );
+    var current = Math.max(
+      window.pageYOffset || 0,
+      root ? root.scrollTop : 0,
+      body ? body.scrollTop : 0
+    );
+    var next = Math.max(0, Math.min(maxScroll, current + delta));
+    if (Math.abs(next - current) < 0.5) return;
+
+    event.preventDefault();
+    window.scrollTo(0, next);
+  }, { capture: true, passive: false });
+
 })();
