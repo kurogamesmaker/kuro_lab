@@ -143,7 +143,7 @@ function dashboardWidget(id){
  else if(id==="clock")b='<div class="portal-dashboard-clock"><strong id="portal-clock-time">--:--</strong><span id="portal-clock-date"></span></div>';
  else if(id==="custom"){var links=st.data.preferences.customLinks||[];b=links.length?'<div class="portal-custom-link-grid">'+links.map(function(x){var href=safeDashboardUrl(x.href);if(!href)return "";var external=/^https:\/\//i.test(href)&&new URL(href,location.href).origin!==location.origin;return '<a href="'+esc(href)+'" '+(external?'target="_blank" rel="noopener noreferrer"':"")+'><span>'+esc(x.icon||"🔗")+'</span><b>'+esc(x.title)+'</b><i>↗</i></a>';}).join("")+'</div>':'<div class="portal-widget-empty">自分だけのショートカットを登録できます。<a href="#" data-open-dashboard-editor>リンクを追加する →</a></div>';}
  var more=id==="games"?"/games/":id==="activity"?"/notifications/":id==="recent"?"/history/":id==="favorites"?"/favorites/":id==="achievements"?"/achievements/":id==="shortcuts"?"/search/":"/settings/";
- return '<section class="portal-widget '+(edit?"is-editing":"")+'" data-widget-id="'+id+'" data-size="'+size+'"><div class="portal-widget-head"><div class="portal-widget-title"><span>'+d.icon+'</span><div><b>'+d.title+'</b><small>'+d.desc+'</small></div></div><div class="portal-widget-tools" '+(edit?"":"hidden")+'></div><a class="portal-widget-more" href="'+more+'" '+(edit?'hidden':'')+'>›</a></div>'+(edit&&resizeMode?'<div class="portal-widget-resize-grip" aria-label="右端をドラッグしてサイズ変更" title="左右にドラッグしてサイズ変更"></div>':'')+'<button type="button" class="portal-widget-remove" data-widget-remove="'+id+'" aria-label="'+d.title+'を削除" '+(edit?"":"hidden")+'>−</button><div class="portal-widget-body">'+b+'</div></section>';
+ return '<section class="portal-widget '+(edit?"is-editing":"")+'" data-widget-id="'+id+'" data-size="'+size+'"><div class="portal-widget-head"><div class="portal-widget-title"><span>'+d.icon+'</span><div><b>'+d.title+'</b><small>'+d.desc+'</small></div></div><div class="portal-widget-tools" '+(edit?"":"hidden")+'></div><a class="portal-widget-more" href="'+more+'" '+(edit?'hidden':'')+'>›</a></div>'+(edit&&resizeMode?'<div class="portal-widget-resize-handle n" data-resize-dir="n" title="上辺をドラッグ"></div><div class="portal-widget-resize-handle s" data-resize-dir="s" title="下辺をドラッグ"></div><div class="portal-widget-resize-handle e" data-resize-dir="e" title="右辺をドラッグ"></div><div class="portal-widget-resize-handle w" data-resize-dir="w" title="左辺をドラッグ"></div><div class="portal-widget-resize-handle ne" data-resize-dir="ne" title="右上をドラッグ"></div><div class="portal-widget-resize-handle nw" data-resize-dir="nw" title="左上をドラッグ"></div><div class="portal-widget-resize-handle se" data-resize-dir="se" title="右下をドラッグ"></div><div class="portal-widget-resize-handle sw" data-resize-dir="sw" title="左下をドラッグ"></div>':'')+'<button type="button" class="portal-widget-remove" data-widget-remove="'+id+'" aria-label="'+d.title+'を削除" '+(edit?"":"hidden")+'>−</button><div class="portal-widget-body">'+b+'</div></section>';
 }
 function home(){var ids=getDashboardIds(),edit=!!st.dashboardEditing,resizeMode=!!st.dashboardResizeMode,storedLayout=st.data.preferences.dashboardLayout,layout=["balanced","three","single"].indexOf(storedLayout)>=0?storedLayout:"balanced";return '<div class="portal-dashboard-v2"><div class="portal-dashboard-toolbar"><div><b>ホーム</b><small>'+(edit?(resizeMode?"サイズ変更モード：カードのどこからでもドラッグ":"移動モード：カードのどこからでもドラッグ"):"ウィジェットを自由に配置")+'</small></div><div class="portal-dashboard-actions"><button id="portal-dashboard-edit" class="portal-btn '+(edit?"primary":"")+'" type="button">'+(edit?"完了":"編集")+'</button>'+(edit?'<button id="portal-dashboard-mode" class="portal-btn '+(resizeMode?"primary":"")+'" type="button">'+(resizeMode?"移動モードへ":"サイズ変更")+'</button>':"")+'<button id="portal-dashboard-add" class="portal-btn" type="button">＋ 追加</button><button id="portal-dashboard-reset" class="portal-btn subtle" type="button" aria-label="初期配置に戻す">↺</button></div></div><section id="portal-dashboard-editor" class="portal-dashboard-editor" '+(edit?"":"hidden")+'><div class="portal-editor-heading"><div><b>ウィジェットを追加</b><small>タップするとホームに追加されます</small></div><span>ADD</span></div><div class="portal-editor-layout"><label for="portal-dashboard-layout">レイアウト</label><select id="portal-dashboard-layout" class="portal-select"><option value="balanced" '+(layout==="balanced"?"selected":"") +'>バランス型</option><option value="three" '+(layout==="three"?"selected":"") +'>3列グリッド</option><option value="single" '+(layout==="single"?"selected":"") +'>ワイド</option></select></div><div class="portal-widget-picker">'+DASHBOARD_WIDGETS.map(function(w){var on=ids.indexOf(w.id)>=0;return '<button type="button" data-widget-toggle="'+w.id+'" class="'+(on?"selected":"")+'" '+(on?'aria-pressed="true"':'aria-pressed="false"')+'><span>'+w.icon+'</span><b>'+w.title+'</b><small>'+(on?"追加済み":"＋ 追加")+'</small></button>';}).join("")+'</div><form id="portal-custom-link-form" class="portal-custom-link-form"><b>自分のショートカット</b><div class="portal-custom-link-fields"><input id="portal-custom-link-title" class="portal-input" maxlength="32" required placeholder="表示名"><input id="portal-custom-link-url" class="portal-input" maxlength="500" required placeholder="https:// または /ページ/"><input id="portal-custom-link-icon" class="portal-input" maxlength="8" placeholder="🔗"></div><button class="portal-btn primary" type="submit">＋ リンクを登録</button><small>HTTPSまたはKURO Lab内のURL・最大16件</small></form><div id="portal-custom-link-list" class="portal-custom-link-list">'+renderCustomLinksEditor()+'</div></section><div id="portal-dashboard-grid" class="portal-dashboard-grid '+(edit?"is-editing ":"")+(edit&&resizeMode?"is-resize-mode":"")+'" data-layout="'+layout+'">'+ids.map(dashboardWidget).join("")+(edit?'<button type="button" class="portal-dashboard-add-tile" data-dashboard-add-widget><span>＋</span><b>追加</b></button>':"")+'</div></div>';}
 function applyDisplayPrefs(){var p=st.data&&st.data.preferences||{},themes={violet:["#8b5cf6","#30254b"],blue:["#087fbd","#e9f6fd"],green:["#15966d","#e4f7ef"],rose:["#db5475","#fceaf0"],amber:["#c17a16","#fff4df"]},a=themes[p.accent]||themes.violet;document.body.dataset.theme=p.theme==="dark"?"dark":"light";document.body.dataset.density=p.density==="compact"?"compact":"comfortable";document.body.dataset.motion=p.motion==="reduced"?"reduced":"normal";document.body.dataset.background=["aurora","plain","grid"].indexOf(p.background)>=0?p.background:"aurora";document.body.style.setProperty("--blue",a[0]);document.body.style.setProperty("--blue2",a[1]);var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=p.theme==="dark"?"#090a10":"#f4f7fb";}
@@ -173,7 +173,9 @@ function bindDashboard(){
   }
   if(resize){
    var r=resize;resize=null;r.item.classList.remove("resizing");
-   var sizes=st.data.preferences.dashboardSizes||{};sizes[r.id]=r.size;st.data.preferences.dashboardSizes=sizes;persistDisplayPrefs();
+   var sizes=st.data.preferences.dashboardSizes||{};sizes[r.id]=r.size;st.data.preferences.dashboardSizes=sizes;
+   var heights=st.data.preferences.dashboardHeights||{};if(r.height!==null)heights[r.id]=Math.round(r.height);st.data.preferences.dashboardHeights=heights;
+   persistDisplayPrefs();
   }
  }
  function moveBeforePoint(x,y){
@@ -186,22 +188,32 @@ function bindDashboard(){
  }
  function applyResize(x,y){
   if(!resize)return;
-  var dx=x-resize.startX,dy=y-resize.startY;
-  var delta=dx;
-  var step=Math.max(18,Math.min(42,resize.gridWidth/30));
-  var idx=Math.max(0,Math.min(3,resize.startIndex+Math.round(delta/step)));
-  var size=["small","half","wide","full"][idx];
-  if(size!==resize.size){resize.size=size;resize.item.dataset.size=size;}
+  var dx=x-resize.startX,dy=y-resize.startY,dir=resize.dir;
+  if(dir.indexOf("e")>=0||dir.indexOf("w")>=0){
+   var delta=dir.indexOf("w")>=0?-dx:dx;
+   var step=Math.max(18,Math.min(42,resize.gridWidth/30));
+   var idx=Math.max(0,Math.min(3,resize.startIndex+Math.round(delta/step)));
+   var size=["small","half","wide","full"][idx];
+   if(size!==resize.size){resize.size=size;resize.item.dataset.size=size;}
+  }
+  if(dir.indexOf("n")>=0||dir.indexOf("s")>=0){
+   var hdelta=dir.indexOf("n")>=0?-dy:dy;
+   resize.height=Math.max(160,Math.min(900,resize.startHeight+hdelta));
+   resize.item.style.height=Math.round(resize.height)+"px";
+  }
  }
  grid.addEventListener("pointerdown",function(e){
   if(!st.dashboardEditing)return;
   var item=e.target.closest("[data-widget-id]");
   if(!item||!grid.contains(item)||e.target.closest("[data-widget-remove]"))return;
   if(st.dashboardResizeMode){
+   var handle=e.target.closest("[data-resize-dir]");
+   if(!handle||!item.contains(handle))return;
    e.preventDefault();e.stopPropagation();
-   var sizes=["small","half","wide","full"],current=item.dataset.size||"half",rect=grid.getBoundingClientRect();
-   resize={id:item.dataset.widgetId,item:item,startX:e.clientX,startY:e.clientY,startIndex:Math.max(0,sizes.indexOf(current)),size:current,gridWidth:rect.width,pointerId:e.pointerId};
-   item.classList.add("resizing");item.style.setProperty("--resize-start-width",rect.width+"px");
+   var sizes=["small","half","wide","full"],current=item.dataset.size||"half",rect=grid.getBoundingClientRect(),itemRect=item.getBoundingClientRect();
+   var savedHeight=(st.data.preferences.dashboardHeights||{})[item.dataset.widgetId];
+   resize={id:item.dataset.widgetId,item:item,dir:handle.dataset.resizeDir,startX:e.clientX,startY:e.clientY,startIndex:Math.max(0,sizes.indexOf(current)),size:current,gridWidth:rect.width,startHeight:Number(savedHeight)||itemRect.height,height:null,pointerId:e.pointerId};
+   item.classList.add("resizing");
   }else{
    if(e.target.closest("button,a,input,select,textarea,[contenteditable=true]"))return;
    e.preventDefault();e.stopPropagation();
