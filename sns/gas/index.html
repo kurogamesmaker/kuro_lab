@@ -1095,6 +1095,33 @@
     width:52px!important; height:52px!important; font-size:18px!important; }
 }
 
+
+/* Explicit desktop content bounds: never let the feed enter the navigation rail. */
+@media (min-width:768px) {
+  :root { --kuro-gas-rail:96px; }
+  #kuroBottomNav {
+    left:0!important; right:auto!important;
+    width:var(--kuro-gas-rail)!important;
+    min-width:var(--kuro-gas-rail)!important;
+  }
+  #homeFeedView, #myProfileView {
+    position:fixed!important;
+    top:0!important; right:0!important; bottom:0!important;
+    left:var(--kuro-gas-rail)!important;
+    width:calc(100vw - var(--kuro-gas-rail))!important;
+    max-width:none!important; min-width:0!important;
+    margin:0!important; padding-left:24px!important; padding-right:24px!important;
+    box-sizing:border-box!important;
+  }
+  #homeFeedView > .mb-6,
+  #homeFeedView > .mb-6 > div,
+  #postFeed,
+  #postFeed > *,
+  #postFeed [data-post-card] {
+    width:100%!important; max-width:none!important; min-width:0!important;
+    box-sizing:border-box!important;
+  }
+}
 /* Keep Tailwind's hidden state authoritative during tab/view switching. */
 #homeFeedView.hidden,
 #myProfileView.hidden {
