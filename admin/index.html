@@ -139,6 +139,7 @@
   <button data-ops-tab="audit">監査ログ</button>
   <button data-ops-tab="reports">通報管理</button>
   <button data-ops-tab="announcements">お知らせ</button>
+  <button data-ops-tab="messages">共通メッセージ</button>
   <button data-ops-tab="flags">機能ON/OFF</button>
   <button data-ops-tab="analytics">利用分析</button>
  </div>
@@ -188,6 +189,20 @@
     <div class="sns-muted" id="opsAnnStatus">公開中のお知らせはユーザー側の表示条件に従って配信されます。</div>
    </form>
    <div class="list" id="opsAnnouncementsList"><div class="empty">読み込み中…</div></div>
+  </section>
+ </div>
+ <div id="opsMessagesView" hidden>
+  <section class="panel">
+   <div class="toolbar"><div><strong>SNS・KUROLAB 共通メッセージ</strong><div class="sns-muted">個別または全利用者へ配信。両方のサービスで同じ内容を確認できます。</div></div><button class="btn" id="opsMessagesRefresh">更新</button></div>
+   <form id="opsMessageForm" class="ops-form">
+    <label>送信先<select id="opsMessageTarget"><option value="all">全利用者（一斉配信）</option></select></label>
+    <input id="opsMessageTitle" maxlength="120" required placeholder="メッセージのタイトル">
+    <textarea id="opsMessageBody" maxlength="8000" rows="4" required placeholder="メッセージ本文"></textarea>
+    <input id="opsMessageHref" type="url" placeholder="リンク（任意・HTTPSのみ）">
+    <div class="ops-form-actions"><button type="submit" class="btn primary" id="opsMessageSend">メッセージを送信</button></div>
+    <div class="sns-muted" id="opsMessageStatus">送信するとKURO SNSとKUROLABの両方に表示されます。既存のKUROLAB専用お知らせには影響しません。</div>
+   </form>
+   <div class="list" id="opsMessagesList"><div class="empty">読み込み中…</div></div>
   </section>
  </div>
  <div id="opsFlagsView" hidden>
@@ -358,7 +373,7 @@ if(modeSelect)modeSelect.addEventListener("change",()=>setMode(modeSelect.value)
 if(modeSelectTop)modeSelectTop.addEventListener("change",()=>setMode(modeSelectTop.value));
 syncModeSelectors();
 let rows=[],filter="all",channel=null,seen=new Set(),firstLoad=true;
-let opsUsers=[],opsAuditLogs=[],opsAnnouncements=[],opsFlags=[],opsView='users',editingAnnouncementId=null;
+let opsUsers=[],opsAuditLogs=[],opsAnnouncements=[],opsMessages=[],opsFlags=[],opsView='users',editingAnnouncementId=null;
 let snsProfiles=[],snsPosts=[],snsReplies=[],snsChatMessages=[],snsTab="posts",snsUserFilterId=null,refreshTimer=null;
 let snsRealtimeChannel=null,snsReloadTimer=null,analyticsRefreshTimer=null,snsLikesTotal=0,snsFollowsTotal=0;
 const labels={pending:"未対応",reviewing:"確認中",done:"対応済み"};
@@ -729,7 +744,7 @@ async function runOpsUserAction(button){
 
 function setOpsView(view){
  opsView=view;
- ["users","audit","reports","announcements","flags","analytics"].forEach(name=>{
+ ["users","audit","reports","announcements","messages","flags","analytics"].forEach(name=>{
   const target=$("#ops"+name.charAt(0).toUpperCase()+name.slice(1)+"View");
   if(target)target.hidden=name!==view;
   const button=$("#opsTabs [data-ops-tab='"+name+"']");
@@ -739,6 +754,7 @@ function setOpsView(view){
  if(view==="audit")loadOpsAudit();
  if(view==="reports")loadOpsReports();
  if(view==="announcements")loadOpsAnnouncements();
+ if(view==="messages")loadOpsMessages();
  if(view==="flags")loadOpsFlags();
  if(view==="analytics")loadOpsAnalytics();
 }
@@ -787,6 +803,64 @@ async function loadOpsAnnouncements(){
    '<article class="ops-ann-item"><div class="ops-ann-copy"><div class="meta"><strong>'+esc(item.title)+'</strong><span class="ops-status '+(item.published?"":"banned")+'">'+(item.published?"公開":"非公開")+'</span><span>'+esc(date(item.created_at))+'</span></div><p>'+esc(item.body)+'</p><div class="sns-muted">開始：'+esc(date(item.starts_at))+' · 終了：'+esc(item.ends_at?date(item.ends_at):"指定なし")+(item.href?' · '+esc(item.href):'')+'</div></div><div class="ops-inline-actions"><button class="btn" data-ann-edit="'+esc(item.id)+'">編集</button>'+(item.published?'<button class="btn" data-ann-unpublish="'+esc(item.id)+'">非公開</button>':'')+'</div></article>'
   ).join(""):'<div class="empty">お知らせはまだありません。</div>';
  }catch(e){$("#opsAnnouncementsList").innerHTML='<div class="error">読み込みに失敗しました：'+esc(e.message)+'</div>';}
+}
+async function ensureOpsMessageTargets(){
+ const select=$("#opsMessageTarget");
+ if(!select)return;
+ if(!opsUsers.length){
+  const users=[];
+  for(let page=1;page<=20;page++){
+   const data=await opsInvoke({action:"list_users",page});
+   users.push(...(data.users||[]));
+   if(!data.hasMore)break;
+  }
+  opsUsers=users;
+ }
+ const current=select.value||"all";
+ select.innerHTML='<option value="all">全利用者（一斉配信）</option>'+opsUsers.map(u=>{
+  const label=u.display_name||u.username||u.email||u.id;
+  return '<option value="user|'+esc(u.id)+'">'+esc(label)+' · '+esc(u.email||u.id)+'</option>';
+ }).join("");
+ select.value=Array.from(select.options).some(o=>o.value===current)?current:"all";
+}
+async function loadOpsMessages(){
+ $("#opsMessagesList").innerHTML='<div class="empty">読み込み中…</div>';
+ try{
+  await ensureOpsMessageTargets();
+  const data=await opsInvoke({action:"list_admin_messages",limit:200});
+  opsMessages=data.messages||[];
+  $("#opsMessagesList").innerHTML=opsMessages.length?opsMessages.map(m=>{
+   const target=m.audience==="all"?"全利用者":(m.recipient?.display_name||m.recipient?.username||"個別利用者");
+   const targetExtra=m.recipient_id?" · "+m.recipient_id:"";
+   return '<article class="ops-ann-item"><div class="ops-ann-copy"><div class="meta"><strong>'+esc(m.title)+'</strong><span class="ops-status '+(m.published?"":"banned")+'">'+(m.published?"配信中":"停止")+'</span><span>'+esc(date(m.created_at))+'</span></div><div class="sns-muted">送信先：'+esc(target)+esc(targetExtra)+' · 既読 '+Number(m.read_count||0)+' 件</div><p>'+esc(m.body)+'</p>'+(m.href?'<a href="'+esc(m.href)+'" target="_blank" rel="noopener noreferrer">リンクを開く ↗</a>':'')+'</div><div class="ops-inline-actions">'+(m.published?'<button class="btn" data-message-unpublish="'+esc(m.id)+'">配信停止</button>':'')+'</div></article>';
+  }).join(""):'<div class="empty">共通メッセージはまだありません。</div>';
+ }catch(e){$("#opsMessagesList").innerHTML='<div class="error">読み込みに失敗しました：'+esc(e.message)+'</div>';}
+}
+async function sendOpsMessage(event){
+ event.preventDefault();
+ const target=$("#opsMessageTarget").value;
+ const title=$("#opsMessageTitle").value.trim();
+ const content=$("#opsMessageBody").value.trim();
+ const href=$("#opsMessageHref").value.trim();
+ if(!title||!content){alert("タイトルと本文を入力してください。");return;}
+ const audience=target==="all"?"all":"user";
+ const userId=audience==="user"?target.slice(5):"";
+ const targetLabel=audience==="all"?"全利用者":($("#opsMessageTarget").selectedOptions[0]?.textContent||"指定ユーザー");
+ if(!confirm(targetLabel+" に共通メッセージを送信しますか？\nKURO SNSとKUROLABの両方に配信されます。"))return;
+ const button=$("#opsMessageSend");button.disabled=true;
+ try{
+  await opsInvoke({action:"send_admin_message",audience,userId,title,content,href});
+  $("#opsMessageForm").reset();$("#opsMessageTarget").value="all";
+  $("#opsMessageStatus").textContent="送信しました。KURO SNSとKUROLABの両方に配信されました。";
+  await loadOpsMessages();await loadOpsAudit();
+ }catch(e){alert("送信できませんでした："+e.message);}
+ finally{button.disabled=false;}
+}
+async function unpublishOpsMessage(id,button){
+ if(!confirm("この共通メッセージの配信を停止しますか？"))return;
+ button.disabled=true;
+ try{await opsInvoke({action:"unpublish_admin_message",id});await loadOpsMessages();await loadOpsAudit();}
+ catch(e){button.disabled=false;alert("配信停止に失敗しました："+e.message);}
 }
 async function loadOpsFlags(){
  $("#opsFlagsList").innerHTML='<div class="empty">読み込み中…</div>';
@@ -912,6 +986,7 @@ function startAdminPolling(){
    if(opsView==="users")loadOpsUsers();
    else if(opsView==="audit")loadOpsAudit();
    else if(opsView==="announcements")loadOpsAnnouncements();
+   else if(opsView==="messages")loadOpsMessages();
    else if(opsView==="flags")loadOpsFlags();
    else loadOpsAnalytics();
   }
@@ -963,6 +1038,9 @@ $("#opsReportsRefresh").addEventListener("click",loadOpsReports);
 $("#opsReportsStatus").addEventListener("change",loadOpsReports);
 $("#opsReportsList").addEventListener("click",e=>{const b=e.target.closest("[data-report-save]");if(b)saveOpsReport(b.dataset.reportSave,b);});
 $("#opsAnnouncementsRefresh").addEventListener("click",loadOpsAnnouncements);
+$("#opsMessagesRefresh").addEventListener("click",loadOpsMessages);
+$("#opsMessageForm").addEventListener("submit",sendOpsMessage);
+$("#opsMessagesList").addEventListener("click",e=>{const b=e.target.closest("[data-message-unpublish]");if(b)unpublishOpsMessage(b.dataset.messageUnpublish,b);});
 $("#opsFlagsRefresh").addEventListener("click",loadOpsFlags);
 $("#opsAnalyticsRefresh").addEventListener("click",loadOpsAnalytics);
 $("#opsUserErrorsForm").addEventListener("submit",loadOpsUserErrors);
