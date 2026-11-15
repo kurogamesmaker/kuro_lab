@@ -1326,3 +1326,243 @@ body:has(.portal-dashboard-v2) .portal-account-button{
     min-width:0;white-space:nowrap;align-items:center;justify-content:center
   }
 }
+
+
+/* KURO Lab motion system: smooth, restrained, and accessible */
+:root{
+  --kuro-ease:cubic-bezier(.22,.75,.25,1);
+  --kuro-ease-out:cubic-bezier(.16,1,.3,1);
+  --kuro-fast:160ms;
+  --kuro-medium:280ms;
+  --kuro-slow:440ms
+}
+html{scroll-behavior:smooth}
+body.kuro-portal{
+  -webkit-tap-highlight-color:transparent;
+  text-rendering:optimizeLegibility
+}
+@keyframes kuro-page-in{
+  from{opacity:0;transform:translate3d(0,8px,0);filter:blur(2px)}
+  to{opacity:1;transform:translate3d(0,0,0);filter:blur(0)}
+}
+@keyframes kuro-card-in{
+  from{opacity:0;transform:translate3d(0,14px,0) scale(.992)}
+  to{opacity:1;transform:translate3d(0,0,0) scale(1)}
+}
+@keyframes kuro-soft-in{
+  from{opacity:0;transform:translate3d(0,6px,0)}
+  to{opacity:1;transform:translate3d(0,0,0)}
+}
+.portal-app-main{
+  animation:kuro-page-in 460ms var(--kuro-ease-out) both
+}
+.portal-app-main .portal-page-heading,
+.portal-app-main .portal-hero,
+.portal-app-main .portal-dashboard-search,
+.portal-app-main .portal-dashboard-toolbar{
+  animation:kuro-soft-in 380ms var(--kuro-ease-out) both
+}
+.portal-app-main .portal-dashboard-metrics{
+  animation:kuro-soft-in 420ms var(--kuro-ease-out) 50ms both
+}
+.portal-app-main .portal-dashboard-metric{
+  animation:kuro-card-in 440ms var(--kuro-ease-out) both
+}
+.portal-app-main .portal-dashboard-metric:nth-child(2){animation-delay:45ms}
+.portal-app-main .portal-dashboard-metric:nth-child(3){animation-delay:90ms}
+.portal-app-main .portal-dashboard-metric:nth-child(4){animation-delay:135ms}
+.portal-app-main .portal-workspace-bar{
+  animation:kuro-soft-in 420ms var(--kuro-ease-out) 80ms both
+}
+.portal-dashboard-grid:not(.is-editing) .portal-widget{
+  animation:kuro-card-in 480ms var(--kuro-ease-out) both
+}
+.portal-dashboard-grid:not(.is-editing) .portal-widget:nth-child(2){animation-delay:45ms}
+.portal-dashboard-grid:not(.is-editing) .portal-widget:nth-child(3){animation-delay:90ms}
+.portal-dashboard-grid:not(.is-editing) .portal-widget:nth-child(4){animation-delay:135ms}
+.portal-dashboard-grid:not(.is-editing) .portal-widget:nth-child(5){animation-delay:180ms}
+.portal-dashboard-grid:not(.is-editing) .portal-widget:nth-child(6){animation-delay:225ms}
+.portal-dashboard-grid:not(.is-editing) .portal-widget:nth-child(7){animation-delay:270ms}
+.portal-dashboard-grid:not(.is-editing) .portal-widget:nth-child(8){animation-delay:315ms}
+
+/* One consistent motion curve across controls and navigation */
+.portal-btn,
+.portal-account-button,
+.portal-quick-button,
+.portal-back-button,
+.portal-transport-button,
+.portal-notification-button,
+.portal-topnav a,
+.portal-mobile-nav a,
+.portal-mobile-nav button,
+.portal-sidebar-item,
+.portal-sidebar-search,
+.portal-workspace-tab,
+.portal-workspace-create,
+.portal-workspace-delete,
+.portal-widget-more,
+.portal-widget-tools button,
+.portal-widget-remove,
+.portal-dashboard-add-tile,
+.portal-widget-picker button,
+.portal-card,
+.portal-list-item,
+.portal-settings-row,
+.portal-shortcut-grid a,
+.portal-dashboard-game,
+.portal-widget-link-list a,
+.portal-custom-link-grid a,
+.portal-dashboard-metric{
+  transition:
+    transform var(--kuro-medium) var(--kuro-ease),
+    background-color var(--kuro-medium) var(--kuro-ease),
+    color var(--kuro-fast) var(--kuro-ease),
+    border-color var(--kuro-medium) var(--kuro-ease),
+    box-shadow var(--kuro-medium) var(--kuro-ease),
+    opacity var(--kuro-medium) var(--kuro-ease)
+}
+.portal-app-sidebar{
+  transition:
+    width 340ms var(--kuro-ease-out),
+    min-width 340ms var(--kuro-ease-out),
+    box-shadow 280ms var(--kuro-ease),
+    background-color 280ms var(--kuro-ease)
+}
+.portal-app-sidebar .portal-sidebar-brand>span:last-child,
+.portal-app-sidebar .portal-sidebar-search b,
+.portal-app-sidebar .portal-sidebar-search kbd,
+.portal-app-sidebar .portal-sidebar-group-label,
+.portal-app-sidebar .portal-sidebar-text,
+.portal-app-sidebar .portal-sidebar-bottom{
+  transition:opacity 190ms var(--kuro-ease),visibility 190ms var(--kuro-ease)
+}
+.portal-app-sidebar .portal-sidebar-item{
+  transition:
+    width 320ms var(--kuro-ease-out),
+    padding 320ms var(--kuro-ease-out),
+    margin 320ms var(--kuro-ease-out),
+    background-color 180ms var(--kuro-ease),
+    color 180ms var(--kuro-ease),
+    border-color 180ms var(--kuro-ease),
+    transform 180ms var(--kuro-ease)
+}
+
+/* Hover motion only where hover is a real input */
+@media(hover:hover) and (pointer:fine){
+  .portal-btn:hover,
+  .portal-account-button:hover,
+  .portal-quick-button:hover,
+  .portal-back-button:hover,
+  .portal-transport-button:hover,
+  .portal-notification-button:hover,
+  .portal-workspace-create:hover,
+  .portal-widget-more:hover,
+  .portal-widget-tools button:hover{
+    transform:translateY(-1px)
+  }
+  .portal-sidebar-item:hover,
+  .portal-topnav a:hover,
+  .portal-mobile-nav a:hover,
+  .portal-mobile-nav button:hover{
+    transform:translateX(2px)
+  }
+  .portal-card:hover,
+  .portal-list-item:hover,
+  .portal-settings-row:hover,
+  .portal-shortcut-grid a:hover,
+  .portal-dashboard-game:hover,
+  .portal-custom-link-grid a:hover{
+    transform:translateY(-2px)
+  }
+}
+.portal-btn:active,
+.portal-account-button:active,
+.portal-quick-button:active,
+.portal-back-button:active,
+.portal-transport-button:active,
+.portal-notification-button:active,
+.portal-workspace-tab:active,
+.portal-workspace-create:active,
+.portal-widget-tools button:active,
+.portal-widget-more:active,
+.portal-dashboard-add-tile:active,
+.portal-widget-picker button:active{
+  transform:scale(.975);
+  transition-duration:90ms
+}
+.portal-sidebar-item:active,
+.portal-topnav a:active,
+.portal-mobile-nav a:active,
+.portal-mobile-nav button:active{
+  transform:scale(.985)
+}
+
+/* Focus remains visible even when motion is disabled */
+.portal-btn:focus-visible,
+.portal-sidebar-item:focus-visible,
+.portal-topnav a:focus-visible,
+.portal-mobile-nav a:focus-visible,
+.portal-mobile-nav button:focus-visible,
+.portal-workspace-tab:focus-visible,
+.portal-dashboard-search:focus-visible,
+.portal-dashboard-metric:focus-visible{
+  outline:2px solid var(--blue);
+  outline-offset:3px
+}
+.portal-dashboard-search,
+.portal-dashboard-metric,
+.portal-widget,
+.portal-card,
+.portal-workspace-bar{
+  backface-visibility:hidden
+}
+.portal-dashboard-grid.is-editing .portal-widget,
+.portal-dashboard-grid .portal-widget.drag-active,
+.portal-dashboard-grid .portal-widget.resizing{
+  animation:none!important
+}
+.portal-dashboard-grid .portal-widget.drag-active,
+.portal-dashboard-grid .portal-widget.resizing{
+  transition:none!important
+}
+
+/* Respect the OS setting and KURO's own reduced-motion option */
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .portal-app-main,
+  .portal-app-main .portal-page-heading,
+  .portal-app-main .portal-hero,
+  .portal-app-main .portal-dashboard-search,
+  .portal-app-main .portal-dashboard-toolbar,
+  .portal-app-main .portal-dashboard-metrics,
+  .portal-app-main .portal-dashboard-metric,
+  .portal-app-main .portal-workspace-bar,
+  .portal-dashboard-grid .portal-widget{
+    animation:none!important
+  }
+  *,*::before,*::after{
+    scroll-behavior:auto!important;
+    transition-duration:.01ms!important;
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important
+  }
+}
+body[data-motion=reduced]{
+  scroll-behavior:auto
+}
+body[data-motion=reduced] .portal-app-main,
+body[data-motion=reduced] .portal-app-main *,
+body[data-motion=reduced] .portal-app-sidebar,
+body[data-motion=reduced] .portal-app-sidebar *,
+body[data-motion=reduced] .portal-dashboard-grid .portal-widget{
+  animation:none!important;
+  transition-duration:.01ms!important
+}
+body[data-motion=reduced] .portal-card:hover,
+body[data-motion=reduced] .portal-list-item:hover,
+body[data-motion=reduced] .portal-settings-row:hover,
+body[data-motion=reduced] .portal-shortcut-grid a:hover,
+body[data-motion=reduced] .portal-dashboard-game:hover,
+body[data-motion=reduced] .portal-custom-link-grid a:hover{
+  transform:none!important
+}
