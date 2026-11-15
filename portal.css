@@ -1566,3 +1566,53 @@ body[data-motion=reduced] .portal-dashboard-game:hover,
 body[data-motion=reduced] .portal-custom-link-grid a:hover{
   transform:none!important
 }
+
+
+/* Navigation tab rows must never trap vertical page scroll */
+@media(min-width:761px){
+  body:has(.portal-dashboard-v2) .portal-topnav{
+    overflow:visible!important;
+    overflow-x:visible!important;
+    overflow-y:visible!important;
+    flex-wrap:wrap;
+    white-space:normal;
+    overscroll-behavior: auto
+  }
+  body:has(.portal-dashboard-v2) .portal-topnav a{
+    flex:0 0 auto;
+    white-space:nowrap
+  }
+  body:has(.portal-dashboard-v2) .portal-workspace-tabs{
+    overflow:visible!important;
+    overflow-x:visible!important;
+    overflow-y:visible!important;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+    overscroll-behavior:auto
+  }
+}
+@media(max-width:760px){
+  body:has(.portal-dashboard-v2) .portal-workspace-tabs{
+    overflow:visible!important;
+    overflow-x:visible!important;
+    overflow-y:visible!important;
+    flex-wrap:wrap;
+    justify-content:flex-start;
+    overscroll-behavior:auto
+  }
+}
+body:has(.portal-dashboard-v2) .portal-app-main{
+  overflow:visible!important;
+  height:auto!important;
+  max-height:none!important
+}
+body.kuro-portal:has(.portal-dashboard-v2):not(.portal-drawer-open){
+  overflow-y:auto!important;
+  height:auto!important;
+  overscroll-behavior-y:auto
+}
+html:has(body.kuro-portal .portal-dashboard-v2){
+  overflow-y:auto!important;
+  height:auto!important;
+  overscroll-behavior-y:auto
+}
