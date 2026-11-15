@@ -266,6 +266,88 @@ Deno.serve(async (req: Request) => {
       return reply({ logs: data || [] }, 200, origin);
     }
 
+    if (action === "list_admin_messages") {
+      const limit = Math.max(1, Math.min(300, Number(body.limit) || 100));
+      const { data: messages, error } = await admin.from("admin_messages")
+        .select("id,title,body,href,audience,recipient_id,published,created_at")
+        .order("created_at", { ascending: false }).limit(limit);
+      if (error) throw error;
+      const rows = messages || [];
+      const ids = rows.map((m) => m.id);
+      const recipientIds = [...new Set(rows.map((m) => m.recipient_id).filter(Boolean))];
+      const [readsResult, profilesResult] = ids.length ? await Promise.all([
+        admin.from("admin_message_reads").select("message_id,user_id,read_at").in("message_id", ids),
+        recipientIds.length ? admin.from("profiles").select("id,username,display_name").in("id", recipientIds) : Promise.resolve({ data: [], error: null })
+      ]) : [{ data: [], error: null }, { data: [], error: null }];
+      if (readsResult.error) throw readsResult.error;
+      if (profilesResult.error) throw profilesResult.error;
+      const reads = new Map();
+      (readsResult.data || []).forEach((r) => reads.set(r.message_id, (reads.get(r.message_id) || 0) + 1));
+      const profiles = new Map((profilesResult.data || []).map((p) => [p.id, p]));
+      return reply({ messages: rows.map((m) => ({
+        ...m,
+        read_count: reads.get(m.id) || 0,
+        recipient: m.recipient_id ? (profiles.get(m.recipient_id) || null) : null
+      })) }, 200, origin);
+    }
+
+    if (action === "send_admin_message") {
+      const title = typeof body.title === "string" ? body.title.trim() : "";
+      const content = typeof body.content === "string" ? body.content.trim() : "";
+      const href = typeof body.href === "string" ? body.href.trim() : "";
+      const audience = body.audience === "user" ? "user" : "all";
+      const targetUserId = typeof body.userId === "string" ? body.userId : "";
+      if (!title || title.length > 120) return reply({ error: "Title must be 1-120 characters" }, 400, origin);
+      if (!content || content.length > 8000) return reply({ error: "Body must be 1-8000 characters" }, 400, origin);
+      if (href) {
+        try {
+          const parsedUrl = new URL(href);
+          if (parsedUrl.protocol !== "https:") return reply({ error: "Message links must use HTTPS" }, 400, origin);
+        } catch {
+          return reply({ error: "Invalid message URL" }, 400, origin);
+        }
+      }
+      let recipientId: string | null = null;
+      if (audience === "user") {
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(targetUserId)) {
+          return reply({ error: "A valid target user is required" }, 400, origin);
+        }
+        const { data: target, error: targetError } = await admin.auth.admin.getUserById(targetUserId);
+        if (targetError || !target?.user || target.user.is_anonymous) return reply({ error: "User not found" }, 404, origin);
+        recipientId = targetUserId;
+      }
+      const { data: saved, error } = await admin.from("admin_messages").insert({
+        title, body: content, href: href || null, audience,
+        recipient_id: recipientId, created_by: caller.id, published: true
+      }).select("id,title,audience,recipient_id,created_at").single();
+      if (error) throw error;
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id,
+        action: "admin_message.send",
+        target_user_id: recipientId,
+        metadata: { message_id: saved.id, title, audience }
+      });
+      if (auditError) throw auditError;
+      return reply({ ok: true, message: saved }, 200, origin);
+    }
+
+    if (action === "unpublish_admin_message") {
+      const id = typeof body.id === "string" ? body.id : "";
+      if (!id) return reply({ error: "Message ID required" }, 400, origin);
+      const { data, error } = await admin.from("admin_messages")
+        .update({ published: false }).eq("id", id)
+        .select("id,title").maybeSingle();
+      if (error) throw error;
+      if (!data) return reply({ error: "Message not found" }, 404, origin);
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id,
+        action: "admin_message.unpublish",
+        metadata: { message_id: data.id, title: data.title }
+      });
+      if (auditError) throw auditError;
+      return reply({ ok: true }, 200, origin);
+    }
+
     if (action === "list_announcements") {
       const { data, error } = await admin
         .from("portal_announcements")
