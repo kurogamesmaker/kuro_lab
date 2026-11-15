@@ -1629,13 +1629,15 @@ html:has(body.kuro-portal .portal-dashboard-v2){
 }
 
 
-/* KURO Lab: pin the actual app sidebar to the viewport while the document scrolls */
+/* KURO Lab: integrated, fixed icon rail that expands only when approached */
 @media (min-width:761px){
-  .portal-app-sidebar{
+  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar{
     position:fixed!important;
     top:88px!important;
-    left:max(24px,calc((100vw - 1600px)/2 + 24px))!important;
-    width:244px!important;
+    left:max(20px,calc((100vw - 1500px)/2))!important;
+    width:62px!important;
+    min-width:62px!important;
+    max-width:252px!important;
     height:calc(100vh - 108px)!important;
     height:calc(100dvh - 108px)!important;
     min-height:0!important;
@@ -1643,16 +1645,36 @@ html:has(body.kuro-portal .portal-dashboard-v2){
     margin:0!important;
     z-index:80!important;
     overflow:hidden!important;
+    border:0!important;
+    border-right:1px solid var(--line)!important;
+    border-radius:0 14px 14px 0!important;
+    box-shadow:none!important;
+    background:var(--surface)!important;
+    transition:width 280ms var(--kuro-ease-out),box-shadow 280ms var(--kuro-ease),background-color 280ms var(--kuro-ease)!important;
   }
-  .portal-app-sidebar .portal-sidebar-nav{
+  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:hover,
+  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:focus-within{
+    width:252px!important;
+    min-width:252px!important;
+    overflow:hidden!important;
+    box-shadow:12px 0 32px #00000020!important;
+  }
+  .portal-app-shell:has(.portal-dashboard-v2) .portal-sidebar-nav{
     min-height:0;
-    overflow-y:auto;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
     overscroll-behavior:contain;
   }
 }
 @media (min-width:761px) and (max-width:1120px){
-  .portal-app-sidebar{
-    left:16px!important;
+  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar{
+    left:20px!important;
     width:78px!important;
+    min-width:78px!important;
+  }
+  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:hover,
+  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:focus-within{
+    width:252px!important;
+    min-width:252px!important;
   }
 }
