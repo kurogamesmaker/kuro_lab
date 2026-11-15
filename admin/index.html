@@ -888,7 +888,8 @@ function setOpsView(view){
  if(view==="announcements")loadOpsAnnouncements();
  if(view==="messages")loadOpsMessages();
  if(view==="flags")loadOpsFlags();
- if(view==="analytics")loadOpsAnalytics();\n if(view==="pro")loadOpsPro();
+ if(view==="analytics")loadOpsAnalytics();
+ if(view==="pro")loadOpsPro();
 }
 async function opsInvoke(body){
  const {data,error}=await db.functions.invoke("admin-console",{body});
