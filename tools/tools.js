@@ -20,6 +20,7 @@ function saveFeeds(){localStorage.setItem("kuro_toolbox_rss",JSON.stringify(feed
 function shell(){return '<section class="tb-hero"><div><span class="tb-eyebrow">KURO LAB / TOOLBOX</span><h2>必要な情報を、ひとつの場所に。</h2><p>毎日使う情報収集ツールをまとめました。ツールを選んで、すぐに使えます。</p></div><div class="tb-hero-mark">⌘</div></section><div class="tb-tool-grid" role="list">'+defaults.map(function(x){return '<button type="button" class="tb-tool-card" data-tool="'+x.id+'" aria-pressed="'+(active===x.id)+'"><span class="tb-tool-icon">'+x.icon+'</span><span class="tb-tool-copy"><b>'+x.name+'</b><small>'+x.desc+'</small></span><span class="tb-tool-arrow">↗</span></button>';}).join("")+'</div><section class="tb-panel" id="tb-panel" aria-live="polite"></section><p class="tb-footnote">一部の情報は外部サービスから取得します。取得できない場合は、時間をおいて再試行してください。</p>';}
 function panelHead(icon,title,desc){return '<div class="tb-panel-head"><div class="tb-panel-icon">'+icon+'</div><div><h3>'+title+'</h3><p>'+desc+'</p></div></div>';}
 function renderPanel(){
+ if(clockTimer){clearInterval(clockTimer);clockTimer=null;}
  if(!root)return;var panel=root.querySelector("#tb-panel");if(!panel)return;
  root.querySelectorAll("[data-tool]").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.tool===active));});
  var html="";
@@ -30,7 +31,7 @@ function renderPanel(){
  if(active==="rss")html=rssPanel();
  if(active==="status")html=statusPanel();
  panel.innerHTML=html;bindPanel();
- if(active==="worldclock")updateClocks();
+ if(active==="worldclock"){updateClocks();clockTimer=setInterval(updateClocks,1000);}
  if(active==="news")loadNews(false);
  if(active==="rss")feeds.forEach(function(f){loadFeed(f.id,false);});
 }
