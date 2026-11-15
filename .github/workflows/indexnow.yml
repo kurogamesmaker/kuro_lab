@@ -44,7 +44,7 @@ jobs:
             }
           }
 
-          const urls = [...sitemap.matchAll(/<loc>\\s*([^<]+?)\\s*<\\/loc>/g)]
+          const urls = [...sitemap.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/g)]
             .map(match => match[1].trim())
             .filter(url => {
               try { return new URL(url).hostname === new URL(site).hostname; }
