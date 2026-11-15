@@ -247,8 +247,8 @@ async function loadSns(){
   db.from("posts").select("id,user_id,content,hashtags,created_at",{count:"exact"}).order("created_at",{ascending:false}).limit(500),
   db.from("post_replies").select("id,post_id,user_id,content,created_at",{count:"exact"}).order("created_at",{ascending:false}).limit(500),
   db.from("public_chat_messages").select("id,nickname,content,created_at",{count:"exact"}).order("created_at",{ascending:false}).limit(500),
-  db.from("post_likes").select("post_id",{count:"exact",head:true}),
-  db.from("follows").select("follower_id",{count:"exact",head:true})
+  db.from("post_likes").select("post_id",{count:"exact"}).limit(1),
+  db.from("follows").select("follower_id",{count:"exact"}).limit(1)
  ]);
  const failed=queries.find(q=>q.error);
  if(failed){
