@@ -2136,7 +2136,7 @@ body:has(.portal-dashboard-v2) #portal-quick-button{display:none!important}
 /* Compact add menu attached to the dashboard toolbar */
 .portal-dashboard-toolbar .portal-dashboard-actions{position:relative}
 .portal-dashboard-editor{
- position:absolute!important;top:calc(100% + 10px)!important;right:0!important;left:auto!important;
+ position:absolute!important;top:calc(100% + 10px)!important;left:0!important;right:auto!important;
  z-index:120!important;width:min(430px,calc(100vw - 32px))!important;max-height:min(65vh,520px);
  overflow:auto;padding:14px!important;border:1px solid var(--line);border-radius:16px;
  background:var(--surface)!important;box-shadow:0 18px 48px #00000024;
@@ -2152,7 +2152,7 @@ body:has(.portal-dashboard-v2) #portal-quick-button{display:none!important}
 .portal-dashboard-editor .portal-widget-picker button:not(:disabled):hover{border-color:var(--blue);background:var(--blue2)}
 .portal-dashboard-editor .portal-widget-picker button:disabled{opacity:.55;cursor:default}
 @media(max-width:760px){
- .portal-dashboard-editor{position:absolute!important;top:calc(100% + 8px)!important;right:0!important;width:min(390px,calc(100vw - 24px))!important}
+ .portal-dashboard-editor{position:absolute!important;top:calc(100% + 8px)!important;left:0!important;right:auto!important;width:min(390px,calc(100vw - 24px))!important}
 }
 
 
@@ -2175,3 +2175,8 @@ body:has(.portal-dashboard-v2) #portal-quick-button{display:none!important}
 .portal-dashboard-editor .portal-widget-picker button>small{
  justify-self:end!important;white-space:nowrap!important;
 }
+
+/* Keep add-menu choices selectable and make the active widget easy to find */
+.portal-dashboard-editor .portal-widget-picker button{pointer-events:auto!important;position:relative;z-index:1;}
+.portal-dashboard-editor .portal-widget-picker button.selected{border-color:var(--blue)!important;background:var(--blue2)!important;}
+.portal-widget-focus{outline:3px solid var(--blue)!important;outline-offset:4px;transition:outline-color .25s ease;}
