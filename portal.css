@@ -1616,3 +1616,14 @@ html:has(body.kuro-portal .portal-dashboard-v2){
   height:auto!important;
   overscroll-behavior-y:auto
 }
+
+
+/* Explicit vertical panning support for navigation controls */
+.portal-topnav,
+.portal-topnav a,
+.portal-workspace-tabs,
+.portal-workspace-tab,
+.portal-workspace-create,
+.portal-workspace-delete{
+  touch-action:pan-y!important;
+}
