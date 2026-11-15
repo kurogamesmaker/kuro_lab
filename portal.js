@@ -167,7 +167,7 @@ function renderPortalAdminMessageList(){
 async function refreshPortalAdminMessages(showNew){
  if(!db||!st.user)return;
  try{
-  var result=await db.from("admin_messages").select("id,title,body,href,audience,recipient_id,created_at").eq("published",true).order("created_at",{ascending:false}).limit(100);
+  var result=await db.from("admin_messages").select("id,title,body,href,audience,recipient_id,created_at").eq("published",true).in("service_scope",["lab","both"]).or("audience.eq.all,recipient_id.eq."+st.user.id).order("created_at",{ascending:false}).limit(100);
   if(result.error)throw result.error;
   var items=result.data||[],ids=items.map(function(x){return x.id;}),reads=[];
   if(ids.length){
