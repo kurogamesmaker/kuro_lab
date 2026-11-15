@@ -2430,3 +2430,9 @@ body:has(.portal-dashboard-v2) #portal-quick-button{display:none!important}
  .portal-worldclocks>div{padding:9px}
  .portal-media-tool iframe{height:210px}
 }
+
+/* Tiny bottom-right location control for the weather widget. */
+.portal-widget[data-widget-id="weather"] .portal-weather{position:relative;padding-bottom:18px}
+.portal-weather-search[hidden]{display:none}
+.portal-weather-location{position:absolute;right:0;bottom:-2px;width:19px;height:19px;padding:0;border:1px solid var(--line);border-radius:6px;background:var(--surface2);color:var(--muted);font-size:12px;line-height:17px;cursor:pointer;opacity:.72}
+.portal-weather-location:hover{opacity:1;color:var(--ink);border-color:var(--blue)}
