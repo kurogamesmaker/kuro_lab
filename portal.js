@@ -191,13 +191,29 @@ function positionDashboardEditor(){
  var panel=$("#portal-dashboard-editor"),button=$("#portal-dashboard-add");
  if(!panel||panel.hidden||!button)return;
  if(panel.parentNode!==document.body)document.body.appendChild(panel);
- var r=button.getBoundingClientRect(),gap=8,w=Math.min(340,window.innerWidth-24);
- var top=Math.max(12,Math.min(r.bottom+gap,window.innerHeight-180));
- panel.style.position="fixed";panel.style.top=Math.round(top)+"px";panel.style.left="16px";panel.style.right="auto";panel.style.bottom="auto";panel.style.width=w+"px";panel.style.maxHeight=Math.max(150,window.innerHeight-top-20)+"px";panel.style.overflowY="auto";
+ var r=button.getBoundingClientRect(),gap=8,w=Math.min(360,window.innerWidth-24);
+ var mobile=window.matchMedia&&window.matchMedia("(max-width:760px)").matches;
+ var maxLeft=Math.max(12,window.innerWidth-w-12),minLeft=mobile?12:Math.min(272,maxLeft);
+ var left=Math.max(minLeft,Math.min(r.left,maxLeft));
+ var top=r.bottom+gap,available=window.innerHeight-top-12;
+ if(available<180){
+  var above=Math.min(480,Math.max(150,r.top-24));
+  top=Math.max(12,r.top-above-gap);
+  available=window.innerHeight-top-12;
+ }
+ panel.style.position="fixed";
+ panel.style.top=Math.round(top)+"px";
+ panel.style.left=Math.round(left)+"px";
+ panel.style.right="auto";
+ panel.style.bottom="auto";
+ panel.style.width=Math.round(w)+"px";
+ panel.style.maxHeight=Math.max(150,Math.min(480,available))+"px";
+ panel.style.overflowY="auto";
+ panel.style.zIndex="2147483647";
 }
 function restoreDashboardEditor(panel,add){
  var actions=document.querySelector(".portal-dashboard-actions");
- if(panel){panel.hidden=true;panel.style.position="";panel.style.top="";panel.style.left="";panel.style.right="";panel.style.bottom="";panel.style.width="";panel.style.maxHeight="";panel.style.overflowY="";if(actions&&panel.parentNode!==actions)actions.appendChild(panel);}
+ if(panel){panel.hidden=true;panel.style.position="";panel.style.top="";panel.style.left="";panel.style.right="";panel.style.bottom="";panel.style.width="";panel.style.maxHeight="";panel.style.overflowY="";panel.style.zIndex="";if(actions&&panel.parentNode!==actions)actions.appendChild(panel);}
  if(add)add.setAttribute("aria-expanded","false");
 }
 function positionDashboardToolbar(){
