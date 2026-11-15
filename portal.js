@@ -306,6 +306,24 @@ function positionDashboardToolbar(){
 }
 function bindDashboard(){
  positionDashboardToolbar();
+ if(!window.kuroDashboardViewModeDelegationBound){
+  document.addEventListener("click",function(e){
+   var target=e.target&&e.target.nodeType===1?e.target:e.target&&e.target.parentElement;
+   var choice=target&&target.closest?target.closest("[data-dashboard-view-choice]"):null;
+   if(!choice)return;
+   var mode=choice.getAttribute("data-dashboard-view-choice");
+   if(mode!=="grid"&&mode!=="canvas")return;
+   e.preventDefault();
+   e.stopPropagation();
+   if(e.stopImmediatePropagation)e.stopImmediatePropagation();
+   if(!st.data||!st.data.preferences)return;
+   if(st.data.preferences.dashboardViewMode===mode)return;
+   st.data.preferences.dashboardViewMode=mode;
+   persistDisplayPrefs();
+   render();
+  },true);
+  window.kuroDashboardViewModeDelegationBound=true;
+ }
  if(!window.kuroDashboardAddDelegationBound){
   document.addEventListener("click",function(e){
    var target=e.target&&e.target.nodeType===1?e.target:e.target&&e.target.parentElement;
