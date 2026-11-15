@@ -377,20 +377,16 @@
       return;
     }
     var bar = document.querySelector(".portal-workspace-bar");
+    var actions = dash.querySelector(".portal-dashboard-actions");
     if (!bar) {
-      if (header) {
-        var account = header.querySelector("#portal-account-button");
-        var notice = header.querySelector("#portal-notification-button");
-        var anchor = notice || account;
-        if (anchor) anchor.insertAdjacentHTML("beforebegin", workspaceBar(p));
-        else header.insertAdjacentHTML("beforeend", workspaceBar(p));
-      }
-    } else if (header && bar.parentElement !== header) {
-      var accountAnchor = header.querySelector("#portal-notification-button") || header.querySelector("#portal-account-button");
-      if (accountAnchor) accountAnchor.insertAdjacentElement("beforebegin", bar);
-      else header.appendChild(bar);
+      if (actions) actions.insertAdjacentHTML("beforeend", workspaceBar(p));
+      bar = dash.querySelector(".portal-workspace-bar");
     }
-    bar = document.querySelector(".portal-header-inner .portal-workspace-bar") || document.querySelector(".portal-workspace-bar");
+    if (bar && actions && bar.parentElement !== actions) {
+      var editButton = actions.querySelector("#portal-dashboard-edit");
+      if (editButton) editButton.insertAdjacentElement("afterend", bar);
+      else actions.insertAdjacentElement("afterbegin", bar);
+    }
     if (bar) {
       var activeId = p.activeWorkspace || "personal";
       bar.querySelectorAll("[data-workspace-switch]").forEach(function (button) {
