@@ -185,13 +185,25 @@ export default {
 
     if (url.hostname === "kurolab.cc.cd" && url.pathname === "/portal.css") {
       const assetResponse = await env.ASSETS.fetch(request);
-      if (assetResponse.status !== 404) return assetResponse;
+      if (assetResponse.status !== 404) {
+        const headers = new Headers(assetResponse.headers);
+        headers.set("Content-Type", "text/css; charset=utf-8");
+        headers.set("Cache-Control", "no-store, max-age=0");
+        headers.set("X-Content-Type-Options", "nosniff");
+        return new Response(assetResponse.body, { status: assetResponse.status, statusText: assetResponse.statusText, headers });
+      }
       return new Response(PORTAL_CSS, { headers: { "Content-Type": "text/css; charset=utf-8", "Cache-Control": "no-store, max-age=0", "X-Content-Type-Options": "nosniff" } });
     }
 
     if (url.hostname === "kurolab.cc.cd" && url.pathname === "/portal.js") {
       const assetResponse = await env.ASSETS.fetch(request);
-      if (assetResponse.status !== 404) return assetResponse;
+      if (assetResponse.status !== 404) {
+        const headers = new Headers(assetResponse.headers);
+        headers.set("Content-Type", "application/javascript; charset=utf-8");
+        headers.set("Cache-Control", "no-store, max-age=0");
+        headers.set("X-Content-Type-Options", "nosniff");
+        return new Response(assetResponse.body, { status: assetResponse.status, statusText: assetResponse.statusText, headers });
+      }
       return new Response(PORTAL_JS, { headers: { "Content-Type": "application/javascript; charset=utf-8", "Cache-Control": "no-store, max-age=0", "X-Content-Type-Options": "nosniff" } });
     }
 
