@@ -3325,8 +3325,8 @@
             const markAdminMessagesButton = document.getElementById('markAdminMessagesRead');
             let adminMessages = [], adminMessageReads = [];
             const {data: adminMessageData, error: adminMessageError} = await supabaseClient.from('admin_messages')
-                .select('id,title,body,href,audience,recipient_id,created_at')
-                .eq('published', true).order('created_at', {ascending:false}).limit(100);
+                .select('id,title,body,href,audience,recipient_id,created_at,service_scope')
+                .eq('published', true).in('service_scope', ['sns','both']).order('created_at', {ascending:false}).limit(100);
             if (adminMessageError) {
                 if (adminMessageBox) adminMessageBox.innerHTML = '<p class="text-sm text-red-300">共通メッセージを読み込めませんでした。</p>';
                 console.warn('KURO shared admin messages:', adminMessageError);
