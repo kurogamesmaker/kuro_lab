@@ -504,8 +504,8 @@ function addDashboardLinkGroup(){
 }
 function openDashboardLinkGroup(id){
  var g=(st.data.preferences.linkGroups||[]).find(function(x){return x.id===id;});if(!g)return;
- var opened=0;(g.links||[]).forEach(function(href){var u=safeDashboardUrl(href);if(!u)return;var w=window.open(u,"_blank","noopener,noreferrer");if(w)opened++;});
- toast(opened+"件のタブを開きました。ブロックされた場合はポップアップを許可してください");
+ var opened=0;(g.links||[]).forEach(function(href){var u=safeDashboardUrl(href);if(!u)return;window.open(u,"_blank","noopener,noreferrer");opened++;});
+ toast(opened+"件のリンクを開く操作を送りました。ブロックされた場合はポップアップを許可してください");
 }
 function runDashboardSearch(){
  var q=$("[data-site-search-query]"),engine=$("[data-search-engine]"),word=q&&q.value.trim();if(!word){toast("検索ワードを入力してください");return;}
