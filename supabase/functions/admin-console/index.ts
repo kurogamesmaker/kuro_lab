@@ -559,7 +559,7 @@ Deno.serve(async (req: Request) => {
       const {data:protectedAdmin,error:protectedError}=await admin.from("admin_users").select("user_id").eq("user_id",targetUserId).maybeSingle();
       if(protectedError) throw protectedError;
       if(protectedAdmin) return reply({error:"Administrator accounts are not eligible for Pro membership"},409,origin);
-      const {data:existing,error:existingError}=await admin.from("pro_memberships").select("status,expires_at").eq("user_id",targetUserId).maybeSingle();
+      const {data:existing,error:existingError}=await admin.from("pro_memberships").select("status,expires_at,features").eq("user_id",targetUserId).maybeSingle();
       if(existingError) throw existingError;
       if(existing?.status==="active" && (!existing.expires_at||new Date(existing.expires_at).getTime()>Date.now())) return reply({error:"この利用者はすでにProです。"},409,origin);
       if(existing?.status==="suspended") return reply({error:"Proが停止中の利用者には招待を発行できません。"},409,origin);
@@ -611,7 +611,7 @@ Deno.serve(async (req: Request) => {
         if(current.expires_at&&new Date(current.expires_at).getTime()<=Date.now()) return reply({error:"期限切れのProは期限を更新してから再開してください。"},409,origin);
         patch.status="active";
       } else if(operation==="revoke") patch.status="revoked";
-      else if(operation==="set_expiry") {
+      else if(operation==="set_features") {\n        const incoming=body.features&&typeof body.features==="object"?body.features:{};\n        patch.features={workspace_plus:incoming.workspace_plus===true,pro_tools:incoming.pro_tools===true,customization_plus:incoming.customization_plus===true,early_access:incoming.early_access===true};\n      else if(operation==="set_expiry") {
         const expiry=body.expiresAt?new Date(body.expiresAt):null;
         if(body.expiresAt && (!expiry||Number.isNaN(expiry.getTime())||expiry.getTime()<=Date.now())) return reply({error:"期限は未来の日時にしてください。"},400,origin);
         patch.expires_at=expiry?expiry.toISOString():null;
