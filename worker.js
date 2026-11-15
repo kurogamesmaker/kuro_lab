@@ -219,18 +219,17 @@ export default {
     }
 
     if (url.hostname === "kurolab.cc.cd" && (url.pathname === "/admin" || url.pathname === "/admin/")) {
-      const assetUrl = new URL("/admin/index.html", request.url);
-      const assetResponse = await env.ASSETS.fetch(new Request(assetUrl, { method: "GET", headers: request.headers }));
-      const headers = new Headers(assetResponse.headers);
-      headers.set("Cache-Control", "private, no-store, max-age=0");
-      headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
-      headers.set("X-Content-Type-Options", "nosniff");
-      headers.set("Referrer-Policy", "same-origin");
-      headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
-      headers.set("X-Frame-Options", "DENY");
-      headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-      if (assetResponse.status !== 404) return new Response(assetResponse.body, { status: assetResponse.status, statusText: assetResponse.statusText, headers });
-      return new Response(ADMIN_HTML, { status: 200, headers: { ...Object.fromEntries(headers), "Content-Type": "text/html; charset=utf-8" } });
+      const headers = new Headers({
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "private, no-store, max-age=0",
+        "X-Robots-Tag": "noindex, nofollow, noarchive",
+        "X-Content-Type-Options": "nosniff",
+        "Referrer-Policy": "same-origin",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+        "X-Frame-Options": "DENY",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
+      });
+      return new Response(ADMIN_HTML, { status: 200, headers });
     }
 
     if (url.hostname === "kurolab.cc.cd" && url.pathname === "/") {
