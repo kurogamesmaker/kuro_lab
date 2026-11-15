@@ -1843,3 +1843,128 @@ html:has(body.kuro-portal .portal-dashboard-v2){
 #portal-dashboard-grid.is-editing .portal-widget.is-editing .portal-widget-resize-handle.sw{left:-6px!important;bottom:-6px!important;right:auto!important;top:auto!important;cursor:nesw-resize!important}
 #portal-dashboard-grid.is-editing .portal-widget.is-editing .portal-widget-resize-handle:hover{background:var(--blue)!important;opacity:1!important}
 #portal-dashboard-grid .portal-widget.resizing{transition:none!important;overflow:visible!important}
+
+
+/* KURO Lab unified information architecture — 2026-11-15 */
+@media (min-width:761px){
+  /* One navigation system: the left rail is the primary route menu. */
+  #portal-desktop-nav{display:none!important}
+  .portal-header-inner{
+    width:min(1600px,calc(100% - 48px))!important;
+    max-width:1600px!important;
+    min-height:72px!important;
+    gap:12px!important;
+    flex-wrap:nowrap!important;
+  }
+  .portal-header-inner .portal-brand{flex:0 0 auto!important;min-width:0}
+  .portal-header-inner #portal-back-button{display:none!important}
+  .portal-header-inner .portal-dashboard-toolbar-in-header{
+    order:1!important;display:flex!important;flex:0 0 auto!important;
+    min-width:0!important;margin:0 8px 0 10px!important;
+    padding:0!important;background:transparent!important;
+  }
+  .portal-header-inner .portal-dashboard-toolbar-in-header .portal-dashboard-actions{
+    display:flex!important;flex-flow:row nowrap!important;align-items:center!important;
+    justify-content:flex-start!important;gap:6px!important;width:auto!important;
+    margin:0!important;padding:0!important;white-space:nowrap!important;
+  }
+  .portal-header-inner .portal-dashboard-toolbar-in-header .portal-btn{
+    min-height:36px!important;padding:7px 11px!important;font-size:12px!important;
+    white-space:nowrap!important;border-radius:10px!important;
+  }
+  body:has(.portal-dashboard-v2) #portal-quick-button{display:none!important}
+  .portal-header-inner #portal-quick-button{margin-left:auto!important;flex:0 0 auto}
+  .portal-header-inner #portal-network-status{flex:0 0 auto}
+  .portal-header-inner #portal-account-button{flex:0 0 auto}
+  .portal-transport-button{flex:0 0 auto!important;white-space:nowrap!important}
+
+  .portal-app-shell{
+    width:min(1600px,calc(100% - 48px))!important;
+    max-width:1600px!important;
+    grid-template-columns:244px minmax(0,1fr)!important;
+    gap:24px!important;
+    align-items:start!important;
+  }
+  .portal-app-shell .portal-app-sidebar,
+  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar{
+    position:sticky!important;
+    top:88px!important;
+    left:auto!important;
+    width:auto!important;
+    min-width:0!important;
+    max-width:none!important;
+    height:calc(100vh - 108px)!important;
+    height:calc(100dvh - 108px)!important;
+    min-height:520px!important;
+    max-height:none!important;
+    margin:20px 0 28px!important;
+    padding:14px 11px 12px!important;
+    display:flex!important;
+    flex-direction:column!important;
+    gap:10px!important;
+    overflow:hidden!important;
+    border:1px solid var(--line)!important;
+    border-radius:18px!important;
+    background:var(--surface)!important;
+    box-shadow:0 10px 32px #00000012!important;
+    backdrop-filter:blur(16px)!important;
+    transition:none!important;
+  }
+  .portal-app-sidebar .portal-sidebar-heading{
+    display:block!important;
+    padding:5px 9px 1px!important;
+    color:var(--muted)!important;
+    font-size:10px!important;font-weight:900!important;
+    letter-spacing:.08em!important;
+  }
+  .portal-app-sidebar .portal-sidebar-brand,
+  .portal-app-sidebar .portal-sidebar-search{display:none!important}
+  .portal-app-sidebar .portal-sidebar-nav{
+    display:grid!important;gap:8px!important;
+    min-height:0!important;flex:1 1 auto!important;
+    overflow-x:hidden!important;overflow-y:auto!important;
+    padding:1px 2px 8px!important;
+    scrollbar-width:thin!important;
+    overscroll-behavior:contain!important;
+  }
+  .portal-app-sidebar .portal-sidebar-group{gap:2px!important}
+  .portal-app-sidebar .portal-sidebar-group-label{
+    padding:8px 9px 4px!important;
+    color:var(--muted)!important;font-size:10px!important;
+    letter-spacing:.04em!important;font-weight:850!important;
+  }
+  .portal-app-sidebar .portal-sidebar-item{
+    min-height:39px!important;padding:8px 9px!important;
+    border-radius:10px!important;font-size:12px!important;font-weight:750!important;
+  }
+  .portal-app-sidebar .portal-sidebar-item.is-active{
+    background:var(--blue2)!important;color:var(--blue)!important;
+    border-color:color-mix(in srgb,var(--blue) 28%,transparent)!important;
+  }
+  .portal-app-sidebar .portal-sidebar-bottom{
+    flex:0 0 auto!important;margin-top:0!important;
+    padding-top:9px!important;gap:6px!important;
+  }
+  .portal-app-shell .portal-app-main{min-width:0!important}
+}
+@media (min-width:761px) and (max-width:1080px){
+  .portal-app-shell{grid-template-columns:218px minmax(0,1fr)!important;gap:18px!important}
+  .portal-header-inner{gap:8px!important}
+  .portal-header-inner .portal-dashboard-toolbar-in-header{margin:0 3px!important}
+  .portal-header-inner .portal-dashboard-toolbar-in-header .portal-btn{
+    min-height:34px!important;padding:6px 8px!important;font-size:11px!important
+  }
+  .portal-header-inner #portal-network-status span{display:none!important}
+  .portal-header-inner #portal-transport-button{padding:6px 7px!important;font-size:10px!important}
+}
+@media (max-width:760px){
+  #portal-desktop-nav{display:none!important}
+  .portal-app-sidebar{display:none!important}
+}
+/* The home toolbar owns search; avoid a second launcher in that same header. */
+body:has(.portal-dashboard-v2) #portal-quick-button{display:none!important}
+/* Keep focus and touch scrolling predictable across the grouped menu. */
+.portal-sidebar-nav,.portal-sidebar-item{touch-action:pan-y!important}
+@media(prefers-reduced-motion:reduce){
+  .portal-app-sidebar,.portal-sidebar-item{transition:none!important}
+}
