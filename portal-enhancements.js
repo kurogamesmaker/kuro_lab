@@ -481,7 +481,7 @@
     var card = document.createElement("section");
     card.id = "portal-template-import";
     card.className = "portal-template-import";
-    card.innerHTML = '<div><span class="portal-eyebrow">SHARED WORKSPACE TEMPLATE</span><strong>' + esc(payload.name) + '</strong><small>' + payload.widgets.length + '種類のウィジェット配置 · ' + (payload.viewMode === "canvas" ? "無限キャンバス" : "整列レイアウト") + '</small><p>このテンプレートには配置・サイズ・表示モードのみが含まれます。メモ、個人URL、RSS登録内容、アカウント情報は共有されません。</p></div><div class="portal-template-actions"><button type="button" class="portal-btn primary" data-template-import>新しいワークスペースとして追加</button><button type="button" class="portal-btn subtle" data-template-dismiss>閉じる</button></div>';
+    card.innerHTML = '<div><span class="portal-eyebrow">SHARED WORKSPACE TEMPLATE</span><strong>' + esc(payload.name) + '</strong><small>' + payload.widgets.length + '種類のウィジェット配置 · ' + (payload.viewMode === "canvas" ? "自由配置" : "整列レイアウト") + '</small><p>このテンプレートには配置・サイズ・表示モードのみが含まれます。メモ、個人URL、RSS登録内容、アカウント情報は共有されません。</p></div><div class="portal-template-actions"><button type="button" class="portal-btn primary" data-template-import>新しいワークスペースとして追加</button><button type="button" class="portal-btn subtle" data-template-dismiss>閉じる</button></div>';
     var host = dash.querySelector(".portal-canvas-viewport") || dash.querySelector("#portal-dashboard-grid");
     if (host) host.insertAdjacentElement("beforebegin",card);
     else dash.appendChild(card);
