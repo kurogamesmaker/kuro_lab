@@ -1,5 +1,5 @@
 const ALLOWED_PREFIXES = ["/rest/v1/", "/auth/v1/", "/storage/v1/"];
-const ALLOWED_FUNCTION_PATHS = new Set(["/functions/v1/admin-console"]);
+const ALLOWED_FUNCTION_PATHS = new Set(["/functions/v1/admin-console", "/functions/v1/pro-access"]);
 const ALLOWED_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"]);
 
 function validatePath(value) {
