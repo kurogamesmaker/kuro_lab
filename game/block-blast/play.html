@@ -109,4 +109,5 @@ function renderThemes(){$("themeList").innerHTML="";themes.forEach(function(t){v
 $("themeOpen").addEventListener("click",function(){$("themeModal").hidden=false;renderThemes()});$("themeClose").addEventListener("click",function(){$("themeModal").hidden=true});$("themeModal").addEventListener("click",function(e){if(e.target===$("themeModal"))$("themeModal").hidden=true});
 board=Array.from({length:N},function(){return Array(N).fill(-1)});hand=[null,null,null];score=0;combo=0;fever=0;feverUntil=0;shuffleLeft=3;$("best").textContent=best.toLocaleString();applyTheme();renderBoard();fillHand();updateScore();updateFever();
 })();
-</script></body></html>
+</script><script src="/usage-tracker.js"></script>
+</body></html>

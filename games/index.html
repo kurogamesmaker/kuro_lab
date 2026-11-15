@@ -145,4 +145,5 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
  cards.forEach(card=>card.querySelector(".heart").addEventListener("click",()=>{const id=card.dataset.id;favorites=favorites.includes(id)?favorites.filter(x=>x!==id):favorites.concat(id);save();update();}));
  update();
 })();
-</script></body></html>
+</script><script src="/usage-tracker.js"></script>
+</body></html>
