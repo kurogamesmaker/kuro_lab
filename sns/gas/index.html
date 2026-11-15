@@ -1303,7 +1303,7 @@
         const SUPABASE_URL = "https://cprvpphlfpmiegjiutjn.supabase.co";
         const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
 
-        // KURO GAS Bridge: browser -> same-origin Vercel API -> Google Apps Script -> Supabase.
+        // KURO GAS Bridge: browser -> same-origin Cloudflare Pages API -> Google Apps Script -> Supabase.
         const KURO_GAS_PROXY_ENDPOINT = '/api/kuro-gas-proxy';
         const KURO_GAS_NATIVE_FETCH = window.fetch.bind(window);
         function kuroGasClientId() {
@@ -1337,7 +1337,8 @@
         async function kuroGasFetch(input, init) {
             const request = new Request(input, init);
             const requestUrl = new URL(request.url);
-            if (requestUrl.origin !== SUPABASE_URL) {
+            // Edge Functions are not part of the GAS bridge allowlist; keep push calls on their existing direct route.
+            if (requestUrl.origin !== SUPABASE_URL || requestUrl.pathname.startsWith('/functions/v1/')) {
                 return KURO_GAS_NATIVE_FETCH(input, init);
             }
             const bytes = new Uint8Array(await request.clone().arrayBuffer());
