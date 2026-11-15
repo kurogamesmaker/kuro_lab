@@ -1,0 +1,12 @@
+# Worker source and Pages Function source are bundled by worker.js, not public assets.
+worker.js
+functions/
+api/
+wrangler.jsonc
+.assetsignore
+package.json
+package-lock.json
+README.md
+kuro-main.zip
+.github/
+node_modules/
