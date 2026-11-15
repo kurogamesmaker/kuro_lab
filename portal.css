@@ -1767,3 +1767,31 @@ html:has(body.kuro-portal .portal-dashboard-v2){
 @media(max-width:760px){
   .portal-header-inner .portal-dashboard-toolbar-in-header{display:none!important}
 }
+
+
+/* Keep the user's icon workspace clear; compact controls belong in the site header */
+@media(min-width:761px){
+ .portal-header-inner .portal-dashboard-toolbar-in-header{
+   order:1!important;display:flex!important;flex:0 0 auto!important;
+   width:auto!important;min-width:0!important;margin:0 12px 0 18px!important;
+   padding:0!important;background:transparent!important;
+ }
+ .portal-header-inner .portal-dashboard-toolbar-in-header .portal-dashboard-actions{
+   display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;
+   align-items:center!important;gap:5px!important;width:auto!important;
+   margin:0!important;white-space:nowrap!important;
+ }
+ .portal-header-inner .portal-dashboard-toolbar-in-header .portal-btn{
+   min-height:34px!important;padding:6px 9px!important;font-size:11px!important;
+   white-space:nowrap!important;
+ }
+ .portal-header-inner .portal-topnav{flex:1 1 auto!important;min-width:0!important}
+}
+@media(max-width:1120px) and (min-width:761px){
+ .portal-header-inner{gap:8px!important}
+ .portal-header-inner .portal-dashboard-toolbar-in-header{margin:0 6px!important}
+ .portal-header-inner .portal-dashboard-toolbar-in-header .portal-btn{padding:5px 6px!important;font-size:10px!important}
+}
+@media(max-width:760px){
+ .portal-header-inner .portal-dashboard-toolbar-in-header{display:none!important}
+}
