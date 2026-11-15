@@ -902,6 +902,7 @@ async function sendOpsMessage(event){
  const audience=target==="all"?"all":"user";
  const userId=audience==="user"?target.slice(5):"";
  const serviceScope=$("#opsMessageScope").value;
+ if(audience==="user"&&serviceScope!=="sns"){alert("個別利用者への配信はKURO SNSのみ対応しています。");return;}
  const scopeLabel=serviceScope==="both"?"KUROLAB ＋ KURO SNS":serviceScope==="lab"?"KUROLABのみ":"KURO SNSのみ";
  const targetLabel=audience==="all"?"全利用者":($("#opsMessageTarget").selectedOptions[0]?.textContent||"指定ユーザー");
  if(!confirm(scopeLabel+" の "+targetLabel+" にお知らせを配信しますか？"))return;
@@ -1107,6 +1108,9 @@ $("#snsAnnForm").addEventListener("submit",sendSnsAnnouncement);
 $("#snsAnnRefresh").addEventListener("click",loadSnsAnnouncements);
 
 $("#opsMessagesList").addEventListener("click",e=>{const b=e.target.closest("[data-message-unpublish]");if(b)unpublishOpsMessage(b.dataset.messageUnpublish,b);});
+$("#labAnnList").addEventListener("click",e=>{const b=e.target.closest("[data-lab-ann-stop]");if(!b)return;b.disabled=true;opsInvoke({action:"unpublish_announcement",id:b.dataset.labAnnStop}).then(loadLabAnnouncements).catch(err=>{b.disabled=false;alert("配信停止に失敗しました："+err.message);});});
+$("#snsAnnList").addEventListener("click",e=>{const b=e.target.closest("[data-sns-ann-stop]");if(b)unpublishOpsMessage(b.dataset.snsAnnStop,b);});
+
 $("#opsFlagsRefresh").addEventListener("click",loadOpsFlags);
 $("#opsAnalyticsRefresh").addEventListener("click",loadOpsAnalytics);
 $("#opsUserErrorsForm").addEventListener("submit",loadOpsUserErrors);
