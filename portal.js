@@ -183,6 +183,12 @@ function home(){var ids=getDashboardIds(),edit=!!st.dashboardEditing,resizeMode=
 function applyDisplayPrefs(){var p=st.data&&st.data.preferences||{},themes={violet:["#8b5cf6","#30254b"],blue:["#087fbd","#e9f6fd"],green:["#15966d","#e4f7ef"],rose:["#db5475","#fceaf0"],amber:["#c17a16","#fff4df"]},a=themes[p.accent]||themes.violet;document.body.dataset.theme=p.theme==="auto"?(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):p.theme==="dark"?"dark":"light";document.body.dataset.density=p.density==="compact"?"compact":"comfortable";document.body.dataset.motion=p.motion==="reduced"?"reduced":"normal";document.body.dataset.background=["aurora","plain","grid"].indexOf(p.background)>=0?p.background:"aurora";document.body.style.setProperty("--blue",a[0]);document.body.style.setProperty("--blue2",a[1]);var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=p.theme==="dark"?"#090a10":"#f4f7fb";}
 function persistDisplayPrefs(){save();if(st.user){if(st.sync)st.syncAgain=true;else sync(false);}}
 function bindDisplaySettings(){var x=$("#portal-theme");if(x)x.onchange=function(){st.data.preferences.theme=this.value;persistDisplayPrefs();};x=$("#portal-density");if(x)x.onchange=function(){st.data.preferences.density=this.value;persistDisplayPrefs();};x=$("#portal-motion");if(x)x.onchange=function(){st.data.preferences.motion=this.value;persistDisplayPrefs();};x=$("#portal-accent");if(x)x.onchange=function(){st.data.preferences.accent=this.value;persistDisplayPrefs();};x=$("#portal-background");if(x)x.onchange=function(){st.data.preferences.background=this.value;persistDisplayPrefs();};}
+function positionDashboardEditor(){
+ var panel=$("#portal-dashboard-editor"),button=$("#portal-dashboard-add");
+ if(!panel||panel.hidden||!button)return;
+ var r=button.getBoundingClientRect(),gap=8,w=Math.min(430,window.innerWidth-24),left=Math.max(12,Math.min(r.left,window.innerWidth-w-12));
+ panel.style.position="fixed";panel.style.top=Math.round(Math.min(r.bottom+gap,window.innerHeight-180))+"px";panel.style.left=Math.round(left)+"px";panel.style.right="auto";panel.style.width=w+"px";panel.style.maxHeight=Math.max(180,window.innerHeight-r.bottom-gap-16)+"px";
+}
 function positionDashboardToolbar(){
  var main=$("#portal-main"),headerInner=document.querySelector(".portal-header-inner");
  if(!main||!headerInner)return;
@@ -192,11 +198,6 @@ function positionDashboardToolbar(){
  if(!toolbar)return;
  if(toolbar!==oldHeaderToolbar&&oldHeaderToolbar)oldHeaderToolbar.remove();
  var mobile=window.matchMedia&&window.matchMedia("(max-width:760px)").matches;
- var side=main.querySelector(".portal-side"),panel=main.querySelector("#portal-dashboard-editor");
- if(side&&panel&&panel.parentNode!==side){
-  var sideNav=side.querySelector(".portal-side-link:last-of-type");
-  side.appendChild(panel);
- }
  var brand=headerInner.querySelector(".portal-brand"),topnav=$("#portal-desktop-nav");
  if(mobile){
   toolbar.classList.remove("portal-dashboard-toolbar-in-header");
@@ -213,6 +214,8 @@ function positionDashboardToolbar(){
 }
 function bindDashboard(){
  positionDashboardToolbar();
+ window.addEventListener("resize",positionDashboardEditor,{passive:true});
+ window.addEventListener("scroll",positionDashboardEditor,{passive:true,capture:true});
  if(!window.kuroDashboardToolbarResizeBound){
   window.addEventListener("resize",positionDashboardToolbar,{passive:true});
   window.kuroDashboardToolbarResizeBound=true;
@@ -220,14 +223,14 @@ function bindDashboard(){
  var edit=$("#portal-dashboard-edit"),mode=$("#portal-dashboard-mode"),add=$("#portal-dashboard-add"),reset=$("#portal-dashboard-reset"),panel=$("#portal-dashboard-editor"),grid=$("#portal-dashboard-grid"),layout=$("#portal-dashboard-layout"),form=$("#portal-custom-link-form");
  if(edit)edit.onclick=function(){st.dashboardEditing=!st.dashboardEditing;if(!st.dashboardEditing)st.dashboardResizeMode=false;render();};
  if(mode)mode.onclick=function(){st.dashboardResizeMode=!st.dashboardResizeMode;render();};
- if(add)add.onclick=function(){if(panel){panel.hidden=!panel.hidden;add.setAttribute("aria-expanded",String(!panel.hidden));if(!panel.hidden){panel.scrollIntoView({behavior:"smooth",block:"nearest"});}}};
+ if(add)add.onclick=function(){if(panel){panel.hidden=!panel.hidden;add.setAttribute("aria-expanded",String(!panel.hidden));if(!panel.hidden){positionDashboardEditor();}}};
  if(reset)reset.onclick=function(){if(!confirm("ホーム画面の配置を初期状態に戻しますか？"))return;st.data.preferences.dashboardWidgets=DASHBOARD_WIDGETS.filter(function(x){return x.id!=="custom";}).map(function(x){return x.id;});st.data.preferences.dashboardSizes={};st.data.preferences.dashboardSpans={};st.data.preferences.dashboardHeights={};st.data.preferences.dashboardLayout="balanced";st.dashboardEditing=false;persistDisplayPrefs();render();toast("ホーム画面を初期配置に戻しました");};
  if(layout)layout.onchange=function(){st.data.preferences.dashboardLayout=this.value;persistDisplayPrefs();render();};
  if(form)form.onsubmit=function(e){e.preventDefault();var title=$("#portal-custom-link-title").value.trim(),raw=$("#portal-custom-link-url").value.trim(),icon=$("#portal-custom-link-icon").value.trim()||"🔗",href=safeDashboardUrl(raw),links=st.data.preferences.customLinks||[];if(!title||!href){toast("表示名と有効なHTTPS URLまたはサイト内パスを入力してください");return;}if(links.length>=16){toast("マイリンクは最大16件です");return;}links.push({id:uuid(),title:title.slice(0,32),href:href,icon:icon.slice(0,8)});st.data.preferences.customLinks=links;var ids=getDashboardIds();if(ids.indexOf("custom")<0)ids.push("custom");st.data.preferences.dashboardWidgets=ids;st.dashboardEditing=true;persistDisplayPrefs();render();toast("マイリンクを追加しました");};
  if(panel)panel.addEventListener("click",function(e){var close=e.target.closest(".portal-editor-close");if(close){panel.hidden=true;if(add)add.setAttribute("aria-expanded","false");return;}var choice=e.target.closest("[data-widget-toggle]");if(!choice)return;e.preventDefault();e.stopPropagation();var id=choice.dataset.widgetToggle,ids=getDashboardIds();if(ids.indexOf(id)>=0){panel.hidden=true;if(add)add.setAttribute("aria-expanded","false");var existing=grid&&grid.querySelector('[data-widget-id="'+id+'"]');if(existing){existing.scrollIntoView({behavior:"smooth",block:"center"});existing.classList.add("portal-widget-focus");window.setTimeout(function(){existing.classList.remove("portal-widget-focus");},1400);}toast("この項目はホームに追加済みです");return;}ids.push(id);setDashboardIds(ids);st.dashboardEditing=true;render();toast("ホームに追加しました");});
  if(!grid)return;
  grid.addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;
-  if(b.hasAttribute("data-dashboard-add-widget")){if(panel){panel.hidden=false;panel.scrollIntoView({behavior:"smooth",block:"nearest"});}return;}
+  if(b.hasAttribute("data-dashboard-add-widget")){if(panel){panel.hidden=false;positionDashboardEditor();}return;}
    if(b.dataset.widgetRemove){setDashboardIds(getDashboardIds().filter(function(x){return x!==b.dataset.widgetRemove;}));render();return;}
  });
  
