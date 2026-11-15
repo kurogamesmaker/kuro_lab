@@ -704,6 +704,8 @@ function renderOpsUsers(){
    '<td><span class="ops-status '+(banned?"banned":"")+'">'+(banned?"停止中":"利用可能")+'</span></td>'+
    '<td><div class="ops-user-actions">'+
     (banned?'<button class="btn" data-ops-action="unban" data-user-id="'+esc(u.id)+'">解除</button>':'<button class="btn" data-ops-action="ban" data-user-id="'+esc(u.id)+'">停止</button>')+
+    '<button class="btn" data-ops-action="email" data-user-id="'+esc(u.id)+'">メール変更</button>'+
+    '<button class="btn" data-ops-action="plan" data-user-id="'+esc(u.id)+'">'+((u.plan==="pro"||u.plan==="paid")?"Pro解除":"Pro付与")+'</button>'+
     '<button class="btn" data-ops-action="reset" data-user-id="'+esc(u.id)+'">再設定メール</button>'+
     '<button class="btn danger" data-ops-action="delete" data-user-id="'+esc(u.id)+'">削除</button>'+
    '</div></td></tr>';
@@ -737,6 +739,16 @@ async function runOpsUserAction(button){
  }else if(action==="unban"){
   if(!window.confirm((user.email||user.id)+" の停止を解除しますか？"))return;
   payload={action:"set_ban",userId,enabled:false,reason:"管理者による停止解除"};
+ }else if(action==="email"){
+  const nextEmail=window.prompt("新しいメールアドレスを入力してください。",user.email||"");
+  if(nextEmail===null)return;
+  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(nextEmail.trim())){alert("メールアドレスの形式を確認してください。");return;}
+  if(!window.confirm((user.email||"現在のメールアドレス")+" を "+nextEmail.trim()+" に変更しますか？新しいアドレス側で確認が必要になる場合があります。"))return;
+  payload={action:"update_user_email",userId,email:nextEmail.trim()};
+ }else if(action==="plan"){
+  const enable=!(user.plan==="pro"||user.plan==="paid");
+  if(!window.confirm((user.email||user.id)+" のProプランを"+(enable?"手動付与":"解除")+"しますか？課金サービスの契約状態は変更されません。"))return;
+  payload={action:"set_user_plan",userId,plan:enable?"pro":"free"};
  }else if(action==="reset"){
   if(!window.confirm((user.email||user.id)+" にパスワード再設定メールを送信しますか？"))return;
   payload={action:"send_password_reset",userId};
@@ -751,7 +763,7 @@ async function runOpsUserAction(button){
  const {data,error}=await db.functions.invoke("admin-console",{body:payload});
  button.disabled=false;
  if(error||data?.error){alert("操作に失敗しました："+(error?.message||data?.error||"不明なエラー"));return;}
- alert(action==="ban"?"アカウントを停止しました。":action==="unban"?"停止を解除しました。":action==="reset"?"再設定メールの送信を要求しました。":"アカウントを削除しました。");
+ alert(action==="ban"?"アカウントを停止しました。":action==="unban"?"停止を解除しました。":action==="reset"?"再設定メールの送信を要求しました。":action==="email"?"メールアドレス変更を受け付けました。":action==="plan"?"プランを更新しました。":"アカウントを削除しました。");
  await loadOpsUsers();
 }
 
