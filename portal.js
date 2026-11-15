@@ -173,38 +173,41 @@ function bindDashboard(){
   }
   if(resize){
    var r=resize;resize=null;r.item.classList.remove("resizing");
+   if(r.placeholder&&r.placeholder.parentNode)r.placeholder.parentNode.removeChild(r.placeholder);
+   r.item.style.position="";r.item.style.left="";r.item.style.top="";r.item.style.width="";r.item.style.zIndex="";
    var sizes=st.data.preferences.dashboardSizes||{};sizes[r.id]=r.size;st.data.preferences.dashboardSizes=sizes;
    var spans=st.data.preferences.dashboardSpans||{};spans[r.id]=r.span;st.data.preferences.dashboardSpans=spans;
    var heights=st.data.preferences.dashboardHeights||{};if(r.height!==null)heights[r.id]=Math.round(r.height);st.data.preferences.dashboardHeights=heights;
-   persistDisplayPrefs();
+   persistDisplayPrefs();render();
   }
  }
  function moveBeforePoint(x,y){
   var over=document.elementFromPoint(x,y),target=over&&over.closest("[data-widget-id]");
   if(!target||target.dataset.widgetId===drag.id||!grid.contains(target))return;
   var moving=grid.querySelector('[data-widget-id="'+drag.id+'"]');if(!moving)return;
-  var r=target.getBoundingClientRect(),after=y>r.top+r.height/2;
+  var r=target.getBoundingClientRect(),sameRow=y>=r.top&&y<=r.bottom;
+  var after=sameRow?x>r.left+r.width/2:y>r.top+r.height/2;
   if(after){if(target.nextElementSibling!==moving)grid.insertBefore(moving,target.nextElementSibling);}
   else if(target!==moving.nextElementSibling){grid.insertBefore(moving,target);}
  }
  function applyResize(x,y){
   if(!resize)return;
   var dx=x-resize.startX,dy=y-resize.startY,dir=resize.dir;
+  var cols=resize.gridColumns||12,gap=resize.gridGap||0,track=(resize.gridWidth-gap*(cols-1))/cols;
   if(dir.indexOf("e")>=0||dir.indexOf("w")>=0){
-   var delta=dir.indexOf("w")>=0?-dx:dx;
-   var cols=resize.gridColumns||12,gap=resize.gridGap||0;
-   var track=(resize.gridWidth-gap*(cols-1))/cols,step=Math.max(12,track+gap);
-   var maxSpan=Math.max(3,Math.min(12,cols));
+   var delta=dir.indexOf("w")>=0?-dx:dx,step=track+gap,maxSpan=Math.max(3,Math.min(12,cols));
    resize.span=Math.max(3,Math.min(maxSpan,resize.startSpan+Math.round(delta/step)));
-   resize.item.style.gridColumn="span "+resize.span;
-   resize.item.dataset.span=String(resize.span);
    resize.size=resize.span<=4?"small":resize.span<=6?"half":resize.span<=9?"wide":"full";
-   resize.item.dataset.size=resize.size;
+   var width=resize.span*track+(resize.span-1)*gap;
+   resize.item.style.width=Math.max(0,width)+"px";
+   if(dir.indexOf("w")>=0)resize.item.style.left=Math.max(0,resize.startLeft+resize.startWidth-width)+"px";
+   resize.item.dataset.span=String(resize.span);resize.item.dataset.size=resize.size;
   }
   if(dir.indexOf("n")>=0||dir.indexOf("s")>=0){
    var hdelta=dir.indexOf("n")>=0?-dy:dy;
    resize.height=Math.max(160,Math.min(900,resize.startHeight+hdelta));
    resize.item.style.height=Math.round(resize.height)+"px";
+   if(dir.indexOf("n")>=0)resize.item.style.top=Math.max(0,resize.startTop+resize.startHeight-resize.height)+"px";
   }
  }
  grid.addEventListener("pointerdown",function(e){
@@ -219,7 +222,15 @@ function bindDashboard(){
    var cols=Math.max(1,gridStyle.gridTemplateColumns.split(/\\s+/).length),gap=parseFloat(gridStyle.columnGap)||0;
    var savedHeight=(st.data.preferences.dashboardHeights||{})[item.dataset.widgetId],savedSpan=Number((st.data.preferences.dashboardSpans||{})[item.dataset.widgetId]),baseSpan=savedSpan>=3&&savedSpan<=12?savedSpan:({small:4,half:6,wide:8,full:12}[current]||6);
    baseSpan=Math.min(baseSpan,cols);
-   resize={id:item.dataset.widgetId,item:item,dir:handle.dataset.resizeDir,startX:e.clientX,startY:e.clientY,startSpan:baseSpan,span:baseSpan,size:current,gridWidth:rect.width,gridColumns:cols,gridGap:gap,startHeight:Number(savedHeight)||itemRect.height,height:null,pointerId:e.pointerId};
+   var placeholder=document.createElement("div");
+   placeholder.className="portal-widget-resize-placeholder";
+   placeholder.style.gridColumn=getComputedStyle(item).gridColumn;
+   placeholder.style.height=Math.round(itemRect.height)+"px";
+   placeholder.style.minHeight="160px";
+   grid.insertBefore(placeholder,item);
+   var startLeft=itemRect.left-rect.left,startTop=itemRect.top-rect.top;
+   resize={id:item.dataset.widgetId,item:item,placeholder:placeholder,dir:handle.dataset.resizeDir,startX:e.clientX,startY:e.clientY,startSpan:baseSpan,span:baseSpan,size:current,gridWidth:rect.width,gridColumns:cols,gridGap:gap,startHeight:Number(savedHeight)||itemRect.height,height:null,startLeft:startLeft,startTop:startTop,startWidth:itemRect.width,pointerId:e.pointerId};
+   item.style.position="absolute";item.style.left=startLeft+"px";item.style.top=startTop+"px";item.style.width=itemRect.width+"px";item.style.zIndex="130";
    item.classList.add("resizing");
   }else{
    if(e.target.closest("button,a,input,select,textarea,[contenteditable=true]"))return;
