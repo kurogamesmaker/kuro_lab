@@ -1299,8 +1299,8 @@
           <p class="text-xs leading-5 text-gray-400">iPhoneの場合は、まずSafariの共有ボタンから「ホーム画面に追加」を行い、ホーム画面のKUROを開いてから通知をオンにしてね。端末側の通知設定も確認してね。</p>
         </div>
         <div class="border-b border-kuro-800 p-4">
-          <div class="flex items-center justify-between gap-3 mb-3"><strong class="text-sm">KURO SNS・KUROLAB 共通メッセージ</strong><button id="markAdminMessagesRead" type="button" class="text-xs text-gray-400 hover:text-white">すべて既読</button></div>
-          <div id="adminMessageList" class="space-y-2"><p class="text-sm text-gray-500">共通メッセージを読み込み中…</p></div>
+          <div class="flex items-center justify-between gap-3 mb-3"><strong class="text-sm">KURO SNS運営からのお知らせ</strong><button id="markAdminMessagesRead" type="button" class="text-xs text-gray-400 hover:text-white">すべて既読</button></div>
+          <div id="adminMessageList" class="space-y-2"><p class="text-sm text-gray-500">運営からのお知らせを読み込み中…</p></div>
         </div>
         <div id="notificationList" class="p-4 space-y-3 overflow-y-auto max-h-[55vh]"><p class="text-sm text-gray-500">通知を読み込み中…</p></div>
       </section>
@@ -3328,7 +3328,7 @@
                 .select('id,title,body,href,audience,recipient_id,created_at,service_scope')
                 .eq('published', true).in('service_scope', ['sns','both']).order('created_at', {ascending:false}).limit(100);
             if (adminMessageError) {
-                if (adminMessageBox) adminMessageBox.innerHTML = '<p class="text-sm text-red-300">共通メッセージを読み込めませんでした。</p>';
+                if (adminMessageBox) adminMessageBox.innerHTML = '<p class="text-sm text-red-300">運営からのお知らせを読み込めませんでした。</p>';
                 console.warn('KURO shared admin messages:', adminMessageError);
             } else {
                 adminMessages = adminMessageData || [];
@@ -3344,7 +3344,7 @@
                     adminMessageBox.innerHTML = adminMessages.length ? adminMessages.map(m => {
                         const isRead = readIds.has(m.id);
                         return '<article class="rounded-xl border border-kuro-800 p-3 '+(isRead?'':'bg-kuro-900 border-violet-500/40')+'"><div class="flex items-start justify-between gap-3"><strong class="text-sm">'+socialEscape(m.title)+'</strong><time class="text-[11px] text-gray-500 shrink-0">'+socialEscape(formatPostDate(m.created_at))+'</time></div><p class="text-sm text-gray-300 whitespace-pre-wrap mt-2">'+socialEscape(m.body)+'</p>'+(m.href?'<a class="inline-block text-xs text-violet-300 mt-2 hover:underline" href="'+socialEscape(m.href)+'" target="_blank" rel="noopener noreferrer">リンクを開く ↗</a>':'')+(isRead?'<small class="block text-[11px] text-gray-500 mt-2">既読</small>':'<small class="block text-[11px] text-violet-300 mt-2">未読</small>')+'</article>';
-                    }).join('') : '<p class="text-sm text-gray-500">共通メッセージはまだないよ。</p>';
+                    }).join('') : '<p class="text-sm text-gray-500">運営からのお知らせはまだないよ。</p>';
                 }
                 if (markAdminMessagesButton) {
                     markAdminMessagesButton.disabled = !adminMessages.some(m => !readIds.has(m.id));
@@ -3357,7 +3357,7 @@
                             unreadIds.map(message_id => ({message_id,user_id:currentUser.id,read_at:readAt})),
                             {onConflict:'message_id,user_id'}
                         );
-                        if (markError) { showToast('共通メッセージを既読にできなかったよ'); markAdminMessagesButton.disabled = false; return; }
+                        if (markError) { showToast('お知らせを既読にできなかったよ'); markAdminMessagesButton.disabled = false; return; }
                         await loadNotifications();
                     };
                 }
