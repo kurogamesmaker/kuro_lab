@@ -20,6 +20,9 @@
       { href: "/", label: "ホーム", icon: "⌂" },
       { href: "/search/", label: "探す", icon: "⌕" }
     ] },
+    { label: "ツール", items: [
+      { href: "/tools/", label: "ツールボックス", icon: "▦" }
+    ] },
     { label: "サービス", items: [
       { href: "/games/", label: "KURO GAMES", icon: "🎮" },
       { href: "/sns/", label: "KURO SNS", icon: "💬" },
