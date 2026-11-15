@@ -248,3 +248,8 @@ body[data-motion=reduced] .portal-widget.is-editing{animation:none}
 #portal-dashboard-grid.is-resize-mode .portal-widget.is-editing .portal-widget-resize-handle.e,#portal-dashboard-grid.is-resize-mode .portal-widget.is-editing .portal-widget-resize-handle.w{cursor:ew-resize!important}
 #portal-dashboard-grid.is-resize-mode .portal-widget.is-editing{align-self:start;min-height:160px;max-height:900px;box-sizing:border-box}
 #portal-dashboard-grid.is-resize-mode .portal-widget.is-editing .portal-widget-body{min-height:0}
+
+/* Keep the dashboard layout stable while a widget is being resized. */
+#portal-dashboard-grid{position:relative}
+#portal-dashboard-grid .portal-widget-resize-placeholder{visibility:hidden;min-width:0;pointer-events:none}
+#portal-dashboard-grid.is-resize-mode .portal-widget.resizing{transition:none!important;will-change:left,top,width,height}
