@@ -186,8 +186,15 @@ function bindDisplaySettings(){var x=$("#portal-theme");if(x)x.onchange=function
 function positionDashboardEditor(){
  var panel=$("#portal-dashboard-editor"),button=$("#portal-dashboard-add");
  if(!panel||panel.hidden||!button)return;
- var r=button.getBoundingClientRect(),gap=8,w=Math.min(430,window.innerWidth-24),left=Math.max(12,Math.min(r.left,window.innerWidth-w-12));
- panel.style.position="fixed";panel.style.top=Math.round(Math.min(r.bottom+gap,window.innerHeight-180))+"px";panel.style.left=Math.round(left)+"px";panel.style.right="auto";panel.style.width=w+"px";panel.style.maxHeight=Math.max(180,window.innerHeight-r.bottom-gap-16)+"px";
+ if(panel.parentNode!==document.body)document.body.appendChild(panel);
+ var r=button.getBoundingClientRect(),gap=8,w=Math.min(340,window.innerWidth-24);
+ var top=Math.max(12,Math.min(r.bottom+gap,window.innerHeight-180));
+ panel.style.position="fixed";panel.style.top=Math.round(top)+"px";panel.style.left="16px";panel.style.right="auto";panel.style.bottom="auto";panel.style.width=w+"px";panel.style.maxHeight=Math.max(150,window.innerHeight-top-20)+"px";panel.style.overflowY="auto";
+}
+function restoreDashboardEditor(panel,add){
+ var actions=document.querySelector(".portal-dashboard-actions");
+ if(panel){panel.hidden=true;panel.style.position="";panel.style.top="";panel.style.left="";panel.style.right="";panel.style.bottom="";panel.style.width="";panel.style.maxHeight="";panel.style.overflowY="";if(actions&&panel.parentNode!==actions)actions.appendChild(panel);}
+ if(add)add.setAttribute("aria-expanded","false");
 }
 function positionDashboardToolbar(){
  var main=$("#portal-main"),headerInner=document.querySelector(".portal-header-inner");
@@ -223,14 +230,14 @@ function bindDashboard(){
  var edit=$("#portal-dashboard-edit"),mode=$("#portal-dashboard-mode"),add=$("#portal-dashboard-add"),reset=$("#portal-dashboard-reset"),panel=$("#portal-dashboard-editor"),grid=$("#portal-dashboard-grid"),layout=$("#portal-dashboard-layout"),form=$("#portal-custom-link-form");
  if(edit)edit.onclick=function(){st.dashboardEditing=!st.dashboardEditing;if(!st.dashboardEditing)st.dashboardResizeMode=false;render();};
  if(mode)mode.onclick=function(){st.dashboardResizeMode=!st.dashboardResizeMode;render();};
- if(add)add.onclick=function(){if(panel){panel.hidden=!panel.hidden;add.setAttribute("aria-expanded",String(!panel.hidden));if(!panel.hidden){positionDashboardEditor();}}};
+ if(add)add.onclick=function(){if(panel){if(panel.hidden){panel.hidden=false;add.setAttribute("aria-expanded","true");positionDashboardEditor();}else{restoreDashboardEditor(panel,add);}}};
  if(reset)reset.onclick=function(){if(!confirm("ホーム画面の配置を初期状態に戻しますか？"))return;st.data.preferences.dashboardWidgets=DASHBOARD_WIDGETS.filter(function(x){return x.id!=="custom";}).map(function(x){return x.id;});st.data.preferences.dashboardSizes={};st.data.preferences.dashboardSpans={};st.data.preferences.dashboardHeights={};st.data.preferences.dashboardLayout="balanced";st.dashboardEditing=false;persistDisplayPrefs();render();toast("ホーム画面を初期配置に戻しました");};
  if(layout)layout.onchange=function(){st.data.preferences.dashboardLayout=this.value;persistDisplayPrefs();render();};
  if(form)form.onsubmit=function(e){e.preventDefault();var title=$("#portal-custom-link-title").value.trim(),raw=$("#portal-custom-link-url").value.trim(),icon=$("#portal-custom-link-icon").value.trim()||"🔗",href=safeDashboardUrl(raw),links=st.data.preferences.customLinks||[];if(!title||!href){toast("表示名と有効なHTTPS URLまたはサイト内パスを入力してください");return;}if(links.length>=16){toast("マイリンクは最大16件です");return;}links.push({id:uuid(),title:title.slice(0,32),href:href,icon:icon.slice(0,8)});st.data.preferences.customLinks=links;var ids=getDashboardIds();if(ids.indexOf("custom")<0)ids.push("custom");st.data.preferences.dashboardWidgets=ids;st.dashboardEditing=true;persistDisplayPrefs();render();toast("マイリンクを追加しました");};
- if(panel)panel.addEventListener("click",function(e){var close=e.target.closest(".portal-editor-close");if(close){panel.hidden=true;if(add)add.setAttribute("aria-expanded","false");return;}var choice=e.target.closest("[data-widget-toggle]");if(!choice)return;e.preventDefault();e.stopPropagation();var id=choice.dataset.widgetToggle,ids=getDashboardIds();if(ids.indexOf(id)>=0){panel.hidden=true;if(add)add.setAttribute("aria-expanded","false");var existing=grid&&grid.querySelector('[data-widget-id="'+id+'"]');if(existing){existing.scrollIntoView({behavior:"smooth",block:"center"});existing.classList.add("portal-widget-focus");window.setTimeout(function(){existing.classList.remove("portal-widget-focus");},1400);}toast("この項目はホームに追加済みです");return;}ids.push(id);setDashboardIds(ids);st.dashboardEditing=true;render();toast("ホームに追加しました");});
+ if(panel)panel.addEventListener("click",function(e){var close=e.target.closest(".portal-editor-close");if(close){restoreDashboardEditor(panel,add);return;}var choice=e.target.closest("[data-widget-toggle]");if(!choice)return;e.preventDefault();e.stopPropagation();var id=choice.dataset.widgetToggle,ids=getDashboardIds();if(ids.indexOf(id)>=0){restoreDashboardEditor(panel,add);var existing=grid&&grid.querySelector('[data-widget-id="'+id+'"]');if(existing){existing.scrollIntoView({behavior:"smooth",block:"center"});existing.classList.add("portal-widget-focus");window.setTimeout(function(){existing.classList.remove("portal-widget-focus");},1400);}toast("この項目はホームに追加済みです");return;}ids.push(id);panel.remove();if(add)add.setAttribute("aria-expanded","false");setDashboardIds(ids);st.dashboardEditing=true;render();toast("ホームに追加しました");});
  if(!grid)return;
  grid.addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;
-  if(b.hasAttribute("data-dashboard-add-widget")){if(panel){panel.hidden=false;positionDashboardEditor();}return;}
+  if(b.hasAttribute("data-dashboard-add-widget")){if(panel){panel.hidden=false;if(add)add.setAttribute("aria-expanded","true");positionDashboardEditor();}return;}
    if(b.dataset.widgetRemove){setDashboardIds(getDashboardIds().filter(function(x){return x!==b.dataset.widgetRemove;}));render();return;}
  });
  
