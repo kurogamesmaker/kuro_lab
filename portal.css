@@ -1209,7 +1209,14 @@ body:has(.portal-dashboard-v2) .portal-account-button{
 /* Sidebar: compact icon rail, expands on pointer/focus */
 @media(min-width:761px){
   .portal-app-shell:has(.portal-dashboard-v2){
-    grid-template-columns:62px minmax(0,1fr)!important;
+    /* Sidebar is fixed and overlays the edge; keep the main dashboard in its original full-width layout. */
+    grid-template-columns:minmax(0,1fr)!important;
+    width:min(1440px,calc(100% - 48px))!important;
+    max-width:1440px!important;
+    gap:0!important;
+    align-items:start
+  }
+
     width:min(1500px,calc(100% - 40px));
     max-width:1500px;
     gap:18px;
