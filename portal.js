@@ -54,12 +54,19 @@ function classifyApiRequest(input){
   return {service:service,widget:widget?String(widget.dataset.widgetId||"").slice(0,64)||null:null};
  }catch(e){return null;}
 }
+var pendingUsageEvents=[];
 function queueUsageEvent(eventName,extra){
- if(!trackingUserId||!db||trackingWrite)return;
+ if(!trackingUserId||!db)return;
  var payload=Object.assign({user_id:trackingUserId,session_id:trackingSessionId,event_name:eventName,page_key:(page||"home").replace(/[^a-zA-Z0-9_/-]/g,"").slice(0,64)||"home"},extra||{});
  if(payload.widget_key&&!/^[a-zA-Z0-9_-]{1,64}$/.test(payload.widget_key))payload.widget_key=null;
+ pendingUsageEvents.push(payload);
+ flushUsageEvents();
+}
+function flushUsageEvents(){
+ if(trackingWrite||!pendingUsageEvents.length||!db)return;
+ var batch=pendingUsageEvents.splice(0,20);
  trackingWrite=true;
- Promise.resolve(db.from("usage_events").insert(payload)).then(function(result){if(result&&result.error)console.debug("KURO usage telemetry skipped",result.error.message);}).catch(function(error){console.debug("KURO usage telemetry skipped",error&&error.message||error);}).finally(function(){trackingWrite=false;});
+ Promise.resolve(db.from("usage_events").insert(batch)).then(function(result){if(result&&result.error)console.debug("KURO usage telemetry skipped",result.error.message);}).catch(function(error){console.debug("KURO usage telemetry skipped",error&&error.message||error);}).finally(function(){trackingWrite=false;if(pendingUsageEvents.length)flushUsageEvents();});
 }
 function activateUsageTracking(user){
  trackingUserId=user&&user.id||null;
