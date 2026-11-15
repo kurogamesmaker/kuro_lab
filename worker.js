@@ -171,6 +171,11 @@ export default {
     try {
     const url = new URL(request.url);
 
+    if (url.pathname === "/favicon.ico") {
+      const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="#101827"/><path d="M16 12h9v18l17-18h12L36 31l19 21H43L25 35v17h-9z" fill="#55b5f2"/><path d="M25 30l11 1-11 4z" fill="#dff3ff"/></svg>';
+      return new Response(svg, { status: 200, headers: { "Content-Type": "image/svg+xml; charset=utf-8", "Cache-Control": "public, max-age=86400", "X-Content-Type-Options": "nosniff" } });
+    }
+
     if (url.hostname === "kurolab.cc.cd" && (url.pathname === "/pro" || url.pathname === "/pro/")) {
       const assetUrl = new URL("/pro/index.html", request.url);
       const assetResponse = await env.ASSETS.fetch(new Request(assetUrl, { method: "GET", headers: request.headers }));
