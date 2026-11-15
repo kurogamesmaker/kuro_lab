@@ -1193,6 +1193,17 @@
             <button id="publicProfileFollowButton" type="button" onclick="togglePublicProfileFollow()" class="rounded-xl border border-kuro-700 px-4 py-3 text-sm font-semibold hover:bg-kuro-800">フォロー</button>
             <button id="publicProfileMessageButton" type="button" onclick="messagePublicProfile()" class="rounded-xl bg-white text-black px-4 py-3 text-sm font-semibold hover:bg-gray-200"><i class="fa-regular fa-paper-plane mr-2"></i>メッセージ</button>
           </div>
+          <div id="publicProfileReportArea" class="mt-3 hidden">
+            <button id="publicProfileReportToggle" type="button" onclick="togglePublicProfileReport()" class="w-full rounded-xl border border-red-900/60 text-red-300 px-4 py-3 text-sm hover:bg-red-950/40">この利用者を通報</button>
+            <form id="publicProfileReportForm" onsubmit="submitPublicProfileReport(event)" class="hidden mt-3 rounded-xl border border-kuro-800 bg-kuro-900/70 p-4 space-y-3">
+              <p class="text-sm text-gray-300">通報内容は運営だけが確認できます。緊急の危険がある場合は、身近な信頼できる大人にも相談してください。</p>
+              <select id="publicProfileReportReason" required class="w-full bg-kuro-950 border border-kuro-700 rounded-xl px-3 py-3 text-sm text-gray-200">
+                <option value="harassment">嫌がらせ・迷惑行為</option><option value="spam">スパム</option><option value="impersonation">なりすまし</option><option value="inappropriate">不適切な内容</option><option value="privacy">個人情報・プライバシー</option><option value="other">その他</option>
+              </select>
+              <textarea id="publicProfileReportDetails" maxlength="1000" rows="3" placeholder="状況を説明してください（任意・1000文字まで）" class="w-full bg-kuro-950 border border-kuro-700 rounded-xl px-3 py-3 text-sm text-gray-200"></textarea>
+              <div class="flex gap-2 justify-end"><button type="button" onclick="togglePublicProfileReport(false)" class="rounded-lg border border-kuro-700 px-4 py-2 text-sm">キャンセル</button><button type="submit" class="rounded-lg bg-red-600 text-white px-4 py-2 text-sm font-semibold">通報を送信</button></div>
+            </form>
+          </div>
           <div class="mt-8 border-t border-kuro-800 pt-5">
             <h3 class="font-semibold mb-4 flex items-center gap-2"><i class="fa-solid fa-grip"></i> 投稿一覧</h3>
             <div id="publicProfilePosts" class="space-y-3"><p class="text-sm text-gray-500">プロフィールを読み込み中…</p></div>
@@ -3353,6 +3364,52 @@
             await loadNotifications();
         }
         let publicProfileUser = null;
+        function togglePublicProfileReport(force) {
+            if (!currentUser) {
+                showToast('通報するにはログインしてください');
+                openAuthModal('signin');
+                return;
+            }
+            const form = document.getElementById('publicProfileReportForm');
+            if (!form) return;
+            const show = typeof force === 'boolean' ? force : form.classList.contains('hidden');
+            form.classList.toggle('hidden', !show);
+        }
+
+        async function submitPublicProfileReport(event) {
+            event?.preventDefault();
+            if (!currentUser || !publicProfileUser?.id) {
+                showToast('ログインしてから通報してください');
+                return;
+            }
+            if (currentUser.id === publicProfileUser.id) return;
+            const reason = document.getElementById('publicProfileReportReason')?.value || 'other';
+            const details = (document.getElementById('publicProfileReportDetails')?.value || '').trim();
+            const submit = document.querySelector('#publicProfileReportForm button[type="submit"]');
+            if (submit) submit.disabled = true;
+            try {
+                const { error } = await supabaseClient.from('sns_user_reports').insert({
+                    reporter_id: currentUser.id,
+                    target_user_id: publicProfileUser.id,
+                    target_username: publicProfileUser.username || '',
+                    reason,
+                    details
+                });
+                if (error) {
+                    if (error.code === '23505') throw new Error('この利用者への未対応の通報はすでに送信されています。');
+                    throw error;
+                }
+                document.getElementById('publicProfileReportForm')?.classList.add('hidden');
+                document.getElementById('publicProfileReportDetails').value = '';
+                showToast('通報を運営に送信しました。確認までお待ちください。');
+            } catch (error) {
+                console.error('KURO SNS report error:', error);
+                showToast(error.message || '通報を送信できませんでした');
+            } finally {
+                if (submit) submit.disabled = false;
+            }
+        }
+
         async function openPublicProfile(userId) {
             if (!userId) { showToast('プロフィールを開けませんでした'); return; }
             const modal = document.getElementById('publicProfileModal');
@@ -3375,6 +3432,10 @@
                 else { avatar.removeAttribute('src'); avatar.classList.add('hidden'); placeholder.classList.remove('hidden'); }
 
                 const isOwn = !!currentUser && currentUser.id === profile.id;
+                const reportArea = document.getElementById('publicProfileReportArea');
+                if (reportArea) reportArea.classList.toggle('hidden', isOwn || !currentUser);
+                const reportForm = document.getElementById('publicProfileReportForm');
+                if (reportForm) reportForm.classList.add('hidden');
                 const followButton = document.getElementById('publicProfileFollowButton');
                 const messageButton = document.getElementById('publicProfileMessageButton');
                 followButton.classList.toggle('hidden', isOwn);
