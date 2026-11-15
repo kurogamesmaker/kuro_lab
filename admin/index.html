@@ -69,6 +69,25 @@
 .ops-plan{color:var(--muted);font-size:11px}
 .ops-meta{padding:0 16px 12px;color:var(--muted);font-size:11px}
 @media(max-width:680px){.ops-filters input{min-width:100%}.ops-filters select{flex:1;min-width:42%}}
+
+.ops-tabs{margin:0 0 18px}
+.ops-form{padding:16px;display:grid;gap:11px;border-bottom:1px solid var(--line)}
+.ops-form input:not([type=checkbox]),.ops-form textarea{width:100%;background:#0b1524;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:10px 12px;outline:none}
+.ops-form textarea{resize:vertical}
+.ops-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.ops-form-grid label{display:grid;gap:6px;color:var(--muted);font-size:12px}
+.ops-check{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px}
+.ops-check input{width:16px;height:16px;accent-color:var(--blue)}
+.ops-form-actions{display:flex;gap:8px;flex-wrap:wrap}
+.ops-ann-item,.ops-flag-item{display:flex;align-items:start;justify-content:space-between;gap:16px;background:rgba(7,15,27,.45);border:1px solid var(--line);border-radius:12px;padding:14px}
+.ops-ann-copy,.ops-flag-copy{min-width:0;flex:1}
+.ops-ann-copy p{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0}
+.ops-audit-meta{font:11px/1.5 ui-monospace,monospace;color:var(--muted);overflow-wrap:anywhere;margin-top:6px}
+.ops-inline-actions{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.ops-inline-actions .btn{padding:6px 9px;font-size:12px}
+.ops-flag-key{font:12px ui-monospace,monospace;color:#9bd9ff}
+@media(max-width:680px){.ops-form-grid{grid-template-columns:1fr}.ops-ann-item,.ops-flag-item{flex-direction:column}.ops-inline-actions{width:100%}}
+
 </style>
 </head>
 <body>
@@ -92,30 +111,72 @@
 </main>
 
 
+
 <main id="opsAdminSection" class="wrap main" hidden>
  <div class="eyebrow">KURO Lab / Operations</div>
  <div class="heading">
-  <div><h1>運営管理</h1><p>ユーザーアカウント・利用状況を確認します。強い操作は監査ログに記録されます。</p></div>
+  <div><h1>運営管理</h1><p>アカウント・運用設定・お知らせを管理します。強い操作は監査ログに記録されます。</p></div>
   <div class="statusline" id="opsConnection">準備中…</div>
  </div>
- <div class="stats">
-  <div class="stat"><span>登録ユーザー</span><strong id="opsTotalUsers">—</strong></div>
-  <div class="stat"><span>利用可能</span><strong id="opsActiveUsers">—</strong></div>
-  <div class="stat"><span>停止中</span><strong id="opsBannedUsers">—</strong></div>
+ <div class="sns-tabs ops-tabs" id="opsTabs">
+  <button class="active" data-ops-tab="users">ユーザー</button>
+  <button data-ops-tab="audit">監査ログ</button>
+  <button data-ops-tab="announcements">お知らせ</button>
+  <button data-ops-tab="flags">機能ON/OFF</button>
  </div>
- <section class="panel">
-  <div class="toolbar"><strong>ユーザー・アカウント管理</strong><button class="btn" id="opsUsersRefresh">更新</button></div>
-  <div class="ops-filters">
-   <input id="opsUsersSearch" type="search" placeholder="メール・ユーザー名・表示名・IDで検索">
-   <select id="opsStatusFilter" aria-label="アカウント状態"><option value="all">状態：すべて</option><option value="active">利用可能</option><option value="banned">停止中</option></select>
-   <select id="opsCreatedFilter" aria-label="登録日時"><option value="all">登録日：すべて</option><option value="7">過去7日</option><option value="30">過去30日</option><option value="90">過去90日</option></select>
-   <select id="opsActivityFilter" aria-label="最終ログイン"><option value="all">最終ログイン：すべて</option><option value="7">7日以内</option><option value="30">30日以内</option><option value="90">90日以内</option><option value="never">ログイン記録なし</option></select>
-   <select id="opsBoardsFilter" aria-label="ボード数"><option value="all">ボード数：すべて</option><option value="0">0</option><option value="1">1</option><option value="2-5">2〜5</option><option value="6">6以上</option></select>
-   <select id="opsPlanFilter" aria-label="プラン"><option value="all">プラン：すべて</option><option value="free">無料</option><option value="paid">有料</option><option value="unlinked">未連携</option></select>
+ <div id="opsUsersView">
+  <div class="stats">
+   <div class="stat"><span>登録ユーザー</span><strong id="opsTotalUsers">—</strong></div>
+   <div class="stat"><span>利用可能</span><strong id="opsActiveUsers">—</strong></div>
+   <div class="stat"><span>停止中</span><strong id="opsBannedUsers">—</strong></div>
   </div>
-  <div class="ops-meta" id="opsUsersMeta">アカウント一覧を読み込みます。</div>
-  <div class="ops-tablewrap" id="opsUsersList"><div class="empty">読み込み中…</div></div>
- </section>
+  <section class="panel">
+   <div class="toolbar"><strong>ユーザー・アカウント管理</strong><button class="btn" id="opsUsersRefresh">更新</button></div>
+   <div class="ops-filters">
+    <input id="opsUsersSearch" type="search" placeholder="メール・ユーザー名・表示名・IDで検索">
+    <select id="opsStatusFilter" aria-label="アカウント状態"><option value="all">状態：すべて</option><option value="active">利用可能</option><option value="banned">停止中</option></select>
+    <select id="opsCreatedFilter" aria-label="登録日時"><option value="all">登録日：すべて</option><option value="7">過去7日</option><option value="30">過去30日</option><option value="90">過去90日</option></select>
+    <select id="opsActivityFilter" aria-label="最終ログイン"><option value="all">最終ログイン：すべて</option><option value="7">7日以内</option><option value="30">30日以内</option><option value="90">90日以内</option><option value="never">ログイン記録なし</option></select>
+    <select id="opsBoardsFilter" aria-label="ボード数"><option value="all">ボード数：すべて</option><option value="0">0</option><option value="1">1</option><option value="2-5">2〜5</option><option value="6">6以上</option></select>
+    <select id="opsPlanFilter" aria-label="プラン"><option value="all">プラン：すべて</option><option value="free">無料</option><option value="paid">有料</option><option value="unlinked">未連携</option></select>
+   </div>
+   <div class="ops-meta" id="opsUsersMeta">アカウント一覧を読み込みます。</div>
+   <div class="ops-tablewrap" id="opsUsersList"><div class="empty">読み込み中…</div></div>
+  </section>
+ </div>
+ <div id="opsAuditView" hidden>
+  <section class="panel">
+   <div class="toolbar"><div><strong>操作監査ログ</strong><div class="sns-muted">誰が・いつ・何を変更したかを記録します。</div></div><button class="btn" id="opsAuditRefresh">更新</button></div>
+   <div class="list" id="opsAuditList"><div class="empty">読み込み中…</div></div>
+  </section>
+ </div>
+ <div id="opsAnnouncementsView" hidden>
+  <section class="panel">
+   <div class="toolbar"><div><strong>お知らせ・メンテナンス配信</strong><div class="sns-muted">公開期間を指定し、ユーザー側に配信します。</div></div><button class="btn" id="opsAnnouncementsRefresh">更新</button></div>
+   <form id="opsAnnouncementForm" class="ops-form">
+    <input id="opsAnnTitle" maxlength="120" required placeholder="お知らせのタイトル">
+    <textarea id="opsAnnBody" maxlength="8000" rows="4" required placeholder="本文"></textarea>
+    <input id="opsAnnHref" type="url" placeholder="リンク（任意・HTTPSのみ）">
+    <div class="ops-form-grid"><label>公開開始<input id="opsAnnStarts" type="datetime-local"></label><label>公開終了（任意）<input id="opsAnnEnds" type="datetime-local"></label></div>
+    <label class="ops-check"><input id="opsAnnPublished" type="checkbox"> 保存後すぐ公開する</label>
+    <div class="ops-form-actions"><button type="submit" class="btn primary" id="opsAnnSave">お知らせを保存</button><button class="btn" type="button" id="opsAnnCancel" hidden>編集をキャンセル</button></div>
+    <div class="sns-muted" id="opsAnnStatus">公開中のお知らせはユーザー側の表示条件に従って配信されます。</div>
+   </form>
+   <div class="list" id="opsAnnouncementsList"><div class="empty">読み込み中…</div></div>
+  </section>
+ </div>
+ <div id="opsFlagsView" hidden>
+  <section class="panel">
+   <div class="toolbar"><div><strong>フィーチャーフラグ</strong><div class="sns-muted">機能公開設定を保存します。サイト本体側の接続後に表示制御へ反映されます。</div></div><button class="btn" id="opsFlagsRefresh">更新</button></div>
+   <form id="opsFlagForm" class="ops-form">
+    <div class="ops-form-grid"><label>フラグキー<input id="opsFlagKey" pattern="[a-z0-9][a-z0-9_-]{1,63}" required placeholder="new_widget"></label><label>表示名<input id="opsFlagLabel" maxlength="80" required placeholder="新ウィジェット"></label></div>
+    <textarea id="opsFlagDescription" maxlength="500" rows="2" placeholder="説明・対象機能"></textarea>
+    <div class="ops-form-grid"><label>公開割合（%）<input id="opsFlagRollout" type="number" min="0" max="100" step="1" value="100"></label><label class="ops-check"><input id="opsFlagEnabled" type="checkbox"> 有効にする</label></div>
+    <div class="ops-form-actions"><button type="submit" class="btn primary">フラグを保存</button><button class="btn" type="reset">入力をクリア</button></div>
+   </form>
+   <div class="list" id="opsFlagsList"><div class="empty">読み込み中…</div></div>
+  </section>
+ </div>
 </main>
 
 <main id="snsAdminSection" class="wrap main" hidden>
@@ -232,7 +293,7 @@ if(modeSelect)modeSelect.addEventListener("change",()=>setMode(modeSelect.value)
 if(modeSelectTop)modeSelectTop.addEventListener("change",()=>setMode(modeSelectTop.value));
 syncModeSelectors();
 let rows=[],filter="all",channel=null,seen=new Set(),firstLoad=true;
-let opsUsers=[];
+let opsUsers=[],opsAuditLogs=[],opsAnnouncements=[],opsFlags=[],opsView='users',editingAnnouncementId=null;
 let snsProfiles=[],snsPosts=[],snsReplies=[],snsChatMessages=[],snsTab="posts",snsUserFilterId=null,refreshTimer=null;
 let snsRealtimeChannel=null,snsReloadTimer=null,analyticsRefreshTimer=null,snsLikesTotal=0,snsFollowsTotal=0;
 const labels={pending:"未対応",reviewing:"確認中",done:"対応済み"};
@@ -564,6 +625,114 @@ async function runOpsUserAction(button){
  await loadOpsUsers();
 }
 
+
+function setOpsView(view){
+ opsView=view;
+ ["users","audit","announcements","flags"].forEach(name=>{
+  const target=$("#ops"+name.charAt(0).toUpperCase()+name.slice(1)+"View");
+  if(target)target.hidden=name!==view;
+  const button=$("#opsTabs [data-ops-tab='"+name+"']");
+  if(button)button.classList.toggle("active",name===view);
+ });
+ if(view==="users")loadOpsUsers();
+ if(view==="audit")loadOpsAudit();
+ if(view==="announcements")loadOpsAnnouncements();
+ if(view==="flags")loadOpsFlags();
+}
+async function opsInvoke(body){
+ if(mode==="gas")throw new Error("この運営機能はSupabase版で使用してください。");
+ const {data,error}=await db.functions.invoke("admin-console",{body});
+ if(error)throw error;
+ if(data?.error)throw new Error(data.error);
+ return data;
+}
+async function loadOpsAudit(){
+ $("#opsAuditList").innerHTML='<div class="empty">読み込み中…</div>';
+ try{
+  const data=await opsInvoke({action:"list_audit",limit:200});
+  opsAuditLogs=data.logs||[];
+  $("#opsAuditList").innerHTML=opsAuditLogs.length?opsAuditLogs.map(log=>
+   '<article class="ops-ann-item"><div class="ops-ann-copy"><div class="meta"><strong>'+esc(log.action)+'</strong><span>'+esc(date(log.created_at))+'</span></div>'+
+   '<div class="ops-audit-meta">管理者：'+esc(log.actor_user_id||"不明")+'<br>対象：'+esc(log.target_user_id||"—")+'<br>'+esc(JSON.stringify(log.metadata||{}))+'</div></div></article>'
+  ).join(""):'<div class="empty">監査ログはまだありません。</div>';
+ }catch(e){$("#opsAuditList").innerHTML='<div class="error">読み込みに失敗しました：'+esc(e.message)+'</div>';}
+}
+async function loadOpsAnnouncements(){
+ $("#opsAnnouncementsList").innerHTML='<div class="empty">読み込み中…</div>';
+ try{
+  const data=await opsInvoke({action:"list_announcements"});
+  opsAnnouncements=data.announcements||[];
+  $("#opsAnnouncementsList").innerHTML=opsAnnouncements.length?opsAnnouncements.map(item=>
+   '<article class="ops-ann-item"><div class="ops-ann-copy"><div class="meta"><strong>'+esc(item.title)+'</strong><span class="ops-status '+(item.published?"":"banned")+'">'+(item.published?"公開":"非公開")+'</span><span>'+esc(date(item.created_at))+'</span></div><p>'+esc(item.body)+'</p><div class="sns-muted">開始：'+esc(date(item.starts_at))+' · 終了：'+esc(item.ends_at?date(item.ends_at):"指定なし")+(item.href?' · '+esc(item.href):'')+'</div></div><div class="ops-inline-actions"><button class="btn" data-ann-edit="'+esc(item.id)+'">編集</button>'+(item.published?'<button class="btn" data-ann-unpublish="'+esc(item.id)+'">非公開</button>':'')+'</div></article>'
+  ).join(""):'<div class="empty">お知らせはまだありません。</div>';
+ }catch(e){$("#opsAnnouncementsList").innerHTML='<div class="error">読み込みに失敗しました：'+esc(e.message)+'</div>';}
+}
+async function loadOpsFlags(){
+ $("#opsFlagsList").innerHTML='<div class="empty">読み込み中…</div>';
+ try{
+  const data=await opsInvoke({action:"list_feature_flags"});
+  opsFlags=data.flags||[];
+  $("#opsFlagsList").innerHTML=opsFlags.length?opsFlags.map(flag=>
+   '<article class="ops-flag-item"><div class="ops-flag-copy"><div class="meta"><strong>'+esc(flag.label)+'</strong><span class="ops-flag-key">'+esc(flag.key)+'</span><span class="ops-status '+(flag.enabled?"":"banned")+'">'+(flag.enabled?"有効":"無効")+'</span><span>'+Number(flag.rollout_percentage)+'%</span></div><div class="sns-muted">'+esc(flag.description||"説明なし")+'</div></div><div class="ops-inline-actions"><button class="btn" data-flag-edit="'+esc(flag.key)+'">編集</button><button class="btn" data-flag-delete="'+esc(flag.key)+'">削除</button></div></article>'
+  ).join(""):'<div class="empty">フラグはまだ登録されていません。</div>';
+ }catch(e){$("#opsFlagsList").innerHTML='<div class="error">読み込みに失敗しました：'+esc(e.message)+'</div>';}
+}
+function resetAnnouncementForm(){
+ editingAnnouncementId=null;$("#opsAnnouncementForm").reset();
+ const local=new Date(Date.now()-new Date().getTimezoneOffset()*60000);
+ $("#opsAnnStarts").value=local.toISOString().slice(0,16);
+ $("#opsAnnSave").textContent="お知らせを保存";$("#opsAnnCancel").hidden=true;
+}
+function editAnnouncement(id){
+ const item=opsAnnouncements.find(x=>x.id===id);if(!item)return;
+ editingAnnouncementId=id;$("#opsAnnTitle").value=item.title||"";
+ $("#opsAnnBody").value=item.body||"";$("#opsAnnHref").value=item.href||"";
+ $("#opsAnnPublished").checked=!!item.published;
+ const toLocal=value=>{if(!value)return "";const d=new Date(value);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);};
+ $("#opsAnnStarts").value=toLocal(item.starts_at);$("#opsAnnEnds").value=toLocal(item.ends_at);
+ $("#opsAnnSave").textContent="変更を保存";$("#opsAnnCancel").hidden=false;
+ $("#opsAnnStatus").textContent="編集中："+item.title;
+ $("#opsAnnouncementForm").scrollIntoView({behavior:"smooth",block:"start"});
+}
+async function saveAnnouncement(event){
+ event.preventDefault();const button=$("#opsAnnSave");button.disabled=true;
+ try{
+  const starts=$("#opsAnnStarts").value?new Date($("#opsAnnStarts").value).toISOString():null;
+  const ends=$("#opsAnnEnds").value?new Date($("#opsAnnEnds").value).toISOString():null;
+  await opsInvoke({action:"save_announcement",id:editingAnnouncementId||undefined,title:$("#opsAnnTitle").value,content:$("#opsAnnBody").value,href:$("#opsAnnHref").value,starts_at:starts,ends_at:ends,published:$("#opsAnnPublished").checked});
+  $("#opsAnnStatus").textContent="保存しました。";resetAnnouncementForm();
+  await loadOpsAnnouncements();await loadOpsAudit();
+ }catch(e){alert("保存できませんでした："+e.message);}
+ finally{button.disabled=false;}
+}
+async function unpublishAnnouncement(id){
+ const item=opsAnnouncements.find(x=>x.id===id);if(!item)return;
+ if(!confirm("「"+item.title+"」を非公開にしますか？"))return;
+ try{await opsInvoke({action:"unpublish_announcement",id});await loadOpsAnnouncements();await loadOpsAudit();}
+ catch(e){alert("非公開にできませんでした："+e.message);}
+}
+function editFeatureFlag(key){
+ const flag=opsFlags.find(x=>x.key===key);if(!flag)return;
+ $("#opsFlagKey").value=flag.key;$("#opsFlagKey").readOnly=true;
+ $("#opsFlagLabel").value=flag.label;$("#opsFlagDescription").value=flag.description||"";
+ $("#opsFlagRollout").value=flag.rollout_percentage;$("#opsFlagEnabled").checked=!!flag.enabled;
+ $("#opsFlagForm").scrollIntoView({behavior:"smooth",block:"start"});
+}
+async function saveFeatureFlag(event){
+ event.preventDefault();const button=$("#opsFlagForm button[type='submit']");button.disabled=true;
+ try{
+  await opsInvoke({action:"save_feature_flag",key:$("#opsFlagKey").value,label:$("#opsFlagLabel").value,description:$("#opsFlagDescription").value,rollout_percentage:Number($("#opsFlagRollout").value),enabled:$("#opsFlagEnabled").checked});
+  $("#opsFlagForm").reset();$("#opsFlagKey").readOnly=false;$("#opsFlagRollout").value=100;
+  await loadOpsFlags();await loadOpsAudit();
+ }catch(e){alert("保存できませんでした："+e.message);}
+ finally{button.disabled=false;}
+}
+async function deleteFeatureFlag(key){
+ if(!confirm("フラグ「"+key+"」を削除しますか？"))return;
+ try{await opsInvoke({action:"delete_feature_flag",key});await loadOpsFlags();await loadOpsAudit();}
+ catch(e){alert("削除できませんでした："+e.message);}
+}
+
 function startAdminPolling(){
  if(refreshTimer)clearInterval(refreshTimer);
  const interval=activeProduct==="sns"&&mode==="gas"?15000:45000;
@@ -573,7 +742,12 @@ function startAdminPolling(){
   else if(activeProduct==="sns"){
    loadSns();
    if(snsTab==="analytics")loadAnalytics();
-  }else loadOpsUsers();
+  }else if(activeProduct==="ops"){
+   if(opsView==="users")loadOpsUsers();
+   else if(opsView==="audit")loadOpsAudit();
+   else if(opsView==="announcements")loadOpsAnnouncements();
+   else loadOpsFlags();
+  }
  },interval);
 }
 async function switchProduct(){
@@ -590,7 +764,7 @@ async function switchProduct(){
   await loadSns();
   startSnsRealtime();
   if(snsTab==="analytics")await loadAnalytics();
- }else await loadOpsUsers();
+ }else setOpsView(opsView);
  startAdminPolling();
 }
 
@@ -616,6 +790,17 @@ $("#opsUsersRefresh").addEventListener("click",loadOpsUsers);
 $("#opsUsersSearch").addEventListener("input",renderOpsUsers);
 ["opsStatusFilter","opsCreatedFilter","opsActivityFilter","opsBoardsFilter","opsPlanFilter"].forEach(id=>$("#"+id).addEventListener("change",renderOpsUsers));
 $("#opsUsersList").addEventListener("click",e=>{const b=e.target.closest("button[data-ops-action]");if(b)runOpsUserAction(b);});
+$("#opsTabs").addEventListener("click",e=>{const b=e.target.closest("button[data-ops-tab]");if(b)setOpsView(b.dataset.opsTab);});
+$("#opsAuditRefresh").addEventListener("click",loadOpsAudit);
+$("#opsAnnouncementsRefresh").addEventListener("click",loadOpsAnnouncements);
+$("#opsFlagsRefresh").addEventListener("click",loadOpsFlags);
+$("#opsAnnouncementForm").addEventListener("submit",saveAnnouncement);
+$("#opsAnnCancel").addEventListener("click",resetAnnouncementForm);
+$("#opsAnnouncementsList").addEventListener("click",e=>{const edit=e.target.closest("[data-ann-edit]"),off=e.target.closest("[data-ann-unpublish]");if(edit)editAnnouncement(edit.dataset.annEdit);if(off)unpublishAnnouncement(off.dataset.annUnpublish);});
+$("#opsFlagForm").addEventListener("submit",saveFeatureFlag);
+$("#opsFlagForm").addEventListener("reset",()=>{setTimeout(()=>{$("#opsFlagKey").readOnly=false;$("#opsFlagRollout").value=100;},0);});
+$("#opsFlagsList").addEventListener("click",e=>{const edit=e.target.closest("[data-flag-edit]"),del=e.target.closest("[data-flag-delete]");if(edit)editFeatureFlag(edit.dataset.flagEdit);if(del)deleteFeatureFlag(del.dataset.flagDelete);});
+
 
 $("#snsTabs").addEventListener("click",async e=>{
  const b=e.target.closest("button[data-sns-tab]");if(!b)return;
