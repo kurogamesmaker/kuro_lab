@@ -331,9 +331,14 @@
     if (!window.confirm("「" + w.name + "」を削除しますか？")) return;
     delete p.dashboardWorkspaces[id];
     if (p.activeWorkspace === id) {
+      var personal = p.dashboardWorkspaces.personal || { widgets: ["shortcuts", "games", "favorites", "activity", "recent", "achievements", "clock"], layout: "balanced", sizes: {}, spans: {}, heights: {} };
+      var fallback = cloneSnapshot(personal);
       p.activeWorkspace = "personal";
-      switchWorkspace("personal");
-      return;
+      p.dashboardWidgets = fallback.widgets;
+      p.dashboardLayout = fallback.layout;
+      p.dashboardSizes = fallback.sizes;
+      p.dashboardSpans = fallback.spans;
+      p.dashboardHeights = fallback.heights;
     }
     saveAndRender("ワークスペースを削除しました");
   }
@@ -367,9 +372,12 @@
       var toolbar = dash.querySelector(".portal-dashboard-toolbar");
       if (toolbar) toolbar.insertAdjacentHTML("beforebegin", workspaceBar(p));
     } else {
-      var fresh = document.createElement("div");
-      fresh.innerHTML = workspaceBar(p);
-      bar.replaceWith(fresh.firstElementChild);
+      var activeId = p.activeWorkspace || "personal";
+      bar.querySelectorAll("[data-workspace-switch]").forEach(function (button) {
+        var active = button.dataset.workspaceSwitch === activeId;
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
     }
     var actions = dash.querySelector(".portal-dashboard-actions");
     if (actions && !actions.querySelector("[data-open-quick]")) {
@@ -411,7 +419,11 @@
           return '<button type="button" data-accent-choice="' + x[0] + '" title="' + x[1] + '" aria-label="' + x[1] +
             '" style="--swatch:' + x[2] + '"></button>';
         }).join("");
-        accent.parentElement.appendChild(swatches);
+        var control = document.createElement("div");
+        control.className = "portal-accent-control";
+        accent.parentNode.insertBefore(control, accent);
+        control.appendChild(accent);
+        control.appendChild(swatches);
       }
     }
     var row = Array.from(document.querySelectorAll(".portal-settings-row")).find(function (x) { return !!x.querySelector("#portal-theme"); });
@@ -419,7 +431,9 @@
       var note = document.createElement("small");
       note.className = "portal-theme-auto-note";
       note.textContent = "PCやスマホ本体のライト・ダーク設定に自動で合わせることもできます。";
-      row.appendChild(note);
+      var left = row.querySelector("div");
+      if (left) left.appendChild(note);
+      else row.appendChild(note);
     }
   }
 
