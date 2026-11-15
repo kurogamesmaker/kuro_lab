@@ -589,12 +589,26 @@ function renderSns(){
  }
  if(snsTab==="users"){
   const shown=snsProfiles.filter(p=>!query||[p.display_name,p.username,p.bio].join(" ").toLowerCase().includes(query));
-  $("#snsUsersPanel").innerHTML=shown.length?shown.map(p=>'<article class="item"><div><div class="meta"><strong>'+esc(p.display_name||p.username)+'</strong><span>@'+esc(p.username)+'</span><span>登録 '+esc(date(p.created_at))+'</span></div><p class="sns-text">'+esc(p.bio||"自己紹介はありません。")+'</p><div class="sns-muted">投稿 '+snsPosts.filter(x=>x.user_id===p.id).length+' 件 · 返信 '+snsReplies.filter(x=>x.user_id===p.id).length+' 件</div></div><div class="sns-actions"><button class="btn" data-sns-user-posts="'+esc(p.id)+'">この利用者の投稿</button></div></article>').join(""):'<div class="empty">該当する利用者はいません。</div>';
+  $("#snsUsersPanel").innerHTML=shown.length?shown.map(p=>'<article class="item"><div><div class="meta"><strong>'+esc(p.display_name||p.username)+'</strong><span>@'+esc(p.username)+'</span><span>登録 '+esc(date(p.created_at))+'</span></div><p class="sns-text">'+esc(p.bio||"自己紹介はありません。")+'</p><div class="sns-muted">投稿 '+snsPosts.filter(x=>x.user_id===p.id).length+' 件 · 返信 '+snsReplies.filter(x=>x.user_id===p.id).length+' 件</div></div><div class="sns-actions"><button class="btn" data-sns-user-posts="'+esc(p.id)+'">この利用者の投稿</button><button class="btn" data-sns-user-email="'+esc(p.id)+'" data-sns-user-label="'+esc(p.display_name||p.username||"KUROユーザー")+'">メール</button></div></article>').join(""):'<div class="empty">該当する利用者はいません。</div>';
  }
  if(snsTab==="chat"){
   const shown=snsChatMessages.filter(r=>!query||[r.nickname,r.content].join(" ").toLowerCase().includes(query));
   $("#snsChatPanel").innerHTML=shown.length?shown.map(r=>'<article class="item"><div><div class="meta"><strong>'+esc(r.nickname)+'</strong><span>'+esc(date(r.created_at))+'</span></div><p class="sns-text">'+esc(r.content)+'</p></div><div class="sns-actions"><button class="btn" data-sns-delete="chat" data-id="'+esc(r.id)+'">メッセージを削除</button></div></article>').join(""):'<div class="empty">該当する公開チャットはありません。</div>';
  }
+}
+async function emailSnsUser(userId,label,button){
+ const subject=window.prompt("宛先："+label+"\nメールの件名を入力してください。","KURO SNS 運営からのお知らせ");
+ if(subject===null)return;
+ const content=window.prompt("メール本文を入力してください。");
+ if(content===null)return;
+ if(!subject.trim()||!content.trim()){alert("件名と本文を入力してください。");return;}
+ if(!window.confirm(label+" にメールを送信しますか？"))return;
+ if(button)button.disabled=true;
+ try{
+  await opsInvoke({action:"send_user_email",userId,subject:subject.trim(),content:content.trim()});
+  alert("メールを送信しました。");
+ }catch(e){alert("メールを送信できませんでした："+e.message);}
+ finally{if(button)button.disabled=false;}
 }
 async function deleteSnsItem(type,id,button){
  const config={
@@ -973,7 +987,9 @@ $("#snsAdminSection").addEventListener("click",e=>{
  const del=e.target.closest("button[data-sns-delete]");
  if(del){deleteSnsItem(del.dataset.snsDelete,del.dataset.id,del);return;}
  const user=e.target.closest("button[data-sns-user-posts]");
- if(user){snsUserFilterId=user.dataset.snsUserPosts;snsTab="posts";$("#snsSearch").value="";renderSns();}
+ if(user){snsUserFilterId=user.dataset.snsUserPosts;snsTab="posts";$("#snsSearch").value="";renderSns();return;}
+ const mail=e.target.closest("button[data-sns-user-email]");
+ if(mail){emailSnsUser(mail.dataset.snsUserEmail,mail.dataset.snsUserLabel,mail);}
 });
 db.auth.getSession().then(({data})=>{if(data.session)enter(data.session.user);});
 db.auth.onAuthStateChange((event,session)=>{if(event==="SIGNED_OUT")showLogin("");});
