@@ -748,7 +748,7 @@ function renderOpsUsers(){
    '<td><div class="ops-user-actions">'+
     (banned?'<button class="btn" data-ops-action="unban" data-user-id="'+esc(u.id)+'">解除</button>':'<button class="btn" data-ops-action="ban" data-user-id="'+esc(u.id)+'">停止</button>')+
     '<button class="btn" data-ops-action="email" data-user-id="'+esc(u.id)+'">メール変更</button>'+
-    '<button class="btn" data-ops-action="plan" data-user-id="'+esc(u.id)+'">'+((u.plan==="pro"||u.plan==="paid")?"Pro解除":"Pro付与")+'</button>'+
+    '<button class="btn" data-ops-go-pro="true">Pro管理</button>'+
     '<button class="btn" data-ops-action="reset" data-user-id="'+esc(u.id)+'">再設定メール</button>'+
     '<button class="btn danger" data-ops-action="delete" data-user-id="'+esc(u.id)+'">削除</button>'+
    '</div></td></tr>';
@@ -1236,7 +1236,7 @@ $("#opsUsersPrev").addEventListener("click",()=>loadOpsUsers(Math.max(1,opsUsers
 $("#opsUsersNext").addEventListener("click",()=>loadOpsUsers(opsUsersPage+1));
 $("#opsUsersSearch").addEventListener("input",renderOpsUsers);
 ["opsStatusFilter","opsCreatedFilter","opsActivityFilter","opsBoardsFilter","opsPlanFilter"].forEach(id=>$("#"+id).addEventListener("change",renderOpsUsers));
-$("#opsUsersList").addEventListener("click",e=>{const b=e.target.closest("button[data-ops-action]");if(b)runOpsUserAction(b);});
+$("#opsUsersList").addEventListener("click",e=>{const b=e.target.closest("button[data-ops-action]");if(b)runOpsUserAction(b);});\n$("#opsUsersList").addEventListener("click",e=>{if(e.target.closest("[data-ops-go-pro]"))setOpsView("pro");});
 $("#opsTabs").addEventListener("click",e=>{const b=e.target.closest("button[data-ops-tab]");if(b)setOpsView(b.dataset.opsTab);});
 $("#opsProRefresh").addEventListener("click",loadOpsPro);
 $("#opsProApplications").addEventListener("click",handleOpsProClick);
