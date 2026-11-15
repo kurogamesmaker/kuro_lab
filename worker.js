@@ -6,7 +6,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    if (url.hostname === "admin.kurolab.cc.cd") {
+    if (url.hostname === "kurolab.cc.cd" && (url.pathname === "/admin" || url.pathname === "/admin/")) {\n      return Response.redirect("https://admin.kurolab.cc.cd/", 302);\n    }\n\n    if (url.hostname === "admin.kurolab.cc.cd") {
       if (url.pathname === "/" || url.pathname === "/admin/index.html") {
         return new Response(ADMIN_HTML, {
           headers: {
@@ -14,7 +14,7 @@ export default {
             "Cache-Control": "private, no-store, max-age=0",
             "X-Robots-Tag": "noindex, nofollow, noarchive",
             "X-Content-Type-Options": "nosniff",
-            "Referrer-Policy": "same-origin"
+            "Referrer-Policy": "same-origin",\n            "Strict-Transport-Security": "max-age=31536000; includeSubDomains",\n            "X-Frame-Options": "DENY",\n            "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
           }
         });
       }
