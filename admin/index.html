@@ -430,6 +430,18 @@ async function deleteSnsItem(type,id,button){
  if(!data||!data.length){alert("削除されませんでした。管理者権限または削除ポリシーを確認してください。");return;}
  await loadSns();
 }
+function startAdminPolling(){
+ if(refreshTimer)clearInterval(refreshTimer);
+ const interval=activeProduct==="sns"&&mode==="gas"?15000:45000;
+ refreshTimer=setInterval(()=>{
+  if($("#appView").hidden)return;
+  if(activeProduct==="lab")load();
+  else{
+   loadSns();
+   if(snsTab==="analytics")loadAnalytics();
+  }
+ },interval);
+}
 async function switchProduct(){
  activeProduct=productSelect?.value==="sns"?"sns":"lab";
  localStorage.setItem(PRODUCT_KEY,activeProduct);
@@ -444,19 +456,14 @@ async function switchProduct(){
   startSnsRealtime();
   if(snsTab==="analytics")await loadAnalytics();
  }
+ startAdminPolling();
 }
 
 async function enter(user){
  try{
   await checkAdmin(user);showApp(user);syncModeSelectors();syncProductSelector();
   await switchProduct();
-  if(refreshTimer)clearInterval(refreshTimer);
-  refreshTimer=setInterval(()=>{
-   if($("#appView").hidden)return;
-   if(activeProduct==="lab"){if(mode==="gas")load();}
-   else if(mode==="gas"){loadSns();if(snsTab==="analytics")loadAnalytics();}
-   else if(snsTab==="analytics")loadAnalytics();
-  },mode==="gas"&&activeProduct==="sns"?15000:60000);
+
  }catch(e){await db.auth.signOut();showLogin(e.message||"管理者認証に失敗しました。");}
 }
 $("#loginForm").addEventListener("submit",async e=>{
