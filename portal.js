@@ -20,7 +20,7 @@ var requestedTransport=new URLSearchParams(location.search).get("transport");
 var useGas=requestedTransport!=="direct";
 localStorage.setItem("kuro_portal_transport",useGas?"gas":"direct");
 function gasFetch(input,init){
- var req=new Request(input,init),url=new URL(req.url);
+ var req=new Request(input,init),url=new URL(req.url),serviceInfo=url.origin===SUPABASE_URL?classifyApiRequest(url.href):null;
  if(url.origin!==SUPABASE_URL)return fetch(req);
  return req.arrayBuffer().then(function(buf){
   var bytes=new Uint8Array(buf),binary="",step=0x8000;
@@ -30,11 +30,12 @@ function gasFetch(input,init){
    .then(async function(proxyResponse){
     var result;try{result=await proxyResponse.json();}catch(e){throw new Error("GAS中継サーバーから応答を読み取れませんでした");}
     if(!proxyResponse.ok||!result||typeof result.status!=="number")return new Response(JSON.stringify(result||{message:"GAS proxy error"}),{status:proxyResponse.status||502,headers:{"Content-Type":"application/json"}});
-    var responseHeaders=new Headers(result.headers||{}),body=null;
+    var responseHeaders=new Headers(result.headers||{}),body=null,status=result.status||502;
     if(result.isBinary&&result.bodyBase64){var raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(var j=0;j<raw.length;j++)out[j]=raw.charCodeAt(j);body=out;}
-    else if(result.bodyText!==undefined&&![204,205,304].includes(result.status))body=result.bodyText;
-    return new Response(body,{status:result.status,headers:responseHeaders});
-   });
+    else if(result.bodyText!==undefined&&![204,205,304].includes(status))body=result.bodyText;
+    if(serviceInfo&&!trackingWrite)queueUsageEvent(status>=200&&status<400?"api_success":"api_error",{service_key:serviceInfo.service,status_code:status,error_code:status>=400?"http_"+status:null,widget_key:serviceInfo.widget});
+    return new Response(body,{status:status,headers:responseHeaders});
+   }).catch(function(error){if(serviceInfo&&!trackingWrite)queueUsageEvent("api_error",{service_key:serviceInfo.service,error_code:"network_error",widget_key:serviceInfo.widget});throw error;});
  });
 }
 var db=supabaseReady?window.supabase.createClient(SUPABASE_URL,PUBLISHABLE_KEY,{global:{fetch:useGas?gasFetch:window.fetch},auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}}):null;
@@ -42,7 +43,7 @@ function classifyApiRequest(input){
  try{
   var raw=typeof input==="string"?input:input&&input.url?input.url:String(input||"");
   var u=new URL(raw,location.href),host=u.hostname.toLowerCase(),p=u.pathname.toLowerCase(),service="";
-  if(p.indexOf("/api/kuro-gas-proxy")===0)service="gas_proxy";
+  if(p.indexOf("/api/kuro-gas-proxy")===0)return null;
   else if(p.indexOf("/api/workspace-rss")===0||/rss|feed/.test(p))service="rss";
   else if(p.indexOf("/api/ogp")===0||/ogp|opengraph/.test(p))service="ogp";
   else if(/weather|openweathermap|weatherapi/.test(host)||/weather/.test(p))service="weather";
