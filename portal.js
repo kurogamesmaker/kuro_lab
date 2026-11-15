@@ -130,7 +130,7 @@ var catalog=[
 {key:"about",type:"page",title:"KURO Labについて",desc:"KURO Labの活動やサービスについて",href:"/about/",icon:"🏢",tags:"紹介 運営"},
 {key:"guide",type:"page",title:"使い方ガイド",desc:"各サービスの基本的な使い方",href:"/guide/",icon:"📘",tags:"ガイド ヘルプ"},
 {key:"faq",type:"page",title:"よくある質問",desc:"利用時の疑問や困ったときの案内",href:"/faq/",icon:"❔",tags:"質問 ヘルプ"}];
-var nav=[["home","ホーム","⌂","/"],["search","検索","⌕","/search/"],["games","ゲーム","▣","/games/"],["sns","SNS","◉","/sns/"],["chat","チャット","☷","/chat/"],["favorites","お気に入り","☆","/favorites/"],["history","履歴","◷","/history/"],["notifications","お知らせ","♧","/notifications/"],["mypage","マイページ","◎","/mypage/"],["settings","設定","⚙","/settings/"],["tools","ツールボックス","▦","/tools/"]];
+var nav=[["home","ホーム","⌂","/"],["search","検索","⌕","/search/"],["tools","ツールボックス","▦","/tools/"],["games","ゲーム","▣","/games/"],["sns","SNS","◉","/sns/"],["chat","チャット","☷","/chat/"],["favorites","お気に入り","☆","/favorites/"],["history","履歴","◷","/history/"],["notifications","お知らせ","♧","/notifications/"],["mypage","マイページ","◎","/mypage/"],["settings","設定","⚙","/settings/"]];
 var st={user:null,ann:[],data:null,sync:false,requestNotifications:[],requestUnread:0};var portalNotificationTopId=null,portalNotificationTimer=null,portalNotificationChannel=null,portalNotificationEventsBound=false;window.__kuroPortal={state:st,catalog:catalog,save:save,render:render,sync:sync,toast:toast,openQuick:openQuick,closeQuick:closeQuick,applyDisplayPrefs:applyDisplayPrefs};window.dispatchEvent(new Event("kuro:portal-api-ready"));
 function $(s,r){return (r||document).querySelector(s);}
 function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
