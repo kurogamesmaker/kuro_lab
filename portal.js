@@ -192,8 +192,10 @@ function bindDashboard(){
   var dx=x-resize.startX,dy=y-resize.startY,dir=resize.dir;
   if(dir.indexOf("e")>=0||dir.indexOf("w")>=0){
    var delta=dir.indexOf("w")>=0?-dx:dx;
-   var step=Math.max(1,resize.gridWidth/12);
-   resize.span=Math.max(3,Math.min(12,resize.startSpan+Math.round(delta/step)));
+   var cols=resize.gridColumns||12,gap=resize.gridGap||0;
+   var track=(resize.gridWidth-gap*(cols-1))/cols,step=Math.max(12,track+gap);
+   var maxSpan=Math.max(3,Math.min(12,cols));
+   resize.span=Math.max(3,Math.min(maxSpan,resize.startSpan+Math.round(delta/step)));
    resize.item.style.gridColumn="span "+resize.span;
    resize.item.dataset.span=String(resize.span);
    resize.size=resize.span<=4?"small":resize.span<=6?"half":resize.span<=9?"wide":"full";
@@ -213,9 +215,11 @@ function bindDashboard(){
    var handle=e.target.closest("[data-resize-dir]");
    if(!handle||!item.contains(handle))return;
    e.preventDefault();e.stopPropagation();
-   var sizes=["small","half","wide","full"],current=item.dataset.size||"half",rect=grid.getBoundingClientRect(),itemRect=item.getBoundingClientRect();
+   var current=item.dataset.size||"half",rect=grid.getBoundingClientRect(),itemRect=item.getBoundingClientRect(),gridStyle=getComputedStyle(grid);
+   var cols=Math.max(1,gridStyle.gridTemplateColumns.split(/\\s+/).length),gap=parseFloat(gridStyle.columnGap)||0;
    var savedHeight=(st.data.preferences.dashboardHeights||{})[item.dataset.widgetId],savedSpan=Number((st.data.preferences.dashboardSpans||{})[item.dataset.widgetId]),baseSpan=savedSpan>=3&&savedSpan<=12?savedSpan:({small:4,half:6,wide:8,full:12}[current]||6);
-   resize={id:item.dataset.widgetId,item:item,dir:handle.dataset.resizeDir,startX:e.clientX,startY:e.clientY,startSpan:baseSpan,span:baseSpan,size:current,gridWidth:rect.width,startHeight:Number(savedHeight)||itemRect.height,height:null,pointerId:e.pointerId};
+   baseSpan=Math.min(baseSpan,cols);
+   resize={id:item.dataset.widgetId,item:item,dir:handle.dataset.resizeDir,startX:e.clientX,startY:e.clientY,startSpan:baseSpan,span:baseSpan,size:current,gridWidth:rect.width,gridColumns:cols,gridGap:gap,startHeight:Number(savedHeight)||itemRect.height,height:null,pointerId:e.pointerId};
    item.classList.add("resizing");
   }else{
    if(e.target.closest("button,a,input,select,textarea,[contenteditable=true]"))return;
