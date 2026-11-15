@@ -161,6 +161,7 @@
    </div>
    <div class="ops-meta" id="opsUsersMeta">アカウント一覧を読み込みます。</div>
    <div class="ops-tablewrap" id="opsUsersList"><div class="empty">読み込み中…</div></div>
+   <div class="ops-inline-actions" id="opsUsersPager"><button class="btn" id="opsUsersPrev" disabled>前へ</button><span class="ops-meta" id="opsUsersPageLabel">1ページ目</span><button class="btn" id="opsUsersNext" disabled>次へ</button></div>
   </section>
  </div>
  <div id="opsAuditView" hidden>
@@ -373,7 +374,7 @@ if(modeSelect)modeSelect.addEventListener("change",()=>setMode(modeSelect.value)
 if(modeSelectTop)modeSelectTop.addEventListener("change",()=>setMode(modeSelectTop.value));
 syncModeSelectors();
 let rows=[],filter="all",channel=null,seen=new Set(),firstLoad=true;
-let opsUsers=[],opsAuditLogs=[],opsAnnouncements=[],opsMessages=[],opsFlags=[],opsView='users',editingAnnouncementId=null;
+let opsUsers=[],opsAuditLogs=[],opsAnnouncements=[],opsMessages=[],opsFlags=[],opsView='users',editingAnnouncementId=null,opsUsersPage=1,opsUsersTotal=null;
 let snsProfiles=[],snsPosts=[],snsReplies=[],snsChatMessages=[],snsTab="posts",snsUserFilterId=null,refreshTimer=null;
 let snsRealtimeChannel=null,snsReloadTimer=null,analyticsRefreshTimer=null,snsLikesTotal=0,snsFollowsTotal=0;
 const labels={pending:"未対応",reviewing:"確認中",done:"対応済み"};
@@ -435,37 +436,46 @@ function subscribe(){
  }).subscribe(s=>{$("#connection").textContent=s==="SUBSCRIBED"?"リアルタイム接続中":"再接続待機中";});
 }
 
+async function fetchAllAdminRows(makeQuery,pageSize=1000,maxRows=100000){
+ const all=[];let total=null,offset=0,truncated=false;
+ while(offset<maxRows){
+  const {data,error,count}=await makeQuery().range(offset,Math.min(offset+pageSize,maxRows)-1);
+  if(error)throw error;
+  if(total===null&&Number.isFinite(count))total=count;
+  const page=data||[];all.push(...page);
+  if(page.length<pageSize)break;
+  offset+=page.length;
+  if(offset>=maxRows)truncated=total===null||total>all.length;
+ }
+ return {data:all,count:total??all.length,truncated};
+}
 async function loadSns(){
  const panels=["#snsPostsPanel","#snsRepliesPanel","#snsUsersPanel","#snsChatPanel"];
  panels.forEach(s=>$(s).innerHTML='<div class="empty">読み込み中…</div>');
- const queries=await Promise.all([
-  db.from("profiles").select("id,username,display_name,bio,avatar_url,created_at",{count:"exact"}).order("created_at",{ascending:false}).limit(500),
-  db.from("posts").select("id,user_id,content,hashtags,created_at",{count:"exact"}).order("created_at",{ascending:false}).limit(500),
-  db.from("post_replies").select("id,post_id,user_id,content,created_at",{count:"exact"}).order("created_at",{ascending:false}).limit(500),
-  db.from("public_chat_messages").select("id,nickname,content,created_at",{count:"exact"}).order("created_at",{ascending:false}).limit(500),
-  db.from("post_likes").select("post_id",{count:"exact"}).limit(1),
-  db.from("follows").select("follower_id",{count:"exact"}).limit(1)
- ]);
- const failed=queries.find(q=>q.error);
- if(failed){
-  const message=esc(failed.error.message||"読み込みに失敗しました。");
+ try{
+  const specs=[
+   ()=>db.from("profiles").select("id,username,display_name,bio,avatar_url,created_at",{count:"exact"}).order("created_at",{ascending:false}),
+   ()=>db.from("posts").select("id,user_id,content,hashtags,created_at",{count:"exact"}).order("created_at",{ascending:false}),
+   ()=>db.from("post_replies").select("id,post_id,user_id,content,created_at",{count:"exact"}).order("created_at",{ascending:false}),
+   ()=>db.from("public_chat_messages").select("id,nickname,content,created_at",{count:"exact"}).order("created_at",{ascending:false})
+  ];
+  const [profiles,posts,replies,chats,likes,follows]=await Promise.all([
+   ...specs.map(make=>fetchAllAdminRows(make)),
+   db.from("post_likes").select("post_id",{count:"exact",head:true}),
+   db.from("follows").select("follower_id",{count:"exact",head:true})
+  ]);
+  snsProfiles=profiles.data;snsPosts=posts.data;snsReplies=replies.data;snsChatMessages=chats.data;
+  snsLikesTotal=likes.count||0;snsFollowsTotal=follows.count||0;
+  $("#snsUsersCount").textContent=profiles.count;$("#snsPostsCount").textContent=posts.count;
+  $("#snsRepliesCount").textContent=replies.count;$("#snsChatCount").textContent=chats.count;
+  $("#snsLikesCount").textContent=snsLikesTotal;$("#snsFollowsCount").textContent=snsFollowsTotal;
+  $("#snsConnection").textContent=[profiles,posts,replies,chats].some(x=>x.truncated)?"安全上限まで表示":"全データ取得済み";
+  renderSns();
+ }catch(error){
+  const message=esc(error.message||"読み込みに失敗しました。");
   panels.forEach(s=>$(s).innerHTML='<div class="error">読み込みに失敗しました：'+message+'</div>');
   $("#snsConnection").textContent="通信エラー";
-  return;
  }
- snsProfiles=queries[0].data||[];
- snsPosts=queries[1].data||[];
- snsReplies=queries[2].data||[];
- snsChatMessages=queries[3].data||[];
- snsLikesTotal=queries[4].count||0;
- snsFollowsTotal=queries[5].count||0;
- $("#snsUsersCount").textContent=queries[0].count??snsProfiles.length;
- $("#snsPostsCount").textContent=queries[1].count??snsPosts.length;
- $("#snsRepliesCount").textContent=queries[2].count??snsReplies.length;
- $("#snsChatCount").textContent=queries[3].count??snsChatMessages.length;
- $("#snsLikesCount").textContent=snsLikesTotal;
- $("#snsFollowsCount").textContent=snsFollowsTotal;
- renderSns();
 }
 
 function analyticsDateKey(value){
@@ -477,22 +487,23 @@ async function loadAnalytics(){
  const start=new Date();start.setHours(0,0,0,0);start.setDate(start.getDate()-(days-1));
  const since=start.toISOString();
  $("#snsAnalyticsUpdated").textContent="集計中…";
- const queries=await Promise.all([
-  db.from("profiles").select("id,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true}).limit(1000),
-  db.from("posts").select("id,user_id,hashtags,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true}).limit(1000),
-  db.from("post_replies").select("id,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true}).limit(1000),
-  db.from("post_likes").select("post_id,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true}).limit(1000),
-  db.from("follows").select("follower_id,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true}).limit(1000),
-  db.from("public_chat_messages").select("id,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true}).limit(1000)
- ]);
- const failed=queries.find(q=>q.error);
- if(failed){
+ let results;
+ try{
+  const specs=[
+   ()=>db.from("profiles").select("id,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true}),
+   ()=>db.from("posts").select("id,user_id,hashtags,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true}),
+   ()=>db.from("post_replies").select("id,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true}),
+   ()=>db.from("post_likes").select("post_id,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true}),
+   ()=>db.from("follows").select("follower_id,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true}),
+   ()=>db.from("public_chat_messages").select("id,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true})
+  ];
+  results=await Promise.all(specs.map(make=>fetchAllAdminRows(make)));
+ }catch(error){
   $("#snsAnalyticsUpdated").textContent="集計に失敗";
-  $("#snsActivityChart").innerHTML='<text x="30" y="110">データを取得できませんでした：'+esc(failed.error.message)+'</text>';
+  $("#snsActivityChart").innerHTML='<text x="30" y="110">データを取得できませんでした：'+esc(error.message)+'</text>';
   return;
  }
- const data=queries.map(q=>q.data||[]);
- const totals=queries.map((q,i)=>q.count??data[i].length);
+ const data=results.map(q=>q.data),totals=results.map(q=>q.count);
  $("#analyticsNewUsers").textContent=totals[0];
  $("#analyticsPosts").textContent=totals[1];
  $("#analyticsReplies").textContent=totals[2];
@@ -539,8 +550,8 @@ async function loadAnalytics(){
  $("#snsEngagement").textContent=postTotal?((snsLikesTotal+(Number($("#snsRepliesCount").textContent)||0))/postTotal).toFixed(2):"—";
  const sums=datePoints.reduce((a,p)=>({posts:a.posts+p.posts,replies:a.replies+p.replies,chat:a.chat+p.chat}),{posts:0,replies:0,chat:0});
  $("#analyticsSummaryText").textContent="期間内の合計：投稿 "+totals[1]+" 件／返信 "+totals[2]+" 件／いいね "+totals[3]+" 件／フォロー "+totals[4]+" 件／公開チャット "+totals[5]+" 件";
- const capped=queries.some((q,i)=>(q.count??0)>data[i].length);
- $("#analyticsDataNote").textContent=(capped?"一部テーブルで取得上限に達しています。日別グラフは取得できた先頭1,000件の範囲です。":"期間内のデータをすべて取得しています。")+" 人気タグ・投稿者ランキングは管理画面に読み込んだ最新500投稿を対象にしています。";
+ const capped=results.some(q=>q.truncated);
+ $("#analyticsDataNote").textContent=capped?"データ量が非常に多いため、安全上限まで取得しました。全件ではない可能性があります。":"選択期間の全データをページ分割して集計しています。人気タグ・投稿者ランキングも取得済み投稿全体が対象です。";
  $("#snsAnalyticsUpdated").textContent="最終更新："+new Date().toLocaleTimeString("ja-JP");
 }
 function stopSnsRealtime(){
@@ -656,7 +667,9 @@ function renderOpsUsers(){
  $("#opsTotalUsers").textContent=opsUsers.length;
  $("#opsActiveUsers").textContent=active;
  $("#opsBannedUsers").textContent=opsUsers.length-active;
- $("#opsUsersMeta").textContent=shown.length+" / "+opsUsers.length+" 件を表示 · プラン情報は課金連携が完了するまで未連携です。";
+ $("#opsUsersMeta").textContent=shown.length+" / "+opsUsers.length+" 件を表示（このページ内で検索・絞り込み） · プラン情報は課金連携が完了するまで未連携です。";
+ const pageLabel=$("#opsUsersPageLabel");if(pageLabel)pageLabel.textContent=opsUsersPage+"ページ目"+(opsUsersTotal!==null?" · 全 "+opsUsersTotal.toLocaleString("ja-JP")+"人":"");
+ const prev=$("#opsUsersPrev"),next=$("#opsUsersNext");if(prev)prev.disabled=opsUsersPage<=1;if(next)next.disabled=opsUsers.length<500||(opsUsersTotal!==null&&opsUsersPage*500>=opsUsersTotal);
  if(!shown.length){$("#opsUsersList").innerHTML='<div class="empty">条件に一致するユーザーはいません。</div>';return;}
  $("#opsUsersList").innerHTML='<table class="ops-table"><thead><tr><th>ユーザー</th><th>登録日時</th><th>最終ログイン</th><th>ボード</th><th>ウィジェット</th><th>プラン</th><th>状態</th><th>操作</th></tr></thead><tbody>'+
  shown.map(u=>{
@@ -674,10 +687,11 @@ function renderOpsUsers(){
    '</div></td></tr>';
  }).join("")+'</tbody></table>';
 }
-async function loadOpsUsers(){
+async function loadOpsUsers(page=opsUsersPage){
+ opsUsersPage=Math.max(1,Number(page)||1);
  $("#opsUsersList").innerHTML='<div class="empty">読み込み中…</div>';
  $("#opsConnection").textContent="アカウント情報を取得中…";
- const {data,error}=await db.functions.invoke("admin-console",{body:{action:"list_users",page:1}});
+ const {data,error}=await db.functions.invoke("admin-console",{body:{action:"list_users",page:opsUsersPage}});
  if(error||data?.error){
   const message=error?.message||data?.error||"不明なエラー";
   $("#opsUsersList").innerHTML='<div class="error">読み込みに失敗しました：'+esc(message)+'</div>';
@@ -685,6 +699,7 @@ async function loadOpsUsers(){
   return;
  }
  opsUsers=Array.isArray(data?.users)?data.users:[];
+ opsUsersTotal=Number.isFinite(Number(data?.total))?Number(data.total):null;
  renderOpsUsers();
  $("#opsConnection").textContent="接続済み · "+new Date().toLocaleTimeString("ja-JP");
 }
@@ -786,7 +801,7 @@ async function ensureOpsMessageTargets(){
  if(!select)return;
  if(!opsUsers.length){
   const users=[];
-  for(let page=1;page<=20;page++){
+  for(let page=1;page<=200;page++){
    const data=await opsInvoke({action:"list_users",page});
    users.push(...(data.users||[]));
    if(!data.hasMore)break;
@@ -1005,7 +1020,9 @@ $("#notifyButton").addEventListener("click",async()=>{if(!("Notification" in win
 $("#filters").addEventListener("click",e=>{const b=e.target.closest("button[data-filter]");if(!b)return;filter=b.dataset.filter;$("#filters").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b));render();});
 $("#search").addEventListener("input",render);
 $("#productSelect").addEventListener("change",switchProduct);
-$("#opsUsersRefresh").addEventListener("click",loadOpsUsers);
+$("#opsUsersRefresh").addEventListener("click",()=>loadOpsUsers(opsUsersPage));
+$("#opsUsersPrev").addEventListener("click",()=>loadOpsUsers(Math.max(1,opsUsersPage-1)));
+$("#opsUsersNext").addEventListener("click",()=>loadOpsUsers(opsUsersPage+1));
 $("#opsUsersSearch").addEventListener("input",renderOpsUsers);
 ["opsStatusFilter","opsCreatedFilter","opsActivityFilter","opsBoardsFilter","opsPlanFilter"].forEach(id=>$("#"+id).addEventListener("change",renderOpsUsers));
 $("#opsUsersList").addEventListener("click",e=>{const b=e.target.closest("button[data-ops-action]");if(b)runOpsUserAction(b);});
