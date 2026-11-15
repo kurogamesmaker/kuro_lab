@@ -763,7 +763,7 @@ async function searchOpsUserErrors(event){
 
 function setOpsView(view){
  opsView=view;
- ["users","audit","announcements","flags"].forEach(name=>{
+ ["users","audit","announcements","flags","analytics"].forEach(name=>{
   const target=$("#ops"+name.charAt(0).toUpperCase()+name.slice(1)+"View");
   if(target)target.hidden=name!==view;
   const button=$("#opsTabs [data-ops-tab='"+name+"']");
