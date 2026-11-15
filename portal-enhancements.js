@@ -225,9 +225,13 @@
     return {
       widgets: Array.isArray(p.dashboardWidgets) ? p.dashboardWidgets.slice() : [],
       layout: p.dashboardLayout || "balanced",
+      viewMode: p.dashboardViewMode === "canvas" ? "canvas" : "grid",
       sizes: JSON.parse(JSON.stringify(p.dashboardSizes || {})),
       spans: JSON.parse(JSON.stringify(p.dashboardSpans || {})),
-      heights: JSON.parse(JSON.stringify(p.dashboardHeights || {}))
+      heights: JSON.parse(JSON.stringify(p.dashboardHeights || {})),
+      positions: JSON.parse(JSON.stringify(p.dashboardCanvasPositions || {})),
+      bounds: JSON.parse(JSON.stringify(p.dashboardCanvasBounds || {width:4800,height:3200})),
+      zoom: Number(p.dashboardCanvasZoom) || 1
     };
   }
 
@@ -235,9 +239,13 @@
     return {
       widgets: Array.isArray(x && x.widgets) ? x.widgets.slice() : ["shortcuts", "games", "favorites", "activity", "recent", "achievements", "clock"],
       layout: x && ["balanced", "three", "single"].indexOf(x.layout) >= 0 ? x.layout : "balanced",
+      viewMode: x && x.viewMode === "canvas" ? "canvas" : "grid",
       sizes: JSON.parse(JSON.stringify(x && x.sizes || {})),
       spans: JSON.parse(JSON.stringify(x && x.spans || {})),
-      heights: JSON.parse(JSON.stringify(x && x.heights || {}))
+      heights: JSON.parse(JSON.stringify(x && x.heights || {})),
+      positions: JSON.parse(JSON.stringify(x && x.positions || {})),
+      bounds: JSON.parse(JSON.stringify(x && x.bounds || {width:4800,height:3200})),
+      zoom: Math.max(.55,Math.min(1.5,Number(x && x.zoom) || 1))
     };
   }
 
@@ -306,6 +314,10 @@
     p.dashboardSizes = snap.sizes;
     p.dashboardSpans = snap.spans;
     p.dashboardHeights = snap.heights;
+    p.dashboardViewMode = snap.viewMode;
+    p.dashboardCanvasPositions = snap.positions;
+    p.dashboardCanvasBounds = snap.bounds;
+    p.dashboardCanvasZoom = snap.zoom;
     saveAndRender(w.name + "に切り替えました");
   }
 
@@ -358,7 +370,144 @@
         "</div>";
     }).join("");
     return '<div class="portal-workspace-bar"><div class="portal-workspace-heading"><span>YOUR WORKSPACES</span><small>用途ごとにホームを切り替え</small></div><div class="portal-workspace-tabs">' +
-      items + '<button type="button" class="portal-workspace-create" data-workspace-create aria-label="ワークスペースを追加">＋</button></div></div>';
+      items + '<button type="button" class="portal-workspace-create" data-workspace-create aria-label="ワークスペースを追加">＋</button><button type="button" class="portal-workspace-share" data-workspace-share aria-label="ワークスペースを共有">共有 ↗</button></div></div>';
+  }
+
+
+  var TEMPLATE_WIDGETS = ["shortcuts","games","favorites","activity","recent","achievements","clock","weather","market","smartlinks","groups","searchbox","qr","rss","notes","todo","pomodoro","worldclock","countdown","utilities","photo","media","custom"];
+  var pendingSharedTemplate = null;
+
+  function cleanTemplatePayload(input) {
+    if (!input || input.v !== 1 || !Array.isArray(input.widgets)) return null;
+    var widgets = Array.from(new Set(input.widgets.filter(function (id) {
+      return TEMPLATE_WIDGETS.indexOf(id) >= 0;
+    }))).slice(0, 24);
+    if (!widgets.length) return null;
+    function cleanMap(source, allowed) {
+      var out = {};
+      if (!source || typeof source !== "object") return out;
+      Object.keys(source).forEach(function (key) {
+        if (widgets.indexOf(key) < 0) return;
+        var value = source[key];
+        if (allowed === "size" && ["small","half","wide","full"].indexOf(value) >= 0) out[key] = value;
+        else if (allowed === "span" && Number(value) >= 1 && Number(value) <= 12) out[key] = Math.round(Number(value));
+        else if (allowed === "height" && Number(value) >= 160 && Number(value) <= 900) out[key] = Math.round(Number(value));
+        else if (allowed === "position" && value && typeof value === "object") {
+          out[key] = {
+            x: Math.max(-50000,Math.min(50000,Number(value.x)||0)),
+            y: Math.max(-50000,Math.min(50000,Number(value.y)||0)),
+            width: Math.max(260,Math.min(1100,Number(value.width)||420)),
+            rotation: Math.max(-180,Math.min(180,Number(value.rotation)||0)),
+            z: Math.max(1,Math.min(999,Number(value.z)||100))
+          };
+        }
+      });
+      return out;
+    }
+    var bounds = input.bounds || {};
+    return {
+      v: 1,
+      name: String(input.name || "共有テンプレート").replace(/[<>]/g,"").trim().slice(0,24) || "共有テンプレート",
+      widgets: widgets,
+      layout: ["balanced","three","single"].indexOf(input.layout) >= 0 ? input.layout : "balanced",
+      viewMode: input.viewMode === "canvas" ? "canvas" : "grid",
+      sizes: cleanMap(input.sizes,"size"),
+      spans: cleanMap(input.spans,"span"),
+      heights: cleanMap(input.heights,"height"),
+      positions: cleanMap(input.positions,"position"),
+      bounds: {
+        width: Math.max(3200,Math.min(30000,Number(bounds.width)||4800)),
+        height: Math.max(2200,Math.min(30000,Number(bounds.height)||3200))
+      },
+      zoom: Math.max(.55,Math.min(1.5,Number(input.zoom)||1))
+    };
+  }
+
+  function encodeTemplate(payload) {
+    return btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
+      .replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+  }
+
+  function decodeTemplate(token) {
+    try {
+      var base64 = String(token || "").replace(/-/g,"+").replace(/_/g,"/");
+      while (base64.length % 4) base64 += "=";
+      var json = decodeURIComponent(escape(atob(base64)));
+      if (json.length > 18000) return null;
+      return cleanTemplatePayload(JSON.parse(json));
+    } catch (e) { return null; }
+  }
+
+  function readIncomingTemplate() {
+    if (pendingSharedTemplate) return pendingSharedTemplate;
+    var hash = String(location.hash || "");
+    var match = hash.match(/(?:^#|&)kuro-template=([^&]+)/);
+    if (!match) return null;
+    pendingSharedTemplate = decodeTemplate(match[1]);
+    return pendingSharedTemplate;
+  }
+
+  function clearTemplateHash() {
+    try { history.replaceState(null,"",location.pathname + location.search); } catch (e) {}
+    pendingSharedTemplate = null;
+  }
+
+  function shareCurrentWorkspace() {
+    var a = getApi(), p = getPrefs();
+    if (!a || !p || !p.dashboardWorkspaces) return;
+    captureWorkspace();
+    p = getPrefs();
+    var id = p.activeWorkspace || "personal", w = p.dashboardWorkspaces[id] || {};
+    var snap = cleanTemplatePayload(Object.assign({v:1,name:w.name || "KURO ワークスペース"}, snapshotCurrent()));
+    if (!snap) { a.toast("共有できるウィジェットがありません"); return; }
+    var url = location.origin + location.pathname + location.search + "#kuro-template=" + encodeTemplate(snap);
+    if (url.length > 14000) { a.toast("テンプレートの情報量が多すぎます。ウィジェット数を減らしてください"); return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () {
+        a.toast("テンプレート共有URLをコピーしました");
+      }).catch(function () {
+        window.prompt("このURLをコピーして共有してください",url);
+      });
+    } else {
+      window.prompt("このURLをコピーして共有してください",url);
+    }
+  }
+
+  function showTemplateImportCard() {
+    var a = getApi(), dash = document.querySelector(".portal-dashboard-v2");
+    var toolbar = dash && dash.querySelector(".portal-dashboard-toolbar");
+    var payload = readIncomingTemplate();
+    if (!a || !toolbar || !payload || document.getElementById("portal-template-import")) return;
+    var card = document.createElement("section");
+    card.id = "portal-template-import";
+    card.className = "portal-template-import";
+    card.innerHTML = '<div><span class="portal-eyebrow">SHARED WORKSPACE TEMPLATE</span><strong>' + esc(payload.name) + '</strong><small>' + payload.widgets.length + '種類のウィジェット配置 · ' + (payload.viewMode === "canvas" ? "無限キャンバス" : "整列レイアウト") + '</small><p>このテンプレートには配置・サイズ・表示モードのみが含まれます。メモ、個人URL、RSS登録内容、アカウント情報は共有されません。</p></div><div class="portal-template-actions"><button type="button" class="portal-btn primary" data-template-import>新しいワークスペースとして追加</button><button type="button" class="portal-btn subtle" data-template-dismiss>閉じる</button></div>';
+    toolbar.insertAdjacentElement("afterend",card);
+  }
+
+  function importSharedTemplate() {
+    var a = getApi(), p = getPrefs(), payload = readIncomingTemplate();
+    if (!a || !p || !payload || !p.dashboardWorkspaces) return;
+    if (Object.keys(p.dashboardWorkspaces).length >= 6) {
+      a.toast("ワークスペースは最大6個です。不要なワークスペースを削除してから追加してください");
+      return;
+    }
+    captureWorkspace();
+    var id = "custom_shared_" + Date.now();
+    var snap = cloneSnapshot(payload);
+    p.dashboardWorkspaces[id] = Object.assign({name:payload.name},snap);
+    p.activeWorkspace = id;
+    p.dashboardWidgets = snap.widgets;
+    p.dashboardLayout = snap.layout;
+    p.dashboardViewMode = snap.viewMode;
+    p.dashboardSizes = snap.sizes;
+    p.dashboardSpans = snap.spans;
+    p.dashboardHeights = snap.heights;
+    p.dashboardCanvasPositions = snap.positions;
+    p.dashboardCanvasBounds = snap.bounds;
+    p.dashboardCanvasZoom = snap.zoom;
+    clearTemplateHash();
+    saveAndRender("共有テンプレートを追加しました");
   }
 
   function decorateDashboard() {
@@ -405,6 +554,7 @@
       actions.insertBefore(search, actions.firstChild);
     }
     captureWorkspace();
+    showTemplateImportCard();
     updateBadges();
   }
 
@@ -546,6 +696,20 @@
     var del = event.target.closest("[data-workspace-delete]");
     if (del) {
       deleteWorkspace(del.dataset.workspaceDelete);
+      return;
+    }
+    if (event.target.closest("[data-workspace-share]")) {
+      shareCurrentWorkspace();
+      return;
+    }
+    if (event.target.closest("[data-template-import]")) {
+      importSharedTemplate();
+      return;
+    }
+    if (event.target.closest("[data-template-dismiss]")) {
+      clearTemplateHash();
+      var importCard = document.getElementById("portal-template-import");
+      if (importCard) importCard.remove();
       return;
     }
     var accent = event.target.closest("[data-accent-choice]");
