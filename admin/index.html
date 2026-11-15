@@ -133,9 +133,9 @@ const date=s=>new Intl.DateTimeFormat("ja-JP",{dateStyle:"medium",timeStyle:"sho
 function showLogin(message){$("#appView").hidden=true;$("#loginView").hidden=false;if(message)$("#loginError").textContent=message;}
 function showApp(user){$("#loginView").hidden=true;$("#appView").hidden=false;$("#account").textContent=user.email||"管理者";$("#loginError").textContent="";}
 async function checkAdmin(user){
- const {data,error}=await db.rpc("is_portal_admin");
+ const {data,error}=await db.from("admin_users").select("user_id,role").eq("user_id",user.id).maybeSingle();
  if(error)throw error;
- if(data!==true)throw new Error("このアカウントには管理者権限がありません。");
+ if(!data)throw new Error("このアカウントには管理者権限がありません。");
 }
 async function load(){
  $("#requestList").innerHTML='<div class="empty">読み込み中…</div>';
