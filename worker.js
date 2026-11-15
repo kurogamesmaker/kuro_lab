@@ -168,6 +168,7 @@ async function workspaceRss(request) {
 
 export default {
   async fetch(request, env, ctx) {
+    try {
     const url = new URL(request.url);
 
     if (url.hostname === "kurolab.cc.cd" && (url.pathname === "/pro" || url.pathname === "/pro/")) {
@@ -269,15 +270,15 @@ export default {
     }
 
     if (url.hostname === "kurolab.cc.cd" && url.pathname === "/api/site-status") {
-      return workspaceSiteStatus(request);
+      return await workspaceSiteStatus(request);
     }
 
     if (url.pathname === "/api/workspace-rss") {
-      return workspaceRss(request);
+      return await workspaceRss(request);
     }
 
     if (url.pathname === "/api/kuro-gas-proxy") {
-      return gasProxy({
+      return await gasProxy({
         request,
         env,
         params: {},
@@ -286,6 +287,37 @@ export default {
       });
     }
 
-    return env.ASSETS.fetch(request);
+    return await env.ASSETS.fetch(request);
+    } catch (error) {
+      let pathname = "/";
+      try { pathname = new URL(request.url).pathname; } catch (_) {}
+      const rayId = request.headers.get("cf-ray") || "not-provided";
+      const errorName = error && error.name ? String(error.name) : "Error";
+      const rawMessage = String(error && error.message ? error.message : error || "Unknown error");
+      const errorMessage = rawMessage.replace(/https?:\/\/\S+/g, (value) => {
+        const queryIndex = value.indexOf("?");
+        return queryIndex < 0 ? value : value.slice(0, queryIndex) + "?[redacted]";
+      }).slice(0, 1200);
+      const errorStack = error && typeof error.stack === "string" ? error.stack.slice(0, 6000) : "";
+      console.error("[KURO_LAB_WORKER_EXCEPTION]", JSON.stringify({
+        rayId,
+        method: request.method,
+        pathname,
+        errorName,
+        errorMessage,
+        stack: errorStack
+      }));
+      return new Response("KURO Lab is temporarily unavailable. Please try again shortly.", {
+        status: 503,
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Cache-Control": "no-store",
+          "Retry-After": "30",
+          "X-Content-Type-Options": "nosniff",
+          "X-Kuro-Error": "worker-exception",
+          "X-Kuro-Request-Id": rayId
+        }
+      });
+    }
   }
 };
