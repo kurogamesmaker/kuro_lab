@@ -480,12 +480,12 @@ function bindDashboard(){
 
  var viewport=$("#portal-canvas-viewport"),stage=$("#portal-canvas-stage");
  if(viewport&&stage){
-  var zoom=Math.max(.55,Math.min(1.5,Number(st.data.preferences.dashboardCanvasZoom)||1)),bounds=getDashboardCanvasBounds(),savedView=window.__kuroCanvasScroll;
-  if(!savedView){try{savedView=JSON.parse(localStorage.getItem("kuro_canvas_view")||"null");}catch(err){}}
+  var zoom=Math.max(.55,Math.min(1.5,Number(st.data.preferences.dashboardCanvasZoom)||1)),bounds=getDashboardCanvasBounds(),workspaceCanvasKey="kuro_canvas_view_"+String(st.data.preferences.activeWorkspace||"personal"),savedView=window.__kuroCanvasScroll;
+  if(!savedView){try{savedView=JSON.parse(localStorage.getItem(workspaceCanvasKey)||"null");}catch(err){}}
   if(savedView&&Number.isFinite(savedView.left)&&Number.isFinite(savedView.top)){viewport.scrollLeft=Math.max(0,savedView.left);viewport.scrollTop=Math.max(0,savedView.top);}
-  else{viewport.scrollLeft=900*zoom;viewport.scrollTop=480*zoom;}
+  else{var visibleIds=getDashboardIds(),minX=Infinity,minY=Infinity;visibleIds.forEach(function(id,index){var position=getDashboardCanvasPosition(id,index);minX=Math.min(minX,position.x);minY=Math.min(minY,position.y);});viewport.scrollLeft=Number.isFinite(minX)?Math.max(0,(minX-180)*zoom):900*zoom;viewport.scrollTop=Number.isFinite(minY)?Math.max(0,(minY-180)*zoom):480*zoom;}
   var growing=false;
-  function updateCanvasView(){var view={left:viewport.scrollLeft,top:viewport.scrollTop};window.__kuroCanvasScroll=view;try{localStorage.setItem("kuro_canvas_view",JSON.stringify(view));}catch(err){}}
+  function updateCanvasView(){var view={left:viewport.scrollLeft,top:viewport.scrollTop};window.__kuroCanvasScroll=view;try{localStorage.setItem(workspaceCanvasKey,JSON.stringify(view));}catch(err){}}
   function setCanvasDimensions(){var b=getDashboardCanvasBounds(),z=Math.max(.55,Math.min(1.5,Number(st.data.preferences.dashboardCanvasZoom)||1));stage.style.width=Math.round(b.width*z)+"px";stage.style.height=Math.round(b.height*z)+"px";grid.style.width=b.width+"px";grid.style.height=b.height+"px";grid.style.transform="scale("+z+")";}
   viewport.addEventListener("scroll",function(){
    updateCanvasView();if(growing)return;var leftGrow=viewport.scrollLeft<220,topGrow=viewport.scrollTop<220,rightGrow=viewport.scrollLeft+viewport.clientWidth>viewport.scrollWidth-260,bottomGrow=viewport.scrollTop+viewport.clientHeight>viewport.scrollHeight-260;
@@ -494,7 +494,7 @@ function bindDashboard(){
    if(leftGrow){Object.keys(pos).forEach(function(id){pos[id].x=Number(pos[id].x||0)+grow;});viewport.scrollLeft+=grow*zoom;bounds.width+=grow;}
    if(topGrow){Object.keys(pos).forEach(function(id){pos[id].y=Number(pos[id].y||0)+grow;});viewport.scrollTop+=grow*zoom;bounds.height+=grow;}
    if(rightGrow)bounds.width+=grow;if(bottomGrow)bounds.height+=grow;
-   st.data.preferences.dashboardCanvasPositions=pos;st.data.preferences.dashboardCanvasBounds=bounds;setCanvasDimensions();updateCanvasView();persistDisplayPrefs();growing=false;
+   st.data.preferences.dashboardCanvasPositions=pos;st.data.preferences.dashboardCanvasBounds=bounds;setCanvasDimensions();updateCanvasView();persistDisplayPrefs();window.dispatchEvent(new Event("kuro:canvas-layout-changed"));growing=false;
   },{passive:true});
   var pan=null;
   viewport.addEventListener("pointerdown",function(e){
