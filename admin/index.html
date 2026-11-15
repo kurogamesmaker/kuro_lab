@@ -1236,7 +1236,8 @@ $("#opsUsersPrev").addEventListener("click",()=>loadOpsUsers(Math.max(1,opsUsers
 $("#opsUsersNext").addEventListener("click",()=>loadOpsUsers(opsUsersPage+1));
 $("#opsUsersSearch").addEventListener("input",renderOpsUsers);
 ["opsStatusFilter","opsCreatedFilter","opsActivityFilter","opsBoardsFilter","opsPlanFilter"].forEach(id=>$("#"+id).addEventListener("change",renderOpsUsers));
-$("#opsUsersList").addEventListener("click",e=>{const b=e.target.closest("button[data-ops-action]");if(b)runOpsUserAction(b);});\n$("#opsUsersList").addEventListener("click",e=>{if(e.target.closest("[data-ops-go-pro]"))setOpsView("pro");});
+$("#opsUsersList").addEventListener("click",e=>{const b=e.target.closest("button[data-ops-action]");if(b)runOpsUserAction(b);});
+$("#opsUsersList").addEventListener("click",e=>{if(e.target.closest("[data-ops-go-pro]"))setOpsView("pro");});
 $("#opsTabs").addEventListener("click",e=>{const b=e.target.closest("button[data-ops-tab]");if(b)setOpsView(b.dataset.opsTab);});
 $("#opsProRefresh").addEventListener("click",loadOpsPro);
 $("#opsProApplications").addEventListener("click",handleOpsProClick);
