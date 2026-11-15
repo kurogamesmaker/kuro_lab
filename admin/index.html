@@ -401,7 +401,10 @@ const SUPABASE_URL="https://cprvpphlfpmiegjiutjn.supabase.co";
 const PUBLISHABLE_KEY="sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
 const $=s=>document.querySelector(s);
 const MODE_KEY="kuro-admin-connection-mode";
-const mode=localStorage.getItem(MODE_KEY)==="gas"?"gas":"supabase";
+const requestedMode=new URLSearchParams(location.search).get("connection");
+const storedMode=localStorage.getItem(MODE_KEY);
+const mode=(requestedMode==="gas"||requestedMode==="supabase")?requestedMode:(storedMode==="gas"?"gas":"supabase");
+try{localStorage.setItem(MODE_KEY,mode);}catch{}
 async function gasFetch(input,init={}){
  const request=new Request(input,init);
  const target=new URL(request.url);
@@ -434,7 +437,7 @@ let activeProduct=["lab","sns","ops"].includes(localStorage.getItem(PRODUCT_KEY)
 const productSelect=$("#productSelect");
 function syncModeSelectors(){if(modeSelect)modeSelect.value=mode;if(modeSelectTop)modeSelectTop.value=mode;}
 function syncProductSelector(){if(productSelect)productSelect.value=activeProduct;}
-function setMode(next){if(next!=="gas"&&next!=="supabase")return;localStorage.setItem(MODE_KEY,next);location.reload();}
+function setMode(next){if(next!=="gas"&&next!=="supabase")return;try{localStorage.setItem(MODE_KEY,next);}catch{}const url=new URL(location.href);url.searchParams.set("connection",next);location.replace(url.toString());}
 if(modeSelect)modeSelect.addEventListener("change",()=>setMode(modeSelect.value));
 if(modeSelectTop)modeSelectTop.addEventListener("change",()=>setMode(modeSelectTop.value));
 syncModeSelectors();
