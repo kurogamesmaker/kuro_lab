@@ -581,4 +581,19 @@
     addCatalogItems();
     updateMain();
   }
+
+
+  // Let vertical page scrolling pass through horizontally scrollable navigation strips.
+  // Keep horizontal trackpad / Shift+wheel navigation intact.
+  document.addEventListener("wheel", function (event) {
+    if (event.defaultPrevented || event.ctrlKey || event.metaKey) return;
+    var strip = event.target.closest(".portal-topnav, .portal-workspace-tabs");
+    if (!strip || !event.deltaY) return;
+    if (Math.abs(event.deltaX) > Math.abs(event.deltaY) || event.shiftKey) return;
+    var page = document.scrollingElement || document.documentElement;
+    var before = page.scrollTop;
+    page.scrollTop += event.deltaY;
+    if (page.scrollTop !== before) event.preventDefault();
+  }, { passive: false });
+
 })();
