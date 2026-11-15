@@ -45,9 +45,9 @@ function classifyApiRequest(input){
   if(p.indexOf("/api/kuro-gas-proxy")===0)service="gas_proxy";
   else if(p.indexOf("/api/workspace-rss")===0||/rss|feed/.test(p))service="rss";
   else if(p.indexOf("/api/ogp")===0||/ogp|opengraph/.test(p))service="ogp";
-  else if(/youtube|googleapis/.test(host))service="youtube";
   else if(/weather|openweathermap|weatherapi/.test(host)||/weather/.test(p))service="weather";
-  else if(host===new URL(SUPABASE_URL).hostname)service="supabase_data_api";
+  else if(host===new URL(SUPABASE_URL).hostname){if(p.indexOf("/auth/v1/")===0)service="supabase_auth";else if(p.indexOf("/storage/v1/")===0)service="supabase_storage";else if(p.indexOf("/functions/v1/")===0)service="supabase_edge";else service="supabase_data_api";}
+  else if(/youtube|googleapis/.test(host))service="other_api";
   else if(p.indexOf("/api/")===0)service="other_api";
   if(!service||p.indexOf("/rest/v1/usage_events")>=0)return null;
   var active=document.activeElement,widget=active&&active.closest?active.closest("[data-widget-id]"):null;
