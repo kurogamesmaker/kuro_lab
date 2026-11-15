@@ -375,9 +375,43 @@ function loadDashboardWeather(force){
  var status=$("#portal-weather-status");if(!status)return;
  var city=String(st.data.preferences.weatherCity||"東京").trim().slice(0,32)||"東京";
  if(!force&&window.__kuroWeatherCache&&window.__kuroWeatherCache.city===city&&Date.now()-window.__kuroWeatherCache.time<900000){applyWeatherData(window.__kuroWeatherCache.data);return;}
- if(window.__kuroWeatherLoading)return;window.__kuroWeatherLoading=true;status.textContent=city+"の天気を取得中…";
- var geo="https://geocoding-api.open-meteo.com/v1/search?name="+encodeURIComponent(city)+"&count=1&language=ja&format=json";
- fetch(geo).then(function(r){if(!r.ok)throw new Error("地域検索に失敗しました");return r.json();}).then(function(g){var place=g.results&&g.results[0];if(!place)throw new Error("地域が見つかりませんでした");var q="https://api.open-meteo.com/v1/forecast?latitude="+encodeURIComponent(place.latitude)+"&longitude="+encodeURIComponent(place.longitude)+"&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=1";return fetch(q).then(function(r){if(!r.ok)throw new Error("天気データを取得できません");return r.json();}).then(function(data){return {city:place.name||city,data:data};});}).then(function(result){window.__kuroWeatherCache={city:city,time:Date.now(),data:result};applyWeatherData(result);}).catch(function(err){var el=$("#portal-weather-status");if(el)el.textContent=err&&err.message?err.message:"天気を読み込めませんでした";}).finally(function(){window.__kuroWeatherLoading=false;});
+ var requestId=(window.__kuroWeatherRequestId||0)+1;window.__kuroWeatherRequestId=requestId;window.__kuroWeatherLoading=true;status.textContent=city+"の天気を取得中…";
+ var fallbackPlaces={
+  "東京":[35.6762,139.6503],"東京都":[35.6762,139.6503],"新宿":[35.6938,139.7034],"新宿区":[35.6938,139.7034],
+  "横浜":[35.4437,139.6380],"横浜市":[35.4437,139.6380],"神奈川":[35.4478,139.6425],"神奈川県":[35.4478,139.6425],
+  "大阪":[34.6937,135.5023],"大阪府":[34.6937,135.5023],"京都":[35.0116,135.7681],"京都府":[35.0116,135.7681],
+  "名古屋":[35.1815,136.9066],"愛知":[35.1802,136.9066],"愛知県":[35.1802,136.9066],
+  "札幌":[43.0618,141.3545],"北海道":[43.0618,141.3545],"仙台":[38.2682,140.8694],"宮城":[38.2682,140.8694],
+  "さいたま":[35.8617,139.6455],"埼玉":[35.8617,139.6455],"千葉":[35.6074,140.1065],"千葉県":[35.6074,140.1065],
+  "神戸":[34.6901,135.1956],"兵庫":[34.6913,135.1830],"兵庫県":[34.6913,135.1830],
+  "広島":[34.3853,132.4553],"広島県":[34.3853,132.4553],"福岡":[33.5902,130.4017],"福岡県":[33.5902,130.4017],
+  "那覇":[26.2124,127.6809],"沖縄":[26.2124,127.6809],"沖縄県":[26.2124,127.6809],
+  "静岡":[34.9756,138.3828],"新潟":[37.9161,139.0364],"金沢":[36.5613,136.6562],"岡山":[34.6551,133.9195],
+  "熊本":[32.8031,130.7079],"鹿児島":[31.5966,130.5571],"長野":[36.6513,138.1810],"高松":[34.3428,134.0466],
+  "松山":[33.8392,132.7657]
+ };
+ function knownPlace(){
+  var key=city.replace(/[\s　]/g,"");
+  if(fallbackPlaces[key])return {name:key,latitude:fallbackPlaces[key][0],longitude:fallbackPlaces[key][1]};
+  return null;
+ }
+ function fetchForecast(place){
+  var q="https://api.open-meteo.com/v1/forecast?latitude="+encodeURIComponent(place.latitude)+"&longitude="+encodeURIComponent(place.longitude)+"&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=1";
+  return fetch(q).then(function(r){if(!r.ok)throw new Error("天気データを取得できません");return r.json();}).then(function(data){return {city:place.name||city,data:data};});
+ }
+ var geo="https://geocoding-api.open-meteo.com/v1/search?name="+encodeURIComponent(city)+"&count=10&language=ja&format=json";
+ fetch(geo).then(function(r){if(!r.ok)throw new Error("地域検索に失敗しました");return r.json();}).then(function(g){
+  if(requestId!==window.__kuroWeatherRequestId)return null;
+  var results=Array.isArray(g.results)?g.results:[],place=results.find(function(x){return x.country_code==="JP";})||results[0]||knownPlace();
+  if(!place)throw new Error("地域が見つかりませんでした。市区町村名か都道府県名で入力してください");
+  return fetchForecast(place);
+ }).then(function(result){
+  if(!result||requestId!==window.__kuroWeatherRequestId)return;
+  window.__kuroWeatherCache={city:city,time:Date.now(),data:result};applyWeatherData(result);
+ }).catch(function(err){
+  if(requestId!==window.__kuroWeatherRequestId)return;
+  var el=$("#portal-weather-status");if(el)el.textContent=err&&err.message?err.message:"天気を読み込めませんでした";
+ }).finally(function(){if(requestId===window.__kuroWeatherRequestId)window.__kuroWeatherLoading=false;});
 }
 function applyWeatherData(result){var data=result&&result.data||{},current=data.current||{},daily=data.daily||{};var put=function(id,value){var el=$("#"+id);if(el)el.textContent=value;};put("portal-weather-status",result.city+" の現在の天気");put("portal-weather-temp",Number.isFinite(current.temperature_2m)?Math.round(current.temperature_2m)+"°":"--°");put("portal-weather-label",weatherCodeLabel(current.weather_code));put("portal-weather-max",daily.temperature_2m_max&&daily.temperature_2m_max.length?Math.round(daily.temperature_2m_max[0])+"°":"--°");put("portal-weather-min",daily.temperature_2m_min&&daily.temperature_2m_min.length?Math.round(daily.temperature_2m_min[0])+"°":"--°");put("portal-weather-rain",daily.precipitation_probability_max&&daily.precipitation_probability_max.length?Math.round(daily.precipitation_probability_max[0])+"%":"--%");}
 function updateNetworkStatus(){var e=$("#portal-network-status");if(!e)return;var off=!navigator.onLine,busy=(window.__kuroPendingRequests||0)>0;e.dataset.state=off?"offline":busy?"busy":"online";e.innerHTML='<i></i><span>'+(off?"オフライン":busy?"通信中":"オンライン")+'</span>';e.title=off?"ネットワーク未接続":busy?"データを読み込み中":"通信できます";}
