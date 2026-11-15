@@ -979,3 +979,14 @@ body.portal-drawer-open{overflow:hidden}
 @media(prefers-reduced-motion:reduce){
   .portal-sidebar-item,.portal-workspace-tab{transition:none!important}
 }
+
+/* Settings control grouping */
+.portal-accent-control{display:grid;gap:8px;justify-items:end;min-width:190px;max-width:260px}
+.portal-accent-control .portal-select{width:100%;min-width:0}
+.portal-accent-swatches{display:flex;justify-content:flex-end;gap:9px;margin-top:0}
+.portal-theme-auto-note{margin-top:4px}
+@media(max-width:760px){
+  .portal-accent-control{min-width:0;width:100%;max-width:100%}
+  .portal-settings-row{align-items:flex-start}
+  .portal-settings-row>div:first-child{min-width:0}
+}
