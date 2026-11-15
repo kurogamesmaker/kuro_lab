@@ -104,6 +104,26 @@
 @media(max-width:900px){.ops-analytics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ops-analytics-columns{grid-template-columns:1fr}}
 @media(max-width:520px){.ops-retention-grid{grid-template-columns:1fr}.ops-error-search{grid-template-columns:1fr}}
 .request-reply-editor{grid-column:1/-1;display:grid;gap:8px;padding-top:12px;border-top:1px solid var(--line)}.request-reply-editor label{font-size:12px;color:var(--muted)}.request-reply-editor textarea{width:100%;min-height:76px;resize:vertical;background:#0b1524;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit}.request-reply-editor .btn{justify-self:start}.request-reply-preview{margin-top:12px;padding:12px;border-radius:10px;background:#12263a;border-left:3px solid #5aa9e6}.request-reply-preview p{white-space:pre-wrap;margin:6px 0}.request-reply-preview small{color:var(--muted)}@media(max-width:650px){.item{grid-template-columns:minmax(0,1fr)}.actions{flex-wrap:wrap}.request-reply-editor{grid-column:1}}
+/* Admin layout refresh */
+#opsAdminSection{display:grid;grid-template-columns:210px minmax(0,1fr);column-gap:24px;align-items:start}
+#opsAdminSection>.eyebrow,#opsAdminSection>.heading{grid-column:1/-1}
+#opsAdminSection>.ops-tabs{grid-column:1;grid-row:3;position:sticky;top:16px;display:flex;flex-direction:column;gap:5px;margin:0;padding:9px;background:rgba(13,24,39,.78);border:1px solid var(--line);border-radius:14px}
+#opsAdminSection>.ops-tabs button{text-align:left;padding:11px 12px;border-radius:9px}
+#opsAdminSection>[id$="View"]{grid-column:2;grid-row:3;min-width:0}
+#opsAdminSection>.heading{margin-bottom:20px}
+.ops-overview-head{display:flex;justify-content:space-between;align-items:center;gap:14px;margin:0 0 14px}.ops-overview-head>div:first-child>strong{font-size:18px}.ops-overview-tools{display:flex;align-items:center;gap:10px}
+.ops-overview-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px}.ops-overview-kpi{min-width:0;padding:15px 17px;border:1px solid var(--line);border-radius:13px;background:linear-gradient(145deg,rgba(23,36,56,.96),rgba(15,26,42,.96))}
+.ops-overview-kpi small,.ops-overview-kpi span{display:block;color:var(--muted);font-size:11px}.ops-overview-kpi strong{display:block;font-size:clamp(22px,2.5vw,30px);line-height:1.25;margin:6px 0;font-variant-numeric:tabular-nums}
+.ops-overview-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.ops-overview-panel{min-width:0;overflow:hidden}.ops-overview-wide{grid-column:1/-1}
+.ops-overview-legend{display:flex;gap:15px;flex-wrap:wrap;padding:12px 18px 0;color:var(--muted);font-size:11px}.ops-overview-legend span{display:flex;align-items:center;gap:6px}.ov-dot{width:8px;height:8px;border-radius:50%;display:inline-block}.ov-blue{background:#55b5f2}.ov-purple{background:#a78bfa}.ov-green{background:#55cda5}.ov-amber{background:#e7b65c}
+.ops-overview-chart{display:block;width:100%;height:auto;min-height:190px;padding:8px 12px 0}.ops-overview-chart text{fill:var(--muted);font-size:11px}.ops-overview-chart .ov-grid{stroke:#314157;stroke-width:1;opacity:.65}.ops-overview-chart .ov-series{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.ops-overview-chart .ov-point{stroke:var(--panel);stroke-width:2}.ops-overview-foot{padding:0 18px 14px;color:var(--muted);font-size:11px}
+.ops-overview-donut-wrap{display:flex;align-items:center;justify-content:center;gap:20px;padding:26px 16px;flex-wrap:wrap}.ops-overview-donut{width:150px;height:150px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#55b5f2 0 45%,#a78bfa 45% 75%,#55cda5 75% 100%);position:relative;flex:none}.ops-overview-donut:before{content:"";position:absolute;inset:19px;border-radius:50%;background:#111c2d}.ops-overview-donut span{position:relative;font-size:21px;font-weight:800;font-variant-numeric:tabular-nums}
+.ops-overview-donut-legend{display:grid;gap:10px;min-width:130px}.ops-overview-donut-legend div{display:grid;grid-template-columns:10px 1fr auto;gap:7px;align-items:center;font-size:12px;color:var(--muted)}.ops-overview-donut-legend i{width:9px;height:9px;border-radius:3px}.ops-overview-donut-legend b{color:var(--text);font-variant-numeric:tabular-nums}
+.ops-overview-bars{padding:14px 16px 18px;display:grid;gap:12px}.ops-overview-bar-row{display:grid;grid-template-columns:minmax(70px,1fr) minmax(70px,2fr) 42px;align-items:center;gap:9px;font-size:12px}.ops-overview-bar-row>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}.ops-overview-bar-track{height:9px;border-radius:99px;background:#26364d;overflow:hidden}.ops-overview-bar-fill{height:100%;border-radius:99px}.ops-overview-bar-row b{text-align:right;font-variant-numeric:tabular-nums}
+.ops-overview-shortcuts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:14px}.ops-shortcut{position:relative;text-align:left;display:grid;gap:5px;padding:14px 34px 14px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(7,15,27,.4);color:var(--text);cursor:pointer}.ops-shortcut:hover{border-color:#477aa7;background:#14263b}.ops-shortcut b{font-size:13px}.ops-shortcut span{font-size:11px;color:var(--muted)}.ops-shortcut i{position:absolute;right:13px;top:15px;font-style:normal;color:var(--blue)}
+@media(max-width:1000px){#opsAdminSection{grid-template-columns:1fr}#opsAdminSection>.ops-tabs{grid-column:1;grid-row:auto;position:static;flex-direction:row;overflow-x:auto;white-space:nowrap}#opsAdminSection>.ops-tabs button{flex:none}#opsAdminSection>[id$="View"]{grid-column:1;grid-row:auto}.ops-overview-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.ops-overview-head{align-items:flex-start;flex-direction:column}.ops-overview-tools{width:100%;justify-content:space-between}.ops-overview-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.ops-overview-grid{grid-template-columns:1fr}.ops-overview-wide{grid-column:1}.ops-overview-shortcuts{grid-template-columns:1fr 1fr}.ops-overview-donut-wrap{gap:14px}.ops-overview-donut{width:125px;height:125px}.ops-overview-chart{min-height:150px}}
+@media(max-width:420px){.ops-overview-shortcuts{grid-template-columns:1fr}.ops-overview-kpi{padding:12px}.ops-overview-kpi strong{font-size:23px}}
 </style>
 </head>
 <body>
@@ -145,7 +165,8 @@
   <div class="statusline" id="opsConnection">準備中…</div>
  </div>
  <div class="sns-tabs ops-tabs" id="opsTabs">
-  <button class="active" data-ops-tab="users">ユーザー</button>
+  <button class="active" data-ops-tab="overview">TOP / 概要</button>
+  <button data-ops-tab="users">ユーザー</button>
   <button data-ops-tab="audit">監査ログ</button>
   <button data-ops-tab="reports">通報管理</button>
   <button data-ops-tab="announcements">お知らせ</button>
@@ -153,7 +174,20 @@
   <button data-ops-tab="flags">機能ON/OFF</button>
   <button data-ops-tab="analytics">利用分析</button>
  </div>
- <div id="opsUsersView">
+ <div id="opsOverviewView">
+  <div class="ops-overview-head"><div><strong>全サービスの運営状況</strong><div class="sns-muted">KUROLABとKURO SNSの主要指標をまとめて確認できます。</div></div><div class="ops-overview-tools"><span id="opsOverviewUpdated" class="sns-muted">集計準備中…</span><button class="btn" id="opsOverviewRefresh">全体を更新</button></div></div>
+  <div class="ops-overview-kpis">
+   <article class="ops-overview-kpi"><small>KUROLAB DAU</small><strong id="ovDau">—</strong><span>今日の利用者</span></article><article class="ops-overview-kpi"><small>KUROLAB MAU</small><strong id="ovMau">—</strong><span>過去30日の利用者</span></article><article class="ops-overview-kpi"><small>KURO SNS 利用者</small><strong id="ovSnsUsers">—</strong><span>登録プロフィール</span></article><article class="ops-overview-kpi"><small>SNS 投稿</small><strong id="ovSnsPosts">—</strong><span>累計投稿数</span></article><article class="ops-overview-kpi"><small>直近24時間のAPIエラー</small><strong id="ovApiErrors">—</strong><span>KUROLAB計測分</span></article><article class="ops-overview-kpi"><small>直近30日のページ閲覧</small><strong id="ovPageViews">—</strong><span>KUROLAB計測分</span></article>
+  </div>
+  <div class="ops-overview-grid">
+   <section class="panel ops-overview-panel ops-overview-wide"><div class="toolbar"><div><strong>日別アクティビティ推移</strong><div class="sns-muted">過去30日 · アクティブ利用者・SNS投稿・返信・公開チャット</div></div><span class="sns-muted">日別</span></div><div class="ops-overview-legend"><span><i class="ov-dot ov-blue"></i>KUROLAB DAU</span><span><i class="ov-dot ov-purple"></i>SNS投稿</span><span><i class="ov-dot ov-green"></i>SNS返信</span><span><i class="ov-dot ov-amber"></i>公開チャット</span></div><svg id="opsOverviewTrend" class="ops-overview-chart" viewBox="0 0 900 270" role="img" aria-label="サービス全体の日別アクティビティ折れ線グラフ"></svg><div id="opsOverviewTrendNote" class="ops-overview-foot">データを取得しています。</div></section>
+   <section class="panel ops-overview-panel"><div class="toolbar"><div><strong>サービス別利用ボリューム</strong><div class="sns-muted">過去30日の主要イベント</div></div></div><div class="ops-overview-donut-wrap"><div id="opsOverviewDonut" class="ops-overview-donut"><span id="opsOverviewDonutTotal">—</span></div><div id="opsOverviewDonutLegend" class="ops-overview-donut-legend"></div></div></section>
+   <section class="panel ops-overview-panel"><div class="toolbar"><div><strong>ウィジェット利用 TOP 8</strong><div class="sns-muted">閲覧・追加・削除の合計</div></div></div><div id="opsOverviewWidgets" class="ops-overview-bars"><div class="empty">集計中…</div></div></section>
+   <section class="panel ops-overview-panel"><div class="toolbar"><div><strong>APIエラーの発生状況</strong><div class="sns-muted">過去7日・サービス別</div></div></div><div id="opsOverviewApi" class="ops-overview-bars"><div class="empty">集計中…</div></div></section>
+  </div>
+  <div class="ops-overview-shortcuts"><button class="ops-shortcut" data-go-ops="users"><b>ユーザー管理</b><span>検索・プラン・アカウント状態</span><i>→</i></button><button class="ops-shortcut" data-go-ops="reports"><b>通報管理</b><span>報告内容と対応状況</span><i>→</i></button><button class="ops-shortcut" data-go-ops="messages"><b>サービス別配信</b><span>KUROLAB / KURO SNSのお知らせ</span><i>→</i></button><button class="ops-shortcut" data-go-ops="analytics"><b>詳細分析</b><span>定着率・API・エラーログ</span><i>→</i></button></div>
+ </div>
+ <div id="opsUsersView" hidden>
   <div class="stats">
    <div class="stat"><span>このページのユーザー</span><strong id="opsTotalUsers">—</strong></div>
    <div class="stat"><span>このページの利用可能</span><strong id="opsActiveUsers">—</strong></div>
@@ -387,7 +421,7 @@ async function gasFetch(input,init={}){
 const db=window.supabase.createClient(SUPABASE_URL,PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},global:{fetch:mode==="gas"?gasFetch:fetch}});
 const modeSelect=$("#modeSelect"),modeSelectTop=$("#modeSelectTop");
 const PRODUCT_KEY="kuro-admin-product";
-let activeProduct=["lab","sns","ops"].includes(localStorage.getItem(PRODUCT_KEY))?localStorage.getItem(PRODUCT_KEY):"lab";
+let activeProduct=["lab","sns","ops"].includes(localStorage.getItem(PRODUCT_KEY))?localStorage.getItem(PRODUCT_KEY):"ops";
 const productSelect=$("#productSelect");
 function syncModeSelectors(){if(modeSelect)modeSelect.value=mode;if(modeSelectTop)modeSelectTop.value=mode;}
 function syncProductSelector(){if(productSelect)productSelect.value=activeProduct;}
@@ -396,7 +430,7 @@ if(modeSelect)modeSelect.addEventListener("change",()=>setMode(modeSelect.value)
 if(modeSelectTop)modeSelectTop.addEventListener("change",()=>setMode(modeSelectTop.value));
 syncModeSelectors();
 let rows=[],filter="all",channel=null,seen=new Set(),firstLoad=true;
-let opsUsers=[],opsAuditLogs=[],opsAnnouncements=[],opsMessages=[],opsFlags=[],opsView='users',editingAnnouncementId=null,opsUsersPage=1,opsUsersTotal=null;
+let opsUsers=[],opsAuditLogs=[],opsAnnouncements=[],opsMessages=[],opsFlags=[],opsView='overview',editingAnnouncementId=null,opsUsersPage=1,opsUsersTotal=null;
 let snsProfiles=[],snsPosts=[],snsReplies=[],snsChatMessages=[],snsTab="posts",snsUserFilterId=null,refreshTimer=null;
 let snsRealtimeChannel=null,snsReloadTimer=null,analyticsRefreshTimer=null,snsLikesTotal=0,snsFollowsTotal=0;
 const labels={pending:"未対応",reviewing:"確認中",done:"対応済み"};
@@ -770,12 +804,13 @@ async function runOpsUserAction(button){
 
 function setOpsView(view){
  opsView=view;
- ["users","audit","reports","announcements","messages","flags","analytics"].forEach(name=>{
+ ["overview","users","audit","reports","announcements","messages","flags","analytics"].forEach(name=>{
   const target=$("#ops"+name.charAt(0).toUpperCase()+name.slice(1)+"View");
   if(target)target.hidden=name!==view;
   const button=$("#opsTabs [data-ops-tab='"+name+"']");
   if(button)button.classList.toggle("active",name===view);
  });
+ if(view==="overview")loadOpsOverview();
  if(view==="users")loadOpsUsers();
  if(view==="audit")loadOpsAudit();
  if(view==="reports")loadOpsReports();
@@ -999,6 +1034,33 @@ async function deleteFeatureFlag(key){
  catch(e){alert("削除できませんでした："+e.message);}
 }
 
+
+function overviewDateKey(value){return new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Tokyo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(value));}
+function drawOverviewTrend(points){
+ const series=[{key:"dau",color:"#55b5f2"},{key:"posts",color:"#a78bfa"},{key:"replies",color:"#55cda5"},{key:"chat",color:"#e7b65c"}],w=900,h=270,l=48,r=18,t=18,b=38,pw=w-l-r,ph=h-t-b,max=Math.max(1,...points.flatMap(p=>series.map(q=>Number(p[q.key]||0))));
+ const x=i=>l+(points.length<=1?0:i*pw/(points.length-1)),y=v=>t+ph-Number(v||0)/max*ph;let svg="";
+ for(let i=0;i<=4;i++){const v=Math.round(max*i/4),yy=y(v);svg+='<line class="ov-grid" x1="'+l+'" y1="'+yy+'" x2="'+(w-r)+'" y2="'+yy+'"></line><text x="'+(l-9)+'" y="'+(yy+4)+'" text-anchor="end">'+v+'</text>';}
+ for(const q of series){const path=points.map((p,i)=>(i?"L":"M")+x(i).toFixed(1)+","+y(p[q.key]).toFixed(1)).join(" ");svg+='<path class="ov-series" stroke="'+q.color+'" d="'+path+'"></path>';points.forEach((p,i)=>{svg+='<circle class="ov-point" cx="'+x(i).toFixed(1)+'" cy="'+y(p[q.key]).toFixed(1)+'" r="3" fill="'+q.color+'"><title>'+esc(p.label)+' / '+Number(p[q.key]||0)+'</title></circle>';});}
+ [0,Math.round((points.length-1)*.25),Math.round((points.length-1)*.5),Math.round((points.length-1)*.75),points.length-1].filter((v,i,a)=>a.indexOf(v)===i).forEach(i=>{if(points[i])svg+='<text x="'+x(i)+'" y="'+(h-9)+'" text-anchor="middle">'+esc(points[i].label)+'</text>';});$("#opsOverviewTrend").innerHTML=svg;
+}
+function renderOverviewBars(target,items,color,empty){const max=Math.max(1,...items.map(x=>Number(x.value||0)));$(target).innerHTML=items.length?items.map(x=>'<div class="ops-overview-bar-row"><span title="'+esc(x.label)+'">'+esc(x.label)+'</span><div class="ops-overview-bar-track"><div class="ops-overview-bar-fill" style="width:'+Math.max(0,Math.min(100,Number(x.value||0)/max*100))+'%;background:'+color+'"></div></div><b>'+Number(x.value||0).toLocaleString("ja-JP")+'</b></div>').join(""):'<div class="analytics-empty">'+empty+'</div>';}
+async function loadOpsOverview(){
+ $("#opsOverviewUpdated").textContent="集計中…";$("#opsOverviewTrend").innerHTML='<text x="30" y="120">集計中…</text>';
+ try{
+  const since=new Date();since.setHours(0,0,0,0);since.setDate(since.getDate()-29);const sinceIso=since.toISOString();
+  const [usage,profileCount,postCount,posts,replies,chats]=await Promise.all([opsInvoke({action:"get_usage_analytics"}),db.from("profiles").select("id",{count:"exact",head:true}),db.from("posts").select("id",{count:"exact",head:true}),fetchAllAdminRows(()=>db.from("posts").select("id,created_at").gte("created_at",sinceIso).order("created_at",{ascending:true})),fetchAllAdminRows(()=>db.from("post_replies").select("id,created_at").gte("created_at",sinceIso).order("created_at",{ascending:true})),fetchAllAdminRows(()=>db.from("public_chat_messages").select("id,created_at").gte("created_at",sinceIso).order("created_at",{ascending:true}))]);
+  if(profileCount.error)throw profileCount.error;if(postCount.error)throw postCount.error;const n=v=>Number(v||0).toLocaleString("ja-JP");
+  $("#ovDau").textContent=n(usage.dau);$("#ovMau").textContent=n(usage.mau);$("#ovSnsUsers").textContent=n(profileCount.count);$("#ovSnsPosts").textContent=n(postCount.count);$("#ovApiErrors").textContent=n(usage.api_errors_24h);$("#ovPageViews").textContent=n(usage.page_views_30d);
+  const points=Array.from({length:30},(_,i)=>{const d=new Date(since);d.setDate(d.getDate()+i);return {key:overviewDateKey(d),label:d.toLocaleDateString("ja-JP",{month:"numeric",day:"numeric"}),dau:0,posts:0,replies:0,chat:0};}),map=new Map(points.map(p=>[p.key,p]));
+  (usage.daily||[]).forEach(x=>{const p=map.get(x.date);if(p)p.dau=Number(x.active_users||0);});posts.data.forEach(x=>{const p=map.get(overviewDateKey(x.created_at));if(p)p.posts++;});replies.data.forEach(x=>{const p=map.get(overviewDateKey(x.created_at));if(p)p.replies++;});chats.data.forEach(x=>{const p=map.get(overviewDateKey(x.created_at));if(p)p.chat++;});drawOverviewTrend(points);
+  const parts=[{label:"KUROLAB閲覧",value:Number(usage.page_views_30d||0),color:"#55b5f2"},{label:"SNS投稿",value:posts.data.length,color:"#a78bfa"},{label:"SNS返信",value:replies.data.length,color:"#55cda5"},{label:"公開チャット",value:chats.data.length,color:"#e7b65c"}],total=parts.reduce((a,p)=>a+p.value,0);let cursor=0;const stops=parts.map(p=>{const start=cursor;cursor+=total?p.value/total*100:0;return p.color+" "+start+"% "+cursor+"%";}).join(",");
+  $("#opsOverviewDonut").style.background=total?"conic-gradient("+stops+")":"conic-gradient(#314157 0 100%)";$("#opsOverviewDonutTotal").textContent=n(total);$("#opsOverviewDonutLegend").innerHTML=parts.map(p=>'<div><i style="background:'+p.color+'"></i><span>'+p.label+'</span><b>'+n(p.value)+'</b></div>').join("");
+  renderOverviewBars("#opsOverviewWidgets",(usage.widgets||[]).map(x=>({label:x.widget_key,value:Number(x.views||0)+Number(x.adds||0)+Number(x.removes||0)})).sort((a,b)=>b.value-a.value).slice(0,8),"linear-gradient(90deg,#3973d6,#55b5f2)","ウィジェット利用データはまだありません。");
+  renderOverviewBars("#opsOverviewApi",(usage.apis||[]).map(x=>({label:x.service_key,value:Number(x.errors||0)})).sort((a,b)=>b.value-a.value).slice(0,8),"linear-gradient(90deg,#a34d62,#ef7777)","APIエラーはまだ記録されていません。");
+  $("#opsOverviewTrendNote").textContent="30日間：SNS投稿 "+n(posts.data.length)+" 件・返信 "+n(replies.data.length)+" 件・公開チャット "+n(chats.data.length)+" 件"+([posts,replies,chats].some(x=>x.truncated)?" · SNSデータは取得上限に達している可能性があります。":"");$("#opsOverviewUpdated").textContent="最終更新："+new Date().toLocaleTimeString("ja-JP");
+ }catch(e){$("#opsOverviewTrend").innerHTML='<text x="30" y="120">全体集計に失敗しました。</text>';$("#opsOverviewTrendNote").textContent=e.message||"データを取得できませんでした。";$("#opsOverviewUpdated").textContent="取得失敗";}
+}
+
 async function loadOpsAnalytics(){
  $("#opsActiveChart").innerHTML='<div class="empty">集計中…</div>';
  try{
@@ -1054,7 +1116,8 @@ function startAdminPolling(){
    loadSns();loadSnsAnnouncements();
    if(snsTab==="analytics")loadAnalytics();
   }else if(activeProduct==="ops"){
-   if(opsView==="users")loadOpsUsers();
+   if(opsView==="overview")loadOpsOverview();
+   else if(opsView==="users")loadOpsUsers();
    else if(opsView==="audit")loadOpsAudit();
    else if(opsView==="announcements")loadOpsAnnouncements();
    else if(opsView==="messages")loadOpsMessages();
@@ -1125,6 +1188,8 @@ $("#snsAnnList").addEventListener("click",e=>{const b=e.target.closest("[data-sn
 
 $("#opsFlagsRefresh").addEventListener("click",loadOpsFlags);
 $("#opsAnalyticsRefresh").addEventListener("click",loadOpsAnalytics);
+$("#opsOverviewRefresh").addEventListener("click",loadOpsOverview);
+$("#opsOverviewView").addEventListener("click",e=>{const b=e.target.closest("[data-go-ops]");if(b)setOpsView(b.dataset.goOps);});
 $("#opsUserErrorsForm").addEventListener("submit",loadOpsUserErrors);
 $("#opsAnnouncementForm").addEventListener("submit",saveAnnouncement);
 $("#opsAnnCancel").addEventListener("click",resetAnnouncementForm);
