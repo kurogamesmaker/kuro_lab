@@ -2485,3 +2485,5 @@ body:has(.portal-dashboard-v2) #portal-quick-button{display:none!important}
 @keyframes weather-flash{0%,88%,100%{opacity:0}90%,94%{opacity:1}}
 @media(max-width:520px){.portal-weather-scene{right:0;top:25px;width:96px;transform:scale(.88);transform-origin:top right}.portal-weather-status,.portal-weather-main,.portal-weather-details{max-width:68%}}
 @media(prefers-reduced-motion:reduce){.portal-weather-scene *{animation:none!important}}
+
+.portal-widget-hint{display:block;margin-top:6px;color:var(--muted);font-size:9px;line-height:1.5}
