@@ -1627,3 +1627,32 @@ html:has(body.kuro-portal .portal-dashboard-v2){
 .portal-workspace-delete{
   touch-action:pan-y!important;
 }
+
+
+/* KURO Lab: pin the actual app sidebar to the viewport while the document scrolls */
+@media (min-width:761px){
+  .portal-app-sidebar{
+    position:fixed!important;
+    top:88px!important;
+    left:max(24px,calc((100vw - 1600px)/2 + 24px))!important;
+    width:244px!important;
+    height:calc(100vh - 108px)!important;
+    height:calc(100dvh - 108px)!important;
+    min-height:0!important;
+    max-height:none!important;
+    margin:0!important;
+    z-index:80!important;
+    overflow:hidden!important;
+  }
+  .portal-app-sidebar .portal-sidebar-nav{
+    min-height:0;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+  }
+}
+@media (min-width:761px) and (max-width:1120px){
+  .portal-app-sidebar{
+    left:16px!important;
+    width:78px!important;
+  }
+}
