@@ -23,6 +23,34 @@
 .sns-context button{margin-left:8px}
 .product-select{background:#142238;color:var(--text);border:1px solid #36506d;border-radius:9px;padding:8px 10px;font-weight:700;max-width:150px}
 .sns-section-title{margin:20px 14px 0;font-size:15px;color:var(--muted)}
+
+.analytics-intro{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:16px 16px 4px}
+.analytics-intro strong{display:block;font-size:16px}.analytics-intro small{color:var(--muted)}
+.analytics-range{background:#0b1524;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+.analytics-layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(260px,1fr);gap:14px;padding:14px}
+.analytics-card{background:rgba(7,15,27,.45);border:1px solid var(--line);border-radius:13px;padding:16px;min-width:0}
+.analytics-card h3{font-size:14px;margin:0 0 10px}.analytics-sub{font-size:12px;color:var(--muted);margin-bottom:12px}
+.analytics-legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin-bottom:8px}
+.analytics-legend span{display:flex;align-items:center;gap:6px}.analytics-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.analytics-chart{width:100%;height:auto;display:block;overflow:visible}
+.analytics-chart text{fill:var(--muted);font-size:11px}
+.analytics-chart .gridline{stroke:#314157;stroke-width:1;opacity:.62}
+.analytics-chart .series-posts{fill:none;stroke:#55b5f2;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.analytics-chart .series-replies{fill:none;stroke:#a78bfa;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.analytics-chart .series-chat{fill:none;stroke:#55cda5;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.analytics-side{display:grid;gap:14px;align-content:start}
+.analytics-rank{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.analytics-rank li{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px}
+.analytics-rank li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.analytics-rank b{font-variant-numeric:tabular-nums;color:var(--text)}
+.analytics-empty{color:var(--muted);font-size:12px;padding:8px 0}
+.analytics-note{color:var(--muted);font-size:11px;padding:0 16px 14px}
+.analytics-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:0 14px 14px}
+.analytics-mini{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:rgba(7,15,27,.35)}
+.analytics-mini small{display:block;color:var(--muted);font-size:11px}.analytics-mini strong{display:block;font-size:20px;margin-top:3px;font-variant-numeric:tabular-nums}
+.live-pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:#46c69a;margin-right:7px;box-shadow:0 0 0 4px #46c69a22}
+@media(max-width:760px){.analytics-layout{grid-template-columns:1fr}.analytics-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
 @media(max-width:680px){.top-right{gap:6px}.product-select,.mode-select{padding:7px 6px;max-width:112px;font-size:11px}.sns-toolbar-right{justify-content:stretch}.sns-toolbar-right .search{min-width:0;flex:1}}
 
 </style>
@@ -57,6 +85,8 @@
   <div class="stat"><span>登録プロフィール</span><strong id="snsUsersCount">—</strong></div>
   <div class="stat"><span>投稿</span><strong id="snsPostsCount">—</strong></div>
   <div class="stat"><span>返信</span><strong id="snsRepliesCount">—</strong></div>
+  <div class="stat"><span>いいね</span><strong id="snsLikesCount">—</strong></div>
+  <div class="stat"><span>フォロー</span><strong id="snsFollowsCount">—</strong></div>
   <div class="stat"><span>公開チャット</span><strong id="snsChatCount">—</strong></div>
  </div>
  <section class="panel">
@@ -66,9 +96,11 @@
     <button data-sns-tab="replies">返信管理</button>
     <button data-sns-tab="users">利用者</button>
     <button data-sns-tab="chat">公開チャット</button>
+    <button data-sns-tab="analytics">分析</button>
    </div>
    <div class="sns-toolbar-right">
-    <input class="search" id="snsSearch" type="search" placeholder="表示中の内容を検索…">
+    <div id="snsSearchWrap"><input class="search" id="snsSearch" type="search" placeholder="表示中の内容を検索…"></div>
+    <select class="analytics-range" id="snsAnalyticsRange" aria-label="分析期間" hidden><option value="7">7日間</option><option value="14" selected>14日間</option><option value="30">30日間</option><option value="90">90日間</option></select>
     <button class="btn" id="snsRefresh">更新</button>
    </div>
   </div>
@@ -77,6 +109,37 @@
   <div id="snsRepliesPanel" class="list" hidden><div class="empty">読み込み中…</div></div>
   <div id="snsUsersPanel" class="list" hidden><div class="empty">読み込み中…</div></div>
   <div id="snsChatPanel" class="list" hidden><div class="empty">読み込み中…</div></div>
+  <div id="snsAnalyticsPanel" class="list" hidden>
+   <div class="analytics-intro">
+    <div><strong>KURO SNS インサイト</strong><small>投稿・返信・フォローなどの動きを期間別に分析します。</small></div>
+    <div class="sns-muted" id="snsAnalyticsUpdated">集計準備中…</div>
+   </div>
+   <div class="analytics-summary">
+    <div class="analytics-mini"><small>期間内の新規登録</small><strong id="analyticsNewUsers">—</strong></div>
+    <div class="analytics-mini"><small>期間内の投稿</small><strong id="analyticsPosts">—</strong></div>
+    <div class="analytics-mini"><small>期間内の返信</small><strong id="analyticsReplies">—</strong></div>
+    <div class="analytics-mini"><small>期間内のいいね</small><strong id="analyticsLikes">—</strong></div>
+   </div>
+   <div class="analytics-layout">
+    <section class="analytics-card">
+     <h3>日別アクティビティ</h3>
+     <div class="analytics-sub" id="analyticsChartSubtitle">投稿・返信・公開チャットの推移</div>
+     <div class="analytics-legend">
+      <span><i class="analytics-dot" style="background:#55b5f2"></i>投稿</span>
+      <span><i class="analytics-dot" style="background:#a78bfa"></i>返信</span>
+      <span><i class="analytics-dot" style="background:#55cda5"></i>公開チャット</span>
+     </div>
+     <svg id="snsActivityChart" class="analytics-chart" viewBox="0 0 900 250" role="img" aria-label="日別アクティビティの折れ線グラフ"></svg>
+     <div id="analyticsSummaryText" class="analytics-sub"></div>
+    </section>
+    <div class="analytics-side">
+     <section class="analytics-card"><h3>人気ハッシュタグ</h3><div class="analytics-sub">取得できた投稿データから集計</div><ol id="snsTopHashtags" class="analytics-rank"></ol></section>
+     <section class="analytics-card"><h3>投稿が多い利用者</h3><div class="analytics-sub">取得できた投稿データから集計</div><ol id="snsTopContributors" class="analytics-rank"></ol></section>
+     <section class="analytics-card"><h3>エンゲージメント</h3><div class="analytics-sub">投稿1件あたりの「いいね＋返信」</div><strong id="snsEngagement" style="font-size:28px">—</strong></section>
+    </div>
+   </div>
+   <div id="analyticsDataNote" class="analytics-note"></div>
+  </div>
  </section>
  <p class="sns-muted" style="margin:12px 4px 0">安全のため、個人間チャットやグループ内の非公開メッセージはこの管理画面には表示しません。</p>
 </main>
@@ -127,6 +190,7 @@ if(modeSelectTop)modeSelectTop.addEventListener("change",()=>setMode(modeSelectT
 syncModeSelectors();
 let rows=[],filter="all",channel=null,seen=new Set(),firstLoad=true;
 let snsProfiles=[],snsPosts=[],snsReplies=[],snsChatMessages=[],snsTab="posts",snsUserFilterId=null,refreshTimer=null;
+let snsRealtimeChannel=null,snsReloadTimer=null,analyticsRefreshTimer=null,snsLikesTotal=0,snsFollowsTotal=0;
 const labels={pending:"未対応",reviewing:"確認中",done:"対応済み"};
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const date=s=>new Intl.DateTimeFormat("ja-JP",{dateStyle:"medium",timeStyle:"short"}).format(new Date(s));
@@ -182,7 +246,9 @@ async function loadSns(){
   db.from("profiles").select("id,username,display_name,bio,avatar_url,created_at",{count:"exact"}).order("created_at",{ascending:false}).limit(500),
   db.from("posts").select("id,user_id,content,hashtags,created_at",{count:"exact"}).order("created_at",{ascending:false}).limit(500),
   db.from("post_replies").select("id,post_id,user_id,content,created_at",{count:"exact"}).order("created_at",{ascending:false}).limit(500),
-  db.from("public_chat_messages").select("id,nickname,content,created_at",{count:"exact"}).order("created_at",{ascending:false}).limit(500)
+  db.from("public_chat_messages").select("id,nickname,content,created_at",{count:"exact"}).order("created_at",{ascending:false}).limit(500),
+  db.from("post_likes").select("post_id",{count:"exact",head:true}),
+  db.from("follows").select("follower_id",{count:"exact",head:true})
  ]);
  const failed=queries.find(q=>q.error);
  if(failed){
@@ -195,25 +261,134 @@ async function loadSns(){
  snsPosts=queries[1].data||[];
  snsReplies=queries[2].data||[];
  snsChatMessages=queries[3].data||[];
+ snsLikesTotal=queries[4].count||0;
+ snsFollowsTotal=queries[5].count||0;
  $("#snsUsersCount").textContent=queries[0].count??snsProfiles.length;
  $("#snsPostsCount").textContent=queries[1].count??snsPosts.length;
  $("#snsRepliesCount").textContent=queries[2].count??snsReplies.length;
  $("#snsChatCount").textContent=queries[3].count??snsChatMessages.length;
- $("#snsConnection").textContent=mode==="gas"?"GAS経由・45秒ごとに自動更新":"Supabase直接接続・45秒ごとに自動更新";
+ $("#snsLikesCount").textContent=snsLikesTotal;
+ $("#snsFollowsCount").textContent=snsFollowsTotal;
  renderSns();
 }
+
+function analyticsDateKey(value){
+ const d=new Date(value);
+ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+async function loadAnalytics(){
+ const days=Number($("#snsAnalyticsRange").value)||14;
+ const start=new Date();start.setHours(0,0,0,0);start.setDate(start.getDate()-(days-1));
+ const since=start.toISOString();
+ $("#snsAnalyticsUpdated").textContent="集計中…";
+ const queries=await Promise.all([
+  db.from("profiles").select("id,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true}).limit(1000),
+  db.from("posts").select("id,user_id,hashtags,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true}).limit(1000),
+  db.from("post_replies").select("id,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true}).limit(1000),
+  db.from("post_likes").select("post_id,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true}).limit(1000),
+  db.from("follows").select("follower_id,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true}).limit(1000),
+  db.from("public_chat_messages").select("id,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true}).limit(1000)
+ ]);
+ const failed=queries.find(q=>q.error);
+ if(failed){
+  $("#snsAnalyticsUpdated").textContent="集計に失敗";
+  $("#snsActivityChart").innerHTML='<text x="30" y="110">データを取得できませんでした：'+esc(failed.error.message)+'</text>';
+  return;
+ }
+ const data=queries.map(q=>q.data||[]);
+ const totals=queries.map((q,i)=>q.count??data[i].length);
+ $("#analyticsNewUsers").textContent=totals[0];
+ $("#analyticsPosts").textContent=totals[1];
+ $("#analyticsReplies").textContent=totals[2];
+ $("#analyticsLikes").textContent=totals[3];
+ const datePoints=Array.from({length:days},(_,i)=>{
+  const d=new Date(start);d.setDate(start.getDate()+i);
+  return {key:analyticsDateKey(d),label:d.toLocaleDateString("ja-JP",{month:"numeric",day:"numeric"}),posts:0,replies:0,chat:0};
+ });
+ const byDay=new Map(datePoints.map(p=>[p.key,p]));
+ for(const r of data[1]){const p=byDay.get(analyticsDateKey(r.created_at));if(p)p.posts++;}
+ for(const r of data[2]){const p=byDay.get(analyticsDateKey(r.created_at));if(p)p.replies++;}
+ for(const r of data[5]){const p=byDay.get(analyticsDateKey(r.created_at));if(p)p.chat++;}
+ const series=[{key:"posts",css:"series-posts"},{key:"replies",css:"series-replies"},{key:"chat",css:"series-chat"}];
+ const max=Math.max(1,...datePoints.flatMap(p=>series.map(s=>p[s.key])));
+ const left=48,right=16,top=18,bottom=38,width=900,height=250,plotW=width-left-right,plotH=height-top-bottom;
+ const x=i=>left+(datePoints.length===1?0:i*plotW/(datePoints.length-1));
+ const y=v=>top+plotH-(v/max)*plotH;
+ let svg="";
+ for(let i=0;i<=4;i++){
+  const val=Math.round(max*i/4),yy=y(val);
+  svg+='<line class="gridline" x1="'+left+'" y1="'+yy+'" x2="'+(width-right)+'" y2="'+yy+'"></line><text x="'+(left-10)+'" y="'+(yy+4)+'" text-anchor="end">'+val+'</text>';
+ }
+ for(const s of series){
+  const path=datePoints.map((p,i)=>(i===0?"M":"L")+x(i).toFixed(1)+","+y(p[s.key]).toFixed(1)).join(" ");
+  svg+='<path class="'+s.css+'" d="'+path+'"></path>';
+  if(datePoints.length<=30)datePoints.forEach((p,i)=>{svg+='<circle cx="'+x(i).toFixed(1)+'" cy="'+y(p[s.key]).toFixed(1)+'" r="3" fill="'+(s.key==="posts"?"#55b5f2":s.key==="replies"?"#a78bfa":"#55cda5")+'"></circle>';});
+ }
+ const labelIndexes=[0,Math.round((days-1)*.25),Math.round((days-1)*.5),Math.round((days-1)*.75),days-1];
+ [...new Set(labelIndexes)].forEach(i=>{const p=datePoints[i];if(p)svg+='<text x="'+x(i)+'" y="'+(height-10)+'" text-anchor="middle">'+p.label+'</text>';});
+ $("#snsActivityChart").innerHTML=svg;
+ $("#analyticsChartSubtitle").textContent=days+"日間の日別投稿・返信・公開チャット";
+ const hashtagCounts=new Map();
+ snsPosts.forEach(p=>(p.hashtags||[]).forEach(tag=>{const t=String(tag).replace(/^#/,"").trim();if(t)hashtagCounts.set(t,(hashtagCounts.get(t)||0)+1);}));
+ const tagList=[...hashtagCounts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6);
+ $("#snsTopHashtags").innerHTML=tagList.length?tagList.map(([tag,n])=>'<li><span>#'+esc(tag)+'</span><b>'+n+'</b></li>').join(""):'<li class="analytics-empty">まだ集計できるタグがありません。</li>';
+ const users=new Map();
+ snsPosts.forEach(p=>users.set(p.user_id,(users.get(p.user_id)||0)+1));
+ const topUsers=[...users.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5);
+ $("#snsTopContributors").innerHTML=topUsers.length?topUsers.map(([id,n])=>{
+  const profile=snsProfiles.find(p=>p.id===id);
+  return '<li><span>'+esc(profile?.display_name||profile?.username||"利用者")+(profile?.username?' <small>@'+esc(profile.username)+'</small>':'')+'</span><b>'+n+'</b></li>';
+ }).join(""):'<li class="analytics-empty">投稿データがありません。</li>';
+ const postTotal=Number($("#snsPostsCount").textContent)||0;
+ $("#snsEngagement").textContent=postTotal?((snsLikesTotal+(Number($("#snsRepliesCount").textContent)||0))/postTotal).toFixed(2):"—";
+ const sums=datePoints.reduce((a,p)=>({posts:a.posts+p.posts,replies:a.replies+p.replies,chat:a.chat+p.chat}),{posts:0,replies:0,chat:0});
+ $("#analyticsSummaryText").textContent="期間内の合計：投稿 "+totals[1]+" 件／返信 "+totals[2]+" 件／いいね "+totals[3]+" 件／フォロー "+totals[4]+" 件／公開チャット "+totals[5]+" 件";
+ const capped=queries.some((q,i)=>(q.count??0)>data[i].length);
+ $("#analyticsDataNote").textContent=(capped?"一部テーブルで取得上限に達しています。日別グラフは取得できた先頭1,000件の範囲です。":"期間内のデータをすべて取得しています。")+" 人気タグ・投稿者ランキングは管理画面に読み込んだ最新500投稿を対象にしています。";
+ $("#snsAnalyticsUpdated").textContent="最終更新："+new Date().toLocaleTimeString("ja-JP");
+}
+function stopSnsRealtime(){
+ if(snsRealtimeChannel){db.removeChannel(snsRealtimeChannel);snsRealtimeChannel=null;}
+ if(snsReloadTimer){clearTimeout(snsReloadTimer);snsReloadTimer=null;}
+}
+function queueSnsRealtimeRefresh(){
+ if(snsReloadTimer)clearTimeout(snsReloadTimer);
+ snsReloadTimer=setTimeout(async()=>{
+  if(activeProduct!=="sns")return;
+  await loadSns();
+  if(snsTab==="analytics")await loadAnalytics();
+ },350);
+}
+function startSnsRealtime(){
+ stopSnsRealtime();
+ if(mode==="gas"){
+  $("#snsConnection").textContent="GAS版・15秒ごとに自動同期";
+  return;
+ }
+ const channel=db.channel("kuro-sns-admin-live");
+ ["profiles","posts","post_replies","post_likes","follows","public_chat_messages"].forEach(table=>{
+  channel.on("postgres_changes",{event:"*",schema:"public",table},queueSnsRealtimeRefresh);
+ });
+ snsRealtimeChannel=channel.subscribe(status=>{
+  if(activeProduct!=="sns")return;
+  $("#snsConnection").innerHTML=status==="SUBSCRIBED"?'<span class="live-pulse"></span>リアルタイム接続中':status==="CHANNEL_ERROR"?"リアルタイム接続エラー":status==="TIMED_OUT"?"接続タイムアウト":"リアルタイム接続中…";
+ });
+}
+
 function snsProfileLabel(userId){
  const p=snsProfiles.find(x=>x.id===userId);
  return p?esc(p.display_name||p.username)+" <span class=\"sns-muted\">@"+esc(p.username)+"</span>":"<span class=\"sns-muted\">プロフィール未登録</span>";
 }
 function renderSns(){
  const query=($("#snsSearch").value||"").trim().toLowerCase();
- ["posts","replies","users","chat"].forEach(tab=>{
+ ["posts","replies","users","chat","analytics"].forEach(tab=>{
   const panel=$("#sns"+tab.charAt(0).toUpperCase()+tab.slice(1)+"Panel");
   if(panel)panel.hidden=snsTab!==tab;
   const button=$("#snsTabs [data-sns-tab='"+tab+"']");
   if(button)button.classList.toggle("active",snsTab===tab);
  });
+ $("#snsSearchWrap").hidden=snsTab==="analytics";
+ $("#snsAnalyticsRange").hidden=snsTab!=="analytics";
  $("#snsContextFilter").hidden=!snsUserFilterId;
  const profileById=id=>snsProfiles.find(p=>p.id===id);
  if(snsTab==="posts"){
@@ -260,20 +435,28 @@ async function switchProduct(){
  localStorage.setItem(PRODUCT_KEY,activeProduct);
  syncProductSelector();
  if(channel){await db.removeChannel(channel);channel=null;}
+ stopSnsRealtime();
  $("#labAdminSection").hidden=activeProduct!=="lab";
  $("#snsAdminSection").hidden=activeProduct!=="sns";
  if(activeProduct==="lab"){await load();subscribe();}
- else{await loadSns();}
+ else{
+  await loadSns();
+  startSnsRealtime();
+  if(snsTab==="analytics")await loadAnalytics();
+ }
 }
 
 async function enter(user){
  try{
   await checkAdmin(user);showApp(user);syncModeSelectors();syncProductSelector();
   await switchProduct();
-  if(!refreshTimer)refreshTimer=setInterval(()=>{
+  if(refreshTimer)clearInterval(refreshTimer);
+  refreshTimer=setInterval(()=>{
    if($("#appView").hidden)return;
-   if(activeProduct==="lab")load();else loadSns();
-  },45000);
+   if(activeProduct==="lab"){if(mode==="gas")load();}
+   else if(mode==="gas"){loadSns();if(snsTab==="analytics")loadAnalytics();}
+   else if(snsTab==="analytics")loadAnalytics();
+  },mode==="gas"&&activeProduct==="sns"?15000:60000);
  }catch(e){await db.auth.signOut();showLogin(e.message||"管理者認証に失敗しました。");}
 }
 $("#loginForm").addEventListener("submit",async e=>{
@@ -287,12 +470,14 @@ $("#notifyButton").addEventListener("click",async()=>{if(!("Notification" in win
 $("#filters").addEventListener("click",e=>{const b=e.target.closest("button[data-filter]");if(!b)return;filter=b.dataset.filter;$("#filters").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b));render();});
 $("#search").addEventListener("input",render);
 $("#productSelect").addEventListener("change",switchProduct);
-$("#snsTabs").addEventListener("click",e=>{
+$("#snsTabs").addEventListener("click",async e=>{
  const b=e.target.closest("button[data-sns-tab]");if(!b)return;
  snsTab=b.dataset.snsTab;renderSns();
+ if(snsTab==="analytics")await loadAnalytics();
 });
 $("#snsSearch").addEventListener("input",renderSns);
-$("#snsRefresh").addEventListener("click",loadSns);
+$("#snsRefresh").addEventListener("click",async()=>{await loadSns();if(snsTab==="analytics")await loadAnalytics();});
+$("#snsAnalyticsRange").addEventListener("change",loadAnalytics);
 $("#snsClearUserFilter").addEventListener("click",()=>{snsUserFilterId=null;renderSns();});
 $("#snsAdminSection").addEventListener("click",e=>{
  const del=e.target.closest("button[data-sns-delete]");
