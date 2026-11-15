@@ -145,7 +145,7 @@ function bindPanel(){
  if(active==="convert"){fxConvert();unitConvert();}
 }
 function mount(){
- var path=location.pathname.replace(/\\/+$/,"")||"/";
+ var path=location.pathname.replace(/\/+$/,"")||"/";
  var node=document.getElementById("kuro-toolbox-root");
  if(!node&&path==="/tools")node=document.getElementById("portal-main");
  if(!node)return;
