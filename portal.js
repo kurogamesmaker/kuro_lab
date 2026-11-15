@@ -2,7 +2,7 @@
 (async function(){
 "use strict";
 window.__kuroPendingRequests=0;var kuroNativeFetch=window.fetch.bind(window);var trackingUserId=null,trackingSessionId=null,trackingWrite=false,trackedPageView=false,trackedSessionUser=null;window.fetch=function(input,init){window.__kuroPendingRequests++;if(typeof updateNetworkStatus==="function")updateNetworkStatus();var apiInfo=trackingWrite?null:classifyApiRequest(input);var started=Date.now();return kuroNativeFetch(input,init).then(function(response){if(apiInfo)queueUsageEvent(response.ok?"api_success":"api_error",{service_key:apiInfo.service,status_code:response.status,error_code:response.ok?null:"http_"+response.status,widget_key:apiInfo.widget});return response;}).catch(function(err){if(apiInfo)queueUsageEvent("api_error",{service_key:apiInfo.service,error_code:"network_error",widget_key:apiInfo.widget});if(!navigator.onLine&&typeof showErrorPanel==="function")showErrorPanel("オフラインです","接続を確認してください。端末の保存データは保持されています。");throw err;}).finally(function(){window.__kuroPendingRequests=Math.max(0,window.__kuroPendingRequests-1);if(typeof updateNetworkStatus==="function")updateNetworkStatus();});};
-var SUPABASE_URL="https://cprvpphlfpmiegjiutjn.supabase.co",PUBLISHABLE_KEY="sb_publishable_BYPUfB0lr2h26jV8_6ZQnpQ_wfAKOVyn";
+var SUPABASE_URL="https://cprvpphlfpmiegjiutjn.supabase.co",PUBLISHABLE_KEY="sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
 async function ensureSupabaseSdk(){
  if(window.supabase&&typeof window.supabase.createClient==="function")return true;
  var urls=["https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js","https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"];
