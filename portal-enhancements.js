@@ -771,6 +771,7 @@
     var target = event.target;
     if (target && target.nodeType !== 1) target = target.parentElement;
     if (!target || !target.closest) return;
+    if (target.closest(".portal-canvas-viewport")) return;
     var tab = target.closest(
       ".portal-topnav, .portal-workspace-tabs, .portal-workspace-tab, .portal-workspace-create, .portal-workspace-delete, .portal-widget, .portal-widget-body"
     );
