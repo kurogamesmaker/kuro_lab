@@ -2229,3 +2229,37 @@ body:has(.portal-dashboard-v2) #portal-quick-button{display:none!important}
  .portal-dashboard-actions .portal-dashboard-layout-label{font-size:10px!important}
  .portal-dashboard-actions .portal-dashboard-layout-select{min-width:76px!important;min-height:34px!important;font-size:11px!important}
 }
+
+
+/* Keep workspace mode switching in the global top header. */
+.portal-header-inner>.portal-workspace-bar{
+  display:flex!important;align-items:center!important;justify-content:flex-end!important;
+  flex:0 1 auto!important;gap:0!important;width:auto!important;min-width:0!important;
+  max-width:min(440px,42vw)!important;margin:0 2px!important;padding:0!important;
+  border:0!important;border-radius:0!important;background:transparent!important;
+}
+.portal-header-inner>.portal-workspace-bar .portal-workspace-heading{display:none!important}
+.portal-header-inner>.portal-workspace-bar .portal-workspace-tabs{
+  display:flex!important;align-items:center!important;justify-content:flex-end!important;
+  width:auto!important;max-width:100%!important;min-width:0!important;margin:0!important;
+  gap:5px!important;overflow-x:auto!important;overflow-y:hidden!important;
+}
+.portal-header-inner>.portal-workspace-bar .portal-workspace-tab{
+  min-height:32px!important;padding:6px 10px!important;border-radius:999px!important;
+  font-size:10px!important;white-space:nowrap!important;
+}
+.portal-header-inner>.portal-workspace-bar .portal-workspace-create{
+  width:30px!important;height:30px!important;min-width:30px!important;
+}
+@media(max-width:1500px) and (min-width:701px){
+  .portal-header-inner>.portal-workspace-bar{order:7;flex:1 0 100%!important;max-width:100%!important;justify-content:center!important;margin:2px 0!important}
+}
+@media(max-width:700px){
+  .portal-header-inner>.portal-workspace-bar{
+    order:8;flex:1 0 100%!important;width:100%!important;max-width:100%!important;
+    justify-content:flex-start!important;margin:3px 0 0!important;
+  }
+  .portal-header-inner>.portal-workspace-bar .portal-workspace-tabs{
+    justify-content:flex-start!important;width:100%!important;flex-wrap:nowrap!important;
+  }
+}
