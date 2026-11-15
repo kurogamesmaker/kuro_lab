@@ -72,10 +72,10 @@ function flushUsageEvents(){
 function activateUsageTracking(user){
  trackingUserId=user&&user.id||null;
  if(!trackingUserId){trackingSessionId=null;trackedPageView=false;trackedSessionUser=null;return;}
- var sessionKey="kuro_usage_session_"+trackingUserId;
+ var sessionKey="kuro_usage_session_"+trackingUserId,startedKey="kuro_usage_session_started_"+trackingUserId;
  trackingSessionId=sessionStorage.getItem(sessionKey);
  if(!trackingSessionId){trackingSessionId=uuid();sessionStorage.setItem(sessionKey,trackingSessionId);}
- if(trackedSessionUser!==trackingUserId){queueUsageEvent("session_start");trackedSessionUser=trackingUserId;}
+ if(sessionStorage.getItem(startedKey)!==trackingSessionId){sessionStorage.setItem(startedKey,trackingSessionId);queueUsageEvent("session_start");}
  if(!trackedPageView){queueUsageEvent("page_view");trackedPageView=true;}
  observeDashboardWidgets();
 }
