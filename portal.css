@@ -253,3 +253,62 @@ body[data-motion=reduced] .portal-widget.is-editing{animation:none}
 #portal-dashboard-grid{position:relative}
 #portal-dashboard-grid .portal-widget-resize-placeholder{visibility:hidden;min-width:0;pointer-events:none}
 #portal-dashboard-grid.is-resize-mode .portal-widget.resizing{transition:none!important;will-change:left,top,width,height}
+
+
+/* KURO portal: prevent accidental horizontal page overflow */
+html,body.kuro-portal{
+  width:100%;
+  max-width:100%;
+  overflow-x:clip;
+}
+body.kuro-portal{
+  min-width:0;
+}
+.portal-header,
+.portal-header-inner,
+.portal-wrap,
+.portal-dashboard,
+.portal-center,
+.portal-dashboard-v2,
+.portal-dashboard-grid,
+.portal-right,
+.portal-footer,
+.portal-footer-inner{
+  min-width:0;
+  max-width:100%;
+}
+.portal-dashboard-grid{
+  width:100%;
+  grid-template-columns:repeat(12,minmax(0,1fr));
+}
+.portal-dashboard-grid > *,
+.portal-widget,
+.portal-widget-body,
+.portal-widget-head,
+.portal-widget-title{
+  min-width:0;
+  max-width:100%;
+}
+.portal-widget{
+  overflow-wrap:anywhere;
+}
+.portal-widget img,
+.portal-widget video,
+.portal-widget iframe,
+.portal-widget canvas,
+.portal-widget svg{
+  max-width:100%;
+}
+@media(max-width:700px){
+  .portal-header-inner{
+    width:calc(100% - 26px);
+    max-width:calc(100% - 26px);
+  }
+  .portal-wrap{
+    width:calc(100% - 24px);
+    max-width:calc(100% - 24px);
+  }
+  .portal-dashboard-grid{
+    grid-template-columns:repeat(8,minmax(0,1fr));
+  }
+}
