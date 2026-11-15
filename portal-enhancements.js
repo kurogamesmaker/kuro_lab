@@ -477,14 +477,15 @@
 
   function showTemplateImportCard() {
     var a = getApi(), dash = document.querySelector(".portal-dashboard-v2");
-    var toolbar = dash && dash.querySelector(".portal-dashboard-toolbar");
     var payload = readIncomingTemplate();
-    if (!a || !toolbar || !payload || document.getElementById("portal-template-import")) return;
+    if (!a || !dash || !payload || document.getElementById("portal-template-import")) return;
     var card = document.createElement("section");
     card.id = "portal-template-import";
     card.className = "portal-template-import";
     card.innerHTML = '<div><span class="portal-eyebrow">SHARED WORKSPACE TEMPLATE</span><strong>' + esc(payload.name) + '</strong><small>' + payload.widgets.length + '種類のウィジェット配置 · ' + (payload.viewMode === "canvas" ? "無限キャンバス" : "整列レイアウト") + '</small><p>このテンプレートには配置・サイズ・表示モードのみが含まれます。メモ、個人URL、RSS登録内容、アカウント情報は共有されません。</p></div><div class="portal-template-actions"><button type="button" class="portal-btn primary" data-template-import>新しいワークスペースとして追加</button><button type="button" class="portal-btn subtle" data-template-dismiss>閉じる</button></div>';
-    toolbar.insertAdjacentElement("afterend",card);
+    var host = dash.querySelector(".portal-canvas-viewport") || dash.querySelector("#portal-dashboard-grid");
+    if (host) host.insertAdjacentElement("beforebegin",card);
+    else dash.appendChild(card);
   }
 
   function importSharedTemplate() {
@@ -528,8 +529,8 @@
       updateBadges();
       return;
     }
-    var actions = dash.querySelector(".portal-dashboard-actions");
-    var bar = dash.querySelector(".portal-workspace-bar");
+    var actions = document.querySelector(".portal-dashboard-toolbar .portal-dashboard-actions") || dash.querySelector(".portal-dashboard-actions");
+    var bar = document.querySelector(".portal-workspace-bar");
     if (!bar && actions) {
       actions.insertAdjacentHTML("beforeend", workspaceBar(p));
       bar = actions.querySelector(".portal-workspace-bar");
@@ -547,7 +548,7 @@
         button.setAttribute("aria-pressed", String(active));
       });
     }
-    var actions = dash.querySelector(".portal-dashboard-actions");
+    actions = document.querySelector(".portal-dashboard-toolbar .portal-dashboard-actions") || dash.querySelector(".portal-dashboard-actions");
     if (actions && !actions.querySelector("[data-open-quick]")) {
       var search = document.createElement("button");
       search.type = "button";
