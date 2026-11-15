@@ -75,7 +75,7 @@ Deno.serve(async (req: Request) => {
     if(action==="accept_invitation") {
       const invitationId=typeof body.invitationId==="string"?body.invitationId:"";
       if(!uuidPattern.test(invitationId)) return reply({error:"招待IDが正しくありません。"},400,origin);
-      const {data:invitation,error:invError}=await admin.from("pro_invitations").select("id,invited_user_id,status,expires_at,created_by").eq("id",invitationId).eq("invited_user_id",user.id).maybeSingle();
+      const {data:invitation,error:invError}=await admin.from("pro_invitations").select("id,invited_user_id,status,expires_at,membership_expires_at,created_by").eq("id",invitationId).eq("invited_user_id",user.id).maybeSingle();
       if(invError) throw invError;
       if(!invitation) return reply({error:"このアカウント宛ての招待が見つかりません。"},404,origin);
       if(invitation.status!=="pending") return reply({error:"この招待はすでに利用済みか、取り消されています。"},409,origin);
