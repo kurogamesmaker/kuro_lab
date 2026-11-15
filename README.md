@@ -8,6 +8,8 @@ KURO Lab（KURO Lab / クロラボ）は、オリジナルのWebサービスや�
 
 - **KURO SNS** — 短い投稿、ハッシュタグ、フォロー、返信、チャットで交流できるソーシャルサービス  
   https://kurolab.cc.cd/sns/
+- **KURO Toolbox** — 天気、ニュース、世界時計、為替・単位変換、RSS、サイト稼働状況をまとめた情報ツール集  
+  https://kurolab.cc.cd/tools/
 - **KURO GAMES** — インストール不要で遊べる無料ブラウザゲームの一覧  
   https://kurolab.cc.cd/games/
 
