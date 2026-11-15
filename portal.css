@@ -1209,116 +1209,66 @@ body:has(.portal-dashboard-v2) .portal-account-button{
 /* Sidebar: compact icon rail, expands on pointer/focus */
 @media(min-width:761px){
   .portal-app-shell:has(.portal-dashboard-v2){
-    /* Sidebar is fixed and overlays the edge; keep the main dashboard in its original full-width layout. */
     grid-template-columns:minmax(0,1fr)!important;
     width:min(1440px,calc(100% - 48px))!important;
     max-width:1440px!important;
     gap:0!important;
-    align-items:start
+    align-items:start;
   }
-
-    width:min(1500px,calc(100% - 40px));
-    max-width:1500px;
-    gap:18px;
-    align-items:start
+  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-main{
+    width:100%!important;
+    max-width:none!important;
+    min-width:0!important;
+    margin:0!important;
   }
   .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar{
     display:flex!important;
-    position:sticky;top:88px;z-index:60;
-    width:62px;min-width:62px;max-width:none;
-    height:calc(100vh - 108px);min-height:420px;max-height:900px;
-    margin:22px 0 28px;padding:13px 8px 10px;
-    gap:12px;overflow:hidden;
-    border-radius:19px;
-    transition:width .2s ease,box-shadow .2s ease,background .2s ease;
-    box-shadow:0 8px 28px #00000012
+    position:fixed!important;
+    top:88px!important;
+    left:0!important;
+    width:14px!important;
+    min-width:14px!important;
+    max-width:252px!important;
+    height:calc(100vh - 108px)!important;
+    height:calc(100dvh - 108px)!important;
+    min-height:0!important;
+    max-height:none!important;
+    margin:0!important;
+    padding:0!important;
+    z-index:80!important;
+    overflow:hidden!important;
+    border:0!important;
+    border-right:1px solid var(--line)!important;
+    border-radius:0 10px 10px 0!important;
+    box-shadow:none!important;
+    background:var(--surface)!important;
+    gap:0!important;
+    transition:width 280ms ease,box-shadow 280ms ease!important;
   }
   .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:hover,
   .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:focus-within{
-    width:252px;min-width:252px;overflow:visible;
-    box-shadow:0 16px 42px #0000002b;
-    background:var(--surface)
+    width:252px!important;
+    min-width:252px!important;
+    padding:13px 8px 10px!important;
+    gap:12px!important;
+    box-shadow:12px 0 32px #00000020!important;
   }
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-sidebar-brand{
-    min-width:226px;gap:10px;padding:2px 1px 8px
+  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar > *{
+    opacity:0!important;
+    visibility:hidden!important;
+    pointer-events:none!important;
   }
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-sidebar-logo{
-    width:44px;height:44px;flex-basis:44px
+  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:hover > *,
+  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:focus-within > *{
+    opacity:1!important;
+    visibility:visible!important;
+    pointer-events:auto!important;
   }
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-sidebar-brand>span:last-child,
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-sidebar-search b,
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-sidebar-search kbd,
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-sidebar-group-label,
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-sidebar-text,
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-sidebar-bottom{
-    opacity:0;visibility:hidden;pointer-events:none;
-    transition:opacity .12s ease,visibility .12s ease
-  }
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-sidebar-search{
-    width:44px;min-width:44px;height:44px;min-height:44px;
-    justify-content:center;padding:0;margin:0 auto;border-radius:13px
-  }
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-sidebar-search>span{font-size:22px}
   .portal-app-shell:has(.portal-dashboard-v2) .portal-sidebar-nav{
-    width:226px;overflow-x:hidden;overflow-y:auto;gap:8px;padding:0;
-    scrollbar-width:thin
-  }
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-sidebar-group{gap:3px}
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-sidebar-item{
-    width:44px;min-width:44px;height:43px;min-height:43px;
-    justify-content:flex-start;gap:13px;padding:0 11px;margin:0 auto;
-    overflow:hidden;white-space:nowrap;border-radius:12px
-  }
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-sidebar-icon{
-    display:grid;place-items:center;width:20px;min-width:20px;height:22px;
-    font-size:17px;flex:0 0 20px
-  }
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-sidebar-item .portal-sidebar-badge{
-    margin-left:auto;flex:0 0 auto
-  }
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:hover .portal-sidebar-brand>span:last-child,
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:hover .portal-sidebar-search b,
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:hover .portal-sidebar-search kbd,
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:hover .portal-sidebar-group-label,
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:hover .portal-sidebar-text,
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:hover .portal-sidebar-bottom,
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:focus-within .portal-sidebar-brand>span:last-child,
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:focus-within .portal-sidebar-search b,
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:focus-within .portal-sidebar-search kbd,
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:focus-within .portal-sidebar-group-label,
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:focus-within .portal-sidebar-text,
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:focus-within .portal-sidebar-bottom{
-    opacity:1;visibility:visible;pointer-events:auto
-  }
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:hover .portal-sidebar-search,
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:focus-within .portal-sidebar-search{
-    width:100%;min-width:0;justify-content:flex-start;padding:0 10px
-  }
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:hover .portal-sidebar-item,
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:focus-within .portal-sidebar-item{
-    width:100%;margin:0;padding:8px 10px
-  }
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:hover .portal-sidebar-group-label,
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:focus-within .portal-sidebar-group-label{
-    padding-left:10px
-  }
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:hover .portal-sidebar-bottom,
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-app-sidebar:focus-within .portal-sidebar-bottom{
-    display:grid;gap:9px;margin-top:auto
-  }
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-dashboard-toolbar .portal-dashboard-actions{
-    display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;
-    align-items:center;justify-content:flex-end;gap:8px;width:max-content;
-    max-width:100%;margin-left:auto;white-space:nowrap
-  }
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-dashboard-toolbar .portal-dashboard-actions>.portal-btn{
-    display:inline-flex!important;flex:0 0 auto!important;
-    width:auto!important;min-width:0;align-items:center;justify-content:center;
-    white-space:nowrap
-  }
-  .portal-app-shell:has(.portal-dashboard-v2) .portal-dashboard-toolbar{
-    display:flex!important;flex-direction:row!important;align-items:center;
-    justify-content:flex-end;width:100%;min-height:42px
+    min-height:0!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    overscroll-behavior:contain;
   }
 }
 @media(max-width:760px){
