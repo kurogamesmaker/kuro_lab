@@ -604,26 +604,12 @@ function renderSns(){
  }
  if(snsTab==="users"){
   const shown=snsProfiles.filter(p=>!query||[p.display_name,p.username,p.bio].join(" ").toLowerCase().includes(query));
-  $("#snsUsersPanel").innerHTML=shown.length?shown.map(p=>'<article class="item"><div><div class="meta"><strong>'+esc(p.display_name||p.username)+'</strong><span>@'+esc(p.username)+'</span><span>登録 '+esc(date(p.created_at))+'</span></div><p class="sns-text">'+esc(p.bio||"自己紹介はありません。")+'</p><div class="sns-muted">投稿 '+snsPosts.filter(x=>x.user_id===p.id).length+' 件 · 返信 '+snsReplies.filter(x=>x.user_id===p.id).length+' 件</div></div><div class="sns-actions"><button class="btn" data-sns-user-posts="'+esc(p.id)+'">この利用者の投稿</button><button class="btn" data-sns-user-email="'+esc(p.id)+'" data-sns-user-label="'+esc(p.display_name||p.username||"KUROユーザー")+'">メール</button></div></article>').join(""):'<div class="empty">該当する利用者はいません。</div>';
+  $("#snsUsersPanel").innerHTML=shown.length?shown.map(p=>'<article class="item"><div><div class="meta"><strong>'+esc(p.display_name||p.username)+'</strong><span>@'+esc(p.username)+'</span><span>登録 '+esc(date(p.created_at))+'</span></div><p class="sns-text">'+esc(p.bio||"自己紹介はありません。")+'</p><div class="sns-muted">投稿 '+snsPosts.filter(x=>x.user_id===p.id).length+' 件 · 返信 '+snsReplies.filter(x=>x.user_id===p.id).length+' 件</div></div><div class="sns-actions"><button class="btn" data-sns-user-posts="'+esc(p.id)+'">この利用者の投稿</button></div></article>').join(""):'<div class="empty">該当する利用者はいません。</div>';
  }
  if(snsTab==="chat"){
   const shown=snsChatMessages.filter(r=>!query||[r.nickname,r.content].join(" ").toLowerCase().includes(query));
   $("#snsChatPanel").innerHTML=shown.length?shown.map(r=>'<article class="item"><div><div class="meta"><strong>'+esc(r.nickname)+'</strong><span>'+esc(date(r.created_at))+'</span></div><p class="sns-text">'+esc(r.content)+'</p></div><div class="sns-actions"><button class="btn" data-sns-delete="chat" data-id="'+esc(r.id)+'">メッセージを削除</button></div></article>').join(""):'<div class="empty">該当する公開チャットはありません。</div>';
  }
-}
-async function emailSnsUser(userId,label,button){
- const subject=window.prompt("宛先："+label+"\nメールの件名を入力してください。","KURO SNS 運営からのお知らせ");
- if(subject===null)return;
- const content=window.prompt("メール本文を入力してください。");
- if(content===null)return;
- if(!subject.trim()||!content.trim()){alert("件名と本文を入力してください。");return;}
- if(!window.confirm(label+" にメールを送信しますか？"))return;
- if(button)button.disabled=true;
- try{
-  await opsInvoke({action:"send_user_email",userId,subject:subject.trim(),content:content.trim()});
-  alert("メールを送信しました。");
- }catch(e){alert("メールを送信できませんでした："+e.message);}
- finally{if(button)button.disabled=false;}
 }
 async function deleteSnsItem(type,id,button){
  const config={
@@ -684,7 +670,6 @@ function renderOpsUsers(){
    '<td><div class="ops-user-actions">'+
     (banned?'<button class="btn" data-ops-action="unban" data-user-id="'+esc(u.id)+'">解除</button>':'<button class="btn" data-ops-action="ban" data-user-id="'+esc(u.id)+'">停止</button>')+
     '<button class="btn" data-ops-action="reset" data-user-id="'+esc(u.id)+'">再設定メール</button>'+
-    '<button class="btn" data-ops-action="email" data-user-id="'+esc(u.id)+'">メール</button>'+
     '<button class="btn danger" data-ops-action="delete" data-user-id="'+esc(u.id)+'">削除</button>'+
    '</div></td></tr>';
  }).join("")+'</tbody></table>';
@@ -718,14 +703,6 @@ async function runOpsUserAction(button){
  }else if(action==="reset"){
   if(!window.confirm((user.email||user.id)+" にパスワード再設定メールを送信しますか？"))return;
   payload={action:"send_password_reset",userId};
- }else if(action==="email"){
-  const subject=window.prompt("メールの件名を入力してください。","KURO SNS 運営からのお知らせ");
-  if(subject===null)return;
-  const content=window.prompt("メール本文を入力してください。");
-  if(content===null)return;
-  if(!subject.trim()||!content.trim()){alert("件名と本文を入力してください。");return;}
-  if(!window.confirm((user.email||user.id)+" にメールを送信しますか？"))return;
-  payload={action:"send_user_email",userId,subject:subject.trim(),content:content.trim()};
  }else if(action==="delete"){
   const typed=window.prompt("アカウントを完全削除します。取り消せません。確認のため、対象のメールアドレスをそのまま入力してください。", "");
   if(typed===null)return;
@@ -737,7 +714,7 @@ async function runOpsUserAction(button){
  const {data,error}=await db.functions.invoke("admin-console",{body:payload});
  button.disabled=false;
  if(error||data?.error){alert("操作に失敗しました："+(error?.message||data?.error||"不明なエラー"));return;}
- alert(action==="ban"?"アカウントを停止しました。":action==="unban"?"停止を解除しました。":action==="reset"?"再設定メールの送信を要求しました。":action==="email"?"メールを送信しました。":"アカウントを削除しました。");
+ alert(action==="ban"?"アカウントを停止しました。":action==="unban"?"停止を解除しました。":action==="reset"?"再設定メールの送信を要求しました。":"アカウントを削除しました。");
  await loadOpsUsers();
 }
 
@@ -1066,8 +1043,6 @@ $("#snsAdminSection").addEventListener("click",e=>{
  if(del){deleteSnsItem(del.dataset.snsDelete,del.dataset.id,del);return;}
  const user=e.target.closest("button[data-sns-user-posts]");
  if(user){snsUserFilterId=user.dataset.snsUserPosts;snsTab="posts";$("#snsSearch").value="";renderSns();return;}
- const mail=e.target.closest("button[data-sns-user-email]");
- if(mail){emailSnsUser(mail.dataset.snsUserEmail,mail.dataset.snsUserLabel,mail);}
 });
 db.auth.getSession().then(({data})=>{if(data.session)enter(data.session.user);});
 db.auth.onAuthStateChange((event,session)=>{if(event==="SIGNED_OUT")showLogin("");});
