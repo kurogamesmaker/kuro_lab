@@ -243,8 +243,8 @@ function startPortalRequestNotificationSync(){
  }
  if(!portalNotificationEventsBound){
   portalNotificationEventsBound=true;
-  document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")refreshPortalRequestNotifications(true);});
-  window.addEventListener("focus",function(){refreshPortalRequestNotifications(true);});
+  document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"){refreshPortalRequestNotifications(true);refreshPortalAdminMessages(true);}});
+  window.addEventListener("focus",function(){refreshPortalRequestNotifications(true);refreshPortalAdminMessages(true);});
  }
 }
 async function markPortalRequestNotificationRead(id){
