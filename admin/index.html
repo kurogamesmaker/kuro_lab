@@ -639,11 +639,6 @@ function renderOpsUsers(){
  }).join("")+'</tbody></table>';
 }
 async function loadOpsUsers(){
- if(mode==="gas"){
-  $("#opsConnection").textContent="Supabase版に切り替えてください";
-  $("#opsUsersList").innerHTML='<div class="empty">アカウント管理APIはセキュリティ上、Supabase版でのみ利用できます。</div>';
-  return;
- }
  $("#opsUsersList").innerHTML='<div class="empty">読み込み中…</div>';
  $("#opsConnection").textContent="アカウント情報を取得中…";
  const {data,error}=await db.functions.invoke("admin-console",{body:{action:"list_users",page:1}});
@@ -697,7 +692,6 @@ function setOpsView(view){
  if(view==="analytics")loadOpsAnalytics();
 }
 async function opsInvoke(body){
- if(mode==="gas")throw new Error("この運営機能はSupabase版で使用してください。");
  const {data,error}=await db.functions.invoke("admin-console",{body});
  if(error)throw error;
  if(data?.error)throw new Error(data.error);
