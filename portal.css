@@ -2466,17 +2466,17 @@ body:has(.portal-dashboard-v2) #portal-quick-button{display:none!important}
 .weather-sun-spin{animation:weather-sun-spin 22s linear infinite}
 .weather-sun{transform-origin:center}
 .weather-sun i{animation:weather-sun-spin 16s linear infinite reverse}
-.weather-partly .weather-sun{opacity:1;right:27px;top:8px;transform:scale(.9)}
-.weather-partly .weather-cloud,.weather-cloud .weather-cloud{opacity:1}
+.weather-state-partly .weather-sun{opacity:1;right:27px;top:8px;transform:scale(.9)}
+.weather-state-partly .weather-cloud,.weather-state-cloud .weather-cloud{opacity:1}
 .weather-cloud .weather-sun,.weather-rain .weather-sun,.weather-snow .weather-sun,.weather-storm .weather-sun{opacity:0}
-.weather-cloud .weather-cloud,.weather-rain .weather-cloud,.weather-snow .weather-cloud,.weather-storm .weather-cloud{opacity:1;right:16px;top:28px;transform:scale(1.12)}
-.weather-rain .weather-rain,.weather-snow .weather-snow{display:block;opacity:1}
-.weather-storm .weather-rain{display:block;opacity:1}
-.weather-storm .weather-lightning{opacity:1}
-.weather-storm .weather-cloud{background:linear-gradient(180deg,#9eafc3,#657b95)}
-.weather-snow .weather-cloud{background:linear-gradient(180deg,#fff,#d8e9f7)}
-.weather-rain .weather-cloud{background:linear-gradient(180deg,#dce7f2,#9eafc3)}
-.weather-sun .weather-cloud{opacity:0}
+.weather-state-cloud .weather-cloud,.weather-state-rain .weather-cloud,.weather-state-snow .weather-cloud,.weather-state-storm .weather-cloud{opacity:1;right:16px;top:28px;transform:scale(1.12)}
+.weather-state-rain .weather-rain,.weather-state-snow .weather-snow{display:block;opacity:1}
+.weather-state-storm .weather-rain{display:block;opacity:1}
+.weather-state-storm .weather-lightning{opacity:1}
+.weather-state-storm .weather-cloud{background:linear-gradient(180deg,#9eafc3,#657b95)}
+.weather-state-snow .weather-cloud{background:linear-gradient(180deg,#fff,#d8e9f7)}
+.weather-state-rain .weather-cloud{background:linear-gradient(180deg,#dce7f2,#9eafc3)}
+.weather-state-sun .weather-cloud{opacity:0}
 @keyframes weather-sun-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 @keyframes weather-sun-spin{to{transform:rotate(360deg)}}
 @keyframes weather-cloud-float{0%,100%{translate:0 0}50%{translate:-5px -3px}}
