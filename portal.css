@@ -2154,3 +2154,24 @@ body:has(.portal-dashboard-v2) #portal-quick-button{display:none!important}
 @media(max-width:760px){
  .portal-dashboard-editor{position:absolute!important;top:calc(100% + 8px)!important;right:0!important;width:min(390px,calc(100vw - 24px))!important}
 }
+
+
+/* Add menu: a simple vertical selectable list */
+.portal-dashboard-editor .portal-widget-picker{
+ display:flex!important;flex-direction:column!important;grid-template-columns:none!important;
+ gap:6px!important;
+}
+.portal-dashboard-editor .portal-widget-picker button{
+ display:grid!important;grid-template-columns:34px minmax(0,1fr) auto!important;
+ grid-template-rows:1fr!important;align-items:center!important;
+ min-height:48px!important;padding:8px 11px!important;
+}
+.portal-dashboard-editor .portal-widget-picker button>span{
+ grid-row:1!important;width:32px!important;height:32px!important;
+}
+.portal-dashboard-editor .portal-widget-picker button>b{
+ font-size:13px!important;white-space:normal!important;
+}
+.portal-dashboard-editor .portal-widget-picker button>small{
+ justify-self:end!important;white-space:nowrap!important;
+}
