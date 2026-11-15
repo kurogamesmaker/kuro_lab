@@ -427,6 +427,80 @@ Deno.serve(async (req: Request) => {
       return reply({ ok: true }, 200, origin);
     }
 
+    if (action === "list_user_reports") {
+      const status = typeof body.status === "string" ? body.status : "open";
+      const limit = Math.max(1, Math.min(300, Number(body.limit) || 250));
+      let query = admin.from("sns_user_reports")
+        .select("id,reporter_id,target_user_id,target_username,reason,details,status,admin_note,reviewed_by,reviewed_at,created_at")
+        .order("created_at", { ascending: false }).limit(limit);
+      if (status !== "all") query = query.eq("status", status);
+      const { data: reports, error } = await query;
+      if (error) throw error;
+      const rows = reports || [];
+      const profileIds = [...new Set(rows.flatMap((r) => [r.reporter_id, r.target_user_id]).filter(Boolean))];
+      const { data: profiles, error: profilesError } = profileIds.length
+        ? await admin.from("profiles").select("id,username,display_name").in("id", profileIds)
+        : { data: [], error: null };
+      if (profilesError) throw profilesError;
+      const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
+      return reply({ reports: rows.map((r) => ({
+        ...r,
+        reporter: r.reporter_id ? (profileMap.get(r.reporter_id) || null) : null,
+        target: r.target_user_id ? (profileMap.get(r.target_user_id) || null) : null
+      })) }, 200, origin);
+    }
+
+    if (action === "update_user_report") {
+      const reportId = typeof body.reportId === "string" ? body.reportId : "";
+      const status = typeof body.status === "string" ? body.status : "";
+      const adminNote = typeof body.adminNote === "string" ? body.adminNote.trim().slice(0, 1000) : "";
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(reportId)) {
+        return reply({ error: "Invalid report ID" }, 400, origin);
+      }
+      if (!["open", "reviewing", "resolved", "dismissed"].includes(status)) {
+        return reply({ error: "Invalid report status" }, 400, origin);
+      }
+      const { data, error } = await admin.from("sns_user_reports").update({
+        status, admin_note: adminNote, reviewed_by: caller.id, reviewed_at: new Date().toISOString()
+      }).eq("id", reportId).select("id,status").maybeSingle();
+      if (error) throw error;
+      if (!data) return reply({ error: "Report not found" }, 404, origin);
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id, action: "sns_report.update",
+        target_user_id: null,
+        metadata: { report_id: reportId, status }
+      });
+      if (auditError) throw auditError;
+      return reply({ ok: true, report: data }, 200, origin);
+    }
+
+    if (action === "delete_user") {
+      const targetUserId = typeof body.userId === "string" ? body.userId : "";
+      const confirmEmail = typeof body.confirmEmail === "string" ? body.confirmEmail.trim().toLowerCase() : "";
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(targetUserId)) {
+        return reply({ error: "Invalid user ID" }, 400, origin);
+      }
+      if (targetUserId === caller.id) return reply({ error: "You cannot delete your own administrator account" }, 409, origin);
+      const { data: targetAdmin, error: targetAdminError } = await admin.from("admin_users")
+        .select("user_id").eq("user_id", targetUserId).maybeSingle();
+      if (targetAdminError) throw targetAdminError;
+      if (targetAdmin) return reply({ error: "Administrator accounts are protected from deletion" }, 409, origin);
+      const { data: targetData, error: targetError } = await admin.auth.admin.getUserById(targetUserId);
+      if (targetError || !targetData?.user) return reply({ error: "User not found" }, 404, origin);
+      const actualEmail = (targetData.user.email || "").trim().toLowerCase();
+      if (!actualEmail || !confirmEmail || confirmEmail !== actualEmail) {
+        return reply({ error: "Confirmation email does not match" }, 409, origin);
+      }
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id, action: "account.delete", target_user_id: targetUserId,
+        metadata: { email: targetData.user.email || "", username: String(body.username || "").slice(0, 100) }
+      });
+      if (auditError) throw auditError;
+      const { error: deleteError } = await admin.auth.admin.deleteUser(targetUserId);
+      if (deleteError) throw deleteError;
+      return reply({ ok: true }, 200, origin);
+    }
+
     if (action === "list_users") {
       const page = Math.max(1, Math.min(20, Number(body.page) || 1));
       const perPage = 500;
