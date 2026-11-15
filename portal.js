@@ -223,10 +223,19 @@ function bindDashboard(){
  positionDashboardToolbar();
  if(!window.kuroDashboardAddDelegationBound){
   document.addEventListener("click",function(e){
-   var trigger=e.target&&e.target.closest?e.target.closest("#portal-dashboard-add"):null;
+   var target=e.target&&e.target.nodeType===1?e.target:e.target&&e.target.parentElement;
+   var trigger=target&&target.closest?target.closest("#portal-dashboard-add"):null;
    if(!trigger)return;
    e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();
-   var panel=$("#portal-dashboard-editor");if(!panel)return;
+   var panels=Array.prototype.slice.call(document.querySelectorAll("#portal-dashboard-editor"));
+   var panel=panels.find(function(x){return !x.hidden;});
+   if(!panel){
+    var toolbar=trigger.closest(".portal-dashboard-toolbar");
+    panel=toolbar&&toolbar.querySelector("#portal-dashboard-editor");
+   }
+   if(!panel)panel=panels[panels.length-1];
+   if(!panel)return;
+   panels.forEach(function(x){if(x!==panel)x.remove();});
    if(panel.hidden){panel.hidden=false;trigger.setAttribute("aria-expanded","true");positionDashboardEditor();}
    else{restoreDashboardEditor(panel,trigger);}
   },true);
