@@ -100,6 +100,69 @@ async function workspaceSiteStatus(request) {
   }
 }
 
+
+function isSafeWorkspaceRssUrl(value) {
+  let target;
+  try { target = new URL(value); } catch (_) { return false; }
+  if (target.protocol !== "https:" && target.protocol !== "http:") return false;
+  if (target.username || target.password) return false;
+  if (target.port && target.port !== "80" && target.port !== "443") return false;
+  const host = target.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (!host || host === "localhost" || !host.includes(".") ||
+      /(^|\.)(localhost|local|internal|test|invalid|example)$/.test(host) ||
+      host.endsWith(".localhost") || host.endsWith(".local")) return false;
+  if (/^[0-9.]+$/.test(host) || host.includes(":")) return false;
+  return true;
+}
+
+async function workspaceRss(request) {
+  const jsonError = (message, status) => new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" }
+  });
+  if (request.method !== "GET") return jsonError("GETリクエストのみ対応しています。", 405);
+  const raw = new URL(request.url).searchParams.get("url") || "";
+  if (!raw || raw.length > 1800 || !isSafeWorkspaceRssUrl(raw)) return jsonError("有効な公開HTTP / HTTPSフィードURLを指定してください。", 400);
+  let target = new URL(raw);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+  try {
+    let response = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      if (!isSafeWorkspaceRssUrl(target.href)) return jsonError("安全でないリダイレクト先が検出されました。", 400);
+      response = await fetch(target.href, {
+        method: "GET", redirect: "manual", signal: controller.signal,
+        headers: { "Accept": "application/rss+xml, application/atom+xml, application/xml, text/xml, */*;q=0.8", "User-Agent": "KURO-Lab-RSS/1.0" }
+      });
+      if (![301, 302, 303, 307, 308].includes(response.status)) break;
+      const location = response.headers.get("Location");
+      if (response.body) await response.body.cancel().catch(() => {});
+      if (!location || attempt === 4) return jsonError("リダイレクトが多すぎます。", 502);
+      target = new URL(location, target);
+    }
+    if (!response || !response.ok) {
+      const status = response ? response.status : 502;
+      if (response && response.body) await response.body.cancel().catch(() => {});
+      return jsonError("配信元がフィードを返しませんでした（HTTP " + status + "）。", 502);
+    }
+    const length = Number(response.headers.get("Content-Length") || 0);
+    if (length > 1500000) {
+      if (response.body) await response.body.cancel().catch(() => {});
+      return jsonError("フィードのサイズが上限を超えています。", 413);
+    }
+    const body = await response.text();
+    if (new TextEncoder().encode(body).byteLength > 1500000) return jsonError("フィードのサイズが上限を超えています。", 413);
+    if (!body.trim()) return jsonError("配信元から空のフィードが返されました。", 502);
+    return new Response(body, { status: 200, headers: {
+      "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=300, s-maxage=300", "X-Content-Type-Options": "nosniff"
+    }});
+  } catch (error) {
+    return jsonError(error && error.name === "AbortError" ? "フィード取得がタイムアウトしました。" : "フィード配信元に接続できませんでした。", 502);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
