@@ -2263,3 +2263,28 @@ body:has(.portal-dashboard-v2) #portal-quick-button{display:none!important}
     justify-content:flex-start!important;width:100%!important;flex-wrap:nowrap!important;
   }
 }
+
+
+/* Workspace modes replace the former display-layout selector in dashboard actions. */
+.portal-dashboard-actions>.portal-workspace-bar{
+  display:inline-flex!important;align-items:center!important;justify-content:flex-start!important;
+  flex:0 1 auto!important;width:auto!important;min-width:0!important;max-width:min(520px,55vw)!important;
+  margin:0 2px!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;
+}
+.portal-dashboard-actions>.portal-workspace-bar .portal-workspace-heading{display:none!important}
+.portal-dashboard-actions>.portal-workspace-bar .portal-workspace-tabs{
+  display:flex!important;align-items:center!important;justify-content:flex-start!important;
+  width:auto!important;max-width:100%!important;min-width:0!important;margin:0!important;
+  gap:5px!important;overflow-x:auto!important;overflow-y:hidden!important;
+}
+.portal-dashboard-actions>.portal-workspace-bar .portal-workspace-tab{
+  min-height:34px!important;padding:6px 10px!important;border-radius:999px!important;
+  font-size:10px!important;white-space:nowrap!important;
+}
+.portal-dashboard-actions>.portal-workspace-bar .portal-workspace-create{
+  width:30px!important;height:30px!important;min-width:30px!important;
+}
+@media(max-width:760px){
+  .portal-dashboard-actions>.portal-workspace-bar{order:0;flex:1 1 100%!important;width:100%!important;max-width:100%!important;margin:4px 0!important}
+  .portal-dashboard-actions>.portal-workspace-bar .portal-workspace-tabs{width:100%!important;flex-wrap:nowrap!important}
+}
