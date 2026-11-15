@@ -1,7 +1,7 @@
 
 (async function(){
 "use strict";
-window.__kuroPendingRequests=0;var kuroNativeFetch=window.fetch.bind(window);window.fetch=function(input,init){window.__kuroPendingRequests++;if(typeof updateNetworkStatus==="function")updateNetworkStatus();return kuroNativeFetch(input,init).catch(function(err){if(!navigator.onLine&&typeof showErrorPanel==="function")showErrorPanel("オフラインです","接続を確認してください。端末の保存データは保持されています。");throw err;}).finally(function(){window.__kuroPendingRequests=Math.max(0,window.__kuroPendingRequests-1);if(typeof updateNetworkStatus==="function")updateNetworkStatus();});};
+window.__kuroPendingRequests=0;var kuroNativeFetch=window.fetch.bind(window);var trackingUserId=null,trackingSessionId=null,trackingWrite=false,trackedPageView=false,trackedSessionUser=null;window.fetch=function(input,init){window.__kuroPendingRequests++;if(typeof updateNetworkStatus==="function")updateNetworkStatus();var apiInfo=trackingWrite?null:classifyApiRequest(input);var started=Date.now();return kuroNativeFetch(input,init).then(function(response){if(apiInfo)queueUsageEvent(response.ok?"api_success":"api_error",{service_key:apiInfo.service,status_code:response.status,error_code:response.ok?null:"http_"+response.status,widget_key:apiInfo.widget});return response;}).catch(function(err){if(apiInfo)queueUsageEvent("api_error",{service_key:apiInfo.service,error_code:"network_error",widget_key:apiInfo.widget});if(!navigator.onLine&&typeof showErrorPanel==="function")showErrorPanel("オフラインです","接続を確認してください。端末の保存データは保持されています。");throw err;}).finally(function(){window.__kuroPendingRequests=Math.max(0,window.__kuroPendingRequests-1);if(typeof updateNetworkStatus==="function")updateNetworkStatus();});};
 var SUPABASE_URL="https://cprvpphlfpmiegjiutjn.supabase.co",PUBLISHABLE_KEY="sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
 async function ensureSupabaseSdk(){
  if(window.supabase&&typeof window.supabase.createClient==="function")return true;
@@ -38,6 +38,75 @@ function gasFetch(input,init){
  });
 }
 var db=supabaseReady?window.supabase.createClient(SUPABASE_URL,PUBLISHABLE_KEY,{global:{fetch:useGas?gasFetch:window.fetch},auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}}):null;
+function classifyApiRequest(input){
+ try{
+  var raw=typeof input==="string"?input:input&&input.url?input.url:String(input||"");
+  var u=new URL(raw,location.href),host=u.hostname.toLowerCase(),p=u.pathname.toLowerCase(),service="";
+  if(p.indexOf("/api/kuro-gas-proxy")===0)service="gas_proxy";
+  else if(p.indexOf("/api/workspace-rss")===0||/rss|feed/.test(p))service="rss";
+  else if(p.indexOf("/api/ogp")===0||/ogp|opengraph/.test(p))service="ogp";
+  else if(/youtube|googleapis/.test(host))service="youtube";
+  else if(/weather|openweathermap|weatherapi/.test(host)||/weather/.test(p))service="weather";
+  else if(host===new URL(SUPABASE_URL).hostname)service="supabase_data_api";
+  else if(p.indexOf("/api/")===0)service="other_api";
+  if(!service||p.indexOf("/rest/v1/usage_events")>=0)return null;
+  var active=document.activeElement,widget=active&&active.closest?active.closest("[data-widget-id]"):null;
+  return {service:service,widget:widget?String(widget.dataset.widgetId||"").slice(0,64)||null:null};
+ }catch(e){return null;}
+}
+function queueUsageEvent(eventName,extra){
+ if(!trackingUserId||!db||trackingWrite)return;
+ var payload=Object.assign({user_id:trackingUserId,session_id:trackingSessionId,event_name:eventName,page_key:(page||"home").replace(/[^a-zA-Z0-9_/-]/g,"").slice(0,64)||"home"},extra||{});
+ if(payload.widget_key&&!/^[a-zA-Z0-9_-]{1,64}$/.test(payload.widget_key))payload.widget_key=null;
+ trackingWrite=true;
+ Promise.resolve(db.from("usage_events").insert(payload)).then(function(result){if(result&&result.error)console.debug("KURO usage telemetry skipped",result.error.message);}).catch(function(error){console.debug("KURO usage telemetry skipped",error&&error.message||error);}).finally(function(){trackingWrite=false;});
+}
+function activateUsageTracking(user){
+ trackingUserId=user&&user.id||null;
+ if(!trackingUserId){trackingSessionId=null;trackedPageView=false;trackedSessionUser=null;return;}
+ var sessionKey="kuro_usage_session_"+trackingUserId;
+ trackingSessionId=sessionStorage.getItem(sessionKey);
+ if(!trackingSessionId){trackingSessionId=uuid();sessionStorage.setItem(sessionKey,trackingSessionId);}
+ if(trackedSessionUser!==trackingUserId){queueUsageEvent("session_start");trackedSessionUser=trackingUserId;}
+ if(!trackedPageView){queueUsageEvent("page_view");trackedPageView=true;}
+ observeDashboardWidgets();
+}
+var usageViewedWidgets=new Set(),usageWidgetObserver=null;
+function observeDashboardWidgets(){
+ if(!trackingUserId)return;
+ if(!usageWidgetObserver&&"IntersectionObserver" in window){
+  usageWidgetObserver=new IntersectionObserver(function(entries){
+   entries.forEach(function(entry){
+    if(!entry.isIntersecting)return;
+    var id=String(entry.target.dataset.widgetId||"");
+    if(!id||usageViewedWidgets.has(id))return;
+    usageViewedWidgets.add(id);queueUsageEvent("widget_view",{widget_key:id});
+   });
+  },{threshold:0.25});
+ }
+ document.querySelectorAll(".portal-widget[data-widget-id]").forEach(function(el){
+  if(usageWidgetObserver){if(el.dataset.usageObserved!=="1"){el.dataset.usageObserved="1";usageWidgetObserver.observe(el);}}
+  else{var id=String(el.dataset.widgetId||"");if(id&&!usageViewedWidgets.has(id)){usageViewedWidgets.add(id);queueUsageEvent("widget_view",{widget_key:id});}}
+ });
+}
+function bindUsageWidgetTracking(){
+ if(window.__kuroUsageWidgetTrackingBound)return;
+ window.__kuroUsageWidgetTrackingBound=true;
+ document.addEventListener("click",function(event){
+  var target=event.target&&event.target.closest?event.target.closest("[data-widget-toggle],[data-widget-remove]"):null;
+  if(!target)return;
+  var id=String(target.dataset.widgetToggle||target.dataset.widgetRemove||"");
+  if(!/^[a-zA-Z0-9_-]{1,64}$/.test(id))return;
+  var action=target.hasAttribute("data-widget-remove")?"widget_removed":null;
+  window.setTimeout(function(){
+   var present=Array.from(document.querySelectorAll(".portal-widget[data-widget-id]")).some(function(el){return el.dataset.widgetId===id;});
+   var name=action||(present?"widget_added":"widget_removed");
+   queueUsageEvent(name,{widget_key:id});
+   observeDashboardWidgets();
+  },220);
+ },true);
+}
+
 console.info("KURO portal transport:",useGas?"GAS relay":"direct");
 var S="kuro_portal_v1",G="kuro_portal_guest_id",path=location.pathname.replace(/\/+$/,"")||"/";
 var page=path==="/"?"home":path.split("/")[1];
@@ -86,7 +155,7 @@ achievements:function(){return head("実績機能の整理","実績機能はホ�
 mypage:function(){return head("マイページ","アカウントと利用状況を確認できます。","MY KURO")+'<section class="portal-card"><h2>アカウント</h2><p>'+(st.user?"ログイン中："+esc(st.user.email||"アカウント"):"ゲストとして利用中。この端末にデータを保存しています。")+'</p><p class="portal-muted">ログインするとゲストデータとアカウントデータを統合します。</p><div class="portal-card-actions">'+(st.user?'<button id="portal-sync-now" class="portal-btn primary">今すぐ同期</button><button id="portal-signout" class="portal-btn">ログアウト</button>':'<button id="portal-open-login" class="portal-btn primary">ログイン・新規登録</button>')+'</div></section><section class="portal-section"><div class="portal-grid"><article class="portal-card"><h3>'+st.data.favorites.length+' 件</h3><p>お気に入り</p><a class="portal-btn small" href="/favorites/">確認する</a></article><article class="portal-card"><h3>'+st.data.history.length+' 件</h3><p>閲覧履歴</p><a class="portal-btn small" href="/history/">確認する</a></article></div></section>';},
 request:function(){return head("リクエストBOX","追加してほしい機能や改善してほしい点を送ってください。","FEEDBACK")+'<form id="portal-request-form" class="portal-form"><div class="portal-field"><label for="portal-request-message">リクエスト内容</label><textarea id="portal-request-message" class="portal-textarea" minlength="5" maxlength="500" required placeholder="追加してほしい機能、改善してほしい点など"></textarea><small>5〜500文字。住所・電話番号・学校名・パスワードなどは書かないでください。</small></div><div style="position:absolute;left:-9999px" aria-hidden="true"><input id="portal-request-website" tabindex="-1"></div><button class="portal-btn primary">リクエストを送信</button><p id="portal-request-status" role="status" class="portal-muted"></p></form>';},
 settings:function(){var p=st.data.preferences,t=p.theme||"light",d=p.density||"comfortable",m=p.motion||"normal",a=p.accent||"violet",bg=p.background||"aurora";return head("設定","KURO Labの表示やホーム画面を自分好みに調整できます。","PREFERENCES")+'<section class="portal-card"><div class="portal-settings-row"><div><strong>テーマ</strong><small>ポータル全体のライト・ダークを切り替えます</small></div><select id="portal-theme" class="portal-select"><option value="light" '+(t==="light"?"selected":"") +'>ホワイト</option><option value="dark" '+(t==="dark"?"selected":"") +'>ダーク</option></select></div><div class="portal-settings-row"><div><strong>アクセントカラー</strong><small>ボタンや選択中メニューの色を変更します</small></div><select id="portal-accent" class="portal-select"><option value="violet" '+(a==="violet"?"selected":"") +'>バイオレット</option><option value="blue" '+(a==="blue"?"selected":"") +'>ブルー</option><option value="green" '+(a==="green"?"selected":"") +'>グリーン</option><option value="rose" '+(a==="rose"?"selected":"") +'>ローズ</option><option value="amber" '+(a==="amber"?"selected":"") +'>アンバー</option></select></div><div class="portal-settings-row"><div><strong>背景スタイル</strong><small>背景の雰囲気を選べます</small></div><select id="portal-background" class="portal-select"><option value="aurora" '+(bg==="aurora"?"selected":"") +'>オーロラ</option><option value="plain" '+(bg==="plain"?"selected":"") +'>シンプル</option><option value="grid" '+(bg==="grid"?"selected":"") +'>グリッド</option></select></div><div class="portal-settings-row"><div><strong>表示密度</strong><small>カードの余白や情報量を調整します</small></div><select id="portal-density" class="portal-select"><option value="comfortable" '+(d==="comfortable"?"selected":"") +'>ゆったり</option><option value="compact" '+(d==="compact"?"selected":"") +'>コンパクト</option></select></div><div class="portal-settings-row"><div><strong>アニメーション</strong><small>動きを少なくして表示を軽くします</small></div><select id="portal-motion" class="portal-select"><option value="normal" '+(m==="normal"?"selected":"") +'>通常</option><option value="reduced" '+(m==="reduced"?"selected":"") +'>控えめ</option></select></div><div class="portal-settings-row"><div><strong>ホーム画面</strong><small>ウィジェットや自分のリンクを自由に編集できます</small></div><a href="/" class="portal-btn small">カスタマイズする</a></div><div class="portal-settings-row"><div><strong>端末データ</strong><small>この端末のお気に入り・履歴・表示設定を消去します</small></div><button id="portal-reset-local" class="portal-btn small">消去</button></div><div class="portal-settings-row"><div><strong>アカウント同期</strong><small>ログインすると設定や利用データを複数端末で同期できます</small></div><a href="/mypage/" class="portal-btn small">アカウント設定</a></div></section>';}
-};m.innerHTML=(v[page]||home)();bind();window.dispatchEvent(new Event("kuro:portal-rendered"));}
+};m.innerHTML=(v[page]||home)();bind();observeDashboardWidgets();window.dispatchEvent(new Event("kuro:portal-rendered"));}
 function bindFav(){document.querySelectorAll("[data-fav]").forEach(function(b){b.onclick=function(){var k=b.dataset.fav,x=catalog.find(function(y){return y.key===k;})||st.data.favorites.find(function(y){return y.item_key===k;});if(!x)return;var i=st.data.favorites.findIndex(function(y){return y.item_key===k;});if(i>=0){st.data.favorites.splice(i,1);save();if(st.user)db.from("portal_favorites").delete().eq("user_id",st.user.id).eq("item_key",k);}else{st.data.favorites.unshift({item_key:k,item_type:x.type,title:x.title,href:x.href,created_at:new Date().toISOString()});save();if(st.user)sync();}render();};});}
 function bind(){bindFav();var sf=$("#portal-search-form");if(sf){var i=$("#portal-search-input"),run=function(){var q=i.value.toLowerCase().trim(),a=catalog.filter(function(x){return (x.title+" "+x.desc+" "+x.tags).toLowerCase().indexOf(q)>=0;});$("#portal-search-results").innerHTML=a.length?a.map(card).join(""):'<div class="portal-empty" style="grid-column:1/-1">該当する項目がありません</div>';bindFav();};sf.onsubmit=function(e){e.preventDefault();run();};i.oninput=run;}
 var cl=$("#portal-clear-history");if(cl)cl.onclick=async function(){if(!confirm("閲覧履歴を消去しますか？"))return;st.data.history=[];save();if(st.user)await db.from("portal_history").delete().eq("user_id",st.user.id);render();};
@@ -644,9 +713,9 @@ function initGlobalUI(){
  if(!$("#portal-error-panel")){var p=document.createElement("div");p.id="portal-error-panel";p.className="portal-error-panel";p.hidden=true;p.innerHTML='<div><b id="portal-error-title">通信エラー</b><p id="portal-error-message"></p></div><button type="button" id="portal-error-close">閉じる</button>';document.body.appendChild(p);$("#portal-error-close").onclick=function(){p.hidden=true;};}
  window.addEventListener("online",function(){updateNetworkStatus();$("#portal-error-panel").hidden=true;toast("インターネットに再接続しました");});
  window.addEventListener("offline",function(){updateNetworkStatus();showErrorPanel("オフラインです","インターネットに接続できません。一部機能は通信が戻るまで使えません。端末に保存済みのデータは保持されています。");});
- window.addEventListener("error",function(e){if(e&&e.message)showErrorPanel("ページ内でエラーが発生しました","ページを再読み込みしてください。繰り返す場合はエラー内容をサポートへお知らせください。");});
- window.addEventListener("unhandledrejection",function(e){var m=String(e&&e.reason&&e.reason.message||e&&e.reason||"");if(!/abort/i.test(m))showErrorPanel("処理に失敗しました","通信状態を確認して再試行してください。問題が続く場合はページを再読み込みしてください。");});
- document.addEventListener("keydown",function(e){if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"){e.preventDefault();openQuick();}if(e.key==="Escape")closeQuick();});
+ window.addEventListener("error",function(e){if(e&&e.message){queueUsageEvent("client_error",{error_code:"window_error"});showErrorPanel("ページ内でエラーが発生しました","ページを再読み込みしてください。繰り返す場合はエラー内容をサポートへお知らせください。");}});
+ window.addEventListener("unhandledrejection",function(e){var m=String(e&&e.reason&&e.reason.message||e&&e.reason||"");if(!/abort/i.test(m)){queueUsageEvent("client_error",{error_code:"unhandled_rejection"});showErrorPanel("処理に失敗しました","通信状態を確認して再試行してください。問題が続く場合はページを再読み込みしてください。");}});
+ bindUsageWidgetTracking();document.addEventListener("keydown",function(e){if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"){e.preventDefault();openQuick();}if(e.key==="Escape")closeQuick();});
  document.addEventListener("click",function(e){if(e.target.closest("#portal-quick-results a"))closeQuick();});
  updateNetworkStatus();
 }
@@ -654,5 +723,5 @@ function openQuick(){var o=$("#portal-quick-overlay");if(!o)return;o.hidden=fals
 function closeQuick(){var o=$("#portal-quick-overlay");if(o)o.hidden=true;}
 function renderQuickResults(q){var box=$("#portal-quick-results");if(!box)return;var items=catalog.concat([{key:"home",title:"ホーム・ダッシュボード",desc:"自分専用のホーム画面",href:"/",icon:"⌂"},{key:"favorites",title:"お気に入り",desc:"保存したページ",href:"/favorites/",icon:"☆"},{key:"history",title:"閲覧履歴",desc:"最近開いたページ",href:"/history/",icon:"◷"},{key:"notifications",title:"お知らせ",desc:"KURO Labのお知らせ",href:"/notifications/",icon:"♧"},{key:"mypage",title:"マイページ",desc:"アカウントと同期",href:"/mypage/",icon:"◎"},{key:"settings",title:"表示設定",desc:"テーマや表示密度を変更",href:"/settings/",icon:"⚙"},]);var s=String(q||"").toLowerCase().trim(),a=items.filter(function(x){return !s||(x.title+" "+x.desc+" "+(x.tags||"")).toLowerCase().indexOf(s)>=0;}).slice(0,12);box.innerHTML=a.length?a.map(function(x){return '<a href="'+esc(x.href)+'"><span>'+x.icon+'</span><div><b>'+esc(x.title)+'</b><small>'+esc(x.desc)+'</small></div><i>↗</i></a>';}).join(""):'<div class="portal-widget-empty">一致するページがありません。</div>';}
 
-async function init(){st.data=load();guest();applyDisplayPrefs();document.body.dataset.transport=useGas?"gas":"direct";document.title=titles[page][0]+"｜KURO Lab";var md=$('meta[name="description"]');if(md)md.content=titles[page][1];$("#portal-desktop-nav").innerHTML=nav.map(function(x){return '<a href="'+x[3]+'" '+(x[0]===page?'aria-current="page"':"")+'>'+x[1]+'</a>';}).join("");$("#portal-mobile-nav").innerHTML=nav.filter(function(x){return ["home","search","favorites","notifications","mypage"].indexOf(x[0])>=0;}).map(function(x){return '<a href="'+x[3]+'" '+(x[0]===page?'aria-current="page"':"")+'><span>'+x[2]+'</span><span>'+x[1]+'</span></a>';}).join("");initLogin();initGlobalUI();render();if(!db){console.error("KURO Supabase SDK could not be loaded");return;}db.auth.onAuthStateChange(function(ev,session){st.user=session?session.user:null;updateAccountUI();if(ev==="PASSWORD_RECOVERY"){setRecoveryMode(true);var recoveryModal=$("#portal-login-modal");if(recoveryModal)recoveryModal.hidden=false;}if(ev==="SIGNED_IN"&&st.user)setTimeout(function(){sync(false);},0);render();});try{var ss=await db.auth.getSession();st.user=ss.data&&ss.data.session?ss.data.session.user:null;updateAccountUI();render();if(st.user)sync(false);}catch(authError){console.warn("KURO portal session restore failed",authError);}db.from("portal_announcements").select("id,title,body,href,created_at").eq("published",true).order("created_at",{ascending:false}).limit(20).then(function(a){if(!a.error){st.ann=a.data||[];render();window.dispatchEvent(new Event("kuro:announcements-updated"));}});function recordVisit(item){var h={item_key:item.key,title:item.title,href:item.href,visited_at:new Date().toISOString()},i=st.data.history.findIndex(function(x){return x.item_key===item.key;});if(i>=0)st.data.history.splice(i,1);st.data.history.unshift(h);st.data.history=st.data.history.slice(0,100);save();if(st.user)db.from("portal_history").upsert(Object.assign({user_id:st.user.id},h),{onConflict:"user_id,item_key"});}var item=catalog.find(function(x){return x.href.slice(0,-1)===path;});if(item)recordVisit(item);document.addEventListener("click",function(e){var a=e.target.closest("a[href]");if(!a)return;var u=new URL(a.href,location.href);if(u.origin!==location.origin)return;var destination=catalog.find(function(x){return x.href===u.pathname;});if(destination)recordVisit(destination);});render();}init().catch(function(e){console.error(e);render();});
+async function init(){st.data=load();guest();applyDisplayPrefs();document.body.dataset.transport=useGas?"gas":"direct";document.title=titles[page][0]+"｜KURO Lab";var md=$('meta[name="description"]');if(md)md.content=titles[page][1];$("#portal-desktop-nav").innerHTML=nav.map(function(x){return '<a href="'+x[3]+'" '+(x[0]===page?'aria-current="page"':"")+'>'+x[1]+'</a>';}).join("");$("#portal-mobile-nav").innerHTML=nav.filter(function(x){return ["home","search","favorites","notifications","mypage"].indexOf(x[0])>=0;}).map(function(x){return '<a href="'+x[3]+'" '+(x[0]===page?'aria-current="page"':"")+'><span>'+x[2]+'</span><span>'+x[1]+'</span></a>';}).join("");initLogin();initGlobalUI();render();if(!db){console.error("KURO Supabase SDK could not be loaded");return;}db.auth.onAuthStateChange(function(ev,session){st.user=session?session.user:null;activateUsageTracking(st.user);updateAccountUI();if(ev==="PASSWORD_RECOVERY"){setRecoveryMode(true);var recoveryModal=$("#portal-login-modal");if(recoveryModal)recoveryModal.hidden=false;}if(ev==="SIGNED_IN"&&st.user)setTimeout(function(){sync(false);},0);render();});try{var ss=await db.auth.getSession();st.user=ss.data&&ss.data.session?ss.data.session.user:null;activateUsageTracking(st.user);updateAccountUI();render();if(st.user)sync(false);}catch(authError){console.warn("KURO portal session restore failed",authError);}db.from("portal_announcements").select("id,title,body,href,created_at").eq("published",true).order("created_at",{ascending:false}).limit(20).then(function(a){if(!a.error){st.ann=a.data||[];render();window.dispatchEvent(new Event("kuro:announcements-updated"));}});function recordVisit(item){var h={item_key:item.key,title:item.title,href:item.href,visited_at:new Date().toISOString()},i=st.data.history.findIndex(function(x){return x.item_key===item.key;});if(i>=0)st.data.history.splice(i,1);st.data.history.unshift(h);st.data.history=st.data.history.slice(0,100);save();if(st.user)db.from("portal_history").upsert(Object.assign({user_id:st.user.id},h),{onConflict:"user_id,item_key"});}var item=catalog.find(function(x){return x.href.slice(0,-1)===path;});if(item)recordVisit(item);document.addEventListener("click",function(e){var a=e.target.closest("a[href]");if(!a)return;var u=new URL(a.href,location.href);if(u.origin!==location.origin)return;var destination=catalog.find(function(x){return x.href===u.pathname;});if(destination)recordVisit(destination);});render();}init().catch(function(e){console.error(e);render();});
 })();
