@@ -35,3 +35,10 @@ Google/Appleログインを利用する場合は、Authentication → URL Config
 
 ## KURO LabポータルのGAS認証更新
 KURO Labポータルもこの同じGAS Webアプリを中継先として使用します。`Code.gs` を更新した場合は、Apps Scriptで「デプロイ」→「デプロイを管理」→既存Webアプリの編集（鉛筆）→バージョン「新バージョン」→「デプロイ」を実行してください。コードを保存しただけでは公開中のWebアプリには反映されません。更新後、`https://kurolab.cc.cd/api/kuro-gas-proxy?health=1` が `ready:true` になることを確認してください。
+
+
+## KURO Lab運営管理API（GAS経由）
+
+運営管理の分析・ユーザー管理などはSupabase Edge Function `admin-console` を利用します。GAS中継の許可パスに `/functions/v1/` を追加しているため、管理画面で「GAS版」を選択しても、利用者のログインJWTをそのまま中継し、Edge Function側で管理者権限を検証します。service_roleキーはGASへ渡しません。
+
+`Code.gs` を更新した場合は、上記「KURO LabポータルのGAS認証更新」の手順でWebアプリを新バージョンとして再デプロイしてください。
