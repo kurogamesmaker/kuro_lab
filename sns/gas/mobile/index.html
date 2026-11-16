@@ -4710,10 +4710,14 @@ body.kuro-page>.kuro-global-header{display:block!important}
                 // Register auth events before any async DB/profile request. Otherwise a startup
                 // failure could leave the page without a listener to update its login state.
                 supabaseClient.auth.onAuthStateChange((event, session) => {
-                    if (event === 'INITIAL_SESSION') return;
+                    // INITIAL_SESSION は getSession() 側で処理。TOKEN_REFRESHED などで
+                    // 毎回プロフィール・フォロー・通知を再取得する連鎖を防ぐ。
+                    if (!['SIGNED_IN', 'USER_UPDATED'].includes(event)) return;
                     setTimeout(async () => {
                         try {
                             if (session?.user) {
+                                // 同一ユーザーの重複通知では再同期しない。
+                                if (currentUser?.id === session.user.id && event !== 'USER_UPDATED') return;
                                 await syncCurrentUser(session.user);
                                 setupNotificationRealtime();
                                 loadNotifications();
@@ -4767,7 +4771,7 @@ body.kuro-page>.kuro-global-header{display:block!important}
                     showToast('メールのリンクからログインしました！');
                 }
                 await loadPostsFromSupabase();
-                if (currentUser) { refreshFollowCounts(); loadNotifications(); }
+                if (currentUser) loadNotifications(); // フォロー数は通知読込内で更新するため重複取得しない
             } catch (error) {
                 console.error('KURO initialization error:', error);
                 showToast('初期化時のエラー。ログイン状態の復元を再試行します。');
