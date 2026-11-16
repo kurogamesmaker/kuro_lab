@@ -4,7 +4,7 @@
     <meta name="google-site-verification" content="BMArXsjqD0CUAD34vqFv8qDjq1wuOZdtZRPZ-Y_8pIc">
     <link rel="manifest" href="/manifest.json">
 <meta charset="UTF-8">
-    <meta name="kuro-build-version" content="2026-11-16-tailwind-runtime-01">
+    <meta name="kuro-build-version" content="2026-11-16-tailwind-prod-02">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KURO SNS 新バージョン｜GAS中継版｜KURO Lab公式</title>
     <meta name="description" content="KUROは、短い投稿やハッシュタグで話題を共有し、気になる人をフォローして交流できるSNSです。いいねや返信、チャットでつながれます。">
@@ -46,23 +46,7 @@
     <meta property="og:title" content="KURO SNS 新バージョン｜GAS中継版｜KURO Lab公式">
     <meta property="og:description" content="短い投稿やハッシュタグで話題を共有。フォロー、いいね、返信、チャットで人とつながるSNSです。">
     <meta property="og:url" content="https://kurolab.cc.cd/sns/gas/">
-    <script>
-  window.tailwind = window.tailwind || {};
-  window.tailwind.config = {
-    darkMode: "class",
-    theme: { extend: {
-      colors: { kuro: {
-        950: "#050505", 900: "#0a0a0a", 800: "#121212",
-        700: "#1f1f1f", 600: "#2d2d2d", 500: "#525252"
-      }},
-      fontFamily: {
-        sans: ["Inter", "sans-serif"],
-        mono: ["JetBrains Mono", "monospace"]
-      }
-    }}
-  };
-</script>
-<script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/tailwind.css?v=20261116-prod-02">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -514,7 +498,7 @@
         #postSearchInput { min-height:44px !important; border-radius:999px !important; background:#202327 !important; border:1px solid transparent !important; }
         #postFeed { gap:0 !important; }
         #postFeed [data-post-card] {
-            background:#000 !important; border:0 !important; border-bottom:1px solid #2f3336 !important;
+            background:#000 !important; border:0 !important; border-bottom:0 !important;
             border-radius:0 !important; box-shadow:none !important; padding:1rem !important;
             animation:none !important;
         }
@@ -1072,27 +1056,6 @@
   else if(mq.addListener) mq.addListener(onChange);
 })();
 </script>
-    <style id="kuro-remove-post-separators">
-  /* 投稿下の横線・カード境界線をPC/スマホ共通で完全に非表示 */
-  #postFeed,
-  #postFeed > *,
-  #postFeed [data-post-card],
-  #postFeed [data-post-card]::before,
-  #postFeed [data-post-card]::after {
-    border: 0 !important;
-    border-top: 0 !important;
-    border-right: 0 !important;
-    border-bottom: 0 !important;
-    border-left: 0 !important;
-    box-shadow: none !important;
-    outline: 0 !important;
-  }
-  #postFeed > *::before,
-  #postFeed > *::after {
-    content: none !important;
-    display: none !important;
-  }
-</style>
 </head>
 
 <body class="kuro-page kuro-theme-dark">
@@ -5051,6 +5014,15 @@
     padding:0 !important;
     overflow:hidden !important;
   }
+}
+</style>
+
+<style id="kuro-post-bottom-line-fix">
+/* 投稿カードの下線だけを明示的に無効化（他のUIの区切り線は維持） */
+body.kuro-page #postFeed article[data-post-card] {
+  border-bottom: 0 !important;
+  border-block-end: 0 !important;
+  box-shadow: none !important;
 }
 </style>
 
