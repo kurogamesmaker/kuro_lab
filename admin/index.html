@@ -376,6 +376,83 @@
 #opsAdminSection>.eyebrow,
 #opsAdminSection>.heading{display:none!important}
 
+
+/* KURO admin final layout: use the full page and avoid a cramped nested workspace */
+#appView:has(#opsAdminSection:not([hidden])) .top .wrap{
+  width:100%;max-width:none;padding-inline:clamp(14px,2.2vw,34px)
+}
+#opsAdminSection.wrap{
+  width:100%;max-width:none;margin:0;padding:18px clamp(14px,2.2vw,34px) 48px;
+  display:grid;grid-template-columns:236px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);
+  column-gap:18px;row-gap:12px;align-items:start;
+  min-height:calc(100dvh - 76px);height:auto!important;overflow:visible!important
+}
+#opsAdminSection>.eyebrow,#opsAdminSection>.heading{display:none!important}
+#opsAdminSection>.ops-shell-nav{
+  grid-column:1;grid-row:1 / span 2;position:sticky;top:14px;align-self:start;
+  width:100%;height:auto!important;min-height:0!important;max-height:calc(100dvh - 104px)!important;
+  overflow-y:auto!important;overflow-x:hidden!important;display:flex;flex-direction:column;
+  gap:14px;padding:12px;background:#111c2d;border:1px solid #26364d;border-radius:12px
+}
+#opsAdminSection>.ops-shell-bar{
+  grid-column:2;grid-row:1;align-self:start;margin:0;min-height:40px;width:100%
+}
+#opsAdminSection>[id$="View"]{
+  grid-column:2;grid-row:2;align-self:start;width:100%;min-width:0;
+  min-height:calc(100dvh - 160px);height:auto!important;max-height:none!important;
+  margin:0!important;padding:0!important;overflow:visible!important
+}
+#opsAdminSection>[id$="View"] .ops-overview-head{margin:0 0 15px}
+#opsAdminSection>[id$="View"] .ops-overview-grid{gap:14px}
+#opsAdminSection>[id$="View"] .ops-overview-kpis{grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px}
+#opsAdminSection>[id$="View"] .ops-overview-panel{min-width:0}
+#opsAdminSection .ops-nav-group{display:grid;gap:4px;align-content:start}
+#opsAdminSection .ops-nav-group>small{display:block;padding:3px 8px 5px;color:#71839d;font-size:10px;font-weight:750;letter-spacing:.12em}
+#opsAdminSection .ops-nav-group button{width:100%;min-width:0;display:flex;align-items:center;gap:10px;text-align:left;padding:10px 9px;border-radius:8px}
+#opsAdminSection .ops-nav-group button b{flex:none;width:19px;font-size:10px;font-variant-numeric:tabular-nums}
+#opsAdminSection .ops-nav-group button span{min-width:0;white-space:normal}
+#opsAdminSection #opsLogsView{min-height:calc(100dvh - 160px)}
+#opsAdminSection .ops-log-output{max-height:62dvh!important;min-height:320px;overflow:auto}
+#opsAdminSection .ops-log-toolbar{gap:8px}
+#opsAdminSection .ops-log-toolbar input[type="search"]{width:min(280px,45vw);min-width:170px;background:#0b1421;color:#e6edf7;border:1px solid #344965;border-radius:7px;padding:7px 9px}
+#opsAdminSection .ops-log-line.is-success .ops-log-level,
+#opsAdminSection .ops-log-line.is-success .ops-log-message{color:#7ee0a4}
+#opsAdminSection .ops-log-line.is-success{background:#0b1b13}
+@media(max-width:980px){
+  #opsAdminSection.wrap{
+    display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr);
+    min-height:calc(100dvh - 76px);padding:14px 12px 36px;row-gap:10px
+  }
+  #opsAdminSection>.ops-shell-nav{
+    grid-column:1;grid-row:1;position:static;top:auto;width:100%;max-height:none!important;
+    overflow-x:auto!important;overflow-y:hidden!important;display:flex;flex-direction:row;
+    align-items:stretch;gap:12px;padding:8px
+  }
+  #opsAdminSection .ops-nav-group{display:flex;flex:0 0 auto;align-items:center;gap:5px}
+  #opsAdminSection .ops-nav-group>small{display:none}
+  #opsAdminSection .ops-nav-group button{width:auto;min-width:max-content;white-space:nowrap;padding:9px 11px}
+  #opsAdminSection .ops-nav-group button span{white-space:nowrap}
+  #opsAdminSection>.ops-shell-bar{grid-column:1;grid-row:2;margin:0}
+  #opsAdminSection>[id$="View"]{grid-column:1;grid-row:3;min-height:calc(100dvh - 260px)}
+}
+@media(max-width:620px){
+  #opsAdminSection.wrap{padding:10px 8px 28px;row-gap:8px}
+  #opsAdminSection>.ops-shell-nav{gap:8px;padding:6px}
+  #opsAdminSection .ops-nav-group{gap:4px}
+  #opsAdminSection .ops-nav-group button{font-size:10px;padding:8px 9px;gap:6px}
+  #opsAdminSection .ops-nav-group button b{font-size:9px;width:auto}
+  #opsAdminSection>.ops-shell-bar{font-size:9px;padding:8px 9px}
+  #opsAdminSection>[id$="View"]{min-height:calc(100dvh - 240px)}
+  #opsAdminSection>[id$="View"] .ops-overview-grid{grid-template-columns:minmax(0,1fr)}
+  #opsAdminSection>[id$="View"] .ops-overview-wide{grid-column:1}
+  #opsAdminSection .ops-overview-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #opsAdminSection .ops-log-output{min-height:55vh;max-height:62dvh!important}
+  #opsAdminSection .ops-log-toolbar input[type="search"]{width:100%;min-width:0}
+}
+@media(max-width:420px){
+  #opsAdminSection .ops-overview-shortcuts{grid-template-columns:1fr}
+}
+
 </style>
 </head>
 <body>
@@ -413,30 +490,34 @@
 <main id="opsAdminSection" class="wrap main" hidden>
  <div class="eyebrow">KURO Lab / Operations</div>
  <div class="heading">
-  <div><h1>運営管理</h1><p>アカウント・運用設定・お知らせを管理します。強い操作は監査ログに記録されます。</p></div>
+  <div><h1>運営管理</h1><p></p></div>
   <div class="statusline" id="opsConnection">準備中…</div>
  </div>
  <div class="ops-shell-nav" id="opsTabs">
-  <div class="ops-nav-group"><small>01 / SYSTEM</small>
-   <button class="active" data-ops-tab="overview"><b>01</b><span>概要・ダッシュボード</span></button>
+  <div class="ops-nav-group"><small>01 / OVERVIEW</small>
+   <button class="active" data-ops-tab="overview"><b>01</b><span>全体ダッシュボード</span></button>
+  </div>
+  <div class="ops-nav-group"><small>02 / MONITORING</small>
    <button data-ops-tab="realtime"><b>02</b><span>リアルタイム監視</span></button>
-   <button data-ops-tab="analytics"><b>03</b><span>利用・アクセス分析</span></button>
-   <button data-ops-tab="logs"><b>04</b><span>ログターミナル</span></button>
+   <button data-ops-tab="logs"><b>03</b><span>ログセンター</span></button>
   </div>
-  <div class="ops-nav-group"><small>02 / ACCOUNTS</small>
-   <button data-ops-tab="users"><b>04</b><span>ユーザー管理</span></button>
-   <button data-ops-tab="pro"><b>05</b><span>KUROLAB Pro</span></button>
+  <div class="ops-nav-group"><small>03 / ANALYTICS</small>
+   <button data-ops-tab="analytics"><b>04</b><span>利用・アクセス分析</span></button>
   </div>
-  <div class="ops-nav-group"><small>03 / MODERATION</small>
-   <button data-ops-tab="reports"><b>06</b><span>通報・審査</span></button>
-   <button data-ops-tab="audit"><b>07</b><span>監査ログ</span></button>
+  <div class="ops-nav-group"><small>04 / ACCOUNTS</small>
+   <button data-ops-tab="users"><b>05</b><span>ユーザー管理</span></button>
+   <button data-ops-tab="pro"><b>06</b><span>KUROLAB Pro</span></button>
   </div>
-  <div class="ops-nav-group"><small>04 / CONTENT</small>
-   <button data-ops-tab="announcements"><b>08</b><span>お知らせ管理</span></button>
-   <button data-ops-tab="messages"><b>09</b><span>サービス別配信</span></button>
+  <div class="ops-nav-group"><small>05 / MODERATION</small>
+   <button data-ops-tab="reports"><b>07</b><span>通報・審査</span></button>
+   <button data-ops-tab="audit"><b>08</b><span>監査ログ</span></button>
   </div>
-  <div class="ops-nav-group"><small>05 / CONFIGURATION</small>
-   <button data-ops-tab="flags"><b>10</b><span>機能フラグ</span></button>
+  <div class="ops-nav-group"><small>06 / CONTENT</small>
+   <button data-ops-tab="announcements"><b>09</b><span>お知らせ管理</span></button>
+   <button data-ops-tab="messages"><b>10</b><span>サービス別配信</span></button>
+  </div>
+  <div class="ops-nav-group"><small>07 / SYSTEM</small>
+   <button data-ops-tab="flags"><b>11</b><span>システム設定・機能フラグ</span></button>
   </div>
  </div>
  <div class="ops-shell-bar" id="opsShellBar">
@@ -460,13 +541,15 @@
  <div id="opsLogsView" hidden>
   <div class="ops-overview-head"><div><strong>システムログターミナル</strong><div class="sns-muted">通信・利用イベント・APIエラーを時系列で追跡します。5秒ごとに新しい記録を確認します。</div></div><div class="ops-overview-tools"><span id="opsLogsStatus" class="sns-muted">接続待機中</span><button class="btn" id="opsLogsRefresh">今すぐ取得</button></div></div>
   <div class="ops-log-toolbar">
-   <label>ログ種別 <select id="opsLogsFilter"><option value="all">すべて</option><option value="error">エラーのみ</option><option value="event">通常イベント</option></select></label>
+   <label>ログ種別 <select id="opsLogsFilter"><option value="all">すべて</option><option value="error">エラー</option><option value="success">API成功</option><option value="event">その他イベント</option></select></label>
+   <label>検索 <input id="opsLogsSearch" type="search" placeholder="サービス・イベント・エラーコード"></label>
    <button class="btn" id="opsLogsPause">一時停止</button><button class="btn" id="opsLogsClear">表示をクリア</button>
+   <button class="btn" id="opsLogsCopy">ログをコピー</button><button class="btn" id="opsLogsDownload">CSV出力</button>
    <label class="ops-log-autoscroll"><input type="checkbox" id="opsLogsAutoScroll" checked> 自動スクロール</label>
   </div>
   <section class="ops-log-terminal"><div class="ops-log-terminal-head"><span><i class="ops-log-live-dot"></i> KUROLAB / SYSTEM STREAM</span><span id="opsLogsCount">0 RECORDS</span></div>
    <div id="opsLogsOutput" class="ops-log-output" role="log" aria-live="polite"><div class="ops-log-placeholder">ログを待機しています。新しいイベントが届くとここに表示されます。</div></div>
-   <div class="ops-log-terminal-foot"><span>STREAM: <b id="opsLogsStreamState">LIVE</b></span><span>RETENTION: SESSION ONLY / MAX 500</span></div>
+   <div class="ops-log-terminal-foot"><span>STREAM: <b id="opsLogsStreamState">LIVE</b></span><span>SOURCE: LAST 15 MIN · VIEW BUFFER: MAX 500</span></div>
   </section>
  </div>
  <div id="opsProView" hidden>
@@ -480,7 +563,7 @@
  <div id="opsOverviewView">
   <div class="ops-overview-head"><div><strong>全サービスの運営状況</strong><div class="sns-muted">KUROLABとKURO SNSの主要指標をまとめて確認できます。</div></div><div class="ops-overview-tools"><span id="opsOverviewUpdated" class="sns-muted">集計準備中…</span><button class="btn" id="opsOverviewRefresh">全体を更新</button></div></div>
   <div class="ops-overview-kpis">
-   <article class="ops-overview-kpi"><small>KUROLAB DAU</small><strong id="ovDau">—</strong><span>今日の利用者</span></article><article class="ops-overview-kpi"><small>KUROLAB MAU</small><strong id="ovMau">—</strong><span>過去30日の利用者</span></article><article class="ops-overview-kpi"><small>KURO SNS 利用者</small><strong id="ovSnsUsers">—</strong><span>登録プロフィール</span></article><article class="ops-overview-kpi"><small>SNS 投稿</small><strong id="ovSnsPosts">—</strong><span>累計投稿数</span></article><article class="ops-overview-kpi"><small>直近24時間のAPIエラー</small><strong id="ovApiErrors">—</strong><span>KUROLAB計測分</span></article><article class="ops-overview-kpi"><small>直近30日のページ閲覧</small><strong id="ovPageViews">—</strong><span>KUROLAB計測分</span></article>
+   <article class="ops-overview-kpi"><small>KUROLAB DAU</small><strong id="ovDau">—</strong><span>今日の利用者</span></article><article class="ops-overview-kpi"><small>KUROLAB MAU</small><strong id="ovMau">—</strong><span>過去30日の利用者</span></article><article class="ops-overview-kpi"><small>KURO SNS 利用者</small><strong id="ovSnsUsers">—</strong><span>登録プロフィール</span></article><article class="ops-overview-kpi"><small>SNS 投稿</small><strong id="ovSnsPosts">—</strong><span>累計投稿数</span></article><article class="ops-overview-kpi"><small>直近24時間のAPIエラー</small><strong id="ovApiErrors">—</strong><span>KUROLAB計測分</span></article><article class="ops-overview-kpi"><small>直近30日のページ閲覧</small><strong id="ovPageViews">—</strong><span>KUROLAB計測分</span></article><article class="ops-overview-kpi"><small>直近5分のアクティブ</small><strong id="ovLiveUsers">—</strong><span>操作イベントを基準に推定</span></article><article class="ops-overview-kpi"><small>API成功率（過去7日）</small><strong id="ovApiSuccessRate">—</strong><span>成功・失敗イベントの記録分</span></article>
   </div>
   <div class="ops-overview-grid">
    <section class="panel ops-overview-panel ops-overview-wide"><div class="toolbar"><div><strong>日別アクティビティ推移</strong><div class="sns-muted">過去30日 · アクティブ利用者・SNS投稿・返信・公開チャット</div></div><span class="sns-muted">日別</span></div><div class="ops-overview-legend"><span><i class="ov-dot ov-blue"></i>KUROLAB DAU</span><span><i class="ov-dot ov-purple"></i>SNS投稿</span><span><i class="ov-dot ov-green"></i>SNS返信</span><span><i class="ov-dot ov-amber"></i>公開チャット</span></div><svg id="opsOverviewTrend" class="ops-overview-chart" viewBox="0 0 900 270" role="img" aria-label="サービス全体の日別アクティビティ折れ線グラフ"></svg><div id="opsOverviewTrendNote" class="ops-overview-foot">データを取得しています。</div></section>
@@ -1421,6 +1504,8 @@ async function loadOpsOverview(){
  $("#opsOverviewTrendNote").textContent="管理者APIからデータを取得しています。";
  try{
   const data=await opsInvoke({action:"get_admin_overview"});
+  let liveData=null;
+  try{liveData=await opsInvoke({action:"get_realtime_monitor"});}catch(_){}
   const n=v=>Number(v||0).toLocaleString("ja-JP");
   $("#ovDau").textContent=n(data.dau);
   $("#ovMau").textContent=n(data.mau);
@@ -1428,6 +1513,11 @@ async function loadOpsOverview(){
   $("#ovSnsPosts").textContent=n(data.post_count);
   $("#ovApiErrors").textContent=n(data.api_errors_24h);
   $("#ovPageViews").textContent=n(data.page_views_30d);
+  $("#ovLiveUsers").textContent=liveData?n(liveData.active_users_5m):"—";
+  const apiRows=Array.isArray(data.apis)?data.apis:[];
+  const apiRequests=apiRows.reduce((sum,row)=>sum+Number(row.requests||0),0);
+  const apiSuccesses=apiRows.reduce((sum,row)=>sum+Number(row.successes||0),0);
+  $("#ovApiSuccessRate").textContent=apiRequests?((apiSuccesses/apiRequests)*100).toFixed(1)+"%":"未計測";
   const points=(data.daily||[]).map(p=>({
    key:p.date,
    label:new Date(p.date+"T00:00:00+09:00").toLocaleDateString("ja-JP",{month:"numeric",day:"numeric",timeZone:"Asia/Tokyo"}),
@@ -1462,14 +1552,14 @@ async function loadOpsOverview(){
 async function loadOpsRealtime(){
  const updated=$("#opsRealtimeUpdated");if(updated)updated.textContent="更新中…";
  const started=performance.now();let edge={ok:false,ms:null,status:"—"};
- try{const t=performance.now();const r=await fetch("/favicon.ico?health="+Date.now(),{method:"HEAD",cache:"no-store",credentials:"same-origin"});edge={ok:r.ok,ms:Math.round(performance.now()-t),status:"HTTP "+r.status};}catch(e){edge={ok:false,ms:Math.round(performance.now()-started),status:"接続失敗"};}
+ try{const t=performance.now();const r=await fetch("/robots.txt?health="+Date.now(),{method:"HEAD",cache:"no-store",credentials:"same-origin"});edge={ok:r.ok,ms:Math.round(performance.now()-t),status:"HTTP "+r.status};}catch(e){edge={ok:false,ms:Math.round(performance.now()-started),status:"接続失敗"};}
  try{
   const data=await opsInvoke({action:"get_realtime_monitor"});
   const n=v=>Number(v||0).toLocaleString("ja-JP");
   $("#liveUsers").textContent=n(data.active_users_5m);$("#liveSessions").textContent=n(data.active_sessions_5m);
   $("#liveEvents").textContent=n(data.events_1m);$("#liveErrors").textContent=n(data.errors_5m);
   const rows=[];
-  rows.push({name:"Cloudflare / KUROLAB",ok:edge.ok,state:edge.ok?"正常":"異常",latency:edge.ms===null?"—":edge.ms+" ms",detail:edge.status,kind:edge.ok?"ok":"bad"});
+  rows.push({name:"KUROLAB / Pages CDN",ok:edge.ok,state:edge.ok?"正常":"異常",latency:edge.ms===null?"—":edge.ms+" ms",detail:edge.status,kind:edge.ok?"ok":"bad"});
   rows.push({name:"Supabase / 管理API",ok:true,state:"正常",latency:Math.round(performance.now()-started)+" ms",detail:"認証済み管理API応答",kind:"ok"});
   (data.services||[]).forEach(x=>{
    const age=x.last_seen?Math.max(0,Math.round((Date.now()-new Date(x.last_seen).getTime())/1000)):null;
@@ -1478,7 +1568,8 @@ async function loadOpsRealtime(){
    rows.push({name:x.service_key,state:!fresh?"未計測":kind==="warn"?"注意":"記録あり",latency:x.last_seen?age+"秒前":"—",detail:fresh?(n(x.requests)+"件 / 15分・失敗 "+n(failed)+"件"):"直近10分の通信記録なし",kind:kind||"stale"});
   });
   $("#opsRealtimeServices").innerHTML=rows.map(x=>'<div class="ops-terminal-line"><span class="ops-terminal-label">['+esc(x.name)+']</span> <span class="'+(x.kind==="bad"?"ops-terminal-bad":x.kind==="warn"?"ops-terminal-warn":x.kind==="ok"?"ops-terminal-ok":"ops-terminal-dim")+'">'+esc(x.state)+'</span> <span class="ops-terminal-dim">response='+esc(x.latency)+' · '+esc(x.detail)+'</span></div>').join("");
-  const overall=rows.some(x=>x.kind==="bad")?"一部に接続エラー":rows.some(x=>x.kind==="warn")?"一部サービスに注意":"主要接続は応答中";
+  const measuredServices=rows.slice(2).filter(x=>x.kind==="ok"||x.kind==="warn").length;
+  const overall=rows.some(x=>x.kind==="bad")?"一部に接続エラー":rows.some(x=>x.kind==="warn")?"一部サービスに注意":measuredServices?"管理API応答中・記録上は正常":"管理API応答中・外部APIは未計測";
   $("#liveOverall").textContent=overall;
   const buckets=Array.isArray(data.minutes)?data.minutes:[];
   const max=Math.max(1,...buckets.map(x=>Number(x.events||0)));
@@ -1491,11 +1582,15 @@ async function loadOpsRealtime(){
  }
 }
 
+function filteredOpsLogs(){
+ const query=($("#opsLogsSearch")?.value||"").trim().toLowerCase();
+ return opsLogEntries.filter(x=>(opsLogFilter==="all"||x.level===opsLogFilter)&&(!query||(x.service+" "+x.message+" "+x.time).toLowerCase().includes(query)));
+}
 function renderOpsLogs(){
  const output=$("#opsLogsOutput");if(!output)return;
- const filtered=opsLogEntries.filter(x=>opsLogFilter==="all"||(opsLogFilter==="error"?x.level==="error":x.level==="event"));
+ const filtered=filteredOpsLogs();
  $("#opsLogsCount").textContent=filtered.length+" RECORDS";
- $("#opsLogsOutput").innerHTML=filtered.length?filtered.map(x=>'<div class="ops-log-line '+(x.level==="error"?"is-error":"is-event")+'"><time>'+esc(x.time)+'</time><span class="ops-log-level">'+(x.level==="error"?"ERROR":"EVENT")+'</span><span class="ops-log-service">'+esc(x.service)+'</span><span class="ops-log-message">'+esc(x.message)+'</span></div>').join(""):'<div class="ops-log-placeholder">表示対象のログはありません。</div>';
+ $("#opsLogsOutput").innerHTML=filtered.length?filtered.map(x=>'<div class="ops-log-line '+(x.level==="error"?"is-error":x.level==="success"?"is-success":"is-event")+'"><time>'+esc(x.time)+'</time><span class="ops-log-level">'+(x.level==="error"?"ERROR":x.level==="success"?"INFO":"EVENT")+'</span><span class="ops-log-service">'+esc(x.service)+'</span><span class="ops-log-message">'+esc(x.message)+'</span></div>').join(""):'<div class="ops-log-placeholder">表示対象のログはありません。</div>';
  if($("#opsLogsAutoScroll")?.checked)output.scrollTop=output.scrollHeight;
 }
 async function loadOpsLogs(initial=false){
@@ -1504,7 +1599,7 @@ async function loadOpsLogs(initial=false){
  try{
   const data=await opsInvoke({action:"get_realtime_monitor"});
   const incoming=Array.isArray(data.recent_events)?data.recent_events:[];
-  const normalized=incoming.map(x=>({key:[x.created_at,x.service_key,x.event_name,x.status_code||"",x.error_code||""].join("|"),time:new Date(x.created_at).toLocaleTimeString("ja-JP"),service:x.service_key||"KUROLAB",level:x.event_name==="api_error"||x.event_name==="client_error"?"error":"event",message:x.event_name+(x.status_code?" · HTTP "+Number(x.status_code):"")+(x.error_code?" · "+x.error_code:"")})).sort((a,b)=>a.key.localeCompare(b.key));
+  const normalized=incoming.map(x=>({key:[x.created_at,x.service_key,x.event_name,x.status_code||"",x.error_code||""].join("|"),time:new Date(x.created_at).toLocaleTimeString("ja-JP"),service:x.service_key||"KUROLAB",level:x.event_name==="api_error"||x.event_name==="client_error"?"error":x.event_name==="api_success"?"success":"event",message:x.event_name+(x.status_code?" · HTTP "+Number(x.status_code):"")+(x.error_code?" · "+x.error_code:"")})).sort((a,b)=>a.key.localeCompare(b.key));
   normalized.forEach(x=>{if(!opsLogSeenKeys.has(x.key)){opsLogSeenKeys.add(x.key);opsLogEntries.push(x);}});
   if(opsLogSeenKeys.size>1200)opsLogSeenKeys=new Set([...opsLogSeenKeys].slice(-900));
   if(opsLogEntries.length>500)opsLogEntries=opsLogEntries.slice(-500);
@@ -1666,6 +1761,21 @@ $("#opsOverviewRefresh").addEventListener("click",loadOpsOverview);
 $("#opsRealtimeRefresh").addEventListener("click",loadOpsRealtime);
 $("#opsLogsRefresh").addEventListener("click",()=>loadOpsLogs());
 $("#opsLogsFilter").addEventListener("change",e=>{opsLogFilter=e.target.value;renderOpsLogs();});
+$("#opsLogsSearch").addEventListener("input",renderOpsLogs);
+$("#opsLogsCopy").addEventListener("click",async()=>{
+ const text=filteredOpsLogs().map(x=>[x.time,x.level.toUpperCase(),x.service,x.message].join("\t")).join("\n");
+ try{await navigator.clipboard.writeText(text);$("#opsLogsStatus").textContent="表示中のログをコピーしました";}
+ catch(e){$("#opsLogsStatus").textContent="コピーに失敗しました。ブラウザの権限を確認してください";}
+});
+$("#opsLogsDownload").addEventListener("click",()=>{
+ const rows=filteredOpsLogs();
+ const csv=[["time","level","service","message"],...rows.map(x=>[x.time,x.level,x.service,x.message])]
+  .map(row=>row.map(value=>'"'+String(value??"").replace(/"/g,'""')+'"').join(",")).join("\r\n");
+ const blob=new Blob(["\uFEFF",csv],{type:"text/csv;charset=utf-8"});
+ const url=URL.createObjectURL(blob),link=document.createElement("a");
+ link.href=url;link.download="kuro-admin-logs-"+new Date().toISOString().slice(0,10)+".csv";
+ document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
+});
 $("#opsLogsPause").addEventListener("click",e=>{opsLogPaused=!opsLogPaused;e.currentTarget.textContent=opsLogPaused?"再開":"一時停止";$("#opsLogsStreamState").textContent=opsLogPaused?"PAUSED":"LIVE";$("#opsLogsStatus").textContent=opsLogPaused?"自動取得を一時停止中":"自動取得を再開しました";if(!opsLogPaused)loadOpsLogs();});
 $("#opsLogsClear").addEventListener("click",()=>{opsLogEntries=[];renderOpsLogs();});
 
