@@ -181,6 +181,55 @@
  #opsAdminSection>[id$="View"] .ops-overview-wide{grid-column:1}
 }
 
+
+/* Single full-viewport operations console */
+#opsAdminSection{
+ width:100%;max-width:none;margin:0;padding:14px clamp(12px,1.8vw,26px) 16px;
+ height:calc(100vh - 76px);height:calc(100dvh - 76px);min-height:0;overflow:hidden;
+ grid-template-columns:230px minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr);
+ column-gap:16px;row-gap:0;align-items:stretch
+}
+#opsAdminSection>.eyebrow{font:10px/1.4 ui-monospace,monospace;letter-spacing:.16em;color:#6fa77d;margin:0 0 2px}
+#opsAdminSection>.heading{margin:0 0 10px;align-items:center}
+#opsAdminSection>.heading h1{font:600 clamp(18px,2vw,23px)/1.25 ui-monospace,monospace;letter-spacing:0;color:#c5ffd0}
+#opsAdminSection>.heading p{font:11px/1.5 ui-monospace,monospace;color:#72947b;margin:3px 0 0}
+#opsAdminSection>.ops-shell-nav{grid-row:3;grid-column:1;position:relative;top:auto;height:100%;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+#opsAdminSection>.ops-shell-bar{grid-row:3;grid-column:2;margin:0 0 10px;align-self:start;min-height:38px}
+#opsAdminSection>[id$="View"]{grid-row:3;grid-column:2;align-self:stretch;min-height:0;height:calc(100% - 48px);overflow:auto;overscroll-behavior:contain;scrollbar-color:#285237 #050a08}
+#opsAdminSection>.ops-shell-bar{transform:translateY(0)}
+#opsAdminSection>[id$="View"]{margin-top:48px}
+#opsRealtimeView{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-content:start}
+#opsRealtimeView[hidden]{display:none!important}
+#opsRealtimeView>.ops-overview-head,#opsRealtimeView>.ops-terminal-section,#opsRealtimeView>section:last-child{grid-column:1/-1}
+#opsRealtimeView>.ops-analytics-panel{min-width:0;margin:0}
+#opsRealtimeView .ops-live-bars{height:170px}
+#opsRealtimeView .ops-terminal-body{max-height:260px}
+#opsRealtimeView .ops-terminal-section{margin:0}
+#opsRealtimeView .ops-terminal-section .ops-live-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+#opsRealtimeView .ops-live-metrics span{padding:10px 12px;background:#07130b;border:1px solid #1e3a2c;border-radius:5px}
+#opsAdminSection>[id$="View"] .panel{min-width:0}
+@media(max-width:980px){
+ #opsAdminSection{height:calc(100vh - 76px);height:calc(100dvh - 76px);grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto minmax(0,1fr);gap:0}
+ #opsAdminSection>.ops-shell-nav{grid-column:1;grid-row:3;height:auto;min-height:0;max-height:118px;display:flex;flex-direction:row;align-items:stretch;gap:8px;margin:0 0 8px;padding:8px;overflow-x:auto;overflow-y:hidden;white-space:nowrap}
+ .ops-nav-group{display:flex;flex:0 0 auto;align-items:center;gap:4px}
+ .ops-nav-group>small{display:none}
+ .ops-nav-group button{width:auto;min-width:max-content;flex:none;padding:9px 11px}
+ #opsAdminSection>.ops-shell-bar{grid-column:1;grid-row:4;margin-bottom:8px}
+ #opsAdminSection>[id$="View"]{grid-column:1;grid-row:4;height:calc(100% - 48px);margin-top:48px}
+}
+@media(max-width:620px){
+ #opsAdminSection{padding:10px 8px 12px;height:calc(100vh - 64px);height:calc(100dvh - 64px)}
+ #opsAdminSection>.heading{margin-bottom:8px}
+ #opsAdminSection>.heading p{display:none}
+ #opsAdminSection>.ops-shell-nav{max-height:100px;padding:6px;gap:5px}
+ .ops-nav-group button{font-size:10px;padding:8px 9px}
+ #opsAdminSection>.ops-shell-bar{font-size:9px;padding:8px 10px}
+ #opsAdminSection>[id$="View"]{padding:10px}
+ #opsRealtimeView{grid-template-columns:minmax(0,1fr);gap:10px}
+ #opsRealtimeView>.ops-overview-head,#opsRealtimeView>.ops-terminal-section,#opsRealtimeView>section:last-child{grid-column:1}
+ #opsRealtimeView .ops-terminal-section .ops-live-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
 </style>
 </head>
 <body>
