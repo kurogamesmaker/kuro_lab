@@ -1413,7 +1413,7 @@ async function sendOpsMessage(event){
  const audience=target==="all"?"all":"user";
  const userId=audience==="user"?target.slice(5):"";
  const serviceScope=$("#opsMessageScope").value;
- if(audience==="user"&&serviceScope!=="sns"){alert("個別利用者への配信はKURO SNSのみ対応しています。");return;}
+ 
  const scopeLabel=serviceScope==="both"?"KUROLAB ＋ KURO SNS":serviceScope==="lab"?"KUROLABのみ":"KURO SNSのみ";
  const targetLabel=audience==="all"?"全利用者":($("#opsMessageTarget").selectedOptions[0]?.textContent||"指定ユーザー");
  if(!confirm(scopeLabel+" の "+targetLabel+" にお知らせを配信しますか？"))return;
