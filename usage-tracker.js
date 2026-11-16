@@ -13,6 +13,7 @@
   var sessionId = null;
   var sessionFresh = false;
   var trackedPage = false;
+  var lastApiErrorAt = Object.create(null);
 
   function makeId() {
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
@@ -89,14 +90,27 @@
   window.fetch = function (input, init) {
     var service = serviceFor(input);
     return nativeFetch(input, init).then(function (response) {
-      if (service && !sending) {
-        if (response.status >= 400) addEvent("api_error", { service_key: service, status_code: response.status, error_code: "http_" + response.status });
-        else addEvent("api_success", { service_key: service, status_code: response.status });
+      if (service && !sending && response.status >= 400) {
+        // 同じサービス・ステータスの連続エラーは1分に1件だけ記録する。
+        var key = service + ":" + response.status;
+        var now = Date.now();
+        if (!lastApiErrorAt[key] || now - lastApiErrorAt[key] > 60000) {
+          lastApiErrorAt[key] = now;
+          addEvent("api_error", { service_key: service, status_code: response.status, error_code: "http_" + response.status });
+        }
+      } else if (service && !sending && service !== "supabase_data_api" && service !== "supabase_auth") {
+        // Supabaseの通常成功リクエストは件数が多いため記録対象から除外する。
+        addEvent("api_success", { service_key: service, status_code: response.status });
       }
       return response;
     }).catch(function (error) {
       if (service && !sending && !/abort/i.test(String(error && error.message || error))) {
-        addEvent("api_error", { service_key: service, error_code: "network_error" });
+        var key = service + ":network";
+        var now = Date.now();
+        if (!lastApiErrorAt[key] || now - lastApiErrorAt[key] > 60000) {
+          lastApiErrorAt[key] = now;
+          addEvent("api_error", { service_key: service, error_code: "network_error" });
+        }
       }
       throw error;
     });
