@@ -1,10 +1,15 @@
 const ALLOWED_PREFIXES = ['/rest/v1/', '/auth/v1/', '/storage/v1/'];
+// Only the two authenticated admin functions may pass through the GAS bridge.
+const ALLOWED_FUNCTION_PATHS = new Set(['/functions/v1/admin-console', '/functions/v1/pro-access']);
 const ALLOWED_METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD']);
 
 function validatePath(value) {
   const path = String(value || '');
   if (!path.startsWith('/') || path.includes('..') || path.includes('://')) throw new Error('Invalid Supabase path');
-  if (!ALLOWED_PREFIXES.some((prefix) => path.startsWith(prefix))) throw new Error('Supabase service is not allowed through this proxy');
+  const pathname = path.split('?')[0];
+  const allowedPrefix = ALLOWED_PREFIXES.some((prefix) => path.startsWith(prefix));
+  const allowedFunction = ALLOWED_FUNCTION_PATHS.has(pathname);
+  if (!allowedPrefix && !allowedFunction) throw new Error('Supabase service is not allowed through this proxy');
   return path;
 }
 function sendJson(res, status, value) {
