@@ -124,6 +124,8 @@
 @media(max-width:1000px){#opsAdminSection{grid-template-columns:1fr}#opsAdminSection>.ops-tabs{grid-column:1;grid-row:auto;position:static;flex-direction:row;overflow-x:auto;white-space:nowrap}#opsAdminSection>.ops-tabs button{flex:none}#opsAdminSection>[id$="View"]{grid-column:1;grid-row:auto}.ops-overview-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){.ops-overview-head{align-items:flex-start;flex-direction:column}.ops-overview-tools{width:100%;justify-content:space-between}.ops-overview-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.ops-overview-grid{grid-template-columns:1fr}.ops-overview-wide{grid-column:1}.ops-overview-shortcuts{grid-template-columns:1fr 1fr}.ops-overview-donut-wrap{gap:14px}.ops-overview-donut{width:125px;height:125px}.ops-overview-chart{min-height:150px}}
 @media(max-width:420px){.ops-overview-shortcuts{grid-template-columns:1fr}.ops-overview-kpi{padding:12px}.ops-overview-kpi strong{font-size:23px}}
+
+.ops-live-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}.ops-live-card{border:1px solid var(--line);border-radius:12px;background:linear-gradient(145deg,rgba(23,36,56,.96),rgba(15,26,42,.96));padding:14px;min-width:0}.ops-live-card small{display:block;color:var(--muted);font-size:11px}.ops-live-card strong{display:block;font-size:26px;margin:5px 0;font-variant-numeric:tabular-nums}.ops-live-card span{font-size:11px;color:var(--muted)}.ops-live-status{display:inline-flex;align-items:center;gap:7px;font-size:12px}.ops-live-dot{width:8px;height:8px;border-radius:50%;background:#8b98a9;display:inline-block}.ops-live-dot.ok{background:#55cda5;box-shadow:0 0 0 3px #55cda522}.ops-live-dot.warn{background:#e7b65c}.ops-live-dot.bad{background:#ef7777}.ops-live-bars{display:flex;align-items:end;gap:4px;height:130px;padding:16px;overflow:hidden}.ops-live-bar{flex:1;min-width:3px;border-radius:4px 4px 0 0;background:linear-gradient(180deg,#55b5f2,#3973d6);position:relative}.ops-live-table{width:100%;border-collapse:collapse;font-size:12px}.ops-live-table th,.ops-live-table td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left}.ops-live-table th{color:var(--muted);font-weight:600}.ops-live-note{font-size:11px;color:var(--muted);padding:12px 16px}.ops-live-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.ops-live-table-wrap{overflow-x:auto}@media(max-width:850px){.ops-live-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:480px){.ops-live-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ops-live-card{padding:11px}.ops-live-card strong{font-size:22px}}
 </style>
 </head>
 <body>
@@ -173,7 +175,23 @@
   <button data-ops-tab="messages">サービス別配信</button>
   <button data-ops-tab="flags">機能ON/OFF</button>
   <button data-ops-tab="analytics">利用分析</button>
+  <button data-ops-tab="realtime">リアルタイム監視</button>
   <button data-ops-tab="pro">KUROLAB Pro</button>
+ </div>
+ <div id="opsRealtimeView" hidden>
+  <div class="ops-overview-head"><div><strong>リアルタイム通信・利用監視</strong><div class="sns-muted">15秒ごとに自動更新 · オンライン推定は直近5分の操作記録を基準に集計</div></div><div class="ops-overview-tools"><span id="opsRealtimeUpdated" class="sns-muted">準備中…</span><button class="btn" id="opsRealtimeRefresh">今すぐ更新</button></div></div>
+  <div class="ops-live-grid">
+   <article class="ops-live-card"><small>直近5分のアクティブ利用者</small><strong id="liveUsers">—</strong><span>利用記録があったユーザー</span></article>
+   <article class="ops-live-card"><small>直近5分のセッション</small><strong id="liveSessions">—</strong><span>セッションID単位</span></article>
+   <article class="ops-live-card"><small>直近1分のイベント</small><strong id="liveEvents">—</strong><span>操作・閲覧・通信記録</span></article>
+   <article class="ops-live-card"><small>直近5分のAPIエラー</small><strong id="liveErrors">—</strong><span>記録された失敗件数</span></article>
+  </div>
+  <section class="panel ops-analytics-panel"><div class="toolbar ops-live-head"><div><strong>サービス接続チェック</strong><div class="sns-muted">管理画面からの実測と、サービス別の直近通信記録を表示</div></div><span class="sns-muted" id="liveOverall">状態を確認中…</span></div>
+   <div class="ops-tablewrap ops-live-table-wrap"><table class="ops-live-table"><thead><tr><th>対象</th><th>状態</th><th>応答 / 最終記録</th><th>補足</th></tr></thead><tbody id="opsRealtimeServices"><tr><td colspan="4">通信状態を確認しています…</td></tr></tbody></table></div>
+   <div class="ops-live-note">Cloudflareはこの管理画面からのHTTP応答、Supabaseは管理APIの応答、GASなどの外部APIは利用イベントに記録された直近の成功・失敗を表示します。記録がないサービスは「未計測」となります。</div>
+  </section>
+  <section class="panel ops-analytics-panel"><div class="toolbar"><div><strong>直近15分の利用推移</strong><div class="sns-muted">1分ごとのイベント件数</div></div></div><div id="opsRealtimeBars" class="ops-live-bars"><div class="empty">データを取得しています…</div></div><div id="opsRealtimeTrendNote" class="ops-live-note">—</div></section>
+  <section class="panel ops-analytics-panel"><div class="toolbar"><div><strong>直近の通信・エラー記録</strong><div class="sns-muted">直近15分 · 個人情報は表示しません</div></div></div><div class="ops-tablewrap ops-live-table-wrap"><table class="ops-live-table"><thead><tr><th>時刻</th><th>サービス</th><th>結果</th><th>対象</th></tr></thead><tbody id="opsRealtimeEvents"><tr><td colspan="4">読み込み中…</td></tr></tbody></table></div></section>
  </div>
  <div id="opsProView" hidden>
   <div class="ops-overview-head"><div><strong>KUROLAB Pro 管理センター</strong><div class="sns-muted">申請審査・招待・利用期限・再申請制限を管理します。</div></div><button class="btn" id="opsProRefresh">更新</button></div>
@@ -875,7 +893,7 @@ async function handleOpsProClick(e){
 
 function setOpsView(view){
  opsView=view;
- ["overview","users","audit","reports","announcements","messages","flags","analytics","pro"].forEach(name=>{
+ ["overview","users","audit","reports","announcements","messages","flags","analytics","realtime","pro"].forEach(name=>{
   const target=$("#ops"+name.charAt(0).toUpperCase()+name.slice(1)+"View");
   if(target)target.hidden=name!==view;
   const button=$("#opsTabs [data-ops-tab='"+name+"']");
@@ -1160,6 +1178,39 @@ async function loadOpsOverview(){
  }
 }
 
+async function loadOpsRealtime(){
+ const updated=$("#opsRealtimeUpdated");if(updated)updated.textContent="更新中…";
+ const started=performance.now();let edge={ok:false,ms:null,status:"—"};
+ try{const t=performance.now();const r=await fetch("/favicon.ico?health="+Date.now(),{method:"HEAD",cache:"no-store",credentials:"same-origin"});edge={ok:r.ok,ms:Math.round(performance.now()-t),status:"HTTP "+r.status};}catch(e){edge={ok:false,ms:Math.round(performance.now()-started),status:"接続失敗"};}
+ try{
+  const data=await opsInvoke({action:"get_realtime_monitor"});
+  const n=v=>Number(v||0).toLocaleString("ja-JP");
+  $("#liveUsers").textContent=n(data.active_users_5m);$("#liveSessions").textContent=n(data.active_sessions_5m);
+  $("#liveEvents").textContent=n(data.events_1m);$("#liveErrors").textContent=n(data.errors_5m);
+  const rows=[];
+  rows.push({name:"Cloudflare / KUROLAB",ok:edge.ok,state:edge.ok?"正常":"異常",latency:edge.ms===null?"—":edge.ms+" ms",detail:edge.status,kind:edge.ok?"ok":"bad"});
+  rows.push({name:"Supabase / 管理API",ok:true,state:"正常",latency:Math.round(performance.now()-started)+" ms",detail:"認証済み管理API応答",kind:"ok"});
+  (data.services||[]).forEach(x=>{
+   const age=x.last_seen?Math.max(0,Math.round((Date.now()-new Date(x.last_seen).getTime())/1000)):null;
+   const fresh=age!==null&&age<=600,failed=Number(x.errors||0),rate=Number(x.error_rate||0);
+   const kind=!fresh?"":rate>=20||failed>=3?"warn":"ok";
+   rows.push({name:x.service_key,state:!fresh?"未計測":kind==="warn"?"注意":"記録あり",latency:x.last_seen?age+"秒前":"—",detail:fresh?(n(x.requests)+"件 / 15分・失敗 "+n(failed)+"件"):"直近10分の通信記録なし",kind:kind||"stale"});
+  });
+  $("#opsRealtimeServices").innerHTML=rows.map(x=>'<tr><td>'+esc(x.name)+'</td><td><span class="ops-live-status"><i class="ops-live-dot '+(x.kind==="stale"?"":x.kind)+'"></i>'+esc(x.state)+'</span></td><td>'+esc(x.latency)+'</td><td>'+esc(x.detail)+'</td></tr>').join("");
+  const overall=rows.some(x=>x.kind==="bad")?"一部に接続エラー":rows.some(x=>x.kind==="warn")?"一部サービスに注意":"主要接続は応答中";
+  $("#liveOverall").textContent=overall;
+  const buckets=Array.isArray(data.minutes)?data.minutes:[];
+  const max=Math.max(1,...buckets.map(x=>Number(x.events||0)));
+  $("#opsRealtimeBars").innerHTML=buckets.map(x=>{const v=Number(x.events||0),h=Math.max(3,Math.round(v/max*94));return '<div class="ops-live-bar" style="height:'+h+'px" title="'+esc(x.label)+' · '+v+'件"></div>';}).join("");
+  $("#opsRealtimeTrendNote").textContent="15分合計 "+n(buckets.reduce((s,x)=>s+Number(x.events||0),0))+" 件 · 最終集計 "+new Date(data.generated_at||Date.now()).toLocaleTimeString("ja-JP");
+  const events=Array.isArray(data.recent_events)?data.recent_events:[];
+  $("#opsRealtimeEvents").innerHTML=events.length?events.map(x=>'<tr><td>'+esc(new Date(x.created_at).toLocaleTimeString("ja-JP"))+'</td><td>'+esc(x.service_key||"KUROLAB")+'</td><td>'+((x.event_name==="api_error"||x.event_name==="client_error")?'<span style="color:#ef7777">失敗</span>':'<span style="color:#55cda5">成功 / 操作</span>')+'</td><td>'+esc(x.event_name)+(x.status_code?" · HTTP "+Number(x.status_code):"")+(x.error_code?" · "+esc(x.error_code):"")+'</td></tr>').join(""):'<tr><td colspan="4">直近15分のイベントはありません。</td></tr>';
+  updated.textContent="最終更新："+new Date(data.generated_at||Date.now()).toLocaleTimeString("ja-JP");
+ }catch(e){
+  $("#opsRealtimeServices").innerHTML='<tr><td colspan="4" class="error">監視データを取得できません：'+esc(e.message)+'</td></tr>';
+  $("#liveOverall").textContent="監視データ取得失敗";updated.textContent="取得失敗";
+ }
+}
 async function loadOpsAnalytics(){
  $("#opsActiveChart").innerHTML='<div class="empty">集計中…</div>';
  try{
@@ -1207,7 +1258,7 @@ async function loadOpsUserErrors(event){
 
 function startAdminPolling(){
  if(refreshTimer)clearInterval(refreshTimer);
- const interval=activeProduct==="ops"&&opsView==="overview"?300000:(activeProduct==="sns"&&mode==="gas"?15000:45000);
+ const interval=activeProduct==="ops"&&opsView==="realtime"?15000:(activeProduct==="ops"&&opsView==="overview"?300000:(activeProduct==="sns"&&mode==="gas"?15000:45000));
  refreshTimer=setInterval(()=>{
   if($("#appView").hidden)return;
   if(activeProduct==="lab")load();
@@ -1305,6 +1356,7 @@ $("#snsAnnList").addEventListener("click",e=>{const b=e.target.closest("[data-sn
 $("#opsFlagsRefresh").addEventListener("click",loadOpsFlags);
 $("#opsAnalyticsRefresh").addEventListener("click",loadOpsAnalytics);
 $("#opsOverviewRefresh").addEventListener("click",loadOpsOverview);
+$("#opsRealtimeRefresh").addEventListener("click",loadOpsRealtime);
 $("#opsOverviewView").addEventListener("click",e=>{const b=e.target.closest("[data-go-ops]");if(b)setOpsView(b.dataset.goOps);});
 $("#opsUserErrorsForm").addEventListener("submit",loadOpsUserErrors);
 $("#opsAnnouncementForm").addEventListener("submit",saveAnnouncement);
