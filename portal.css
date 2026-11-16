@@ -2631,3 +2631,55 @@ body:has(.portal-dashboard-v2) #portal-quick-button{display:none!important}
 .portal-pro-tool-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
 .portal-pro-tools-grid textarea{width:100%;min-width:0;resize:vertical;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px}
 @media(max-width:760px){.portal-pro-tools-grid{grid-template-columns:1fr}}
+
+
+/* Header overflow correction: keep every control inside the viewport and pin notifications to the far right. */
+.portal-header-inner{
+  width:min(1220px,calc(100% - 32px));
+  min-width:0;
+  gap:clamp(6px,1vw,12px);
+}
+.portal-header-inner>*{min-width:0}
+.portal-brand{flex:0 0 auto;white-space:nowrap}
+.portal-topnav{flex:1 1 auto;min-width:0;overflow-x:auto;overflow-y:hidden;white-space:nowrap}
+.portal-header-inner .portal-account-button,
+.portal-header-inner .portal-transport-button,
+.portal-header-inner .portal-quick-button,
+.portal-header-inner .portal-network-status,
+.portal-header-inner .portal-toolbox-menu-wrap{flex:0 0 auto}
+.portal-header-notification{
+  order:99;
+  flex:0 0 38px;
+  margin:0 0 0 auto;
+}
+@media(max-width:900px){
+  .portal-header-inner{gap:7px;width:calc(100% - 24px)}
+  .portal-topnav{gap:2px}
+  .portal-topnav a{padding:7px 6px;font-size:11px}
+}
+@media(max-width:700px){
+  .portal-header-inner{width:calc(100% - 20px);gap:6px;min-height:60px}
+  .portal-brand{flex:0 1 auto;min-width:0}
+  .portal-brand img{flex:0 0 auto}
+  .portal-brand>span{min-width:0}
+  .portal-brand strong{white-space:nowrap}
+  .portal-header-plan-badge{flex:0 0 auto;margin-left:2px}
+  .portal-header-inner .portal-quick-button{min-width:0;padding:7px 8px}
+  .portal-header-inner .portal-quick-button span{display:none}
+  .portal-header-inner .portal-network-status{display:none}
+  .portal-header-inner .portal-transport-button{display:none}
+  .portal-header-inner .portal-account-button{margin-left:auto;white-space:nowrap;padding:7px 9px;font-size:11px}
+  .portal-header-notification{width:34px;height:34px;flex-basis:34px;margin:0}
+  .portal-toolbox-menu-wrap{margin-left:0!important}
+}
+@media(max-width:390px){
+  .portal-header-inner{gap:4px;width:calc(100% - 14px)}
+  .portal-brand img{width:32px;height:32px}
+  .portal-brand strong{font-size:14px}
+  .portal-brand small{font-size:7px}
+  .portal-header-plan-badge{min-width:36px;padding:0 5px;font-size:8px}
+  .portal-toolbox-trigger{padding:6px 7px;font-size:10px}
+  .portal-toolbox-trigger-icon{font-size:13px}
+  .portal-header-inner .portal-account-button{padding:6px 7px;font-size:10px}
+  .portal-header-notification{width:32px;height:32px;flex-basis:32px}
+}
