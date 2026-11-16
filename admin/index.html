@@ -126,6 +126,61 @@
 @media(max-width:420px){.ops-overview-shortcuts{grid-template-columns:1fr}.ops-overview-kpi{padding:12px}.ops-overview-kpi strong{font-size:23px}}
 
 .ops-terminal{background:#050a08;border:1px solid #1e3a2c;border-radius:8px;color:#a8f0b8;font:12px/1.75 ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;box-shadow:inset 0 0 28px #0008;overflow:hidden}.ops-terminal-head{padding:8px 13px;background:#0b1510;border-bottom:1px solid #1e3a2c;color:#7ebd8c;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.ops-terminal-body{padding:13px 15px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:330px;overflow:auto}.ops-terminal-line{display:block;min-height:1.75em}.ops-terminal-line:before{content:"> ";color:#4cbd70}.ops-terminal-label{color:#6e9d7a}.ops-terminal-value{color:#b9ffc7}.ops-terminal-ok{color:#66e68c}.ops-terminal-warn{color:#ffd16a}.ops-terminal-bad{color:#ff8585}.ops-terminal-dim{color:#668372}.ops-live-metrics{display:flex;gap:10px 24px;flex-wrap:wrap;padding:12px 15px}.ops-live-metrics span{white-space:nowrap}.ops-live-bars{display:flex;align-items:end;gap:4px;height:130px;padding:16px;overflow:hidden;background:#050a08}.ops-live-bar{flex:1;min-width:3px;border-radius:2px 2px 0 0;background:linear-gradient(180deg,#78e99b,#267a43);position:relative}.ops-live-note{font:11px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace;color:#7ebd8c;padding:10px 15px}.ops-live-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.ops-terminal-section{margin:12px 0 16px}.ops-terminal-section>.toolbar{margin-bottom:8px}@media(max-width:480px){.ops-terminal-body{padding:10px;font-size:11px;max-height:280px}.ops-live-metrics{gap:7px 14px;padding:10px;font-size:11px}}
+ 
+/* Full-screen operations shells */
+#opsAdminSection{width:100%;max-width:none;margin:0;padding:22px clamp(14px,2.2vw,34px) 36px;min-height:calc(100vh - 76px);display:grid;grid-template-columns:226px minmax(0,1fr);grid-template-rows:auto auto auto minmax(0,1fr);column-gap:20px;row-gap:0;align-items:stretch}
+#opsAdminSection>.eyebrow,#opsAdminSection>.heading{grid-column:1/-1}
+#opsAdminSection>.heading{margin:5px 0 16px}
+#opsAdminSection>.ops-shell-nav{grid-column:1;grid-row:3 / span 2;align-self:stretch;position:sticky;top:12px;display:flex;flex-direction:column;gap:13px;padding:12px;background:#070d0b;border:1px solid #1e3a2c;border-radius:8px;min-height:calc(100vh - 155px)}
+.ops-nav-group{display:grid;gap:4px}
+.ops-nav-group>small{font:10px/1.4 ui-monospace,monospace;letter-spacing:.12em;color:#668372;padding:4px 8px 6px}
+.ops-nav-group button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid transparent;border-radius:5px;background:transparent;color:#91b69a;padding:9px 8px;font:12px/1.4 ui-monospace,monospace}
+.ops-nav-group button b{color:#547b60;font-size:10px;font-weight:500}
+.ops-nav-group button span{min-width:0}
+.ops-nav-group button:hover{background:#0e1c13;border-color:#24472e;color:#c1ffd0}
+.ops-nav-group button.active{background:#102318;border-color:#36734a;color:#c1ffd0;box-shadow:inset 2px 0 #63d982}
+#opsAdminSection>.ops-shell-bar{grid-column:2;grid-row:3;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:9px 13px;margin-bottom:12px;background:#07100b;border:1px solid #1e3a2c;border-radius:7px;color:#7ebd8c;font:11px/1.5 ui-monospace,monospace}
+.ops-shell-prompt{color:#65dc83}.ops-shell-separator{padding:0 10px;color:#345c40}
+#opsAdminSection>[id$="View"]{grid-column:2;grid-row:4;min-width:0;min-height:calc(100vh - 205px);width:100%;background:#070d0b;border:1px solid #1e3a2c;border-radius:8px;padding:clamp(12px,1.5vw,22px);color:#b8e8c0;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+#opsAdminSection>[id$="View"] .toolbar,#opsAdminSection>[id$="View"] .ops-overview-head{background:#0a160f;border-color:#1e3a2c;color:#b8e8c0}
+#opsAdminSection>[id$="View"] .panel,#opsAdminSection>[id$="View"] .ops-overview-kpi,#opsAdminSection>[id$="View"] .ops-metric,#opsAdminSection>[id$="View"] .ops-retention-card{background:#050a08;border-color:#1e3a2c;border-radius:6px;box-shadow:none}
+#opsAdminSection>[id$="View"] .ops-overview-kpi small,#opsAdminSection>[id$="View"] .ops-overview-kpi span,#opsAdminSection>[id$="View"] .sns-muted,#opsAdminSection>[id$="View"] .ops-meta{color:#72947b}
+#opsAdminSection>[id$="View"] .ops-overview-kpi strong,#opsAdminSection>[id$="View"] .ops-metric strong{color:#b9ffc7}
+#opsAdminSection>[id$="View"] .ops-ann-item,#opsAdminSection>[id$="View"] .ops-flag-item,#opsAdminSection>[id$="View"] .item{background:#080f0a;border-color:#1e3a2c;border-radius:6px}
+#opsAdminSection>[id$="View"] input,#opsAdminSection>[id$="View"] select,#opsAdminSection>[id$="View"] textarea{background:#030805;color:#b9ffc7;border-color:#285237;border-radius:4px;font-family:ui-monospace,monospace}
+#opsAdminSection>[id$="View"] .btn{background:#0d1b11;color:#a8e9b4;border-color:#285237;border-radius:4px;font-family:ui-monospace,monospace}
+#opsAdminSection>[id$="View"] .btn.primary{background:#1d6335;color:#e2ffe8;border-color:#3e9b59}
+#opsAdminSection>[id$="View"] .ops-table th,#opsAdminSection>[id$="View"] .ops-analytics-table th{color:#78a883}
+#opsAdminSection>[id$="View"] .ops-table td,#opsAdminSection>[id$="View"] .ops-analytics-table td{border-color:#1e3a2c}
+#opsAdminSection>[id$="View"] .ops-overview-chart text{fill:#72947b}
+#opsAdminSection>[id$="View"] .ops-overview-chart .ov-grid{stroke:#1e3a2c}
+#opsAdminSection>[id$="View"] .ops-overview-shortcuts .ops-shortcut{background:#07100b;border-color:#285237;border-radius:5px}
+#opsAdminSection>[id$="View"] .ops-overview-shortcuts .ops-shortcut:hover{background:#102318}
+#opsAdminSection>[id$="View"] .ops-active-chart{background:#050a08}
+#opsAdminSection>[id$="View"] .ops-chart-bar{background:linear-gradient(180deg,#78e99b,#267a43)}
+#opsAdminSection>[id$="View"] .empty{color:#72947b}
+#opsAdminSection>[id$="View"] .error{color:#ff8585}
+#opsAdminSection>[id$="View"] .ops-overview-grid{align-items:stretch}
+#opsAdminSection>[id$="View"] .ops-overview-panel{height:100%}
+#opsAdminSection>[id$="View"] .ops-overview-wide{grid-column:1/-1}
+#opsAdminSection>[id$="View"] .ops-overview-kpis{grid-template-columns:repeat(auto-fit,minmax(155px,1fr))}
+@media(max-width:980px){
+ #opsAdminSection{grid-template-columns:1fr;grid-template-rows:auto auto auto auto auto}
+ #opsAdminSection>.ops-shell-nav{grid-column:1;grid-row:3;position:static;min-height:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px}
+ .ops-nav-group{align-content:start}
+ #opsAdminSection>.ops-shell-bar{grid-column:1;grid-row:4}
+ #opsAdminSection>[id$="View"]{grid-column:1;grid-row:5;min-height:calc(100vh - 270px)}
+}
+@media(max-width:560px){
+ #opsAdminSection{padding:14px 10px 24px;min-height:calc(100vh - 64px)}
+ #opsAdminSection>.ops-shell-nav{grid-template-columns:1fr 1fr;gap:5px;padding:8px}
+ .ops-nav-group button{font-size:10px;padding:8px 5px;gap:6px}
+ #opsAdminSection>.ops-shell-bar{font-size:9px}
+ #opsAdminSection>[id$="View"]{padding:10px;min-height:calc(100vh - 310px)}
+ #opsAdminSection>[id$="View"] .ops-overview-grid{grid-template-columns:1fr}
+ #opsAdminSection>[id$="View"] .ops-overview-wide{grid-column:1}
+}
+
 </style>
 </head>
 <body>
@@ -166,17 +221,31 @@
   <div><h1>運営管理</h1><p>アカウント・運用設定・お知らせを管理します。強い操作は監査ログに記録されます。</p></div>
   <div class="statusline" id="opsConnection">準備中…</div>
  </div>
- <div class="sns-tabs ops-tabs" id="opsTabs">
-  <button class="active" data-ops-tab="overview">TOP / 概要</button>
-  <button data-ops-tab="users">ユーザー</button>
-  <button data-ops-tab="audit">監査ログ</button>
-  <button data-ops-tab="reports">通報管理</button>
-  <button data-ops-tab="announcements">お知らせ</button>
-  <button data-ops-tab="messages">サービス別配信</button>
-  <button data-ops-tab="flags">機能ON/OFF</button>
-  <button data-ops-tab="analytics">利用分析</button>
-  <button data-ops-tab="realtime">リアルタイム監視</button>
-  <button data-ops-tab="pro">KUROLAB Pro</button>
+ <div class="ops-shell-nav" id="opsTabs">
+  <div class="ops-nav-group"><small>01 / SYSTEM</small>
+   <button class="active" data-ops-tab="overview"><b>01</b><span>概要・ダッシュボード</span></button>
+   <button data-ops-tab="realtime"><b>02</b><span>リアルタイム監視</span></button>
+   <button data-ops-tab="analytics"><b>03</b><span>利用・アクセス分析</span></button>
+  </div>
+  <div class="ops-nav-group"><small>02 / ACCOUNTS</small>
+   <button data-ops-tab="users"><b>04</b><span>ユーザー管理</span></button>
+   <button data-ops-tab="pro"><b>05</b><span>KUROLAB Pro</span></button>
+  </div>
+  <div class="ops-nav-group"><small>03 / MODERATION</small>
+   <button data-ops-tab="reports"><b>06</b><span>通報・審査</span></button>
+   <button data-ops-tab="audit"><b>07</b><span>監査ログ</span></button>
+  </div>
+  <div class="ops-nav-group"><small>04 / CONTENT</small>
+   <button data-ops-tab="announcements"><b>08</b><span>お知らせ管理</span></button>
+   <button data-ops-tab="messages"><b>09</b><span>サービス別配信</span></button>
+  </div>
+  <div class="ops-nav-group"><small>05 / CONFIGURATION</small>
+   <button data-ops-tab="flags"><b>10</b><span>機能フラグ</span></button>
+  </div>
+ </div>
+ <div class="ops-shell-bar" id="opsShellBar">
+  <div><span class="ops-shell-prompt">KURO@OPS:~$</span> <strong id="opsShellName">overview</strong></div>
+  <div><span id="opsShellState">SESSION: AUTHENTICATED</span><span class="ops-shell-separator">|</span><span id="opsShellClock">LOCAL CONSOLE</span></div>
  </div>
  <div id="opsRealtimeView" hidden>
   <div class="ops-overview-head"><div><strong>リアルタイム通信・利用監視</strong><div class="sns-muted">15秒ごとに自動更新 · オンライン推定は直近5分の操作記録を基準に集計</div></div><div class="ops-overview-tools"><span id="opsRealtimeUpdated" class="sns-muted">準備中…</span><button class="btn" id="opsRealtimeRefresh">今すぐ更新</button></div></div>
@@ -888,6 +957,9 @@ async function handleOpsProClick(e){
 
 function setOpsView(view){
  opsView=view;
+ const shellNames={overview:"overview",users:"accounts.users",audit:"moderation.audit",reports:"moderation.reports",announcements:"content.announcements",messages:"content.broadcast",flags:"config.feature_flags",analytics:"analytics.usage",realtime:"system.realtime",pro:"accounts.pro"};
+ const shellName=$("#opsShellName");if(shellName)shellName.textContent=shellNames[view]||view;
+ const shellClock=$("#opsShellClock");if(shellClock)shellClock.textContent="LOCAL "+new Date().toLocaleTimeString("ja-JP");
  ["overview","users","audit","reports","announcements","messages","flags","analytics","realtime","pro"].forEach(name=>{
   const target=$("#ops"+name.charAt(0).toUpperCase()+name.slice(1)+"View");
   if(target)target.hidden=name!==view;
