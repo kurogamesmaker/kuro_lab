@@ -1073,11 +1073,26 @@
 })();
 </script>
     <style id="kuro-remove-post-separators">
-      /* 投稿カード同士の区切り線を表示しない */
-      #postFeed [data-post-card] {
-        border-bottom: 0 !important;
-      }
-    </style>
+  /* 投稿下の横線・カード境界線をPC/スマホ共通で完全に非表示 */
+  #postFeed,
+  #postFeed > *,
+  #postFeed [data-post-card],
+  #postFeed [data-post-card]::before,
+  #postFeed [data-post-card]::after {
+    border: 0 !important;
+    border-top: 0 !important;
+    border-right: 0 !important;
+    border-bottom: 0 !important;
+    border-left: 0 !important;
+    box-shadow: none !important;
+    outline: 0 !important;
+  }
+  #postFeed > *::before,
+  #postFeed > *::after {
+    content: none !important;
+    display: none !important;
+  }
+</style>
 </head>
 
 <body class="kuro-page kuro-theme-dark">
