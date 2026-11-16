@@ -177,26 +177,12 @@
           '<a href="/tools/?tool=convert"><span>💱</span><b>為替・単位変換</b><i>↗</i></a>' +
           '<a href="/tools/?tool=rss"><span>📡</span><b>RSSリーダー</b><i>↗</i></a>' +
           '<a href="/tools/?tool=status"><span>📶</span><b>サイト稼働状況</b><i>↗</i></a>' +
+          '<a href="/pro-tools/"><span>⚡</span><b>Pro専用ツール</b><i class="portal-toolbox-pro-mark">PRO</i></a>' +
           '<a class="portal-toolbox-all" href="/tools/">すべてのツールを見る <i>→</i></a>' +
-          '<div class="portal-pro-toolbox-links" data-pro-toolbox-links>' +
-            '<div class="portal-toolbox-menu-heading"><b>PRO TOOLS</b><small>Proメンバー向けツール</small></div>' +
-            '<a class="portal-toolbox-pro-item" href="/pro-tools/"><span>⚡</span><b>Pro専用ツール</b><i class="portal-toolbox-pro-mark">✦ PRO</i></a>' +
-          '</div>' +
         '</div>';
       var accountButton = document.getElementById("portal-account-button");
       header.insertBefore(toolbox, accountButton || null);
     }
-    syncProToolbox();
-    if (!window.__kuroProToolboxSyncBound) {
-      window.addEventListener("kuro:pro-status-updated", syncProToolbox);
-      window.__kuroProToolboxSyncBound = true;
-    }
-  }
-
-  function syncProToolbox() {
-    // Pro tools stay visible in the toolbox for every plan; access is enforced on the destination page.
-    var section = document.querySelector("[data-pro-toolbox-links]");
-    if (section) section.hidden = false;
   }
 
   function setupMobileNavigation() {
