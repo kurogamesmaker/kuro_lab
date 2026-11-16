@@ -24,6 +24,12 @@ function reply(body: unknown, status = 200, origin: string | null = null) {
   });
 }
 
+
+function featuresForPlan(plan: "standard" | "pro") {
+  if (plan === "standard") return { workspace_plus:true, pro_tools:false, customization_plus:true, early_access:false, desktop:false, theme_studio:false, developer_mode:false, analytics:"basic", ai:false, ad_free:true };
+  return { workspace_plus:true, pro_tools:true, customization_plus:true, early_access:true, desktop:true, theme_studio:true, developer_mode:true, analytics:"advanced", ai:true, ad_free:true };
+}
+
 function safeError(error: unknown) {
   return String((error as { message?: string })?.message || error || "Unknown error").slice(0, 240);
 }
@@ -600,9 +606,9 @@ Deno.serve(async (req: Request) => {
 
     if (action === "list_pro_management") {
       const [appsResult, membersResult, invitesResult, controlsResult] = await Promise.all([
-        admin.from("pro_applications").select("id,user_id,reason,status,admin_note,reviewed_by,reviewed_at,created_at").order("created_at",{ascending:false}).limit(300),
-        admin.from("pro_memberships").select("user_id,status,source,starts_at,expires_at,features,approved_by,approved_at,updated_at").order("updated_at",{ascending:false}).limit(500),
-        admin.from("pro_invitations").select("id,invited_user_id,status,expires_at,membership_expires_at,created_at,accepted_at,created_by").order("created_at",{ascending:false}).limit(300),
+        admin.from("pro_applications").select("id,user_id,reason,requested_plan,status,admin_note,reviewed_by,reviewed_at,created_at").order("created_at",{ascending:false}).limit(300),
+        admin.from("pro_memberships").select("user_id,status,source,starts_at,expires_at,plan,features,approved_by,approved_at,updated_at").order("updated_at",{ascending:false}).limit(500),
+        admin.from("pro_invitations").select("id,invited_user_id,status,plan,expires_at,membership_expires_at,created_at,accepted_at,created_by").order("created_at",{ascending:false}).limit(300),
         admin.from("pro_user_controls").select("user_id,reapply_allowed,reapply_after,admin_note,updated_at").limit(500)
       ]);
       for (const r of [appsResult,membersResult,invitesResult,controlsResult]) if(r.error) throw r.error;
@@ -631,10 +637,13 @@ Deno.serve(async (req: Request) => {
       const expiresAt=body.expiresAt?new Date(body.expiresAt):null;
       if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(applicationId)) return reply({error:"Invalid application ID"},400,origin);
       if(body.expiresAt && (!expiresAt || Number.isNaN(expiresAt.getTime()) || expiresAt.getTime()<=Date.now())) return reply({error:"有効期限は未来の日時にしてください。"},400,origin);
-      const {data:application,error:appError}=await admin.from("pro_applications").select("id,user_id,status").eq("id",applicationId).maybeSingle();
+      const {data:application,error:appError}=await admin.from("pro_applications").select("id,user_id,status,requested_plan").eq("id",applicationId).maybeSingle();
       if(appError) throw appError;
       if(!application) return reply({error:"Application not found"},404,origin);
       if(application.status!=="pending") return reply({error:"この申請はすでに審査済みです。"},409,origin);
+      const requestedPlan=application.requested_plan==="standard"?"standard":"pro";
+      const grantedPlan=body.plan==="standard"||body.plan==="pro"?body.plan:requestedPlan;
+      if(body.plan!==undefined && body.plan!=="standard" && body.plan!=="pro") return reply({error:"プラン指定が正しくありません。"},400,origin);
       if(approve){
         const {data:existingMembership,error:existingMembershipError}=await admin.from("pro_memberships").select("status").eq("user_id",application.user_id).maybeSingle();
         if(existingMembershipError) throw existingMembershipError;
@@ -648,7 +657,7 @@ Deno.serve(async (req: Request) => {
         const {error:memberError}=await admin.from("pro_memberships").upsert({
           user_id:application.user_id,status:"active",source:"application",starts_at:now,
           expires_at:expiresAt?expiresAt.toISOString():null,
-          features:{workspace_plus:true,pro_tools:true,customization_plus:true,early_access:true},
+          plan:grantedPlan,features:featuresForPlan(grantedPlan),
           approved_by:caller.id,approved_at:now,updated_at:now
         },{onConflict:"user_id"});
         if(memberError) throw memberError;
@@ -670,12 +679,12 @@ Deno.serve(async (req: Request) => {
       }
       const {error:auditError}=await admin.from("admin_audit_logs").insert({
         actor_user_id:caller.id,action:approve?"pro.application.approve":"pro.application.reject",
-        target_user_id:application.user_id,metadata:{application_id:applicationId,expires_at:approve?(expiresAt?expiresAt.toISOString():null):null,reapply_allowed:approve?null:body.reapplyAllowed!==false}
+        target_user_id:application.user_id,metadata:{application_id:applicationId,requested_plan:requestedPlan,granted_plan:approve?grantedPlan:null,expires_at:approve?(expiresAt?expiresAt.toISOString():null):null,reapply_allowed:approve?null:body.reapplyAllowed!==false}
       });
       if(auditError) throw auditError;
       const {error:notifyError}=await admin.from("admin_messages").insert({
-        title:approve?"KUROLAB Proが承認されました":"KUROLAB Pro申請について",
-        body:approve?"Pro権限が有効になりました。Proページで利用状況を確認できます。":(adminNote||"今回のPro申請は承認されませんでした。再申請が許可されている場合は、内容を見直して再度申請できます。"),
+        title:approve?("KUROLAB "+(grantedPlan==="standard"?"スタンダード":"Pro")+"が承認されました"):"KUROLAB プラン申請について",
+        body:approve?((grantedPlan==="standard"?"スタンダード":"Pro")+"プランが有効になりました。プラン管理ページで利用状況を確認できます。"):(adminNote||"今回のプラン申請は承認されませんでした。再申請が許可されている場合は、内容を見直して再度申請できます。"),
         href:"https://kurolab.cc.cd/pro/",audience:"user",recipient_id:application.user_id,created_by:caller.id,published:true,service_scope:"lab"
       });
       if(notifyError) console.warn("Pro review notification failed",notifyError.message);
@@ -684,6 +693,8 @@ Deno.serve(async (req: Request) => {
 
     if (action === "create_pro_invitation") {
       const targetUserId=typeof body.userId==="string"?body.userId:"";
+      const invitePlan=body.plan==="standard"||body.plan==="pro"?body.plan:"";
+      if(!invitePlan) return reply({error:"招待するプランを選択してください。"},400,origin);
       const inviteExpiry=body.inviteExpiresAt?new Date(body.inviteExpiresAt):null;
       const membershipExpiry=body.membershipExpiresAt?new Date(body.membershipExpiresAt):null;
       if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(targetUserId)) return reply({error:"Invalid user ID"},400,origin);
@@ -695,14 +706,15 @@ Deno.serve(async (req: Request) => {
       const {data:protectedAdmin,error:protectedError}=await admin.from("admin_users").select("user_id").eq("user_id",targetUserId).maybeSingle();
       if(protectedError) throw protectedError;
       if(protectedAdmin) return reply({error:"Administrator accounts are not eligible for Pro membership"},409,origin);
-      const {data:existing,error:existingError}=await admin.from("pro_memberships").select("status,expires_at,features").eq("user_id",targetUserId).maybeSingle();
+      const {data:existing,error:existingError}=await admin.from("pro_memberships").select("status,expires_at,features,plan").eq("user_id",targetUserId).maybeSingle();
       if(existingError) throw existingError;
-      if(existing?.status==="active" && (!existing.expires_at||new Date(existing.expires_at).getTime()>Date.now())) return reply({error:"この利用者はすでにProです。"},409,origin);
+      const existingActive=existing?.status==="active" && (!existing.expires_at||new Date(existing.expires_at).getTime()>Date.now());
+      if(existingActive && ((existing.plan||"pro")==="pro" || invitePlan!=="pro")) return reply({error:"この利用者はすでに有効なプランを利用しています。"},409,origin);
       if(existing?.status==="suspended") return reply({error:"Proが停止中の利用者には招待を発行できません。"},409,origin);
       const {data:invite,error}=await admin.from("pro_invitations").insert({
-        invited_user_id:targetUserId,status:"pending",expires_at:inviteExpiry.toISOString(),
+        invited_user_id:targetUserId,status:"pending",plan:invitePlan,expires_at:inviteExpiry.toISOString(),
         membership_expires_at:membershipExpiry?membershipExpiry.toISOString():null,created_by:caller.id
-      }).select("id,invited_user_id,status,expires_at,membership_expires_at,created_at").single();
+      }).select("id,invited_user_id,status,plan,expires_at,membership_expires_at,created_at").single();
       if(error) throw error;
       const {error:auditError}=await admin.from("admin_audit_logs").insert({
         actor_user_id:caller.id,action:"pro.invitation.create",target_user_id:targetUserId,
@@ -710,8 +722,8 @@ Deno.serve(async (req: Request) => {
       });
       if(auditError) throw auditError;
       const {error:notifyError}=await admin.from("admin_messages").insert({
-        title:"KUROLAB Proへの招待が届きました",
-        body:"管理者からKUROLAB Proへの招待が届きました。Proページを開き、招待内容を確認して承諾してください。",
+        title:"KUROLAB "+(invitePlan==="standard"?"スタンダード":"Pro")+"への招待が届きました",
+        body:"管理者からKUROLAB "+(invitePlan==="standard"?"スタンダード":"Pro")+"への招待が届きました。プラン管理ページを開き、招待内容を確認して承諾してください。",
         href:"https://kurolab.cc.cd/pro/",audience:"user",recipient_id:targetUserId,created_by:caller.id,published:true,service_scope:"lab"
       });
       if(notifyError) console.warn("Pro invitation notification failed",notifyError.message);
