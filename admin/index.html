@@ -1534,7 +1534,7 @@ async function loadOpsOverview(){
   const points=(data.daily||[]).map(p=>({
    key:p.date,
    label:new Date(p.date+"T00:00:00+09:00").toLocaleDateString("ja-JP",{month:"numeric",day:"numeric",timeZone:"Asia/Tokyo"}),
-   dau:Number(p.active_users||0),posts:Number(p.posts||0),replies:Number(p.replies||0),chat:Number(p.chat||0)
+   dau:Number(p.active_visitors||0),posts:Number(p.posts||0),replies:Number(p.replies||0),chat:Number(p.chat||0)
   }));
   drawOverviewTrend(points);
   const parts=[
