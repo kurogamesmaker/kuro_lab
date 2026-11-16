@@ -318,6 +318,7 @@ Deno.serve(async (req: Request) => {
 
       const activityByUser = new Map<string, number[]>();
       pageViewsAll.forEach((e) => {
+        if (!e.user_id) return;
         const t = new Date(e.created_at).getTime();
         if (!Number.isFinite(t)) return;
         if (!activityByUser.has(e.user_id)) activityByUser.set(e.user_id, []);
@@ -350,13 +351,6 @@ Deno.serve(async (req: Request) => {
         day30: retentionFor(30),
         tracking_started_at: firstTrackedPage && firstTrackedPage.created_at ? firstTrackedPage.created_at : null
       };
-
-      const pageMap = new Map<string, Set<string>>();
-      pageViews30.forEach((e) => {
-        const key = "portal";
-        if (!pageMap.has(key)) pageMap.set(key, new Set());
-        pageMap.get(key)!.add(e.user_id);
-      });
 
       return reply({
         generated_at: now.toISOString(),
