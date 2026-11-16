@@ -73,12 +73,14 @@ Deno.serve(async (req: Request) => {
       const since5 = new Date(now.getTime() - 5 * 60000).toISOString();
       const since1 = new Date(now.getTime() - 60000).toISOString();
       const { data: events, error } = await admin.from("usage_events")
-        .select("user_id,session_id,event_name,service_key,status_code,error_code,page_key,created_at")
+        .select("user_id,visitor_id,session_id,event_name,service_key,status_code,error_code,page_key,created_at")
         .gte("created_at", since15).order("created_at", { ascending: false }).limit(5000);
       if (error) throw error;
       const rows = events || [];
       const active = rows.filter((e) => e.created_at >= since5);
       const activeUsers = new Set(active.map((e) => e.user_id).filter(Boolean));
+      const activeVisitors = new Set(active.map((e) => e.visitor_id || e.user_id).filter(Boolean));
+      const activeGuests = new Set(active.filter((e) => !e.user_id).map((e) => e.visitor_id).filter(Boolean));
       const activeSessions = new Set(active.map((e) => e.session_id).filter(Boolean));
       const minutes = Array.from({ length: 15 }, (_, i) => {
         const start = new Date(now.getTime() - (14 - i) * 60000);
@@ -99,7 +101,9 @@ Deno.serve(async (req: Request) => {
         error_rate: x.requests ? Math.round(x.errors / x.requests * 1000) / 10 : 0
       })).sort((a, b) => b.errors - a.errors || a.service_key.localeCompare(b.service_key));
       return reply({
-        generated_at: now.toISOString(), active_users_5m: activeUsers.size, active_sessions_5m: activeSessions.size,
+        generated_at: now.toISOString(), active_users_5m: activeUsers.size,
+        active_visitors_5m: activeVisitors.size, active_guests_5m: activeGuests.size,
+        active_sessions_5m: activeSessions.size,
         events_1m: rows.filter((e) => e.created_at >= since1).length,
         errors_5m: active.filter((e) => e.event_name === "api_error" || e.event_name === "client_error").length,
         minutes, services,
@@ -115,7 +119,7 @@ Deno.serve(async (req: Request) => {
       const [profileCount, postCount, eventResult, postRows, replyRows, chatRows] = await Promise.all([
         admin.from("profiles").select("id", { count: "exact", head: true }),
         admin.from("posts").select("id", { count: "exact", head: true }),
-        admin.from("usage_events").select("user_id,event_name,created_at,widget_key,service_key,status_code,error_code").gte("created_at", since30).order("created_at", { ascending: false }).range(0, 9999),
+        admin.from("usage_events").select("user_id,visitor_id,event_name,created_at,widget_key,service_key,status_code,error_code").gte("created_at", since30).order("created_at", { ascending: false }).range(0, 9999),
         admin.from("posts").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(0, 9999),
         admin.from("post_replies").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(0, 9999),
         admin.from("public_chat_messages").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(0, 9999)
@@ -128,15 +132,19 @@ Deno.serve(async (req: Request) => {
         const part = (type: string) => parts.find((p) => p.type === type)?.value || "";
         return part("year") + "-" + part("month") + "-" + part("day");
       };
-      const dailyMap = new Map<string, { date: string; active_users: Set<string>; posts: number; replies: number; chat: number }>();
+      const dailyMap = new Map<string, { date: string; active_users: Set<string>; active_visitors: Set<string>; guest_users: Set<string>; posts: number; replies: number; chat: number }>();
       for (let i = 29; i >= 0; i--) {
         const key = tokyoKey(new Date(now.getTime() - i * 86400000));
-        dailyMap.set(key, { date: key, active_users: new Set(), posts: 0, replies: 0, chat: 0 });
+        dailyMap.set(key, { date: key, active_users: new Set(), active_visitors: new Set(), guest_users: new Set(), posts: 0, replies: 0, chat: 0 });
       }
       const events = eventResult.data || [];
       for (const event of events) {
         const point = dailyMap.get(tokyoKey(event.created_at));
-        if (point && event.event_name === "page_view" && event.user_id) point.active_users.add(event.user_id);
+        if (point && event.event_name === "page_view") {
+          if (event.user_id) point.active_users.add(event.user_id);
+          if (event.visitor_id || event.user_id) point.active_visitors.add(event.visitor_id || event.user_id);
+          if (!event.user_id && event.visitor_id) point.guest_users.add(event.visitor_id);
+        }
       }
       for (const row of postRows.data || []) { const point = dailyMap.get(tokyoKey(row.created_at)); if (point) point.posts++; }
       for (const row of replyRows.data || []) { const point = dailyMap.get(tokyoKey(row.created_at)); if (point) point.replies++; }
@@ -144,8 +152,12 @@ Deno.serve(async (req: Request) => {
       const rows7 = events.filter((e) => e.created_at >= since7);
       const rows24 = events.filter((e) => e.created_at >= since24);
       const pageViews = events.filter((e) => e.event_name === "page_view");
-      const dauUsers = new Set(pageViews.filter((e) => tokyoKey(e.created_at) === tokyoKey(now)).map((e) => e.user_id));
-      const mauUsers = new Set(pageViews.map((e) => e.user_id));
+      const dauUsers = new Set(pageViews.filter((e) => tokyoKey(e.created_at) === tokyoKey(now)).map((e) => e.user_id).filter(Boolean));
+      const mauUsers = new Set(pageViews.map((e) => e.user_id).filter(Boolean));
+      const dauVisitors = new Set(pageViews.filter((e) => tokyoKey(e.created_at) === tokyoKey(now)).map((e) => e.visitor_id || e.user_id).filter(Boolean));
+      const mauVisitors = new Set(pageViews.map((e) => e.visitor_id || e.user_id).filter(Boolean));
+      const dauGuests = new Set(pageViews.filter((e) => tokyoKey(e.created_at) === tokyoKey(now) && !e.user_id).map((e) => e.visitor_id).filter(Boolean));
+      const mauGuests = new Set(pageViews.filter((e) => !e.user_id).map((e) => e.visitor_id).filter(Boolean));
       const widgetMap = new Map<string, { widget_key: string; views: number; adds: number; removes: number }>();
       for (const event of events) {
         if (!event.widget_key) continue;
@@ -167,9 +179,13 @@ Deno.serve(async (req: Request) => {
       }
       return reply({
         generated_at: now.toISOString(), profile_count: profileCount.count || 0, post_count: postCount.count || 0,
-        dau: dauUsers.size, mau: mauUsers.size, page_views_30d: pageViews.length,
+        dau: dauUsers.size, mau: mauUsers.size, dau_visitors: dauVisitors.size, mau_visitors: mauVisitors.size,
+        dau_guests: dauGuests.size, mau_guests: mauGuests.size, page_views_30d: pageViews.length,
         api_errors_24h: rows24.filter((e) => e.event_name === "api_error").length,
-        daily: Array.from(dailyMap.values()).map((p) => ({ date: p.date, active_users: p.active_users.size, posts: p.posts, replies: p.replies, chat: p.chat })),
+        daily: Array.from(dailyMap.values()).map((p) => ({
+          date: p.date, active_users: p.active_users.size, active_visitors: p.active_visitors.size,
+          guest_users: p.guest_users.size, posts: p.posts, replies: p.replies, chat: p.chat
+        })),
         widgets: Array.from(widgetMap.values()).sort((a, b) => b.views - a.views || b.adds - a.adds).slice(0, 20),
         apis: Array.from(apiMap.values()).map((item) => ({ ...item, error_rate: item.requests ? Math.round(item.errors / item.requests * 1000) / 10 : 0 })).sort((a, b) => b.errors - a.errors || b.requests - a.requests),
         truncated: events.length >= 10000 || (postRows.data || []).length >= 10000 || (replyRows.data || []).length >= 10000 || (chatRows.data || []).length >= 10000
@@ -184,14 +200,14 @@ Deno.serve(async (req: Request) => {
       const since24 = new Date(now.getTime() - 24 * 3600000).toISOString();
       const maxRows = 100000;
       const pageSize = 1000;
-      const rows: Array<{ user_id: string; event_name: string; created_at: string; widget_key: string | null; service_key: string | null; status_code: number | null; error_code: string | null }> = [];
+      const rows: Array<{ user_id: string | null; visitor_id: string | null; event_name: string; created_at: string; session_id?: string | null; widget_key: string | null; service_key: string | null; status_code: number | null; error_code: string | null }> = [];
       let eventTotal: number | null = null;
       let truncated = false;
       for (let offset = 0; offset < maxRows; offset += pageSize) {
         const selectOptions = offset === 0 ? { count: "exact" as const } : {};
         const { data: eventPage, error: eventsError, count } = await admin
           .from("usage_events")
-          .select("user_id,event_name,created_at,widget_key,service_key,status_code,error_code", selectOptions)
+          .select("user_id,visitor_id,session_id,event_name,created_at,widget_key,service_key,status_code,error_code", selectOptions)
           .gte("created_at", since32)
           .order("created_at", { ascending: false })
           .range(offset, offset + pageSize - 1);
@@ -216,21 +232,29 @@ Deno.serve(async (req: Request) => {
       }).format(new Date(value));
 
       const todayKey = tokyoKey(now);
-      const dauUsers = new Set(pageViews30.filter((e) => tokyoKey(e.created_at) === todayKey).map((e) => e.user_id));
-      const mauUsers = new Set(pageViews30.map((e) => e.user_id));
+      const dauRows = pageViews30.filter((e) => tokyoKey(e.created_at) === todayKey);
+      const dauUsers = new Set(dauRows.map((e) => e.user_id).filter(Boolean));
+      const mauUsers = new Set(pageViews30.map((e) => e.user_id).filter(Boolean));
+      const dauVisitors = new Set(dauRows.map((e) => e.visitor_id || e.user_id).filter(Boolean));
+      const mauVisitors = new Set(pageViews30.map((e) => e.visitor_id || e.user_id).filter(Boolean));
+      const dauGuests = new Set(dauRows.filter((e) => !e.user_id).map((e) => e.visitor_id).filter(Boolean));
+      const mauGuests = new Set(pageViews30.filter((e) => !e.user_id).map((e) => e.visitor_id).filter(Boolean));
 
-      const dailyMap = new Map<string, Set<string>>();
+      const dailyMap = new Map<string, { visitors: Set<string>; users: Set<string>; guests: Set<string> }>();
       for (let i = 29; i >= 0; i--) {
         const key = tokyoKey(new Date(now.getTime() - i * 86400000));
-        if (!dailyMap.has(key)) dailyMap.set(key, new Set());
+        if (!dailyMap.has(key)) dailyMap.set(key, { visitors: new Set(), users: new Set(), guests: new Set() });
       }
       pageViews30.forEach((e) => {
         const key = tokyoKey(e.created_at);
-        if (dailyMap.has(key)) dailyMap.get(key)!.add(e.user_id);
+        const point = dailyMap.get(key);
+        if (!point) return;
+        if (e.user_id) point.users.add(e.user_id);
+        if (e.visitor_id || e.user_id) point.visitors.add(e.visitor_id || e.user_id);
+        if (!e.user_id && e.visitor_id) point.guests.add(e.visitor_id);
       });
-      const daily = Array.from(dailyMap.entries()).map(([date, users]) => ({
-        date,
-        active_users: users.size
+      const daily = Array.from(dailyMap.entries()).map(([date, point]) => ({
+        date, active_users: point.users.size, active_visitors: point.visitors.size, guest_users: point.guests.size
       }));
 
       const widgetMap = new Map<string, { widget_key: string; views: number; adds: number; removes: number }>();
@@ -339,9 +363,19 @@ Deno.serve(async (req: Request) => {
         tracking_started_at: retention.tracking_started_at,
         dau: dauUsers.size,
         mau: mauUsers.size,
-        dau_mau_rate: mauUsers.size ? Math.round(dauUsers.size / mauUsers.size * 1000) / 10 : 0,
+        dau_logged_in: dauUsers.size,
+        mau_logged_in: mauUsers.size,
+        dau_visitors: dauVisitors.size,
+        mau_visitors: mauVisitors.size,
+        dau_guests: dauGuests.size,
+        mau_guests: mauGuests.size,
+        dau_mau_rate: mauVisitors.size ? Math.round(dauVisitors.size / mauVisitors.size * 1000) / 10 : 0,
         page_views_30d: pageViews30.length,
+        page_views_logged_in_30d: pageViews30.filter((e) => !!e.user_id).length,
+        page_views_guest_30d: pageViews30.filter((e) => !e.user_id && !!e.visitor_id).length,
         sessions_30d: rows30.filter((e) => e.event_name === "session_start").length,
+        sessions_logged_in_30d: rows30.filter((e) => e.event_name === "session_start" && !!e.user_id).length,
+        sessions_guest_30d: rows30.filter((e) => e.event_name === "session_start" && !e.user_id && !!e.visitor_id).length,
         events_30d: rows30.length,
         api_errors_24h: rows24.filter((e) => e.event_name === "api_error").length,
         client_errors_24h: rows24.filter((e) => e.event_name === "client_error").length,
