@@ -178,6 +178,9 @@
   }
 
   async function start() {
+    // GAS版SNSはサーバー側の利用ログ経路を使用するため、ブラウザからの
+    // Supabase直書き計測を重ねない（CORS preflightと二重記録を防止）。
+    if (location.pathname.indexOf("/sns/gas/") === 0) return;
     try {
       // Avoid loading the SDK on anonymous sessions; the tracker is account-only.
       if (!localStorage.getItem("sb-cprvpphlfpmiegjiutjn-auth-token")) return;
