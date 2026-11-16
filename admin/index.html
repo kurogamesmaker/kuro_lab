@@ -231,6 +231,10 @@
 }
 
 
+/* Let the operations console use the full browser page instead of the 1180px content wrapper */
+#opsAdminSection.wrap{width:100%;max-width:none;margin:0}
+@media(min-width:981px){#opsAdminSection{padding-left:clamp(18px,2vw,34px);padding-right:clamp(18px,2vw,34px)}}
+
 /* Dashboard-first operations UI; terminal styling is scoped to the dedicated log screen */
 #opsAdminSection{background:transparent;color:var(--text);font-family:inherit}
 #opsAdminSection>.eyebrow{font:600 10px/1.4 ui-monospace,monospace;color:#7e91aa;letter-spacing:.14em}
