@@ -67,157 +67,112 @@ Deno.serve(async (req: Request) => {
 
 
 
+    if (action === "get_realtime_monitor") {
+      const now = new Date();
+      const since15 = new Date(now.getTime() - 15 * 60000).toISOString();
+      const since5 = new Date(now.getTime() - 5 * 60000).toISOString();
+      const since1 = new Date(now.getTime() - 60000).toISOString();
+      const { data: events, error } = await admin.from("usage_events")
+        .select("user_id,session_id,event_name,service_key,status_code,error_code,page_key,created_at")
+        .gte("created_at", since15).order("created_at", { ascending: false }).limit(5000);
+      if (error) throw error;
+      const rows = events || [];
+      const active = rows.filter((e) => e.created_at >= since5);
+      const activeUsers = new Set(active.map((e) => e.user_id).filter(Boolean));
+      const activeSessions = new Set(active.map((e) => e.session_id).filter(Boolean));
+      const minutes = Array.from({ length: 15 }, (_, i) => {
+        const start = new Date(now.getTime() - (14 - i) * 60000);
+        const end = new Date(start.getTime() + 60000);
+        return { label: start.toLocaleTimeString("ja-JP", { timeZone: "Asia/Tokyo", hour: "2-digit", minute: "2-digit" }),
+          events: rows.filter((e) => { const t = new Date(e.created_at).getTime(); return t >= start.getTime() && t < end.getTime(); }).length };
+      });
+      const serviceMap = new Map<string, { service_key: string; requests: number; errors: number; last_seen: string | null }>();
+      for (const e of rows) {
+        if (!e.service_key || (e.event_name !== "api_success" && e.event_name !== "api_error")) continue;
+        if (!serviceMap.has(e.service_key)) serviceMap.set(e.service_key, { service_key: e.service_key, requests: 0, errors: 0, last_seen: e.created_at });
+        const item = serviceMap.get(e.service_key)!;
+        item.requests++;
+        if (e.event_name === "api_error") item.errors++;
+        if (!item.last_seen || e.created_at > item.last_seen) item.last_seen = e.created_at;
+      }
+      const services = Array.from(serviceMap.values()).map((x) => ({ ...x,
+        error_rate: x.requests ? Math.round(x.errors / x.requests * 1000) / 10 : 0
+      })).sort((a, b) => b.errors - a.errors || a.service_key.localeCompare(b.service_key));
+      return reply({
+        generated_at: now.toISOString(), active_users_5m: activeUsers.size, active_sessions_5m: activeSessions.size,
+        events_1m: rows.filter((e) => e.created_at >= since1).length,
+        errors_5m: active.filter((e) => e.event_name === "api_error" || e.event_name === "client_error").length,
+        minutes, services,
+        recent_events: rows.slice(0, 35).map((e) => ({ event_name: e.event_name, service_key: e.service_key, status_code: e.status_code, error_code: e.error_code, created_at: e.created_at }))
+      }, 200, origin);
+    }
 
     if (action === "get_admin_overview") {
       const now = new Date();
       const since30 = new Date(now.getTime() - 30 * 86400000).toISOString();
       const since7 = new Date(now.getTime() - 7 * 86400000).toISOString();
       const since24 = new Date(now.getTime() - 24 * 3600000).toISOString();
-      const [
-        profileCount, postCount, profiles30, posts30, replies30, chats30, usage30
-      ] = await Promise.all([
+      const [profileCount, postCount, eventResult, postRows, replyRows, chatRows] = await Promise.all([
         admin.from("profiles").select("id", { count: "exact", head: true }),
         admin.from("posts").select("id", { count: "exact", head: true }),
-        admin.from("profiles").select("created_at", { count: "exact" }).gte("created_at", since30).order("created_at", { ascending: true }).limit(10000),
-        admin.from("posts").select("created_at", { count: "exact" }).gte("created_at", since30).order("created_at", { ascending: true }).limit(10000),
-        admin.from("post_replies").select("created_at", { count: "exact" }).gte("created_at", since30).order("created_at", { ascending: true }).limit(10000),
-        admin.from("public_chat_messages").select("created_at", { count: "exact" }).gte("created_at", since30).order("created_at", { ascending: true }).limit(10000),
-        admin.from("usage_events")
-          .select("user_id,event_name,created_at,widget_key,service_key,status_code,error_code", { count: "exact" })
-          .gte("created_at", since30).order("created_at", { ascending: true }).limit(20000)
+        admin.from("usage_events").select("user_id,event_name,created_at,widget_key,service_key,status_code,error_code").gte("created_at", since30).order("created_at", { ascending: false }).range(0, 9999),
+        admin.from("posts").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(0, 9999),
+        admin.from("post_replies").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(0, 9999),
+        admin.from("public_chat_messages").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(0, 9999)
       ]);
-      for (const result of [profileCount, postCount, profiles30, posts30, replies30, chats30, usage30]) {
+      for (const result of [profileCount, postCount, eventResult, postRows, replyRows, chatRows]) {
         if (result.error) throw result.error;
       }
-
-      const tokyoKey = (value: string | Date) => new Intl.DateTimeFormat("en-CA", {
-        timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit"
-      }).format(new Date(value));
-      const days = new Map<string, { date: string; users: Set<string>; posts: number; replies: number; chat: number }>();
+      const tokyoKey = (value: string | Date) => {
+        const parts = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(value));
+        const part = (type: string) => parts.find((p) => p.type === type)?.value || "";
+        return part("year") + "-" + part("month") + "-" + part("day");
+      };
+      const dailyMap = new Map<string, { date: string; active_users: Set<string>; posts: number; replies: number; chat: number }>();
       for (let i = 29; i >= 0; i--) {
         const key = tokyoKey(new Date(now.getTime() - i * 86400000));
-        days.set(key, { date: key, users: new Set<string>(), posts: 0, replies: 0, chat: 0 });
+        dailyMap.set(key, { date: key, active_users: new Set(), posts: 0, replies: 0, chat: 0 });
       }
-      (usage30.data || []).forEach((event: any) => {
-        if (event.event_name !== "page_view") return;
-        const day = days.get(tokyoKey(event.created_at));
-        if (day && event.user_id) day.users.add(event.user_id);
-      });
-      (posts30.data || []).forEach((event: any) => {
-        const day = days.get(tokyoKey(event.created_at));
-        if (day) day.posts++;
-      });
-      (replies30.data || []).forEach((event: any) => {
-        const day = days.get(tokyoKey(event.created_at));
-        if (day) day.replies++;
-      });
-      (chats30.data || []).forEach((event: any) => {
-        const day = days.get(tokyoKey(event.created_at));
-        if (day) day.chat++;
-      });
-
-      const usageRows = usage30.data || [];
-      const widgets = new Map<string, { widget_key: string; views: number; adds: number; removes: number }>();
-      usageRows.forEach((event: any) => {
-        if (!event.widget_key) return;
-        if (!widgets.has(event.widget_key)) widgets.set(event.widget_key, { widget_key: event.widget_key, views: 0, adds: 0, removes: 0 });
-        const item = widgets.get(event.widget_key)!;
+      const events = eventResult.data || [];
+      for (const event of events) {
+        const point = dailyMap.get(tokyoKey(event.created_at));
+        if (point && event.event_name === "page_view" && event.user_id) point.active_users.add(event.user_id);
+      }
+      for (const row of postRows.data || []) { const point = dailyMap.get(tokyoKey(row.created_at)); if (point) point.posts++; }
+      for (const row of replyRows.data || []) { const point = dailyMap.get(tokyoKey(row.created_at)); if (point) point.replies++; }
+      for (const row of chatRows.data || []) { const point = dailyMap.get(tokyoKey(row.created_at)); if (point) point.chat++; }
+      const rows7 = events.filter((e) => e.created_at >= since7);
+      const rows24 = events.filter((e) => e.created_at >= since24);
+      const pageViews = events.filter((e) => e.event_name === "page_view");
+      const dauUsers = new Set(pageViews.filter((e) => tokyoKey(e.created_at) === tokyoKey(now)).map((e) => e.user_id));
+      const mauUsers = new Set(pageViews.map((e) => e.user_id));
+      const widgetMap = new Map<string, { widget_key: string; views: number; adds: number; removes: number }>();
+      for (const event of events) {
+        if (!event.widget_key) continue;
+        if (!widgetMap.has(event.widget_key)) widgetMap.set(event.widget_key, { widget_key: event.widget_key, views: 0, adds: 0, removes: 0 });
+        const item = widgetMap.get(event.widget_key)!;
         if (event.event_name === "widget_view") item.views++;
         if (event.event_name === "widget_added") item.adds++;
         if (event.event_name === "widget_removed") item.removes++;
-      });
-
-      const apis = new Map<string, { service_key: string; requests: number; successes: number; errors: number; error_rate: number }>();
-      usageRows.filter((event: any) => event.created_at >= since7 && (event.event_name === "api_success" || event.event_name === "api_error"))
-        .forEach((event: any) => {
-          const service = event.service_key || "other_api";
-          if (!apis.has(service)) apis.set(service, { service_key: service, requests: 0, successes: 0, errors: 0, error_rate: 0 });
-          const item = apis.get(service)!;
-          item.requests++;
-          if (event.event_name === "api_success") item.successes++;
-          else item.errors++;
-        });
-      const apiRows = Array.from(apis.values()).map((item) => ({
-        ...item, error_rate: item.requests ? Math.round(item.errors / item.requests * 1000) / 10 : 0
-      })).sort((a, b) => b.errors - a.errors || b.requests - a.requests);
-
-      const daily = Array.from(days.values()).map((day) => ({
-        date: day.date, active_users: day.users.size, posts: day.posts, replies: day.replies, chat: day.chat
-      }));
-      const truncation = [
-        profiles30, posts30, replies30, chats30, usage30
-      ].some((result) => Number(result.count || 0) > (result.data || []).length);
-
+      }
+      const apiMap = new Map<string, { service_key: string; requests: number; successes: number; errors: number; error_rate: number; status_codes: Record<string, number> }>();
+      for (const event of rows7) {
+        if (event.event_name !== "api_success" && event.event_name !== "api_error") continue;
+        const service = event.service_key || "other_api";
+        if (!apiMap.has(service)) apiMap.set(service, { service_key: service, requests: 0, successes: 0, errors: 0, error_rate: 0, status_codes: {} });
+        const item = apiMap.get(service)!;
+        item.requests++;
+        if (event.event_name === "api_success") item.successes++;
+        else { item.errors++; const code = String(event.status_code || event.error_code || "unknown"); item.status_codes[code] = (item.status_codes[code] || 0) + 1; }
+      }
       return reply({
-        generated_at: now.toISOString(),
-        profile_count: profileCount.count || 0,
-        post_count: postCount.count || 0,
-        dau: daily.length ? daily[daily.length - 1].active_users : 0,
-        mau: new Set(usageRows.filter((event: any) => event.event_name === "page_view").map((event: any) => event.user_id)).size,
-        api_errors_24h: usageRows.filter((event: any) => event.event_name === "api_error" && event.created_at >= since24).length,
-        page_views_30d: usageRows.filter((event: any) => event.event_name === "page_view").length,
-        daily,
-        widgets: Array.from(widgets.values()).sort((a, b) => b.views - a.views || b.adds - a.adds).slice(0, 20),
-        apis: apiRows,
-        truncated: truncation
-      }, 200, origin);
-    }
-
-    if (action === "get_realtime_monitor") {
-      const now = new Date();
-      const since15 = new Date(now.getTime() - 15 * 60000).toISOString();
-      const since5 = new Date(now.getTime() - 5 * 60000).toISOString();
-      const since1 = new Date(now.getTime() - 60000).toISOString();
-      const { data, error, count } = await admin.from("usage_events")
-        .select("user_id,session_id,event_name,created_at,service_key,status_code,error_code,page_key,widget_key", { count: "exact" })
-        .gte("created_at", since15)
-        .order("created_at", { ascending: false })
-        .limit(5000);
-      if (error) throw error;
-
-      const events = data || [];
-      const recent5 = events.filter((event: any) => event.created_at >= since5);
-      const activeUsers = new Set(recent5.map((event: any) => event.user_id).filter(Boolean));
-      const activeSessions = new Set(recent5.map((event: any) => event.session_id).filter(Boolean));
-      const recent1 = events.filter((event: any) => event.created_at >= since1);
-      const errors5 = recent5.filter((event: any) => event.event_name === "api_error" || event.event_name === "client_error");
-
-      const serviceMap = new Map<string, { service_key: string; requests: number; successes: number; errors: number; error_rate: number; last_seen: string | null }>();
-      events.filter((event: any) => event.event_name === "api_success" || event.event_name === "api_error")
-        .forEach((event: any) => {
-          const key = event.service_key || "other_api";
-          if (!serviceMap.has(key)) serviceMap.set(key, { service_key: key, requests: 0, successes: 0, errors: 0, error_rate: 0, last_seen: null });
-          const item = serviceMap.get(key)!;
-          item.requests++;
-          if (event.event_name === "api_success") item.successes++;
-          else item.errors++;
-          if (!item.last_seen || event.created_at > item.last_seen) item.last_seen = event.created_at;
-        });
-      const services = Array.from(serviceMap.values()).map((item) => ({
-        ...item, error_rate: item.requests ? Math.round(item.errors / item.requests * 1000) / 10 : 0
-      })).sort((a, b) => b.errors - a.errors || a.service_key.localeCompare(b.service_key));
-
-      const minuteStart = Math.floor(now.getTime() / 60000) * 60000 - 14 * 60000;
-      const minutes = Array.from({ length: 15 }, (_, i) => {
-        const start = minuteStart + i * 60000;
-        const end = start + 60000;
-        const eventsInMinute = events.filter((event: any) => {
-          const time = new Date(event.created_at).getTime();
-          return time >= start && time < end;
-        }).length;
-        return { label: new Date(start).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" }), events: eventsInMinute };
-      });
-
-      return reply({
-        generated_at: now.toISOString(),
-        active_users_5m: activeUsers.size,
-        active_sessions_5m: activeSessions.size,
-        events_1m: recent1.length,
-        errors_5m: errors5.length,
-        services,
-        minutes,
-        recent_events: events.slice(0, 100),
-        truncated: Number(count || 0) > events.length
+        generated_at: now.toISOString(), profile_count: profileCount.count || 0, post_count: postCount.count || 0,
+        dau: dauUsers.size, mau: mauUsers.size, page_views_30d: pageViews.length,
+        api_errors_24h: rows24.filter((e) => e.event_name === "api_error").length,
+        daily: Array.from(dailyMap.values()).map((p) => ({ date: p.date, active_users: p.active_users.size, posts: p.posts, replies: p.replies, chat: p.chat })),
+        widgets: Array.from(widgetMap.values()).sort((a, b) => b.views - a.views || b.adds - a.adds).slice(0, 20),
+        apis: Array.from(apiMap.values()).map((item) => ({ ...item, error_rate: item.requests ? Math.round(item.errors / item.requests * 1000) / 10 : 0 })).sort((a, b) => b.errors - a.errors || b.requests - a.requests),
+        truncated: events.length >= 10000 || (postRows.data || []).length >= 10000 || (replyRows.data || []).length >= 10000 || (chatRows.data || []).length >= 10000
       }, 200, origin);
     }
 
