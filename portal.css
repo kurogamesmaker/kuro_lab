@@ -2729,3 +2729,117 @@ body.kuro-portal[data-pro-width="wide"] .portal-wrap{width:min(1460px,calc(100% 
 @media(max-width:560px){.theme-studio-color-grid{grid-template-columns:1fr}.theme-studio-preview{padding:18px;min-height:390px}.theme-studio-preview-label{display:block}.theme-studio-preview-label small{display:block;margin-top:3px}}
 
 .portal-plan-history{margin-top:22px;padding-top:16px;border-top:1px solid var(--portal-line,var(--line,#e5eaf0))}.portal-plan-history h3{font-size:14px;margin:0 0 10px}.portal-plan-history article{display:grid;gap:5px;padding:11px 0;border-top:1px solid var(--portal-line,var(--line,#e5eaf0))}.portal-plan-history article:first-of-type{border-top:0}.portal-plan-history article>div{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.portal-plan-history article small{font-size:11px;color:var(--portal-muted,#7a8797)}.portal-plan-history article p{margin:3px 0 0;font-size:12px;color:var(--portal-muted,#7a8797);white-space:pre-wrap;overflow-wrap:anywhere}
+
+/* Theme Studio: route the whole portal through the selected palette, not only cards. */
+body.kuro-portal[data-pro-theme="on"]{
+  background-color:var(--bg)!important;
+  color:var(--ink)!important;
+  color-scheme:inherit;
+}
+body.kuro-portal[data-pro-theme="on"] .portal-header,
+body.kuro-portal[data-pro-theme="on"] .portal-footer,
+body.kuro-portal[data-pro-theme="on"] .portal-mobile-nav,
+body.kuro-portal[data-pro-theme="on"] .portal-side,
+body.kuro-portal[data-pro-theme="on"] .portal-side-panel,
+body.kuro-portal[data-pro-theme="on"] .portal-dashboard-toolbar,
+body.kuro-portal[data-pro-theme="on"] .portal-dashboard-editor,
+body.kuro-portal[data-pro-theme="on"] .portal-dashboard-hero,
+body.kuro-portal[data-pro-theme="on"] .portal-hero,
+body.kuro-portal[data-pro-theme="on"] .portal-card,
+body.kuro-portal[data-pro-theme="on"] .portal-widget,
+body.kuro-portal[data-pro-theme="on"] .portal-list-item,
+body.kuro-portal[data-pro-theme="on"] .portal-widget-picker button,
+body.kuro-portal[data-pro-theme="on"] .portal-back-button,
+body.kuro-portal[data-pro-theme="on"] .portal-quick-button,
+body.kuro-portal[data-pro-theme="on"] .portal-notification-button{
+  background:var(--surface)!important;
+  border-color:var(--line)!important;
+  color:var(--pro-surface-ink)!important;
+  border-radius:var(--pro-radius)!important;
+}
+body.kuro-portal[data-pro-theme="on"] .portal-dashboard-hero,
+body.kuro-portal[data-pro-theme="on"] .portal-hero{
+  background:linear-gradient(125deg,var(--surface),var(--surface2))!important;
+}
+body.kuro-portal[data-pro-theme="on"] .portal-topnav{
+  background:var(--surface2)!important;
+  border-color:var(--line)!important;
+}
+body.kuro-portal[data-pro-theme="on"] .portal-topnav a,
+body.kuro-portal[data-pro-theme="on"] .portal-account-button,
+body.kuro-portal[data-pro-theme="on"] .portal-mobile-nav a,
+body.kuro-portal[data-pro-theme="on"] .portal-footer,
+body.kuro-portal[data-pro-theme="on"] .portal-footer a,
+body.kuro-portal[data-pro-theme="on"] .portal-brand strong{
+  color:var(--ink)!important;
+}
+body.kuro-portal[data-pro-theme="on"] .portal-topnav a[aria-current="page"],
+body.kuro-portal[data-pro-theme="on"] .portal-mobile-nav a[aria-current="page"],
+body.kuro-portal[data-pro-theme="on"] .portal-widget-picker button.selected{
+  color:var(--pro-accent)!important;
+  background:var(--blue2)!important;
+  border-color:var(--pro-accent)!important;
+}
+body.kuro-portal[data-pro-theme="on"] .portal-eyebrow,
+body.kuro-portal[data-pro-theme="on"] .portal-kicker,
+body.kuro-portal[data-pro-theme="on"] .portal-dashboard-hero h1 em,
+body.kuro-portal[data-pro-theme="on"] .portal-pro-wordmark b{
+  color:var(--pro-accent)!important;
+}
+body.kuro-portal[data-pro-theme="on"] .portal-card p,
+body.kuro-portal[data-pro-theme="on"] .portal-card small,
+body.kuro-portal[data-pro-theme="on"] .portal-widget small,
+body.kuro-portal[data-pro-theme="on"] .portal-list-item small,
+body.kuro-portal[data-pro-theme="on"] .portal-muted,
+body.kuro-portal[data-pro-theme="on"] .portal-field small,
+body.kuro-portal[data-pro-theme="on"] .portal-settings-row small,
+body.kuro-portal[data-pro-theme="on"] .portal-footer-inner{
+  color:var(--pro-surface-muted)!important;
+}
+body.kuro-portal[data-pro-theme="on"] .portal-btn:not(.primary),
+body.kuro-portal[data-pro-theme="on"] .portal-select,
+body.kuro-portal[data-pro-theme="on"] .portal-input,
+body.kuro-portal[data-pro-theme="on"] .portal-textarea,
+body.kuro-portal[data-pro-theme="on"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+body.kuro-portal[data-pro-theme="on"] select,
+body.kuro-portal[data-pro-theme="on"] textarea{
+  background:var(--surface2)!important;
+  color:var(--pro-surface-ink)!important;
+  border-color:var(--line)!important;
+}
+body.kuro-portal[data-pro-theme="on"] input::placeholder,
+body.kuro-portal[data-pro-theme="on"] textarea::placeholder{
+  color:var(--pro-surface-muted)!important;
+  opacity:.8;
+}
+body.kuro-portal[data-pro-theme="on"] .portal-btn.primary{
+  background:var(--pro-accent)!important;
+  border-color:var(--pro-accent)!important;
+  color:var(--pro-accent-ink)!important;
+}
+body.kuro-portal[data-pro-theme="on"] input[type="range"],
+body.kuro-portal[data-pro-theme="on"] input[type="checkbox"],
+body.kuro-portal[data-pro-theme="on"] input[type="radio"]{
+  accent-color:var(--pro-accent)!important;
+}
+body.kuro-portal[data-pro-theme="on"] .portal-icon,
+body.kuro-portal[data-pro-theme="on"] .portal-widget-title>span{
+  border-color:var(--line)!important;
+  background:var(--blue2)!important;
+}
+body.kuro-portal[data-pro-theme="on"] :is(.portal-modal,.portal-dropdown,.portal-popover,.portal-menu,.portal-context-menu){
+  background:var(--surface)!important;
+  color:var(--pro-surface-ink)!important;
+  border-color:var(--line)!important;
+}
+body.kuro-portal[data-pro-theme="on"] :is(.portal-search-result,.portal-history-item,.portal-notification-item,.portal-settings-row,.portal-list-item){
+  border-color:var(--line)!important;
+}
+body.kuro-portal[data-pro-theme="on"] a:focus-visible,
+body.kuro-portal[data-pro-theme="on"] button:focus-visible,
+body.kuro-portal[data-pro-theme="on"] input:focus-visible,
+body.kuro-portal[data-pro-theme="on"] select:focus-visible,
+body.kuro-portal[data-pro-theme="on"] textarea:focus-visible{
+  outline:2px solid var(--pro-accent)!important;
+  outline-offset:2px;
+}
