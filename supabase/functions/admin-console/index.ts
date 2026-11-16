@@ -749,7 +749,7 @@ Deno.serve(async (req: Request) => {
       const {data:protectedAdmin,error:protectedError}=await admin.from("admin_users").select("user_id").eq("user_id",targetUserId).maybeSingle();
       if(protectedError) throw protectedError;
       if(protectedAdmin) return reply({error:"Administrator accounts are protected"},409,origin);
-      const {data:current,error:currentError}=await admin.from("pro_memberships").select("status,expires_at").eq("user_id",targetUserId).maybeSingle();
+      const {data:current,error:currentError}=await admin.from("pro_memberships").select("status,expires_at,plan,features").eq("user_id",targetUserId).maybeSingle();
       if(currentError) throw currentError;
       if(!current) return reply({error:"Pro membership not found"},404,origin);
       const now=new Date().toISOString();
@@ -759,9 +759,19 @@ Deno.serve(async (req: Request) => {
         if(current.expires_at&&new Date(current.expires_at).getTime()<=Date.now()) return reply({error:"期限切れのProは期限を更新してから再開してください。"},409,origin);
         patch.status="active";
       } else if(operation==="revoke") patch.status="revoked";
-      else if(operation==="set_features") {
+      else if(operation==="set_plan") {
+        const nextPlan=body.plan==="standard"||body.plan==="pro"?body.plan:"";
+        if(!nextPlan) return reply({error:"プラン指定が正しくありません。"},400,origin);
+        patch.plan=nextPlan;
+        patch.status="active";
+        patch.features=featuresForPlan(nextPlan);
+      } else if(operation==="set_features") {
         const incoming=body.features&&typeof body.features==="object"?body.features:{};
-        patch.features={workspace_plus:incoming.workspace_plus===true,pro_tools:incoming.pro_tools===true,customization_plus:incoming.customization_plus===true,early_access:incoming.early_access===true};
+        const defaults=featuresForPlan(current.plan==="standard"?"standard":"pro");
+        const booleanKeys=["workspace_plus","pro_tools","customization_plus","early_access","desktop","theme_studio","developer_mode","ai","ad_free"];
+        patch.features={...defaults,...(current.features||{})};
+        for(const key of booleanKeys) if(typeof incoming[key]==="boolean") patch.features[key]=incoming[key];
+        if(incoming.analytics==="basic"||incoming.analytics==="advanced") patch.features.analytics=incoming.analytics;
       } else if(operation==="set_expiry") {
         const expiry=body.expiresAt?new Date(body.expiresAt):null;
         if(body.expiresAt && (!expiry||Number.isNaN(expiry.getTime())||expiry.getTime()<=Date.now())) return reply({error:"期限は未来の日時にしてください。"},400,origin);
@@ -769,12 +779,12 @@ Deno.serve(async (req: Request) => {
         if(current.status==="expired" && !expiry) patch.status="active";
         else if(current.status==="expired" && expiry) patch.status="active";
       } else return reply({error:"Invalid membership operation"},400,origin);
-      const {data:updated,error:updateError}=await admin.from("pro_memberships").update(patch).eq("user_id",targetUserId).select("user_id,status,source,expires_at,features,updated_at").single();
+      const {data:updated,error:updateError}=await admin.from("pro_memberships").update(patch).eq("user_id",targetUserId).select("user_id,status,source,plan,expires_at,features,updated_at").single();
       if(updateError) throw updateError;
       const {error:auditError}=await admin.from("admin_audit_logs").insert({actor_user_id:caller.id,action:"pro.membership."+operation,target_user_id:targetUserId,metadata:patch});
       if(auditError) throw auditError;
-      const message=operation==="suspend"?"KUROLAB Proの利用が一時停止されました。":operation==="revoke"?"KUROLAB Proの利用権限が解除されました。":operation==="resume"?"KUROLAB Proの利用が再開されました。":"KUROLAB Proの有効期限が更新されました。";
-      const {error:notifyError}=await admin.from("admin_messages").insert({title:"KUROLAB Proの状態が更新されました",body:message,href:"https://kurolab.cc.cd/pro/",audience:"user",recipient_id:targetUserId,created_by:caller.id,published:true,service_scope:"lab"});
+      const message=operation==="suspend"?"KUROLABのプラン利用が一時停止されました。":operation==="revoke"?"KUROLABの有料プラン権限が解除され、普通プランに戻りました。":operation==="resume"?"KUROLABのプラン利用が再開されました。":operation==="set_plan"?"KUROLABのプランが"+(patch.plan==="standard"?"スタンダード":"Pro")+"に変更されました。":"KUROLABのプラン有効期限が更新されました。";
+      const {error:notifyError}=await admin.from("admin_messages").insert({title:"KUROLABのプラン状態が更新されました",body:message,href:"https://kurolab.cc.cd/pro/",audience:"user",recipient_id:targetUserId,created_by:caller.id,published:true,service_scope:"lab"});
       if(notifyError) console.warn("Pro membership notification failed",notifyError.message);
       return reply({ok:true,membership:updated},200,origin);
     }
@@ -891,7 +901,7 @@ Deno.serve(async (req: Request) => {
 
     if (action === "set_user_plan") {
       const targetUserId = typeof body.userId === "string" ? body.userId : "";
-      const plan = body.plan === "pro" ? "pro" : body.plan === "free" ? "free" : "";
+      const plan = ["free","standard","pro"].includes(body.plan) ? body.plan : "";
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(targetUserId)) return reply({ error: "Invalid user ID" }, 400, origin);
       if (!plan) return reply({ error: "Plan must be pro or free" }, 400, origin);
       if (targetUserId === caller.id) return reply({ error: "You cannot change your own administrator plan" }, 409, origin);
@@ -901,16 +911,39 @@ Deno.serve(async (req: Request) => {
       const { data: targetData, error: targetError } = await admin.auth.admin.getUserById(targetUserId);
       if (targetError || !targetData?.user) return reply({ error: "User not found" }, 404, origin);
       const currentMetadata = targetData.user.app_metadata || {};
+      const { data: previousMembership, error: previousMembershipError } = await admin.from("pro_memberships")
+        .select("plan,status").eq("user_id", targetUserId).maybeSingle();
+      if (previousMembershipError) throw previousMembershipError;
+      const previousPlan = previousMembership?.status === "active" ? (previousMembership.plan || "pro") : "free";
       const nextMetadata = { ...currentMetadata };
-      if (plan === "pro") nextMetadata.plan = "pro";
-      else delete nextMetadata.plan;
+      if (plan === "free") delete nextMetadata.plan;
+      else nextMetadata.plan = plan;
       const { error: updateError } = await admin.auth.admin.updateUserById(targetUserId, { app_metadata: nextMetadata });
       if (updateError) throw updateError;
+      if (plan === "free") {
+        const { error: membershipError } = await admin.from("pro_memberships").delete().eq("user_id", targetUserId);
+        if (membershipError) throw membershipError;
+      } else {
+        const now = new Date().toISOString();
+        const { error: membershipError } = await admin.from("pro_memberships").upsert({
+          user_id: targetUserId, status: "active", source: "manual", starts_at: now, expires_at: null,
+          plan, features: featuresForPlan(plan), approved_by: caller.id, approved_at: now, updated_at: now
+        }, { onConflict: "user_id" });
+        if (membershipError) throw membershipError;
+      }
       const { error: auditError } = await admin.from("admin_audit_logs").insert({
         actor_user_id: caller.id, action: "account.plan_update", target_user_id: targetUserId,
-        metadata: { previous_plan: currentMetadata.plan || "free", new_plan: plan, manual_override: true }
+        metadata: { previous_plan: previousPlan, new_plan: plan, manual_override: true }
       });
       if (auditError) throw auditError;
+      const planLabel = plan === "free" ? "普通" : plan === "standard" ? "スタンダード" : "Pro";
+      const { error: notifyError } = await admin.from("admin_messages").insert({
+        title: "KUROLABのプランが更新されました",
+        body: "管理者により「" + planLabel + "」プランへ変更されました。",
+        href: "https://kurolab.cc.cd/pro/", audience: "user", recipient_id: targetUserId,
+        created_by: caller.id, published: true, service_scope: "lab"
+      });
+      if (notifyError) console.warn("Plan change notification failed", notifyError.message);
       return reply({ ok: true, plan }, 200, origin);
     }
 
@@ -922,16 +955,19 @@ Deno.serve(async (req: Request) => {
 
       const users = data.users || [];
       const ids = users.map((u) => u.id);
-      const [profilesResult, prefsResult] = ids.length ? await Promise.all([
+      const [profilesResult, prefsResult, membershipsResult] = ids.length ? await Promise.all([
         admin.from("profiles").select("id,username,display_name").in("id", ids),
-        admin.from("portal_preferences").select("user_id,preferences").in("user_id", ids)
-      ]) : [{ data: [], error: null }, { data: [], error: null }];
+        admin.from("portal_preferences").select("user_id,preferences").in("user_id", ids),
+        admin.from("pro_memberships").select("user_id,plan,status,expires_at").in("user_id", ids)
+      ]) : [{ data: [], error: null }, { data: [], error: null }, { data: [], error: null }];
 
       if (profilesResult.error) throw profilesResult.error;
       if (prefsResult.error) throw prefsResult.error;
+      if (membershipsResult.error) throw membershipsResult.error;
 
       const profiles = new Map((profilesResult.data || []).map((p) => [p.id, p]));
       const prefs = new Map((prefsResult.data || []).map((p) => [p.user_id, p.preferences || {}]));
+      const memberships = new Map((membershipsResult.data || []).map((m) => [m.user_id, m]));
       const result = users.filter((u) => !u.is_anonymous).map((u) => {
         const profile = profiles.get(u.id);
         const pref = prefs.get(u.id) || {};
@@ -940,7 +976,9 @@ Deno.serve(async (req: Request) => {
           ? workspaces.length
           : (workspaces && typeof workspaces === "object" ? Object.keys(workspaces).length : 0);
         const widgets = Array.isArray(pref.dashboardWidgets) ? pref.dashboardWidgets.length : 0;
-        const plan = typeof u.app_metadata?.plan === "string" ? u.app_metadata.plan : "unlinked";
+        const membership = memberships.get(u.id);
+        const membershipActive = membership?.status === "active" && (!membership.expires_at || new Date(membership.expires_at).getTime() > Date.now());
+        const plan = membershipActive ? (membership.plan === "standard" ? "standard" : "pro") : "free";
         return {
           id: u.id,
           email: u.email || "",
