@@ -2843,3 +2843,97 @@ body.kuro-portal[data-pro-theme="on"] textarea:focus-visible{
   outline:2px solid var(--pro-accent)!important;
   outline-offset:2px;
 }
+
+/* Standard appearance settings: remove legacy fixed colors from the shared portal shell. */
+body.kuro-portal[data-theme="light"]:not([data-pro-theme="on"]),
+body.kuro-portal[data-theme="dark"]:not([data-pro-theme="on"]){
+  color:var(--ink);
+}
+body.kuro-portal[data-theme="light"]:not([data-pro-theme="on"]){color-scheme:light}
+body.kuro-portal[data-theme="dark"]:not([data-pro-theme="on"]){color-scheme:dark}
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-header,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-footer,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-mobile-nav,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-side,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-side-panel,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-dashboard-toolbar,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-dashboard-editor,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-dashboard-hero,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-hero,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-card,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-widget,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-list-item,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-widget-picker button,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-back-button,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-quick-button,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-notification-button{
+  background:var(--surface)!important;
+  border-color:var(--line)!important;
+  color:var(--ink)!important;
+}
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-dashboard-hero,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-hero{
+  background:linear-gradient(125deg,var(--surface),var(--surface2))!important;
+}
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-topnav{
+  background:var(--surface2)!important;
+  border-color:var(--line)!important;
+}
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-brand strong,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-topnav a,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-account-button,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-mobile-nav a,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-footer,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-footer a{
+  color:var(--ink)!important;
+}
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-topnav a[aria-current="page"],
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-mobile-nav a[aria-current="page"],
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-widget-picker button.selected{
+  color:var(--blue)!important;
+  background:var(--blue2)!important;
+  border-color:var(--blue)!important;
+}
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-eyebrow,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-kicker,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-dashboard-hero h1 em{
+  color:var(--blue)!important;
+}
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-btn:not(.primary),
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-select,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-input,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-textarea,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) select,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) textarea{
+  background:var(--surface2)!important;
+  color:var(--ink)!important;
+  border-color:var(--line)!important;
+}
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-btn.primary{
+  background:var(--blue)!important;
+  border-color:var(--blue)!important;
+  color:#fff!important;
+}
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) input::placeholder,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) textarea::placeholder{
+  color:var(--muted)!important;
+}
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) input[type="range"],
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) input[type="checkbox"],
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) input[type="radio"]{
+  accent-color:var(--blue)!important;
+}
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-icon,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-widget-title>span{
+  background:var(--blue2)!important;
+  border-color:var(--line)!important;
+}
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) a:focus-visible,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) button:focus-visible,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) input:focus-visible,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) select:focus-visible,
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) textarea:focus-visible{
+  outline:2px solid var(--blue)!important;
+  outline-offset:2px;
+}
