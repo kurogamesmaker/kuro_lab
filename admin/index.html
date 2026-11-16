@@ -527,7 +527,9 @@
  <div id="opsRealtimeView" hidden>
   <div class="ops-overview-head"><div><strong>リアルタイム通信・利用監視</strong><div class="sns-muted">15秒ごとに自動更新 · オンライン推定は直近5分の操作記録を基準に集計</div></div><div class="ops-overview-tools"><span id="opsRealtimeUpdated" class="sns-muted">準備中…</span><button class="btn" id="opsRealtimeRefresh">今すぐ更新</button></div></div>
   <section class="ops-realtime-kpis">
-   <article class="ops-realtime-kpi"><small>アクティブユーザー</small><strong id="liveUsers">—</strong><span>直近5分</span></article>
+   <article class="ops-realtime-kpi"><small>全訪問者</small><strong id="liveUsers">—</strong><span>直近5分</span></article>
+   <article class="ops-realtime-kpi"><small>ログイン利用者</small><strong id="liveLoggedUsers">—</strong><span>直近5分</span></article>
+   <article class="ops-realtime-kpi"><small>ゲスト利用者</small><strong id="liveGuestUsers">—</strong><span>直近5分</span></article>
    <article class="ops-realtime-kpi"><small>セッション</small><strong id="liveSessions">—</strong><span>直近5分</span></article>
    <article class="ops-realtime-kpi"><small>イベント</small><strong id="liveEvents">—</strong><span>直近1分</span></article>
    <article class="ops-realtime-kpi"><small>エラー</small><strong id="liveErrors">—</strong><span>直近5分</span></article>
@@ -563,7 +565,7 @@
  <div id="opsOverviewView">
   <div class="ops-overview-head"><div><strong>全サービスの運営状況</strong><div class="sns-muted">KUROLABとKURO SNSの主要指標をまとめて確認できます。</div></div><div class="ops-overview-tools"><span id="opsOverviewUpdated" class="sns-muted">集計準備中…</span><button class="btn" id="opsOverviewRefresh">全体を更新</button></div></div>
   <div class="ops-overview-kpis">
-   <article class="ops-overview-kpi"><small>KUROLAB DAU</small><strong id="ovDau">—</strong><span>今日の利用者</span></article><article class="ops-overview-kpi"><small>KUROLAB MAU</small><strong id="ovMau">—</strong><span>過去30日の利用者</span></article><article class="ops-overview-kpi"><small>KURO SNS 利用者</small><strong id="ovSnsUsers">—</strong><span>登録プロフィール</span></article><article class="ops-overview-kpi"><small>SNS 投稿</small><strong id="ovSnsPosts">—</strong><span>累計投稿数</span></article><article class="ops-overview-kpi"><small>直近24時間のAPIエラー</small><strong id="ovApiErrors">—</strong><span>KUROLAB計測分</span></article><article class="ops-overview-kpi"><small>直近30日のページ閲覧</small><strong id="ovPageViews">—</strong><span>KUROLAB計測分</span></article><article class="ops-overview-kpi"><small>直近5分のアクティブ</small><strong id="ovLiveUsers">—</strong><span>操作イベントを基準に推定</span></article><article class="ops-overview-kpi"><small>API成功率（過去7日）</small><strong id="ovApiSuccessRate">—</strong><span>成功・失敗イベントの記録分</span></article>
+   <article class="ops-overview-kpi"><small>全体 DAU</small><strong id="ovDau">—</strong><span>今日の全訪問者</span></article><article class="ops-overview-kpi"><small>全体 MAU</small><strong id="ovMau">—</strong><span>過去30日の全訪問者</span></article><article class="ops-overview-kpi"><small>ログイン DAU</small><strong id="ovDauLogged">—</strong><span>今日のログイン利用者</span></article><article class="ops-overview-kpi"><small>ゲスト DAU</small><strong id="ovDauGuests">—</strong><span>今日の未ログイン利用者</span></article><article class="ops-overview-kpi"><small>KURO SNS 利用者</small><strong id="ovSnsUsers">—</strong><span>登録プロフィール</span></article><article class="ops-overview-kpi"><small>SNS 投稿</small><strong id="ovSnsPosts">—</strong><span>累計投稿数</span></article><article class="ops-overview-kpi"><small>直近24時間のAPIエラー</small><strong id="ovApiErrors">—</strong><span>KUROLAB計測分</span></article><article class="ops-overview-kpi"><small>直近30日のページ閲覧</small><strong id="ovPageViews">—</strong><span>KUROLAB計測分</span></article><article class="ops-overview-kpi"><small>直近5分の全訪問者</small><strong id="ovLiveUsers">—</strong><span id="ovLiveSplit">ログイン — · ゲスト —</span></article><article class="ops-overview-kpi"><small>API成功率（過去7日）</small><strong id="ovApiSuccessRate">—</strong><span>成功・失敗イベントの記録分</span></article>
   </div>
   <div class="ops-overview-grid">
    <section class="panel ops-overview-panel ops-overview-wide"><div class="toolbar"><div><strong>日別アクティビティ推移</strong><div class="sns-muted">過去30日 · アクティブ利用者・SNS投稿・返信・公開チャット</div></div><span class="sns-muted">日別</span></div><div class="ops-overview-legend"><span><i class="ov-dot ov-blue"></i>KUROLAB DAU</span><span><i class="ov-dot ov-purple"></i>SNS投稿</span><span><i class="ov-dot ov-green"></i>SNS返信</span><span><i class="ov-dot ov-amber"></i>公開チャット</span></div><svg id="opsOverviewTrend" class="ops-overview-chart" viewBox="0 0 900 270" role="img" aria-label="サービス全体の日別アクティビティ折れ線グラフ"></svg><div id="opsOverviewTrendNote" class="ops-overview-foot">データを取得しています。</div></section>
@@ -651,21 +653,29 @@
  </div>
  <div id="opsAnalyticsView" hidden>
   <div class="toolbar" style="padding-left:0;padding-right:0;border:0">
-   <div><strong>KURO Lab 利用状況</strong><div class="sns-muted">ログイン中ユーザーのページ閲覧・ウィジェット利用・APIエラーを集計します。</div></div>
+   <div><strong>KURO Lab 利用状況</strong><div class="sns-muted">全訪問者・ログイン利用者・ゲスト利用者を分けて集計します。個人を特定しないランダムな訪問IDでゲストを計測します。</div></div>
    <button class="btn" id="opsAnalyticsRefresh">更新</button>
   </div>
   <div class="ops-analytics-grid">
-   <div class="ops-metric"><small>DAU（今日）</small><strong id="opsDau">—</strong></div>
-   <div class="ops-metric"><small>MAU（30日）</small><strong id="opsMau">—</strong></div>
-   <div class="ops-metric"><small>DAU / MAU</small><strong id="opsDauMau">—</strong></div>
-   <div class="ops-metric"><small>ページ閲覧（30日）</small><strong id="opsPageViews">—</strong></div>
-   <div class="ops-metric"><small>セッション（30日）</small><strong id="opsSessions">—</strong></div>
+   <div class="ops-metric"><small>全体 DAU（今日）</small><strong id="opsDau">—</strong></div>
+   <div class="ops-metric"><small>全体 MAU（30日）</small><strong id="opsMau">—</strong></div>
+   <div class="ops-metric"><small>全体 DAU / MAU</small><strong id="opsDauMau">—</strong></div>
+   <div class="ops-metric"><small>ログイン DAU</small><strong id="opsDauLogged">—</strong></div>
+   <div class="ops-metric"><small>ログイン MAU</small><strong id="opsMauLogged">—</strong></div>
+   <div class="ops-metric"><small>ゲスト DAU</small><strong id="opsDauGuests">—</strong></div>
+   <div class="ops-metric"><small>ゲスト MAU</small><strong id="opsMauGuests">—</strong></div>
+   <div class="ops-metric"><small>ページ閲覧 全体（30日）</small><strong id="opsPageViews">—</strong></div>
+   <div class="ops-metric"><small>ページ閲覧 ログイン</small><strong id="opsPageViewsLogged">—</strong></div>
+   <div class="ops-metric"><small>ページ閲覧 ゲスト</small><strong id="opsPageViewsGuest">—</strong></div>
+   <div class="ops-metric"><small>セッション 全体（30日）</small><strong id="opsSessions">—</strong></div>
+   <div class="ops-metric"><small>セッション ログイン</small><strong id="opsSessionsLogged">—</strong></div>
+   <div class="ops-metric"><small>セッション ゲスト</small><strong id="opsSessionsGuest">—</strong></div>
    <div class="ops-metric"><small>APIエラー（24時間）</small><strong id="opsApiErrors">—</strong></div>
    <div class="ops-metric"><small>画面エラー（24時間）</small><strong id="opsClientErrors">—</strong></div>
    <div class="ops-metric"><small>記録イベント（30日）</small><strong id="opsEvents">—</strong></div>
   </div>
   <section class="panel ops-analytics-panel">
-   <div class="toolbar"><div><strong>日別アクティブユーザー</strong><div class="sns-muted">日本時間・過去30日</div></div><span class="sns-muted" id="opsAnalyticsUpdated">集計準備中…</span></div>
+   <div class="toolbar"><div><strong>日別アクティブ訪問者</strong><div class="sns-muted">日本時間・過去30日 · 全体／ログイン／ゲスト</div></div><span class="sns-muted" id="opsAnalyticsUpdated">集計準備中…</span></div>
    <div id="opsActiveChart" class="ops-active-chart"><div class="empty">読み込み中…</div></div>
   </section>
   <div class="ops-analytics-columns">
@@ -1507,13 +1517,16 @@ async function loadOpsOverview(){
   let liveData=null;
   try{liveData=await opsInvoke({action:"get_realtime_monitor"});}catch(_){}
   const n=v=>Number(v||0).toLocaleString("ja-JP");
-  $("#ovDau").textContent=n(data.dau);
-  $("#ovMau").textContent=n(data.mau);
+  $("#ovDau").textContent=n(data.dau_visitors);
+  $("#ovMau").textContent=n(data.mau_visitors);
+  $("#ovDauLogged").textContent=n(data.dau);
+  $("#ovDauGuests").textContent=n(data.dau_guests);
   $("#ovSnsUsers").textContent=n(data.profile_count);
   $("#ovSnsPosts").textContent=n(data.post_count);
   $("#ovApiErrors").textContent=n(data.api_errors_24h);
   $("#ovPageViews").textContent=n(data.page_views_30d);
-  $("#ovLiveUsers").textContent=liveData?n(liveData.active_users_5m):"—";
+  $("#ovLiveUsers").textContent=liveData?n(liveData.active_visitors_5m):"—";
+  $("#ovLiveSplit").textContent=liveData?"ログイン "+n(liveData.active_users_5m)+" · ゲスト "+n(liveData.active_guests_5m):"ログイン — · ゲスト —";
   const apiRows=Array.isArray(data.apis)?data.apis:[];
   const apiRequests=apiRows.reduce((sum,row)=>sum+Number(row.requests||0),0);
   const apiSuccesses=apiRows.reduce((sum,row)=>sum+Number(row.successes||0),0);
@@ -1556,7 +1569,10 @@ async function loadOpsRealtime(){
  try{
   const data=await opsInvoke({action:"get_realtime_monitor"});
   const n=v=>Number(v||0).toLocaleString("ja-JP");
-  $("#liveUsers").textContent=n(data.active_users_5m);$("#liveSessions").textContent=n(data.active_sessions_5m);
+  $("#liveUsers").textContent=n(data.active_visitors_5m);
+  $("#liveLoggedUsers").textContent=n(data.active_users_5m);
+  $("#liveGuestUsers").textContent=n(data.active_guests_5m);
+  $("#liveSessions").textContent=n(data.active_sessions_5m);
   $("#liveEvents").textContent=n(data.events_1m);$("#liveErrors").textContent=n(data.errors_5m);
   const rows=[];
   rows.push({name:"KUROLAB / Pages CDN",ok:edge.ok,state:edge.ok?"正常":"異常",latency:edge.ms===null?"—":edge.ms+" ms",detail:edge.status,kind:edge.ok?"ok":"bad"});
@@ -1615,21 +1631,30 @@ async function loadOpsAnalytics(){
  try{
   const data=await opsInvoke({action:"get_usage_analytics"});
   const n=v=>Number(v||0).toLocaleString("ja-JP");
-  $("#opsDau").textContent=n(data.dau);
-  $("#opsMau").textContent=n(data.mau);
+  $("#opsDau").textContent=n(data.dau_visitors);
+  $("#opsMau").textContent=n(data.mau_visitors);
   $("#opsDauMau").textContent=Number(data.dau_mau_rate||0).toFixed(1)+"%";
+  $("#opsDauLogged").textContent=n(data.dau_logged_in);
+  $("#opsMauLogged").textContent=n(data.mau_logged_in);
+  $("#opsDauGuests").textContent=n(data.dau_guests);
+  $("#opsMauGuests").textContent=n(data.mau_guests);
   $("#opsPageViews").textContent=n(data.page_views_30d);
+  $("#opsPageViewsLogged").textContent=n(data.page_views_logged_in_30d);
+  $("#opsPageViewsGuest").textContent=n(data.page_views_guest_30d);
   $("#opsSessions").textContent=n(data.sessions_30d);
+  $("#opsSessionsLogged").textContent=n(data.sessions_logged_in_30d);
+  $("#opsSessionsGuest").textContent=n(data.sessions_guest_30d);
   $("#opsApiErrors").textContent=n(data.api_errors_24h);
   $("#opsClientErrors").textContent=n(data.client_errors_24h);
   $("#opsEvents").textContent=n(data.events_30d);
   $("#opsAnalyticsUpdated").textContent="更新："+new Date(data.generated_at).toLocaleString("ja-JP");
   const daily=Array.isArray(data.daily)?data.daily:[];
-  const max=Math.max(1,...daily.map(x=>Number(x.active_users||0)));
+  const max=Math.max(1,...daily.map(x=>Number(x.active_visitors||0)));
   $("#opsActiveChart").innerHTML=daily.length?daily.map(x=>{
-   const v=Number(x.active_users||0),h=Math.max(2,Math.round(v/max*126));
-   return '<div class="ops-chart-day" title="'+esc(x.date)+'：'+n(v)+'人"><b style="font-size:10px;color:var(--muted)">'+n(v)+'</b><div class="ops-chart-bar" style="height:'+h+'px"></div><small>'+esc(x.date.slice(5))+'</small></div>';
-  }).join(""):'<div class="empty">まだ閲覧データがありません。ログインしてポータルを利用すると記録されます。</div>';
+   const total=Number(x.active_visitors||0),logged=Number(x.active_users||0),guest=Number(x.guest_users||0);
+   const h=Math.max(2,Math.round(total/max*126)),guestH=total?Math.round(h*guest/total):0,loggedH=Math.max(0,h-guestH);
+   return '<div class="ops-chart-day" title="'+esc(x.date)+'：全体 '+n(total)+'人／ログイン '+n(logged)+'人／ゲスト '+n(guest)+'人"><b style="font-size:10px;color:var(--muted)">'+n(total)+'</b><div class="ops-chart-bar" style="height:'+h+'px;background:linear-gradient(to top,#d99a43 0 '+(total?guest/total*100:0)+'%,#3973d6 '+(total?guest/total*100:0)+'% 100%)"></div><small>'+esc(x.date.slice(5))+'</small></div>';
+  }).join(""):'<div class="empty">まだ閲覧データがありません。訪問者がページを開くと記録されます。</div>';
   const widgets=Array.isArray(data.widgets)?data.widgets:[];
   $("#opsWidgetRanking").innerHTML=widgets.length?'<table class="ops-analytics-table"><thead><tr><th>ウィジェット</th><th>閲覧</th><th>追加</th><th>削除</th></tr></thead><tbody>'+widgets.map(x=>'<tr><td>'+esc(x.widget_key)+'</td><td>'+n(x.views)+'</td><td>'+n(x.adds)+'</td><td>'+n(x.removes)+'</td></tr>').join("")+'</tbody></table>':'<div class="empty">ウィジェット利用データはまだありません。</div>';
   const apis=Array.isArray(data.apis)?data.apis:[];
@@ -1637,7 +1662,7 @@ async function loadOpsAnalytics(){
   const retention=data.retention||{};
   const rcard=(label,x)=>'<div class="ops-retention-card"><small>'+label+' 継続率</small><strong>'+(x&&x.rate!==null&&x.rate!==undefined?Number(x.rate).toFixed(1)+"%":"—")+'</strong><small>対象 '+n(x&&x.eligible)+' 人 · 再訪 '+n(x&&x.retained)+' 人</small></div>';
   $("#opsRetention").innerHTML=rcard("翌日",retention.day1)+rcard("7日後",retention.day7)+rcard("30日後",retention.day30);
-  $("#opsTrackingNote").textContent="計測開始："+(data.tracking_started_at?new Date(data.tracking_started_at).toLocaleString("ja-JP"):"まだ記録なし")+(data.truncated?" · イベント数が上限に達したため一部省略":"")+(data.user_list_truncated?" · ユーザー一覧は上限まで取得":"");
+  $("#opsTrackingNote").textContent="計測開始："+(data.tracking_started_at?new Date(data.tracking_started_at).toLocaleString("ja-JP"):"まだ記録なし")+" · 青：ログイン／橙：ゲスト · ゲストは同じブラウザ内のランダムIDで重複を抑制"+(data.truncated?" · イベント数が上限に達したため一部省略":"")+(data.user_list_truncated?" · ユーザー一覧は上限まで取得":"");
  }catch(e){
   $("#opsActiveChart").innerHTML='<div class="error">分析データを取得できませんでした：'+esc(e.message)+'</div>';
   $("#opsAnalyticsUpdated").textContent="取得失敗";
