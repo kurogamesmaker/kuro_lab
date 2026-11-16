@@ -20,8 +20,8 @@ async function ensureSupabaseSdk(){
 }
 var supabaseReady=await ensureSupabaseSdk();
 var requestedTransport=new URLSearchParams(location.search).get("transport");
-// Direct Supabase transport is the default; GAS relay remains available as an optional fallback.
-var useGas=requestedTransport==="gas";
+// Use the same-origin GAS relay by default; direct Supabase is an explicit diagnostic override.
+var useGas=requestedTransport!=="direct";
 safeStorageSet("localStorage","kuro_portal_transport",useGas?"gas":"direct");
 function gasFetch(input,init){
  var req=new Request(input,init),url=new URL(req.url),serviceInfo=url.origin===SUPABASE_URL?classifyApiRequest(url.href):null;
