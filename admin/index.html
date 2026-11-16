@@ -506,7 +506,7 @@
   </div>
   <div class="ops-nav-group"><small>04 / ACCOUNTS</small>
    <button data-ops-tab="users"><b>05</b><span>ユーザー管理</span></button>
-   <button data-ops-tab="pro"><b>06</b><span>KUROLAB Pro</span></button>
+   <button data-ops-tab="pro"><b>06</b><span>プラン管理</span></button>
   </div>
   <div class="ops-nav-group"><small>05 / MODERATION</small>
    <button data-ops-tab="reports"><b>07</b><span>通報・審査</span></button>
@@ -589,7 +589,7 @@
     <select id="opsCreatedFilter" aria-label="登録日時"><option value="all">登録日：すべて</option><option value="7">過去7日</option><option value="30">過去30日</option><option value="90">過去90日</option></select>
     <select id="opsActivityFilter" aria-label="最終ログイン"><option value="all">最終ログイン：すべて</option><option value="7">7日以内</option><option value="30">30日以内</option><option value="90">90日以内</option><option value="never">ログイン記録なし</option></select>
     <select id="opsBoardsFilter" aria-label="ボード数"><option value="all">ボード数：すべて</option><option value="0">0</option><option value="1">1</option><option value="2-5">2〜5</option><option value="6">6以上</option></select>
-    <select id="opsPlanFilter" aria-label="プラン"><option value="all">プラン：すべて</option><option value="free">無料</option><option value="paid">有料</option><option value="unlinked">未連携</option></select>
+    <select id="opsPlanFilter" aria-label="プラン"><option value="all">プラン：すべて</option><option value="free">普通</option><option value="standard">スタンダード</option><option value="pro">Pro</option></select>
    </div>
    <div class="ops-meta" id="opsUsersMeta">アカウント一覧を読み込みます。</div>
    <div class="ops-tablewrap" id="opsUsersList"><div class="empty">読み込み中…</div></div>
@@ -1115,15 +1115,15 @@ function renderOpsUsers(){
   if(boards==="2-5"&&(u.board_count<2||u.board_count>5))return false;
   if(boards==="6"&&u.board_count<6)return false;
   if(plan==="free"&&u.plan!=="free")return false;
-  if(plan==="paid"&&u.plan!=="pro"&&u.plan!=="paid")return false;
-  if(plan==="unlinked"&&u.plan!=="unlinked")return false;
+  if(plan==="standard"&&u.plan!=="standard")return false;
+  if(plan==="pro"&&u.plan!=="pro")return false;
   return true;
  });
  const active=opsUsers.filter(u=>!opsIsBanned(u)).length;
  $("#opsTotalUsers").textContent=opsUsers.length;
  $("#opsActiveUsers").textContent=active;
  $("#opsBannedUsers").textContent=opsUsers.length-active;
- $("#opsUsersMeta").textContent=shown.length+" / "+opsUsers.length+" 件を表示（このページ内で検索・絞り込み） · プラン情報は課金連携が完了するまで未連携です。";
+ $("#opsUsersMeta").textContent=shown.length+" / "+opsUsers.length+" 件を表示（このページ内で検索・絞り込み） · プランは管理者の承認・付与状態を表示しています。";
  const pageLabel=$("#opsUsersPageLabel");if(pageLabel)pageLabel.textContent=opsUsersPage+"ページ目"+(opsUsersTotal!==null?" · 全 "+opsUsersTotal.toLocaleString("ja-JP")+"人":"");
  const prev=$("#opsUsersPrev"),next=$("#opsUsersNext");if(prev)prev.disabled=opsUsersPage<=1;if(next)next.disabled=opsUsers.length<500||(opsUsersTotal!==null&&opsUsersPage*500>=opsUsersTotal);
  if(!shown.length){$("#opsUsersList").innerHTML='<div class="empty">条件に一致するユーザーはいません。</div>';return;}
@@ -1134,12 +1134,12 @@ function renderOpsUsers(){
    '<td>'+esc(u.created_at?date(u.created_at):"—")+'</td>'+
    '<td>'+esc(u.last_sign_in_at?date(u.last_sign_in_at):"記録なし")+'</td>'+
    '<td>'+Number(u.board_count||0)+'</td><td>'+Number(u.widget_count||0)+'</td>'+
-   '<td><span class="ops-plan">'+(u.plan==="free"?"無料":(u.plan==="pro"||u.plan==="paid"?"有料":"未連携"))+'</span></td>'+
+   '<td><span class="ops-plan">'+(u.plan==="free"?"普通":u.plan==="standard"?"スタンダード":u.plan==="pro"?"Pro":"未連携")+'</span></td>'+
    '<td><span class="ops-status '+(banned?"banned":"")+'">'+(banned?"停止中":"利用可能")+'</span></td>'+
    '<td><div class="ops-user-actions">'+
     (banned?'<button class="btn" data-ops-action="unban" data-user-id="'+esc(u.id)+'">解除</button>':'<button class="btn" data-ops-action="ban" data-user-id="'+esc(u.id)+'">停止</button>')+
     '<button class="btn" data-ops-action="email" data-user-id="'+esc(u.id)+'">メール変更</button>'+
-    '<button class="btn" data-ops-go-pro="true">Pro管理</button>'+
+    '<button class="btn" data-ops-go-pro="true">プラン管理</button>'+
     '<button class="btn" data-ops-action="reset" data-user-id="'+esc(u.id)+'">再設定メール</button>'+
     '<button class="btn danger" data-ops-action="delete" data-user-id="'+esc(u.id)+'">削除</button>'+
    '</div></td></tr>';
@@ -1180,9 +1180,12 @@ async function runOpsUserAction(button){
   if(!window.confirm((user.email||"現在のメールアドレス")+" を "+nextEmail.trim()+" に変更しますか？新しいアドレス側で確認が必要になる場合があります。"))return;
   payload={action:"update_user_email",userId,email:nextEmail.trim()};
  }else if(action==="plan"){
-  const enable=!(user.plan==="pro"||user.plan==="paid");
-  if(!window.confirm((user.email||user.id)+" のProプランを"+(enable?"手動付与":"解除")+"しますか？課金サービスの契約状態は変更されません。"))return;
-  payload={action:"set_user_plan",userId,plan:enable?"pro":"free"};
+  const nextPlan=window.prompt("付与するプランを入力してください：free / standard / pro",user.plan==="standard"?"standard":user.plan==="pro"?"pro":"free");
+  if(nextPlan===null)return;
+  if(!["free","standard","pro"].includes(nextPlan.trim().toLowerCase())){alert("free / standard / pro のいずれかを指定してください。");return;}
+  const selectedPlan=nextPlan.trim().toLowerCase();
+  if(!window.confirm((user.email||user.id)+" のプランを「"+(selectedPlan==="free"?"普通":selectedPlan==="standard"?"スタンダード":"Pro")+"」に変更しますか？"))return;
+  payload={action:"set_user_plan",userId,plan:selectedPlan};
  }else if(action==="reset"){
   if(!window.confirm((user.email||user.id)+" にパスワード再設定メールを送信しますか？"))return;
   payload={action:"send_password_reset",userId};
@@ -1217,7 +1220,7 @@ async function loadOpsPro(){
   const apps=opsProCache.applications.filter(x=>x.status==="pending");
   $("#opsProApplications").innerHTML=apps.length?apps.map(x=>{const requested=x.requested_plan==="standard"?"standard":"pro";return '<article class="item"><div><div class="meta"><strong>'+label(x)+'</strong><span>'+esc(x.email)+'</span><span>'+when(x.created_at)+'</span><span class="ops-status">審査待ち</span><span class="ops-status">'+(requested==="standard"?"スタンダード希望":"Pro希望")+'</span></div><p class="message">'+esc(x.reason)+'</p><div class="ops-user-actions" style="margin-top:12px;flex-wrap:wrap"><select class="mode-select" data-pro-plan="'+esc(x.id)+'"><option value="standard" '+(requested==="standard"?'selected':'')+'>スタンダード</option><option value="pro" '+(requested==="pro"?'selected':'')+'>Pro</option></select><select class="mode-select" data-pro-duration="'+esc(x.id)+'"><option value="indefinite">無期限</option><option value="30">30日</option><option value="90">90日</option><option value="365">1年</option></select><input class="search" style="min-width:160px" data-pro-note="'+esc(x.id)+'" placeholder="管理者コメント（任意）"><button class="btn primary" data-pro-review="approve" data-id="'+esc(x.id)+'">承認</button><label class="sns-muted"><input type="checkbox" data-pro-reapply="'+esc(x.id)+'" checked> 却下後の再申請を許可</label><button class="btn" data-pro-review="reject" data-id="'+esc(x.id)+'">却下</button></div></div></article>';}).join(""):'<div class="empty">審査待ちの申請はありません。</div>';
   const members=opsProCache.memberships;
-  $("#opsProMembers").innerHTML=members.length?members.map(x=>'<article class="item"><div><div class="meta"><strong>'+label(x)+'</strong><span>'+esc(x.email)+'</span><span class="ops-status '+(x.status==="suspended"||x.status==="revoked"?"banned":"")+'">'+esc(x.status)+'</span><span>プラン：'+(x.plan==="standard"?"スタンダード":"Pro")+'</span><span>期限：'+when(x.expires_at)+'</span><span>経路：'+esc(x.source)+'</span></div><div class="ops-user-actions" style="margin-top:10px;flex-wrap:wrap"><button class="btn" data-pro-member="suspend" data-user="'+esc(x.user_id)+'">一時停止</button><button class="btn" data-pro-member="resume" data-user="'+esc(x.user_id)+'">再開</button><button class="btn" data-pro-member="expiry" data-user="'+esc(x.user_id)+'">期限変更</button><button class="btn" data-pro-member="revoke" data-user="'+esc(x.user_id)+'">権限解除</button></div><div class="ops-user-actions" style="margin-top:9px;flex-wrap:wrap">'+[['workspace_plus','ワークスペース'],['pro_tools','Proツール'],['customization_plus','カスタマイズ'],['early_access','先行アクセス']].map(([key,label])=>'<label class="sns-muted"><input type="checkbox" data-pro-feature-user="'+esc(x.user_id)+'" data-feature="'+key+'" '+(x.features?.[key]!==false?'checked':'')+'> '+label+'</label>').join('')+'<button class="btn" data-pro-feature-save="'+esc(x.user_id)+'">機能設定を保存</button></div></div></article>').join(""):'<div class="empty">有効プラン利用者はいません。</div>';
+  $("#opsProMembers").innerHTML=members.length?members.map(x=>'<article class="item"><div><div class="meta"><strong>'+label(x)+'</strong><span>'+esc(x.email)+'</span><span class="ops-status '+(x.status==="suspended"||x.status==="revoked"?"banned":"")+'">'+esc(x.status)+'</span><span>プラン：'+(x.plan==="standard"?"スタンダード":"Pro")+'</span><span>期限：'+when(x.expires_at)+'</span><span>経路：'+esc(x.source)+'</span></div><div class="ops-user-actions" style="margin-top:10px;flex-wrap:wrap"><select class="mode-select" data-pro-member-plan="'+esc(x.user_id)+'"><option value="standard" '+(x.plan==="standard"?"selected":"")+'>スタンダード</option><option value="pro" '+(x.plan==="pro"?"selected":"")+'>Pro</option></select><button class="btn" data-pro-member="set_plan" data-user="'+esc(x.user_id)+'">プラン変更</button><button class="btn" data-pro-member="suspend" data-user="'+esc(x.user_id)+'">一時停止</button><button class="btn" data-pro-member="resume" data-user="'+esc(x.user_id)+'">再開</button><button class="btn" data-pro-member="expiry" data-user="'+esc(x.user_id)+'">期限変更</button><button class="btn" data-pro-member="revoke" data-user="'+esc(x.user_id)+'">普通に戻す</button></div><div class="ops-user-actions" style="margin-top:9px;flex-wrap:wrap">'+[['workspace_plus','ワークスペース'],['pro_tools','Proツール'],['customization_plus','カスタマイズ'],['early_access','先行アクセス'],['desktop','KUROLAB Desktop'],['theme_studio','Theme Studio'],['developer_mode','Developer Mode'],['ai','KUROLAB AI'],['ad_free','広告非表示']].map(([key,label])=>'<label class="sns-muted"><input type="checkbox" data-pro-feature-user="'+esc(x.user_id)+'" data-feature="'+key+'" '+(x.features?.[key]!==false?'checked':'')+'> '+label+'</label>').join('')+'<label class="sns-muted">Analytics <select class="mode-select" data-pro-analytics-user="'+esc(x.user_id)+'"><option value="basic" '+(x.features?.analytics==="basic"?"selected":"")+'>基本</option><option value="advanced" '+(x.features?.analytics!=="basic"?"selected":"")+'>高度</option></select></label><button class="btn" data-pro-feature-save="'+esc(x.user_id)+'">機能設定を保存</button></div></div></article>').join(""):'<div class="empty">有効プラン利用者はいません。</div>';
   const inv=opsProCache.invitations;
   $("#opsProInvitations").innerHTML=inv.length?inv.map(x=>'<article class="item"><div><div class="meta"><strong>'+label(x)+'</strong><span>'+esc(x.status)+'</span><span>プラン：'+((x.plan||"pro")==="standard"?"スタンダード":"Pro")+'</span><span>招待期限：'+when(x.expires_at)+'</span><span>プラン期限：'+when(x.membership_expires_at)+'</span></div><div class="ops-user-actions" style="margin-top:8px">'+(x.status==="pending"?'<button class="btn" data-pro-invite-revoke="'+esc(x.id)+'">招待を取り消す</button>':"")+'</div></div></article>').join(""):'<div class="empty">招待履歴はありません。</div>';
   const controls=opsProCache.controls;
@@ -1241,8 +1244,15 @@ async function handleOpsProClick(e){
  const member=e.target.closest("[data-pro-member]");
  if(member){
   const userId=member.dataset.user,op=member.dataset.proMember;
-  if(op==="revoke"&&!confirm("この利用者のPro権限を解除しますか？"))return;
+  if(op==="revoke"&&!confirm("この利用者を普通プランに戻しますか？"))return;
   let payload={action:"update_pro_membership",userId,operation:op};
+  if(op==="set_plan"){
+   const planSelect=document.querySelector("[data-pro-member-plan='"+userId+"']");
+   const nextPlan=planSelect?.value;
+   if(!["standard","pro"].includes(nextPlan))return;
+   if(!confirm("この利用者のプランを"+(nextPlan==="standard"?"スタンダード":"Pro")+"に変更しますか？"))return;
+   payload.plan=nextPlan;
+  }
   if(op==="expiry"){const value=prompt("有効期限を入力してください（YYYY-MM-DD）。空欄で無期限にします。","");if(value===null)return;payload.expiresAt=value?new Date(value+"T23:59:59").toISOString():null;payload.operation="set_expiry";}
   member.disabled=true;try{await opsInvoke(payload);await loadOpsPro();}catch(err){member.disabled=false;alert("更新に失敗しました："+err.message);}return;
  }
@@ -1250,6 +1260,8 @@ async function handleOpsProClick(e){
  if(featureSave){
   const userId=featureSave.dataset.proFeatureSave,features={};
   document.querySelectorAll("[data-pro-feature-user='"+userId+"']").forEach(input=>{features[input.dataset.feature]=input.checked;});
+  const analyticsSelect=document.querySelector("[data-pro-analytics-user='"+userId+"']");
+  if(analyticsSelect)features.analytics=analyticsSelect.value;
   featureSave.disabled=true;
   try{await opsInvoke({action:"update_pro_membership",userId,operation:"set_features",features});await loadOpsPro();}
   catch(err){featureSave.disabled=false;alert("機能設定を保存できませんでした："+err.message);}
