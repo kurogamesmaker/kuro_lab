@@ -36,6 +36,7 @@
       { href: "/mypage/", label: "KURO ID", icon: "◎" },
       { href: "/pro/", label: "KUROLAB Pro", icon: "✦" },
       { href: "/pro-tools/", label: "Pro専用ツール", icon: "⚡" },
+      { href: "/theme-studio/", label: "Theme Studio", icon: "🎨" },
       { href: "/settings/", label: "設定", icon: "⚙" },
       { href: "/request/", label: "リクエストBOX", icon: "✉" }
     ] },
@@ -705,6 +706,7 @@
       ["notifications", "お知らせ", "KURO Labからの更新情報", "/notifications/", "♧", "お知らせ 更新 通知"],
       ["mypage", "マイページ", "アカウントと利用データ", "/mypage/", "◎", "アカウント ログイン"],
       ["settings", "表示設定", "テーマやホーム画面を変更", "/settings/", "⚙", "設定 テーマ"],
+      ["theme-studio", "Theme Studio", "Pro限定のカラー・背景・UI編集", "/theme-studio/", "🎨", "Pro テーマ デザイン"],
       ["request", "リクエストBOX", "機能や改善をリクエスト", "/request/", "💡", "提案 改善 リクエスト"]
     ];
     more.forEach(function (x) {
