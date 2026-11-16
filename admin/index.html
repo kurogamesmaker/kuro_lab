@@ -675,7 +675,7 @@ if(modeSelectTop)modeSelectTop.addEventListener("change",()=>setMode(modeSelectT
 syncModeSelectors();
 let rows=[],filter="all",channel=null,seen=new Set(),firstLoad=true;
 let opsUsers=[],opsAuditLogs=[],opsAnnouncements=[],opsMessages=[],opsFlags=[],opsView='overview',editingAnnouncementId=null,opsUsersPage=1,opsUsersTotal=null;
-let opsLogEntries=[],opsLogPaused=false,opsLogFilter="all";
+let opsLogEntries=[],opsLogPaused=false,opsLogFilter="all",opsLogSeenKeys=new Set();
 let snsProfiles=[],snsPosts=[],snsReplies=[],snsChatMessages=[],snsTab="posts",snsUserFilterId=null,refreshTimer=null;
 let snsRealtimeChannel=null,snsReloadTimer=null,analyticsRefreshTimer=null,snsLikesTotal=0,snsFollowsTotal=0;
 const labels={pending:"未対応",reviewing:"確認中",done:"対応済み"};
@@ -1422,8 +1422,6 @@ async function loadOpsRealtime(){
   const max=Math.max(1,...buckets.map(x=>Number(x.events||0)));
   $("#opsRealtimeBars").innerHTML=buckets.map(x=>{const v=Number(x.events||0),h=Math.max(3,Math.round(v/max*94));return '<div class="ops-live-bar" style="height:'+h+'px" title="'+esc(x.label)+' · '+v+'件"></div>';}).join("");
   $("#opsRealtimeTrendNote").textContent="15分合計 "+n(buckets.reduce((s,x)=>s+Number(x.events||0),0))+" 件 · 最終集計 "+new Date(data.generated_at||Date.now()).toLocaleTimeString("ja-JP");
-  const events=Array.isArray(data.recent_events)?data.recent_events:[];
-  $("#opsRealtimeEvents").innerHTML=events.length?events.map(x=>{const bad=x.event_name==="api_error"||x.event_name==="client_error";return '<div class="ops-terminal-line"><span class="ops-terminal-dim">['+esc(new Date(x.created_at).toLocaleTimeString("ja-JP"))+']</span> <span class="'+(bad?"ops-terminal-bad":"ops-terminal-ok")+'">'+(bad?"ERROR":"EVENT")+'</span> <span>'+esc(x.service_key||"KUROLAB")+' :: '+esc(x.event_name)+(x.status_code?" · HTTP "+Number(x.status_code):"")+(x.error_code?" · "+esc(x.error_code):"")+'</span></div>';}).join(""):'<div class="ops-terminal-line ops-terminal-dim">直近15分のイベントはありません。</div>';
   updated.textContent="最終更新："+new Date(data.generated_at||Date.now()).toLocaleTimeString("ja-JP");
  }catch(e){
   $("#opsRealtimeServices").innerHTML='<div class="ops-terminal-line ops-terminal-bad">監視データを取得できません：'+esc(e.message)+'</div>';
@@ -1445,8 +1443,8 @@ async function loadOpsLogs(initial=false){
   const data=await opsInvoke({action:"get_realtime_monitor"});
   const incoming=Array.isArray(data.recent_events)?data.recent_events:[];
   const normalized=incoming.map(x=>({key:[x.created_at,x.service_key,x.event_name,x.status_code||"",x.error_code||""].join("|"),time:new Date(x.created_at).toLocaleTimeString("ja-JP"),service:x.service_key||"KUROLAB",level:x.event_name==="api_error"||x.event_name==="client_error"?"error":"event",message:x.event_name+(x.status_code?" · HTTP "+Number(x.status_code):"")+(x.error_code?" · "+x.error_code:"")})).sort((a,b)=>a.key.localeCompare(b.key));
-  const known=new Set(opsLogEntries.map(x=>x.key));
-  normalized.forEach(x=>{if(!known.has(x.key))opsLogEntries.push(x);});
+  normalized.forEach(x=>{if(!opsLogSeenKeys.has(x.key)){opsLogSeenKeys.add(x.key);opsLogEntries.push(x);}});
+  if(opsLogSeenKeys.size>1200)opsLogSeenKeys=new Set([...opsLogSeenKeys].slice(-900));
   if(opsLogEntries.length>500)opsLogEntries=opsLogEntries.slice(-500);
   status.textContent="最終確認 "+new Date(data.generated_at||Date.now()).toLocaleTimeString("ja-JP");
   $("#opsLogsStreamState").textContent="LIVE";renderOpsLogs();
