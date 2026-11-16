@@ -904,6 +904,12 @@ body.kuro-page>.kuro-global-header{display:block!important}
   else if(mq.addListener) mq.addListener(onChange);
 })();
 </script>
+    <style id="kuro-remove-post-separators">
+      /* 投稿カード同士の区切り線を表示しない */
+      #postFeed [data-post-card] {
+        border-bottom: 0 !important;
+      }
+    </style>
 </head>
 
 <body class="kuro-page kuro-theme-dark">
