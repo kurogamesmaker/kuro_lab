@@ -177,7 +177,9 @@
           '<a href="/tools/?tool=convert"><span>💱</span><b>為替・単位変換</b><i>↗</i></a>' +
           '<a href="/tools/?tool=rss"><span>📡</span><b>RSSリーダー</b><i>↗</i></a>' +
           '<a href="/tools/?tool=status"><span>📶</span><b>サイト稼働状況</b><i>↗</i></a>' +
-          '<a href="/pro-tools/"><span>⚡</span><b>Pro専用ツール</b><i class="portal-toolbox-pro-mark">PRO</i></a>' +
+          '<a href="/pro-tools/#pro-json-tool"><span>{ }</span><b>JSON Formatter</b><i class="portal-toolbox-pro-mark">PRO</i></a>' +
+          '<a href="/pro-tools/#pro-convert-tool"><span>↔</span><b>URL / Base64 Converter</b><i class="portal-toolbox-pro-mark">PRO</i></a>' +
+          '<a href="/pro-tools/#pro-uuid-tool"><span>⌗</span><b>UUID Generator</b><i class="portal-toolbox-pro-mark">PRO</i></a>' +
           '<a class="portal-toolbox-all" href="/tools/">すべてのツールを見る <i>→</i></a>' +
         '</div>';
       var accountButton = document.getElementById("portal-account-button");
