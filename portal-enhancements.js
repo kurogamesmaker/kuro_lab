@@ -178,10 +178,28 @@
           '<a href="/tools/?tool=rss"><span>📡</span><b>RSSリーダー</b><i>↗</i></a>' +
           '<a href="/tools/?tool=status"><span>📶</span><b>サイト稼働状況</b><i>↗</i></a>' +
           '<a class="portal-toolbox-all" href="/tools/">すべてのツールを見る <i>→</i></a>' +
+          '<div class="portal-pro-toolbox-links" data-pro-toolbox-links hidden>' +
+            '<div class="portal-toolbox-menu-heading"><b>KUROLAB PRO</b><small>Proメンバー専用</small></div>' +
+            '<a href="/pro-tools/"><span>⚡</span><b>Pro専用ツール</b><i>JSON・URL・Base64・UUID</i></a>' +
+            '<a href="/pro/"><span>✦</span><b>Proプラン管理</b><i>↗</i></a>' +
+          '</div>' +
         '</div>';
       var accountButton = document.getElementById("portal-account-button");
       header.insertBefore(toolbox, accountButton || null);
     }
+    syncProToolbox();
+    if (!window.__kuroProToolboxSyncBound) {
+      window.addEventListener("kuro:pro-status-updated", syncProToolbox);
+      window.__kuroProToolboxSyncBound = true;
+    }
+  }
+
+  function syncProToolbox() {
+    var section = document.querySelector("[data-pro-toolbox-links]");
+    var api = window.__kuroPortal;
+    var pro = api && api.pro;
+    if (!section) return;
+    section.hidden = !(pro && pro.active && pro.features && pro.features.pro_tools === true);
   }
 
   function setupMobileNavigation() {
