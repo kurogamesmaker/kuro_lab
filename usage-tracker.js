@@ -25,14 +25,19 @@
   }
 
   function getSession() {
-    var now = Date.now(), state = null, key = "kuro_usage_session";
-    try { state = JSON.parse(sessionStorage.getItem(key) || "null"); } catch (_) {}
-    sessionFresh = !state || !state.id || !state.lastAt || now - Number(state.lastAt) > 1800000;
-    if (sessionFresh) state = { id: makeId(), lastAt: now };
-    else state.lastAt = now;
-    try { sessionStorage.setItem(key, JSON.stringify(state)); } catch (_) {}
-    sessionId = state.id;
-    return state;
+    var key = "kuro_usage_session", startedKey = "kuro_usage_session_started";
+    var id = null, started = null;
+    try { id = sessionStorage.getItem(key); started = sessionStorage.getItem(startedKey); } catch (_) {}
+    if (!id) {
+      id = makeId();
+      try { sessionStorage.setItem(key, id); } catch (_) {}
+    }
+    sessionFresh = started !== id;
+    if (sessionFresh) {
+      try { sessionStorage.setItem(startedKey, id); } catch (_) {}
+    }
+    sessionId = id;
+    return { id: id };
   }
 
   function serviceFor(input) {
@@ -182,10 +187,10 @@
   async function start() {
     // Random first-party visitor ID; no account details are stored in this ID.
     try {
-      visitorId = localStorage.getItem("kuro_usage_visitor");
+      visitorId = localStorage.getItem("kuro_portal_guest_id");
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(visitorId || "")) {
         visitorId = makeId();
-        localStorage.setItem("kuro_usage_visitor", visitorId);
+        localStorage.setItem("kuro_portal_guest_id", visitorId);
       }
     } catch (_) {
       visitorId = makeId();
