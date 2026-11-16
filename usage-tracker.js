@@ -6,6 +6,7 @@
   var SUPABASE_URL = "https://cprvpphlfpmiegjiutjn.supabase.co";
   var PUBLISHABLE_KEY = "sb_publishable_BYPUfB0lr2h26jV8_6ZQnpQ_wfAKOVyn";
   var userId = null;
+  var visitorId = null;
   var client = null;
   var queue = [];
   var sending = false;
@@ -57,7 +58,8 @@
   function addEvent(name, extra) {
     if (!userId || !client) return;
     var row = {
-      user_id: userId,
+      user_id: userId || null,
+      visitor_id: visitorId,
       session_id: sessionId || getSession().id,
       event_name: name,
       page_key: (location.pathname.split("/").filter(Boolean)[0] || "home").replace(/[^a-zA-Z0-9_/-]/g, "").slice(0, 64) || "home"
@@ -73,7 +75,7 @@
   }
 
   function flush() {
-    if (sending || !client || !userId || !queue.length) return;
+    if (sending || !client || !visitorId || !queue.length) return;
     var batch = queue.splice(0, 30);
     sending = true;
     Promise.resolve(client.from("usage_events").insert(batch)).then(function (result) {
@@ -178,13 +180,16 @@
   }
 
   async function start() {
-    // GAS版SNSはサーバー側の利用ログ経路を使用するため、ブラウザからの
-    // Supabase直書き計測を重ねない（CORS preflightと二重記録を防止）。
-    if (location.pathname.indexOf("/sns/gas/") === 0) return;
+    // Random first-party visitor ID; no account details are stored in this ID.
     try {
-      // Avoid loading the SDK on anonymous sessions; the tracker is account-only.
-      if (!localStorage.getItem("sb-cprvpphlfpmiegjiutjn-auth-token")) return;
-    } catch (_) { return; }
+      visitorId = localStorage.getItem("kuro_usage_visitor");
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(visitorId || "")) {
+        visitorId = makeId();
+        localStorage.setItem("kuro_usage_visitor", visitorId);
+      }
+    } catch (_) {
+      visitorId = makeId();
+    }
 
     if (!(await loadSdk())) return;
     client = window.supabase.createClient(SUPABASE_URL, PUBLISHABLE_KEY, {
@@ -194,7 +199,6 @@
     userId = result && result.data && result.data.session && result.data.session.user
       ? result.data.session.user.id
       : null;
-    if (!userId) return;
 
     var session = getSession();
     if (!trackedPage) {
@@ -204,7 +208,6 @@
     }
     client.auth.onAuthStateChange(function (event, sessionData) {
       userId = sessionData && sessionData.user ? sessionData.user.id : null;
-      if (event === "SIGNED_OUT") queue = [];
     });
   }
 
