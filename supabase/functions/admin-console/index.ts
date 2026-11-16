@@ -447,7 +447,6 @@ Deno.serve(async (req: Request) => {
       const href = typeof body.href === "string" ? body.href.trim() : "";
       const audience = body.audience === "user" ? "user" : "all";
       const serviceScope = ["lab","sns","both"].includes(body.serviceScope) ? body.serviceScope : "both";
-      if (body.audience === "user" && serviceScope !== "sns") return reply({ error: "Individual recipients are currently supported for KURO SNS only" }, 400, origin);
       const targetUserId = typeof body.userId === "string" ? body.userId : "";
       if (!title || title.length > 120) return reply({ error: "Title must be 1-120 characters" }, 400, origin);
       if (!content || content.length > 8000) return reply({ error: "Body must be 1-8000 characters" }, 400, origin);
