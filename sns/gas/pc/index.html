@@ -4984,46 +4984,31 @@
 
 <style id="kuro-desktop-nav-icon-size-fix">
 @media (min-width:768px) {
-  body.kuro-page > #kuroBottomNav [data-tab] {
-    width:44px !important;
-    min-width:44px !important;
-    max-width:44px !important;
-    height:44px !important;
-    min-height:44px !important;
-    max-height:44px !important;
-    flex:0 0 44px !important;
-    padding:0 !important;
-    overflow:hidden !important;
-  }
-  body.kuro-page > #kuroBottomNav [data-tab] > i,
-  body.kuro-page > #kuroBottomNav [data-tab] > .kuro-tab-icon {
-    display:inline-flex !important;
-    align-items:center !important;
-    justify-content:center !important;
-    width:16px !important;
-    min-width:16px !important;
-    max-width:16px !important;
-    height:16px !important;
-    min-height:16px !important;
-    max-height:16px !important;
-    margin:0 !important;
-    padding:0 !important;
+  body.kuro-page #kuroBottomNav [data-tab] .kuro-tab-icon,
+  body.kuro-page #kuroBottomNav [data-tab] .kuro-tab-icon::before,
+  body.kuro-page #kuroBottomNav [data-tab] > i {
+    display:inline-block !important;
+    box-sizing:content-box !important;
+    width:auto !important;
+    min-width:0 !important;
+    max-width:none !important;
+    height:auto !important;
+    min-height:0 !important;
+    max-height:none !important;
     font-size:16px !important;
     line-height:16px !important;
-    flex:0 0 16px !important;
     transform:none !important;
   }
-  body.kuro-page > #kuroBottomNav [data-tab] > svg,
-  body.kuro-page > #kuroBottomNav [data-tab] > img {
-    display:block !important;
-    width:16px !important;
-    min-width:16px !important;
-    max-width:16px !important;
-    height:16px !important;
-    min-height:16px !important;
-    max-height:16px !important;
-    flex:0 0 16px !important;
-    object-fit:contain !important;
+  body.kuro-page #kuroBottomNav [data-tab] {
+    width:48px !important;
+    min-width:48px !important;
+    max-width:48px !important;
+    height:48px !important;
+    min-height:48px !important;
+    max-height:48px !important;
+    flex:0 0 48px !important;
+    padding:0 !important;
+    overflow:hidden !important;
   }
 }
 </style>
