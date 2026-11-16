@@ -318,6 +318,59 @@
  .ops-log-toolbar .ops-log-autoscroll{margin-left:0}
 }
 
+
+/* Full document scrolling: keep the right workspace in the page flow */
+#opsAdminSection{
+ height:auto!important;
+ min-height:calc(100vh - 76px);
+ min-height:calc(100dvh - 76px);
+ overflow:visible!important;
+ grid-template-rows:auto auto auto!important;
+ align-items:start!important;
+}
+#opsAdminSection>.ops-shell-nav{
+ height:auto!important;
+ min-height:0!important;
+ max-height:none!important;
+ overflow:visible!important;
+ align-self:start!important;
+}
+#opsAdminSection>[id$="View"]{
+ height:auto!important;
+ min-height:calc(100vh - 220px);
+ min-height:calc(100dvh - 220px);
+ max-height:none!important;
+ overflow:visible!important;
+ align-self:start!important;
+}
+#opsAdminSection .ops-log-output{
+ max-height:none!important;
+ min-height:60vh;
+}
+@media(max-width:980px){
+ #opsAdminSection{
+  height:auto!important;
+  min-height:calc(100dvh - 76px);
+  overflow:visible!important;
+  grid-template-rows:auto auto auto auto!important;
+ }
+ #opsAdminSection>.ops-shell-nav{
+  max-height:118px!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+ }
+ #opsAdminSection>[id$="View"]{
+  height:auto!important;
+  min-height:calc(100dvh - 260px);
+  overflow:visible!important;
+ }
+}
+@media(max-width:620px){
+ #opsAdminSection{height:auto!important;min-height:calc(100dvh - 64px);overflow:visible!important}
+ #opsAdminSection>[id$="View"]{min-height:calc(100dvh - 240px);height:auto!important;overflow:visible!important}
+ #opsAdminSection .ops-log-output{min-height:55vh}
+}
+
 </style>
 </head>
 <body>
