@@ -1618,8 +1618,10 @@
         async function kuroGasFetch(input, init) {
             const request = new Request(input, init);
             const requestUrl = new URL(request.url);
-            // Edge Functions are not part of the GAS bridge allowlist; keep push calls on their existing direct route.
-            if (requestUrl.origin !== SUPABASE_URL || requestUrl.pathname.startsWith('/functions/v1/')) {
+            // Route only the chat-push Edge Function through the GAS bridge to avoid browser CORS preflight issues.
+            // Other Edge Functions retain their existing direct route.
+            if (requestUrl.origin !== SUPABASE_URL ||
+                (requestUrl.pathname.startsWith('/functions/v1/') && requestUrl.pathname !== '/functions/v1/send-chat-push')) {
                 return KURO_GAS_NATIVE_FETCH(input, init);
             }
             const bytes = new Uint8Array(await request.clone().arrayBuffer());
