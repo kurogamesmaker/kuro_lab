@@ -182,16 +182,6 @@
       var accountButton = document.getElementById("portal-account-button");
       header.insertBefore(toolbox, accountButton || null);
     }
-    if (!document.getElementById("portal-notification-button")) {
-      var button = document.createElement("a");
-      button.id = "portal-notification-button";
-      button.className = "portal-notification-button";
-      button.href = "/notifications/";
-      button.setAttribute("aria-label", "お知らせ");
-      button.innerHTML = '<span>♧</span><i class="portal-notification-badge" hidden></i>';
-      var account = document.getElementById("portal-account-button");
-      header.insertBefore(button, account || null);
-    }
   }
 
   function setupMobileNavigation() {
