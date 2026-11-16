@@ -2683,3 +2683,7 @@ body:has(.portal-dashboard-v2) #portal-quick-button{display:none!important}
   .portal-header-inner .portal-account-button{padding:6px 7px;font-size:10px}
   .portal-header-notification{width:32px;height:32px;flex-basis:32px}
 }
+
+/* Pro tools remain discoverable in the standard toolbox for every plan. */
+.portal-pro-toolbox-links{margin-top:5px;padding-top:4px;border-top:1px solid var(--line)}
+.portal-toolbox-menu>a.portal-toolbox-pro-item .portal-toolbox-pro-mark{margin-left:auto;padding:3px 6px;border:1px solid #b99af5;border-radius:999px;background:#f3edff;color:#7041c5;font-size:9px;font-weight:850;letter-spacing:.04em;white-space:nowrap}
