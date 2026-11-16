@@ -166,6 +166,27 @@ async function workspaceRss(request) {
   }
 }
 
+const USAGE_TRACKER_JS = "(function () {\n  \"use strict\";\n  if (window.__kuroUsageTrackerInstalled) return;\n  window.__kuroUsageTrackerInstalled = true;\n\n  var SUPABASE_URL = \"https://cprvpphlfpmiegjiutjn.supabase.co\";\n  var PUBLISHABLE_KEY = \"sb_publishable_BYPUfB0lr2h26jV8_6ZQnpQ_wfAKOVyn\";\n  var userId = null;\n  var visitorId = null;\n  var client = null;\n  var queue = [];\n  var sending = false;\n  var flushTimer = null;\n  var sessionId = null;\n  var sessionFresh = false;\n  var trackedPage = false;\n  var lastApiErrorAt = Object.create(null);\n\n  function makeId() {\n    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();\n    return \"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx\".replace(/[xy]/g, function (c) {\n      var r = Math.random() * 16 | 0;\n      return (c === \"x\" ? r : (r & 3 | 8)).toString(16);\n    });\n  }\n\n  function getSession() {\n    var key = \"kuro_usage_session\", startedKey = \"kuro_usage_session_started\";\n    var id = null, started = null;\n    try { id = sessionStorage.getItem(key); started = sessionStorage.getItem(startedKey); } catch (_) {}\n    if (!id) {\n      id = makeId();\n      try { sessionStorage.setItem(key, id); } catch (_) {}\n    }\n    sessionFresh = started !== id;\n    if (sessionFresh) {\n      try { sessionStorage.setItem(startedKey, id); } catch (_) {}\n    }\n    sessionId = id;\n    return { id: id };\n  }\n\n  function serviceFor(input) {\n    var raw = typeof input === \"string\" ? input : (input && input.url) || \"\";\n    var u;\n    try { u = new URL(raw, location.href); } catch (_) { return null; }\n    var host = u.hostname.toLowerCase(), path = u.pathname.toLowerCase();\n    if (host === \"api.open-meteo.com\" || host === \"geocoding-api.open-meteo.com\") return \"weather\";\n    if (host === \"api.microlink.io\") return \"ogp\";\n    if (/youtube|googleapis/.test(host)) return \"youtube\";\n    if (u.origin === location.origin && path === \"/api/workspace-rss\") return \"rss\";\n    if (host === \"script.google.com\" || (u.origin === location.origin && path === \"/api/kuro-gas-proxy\")) return \"gas_proxy\";\n    if (host.endsWith(\".supabase.co\")) {\n      if (path.startsWith(\"/auth/\")) return \"supabase_auth\";\n      if (path.startsWith(\"/storage/\")) return \"supabase_storage\";\n      if (path.startsWith(\"/functions/\")) return \"supabase_edge\";\n      return \"supabase_data_api\";\n    }\n    if (u.origin === location.origin && path.startsWith(\"/api/\")) return \"other_api\";\n    return null;\n  }\n\n  function addEvent(name, extra) {\n    if (!visitorId || !client) return;\n    var row = {\n      user_id: userId || null,\n      visitor_id: visitorId,\n      session_id: sessionId || getSession().id,\n      event_name: name,\n      page_key: (location.pathname.split(\"/\").filter(Boolean)[0] || \"home\").replace(/[^a-zA-Z0-9_/-]/g, \"\").slice(0, 64) || \"home\"\n    };\n    extra = extra || {};\n    if (extra.service_key) row.service_key = extra.service_key;\n    if (Number.isInteger(extra.status_code) && extra.status_code >= 100 && extra.status_code <= 599) row.status_code = extra.status_code;\n    if (extra.error_code) row.error_code = String(extra.error_code).replace(/[^a-zA-Z0-9_-]/g, \"_\").slice(0, 40);\n    queue.push(row);\n    if (queue.length > 100) queue.splice(0, queue.length - 100);\n    if (queue.length >= 10) flush();\n    else if (!flushTimer) flushTimer = setTimeout(function () { flushTimer = null; flush(); }, 5000);\n  }\n\n  function flush() {\n    if (sending || !client || !visitorId || !queue.length) return;\n    var batch = queue.splice(0, 30);\n    sending = true;\n    Promise.resolve(client.from(\"usage_events\").insert(batch)).then(function (result) {\n      if (result && result.error) console.warn(\"KURO usage log could not be saved\");\n    }).catch(function () {\n      console.warn(\"KURO usage log transport failed\");\n    }).finally(function () {\n      sending = false;\n      if (queue.length && !flushTimer) flushTimer = setTimeout(function () { flushTimer = null; flush(); }, 1000);\n    });\n  }\n\n  var nativeFetch = window.fetch.bind(window);\n  window.fetch = function (input, init) {\n    var service = serviceFor(input);\n    return nativeFetch(input, init).then(function (response) {\n      if (service && !sending && response.status >= 400) {\n        // 同じサービス・ステータスの連続エラーは1分に1件だけ記録する。\n        var key = service + \":\" + response.status;\n        var now = Date.now();\n        if (!lastApiErrorAt[key] || now - lastApiErrorAt[key] > 60000) {\n          lastApiErrorAt[key] = now;\n          addEvent(\"api_error\", { service_key: service, status_code: response.status, error_code: \"http_\" + response.status });\n        }\n      } else if (service && !sending && service !== \"supabase_data_api\" && service !== \"supabase_auth\") {\n        // Supabaseの通常成功リクエストは件数が多いため記録対象から除外する。\n        addEvent(\"api_success\", { service_key: service, status_code: response.status });\n      }\n      return response;\n    }).catch(function (error) {\n      if (service && !sending && !/abort/i.test(String(error && error.message || error))) {\n        var key = service + \":network\";\n        var now = Date.now();\n        if (!lastApiErrorAt[key] || now - lastApiErrorAt[key] > 60000) {\n          lastApiErrorAt[key] = now;\n          addEvent(\"api_error\", { service_key: service, error_code: \"network_error\" });\n        }\n      }\n      throw error;\n    });\n  };\n\n  window.addEventListener(\"error\", function (event) {\n    if (event && event.message) addEvent(\"client_error\", { error_code: \"script_error\" });\n  });\n  window.addEventListener(\"unhandledrejection\", function (event) {\n    var message = String(event && event.reason && event.reason.message || event && event.reason || \"\");\n    if (!/abort/i.test(message)) addEvent(\"client_error\", { error_code: \"unhandled_rejection\" });\n  });\n  window.addEventListener(\"pagehide\", flush);\n\n  // Track dashboard widgets without collecting their settings or contents.\n  var previousWidgetIds = null;\n  var viewedWidgetIds = new Set();\n  var widgetObserver = null;\n  function scanDashboardWidgets() {\n    var grid = document.querySelector(\"#portal-dashboard-grid\");\n    if (!grid) return;\n    var nodes = Array.prototype.slice.call(grid.querySelectorAll(\".portal-widget[data-widget-id]\"));\n    var current = new Set(nodes.map(function (node) { return String(node.dataset.widgetId || \"\").slice(0, 64); }).filter(Boolean));\n    if (previousWidgetIds) {\n      current.forEach(function (id) { if (!previousWidgetIds.has(id)) addEvent(\"widget_added\", { widget_key: id }); });\n      previousWidgetIds.forEach(function (id) { if (!current.has(id)) addEvent(\"widget_removed\", { widget_key: id }); });\n    }\n    previousWidgetIds = current;\n    if (!(\"IntersectionObserver\" in window)) {\n      nodes.forEach(function (node) {\n        var id = node.dataset.widgetId;\n        if (id && !viewedWidgetIds.has(id)) { viewedWidgetIds.add(id); addEvent(\"widget_view\", { widget_key: id }); }\n      });\n      return;\n    }\n    if (!widgetObserver) {\n      widgetObserver = new IntersectionObserver(function (entries) {\n        entries.forEach(function (entry) {\n          if (!entry.isIntersecting || entry.intersectionRatio < 0.25) return;\n          var id = entry.target && entry.target.dataset ? entry.target.dataset.widgetId : \"\";\n          if (id && !viewedWidgetIds.has(id)) { viewedWidgetIds.add(id); addEvent(\"widget_view\", { widget_key: id }); }\n          widgetObserver.unobserve(entry.target);\n        });\n      }, { threshold: [0.25] });\n    }\n    nodes.forEach(function (node) { if (!viewedWidgetIds.has(node.dataset.widgetId)) widgetObserver.observe(node); });\n  }\n  window.addEventListener(\"kuro:portal-rendered\", scanDashboardWidgets);\n  if (document.readyState === \"loading\") document.addEventListener(\"DOMContentLoaded\", scanDashboardWidgets, { once: true });\n  else setTimeout(scanDashboardWidgets, 0);\n  var dashboardRoot = document.getElementById(\"portal-main\");\n  if (dashboardRoot && \"MutationObserver\" in window) {\n    new MutationObserver(scanDashboardWidgets).observe(dashboardRoot, { childList: true, subtree: true });\n  }\n\n  function loadSdk() {\n    if (window.supabase && typeof window.supabase.createClient === \"function\") return Promise.resolve(true);\n    return new Promise(function (resolve) {\n      var script = document.createElement(\"script\");\n      script.src = \"https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2\";\n      script.onload = function () { resolve(!!(window.supabase && window.supabase.createClient)); };\n      script.onerror = function () { resolve(false); };\n      document.head.appendChild(script);\n    });\n  }\n\n  async function start() {\n    // Random first-party visitor ID; no account details are stored in this ID.\n    try {\n      visitorId = localStorage.getItem(\"kuro_portal_guest_id\");\n      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(visitorId || \"\")) {\n        visitorId = makeId();\n        localStorage.setItem(\"kuro_portal_guest_id\", visitorId);\n      }\n    } catch (_) {\n      visitorId = makeId();\n    }\n\n    if (!(await loadSdk())) return;\n    client = window.supabase.createClient(SUPABASE_URL, PUBLISHABLE_KEY, {\n      auth: { autoRefreshToken: false, persistSession: true, detectSessionInUrl: false }\n    });\n    var result = await client.auth.getSession();\n    userId = result && result.data && result.data.session && result.data.session.user\n      ? result.data.session.user.id\n      : null;\n\n    var session = getSession();\n    if (!trackedPage) {\n      trackedPage = true;\n      if (sessionFresh) addEvent(\"session_start\");\n      addEvent(\"page_view\");\n    }\n    client.auth.onAuthStateChange(function (event, sessionData) {\n      userId = sessionData && sessionData.user ? sessionData.user.id : null;\n    });\n  }\n\n  start().catch(function () {});\n})();";
+
+async function injectUsageTracker(request, response) {
+  const url = new URL(request.url);
+  if (request.method !== "GET" || url.hostname !== "kurolab.cc.cd" || url.pathname.startsWith("/admin")) return response;
+  if (response.status < 200 || response.status >= 300 || !(response.headers.get("content-type") || "").toLowerCase().includes("text/html")) return response;
+  const html = await response.text();
+  if (html.includes("portal.js") || html.includes("usage-tracker.js")) {
+    return new Response(html, { status: response.status, statusText: response.statusText, headers: response.headers });
+  }
+  const tag = '<script defer src="/usage-tracker.js?v=20261116guest"></script>';
+  const updated = html.includes("</head>") ? html.replace("</head>", tag + "</head>") : html.includes("</body>") ? html.replace("</body>", tag + "</body>") : html + tag;
+  const headers = new Headers(response.headers);
+  headers.delete("Content-Length");
+  headers.delete("Content-Encoding");
+  headers.delete("ETag");
+  headers.set("Cache-Control", "no-store, max-age=0");
+  headers.set("X-Content-Type-Options", "nosniff");
+  return new Response(updated, { status: response.status, statusText: response.statusText, headers });
+}
+
 export default {
   async fetch(request, env, ctx) {
     try {
@@ -184,9 +205,9 @@ export default {
         headers.set("Cache-Control", "private, no-store, max-age=0");
         headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
         headers.set("X-Content-Type-Options", "nosniff");
-        return new Response(assetResponse.body, { status: assetResponse.status, statusText: assetResponse.statusText, headers });
+        return await injectUsageTracker(request, new Response(assetResponse.body, { status: assetResponse.status, statusText: assetResponse.statusText, headers }));
       }
-      return new Response(PRO_HTML, { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store, max-age=0", "X-Content-Type-Options": "nosniff" } });
+      return await injectUsageTracker(request, new Response(PRO_HTML, { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store, max-age=0", "X-Content-Type-Options": "nosniff" } }));
     }
 
     if (url.hostname === "kurolab.cc.cd" && (url.pathname === "/pro-tools" || url.pathname === "/pro-tools/")) {
@@ -196,7 +217,7 @@ export default {
       headers.set("Cache-Control", "private, no-store, max-age=0");
       headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
       headers.set("X-Content-Type-Options", "nosniff");
-      if (assetResponse.status !== 404) return new Response(assetResponse.body, { status: assetResponse.status, statusText: assetResponse.statusText, headers });
+      if (assetResponse.status !== 404) return await injectUsageTracker(request, new Response(assetResponse.body, { status: assetResponse.status, statusText: assetResponse.statusText, headers }));
       return new Response("Not Found", { status: 404, headers });
     }
 
@@ -210,6 +231,14 @@ export default {
         return new Response(assetResponse.body, { status: assetResponse.status, statusText: assetResponse.statusText, headers });
       }
       return new Response(PORTAL_CSS, { headers: { "Content-Type": "text/css; charset=utf-8", "Cache-Control": "no-store, max-age=0", "X-Content-Type-Options": "nosniff" } });
+    }
+
+    if (url.hostname === "kurolab.cc.cd" && url.pathname === "/usage-tracker.js") {
+      return new Response(USAGE_TRACKER_JS, { headers: {
+        "Content-Type": "application/javascript; charset=utf-8",
+        "Cache-Control": "no-store, max-age=0",
+        "X-Content-Type-Options": "nosniff"
+      } });
     }
 
     if (url.hostname === "kurolab.cc.cd" && url.pathname === "/portal.js") {
@@ -288,7 +317,7 @@ export default {
       });
     }
 
-    return await env.ASSETS.fetch(request);
+    return await injectUsageTracker(request, await env.ASSETS.fetch(request));
     } catch (error) {
       let pathname = "/";
       try { pathname = new URL(request.url).pathname; } catch (_) {}
