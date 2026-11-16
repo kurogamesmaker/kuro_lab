@@ -2684,6 +2684,5 @@ body:has(.portal-dashboard-v2) #portal-quick-button{display:none!important}
   .portal-header-notification{width:32px;height:32px;flex-basis:32px}
 }
 
-/* Pro tools remain discoverable in the standard toolbox for every plan. */
-.portal-pro-toolbox-links{margin-top:5px;padding-top:4px;border-top:1px solid var(--line)}
-.portal-toolbox-menu>a.portal-toolbox-pro-item .portal-toolbox-pro-mark{margin-left:auto;padding:3px 6px;border:1px solid #b99af5;border-radius:999px;background:#f3edff;color:#7041c5;font-size:9px;font-weight:850;letter-spacing:.04em;white-space:nowrap}
+/* Small, right-aligned marker for Pro-restricted toolbox items. */
+.portal-toolbox-menu>a .portal-toolbox-pro-mark{margin-left:auto;padding:2px 5px;border:1px solid var(--line);border-radius:4px;color:var(--muted);font-size:9px;font-style:normal;font-weight:700;line-height:1.4;white-space:nowrap}
