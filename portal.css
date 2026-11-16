@@ -3036,3 +3036,119 @@ body.kuro-portal[data-pro-theme="on"] .portal-side-support a,
 body.kuro-portal[data-pro-theme="on"] .portal-quick-link{
   border-color:var(--line)!important;
 }
+
+
+/* Unified light theme: override legacy dashboard dark-palette declarations */
+body.kuro-portal[data-theme="light"],
+body.kuro-portal[data-theme="light"][data-background],
+html:has(body.kuro-portal[data-theme="light"]) {
+  --bg:#ffffff!important;
+  --surface:#ffffff!important;
+  --surface2:#f7f9fc!important;
+  --ink:#182230!important;
+  --muted:#64748b!important;
+  --line:#e5eaf0!important;
+  --nav:#ffffff!important;
+  background:#ffffff!important;
+  color:#182230!important;
+}
+body.kuro-portal[data-theme="light"] {
+  background:#ffffff!important;
+  background-image:none!important;
+}
+body.kuro-portal[data-theme="light"] .portal-header,
+body.kuro-portal[data-theme="light"] .portal-footer,
+body.kuro-portal[data-theme="light"] .portal-side,
+body.kuro-portal[data-theme="light"] .portal-app-sidebar,
+body.kuro-portal[data-theme="light"] .portal-app-shell,
+body.kuro-portal[data-theme="light"] .portal-app-main,
+body.kuro-portal[data-theme="light"] .portal-app-content,
+body.kuro-portal[data-theme="light"] .portal-card,
+body.kuro-portal[data-theme="light"] .portal-list-item,
+body.kuro-portal[data-theme="light"] .portal-empty,
+body.kuro-portal[data-theme="light"] .portal-widget,
+body.kuro-portal[data-theme="light"] .portal-dashboard-hero,
+body.kuro-portal[data-theme="light"] .portal-dashboard-toolbar,
+body.kuro-portal[data-theme="light"] .portal-dashboard-search,
+body.kuro-portal[data-theme="light"] .portal-profile-card,
+body.kuro-portal[data-theme="light"] .portal-right-section,
+body.kuro-portal[data-theme="light"] .portal-right-promo,
+body.kuro-portal[data-theme="light"] .portal-feature-card,
+body.kuro-portal[data-theme="light"] .portal-game-tile,
+body.kuro-portal[data-theme="light"] .portal-toolbox-menu,
+body.kuro-portal[data-theme="light"] .portal-dashboard-editor,
+body.kuro-portal[data-theme="light"] .portal-quick-dialog,
+body.kuro-portal[data-theme="light"] .portal-modal,
+body.kuro-portal[data-theme="light"] .portal-template-import,
+body.kuro-portal[data-theme="light"] .portal-widget-picker,
+body.kuro-portal[data-theme="light"] .portal-settings-panel {
+  background:#ffffff!important;
+  background-image:none!important;
+  border-color:#e5eaf0!important;
+  color:#182230!important;
+  box-shadow:0 2px 12px #172b450a!important;
+}
+body.kuro-portal[data-theme="light"] .portal-card p,
+body.kuro-portal[data-theme="light"] .portal-muted,
+body.kuro-portal[data-theme="light"] .portal-profile-card p,
+body.kuro-portal[data-theme="light"] .portal-profile-head small,
+body.kuro-portal[data-theme="light"] .portal-right-heading span,
+body.kuro-portal[data-theme="light"] .portal-section-head p,
+body.kuro-portal[data-theme="light"] .portal-welcome p,
+body.kuro-portal[data-theme="light"] .portal-side-label,
+body.kuro-portal[data-theme="light"] .portal-side-brand small,
+body.kuro-portal[data-theme="light"] .portal-list-item small,
+body.kuro-portal[data-theme="light"] .portal-footer-inner {
+  color:#64748b!important;
+}
+body.kuro-portal[data-theme="light"] .portal-brand strong,
+body.kuro-portal[data-theme="light"] .portal-topnav a,
+body.kuro-portal[data-theme="light"] .portal-side-link,
+body.kuro-portal[data-theme="light"] .portal-side-support a,
+body.kuro-portal[data-theme="light"] .portal-quick-link,
+body.kuro-portal[data-theme="light"] .portal-quick-link b,
+body.kuro-portal[data-theme="light"] .portal-card h2,
+body.kuro-portal[data-theme="light"] .portal-card h3,
+body.kuro-portal[data-theme="light"] .portal-widget,
+body.kuro-portal[data-theme="light"] .portal-widget-title b,
+body.kuro-portal[data-theme="light"] .portal-settings-row strong,
+body.kuro-portal[data-theme="light"] .portal-feature-card strong,
+body.kuro-portal[data-theme="light"] .portal-game-tile b {
+  color:#182230!important;
+}
+body.kuro-portal[data-theme="light"] .portal-topnav a[aria-current="page"],
+body.kuro-portal[data-theme="light"] .portal-side-link.active,
+body.kuro-portal[data-theme="light"] .portal-side-link:hover {
+  background:#eef2ff!important;
+  color:var(--blue)!important;
+}
+body.kuro-portal[data-theme="light"] .portal-btn,
+body.kuro-portal[data-theme="light"] .portal-transport-button,
+body.kuro-portal[data-theme="light"] .portal-fav,
+body.kuro-portal[data-theme="light"] .portal-input,
+body.kuro-portal[data-theme="light"] .portal-select,
+body.kuro-portal[data-theme="light"] .portal-textarea,
+body.kuro-portal[data-theme="light"] input,
+body.kuro-portal[data-theme="light"] select,
+body.kuro-portal[data-theme="light"] textarea {
+  background:#ffffff!important;
+  color:#182230!important;
+  border-color:#dbe3ed!important;
+}
+body.kuro-portal[data-theme="light"] .portal-btn.primary {
+  background:var(--blue)!important;
+  color:#ffffff!important;
+  border-color:var(--blue)!important;
+}
+body.kuro-portal[data-theme="light"] .portal-icon,
+body.kuro-portal[data-theme="light"] .portal-widget-title>span {
+  background:#f0edff!important;
+  color:#5741a8!important;
+}
+body.kuro-portal[data-theme="light"] .portal-game-tile:before { background:linear-gradient(0deg,#ffffffee,transparent 90%)!important; }
+body.kuro-portal[data-theme="light"] .portal-oauth-btn {
+  background:#ffffff!important;color:#182230!important;border-color:#dbe3ed!important;
+}
+body.kuro-portal[data-theme="light"] .portal-mobile-nav {
+  background:#ffffff!important;border-color:#e5eaf0!important;
+}
