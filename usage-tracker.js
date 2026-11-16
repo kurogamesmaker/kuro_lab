@@ -56,7 +56,7 @@
   }
 
   function addEvent(name, extra) {
-    if (!userId || !client) return;
+    if (!visitorId || !client) return;
     var row = {
       user_id: userId || null,
       visitor_id: visitorId,
