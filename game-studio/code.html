@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#090b12">
+<title>コードエディター | KURO GAME STUDIO</title>
+<style>
+:root{color-scheme:dark;--bg:#090b12;--panel:#111522;--panel2:#181f30;--line:#293247;--text:#f4f6fc;--muted:#929db2;--accent:#8d78ff;--good:#52c99a;--warn:#f0bd69}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font:14px Inter,system-ui,-apple-system,"Segoe UI",sans-serif}button,input,textarea{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.top{height:62px;display:flex;align-items:center;gap:12px;padding:0 18px;background:#0d111b;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}.brand{font-weight:950;letter-spacing:-.4px;font-size:17px;white-space:nowrap}.brand b{color:var(--accent)}.sep{height:22px;width:1px;background:var(--line)}.project-name{width:min(230px,22vw);border:1px solid transparent;background:transparent;color:#e8ebf5;padding:7px 9px;border-radius:7px;font-size:12px}.project-name:hover,.project-name:focus{border-color:var(--line);background:#ffffff08}.spacer{flex:1}.status{font-size:11px;color:var(--good);white-space:nowrap}.btn{border:1px solid var(--line);background:#ffffff08;color:var(--text);border-radius:8px;padding:8px 12px;font-size:11px;font-weight:800;white-space:nowrap}.btn:hover{background:#ffffff13}.btn.primary{background:linear-gradient(110deg,#9277ff,#657dff);border-color:transparent}.btn.primary:hover{filter:brightness(1.08)}
+.layout{height:calc(100vh - 62px);min-height:620px;display:grid;grid-template-columns:minmax(420px,1fr) minmax(360px,.95fr)}.editor{min-width:0;display:grid;grid-template-rows:54px minmax(0,1fr) 34px;border-right:1px solid var(--line);background:#0d111a}.editor-head{display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--line)}.tab{padding:8px 13px;border:1px solid transparent;background:transparent;border-radius:7px;color:var(--muted);font-size:12px;font-weight:850}.tab.active{background:#26213f;border-color:#51478a;color:#fff}.filetag{margin-left:auto;font:11px ui-monospace,monospace;color:#9ba6bc}.code-wrap{position:relative;min-height:0;display:flex;background:#0b0f18}.gutter{width:48px;flex:0 0 48px;padding:17px 10px 17px 0;text-align:right;overflow:hidden;color:#58647a;background:#0b0f18;border-right:1px solid #20283a;font:12px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre;user-select:none}.code{display:block;resize:none;width:100%;height:100%;border:0;outline:0;background:#0b0f18;color:#d7def0;padding:17px 18px;font:12px/1.65 ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;tab-size:2;white-space:pre;overflow:auto;caret-color:#bcaeff}.code:focus{outline:0}.editor-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 13px;border-top:1px solid var(--line);font-size:10px;color:var(--muted)}
+.preview{min-width:0;display:grid;grid-template-rows:54px minmax(0,1fr) 34px;background:#101521}.preview-head{display:flex;align-items:center;gap:9px;padding:0 13px;border-bottom:1px solid var(--line)}.preview-head strong{font-size:12px}.preview-head .spacer{flex:1}.screen{padding:14px;min-height:0}.frame{display:block;width:100%;height:100%;min-height:340px;border:1px solid #ffffff25;border-radius:10px;background:#fff;box-shadow:0 18px 50px #0006}.preview-foot{display:flex;align-items:center;gap:8px;padding:0 13px;border-top:1px solid var(--line);font-size:10px;color:var(--muted)}
+.help{padding:10px 14px;margin:14px;border:1px solid #343d54;border-radius:9px;background:#151c2c;color:#aab5c9;font-size:10px;line-height:1.65}.help b{color:#e3e8f5}.toast{position:fixed;bottom:52px;left:50%;transform:translateX(-50%);background:#202b40;border:1px solid #485675;padding:10px 14px;border-radius:8px;font-size:11px;opacity:0;pointer-events:none;transition:.2s;z-index:30}.toast.show{opacity:1}.modal{position:fixed;inset:0;z-index:40;display:none;place-items:center;background:#000b;padding:20px}.modal.open{display:grid}.modal section{width:min(520px,100%);padding:20px;border:1px solid var(--line);border-radius:13px;background:#121827}.modal h2{font-size:18px;margin:0 0 8px}.modal p{font-size:12px;color:var(--muted);line-height:1.7}
+@media(max-width:850px){.layout{grid-template-columns:1fr;height:auto;min-height:calc(100vh - 62px)}.editor{height:62vh;min-height:440px;border-right:0;border-bottom:1px solid var(--line)}.preview{height:62vh;min-height:440px}.top{gap:7px;padding:0 9px}.brand{font-size:14px}.status{display:none}.project-name{width:130px}.btn{padding:7px 9px;font-size:10px}}
+@media(max-width:520px){.sep{display:none}.top{height:56px}.layout{height:auto;min-height:calc(100vh - 56px)}.editor{height:60vh;min-height:400px}.preview{height:55vh;min-height:380px}.editor-head{padding:0 7px;gap:3px}.tab{padding:8px 9px;font-size:10px}.filetag{font-size:9px}.code{font-size:11px;padding:12px}.gutter{font-size:11px;padding-top:12px;width:37px;flex-basis:37px}.preview-head{padding:0 8px}.screen{padding:8px}.top .btn{padding:6px 7px;font-size:9px}.project-name{width:88px;font-size:10px}}
+</style>
+</head>
+<body>
+<header class="top">
+ <a class="brand" href="/game-studio/">KURO <b>GAME STUDIO</b></a><span class="sep"></span>
+ <input class="project-name" id="projectName" aria-label="プロジェクト名" value="新しいゲーム">
+ <span class="spacer"></span><span class="status" id="saveStatus">● 保存済み</span>
+ <a class="btn" href="/game-studio/" id="visualLink">ビジュアル編集</a>
+ <button class="btn" id="saveBtn">保存</button><button class="btn" id="syncBtn">ビジュアルから生成</button>
+ <button class="btn" id="exportBtn">HTML書き出し</button><button class="btn primary" id="runBtn">▶ 実行</button>
+</header>
+<main class="layout">
+ <section class="editor">
+  <div class="editor-head">
+   <button class="tab active" data-tab="html">HTML</button><button class="tab" data-tab="css">CSS</button><button class="tab" data-tab="js">JavaScript</button>
+   <span class="filetag" id="fileTag">index.html</span>
+  </div>
+  <div class="code-wrap"><pre class="gutter" id="gutter">1</pre><textarea class="code" id="codeEditor" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="コードエディター"></textarea></div>
+  <div class="editor-foot"><span id="lineInfo">1 行</span><span>Ctrl + S 保存　/　Ctrl + Enter 実行</span></div>
+ </section>
+ <section class="preview">
+  <div class="preview-head"><strong>ライブプレビュー</strong><span class="spacer"></span><span class="muted" id="previewStatus">更新待機中</span><button class="btn" id="refreshBtn">↻ 更新</button></div>
+  <div class="screen"><iframe class="frame" id="previewFrame" title="ゲームプレビュー" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe></div>
+  <div class="preview-foot"><span>安全なサンドボックス内で実行</span><span class="spacer"></span><span id="previewSize">プレビュー</span></div>
+ </section>
+</main>
+<div class="help"><b>コード編集モード：</b> HTML・CSS・JavaScriptを自由に編集できます。プレビューは隔離されたフレーム内で実行します。HTMLタブにはページ全体、または body に入れるHTML断片のどちらも書けます。ビジュアル編集に戻ってもコードは保持されますが、自由記述したコードをビジュアル要素へ自動変換する機能はありません。「ビジュアルから生成」はコードを上書きするので注意してください。</div>
+<div class="modal" id="confirmModal"><section><h2>コードを上書きしますか？</h2><p>現在のビジュアル編集データからHTML・CSS・JavaScriptを再生成します。コードタブで行った変更は置き換わります。</p><div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn" id="cancelSync">キャンセル</button><button class="btn primary" id="confirmSync">再生成する</button></div></section></div>
+<div class="toast" id="toast"></div>
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const KEY="kuroGameStudio.v1";
+const clone=x=>JSON.parse(JSON.stringify(x));
+const escapeHTML=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fallback={id:"studio-new",name:"新しいゲーム",type:"clicker",background:"#17243a",objects:[
+{id:"title",type:"text",name:"タイトル",text:"CLICK GAME",x:25,y:10,w:50,h:15,color:"#ffffff",bg:"transparent",size:34,radius:0},
+{id:"score",type:"text",name:"スコア",text:"SCORE  0",x:35,y:32,w:30,h:12,color:"#d8def0",bg:"transparent",size:22,radius:0},
+{id:"main",type:"button",name:"スコアボタン",text:"クリック！",x:34,y:53,w:32,h:17,color:"#ffffff",bg:"#8068ed",size:22,radius:14}
+]};
+let project,activeTab="html",saveTimer=null,previewTimer=null,toastTimer=null;
+function makeVisualCode(p){
+ const objects=Array.isArray(p.objects)?p.objects:[];
+ const html='<main id="kuro-game" aria-label="'+escapeHTML(p.name||"KURO Game")+'">\n'+objects.map(o=>{
+  const text=escapeHTML(o.text||"");
+  const size=Number(o.size)||20;
+  const style='left:'+Number(o.x||0)+'%;top:'+Number(o.y||0)+'%;width:'+Number(o.w||20)+'%;height:'+Number(o.h||12)+'%;color:'+(o.color||"#fff")+';background:'+(o.bg||"transparent")+';font-size:clamp(8px,'+(size/960*100)+'vw,'+size+'px);border-radius:'+(Number(o.radius)||0)+'px';
+  return '  <div class="game-object" data-id="'+escapeHTML(o.id)+'" data-kind="'+escapeHTML(o.type)+'" style="'+style+'">'+text+'</div>';
+ }).join("\n")+'\n</main>';
+ const css='*{box-sizing:border-box}\\nbody{margin:0;min-height:100vh;display:grid;place-items:center;padding:2vw;background:#0b1020;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#fff}\\n#kuro-game{position:relative;width:min(960px,96vw);aspect-ratio:16/9;overflow:hidden;border-radius:14px;background:'+(p.background||"#17243a")+';box-shadow:0 20px 60px #0008}\\n.game-object{position:absolute;display:flex;align-items:center;justify-content:center;text-align:center;white-space:pre-wrap;word-break:break-word;line-height:1.2;user-select:none}\\n.game-object[data-kind="button"],.game-object[data-kind="emoji"]{cursor:pointer}\\n';
+ const buttonIds=objects.filter(o=>o.type==="button").map(o=>o.id);
+ const target=objects.find(o=>o.id==="target");
+ const type=JSON.stringify(p.type||"custom");
+ const scoreId=JSON.stringify((objects.find(o=>o.id==="score")||{}).id||"score");
+ const buttons=JSON.stringify(buttonIds);
+ const correct=JSON.stringify("a");
+ const targetId=JSON.stringify(target?target.id:"target");
+ const js='// KURO GAME STUDIO - ゲームの動作を編集できます\\nconst gameType = '+type+';\\nconst scoreId = '+scoreId+';\\nconst buttonIds = '+buttons+';\\nconst correctAnswerId = '+correct+';\\nconst targetId = '+targetId+';\\nlet score = 0;\\nconst root = document.querySelector("#kuro-game");\\nroot.addEventListener("click", (event) => {\\n  const item = event.target.closest(".game-object");\\n  if (!item) return;\\n  if (gameType === "clicker" && buttonIds.includes(item.dataset.id)) {\\n    score += 1;\\n    const scoreNode = root.querySelector(\\'[data-id="\\' + scoreId + \\'"]\\');\\n    if (scoreNode) scoreNode.textContent = "SCORE  " + score;\\n  } else if (gameType === "quiz" && buttonIds.includes(item.dataset.id)) {\\n    alert(item.dataset.id === correctAnswerId ? "正解！" : "もう一度挑戦！");\\n  } else if (gameType === "target" && item.dataset.id === targetId) {\\n    score += 10;\\n    const scoreNode = root.querySelector(\\'[data-id="\\' + scoreId + \\'"]\\');\\n    if (scoreNode) scoreNode.textContent = "SCORE  " + score;\\n    item.style.left = (5 + Math.random() * 75) + "%";\\n    item.style.top = (20 + Math.random() * 60) + "%";\\n  }\\n});\\n';
+ return {html,css,js};
+}
+function getStoredProject(){
+ try{
+  const all=JSON.parse(localStorage.getItem(KEY)||"[]");
+  const id=localStorage.getItem(KEY+".current");
+  return all.find(x=>x.id===id)||all[0]||null;
+ }catch(_){return null}
+}
+project=getStoredProject()||clone(fallback);
+if(!project.code||typeof project.code!=="object")project.code=makeVisualCode(project);
+["html","css","js"].forEach(k=>{if(typeof project.code[k]!=="string")project.code[k]="";});
+function setStatus(text,color){$("saveStatus").textContent=text;$("saveStatus").style.color=color||"var(--good)"}
+function toast(s){$("toast").textContent=s;$("toast").classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>$("toast").classList.remove("show"),2200)}
+function persist(silent){
+ try{
+  let all=JSON.parse(localStorage.getItem(KEY)||"[]");
+  const i=all.findIndex(x=>x.id===project.id);
+  project.updatedAt=Date.now();
+  if(i>=0)all[i]=clone(project);else all.unshift(clone(project));
+  localStorage.setItem(KEY,JSON.stringify(all));
+  localStorage.setItem(KEY+".current",project.id);
+  setStatus("● 保存済み","var(--good)");
+  if(!silent)toast("このブラウザに保存しました");
+  return true;
+ }catch(e){setStatus("● 保存エラー","#ff9292");if(!silent)toast("保存できません。ブラウザの保存容量を確認してください");return false}
+}
+function markDirty(){setStatus("● 未保存","var(--warn)");clearTimeout(saveTimer);saveTimer=setTimeout(()=>persist(true),900)}
+function currentValue(){return $("codeEditor").value}
+function renderGutter(){
+ const lines=currentValue().split("\n").length;
+ $("gutter").textContent=Array.from({length:lines},(_,i)=>i+1).join("\n");
+ $("lineInfo").textContent=lines+" 行";
+}
+function showTab(tab){
+ activeTab=tab;
+ document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
+ $("fileTag").textContent=({html:"index.html",css:"style.css",js:"game.js"}[tab]);
+ $("codeEditor").value=project.code[tab]||"";
+ renderGutter();
+}
+function safeScript(source){return String(source||"").replace(/<\/script/gi,"<\\/script");}
+function makeDocument(){
+ const html=project.code.html||"";
+ const css=String(project.code.css||"").replace(/<\/style/gi,"<\\/style");
+ const js=safeScript(project.code.js||"");
+ const styleBlock="<style>"+css+"</style>";
+ const scriptOpen="<scr"+"ipt>";
+ const scriptClose="<"+"/script>";
+ const scriptBlock=scriptOpen+"window.addEventListener('error',function(e){try{parent.postMessage({type:'kuro-studio-error',message:e.message},'*')}catch(_){}});\\n"+js+scriptClose;
+ if(/<html[\s>]/i.test(html)){
+  let doc=html;
+  if(/<\/head>/i.test(doc))doc=doc.replace(/<\/head>/i,styleBlock+"</head>");
+  else if(/<html[^>]*>/i.test(doc))doc=doc.replace(/<html[^>]*>/i,m=>m+"<head>"+styleBlock+"</head>");
+  else doc=styleBlock+doc;
+  if(/<\/body>/i.test(doc))doc=doc.replace(/<\/body>/i,scriptBlock+"</body>");
+  else doc+=scriptBlock;
+  return doc;
+ }
+ return '<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+escapeHTML(project.name||"KURO Game")+'</title>'+styleBlock+'</head><body>'+html+scriptBlock+'</body></html>';
+}
+function run(){
+ $("previewStatus").textContent="実行中…";
+ $("previewFrame").srcdoc=makeDocument();
+ $("previewStatus").textContent="プレビュー更新済み";
+ $("previewSize").textContent="更新 "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+}
+function queuePreview(){clearTimeout(previewTimer);previewTimer=setTimeout(run,700)}
+function editCurrent(){
+ project.code[activeTab]=currentValue();
+ renderGutter();
+ markDirty();
+ queuePreview();
+}
+function syncFromVisual(){
+ project.code=makeVisualCode(project);
+ showTab("html");run();markDirty();toast("ビジュアル内容からコードを再生成しました");
+}
+function exportHTML(){
+ const blob=new Blob([makeDocument()],{type:"text/html;charset=utf-8"});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement("a");
+ const base=(project.name||"kuro-game").replace(/[\\/:*?"<>|]+/g,"-").trim()||"kuro-game";
+ a.href=url;a.download=base+".html";a.click();
+ setTimeout(()=>URL.revokeObjectURL(url),1200);
+ toast("単独HTMLを書き出しました");
+}
+$("projectName").value=project.name||"新しいゲーム";
+$("projectName").addEventListener("input",()=>{project.name=$("projectName").value;markDirty();});
+$("codeEditor").addEventListener("input",editCurrent);
+$("codeEditor").addEventListener("scroll",()=>$("gutter").scrollTop=$("codeEditor").scrollTop);
+document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{project.code[activeTab]=currentValue();showTab(b.dataset.tab);}));
+$("saveBtn").addEventListener("click",()=>{project.code[activeTab]=currentValue();persist(false)});
+$("runBtn").addEventListener("click",()=>{project.code[activeTab]=currentValue();run();});
+$("refreshBtn").addEventListener("click",()=>{project.code[activeTab]=currentValue();run()});
+$("exportBtn").addEventListener("click",()=>{project.code[activeTab]=currentValue();persist(true);exportHTML()});
+$("syncBtn").addEventListener("click",()=>$("confirmModal").classList.add("open"));
+$("cancelSync").addEventListener("click",()=>$("confirmModal").classList.remove("open"));
+$("confirmSync").addEventListener("click",()=>{$("confirmModal").classList.remove("open");project.code[activeTab]=currentValue();syncFromVisual()});
+$("visualLink").addEventListener("click",()=>{project.code[activeTab]=currentValue();persist(true)});
+window.addEventListener("message",event=>{if(event.source!==$("previewFrame").contentWindow)return;if(event.data&&event.data.type==="kuro-studio-error"){$("previewStatus").textContent="エラー: "+String(event.data.message||"実行エラー").slice(0,100)}});
+document.addEventListener("keydown",e=>{
+ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="s"){e.preventDefault();project.code[activeTab]=currentValue();persist(false)}
+ if((e.ctrlKey||e.metaKey)&&e.key==="Enter"){e.preventDefault();project.code[activeTab]=currentValue();run()}
+ if(e.key==="Tab"&&document.activeElement===$("codeEditor")){e.preventDefault();const el=$("codeEditor"),start=el.selectionStart,end=el.selectionEnd,value=el.value;el.value=value.slice(0,start)+"  "+value.slice(end);el.selectionStart=el.selectionEnd=start+2;editCurrent()}
+});
+window.addEventListener("beforeunload",()=>{project.code[activeTab]=currentValue();persist(true)});
+showTab("html");
+run();
+})();
+</script>
+</body></html>
