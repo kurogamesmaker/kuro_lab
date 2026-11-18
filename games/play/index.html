@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f6f8fc"><meta name="robots" content="noindex,nofollow"><title>ゲームプレイ | KURO GAMES</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f6f8fc;color:#17243c;font-family:Inter,"Noto Sans JP",system-ui,sans-serif}.top{height:64px;display:flex;align-items:center;gap:14px;padding:0 max(18px,calc((100% - 1180px)/2));background:#fff;border-bottom:1px solid #e6ebf3}.brand{font-weight:1000;font-size:19px;color:#2878ee;text-decoration:none}.back{margin-left:auto;text-decoration:none;font-size:12px;font-weight:850;color:#53647d}.wrap{width:min(1180px,calc(100% - 28px));margin:22px auto}.info{display:flex;align-items:center;gap:14px;margin-bottom:14px}.icon{width:52px;height:52px;display:grid;place-items:center;border-radius:14px;background:#e5edff;font-size:28px}.copy{min-width:0}.copy h1{font-size:clamp(19px,3vw,27px);margin:0 0 4px}.copy p{margin:0;color:#718098;font-size:12px;line-height:1.6}.frame-wrap{overflow:hidden;border:1px solid #dce3ee;border-radius:14px;background:#fff;box-shadow:0 12px 35px #263d5b12}.game-frame{display:block;width:100%;height:min(76vh,780px);min-height:480px;border:0;background:#fff}.state{padding:70px 20px;text-align:center;color:#718098}.state strong{display:block;color:#17243c;font-size:18px;margin-bottom:8px}.hint{font-size:11px;color:#8390a5;margin:12px 4px}@media(max-width:600px){.top{height:56px;padding:0 14px}.wrap{margin:14px auto}.game-frame{height:72vh;min-height:420px}.icon{width:44px;height:44px}}
+</style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
+<body><header class="top"><a class="brand" href="/games/">KURO GAMES</a><a class="back" href="/games/">← ゲーム一覧へ</a></header>
+<main class="wrap"><div class="info" id="gameInfo" hidden><div class="icon" id="gameIcon">🎮</div><div class="copy"><h1 id="gameTitle">読み込み中…</h1><p id="gameDescription"></p></div></div><div class="frame-wrap" id="frameWrap"><div class="state" id="state"><strong>ゲームを読み込んでいます</strong>少しお待ちください。</div></div><p class="hint">このゲームは独立したサンドボックス内で実行されます。</p></main>
+<script>
+(async function(){
+ const $=id=>document.getElementById(id),params=new URLSearchParams(location.search),id=params.get("id");
+ function fail(message){$("state").innerHTML="<strong>ゲームを開けませんでした</strong>"+message;}
+ if(!id||!/^[0-9a-f-]{36}$/i.test(id)){fail("ゲームIDが正しくありません。");return;}
+ if(!window.supabase||!window.supabase.createClient){fail("通信ライブラリを読み込めませんでした。");return;}
+ try{const db=window.supabase.createClient("https://cprvpphlfpmiegjiutjn.supabase.co","sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn");
+  const {data,error}=await db.from("game_studio_games").select("title,description,icon,html_content").eq("id",id).eq("status","published").maybeSingle();if(error)throw error;if(!data){fail("公開が終了したか、URLが正しくありません。");return;}
+  $("gameTitle").textContent=data.title;$("gameDescription").textContent=data.description||"KURO GAME STUDIOで作成されたゲーム";$("gameIcon").textContent=data.icon||"🎮";$("gameInfo").hidden=false;
+  const frame=document.createElement("iframe");frame.className="game-frame";frame.title=data.title;frame.setAttribute("sandbox","allow-scripts allow-forms allow-modals");frame.referrerPolicy="no-referrer";frame.srcdoc=data.html_content;$("frameWrap").replaceChildren(frame);
+ }catch(error){fail(error.message||"通信エラーが発生しました。");}
+})();
+</script></body></html>
