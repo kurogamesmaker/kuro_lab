@@ -10,7 +10,7 @@
 .top{height:62px;display:flex;align-items:center;gap:12px;padding:0 18px;background:#0d111b;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}.brand{font-weight:950;letter-spacing:-.4px;font-size:17px;white-space:nowrap}.brand b{color:var(--accent)}.sep{height:22px;width:1px;background:var(--line)}.project-name{width:min(230px,22vw);border:1px solid transparent;background:transparent;color:#e8ebf5;padding:7px 9px;border-radius:7px;font-size:12px}.project-name:hover,.project-name:focus{border-color:var(--line);background:#ffffff08}.spacer{flex:1}.status{font-size:11px;color:var(--good);white-space:nowrap}.btn{border:1px solid var(--line);background:#ffffff08;color:var(--text);border-radius:8px;padding:8px 12px;font-size:11px;font-weight:800;white-space:nowrap}.btn:hover{background:#ffffff13}.btn.primary{background:linear-gradient(110deg,#9277ff,#657dff);border-color:transparent}.btn.primary:hover{filter:brightness(1.08)}
 .layout{height:calc(100vh - 62px);min-height:620px;display:grid;grid-template-columns:minmax(420px,1fr) minmax(360px,.95fr)}.editor{min-width:0;display:grid;grid-template-rows:54px minmax(0,1fr) 34px;border-right:1px solid var(--line);background:#0d111a}.editor-head{display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--line)}.tab{padding:8px 13px;border:1px solid transparent;background:transparent;border-radius:7px;color:var(--muted);font-size:12px;font-weight:850}.tab.active{background:#26213f;border-color:#51478a;color:#fff}.filetag{margin-left:auto;font:11px ui-monospace,monospace;color:#9ba6bc}.code-wrap{position:relative;min-height:0;display:flex;background:#0b0f18}.gutter{width:48px;flex:0 0 48px;padding:17px 10px 17px 0;text-align:right;overflow:hidden;color:#58647a;background:#0b0f18;border-right:1px solid #20283a;font:12px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre;user-select:none}.code{display:block;resize:none;width:100%;height:100%;border:0;outline:0;background:#0b0f18;color:#d7def0;padding:17px 18px;font:12px/1.65 ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;tab-size:2;white-space:pre;overflow:auto;caret-color:#bcaeff}.code:focus{outline:0}.editor-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 13px;border-top:1px solid var(--line);font-size:10px;color:var(--muted)}
 .preview{min-width:0;display:grid;grid-template-rows:54px minmax(0,1fr) 34px;background:#101521}.preview-head{display:flex;align-items:center;gap:9px;padding:0 13px;border-bottom:1px solid var(--line)}.preview-head strong{font-size:12px}.preview-head .spacer{flex:1}.screen{padding:14px;min-height:0}.frame{display:block;width:100%;height:100%;min-height:340px;border:1px solid #ffffff25;border-radius:10px;background:#fff;box-shadow:0 18px 50px #0006}.preview-foot{display:flex;align-items:center;gap:8px;padding:0 13px;border-top:1px solid var(--line);font-size:10px;color:var(--muted)}
-.help{padding:10px 14px;margin:14px;border:1px solid #343d54;border-radius:9px;background:#151c2c;color:#aab5c9;font-size:10px;line-height:1.65}.help b{color:#e3e8f5}.toast{position:fixed;bottom:52px;left:50%;transform:translateX(-50%);background:#202b40;border:1px solid #485675;padding:10px 14px;border-radius:8px;font-size:11px;opacity:0;pointer-events:none;transition:.2s;z-index:30}.toast.show{opacity:1}.modal{position:fixed;inset:0;z-index:40;display:none;place-items:center;background:#000b;padding:20px}.modal.open{display:grid}.modal section{width:min(520px,100%);padding:20px;border:1px solid var(--line);border-radius:13px;background:#121827}.modal h2{font-size:18px;margin:0 0 8px}.modal p{font-size:12px;color:var(--muted);line-height:1.7}
+.help{padding:10px 14px;margin:14px;border:1px solid #343d54;border-radius:9px;background:#151c2c;color:#aab5c9;font-size:10px;line-height:1.65}.help b{color:#e3e8f5}.toast{position:fixed;bottom:52px;left:50%;transform:translateX(-50%);background:#202b40;border:1px solid #485675;padding:10px 14px;border-radius:8px;font-size:11px;opacity:0;pointer-events:none;transition:.2s;z-index:30}.toast.show{opacity:1}.import-modal{position:fixed;inset:0;z-index:45;display:none;place-items:center;background:#000c;padding:18px}.import-modal.open{display:grid}.import-box{width:min(850px,100%);max-height:92vh;display:flex;flex-direction:column;gap:12px;padding:20px;border:1px solid var(--line);border-radius:13px;background:#121827}.import-box h2{font-size:18px;margin:0}.import-box p{font-size:11px;color:var(--muted);line-height:1.7;margin:0}.import-box textarea{width:100%;min-height:260px;max-height:48vh;resize:vertical;border:1px solid var(--line);border-radius:9px;background:#090e18;color:#d7def0;padding:12px;font:11px/1.6 ui-monospace,monospace}.import-result{padding:10px;border:1px solid #34415a;border-radius:8px;background:#0d1421;color:#bfc9dc;font-size:11px;line-height:1.7;white-space:pre-wrap}.import-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}.modal{position:fixed;inset:0;z-index:40;display:none;place-items:center;background:#000b;padding:20px}.modal.open{display:grid}.modal section{width:min(520px,100%);padding:20px;border:1px solid var(--line);border-radius:13px;background:#121827}.modal h2{font-size:18px;margin:0 0 8px}.modal p{font-size:12px;color:var(--muted);line-height:1.7}
 @media(max-width:850px){.layout{grid-template-columns:1fr;height:auto;min-height:calc(100vh - 62px)}.editor{height:62vh;min-height:440px;border-right:0;border-bottom:1px solid var(--line)}.preview{height:62vh;min-height:440px}.top{gap:7px;padding:0 9px}.brand{font-size:14px}.status{display:none}.project-name{width:130px}.btn{padding:7px 9px;font-size:10px}}
 @media(max-width:520px){.sep{display:none}.top{height:56px}.layout{height:auto;min-height:calc(100vh - 56px)}.editor{height:60vh;min-height:400px}.preview{height:55vh;min-height:380px}.editor-head{padding:0 7px;gap:3px}.tab{padding:8px 9px;font-size:10px}.filetag{font-size:9px}.code{font-size:11px;padding:12px}.gutter{font-size:11px;padding-top:12px;width:37px;flex-basis:37px}.preview-head{padding:0 8px}.screen{padding:8px}.top .btn{padding:6px 7px;font-size:9px}.project-name{width:88px;font-size:10px}}
 </style>
@@ -21,7 +21,7 @@
  <input class="project-name" id="projectName" aria-label="プロジェクト名" value="新しいゲーム">
  <span class="spacer"></span><span class="status" id="saveStatus">● 保存済み</span>
  <a class="btn" href="/game-studio/projects.html">プロジェクト</a><a class="btn" href="/game-studio/" id="visualLink">ビジュアル編集</a>
- <button class="btn" id="saveBtn">保存</button><button class="btn" id="validateBtn">コード検証</button><button class="btn" id="syncBtn">ビジュアルから生成</button>
+ <button class="btn" id="saveBtn">保存</button><button class="btn" id="importCodeBtn">コード取り込み</button><button class="btn" id="validateBtn">コード検証</button><button class="btn" id="syncBtn">ビジュアルから生成</button>
  <button class="btn" id="exportBtn">HTML書き出し</button><button class="btn primary" id="runBtn">▶ 実行</button>
 </header>
 <main class="layout">
@@ -40,7 +40,7 @@
  </section>
 </main>
 <div class="help"><b>コード編集モード：</b> HTML・CSS・JavaScriptを自由に編集できます。プレビューは隔離されたフレーム内で実行します。HTMLタブにはページ全体、または body に入れるHTML断片のどちらも書けます。ビジュアル編集に戻ってもコードは保持されますが、自由記述したコードをビジュアル要素へ自動変換する機能はありません。「ビジュアルから生成」はコードを上書きするので注意してください。</div>
-<div class="modal" id="confirmModal"><section><h2>コードを上書きしますか？</h2><p>現在のビジュアル編集データからHTML・CSS・JavaScriptを再生成します。コードタブで行った変更は置き換わります。</p><div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn" id="cancelSync">キャンセル</button><button class="btn primary" id="confirmSync">再生成する</button></div></section></div>
+<div class="import-modal" id="importModal"><section class="import-box"><h2>混在コードを自動で分別</h2><p>HTML全体、CSS、JavaScriptが混ざったコードを貼り付けてください。HTML内の style とインライン script も検出して各タブへ分けます。外部ライブラリの読み込みタグはHTML側に残します。</p><textarea id="importSource" spellcheck="false" placeholder="HTML / CSS / JavaScriptが混ざったコードを貼り付け"></textarea><div class="import-result" id="importResult">まだ解析していません。</div><div class="import-actions"><button class="btn" id="cancelImport">キャンセル</button><button class="btn" id="analyzeImport">自動で分別</button><button class="btn primary" id="applyImport" disabled>3つのタブに反映</button></div></section></div><div class="modal" id="confirmModal"><section><h2>コードを上書きしますか？</h2><p>現在のビジュアル編集データからHTML・CSS・JavaScriptを再生成します。コードタブで行った変更は置き換わります。</p><div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn" id="cancelSync">キャンセル</button><button class="btn primary" id="confirmSync">再生成する</button></div></section></div>
 <div class="toast" id="toast"></div>
 <script>
 (function(){
@@ -145,6 +145,40 @@ function showTab(tab){
  $("codeEditor").value=project.code[tab]||"";
  renderGutter();
 }
+function splitMixedCode(source){
+ let input=String(source||"").replace(/^\uFEFF/,"").trim();
+ const parts={html:"",css:"",js:""},notes=[];
+ const fence=/\x60{3}([\w+-]*)\s*\n([\s\S]*?)\x60{3}/g;
+ const fenced=[...input.matchAll(fence)];
+ if(fenced.length){
+  const rest=input.replace(fence,"").trim();
+  for(const m of fenced){const lang=(m[1]||"").toLowerCase(),body=m[2].trim();
+   if(["html","htm","xhtml"].includes(lang))parts.html+=(parts.html?"\n":"")+body;
+   else if(["css","scss","less"].includes(lang))parts.css+=(parts.css?"\n":"")+body;
+   else if(["js","javascript","mjs","jsx","ts","typescript"].includes(lang))parts.js+=(parts.js?"\n":"")+body;
+   else if(/<(!doctype|html|head|body|div|main|section|style|script)\b/i.test(body))parts.html+=(parts.html?"\n":"")+body;
+   else if(/(^|\n)\s*(@media|@keyframes|:root|[.#][\w-]+\s*\{)/.test(body))parts.css+=(parts.css?"\n":"")+body;
+   else parts.js+=(parts.js?"\n":"")+body;
+  }
+  if(rest)notes.push("コードフェンス外の説明文は取り込まずに除外しました。");
+  input="";
+ }else if(!/<(!doctype|html|head|body|style|script)\b/i.test(input)&&/(^|\n)\s*(@media|@keyframes|:root|[.#][\w-]+\s*\{)/.test(input)){parts.css=input;input="";}
+ else if(!/<(!doctype|html|head|body|style|script)\b/i.test(input)&&/\b(const|let|var|function|import|export|document\.|window\.|console\.)/.test(input)){parts.js=input;input="";}
+ if(input){
+  input=input.replace(/<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi,(_,body)=>{parts.css+=(parts.css?"\n\n":"")+body.trim();return"<!-- CSSをstyle.cssへ分離 -->";});
+  input=input.replace(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi,(whole,attrs,body)=>{
+   if(/\bsrc\s*=/.test(attrs)){notes.push("外部script読み込みタグはHTML内に保持しました。");return whole;}
+   if(body.trim()){parts.js+=(parts.js?"\n\n":"")+body.trim();if(/\btype\s*=\s*["']module["']/.test(attrs))notes.push("module形式のJavaScriptを検出しました。import文を保持しています。");}
+   return"<!-- JavaScriptをgame.jsへ分離 -->";
+  });
+  parts.html=input.trim();
+ }
+ if(!parts.html&&!parts.css&&!parts.js)throw new Error("コードを判別できませんでした。");
+ if(!parts.html)parts.html="<!-- HTMLをここに追加できます -->";
+ if(!parts.css)parts.css="/* CSSをここに追加できます */";
+ if(!parts.js)parts.js="// JavaScriptをここに追加できます";
+ return {parts,notes};
+}
 function safeScript(source){return String(source||"").replace(/<\/script/gi,"<\\/script");}
 function makeDocument(){
  const html=project.code.html||"";
@@ -191,6 +225,19 @@ function exportHTML(){
  setTimeout(()=>URL.revokeObjectURL(url),1200);
  toast("単独HTMLを書き出しました");
 }
+let pendingImport=null;
+$("importCodeBtn").addEventListener("click",()=>{$("importModal").classList.add("open");$("importSource").focus();});
+$("cancelImport").addEventListener("click",()=>{$("importModal").classList.remove("open");});
+$("analyzeImport").addEventListener("click",()=>{
+ try{pendingImport=splitMixedCode($("importSource").value);const p=pendingImport.parts;$("importResult").textContent="自動判定結果\nHTML: "+p.html.length+" 文字\nCSS: "+p.css.length+" 文字\nJavaScript: "+p.js.length+" 文字"+(pendingImport.notes.length?"\n\n補足: "+pendingImport.notes.join(" / "):"\n\n分別できました。反映前に各タブの内容を確認できます。");$("applyImport").disabled=false;}
+ catch(e){pendingImport=null;$("applyImport").disabled=true;$("importResult").textContent="解析できませんでした: "+e.message;}
+});
+$("applyImport").addEventListener("click",()=>{
+ if(!pendingImport)return;
+ project.code=pendingImport.parts;
+ showTab("html");$("importModal").classList.remove("open");run();markDirty();toast("HTML・CSS・JavaScriptに分別して反映しました");
+});
+$("importModal").addEventListener("click",e=>{if(e.target===$("importModal"))$("importModal").classList.remove("open");});
 $("projectName").value=project.name||"新しいゲーム";
 $("projectName").addEventListener("input",()=>{project.name=$("projectName").value;markDirty();});
 $("codeEditor").addEventListener("input",editCurrent);
