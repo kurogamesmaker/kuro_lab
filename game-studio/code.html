@@ -153,7 +153,7 @@ function makeDocument(){
  const styleBlock="<style>"+css+"</style>";
  const scriptOpen="<scr"+"ipt>";
  const scriptClose="<"+"/script>";
- const scriptBlock=scriptOpen+"window.addEventListener('error',function(e){try{parent.postMessage({type:'kuro-studio-error',message:e.message},'*')}catch(_){}});\n"+js+scriptClose;
+ const scriptBlock=scriptOpen+"const __kuroSend=(level,args)=>{try{parent.postMessage({type:'kuro-studio-console',level:level,values:Array.from(args).map(v=>{try{return typeof v==='string'?v:JSON.stringify(v)}catch(_){return String(v)}})},'*')}catch(_){}};['log','info','warn','error'].forEach(level=>{const base=console[level].bind(console);console[level]=(...args)=>{base(...args);__kuroSend(level,args)}});window.addEventListener('error',function(e){try{parent.postMessage({type:'kuro-studio-error',message:e.message},'*')}catch(_){}});\n"+js+scriptClose;
  if(/<html[\s>]/i.test(html)){
   let doc=html;
   if(/<\/head>/i.test(doc))doc=doc.replace(/<\/head>/i,styleBlock+"</head>");
@@ -166,7 +166,7 @@ function makeDocument(){
  return '<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+escapeHTML(project.name||"KURO Game")+'</title>'+styleBlock+'</head><body>'+html+scriptBlock+'</body></html>';
 }
 function run(){
- $("previewStatus").textContent="実行中…";
+ clearConsole();$("previewStatus").textContent="実行中…";
  $("previewFrame").srcdoc=makeDocument();
  $("previewStatus").textContent="プレビュー更新済み";
  $("previewSize").textContent="更新 "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
@@ -197,6 +197,15 @@ $("codeEditor").addEventListener("input",editCurrent);
 $("codeEditor").addEventListener("scroll",()=>$("gutter").scrollTop=$("codeEditor").scrollTop);
 document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{project.code[activeTab]=currentValue();showTab(b.dataset.tab);}));
 $("saveBtn").addEventListener("click",()=>{project.code[activeTab]=currentValue();persist(false)});
+$("validateBtn").addEventListener("click",()=>{
+ project.code[activeTab]=currentValue();
+ try{
+  if(activeTab==="js")new Function(project.code.js);
+  else if(activeTab==="css"){const sheet=new CSSStyleSheet();sheet.replaceSync(project.code.css);}
+  else{const doc=new DOMParser().parseFromString(project.code.html,"text/html");if(doc.querySelector("parsererror"))throw new Error("HTML構文エラー");}
+  toast("構文チェックを通過しました");$("previewStatus").textContent="構文チェック OK";
+ }catch(e){$("previewStatus").textContent="構文エラー";writeConsole("error",[e.message]);toast("構文エラー: "+e.message);}
+});
 $("runBtn").addEventListener("click",()=>{project.code[activeTab]=currentValue();run();});
 $("refreshBtn").addEventListener("click",()=>{project.code[activeTab]=currentValue();run()});
 $("exportBtn").addEventListener("click",()=>{project.code[activeTab]=currentValue();persist(true);exportHTML()});
@@ -204,7 +213,9 @@ $("syncBtn").addEventListener("click",()=>$("confirmModal").classList.add("open"
 $("cancelSync").addEventListener("click",()=>$("confirmModal").classList.remove("open"));
 $("confirmSync").addEventListener("click",()=>{$("confirmModal").classList.remove("open");project.code[activeTab]=currentValue();syncFromVisual()});
 $("visualLink").addEventListener("click",()=>{project.code[activeTab]=currentValue();persist(true)});
-window.addEventListener("message",event=>{if(event.source!==$("previewFrame").contentWindow)return;if(event.data&&event.data.type==="kuro-studio-error"){$("previewStatus").textContent="エラー: "+String(event.data.message||"実行エラー").slice(0,100)}});
+function clearConsole(){ $("consoleOutput").textContent="";$("consoleCount").textContent="0"; }
+function writeConsole(level,values){const out=$("consoleOutput");const line=document.createElement("div");line.className=level==="error"?"error":level==="warn"?"warn":"";line.textContent="["+String(level).toUpperCase()+"] "+(values||[]).join(" ");out.appendChild(line);out.scrollTop=out.scrollHeight;$("consoleCount").textContent=String(out.children.length);}
+window.addEventListener("message",event=>{if(event.source!==$("previewFrame").contentWindow||!event.data)return;if(event.data.type==="kuro-studio-error"){$("previewStatus").textContent="エラー: "+String(event.data.message||"実行エラー").slice(0,100);writeConsole("error",[event.data.message||"実行エラー"]);}else if(event.data.type==="kuro-studio-console"){writeConsole(event.data.level,event.data.values||[]);}});
 document.addEventListener("keydown",e=>{
  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="s"){e.preventDefault();project.code[activeTab]=currentValue();persist(false)}
  if((e.ctrlKey||e.metaKey)&&e.key==="Enter"){e.preventDefault();project.code[activeTab]=currentValue();run()}
