@@ -297,7 +297,7 @@ function xInstantiatePrefab(id){
 }
 function xRenderAssets(){
  const list=$("assetList"),prefabs=$("prefabList");if(!list||!prefabs)return;list.innerHTML="";prefabs.innerHTML="";
- p.assets.forEach(asset=>{const row=document.createElement("div");row.className="asset-item";if(asset.type==="image"&&asset.data){const img=document.createElement("img");img.className="asset-thumb";img.src=asset.data;row.appendChild(img);}else{const icon=document.createElement("span");icon.className="asset-thumb";icon.textContent="♫";icon.style.display="grid";icon.style.placeItems="center";row.appendChild(icon);}const name=document.createElement("b");name.textContent=asset.name;row.appendChild(name);if(asset.type==="image"){const addBtn=document.createElement("button");addBtn.textContent="配置";addBtn.onclick=()=>{snapshot();const o={id:uid(),type:"image",name:asset.name,text:"",imageData:asset.data,x:30,y:25,w:35,h:35,color:"#fff",bg:"transparent",size:20,radius:0,layer:"Default",tags:[],collider:{enabled:false,type:"box",trigger:false,mass:1,gravity:1,restitution:.1,friction:.4}};p.objects.push(o);selected=o.id;xMulti=[o.id];xMark();xTab("left","hierarchy");render();};row.appendChild(addBtn);}list.appendChild(row);});
+ p.assets.forEach(asset=>{const row=document.createElement("div");row.className="asset-item";if(asset.type==="image"&&asset.data){const img=document.createElement("img");img.className="asset-thumb";img.src=asset.data;row.appendChild(img);}else{const icon=document.createElement("span");icon.className="asset-thumb";icon.textContent="♫";icon.style.display="grid";icon.style.placeItems="center";row.appendChild(icon);}const name=document.createElement("b");name.textContent=asset.name;row.appendChild(name);if(asset.type==="audio"){const playBtn=document.createElement("button");playBtn.textContent="再生";playBtn.onclick=()=>{const audio=new Audio(asset.data);audio.play().catch(()=>toast("音声を再生できません"));};row.appendChild(playBtn);}if(asset.type==="image"){const addBtn=document.createElement("button");addBtn.textContent="配置";addBtn.onclick=()=>{snapshot();const o={id:uid(),type:"image",name:asset.name,text:"",imageData:asset.data,x:30,y:25,w:35,h:35,color:"#fff",bg:"transparent",size:20,radius:0,layer:"Default",tags:[],collider:{enabled:false,type:"box",trigger:false,mass:1,gravity:1,restitution:.1,friction:.4}};p.objects.push(o);selected=o.id;xMulti=[o.id];xMark();xTab("left","hierarchy");render();};row.appendChild(addBtn);}list.appendChild(row);});
  p.prefabs.forEach(prefab=>{const row=document.createElement("div");row.className="asset-item";const name=document.createElement("b");name.textContent="▣ "+prefab.name;row.appendChild(name);const addBtn=document.createElement("button");addBtn.textContent="配置";addBtn.onclick=()=>xInstantiatePrefab(prefab.id);row.appendChild(addBtn);prefabs.appendChild(row);});
 }
 function xImportFiles(files){
@@ -445,7 +445,13 @@ const xCommandList=[
 ];
 function xOpenCommands(){const modal=$("commandModal");modal.classList.add("open");$("commandSearch").value="";xCommandIndex=0;xRenderCommands();$("commandSearch").focus();}
 function xRenderCommands(){
- const q=$("commandSearch").value.toLowerCase(),items=xCommandList.filter(x=>(x[0]+" "+x[1]).toLowerCase().includes(q));
+ const q=$("commandSearch").value.toLowerCase();
+ const dynamic=[
+  ...p.assets.map(a=>["素材を開く："+a.name,"アセットブラウザで表示","asset:"+a.id]),
+  ...p.prefabs.map(a=>["Prefab："+a.name,"Prefabをシーンに配置","prefab:"+a.id]),
+  ...p.objects.filter(o=>o.type!=="group").map(o=>["オブジェクト："+o.name,"ヒエラルキーで選択","object:"+o.id])
+ ];
+ const items=[...xCommandList,...dynamic].filter(x=>(x[0]+" "+x[1]).toLowerCase().includes(q));
  const box=$("commandResults");box.innerHTML="";items.forEach((item,i)=>{const b=document.createElement("button");b.className="command-result"+(i===xCommandIndex?" active":"");const t=document.createElement("span");t.textContent=item[0];const h=document.createElement("small");h.textContent=item[1];b.append(t,h);b.onclick=()=>xRunCommand(item[2]);box.appendChild(b);});
  if(!items.length){const p=document.createElement("p");p.className="hint";p.textContent="一致するコマンドがありません";box.appendChild(p);}
 }
@@ -464,6 +470,9 @@ function xRunCommand(command){
  else if(command==="save")save();
  else if(command==="prefab")xCreatePrefab();
  else if(command==="layoutSave")xSaveCustomLayout();else if(command==="layoutLoad")xLoadCustomLayout();
+ else if(command.startsWith("prefab:"))xInstantiatePrefab(command.slice(7));
+ else if(command.startsWith("object:")){const id=command.slice(7);selected=id;xMulti=[id];xTab("left","hierarchy");render();}
+ else if(command.startsWith("asset:"))xTab("left","assets");
 }
 function xAddParticles(x,y,count){
  const stage=$("stage");for(let i=0;i<(count||16);i++){const el=document.createElement("i");el.textContent=["✦","•","✧","◆"][i%4];el.style.cssText="position:absolute;z-index:40;left:"+x+"%;top:"+y+"%;color:"+["#f8d46a","#74d9e8","#b99cff","#ff9ba8"][i%4]+";font-size:"+(8+Math.random()*15)+"px;pointer-events:none;animation:kuroParticle .75s ease-out forwards;--dx:"+((Math.random()-.5)*110)+"px;--dy:"+((Math.random()-.5)*110)+"px";stage.appendChild(el);setTimeout(()=>el.remove(),800);}
@@ -552,6 +561,15 @@ function xSetPlay(){
  render();$("playBtn").textContent=playing?"■ 停止して編集":"▶ テスト";
 }
 function xEnableDocking(){
+ document.querySelectorAll("[data-dock-head]").forEach(head=>{
+  head.addEventListener("pointerdown",e=>{
+   const panel=head.closest(".panel");if(!panel||panel.dataset.dock!=="float"||e.target.closest("button"))return;
+   const r=panel.getBoundingClientRect(),sx=e.clientX,sy=e.clientY,left=r.left,top=r.top;
+   const move=ev=>{panel.style.left=Math.max(0,Math.min(innerWidth-panel.offsetWidth,left+ev.clientX-sx))+"px";panel.style.top=Math.max(62,Math.min(innerHeight-100,top+ev.clientY-sy))+"px";};
+   const stop=()=>{document.removeEventListener("pointermove",move);document.removeEventListener("pointerup",stop);};
+   document.addEventListener("pointermove",move);document.addEventListener("pointerup",stop);
+  });
+ });
  document.querySelectorAll("[data-dock-head]").forEach(head=>{
   head.addEventListener("dragstart",e=>{if(e.target.closest("button")){e.preventDefault();return;}e.dataTransfer.setData("text/kuro-panel",head.dataset.dockHead);$("dockHint").classList.add("show");});
   head.addEventListener("dragend",()=>$("dockHint").classList.remove("show"));
