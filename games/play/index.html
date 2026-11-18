@@ -54,7 +54,7 @@ window.addEventListener("message", async event => {
   const requestId = msg.requestId;
   const roomCode = msg.roomCode;
   if (typeof requestId !== "string" || !/^[A-Za-z0-9_-]{1,80}$/.test(requestId) ||
-      typeof roomCode !== "string" || !/^\\d{4}$/.test(roomCode)) return;
+      typeof roomCode !== "string" || !/^\d{4}$/.test(roomCode)) return;
   const previous = kuroGameRealtimeChannels.get(requestId);
   if (previous && previous.source === event.source) {
    kuroGameRealtimeChannels.delete(requestId);
