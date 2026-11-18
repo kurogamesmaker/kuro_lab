@@ -140,7 +140,11 @@ function getStoredProject(){
   return (id?all.find(x=>x.id===id):null)||(!requestedId?all[0]:null)||null;
  }catch(_){return null}
 }
-project=getStoredProject()||clone(fallback);
+const requestedLocalProjectId=new URLSearchParams(location.search).get("projectId");
+project=getStoredProject();
+if(!project&&requestedLocalProjectId){location.replace("/game-studio/projects.html");return;}
+if(!project&&!new URLSearchParams(location.search).get("publishedId")){location.replace("/game-studio/projects.html");return;}
+project=project||clone(fallback);
 if(!project.code||typeof project.code!=="object")project.code=makeVisualCode(project);
 ["html","css","js"].forEach(k=>{if(typeof project.code[k]!=="string")project.code[k]="";});
 function setStatus(text,color){$("saveStatus").textContent=text;$("saveStatus").style.color=color||"var(--good)"}
@@ -150,7 +154,7 @@ function persist(silent){
   let all=JSON.parse(localStorage.getItem(KEY)||"[]");
   const i=all.findIndex(x=>x.id===project.id);
   project.updatedAt=Date.now();
-  if(i>=0)all[i]=clone(project);else all.unshift(clone(project));
+  if(i>=0)all[i]=clone(project);else if(requestedLocalProjectId){setStatus("● 保存先プロジェクトなし","#ff9292");if(!silent)toast("保存先が見つかりません。一覧から開き直してください");return false;}else all.unshift(clone(project));
   localStorage.setItem(KEY,JSON.stringify(all));
   localStorage.setItem(KEY+".current",project.id);
   setStatus("● 保存済み","var(--good)");
