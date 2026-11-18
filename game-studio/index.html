@@ -404,7 +404,7 @@ function xRenderAll(){xEnsure();xRenderStage();xRenderLayers();xRenderInspector(
 function xDock(panel,zone){
  const other=panel.classList.contains("left")?document.querySelector(".panel.right"):document.querySelector(".panel.left");
  const old=panel.dataset.dock|| (panel.classList.contains("left")?"left":"right");
- const apply=(el,z)=>{el.dataset.dock=z;el.style.gridColumn=z==="left"?"1":z==="right"?"3":z==="bottom"?"1 / -1":"";el.style.gridRow=z==="bottom"?"2":"1";};
+ const apply=(el,z)=>{el.dataset.dock=z;el.style.gridColumn=z==="left"?"1":z==="right"?"3":z==="bottom"?"1 / -1":"";el.style.gridRow=z==="bottom"?"2":"1";const head=el.querySelector("[data-dock-head]");if(head)head.draggable=z!=="float";};
  if(zone!=="float"&&other&&other.dataset.dock===zone)apply(other,old);
  apply(panel,zone);
  toast("パネルを"+({left:"左側",right:"右側",bottom:"下部",float:"フロート"}[zone])+"へ配置しました");
