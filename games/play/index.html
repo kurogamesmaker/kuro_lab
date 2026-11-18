@@ -30,22 +30,35 @@ let kuroGameFrame = null;
 const kuroGameAuthClient = window.supabase.createClient(
  "https://cprvpphlfpmiegjiutjn.supabase.co",
  "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn",
- { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }, global: { fetch: KURO_GAS_TRANSPORT ? kuroGasFetch : window.fetch } }
+ {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+  global: { fetch: KURO_GAS_TRANSPORT ? kuroGasFetch : window.fetch },
+  realtime: { params: { log_level: "info" } }
+ }
 );
 let kuroGameAuthPromise = null;
 const kuroGameRealtimeChannels = new Map();
 async function getKuroGameAuthSession() {
- if (!kuroGameAuthPromise) kuroGameAuthPromise = (async () => {
-  let { data, error } = await kuroGameAuthClient.auth.getSession();
-  if (error) throw error;
-  if (!data.session) {
-   const signed = await kuroGameAuthClient.auth.signInAnonymously();
-   if (signed.error) throw signed.error;
-   data = { session: signed.data.session };
-  }
-  return data.session;
- })();
- return kuroGameAuthPromise;
+ if (!kuroGameAuthPromise) {
+  kuroGameAuthPromise = (async () => {
+   let { data, error } = await kuroGameAuthClient.auth.getSession();
+   if (error) throw error;
+   if (!data.session) {
+    const signed = await kuroGameAuthClient.auth.signInAnonymously();
+    if (signed.error) throw signed.error;
+    data = { session: signed.data.session };
+   }
+   if (!data.session || !data.session.access_token) throw new Error("Supabaseのログイン情報を取得できませんでした");
+   return data.session;
+  })().catch(error => {
+   kuroGameAuthPromise = null;
+   throw error;
+  });
+ }
+ const session = await kuroGameAuthPromise;
+ // Realtime側にも現在のJWTを明示的に設定し、HTTP認証とWebSocket認証のずれを防ぐ
+ kuroGameAuthClient.realtime.setAuth(session.access_token);
+ return session;
 }
 window.addEventListener("message", async event => {
  if (!kuroGameFrame || event.source !== kuroGameFrame.contentWindow || !event.data) return;
@@ -80,17 +93,23 @@ window.addEventListener("message", async event => {
     })
     .subscribe((status, error) => {
      if (kuroGameRealtimeChannels.get(requestId) !== entry) return;
+     const detail = error
+      ? [error.message, error.code, error.details, error.hint].filter(Boolean).join(" | ").slice(0, 240)
+      : "";
+     if (status === "SUBSCRIBED") {
+      console.info("[KURO GAMES Realtime] connected", { roomCode });
+     } else {
+      console.error("[KURO GAMES Realtime]", status, detail || "(詳細なし)", { roomCode });
+     }
      try {
       entry.source.postMessage({
        type: "kuro-werewolf-realtime-status",
        requestId,
        status,
-       detail: error ? String(error.message || error).slice(0, 240) : ""
+       detail
       }, "*");
      } catch (_) {}
-     if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
-      kuroGameRealtimeChannels.delete(requestId);
-     }
+     // CHANNEL_ERROR / TIMED_OUT後も購読を保持し、Supabaseクライアントの自動再接続を受け取れるようにする
     });
   } catch (error) {
    try {
