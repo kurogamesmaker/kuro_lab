@@ -134,8 +134,10 @@ function makeVisualCode(p){
 function getStoredProject(){
  try{
   const all=JSON.parse(localStorage.getItem(KEY)||"[]");
-  const id=localStorage.getItem(KEY+".current");
-  return all.find(x=>x.id===id)||all[0]||null;
+  const params=new URLSearchParams(location.search);
+  const requestedId=params.get("projectId");
+  const id=requestedId||localStorage.getItem(KEY+".current");
+  return (id?all.find(x=>x.id===id):null)||(!requestedId?all[0]:null)||null;
  }catch(_){return null}
 }
 project=getStoredProject()||clone(fallback);
