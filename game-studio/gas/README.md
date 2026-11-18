@@ -14,10 +14,12 @@
 3. `Index.html` の内容をHTMLファイルに貼り付け、ファイル名を `Index` にします。
 4. 「デプロイ」→「新しいデプロイ」→「ウェブアプリ」を選びます。
 5. 実行ユーザーは自分、アクセスできるユーザーは既存KURO GASリレーの設定と同じ範囲にします。
-6. デプロイURLを既存Cloudflare Workerの `KURO_GAS_WEB_APP_URL` に設定します。既存リレーと同じGASを使う場合は、既存URLを維持してください。
-7. `KURO_GAS_PROXY_SECRET` は既存の秘密値を維持し、HTMLやGitHubへ書き込まないでください。
+6. このGAS版UIのデプロイURLを利用者向けに案内します。
+7. **Cloudflare Workerの `KURO_GAS_WEB_APP_URL` は変更しないでください。** Supabase通信は既存のKURO GAS Proxyへ送られます。今回のUIラッパーは別プロジェクトとしてデプロイし、既存Proxyの `doPost` を置き換えない構成です。
+8. `KURO_GAS_PROXY_SECRET` は既存の秘密値を維持し、HTMLやGitHubへ書き込まないでください。
 
 ## 注意
+- この `Code.gs` の `doPost` はUIラッパー用の案内応答です。Supabase中継処理ではありません。必ず既存KURO GAS Proxyをそのまま使ってください。
 - このリポジトリにあるのはGAS版のソースです。Google Apps Scriptへの実デプロイはApps Scriptエディタ側で行う必要があります。
 - 既存KURO GASリレーのURL/secretを変更する必要はありません。既存リレーをそのまま使うのが基本です。
 - Supabaseのservice_role/secret keyはブラウザにもHTMLにも置きません。既存のRLSとユーザーJWTを維持します。
