@@ -19,8 +19,32 @@ const KURO_ALLOWED_RESPONSE_HEADERS = [
   'x-total-count', 'location'
 ];
 
-function doGet() {
-  return kuroJsonOutput({ ok: true, service: 'KURO SNS GAS Proxy', version: 1 });
+/**
+ * One shared GAS Web App entry:
+ * - no page / ?health=1: existing SNS proxy health check
+ * - ?page=studio|code|projects|games: KURO GAME STUDIO shell
+ */
+function doGet(e) {
+  var params = (e && e.parameter) || {};
+  var page = String(params.page || '');
+  if (!page || String(params.health || '') === '1') {
+    return kuroJsonOutput({ ok: true, service: 'KURO SNS GAS Proxy', version: 1 });
+  }
+
+  var routes = {
+    studio: 'https://kurolab.cc.cd/game-studio/?transport=gas',
+    code: 'https://kurolab.cc.cd/game-studio/code.html?transport=gas',
+    projects: 'https://kurolab.cc.cd/game-studio/projects.html?transport=gas',
+    games: 'https://kurolab.cc.cd/games/?transport=gas'
+  };
+  if (!Object.prototype.hasOwnProperty.call(routes, page)) page = 'studio';
+
+  var template = HtmlService.createTemplateFromFile('Index');
+  template.appUrl = routes[page];
+  template.activePage = page;
+  return template.evaluate()
+    .setTitle('KURO GAME STUDIO | GAS')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
 function doPost(e) {
