@@ -1,44 +1,39 @@
-# KURO SNS GAS 中継版 セットアップ
+# KURO GAS 共通ブリッジ（SNS + GAME STUDIO）
 
-通信経路：ブラウザー → kurolab.cc.cd のVercel API → Google Apps Script → Supabase。
+このフォルダーを、KURO SNSとKURO GAME STUDIOで共有する唯一のApps Scriptコード置き場とします。
 
-旧版 /sns/ は残し、新版 /sns/gas/ で同じSupabaseプロジェクト・データを使用します。
+## 共通構成
+- `Code.gs`：SNSのSupabase中継処理とGame Studioの画面ルーティングを統合した唯一のエントリーポイント
+- `Index.html`：Game Studio GAS版の画面シェル
+- `index.html`：Webサイト側のSNS GAS入口（PC/スマホ振り分け）。Apps ScriptのHTMLファイル `Index` とは別物です。
+- `appsscript.json`：Apps Scriptマニフェスト
 
-## 1. Apps Scriptを作成
-1. Google Apps Scriptでスタンドアロンプロジェクトを作成。
-2. Code.gsをコード.gsへ貼り付け。
-3. プロジェクト設定でappsscript.jsonを表示し、このフォルダーのマニフェストに置き換える。
-4. initializeProxySecretを実行して権限承認。実行ログに出る秘密値をコピーする。
+## 既存SNS中継を維持
+既存の `doPost`、Supabase publishable key、許可パス、許可HTTPメソッド、レート制限、`KURO_GAS_PROXY_SECRET` の参照方法は維持しています。新しいScript Propertyや新しい秘密値は不要です。
 
-## 2. Webアプリとしてデプロイ
-1. 「デプロイ」→「新しいデプロイ」→種類「ウェブアプリ」。
-2. 実行ユーザーは「自分」、アクセスできるユーザーは「全員」。
-3. デプロイ後のURL（末尾が /exec）を控える。GAS側の秘密値はScript Propertiesに保存される。
+既存のヘルスチェックも維持しています。
+- GAS WebアプリURL（パラメータなし）：従来どおりJSONヘルスチェック
+- `?health=1`：従来どおりJSONヘルスチェック
 
-## 3. Vercel環境変数
-kuro-labプロジェクトのProduction環境に次の2つを登録する。
-- KURO_GAS_WEB_APP_URL：Apps Scriptの /exec URL
-- KURO_GAS_PROXY_SECRET：initializeProxySecretの実行ログに出た秘密値
+## GAME STUDIOのGAS画面
+同じWebアプリURLに次のパラメータを付けます。
+- `?page=studio`：ビジュアルエディター
+- `?page=code`：コードエディター
+- `?page=projects`：プロジェクト一覧
+- `?page=games`：KURO GAMES
 
-その後、Vercelを再デプロイする。/api/kuro-gas-proxy?health=1 が ready:true を返せば中継先に接続できている。
+Game Studioの画面本体は `kurolab.cc.cd` からiframeで読み込み、`transport=gas` を付けて既存のSupabase中継経路を利用します。
 
-## 4. Supabase
-Google/Appleログインを利用する場合は、Authentication → URL Configuration → Redirect URLsに https://kurolab.cc.cd/sns/gas/ を追加する。OAuth認証画面への遷移自体はSupabaseへ直接移動するため、学校ネットワークがSupabaseドメインを遮断している場合は動作しない可能性がある。
+## 再デプロイ
+1. 既存KURO SNS GASプロジェクトを開く。
+2. このフォルダーの `Code.gs` で既存コードを置き換える。
+3. `Index.html` を同じGASプロジェクトに追加する（HTMLファイル名は `Index`）。
+4. 既存の `KURO_GAS_PROXY_SECRET` Script Propertyはそのまま維持する。再生成しない。
+5. 既存Webアプリデプロイを「新バージョン」で更新する。デプロイURLは維持する。
+6. 既存のCloudflare Worker / Vercel環境変数 `KURO_GAS_WEB_APP_URL` と `KURO_GAS_PROXY_SECRET` は変更しない。
 
-## 動作と制限
-- service_role/secret keyは使用しない。Supabase publishable keyと各利用者のJWTを中継し、データ保護は既存RLSに従う。
-- Realtime WebSocketはGASで中継できないため、チャットとグループチャットは約8秒、通知は約30秒ごとにHTTP再取得する。
-- GASの実行時間・URL Fetch割当、Vercelのリクエストサイズ上限がある。大きなファイル・高負荷用途には適さない。
-- 学校などがGASドメインも遮断している場合、この経路も利用できない。
-- 旧版は /sns/ に残し、新版画面からいつでも戻れる。
-
-
-## KURO LabポータルのGAS認証更新
-KURO Labポータルもこの同じGAS Webアプリを中継先として使用します。`Code.gs` を更新した場合は、Apps Scriptで「デプロイ」→「デプロイを管理」→既存Webアプリの編集（鉛筆）→バージョン「新バージョン」→「デプロイ」を実行してください。コードを保存しただけでは公開中のWebアプリには反映されません。更新後、`https://kurolab.cc.cd/api/kuro-gas-proxy?health=1` が `ready:true` になることを確認してください。
-
-
-## KURO Lab運営管理API（GAS経由）
-
-運営管理の分析・ユーザー管理などはSupabase Edge Function `admin-console` を利用します。GAS中継の許可パスに `/functions/v1/` を追加しているため、管理画面で「GAS版」を選択しても、利用者のログインJWTをそのまま中継し、Edge Function側で管理者権限を検証します。service_roleキーはGASへ渡しません。
-
-`Code.gs` を更新した場合は、上記「KURO LabポータルのGAS認証更新」の手順でWebアプリを新バージョンとして再デプロイしてください。
+## セキュリティと制限
+- service_role / secret keyは使用しません。
+- SNSのAPI中継は既存のVercel API経由です。
+- Game StudioのUI本体はiframeです。Apps Script内に全ページのコードを複製しているわけではありません。
+- 実際のGAS反映・再デプロイ後に、SNSログイン/投稿/チャットとGame Studioのログイン/公開をそれぞれ確認してください。
