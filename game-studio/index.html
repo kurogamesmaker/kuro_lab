@@ -517,10 +517,12 @@ function xOverlap(a,b){
  return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
 }
  xDispatch("start",null);let last=performance.now();const hit=new Set();
- const keys={left:false,right:false,jump:false};
- const keyDown=e=>{if(!playing||p.type!=="platformer")return;const key=e.key.toLowerCase();if(["arrowleft","arrowright"," ","a","d","w"].includes(key))e.preventDefault();if(key==="arrowleft"||key==="a")keys.left=true;if(key==="arrowright"||key==="d")keys.right=true;if(key===" "||key==="w"||key==="arrowup")keys.jump=true;};
- const keyUp=e=>{const key=e.key.toLowerCase();if(key==="arrowleft"||key==="a")keys.left=false;if(key==="arrowright"||key==="d")keys.right=false;if(key===" "||key==="w"||key==="arrowup")keys.jump=false;};
- document.addEventListener("keydown",keyDown);document.addEventListener("keyup",keyUp);
+ if(!window.__kuroPlatformBound){
+  window.__kuroPlatformBound=true;
+  window.addEventListener("keydown",e=>{if(!playing||p.type!=="platformer")return;const k=e.key.toLowerCase();if(["arrowleft","arrowright"," ","a","d","w","arrowup"].includes(k))e.preventDefault();const st=window.__kuroPlatformKeys;if(k==="arrowleft"||k==="a")st.left=true;if(k==="arrowright"||k==="d")st.right=true;if(k===" "||k==="w"||k==="arrowup")st.jump=true;});
+  window.addEventListener("keyup",e=>{const k=e.key.toLowerCase(),st=window.__kuroPlatformKeys;if(!st)return;if(k==="arrowleft"||k==="a")st.left=false;if(k==="arrowright"||k==="d")st.right=false;if(k===" "||k==="w"||k==="arrowup")st.jump=false;});
+ }
+ window.__kuroPlatformKeys={left:false,right:false,jump:false};const keys=window.__kuroPlatformKeys;
  xTimer=setInterval(()=>{if(playing)xDispatch("timer",null);},1000);
  const tick=now=>{
   if(!playing)return;const dt=Math.min(.04,(now-last)/1000);last=now;
@@ -536,8 +538,8 @@ function xOverlap(a,b){
   for(let i=0;i<bodies.length;i++)for(let j=i+1;j<bodies.length;j++){
    const a=bodies[i],b=bodies[j],key=[a.id,b.id].sort().join(":");
    const overlap=xOverlap(a,b);
-   if(overlap&&!hit.has(key)){hit.add(key);xDispatch("overlap",a);}
-   if(!overlap)hit.delete(key);
+   if(overlap&&!hit.has(key)){hit.add(key);xDispatch("overlap",a);xDispatch("overlap",b);}
+   if(!overlap&&hit.has(key)){hit.delete(key);xDispatch("overlapExit",a);xDispatch("overlapExit",b);}
    if(overlap&&!a.collider.trigger&&!b.collider.trigger&&a.vy>0&&a.y+a.h-b.y<6){a.y=b.y-a.h;a.vy=-(a.vy||0)*Number(a.collider.restitution||0);}
   }
   xRenderStage();xRuntimeFrame=requestAnimationFrame(tick);
