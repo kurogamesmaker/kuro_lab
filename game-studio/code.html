@@ -309,6 +309,7 @@ document.addEventListener("keydown",e=>{
 window.addEventListener("beforeunload",()=>{project.code[activeTab]=currentValue();persist(true)});
 showTab("html");
 run();
+if(new URLSearchParams(location.search).get("publish")==="1"){syncFromVisual();openPublishModal();}
 })();
 </script>
 </body></html>
