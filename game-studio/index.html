@@ -666,4 +666,13 @@ function gameClick(o){xGameClick(o);}
 xInitExtensions();
 
 })();
+</script><script>
+(function(){
+  if(new URLSearchParams(location.search).get("transport")!=="gas")return;
+  document.querySelectorAll('a[href^="/game-studio/"],a[href^="/games/"]').forEach(function(a){
+    var u=new URL(a.getAttribute("href"),location.origin);
+    u.searchParams.set("transport","gas");
+    a.href=u.pathname+u.search+u.hash;
+  });
+})();
 </script></body></html>
