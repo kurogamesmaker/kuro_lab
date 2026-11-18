@@ -6,12 +6,33 @@
 <body><header class="top"><a class="brand" href="/games/">KURO GAMES</a><a class="back" href="/games/">← ゲーム一覧へ</a></header>
 <main class="wrap"><div class="info" id="gameInfo" hidden><div class="icon" id="gameIcon">🎮</div><div class="copy"><h1 id="gameTitle">読み込み中…</h1><p id="gameDescription"></p></div></div><div class="frame-wrap" id="frameWrap"><div class="state" id="state"><strong>ゲームを読み込んでいます</strong>少しお待ちください。</div></div><p class="hint">このゲームは独立したサンドボックス内で実行されます。</p></main>
 <script>
+
+const KURO_GAS_TRANSPORT=new URLSearchParams(location.search).get("transport")==="gas";
+const KURO_GAS_PROXY_URL="https://kurolab.cc.cd/api/kuro-gas-proxy";
+async function kuroGasFetch(input,init){
+ const req=new Request(input,init),url=new URL(req.url);
+ if(url.origin!=="https://cprvpphlfpmiegjiutjn.supabase.co")return fetch(req);
+ const bytes=new Uint8Array(await req.arrayBuffer());let binary="";
+ for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
+ const headers={};req.headers.forEach((v,k)=>{headers[k]=v;});
+ const proxy=await fetch(KURO_GAS_PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:"game-studio"})});
+ let result;try{result=await proxy.json();}catch(e){throw new Error("GAS中継サーバーの応答を読み取れませんでした");}
+ if(!proxy.ok||!result||typeof result.status!=="number")throw new Error(result&&result.error||"GAS中継通信に失敗しました");
+ let body=null;if(result.isBinary&&result.bodyBase64){const raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);body=out;}else if(result.bodyText!==undefined&&![204,205,304].includes(result.status))body=result.bodyText;
+ return new Response(body,{status:result.status,headers:result.headers||{"Content-Type":"application/json"}});
+}
+function kuroApplyTransportLinks(){
+ if(!KURO_GAS_TRANSPORT)return;
+ document.querySelectorAll('a[href^="/game-studio/"],a[href^="/games/"]').forEach(a=>{const u=new URL(a.href,location.origin);u.searchParams.set("transport","gas");a.href=u.pathname+u.search+u.hash;});
+}
+
 (async function(){
  const $=id=>document.getElementById(id),params=new URLSearchParams(location.search),id=params.get("id");
+ kuroApplyTransportLinks();
  function fail(message){$("state").innerHTML="<strong>ゲームを開けませんでした</strong>"+message;}
  if(!id||!/^[0-9a-f-]{36}$/i.test(id)){fail("ゲームIDが正しくありません。");return;}
  if(!window.supabase||!window.supabase.createClient){fail("通信ライブラリを読み込めませんでした。");return;}
- try{const db=window.supabase.createClient("https://cprvpphlfpmiegjiutjn.supabase.co","sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn");
+ try{const db=window.supabase.createClient("https://cprvpphlfpmiegjiutjn.supabase.co","sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn",{global:{fetch:KURO_GAS_TRANSPORT?kuroGasFetch:window.fetch}});
   const {data,error}=await db.from("game_studio_games").select("title,description,icon,html_content").eq("id",id).eq("status","published").maybeSingle();if(error)throw error;if(!data){fail("公開が終了したか、URLが正しくありません。");return;}
   $("gameTitle").textContent=data.title;$("gameDescription").textContent=data.description||"KURO GAME STUDIOで作成されたゲーム";$("gameIcon").textContent=data.icon||"🎮";$("gameInfo").hidden=false;
   const frame=document.createElement("iframe");frame.className="game-frame";frame.title=data.title;frame.setAttribute("sandbox","allow-scripts allow-forms allow-modals");frame.referrerPolicy="no-referrer";frame.srcdoc=data.html_content;$("frameWrap").replaceChildren(frame);
