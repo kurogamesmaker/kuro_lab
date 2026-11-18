@@ -49,7 +49,26 @@
 const $=id=>document.getElementById(id);
 const KEY="kuroGameStudio.v1";
 const SUPABASE_URL="https://cprvpphlfpmiegjiutjn.supabase.co",SUPABASE_KEY="sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
-const publishDb=window.supabase&&window.supabase.createClient?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
+const KURO_GAS_TRANSPORT=new URLSearchParams(location.search).get("transport")==="gas";
+const KURO_GAS_PROXY_URL="https://kurolab.cc.cd/api/kuro-gas-proxy";
+async function kuroGasFetch(input,init){
+ const req=new Request(input,init),url=new URL(req.url);
+ if(url.origin!=="https://cprvpphlfpmiegjiutjn.supabase.co")return fetch(req);
+ const bytes=new Uint8Array(await req.arrayBuffer());let binary="";
+ for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
+ const headers={};req.headers.forEach((v,k)=>{headers[k]=v;});
+ const proxy=await fetch(KURO_GAS_PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:"game-studio"})});
+ let result;try{result=await proxy.json();}catch(e){throw new Error("GAS中継サーバーの応答を読み取れませんでした");}
+ if(!proxy.ok||!result||typeof result.status!=="number")throw new Error(result&&result.error||"GAS中継通信に失敗しました");
+ let body=null;if(result.isBinary&&result.bodyBase64){const raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);body=out;}else if(result.bodyText!==undefined&&![204,205,304].includes(result.status))body=result.bodyText;
+ return new Response(body,{status:result.status,headers:result.headers||{"Content-Type":"application/json"}});
+}
+function kuroApplyTransportLinks(){
+ if(!KURO_GAS_TRANSPORT)return;
+ document.querySelectorAll('a[href^="/game-studio/"],a[href^="/games/"]').forEach(a=>{const u=new URL(a.href,location.origin);u.searchParams.set("transport","gas");a.href=u.pathname+u.search+u.hash;});
+}
+
+const publishDb=window.supabase&&window.supabase.createClient?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{global:{fetch:KURO_GAS_TRANSPORT?kuroGasFetch:window.fetch},auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
 const clone=x=>JSON.parse(JSON.stringify(x));
 const escapeHTML=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fallback={id:"studio-new",name:"新しいゲーム",type:"clicker",background:"#17243a",objects:[
@@ -308,6 +327,7 @@ document.addEventListener("keydown",e=>{
 });
 window.addEventListener("beforeunload",()=>{project.code[activeTab]=currentValue();persist(true)});
 showTab("html");
+kuroApplyTransportLinks();
 run();
 if(new URLSearchParams(location.search).get("publish")==="1"){syncFromVisual();openPublishModal();}
 })();
