@@ -258,7 +258,7 @@ $("validateBtn").addEventListener("click",()=>{
  project.code[activeTab]=currentValue();
  try{
   if(activeTab==="js"){
-   if(/^\\s*(?:import|export)\\b/m.test(project.code.js)){toast("module形式です。実行時の読み込み結果はプレビューで確認してください");$("previewStatus").textContent="module形式: 構文の簡易判定のみ";}
+   if(/^\s*(?:import|export)\b/m.test(project.code.js)){toast("module形式です。実行時の読み込み結果はプレビューで確認してください");$("previewStatus").textContent="module形式: 構文の簡易判定のみ";}
    else{new Function(project.code.js);toast("JavaScript構文チェック OK");$("previewStatus").textContent="構文チェック OK";}
   }else if(activeTab==="css"){const sheet=new CSSStyleSheet();sheet.replaceSync(project.code.css);toast("CSS構文チェック OK");$("previewStatus").textContent="構文チェック OK";}
   else{const doc=new DOMParser().parseFromString(project.code.html,"text/html");if(doc.querySelector("parsererror"))throw new Error("HTML構文エラー");toast("HTML解析 OK");$("previewStatus").textContent="構文チェック OK";}
