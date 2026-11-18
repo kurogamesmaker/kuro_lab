@@ -135,6 +135,26 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 <footer><div class="wrap foot"><span>© 2026 <b>KURO GAMES</b></span><span>Operated by KURO Lab · <a href="https://kurolab.cc.cd/">KURO Lab公式サイト ↗</a></span></div></footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+
+const KURO_GAS_TRANSPORT=new URLSearchParams(location.search).get("transport")==="gas";
+const KURO_GAS_PROXY_URL="https://kurolab.cc.cd/api/kuro-gas-proxy";
+async function kuroGasFetch(input,init){
+ const req=new Request(input,init),url=new URL(req.url);
+ if(url.origin!=="https://cprvpphlfpmiegjiutjn.supabase.co")return fetch(req);
+ const bytes=new Uint8Array(await req.arrayBuffer());let binary="";
+ for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
+ const headers={};req.headers.forEach((v,k)=>{headers[k]=v;});
+ const proxy=await fetch(KURO_GAS_PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:"game-studio"})});
+ let result;try{result=await proxy.json();}catch(e){throw new Error("GAS中継サーバーの応答を読み取れませんでした");}
+ if(!proxy.ok||!result||typeof result.status!=="number")throw new Error(result&&result.error||"GAS中継通信に失敗しました");
+ let body=null;if(result.isBinary&&result.bodyBase64){const raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);body=out;}else if(result.bodyText!==undefined&&![204,205,304].includes(result.status))body=result.bodyText;
+ return new Response(body,{status:result.status,headers:result.headers||{"Content-Type":"application/json"}});
+}
+function kuroApplyTransportLinks(){
+ if(!KURO_GAS_TRANSPORT)return;
+ document.querySelectorAll('a[href^="/game-studio/"],a[href^="/games/"]').forEach(a=>{const u=new URL(a.href,location.origin);u.searchParams.set("transport","gas");a.href=u.pathname+u.search+u.hash;});
+}
+
 (function(){
  const search=document.getElementById("gameSearch"),cards=[...document.querySelectorAll(".game-card")],filters=[...document.querySelectorAll("[data-filter]")],count=document.getElementById("gameCount"),empty=document.getElementById("empty"),favButton=document.getElementById("favoriteFilter"),grid=document.getElementById("gameGrid");
  let dynamicCards=[];function allCards(){return cards.concat(dynamicCards);}
@@ -149,17 +169,17 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
  cards.forEach(bindHeart);
  async function loadStudioGames(){
   if(!window.supabase||!window.supabase.createClient)return;
-  try{const db=window.supabase.createClient("https://cprvpphlfpmiegjiutjn.supabase.co","sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn");
+  try{const db=window.supabase.createClient("https://cprvpphlfpmiegjiutjn.supabase.co","sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn",{global:{fetch:KURO_GAS_TRANSPORT?kuroGasFetch:window.fetch}});
    const {data,error}=await db.from("game_studio_games").select("id,title,description,category,icon,published_at").eq("status","published").order("published_at",{ascending:false}).limit(60);if(error)throw error;
    (data||[]).forEach(game=>{const card=document.createElement("article");card.className="game-card";card.dataset.id="studio-"+game.id;card.dataset.category=game.category||"other";card.dataset.title=(game.title+" "+(game.description||"")).toLowerCase();
-    const link=document.createElement("a");link.className="game-open";link.href="/games/play/?id="+encodeURIComponent(game.id);
+    const link=document.createElement("a");link.className="game-open";link.href="/games/play/?id="+encodeURIComponent(game.id)+(KURO_GAS_TRANSPORT?"&transport=gas":"");
     const cover=document.createElement("div");cover.className="cover";const tag=document.createElement("span");tag.className="tag";tag.textContent="KURO STUDIO";const glyph=document.createElement("span");glyph.className="studio-game-icon";glyph.textContent=game.icon||"🎮";const play=document.createElement("span");play.className="play";play.textContent="▶";cover.append(tag,glyph,play);
     const body=document.createElement("div");body.className="card-body";const heading=document.createElement("h3");heading.textContent=game.title;const meta=document.createElement("div");meta.className="meta";const type=document.createElement("span");type.className="type";type.textContent=({typing:"タイピング",puzzle:"パズル",action:"アクション",other:"その他"})[game.category]||"その他";const free=document.createElement("span");free.textContent="無料・ブラウザ";meta.append(type,free);body.append(heading,meta);link.append(cover,body);
     const heart=document.createElement("button");heart.className="heart";heart.type="button";heart.textContent="♡";heart.setAttribute("aria-label","お気に入りに追加");heart.title="お気に入り";card.append(link,heart);grid.appendChild(card);dynamicCards.push(card);bindHeart(card);
    });update();
   }catch(error){console.warn("KURO STUDIO games could not be loaded",error);}
  }
- update();loadStudioGames();
+ kuroApplyTransportLinks();update();loadStudioGames();
 })();
 </script><script src="/usage-tracker.js"></script>
 </body></html>
