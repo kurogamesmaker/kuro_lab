@@ -197,6 +197,7 @@ function xUpdatePrefab(obj){
  keys.forEach(k=>{template[k]=clone(obj[k]);});
  p.objects.filter(x=>x.prefabId===obj.prefabId&&(x.prefabPartId||part)===part).forEach(x=>{keys.forEach(k=>{if(template[k]!==undefined)x[k]=clone(template[k]);});});
 }
+function xDescendants(parentId){const out=[];p.objects.filter(o=>o.parentId===parentId).forEach(o=>{out.push(o.id);out.push(...xDescendants(o.id));});return out;}
 function xSelection(){return p.objects.filter(o=>xMulti.includes(o.id));}
 function xRenderLayers(){
  const box=$("layers");if(!box)return;box.innerHTML="";
@@ -208,7 +209,8 @@ function xRenderLayers(){
    const name=document.createElement("span");name.className="layer-name";name.textContent=o.name||o.type;
    const meta=document.createElement("span");meta.className="layer-meta";meta.textContent=o.visible===false?"非表示":o.locked?"🔒":"";
    b.append(ico,name,meta);b.addEventListener("click",e=>{
-    if(e.ctrlKey||e.metaKey){if(xMulti.includes(o.id))xMulti=xMulti.filter(id=>id!==o.id);else xMulti.push(o.id);selected=o.id;}
+    if(o.type==="group"&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey){xMulti=xDescendants(o.id);selected=o.id;}
+    else if(e.ctrlKey||e.metaKey){if(xMulti.includes(o.id))xMulti=xMulti.filter(id=>id!==o.id);else xMulti.push(o.id);selected=o.id;}
     else if(e.shiftKey&&xMulti.length){const ids=p.objects.map(x=>x.id),a=ids.indexOf(xMulti[xMulti.length-1]),z=ids.indexOf(o.id);xMulti=ids.slice(Math.min(a,z),Math.max(a,z)+1);selected=o.id;}
     else{xMulti=[o.id];selected=o.id;}
     renderStage();renderInspector();xRenderLayers();
@@ -285,11 +287,11 @@ function xStartDragMove(e){
 function xEndDrag(){if(!xDrag)return;xDrag=null;xMark();renderInspector();xRenderLayers();}
 document.addEventListener("pointermove",xStartDragMove);
 document.addEventListener("pointerup",xEndDrag);
-function xDeleteSelection(){if(!xMulti.length&&selected)xMulti=[selected];if(!xMulti.length)return;snapshot();const ids=new Set(xMulti);p.objects=p.objects.filter(o=>!ids.has(o.id)&&!ids.has(o.parentId));selected=null;xMulti=[];xMark();render();}
+function xDeleteSelection(){if(!xMulti.length&&selected)xMulti=[selected];if(!xMulti.length)return;snapshot();const ids=new Set(xMulti);const group=p.objects.find(o=>o.id===selected&&o.type==="group");if(group){ids.add(group.id);xDescendants(group.id).forEach(id=>ids.add(id));}p.objects=p.objects.filter(o=>!ids.has(o.id)&&!ids.has(o.parentId));selected=null;xMulti=[];xMark();render();}
 function xGroupSelection(){
  const chosen=xSelection().filter(o=>o.type!=="group");if(chosen.length<2){toast("グループ化する要素を2つ以上選択してください");return;}
  snapshot();const group={id:uid(),type:"group",name:"グループ "+(p.objects.filter(o=>o.type==="group").length+1),x:0,y:0,w:100,h:100,layer:"Default",tags:[],visible:true};
- p.objects.push(group);chosen.forEach(o=>o.parentId=group.id);selected=group.id;xMulti=[group.id];xMark();render();
+ p.objects.push(group);chosen.forEach(o=>o.parentId=group.id);selected=group.id;xMulti=chosen.map(o=>o.id);xMark();render();
 }
 function xUngroup(){const group=p.objects.find(o=>o.id===selected&&o.type==="group");if(!group)return;snapshot();p.objects.forEach(o=>{if(o.parentId===group.id)delete o.parentId;});p.objects=p.objects.filter(o=>o.id!==group.id);selected=null;xMulti=[];xMark();render();}
 function xCreatePrefab(){
