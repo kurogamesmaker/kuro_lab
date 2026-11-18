@@ -6,7 +6,8 @@
 const KURO_SUPABASE_URL = 'https://cprvpphlfpmiegjiutjn.supabase.co';
 const KURO_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn';
 const KURO_SECRET_PROPERTY = 'KURO_GAS_PROXY_SECRET';
-const KURO_ALLOWED_PREFIXES = ['/rest/v1/', '/auth/v1/', '/storage/v1/', '/functions/v1/'];
+const KURO_ALLOWED_PREFIXES = ['/rest/v1/', '/auth/v1/', '/storage/v1/'];
+const KURO_ALLOWED_FUNCTION_PATHS = ['/functions/v1/admin-console', '/functions/v1/pro-access', '/functions/v1/send-chat-push'];
 const KURO_ALLOWED_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD'];
 const KURO_ALLOWED_REQUEST_HEADERS = [
   'accept', 'accept-profile', 'authorization', 'cache-control',
@@ -109,8 +110,10 @@ function doPost(e) {
 function kuroValidatePath(value) {
   var path = String(value || '');
   if (!path || path.charAt(0) !== '/' || path.indexOf('..') !== -1 || path.indexOf('://') !== -1) throw new Error('Invalid upstream path');
-  var allowed = KURO_ALLOWED_PREFIXES.some(function(prefix) { return path.indexOf(prefix) === 0; });
-  if (!allowed) throw new Error('Upstream path is not allowed');
+  var pathname = path.split('?')[0];
+  var allowedPrefix = KURO_ALLOWED_PREFIXES.some(function(prefix) { return path.indexOf(prefix) === 0; });
+  var allowedFunction = KURO_ALLOWED_FUNCTION_PATHS.indexOf(pathname) !== -1;
+  if (!allowedPrefix && !allowedFunction) throw new Error('Upstream path is not allowed');
   return path;
 }
 
