@@ -5,6 +5,11 @@
 @media(max-width:850px){.work{grid-template-columns:175px minmax(300px,1fr)}.right{display:none}}@media(max-width:600px){.top{padding:0 8px;gap:6px}.top .muted{display:none}.top .btn{padding:7px;font-size:10px}.shell{height:auto;min-height:calc(100vh - 60px)}.work{grid-template-columns:1fr;grid-template-rows:auto minmax(430px,1fr)}.left{border:0;border-bottom:1px solid var(--line);max-height:170px}.left .pb{display:grid;grid-template-columns:140px 1fr;gap:9px}.palette{grid-template-columns:1fr 1fr}.palette button{padding:6px}.palette span{display:inline;margin-right:4px;font-size:14px}.layers{max-height:115px;overflow:auto}.center{grid-row:2}.stagewrap{padding:8px}.toolbar{padding:0 6px;gap:4px}.toolbar .btn{padding:6px;font-size:9px}.templates{grid-template-columns:1fr}}
 </style><style>
 /* KURO GAME STUDIO 2D workspace extension */
+@keyframes kuro-float{50%{translate:0 -8px}}
+@keyframes kuro-spin{to{rotate:360deg}}
+@keyframes kuro-pulse{50%{scale:1.1}}
+@keyframes kuro-bob{0%,100%{translate:0 0}50%{translate:0 -14px}}
+
 .work{grid-template-rows:minmax(0,1fr) auto;position:relative;overflow:hidden}
 .left{grid-column:1;grid-row:1;min-width:0}
 .center{grid-column:2;grid-row:1}
@@ -151,6 +156,7 @@ function xEnsure(){
   if(!Array.isArray(o.tags))o.tags=[];
   if(!o.collider)o.collider={enabled:o.type==="shape",type:"box",trigger:false,mass:1,gravity:1,restitution:.1,friction:.4};
   if(typeof o.rotation!=="number")o.rotation=0;
+  if(!o.animation)o.animation={enabled:false,type:"float",duration:1.2,loop:true};
   if(o.visible===undefined)o.visible=true;
  });
  if(!Array.isArray(xMulti)||!xMulti.length)xMulti=selected?[selected]:[];
@@ -230,7 +236,7 @@ function xRenderStage(){
  p.objects.forEach(o=>{
   if(o.type==="group"||o.visible===false)return;
   const e=document.createElement("div");e.className="obj"+(xMulti.includes(o.id)&&xMulti.length>1?" multi":"")+(o.id===selected&&!playing?" sel":"");
-  e.dataset.id=o.id;const zoom=playing?Number(p.settings.cameraZoom||1):1;e.style.left=(50+(o.x+camX-50)*zoom)+"%";e.style.top=(50+(o.y+camY-50)*zoom)+"%";e.style.width=(o.w*zoom)+"%";e.style.height=(o.h*zoom)+"%";e.style.color=o.color||"#fff";e.style.background=o.bg||"transparent";e.style.fontSize=Math.max(10,(o.size||20)/540*100)+"cqh";e.style.borderRadius=(o.radius||0)+"px";e.style.transform="rotate("+(o.rotation||0)+"deg)";
+  e.dataset.id=o.id;const zoom=playing?Number(p.settings.cameraZoom||1):1;e.style.left=(50+(o.x+camX-50)*zoom)+"%";e.style.top=(50+(o.y+camY-50)*zoom)+"%";e.style.width=(o.w*zoom)+"%";e.style.height=(o.h*zoom)+"%";e.style.color=o.color||"#fff";e.style.background=o.bg||"transparent";e.style.fontSize=Math.max(10,(o.size||20)/540*100)+"cqh";e.style.borderRadius=(o.radius||0)+"px";e.style.transform="rotate("+(o.rotation||0)+"deg)";if(playing&&o.animation&&o.animation.enabled){e.style.animation="kuro-"+o.animation.type+" "+Math.max(.1,Number(o.animation.duration)||1)+"s "+(o.animation.loop?"infinite":"1")+" ease-in-out";}
   if(o.type==="shape")e.style.border="0";
   if(o.type==="emoji"||o.type==="particle"){e.style.fontSize=Math.max(18,o.size||32)+"px";e.textContent=o.type==="particle"?"✦":o.text;}
   else if(o.type==="image"&&o.imageData){const img=document.createElement("img");img.className="asset-img";img.src=o.imageData;img.alt=o.name||"画像";e.appendChild(img);}
@@ -345,6 +351,12 @@ function xRenderInspector(){
  r2=document.createElement("div");r2.className="row";phy.appendChild(r2);xField(r2,"反発係数","restitution",o.collider.restitution||0,"number",{min:0,max:1,step:.05},v=>{o.collider.restitution=Number(v);xMark();});xField(r2,"摩擦係数","friction",o.collider.friction||0,"number",{min:0,max:1,step:.05},v=>{o.collider.friction=Number(v);xMark();});
  const help=document.createElement("p");help.className="setting-note";help.textContent="2D Web Runtimeの簡易物理設定です。円・ポリゴンは現在、矩形近似で接触を判定します。";phy.appendChild(help);
  if(o.prefabId){const pref=p.prefabs.find(x=>x.id===o.prefabId);const b=document.createElement("button");b.className="btn";b.textContent="Prefabを全インスタンスへ反映";b.onclick=()=>{snapshot();xUpdatePrefab(o);xMark();render();};box.appendChild(b);const t=document.createElement("p");t.className="setting-note";t.textContent="Prefab: "+(pref?pref.name:"");box.appendChild(t);}
+ const anim=document.createElement("details");anim.className="inspector-section";anim.open=true;anim.innerHTML="<summary>2D アニメーション</summary>";box.appendChild(anim);
+ xCheck(anim,"アニメーションを有効にする",o.animation.enabled,v=>{o.animation.enabled=v;xMark();xRenderStage();});
+ xField(anim,"モーション","animationType",o.animation.type||"float","select",{choices:[["float","浮遊"],["spin","回転"],["pulse","拡大・縮小"],["bob","上下運動"]]},v=>{o.animation.type=v;xMark();xRenderStage();});
+ let ar=document.createElement("div");ar.className="row";anim.appendChild(ar);
+ xField(ar,"秒数","duration",o.animation.duration||1.2,"number",{min:.1,max:20,step:.1},v=>{o.animation.duration=Number(v);xMark();xRenderStage();});
+ xCheck(anim,"ループ再生",o.animation.loop!==false,v=>{o.animation.loop=v;xMark();});
  const del=document.createElement("button");del.className="btn";del.style.marginTop="10px";del.textContent="選択要素を削除";del.onclick=xDeleteSelection;box.appendChild(del);
 }
 function xRenderEvents(){
@@ -354,12 +366,12 @@ function xRenderEvents(){
  p.events.forEach((ev,index)=>{
   const node=document.createElement("div");node.className="event-node";
   const title=document.createElement("div");title.className="node-title";title.innerHTML='<i class="node-dot"></i><span>EVENT NODE '+(index+1)+'</span>';node.appendChild(title);
-  xField(node,"イベント","trigger",ev.trigger,"select",{choices:[["start","ゲーム開始時"],["click","クリック時"],["overlap","衝突・接触時"],["timer","毎秒"]]},v=>{ev.trigger=v;xMark();});
+  xField(node,"イベント","trigger",ev.trigger,"select",{choices:[["start","ゲーム開始時"],["click","クリック時"],["overlap","衝突・接触時"],["overlapExit","接触終了時"],["timer","毎秒"]]},v=>{ev.trigger=v;xMark();});
   xField(node,"対象オブジェクト","targetId",ev.targetId,"select",{choices:[["*","すべてのオブジェクト"],...p.objects.filter(o=>o.type!=="group").map(o=>[o.id,o.name])]},v=>{ev.targetId=v;xMark();});
   ev.actions=Array.isArray(ev.actions)?ev.actions:[];
   ev.actions.forEach((act,ai)=>{
    const action=document.createElement("div");action.className="node-actions";
-   xField(action,"アクション","type",act.type,"select",{choices:[["addScore","スコアを加算"],["setText","テキストを変更"],["moveRandom","ランダムに移動"],["particles","パーティクルを発生"],["message","メッセージを表示"],["gameOver","ゲーム終了"]]},v=>{act.type=v;xMark();});
+   xField(action,"アクション","type",act.type,"select",{choices:[["addScore","スコアを加算"],["setText","テキストを変更"],["moveRandom","ランダムに移動"],["particles","パーティクルを発生"],["cameraShake","カメラを揺らす"],["message","メッセージを表示"],["gameOver","ゲーム終了"]]},v=>{act.type=v;xMark();});
    if(["addScore","message","setText"].includes(act.type))xField(action,"値","value",act.value??(act.type==="addScore"?10:"テキスト"),"text",null,v=>{act.value=v;xMark();});
    const remove=document.createElement("button");remove.className="btn small";remove.textContent="アクション削除";remove.onclick=()=>{snapshot();ev.actions.splice(ai,1);xMark();xRenderEvents();};action.appendChild(remove);node.appendChild(action);
   });
@@ -483,6 +495,7 @@ function xRunActions(ev,target){
   else if(act.type==="setText"&&target)target.text=String(act.value||"");
   else if(act.type==="moveRandom"&&target){target.x=5+Math.random()*75;target.y=5+Math.random()*75;}
   else if(act.type==="particles"){const a=target||{x:45,y:45,w:10,h:10};xAddParticles(a.x+a.w/2,a.y+a.h/2,20);}
+  else if(act.type==="cameraShake"){p.settings.shake=Number(act.value||3);setTimeout(()=>{p.settings.shake=0;xRenderStage();},450);}
   else if(act.type==="message")toast(String(act.value||"イベント"));
   else if(act.type==="gameOver"){playing=false;cancelAnimationFrame(xRuntimeFrame);if(xTimer)clearInterval(xTimer);toast("ゲーム終了");}
  });
