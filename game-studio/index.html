@@ -136,7 +136,7 @@ document.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLower
 let init;try{let all=JSON.parse(localStorage.getItem(KEY)||"[]"),id=localStorage.getItem(KEY+".current");init=all.find(x=>x.id===id)||all[0]}catch(e){}setProject(init||fresh("clicker"));
 
 /* ---- KURO GAME STUDIO: 2D editor extensions ---- */
-let xMulti=[],xDrag=null,xRuntimeFrame=0,xLastTime=0,xTimer=null,xTileColor=0,xCommands=[],xCommandIndex=0;
+var xMulti=[],xDrag=null,xRuntimeFrame=0,xLastTime=0,xTimer=null,xTileColor=0,xCommands=[],xCommandIndex=0;
 const xTileColors=["#26364f","#4d8a72","#b58d55","#8f536e","#6f83b7","#c3c9d4","#e5b35d","#1d2431"];
 function xEnsure(){
  p.settings=Object.assign({grid:5,snapEnabled:true,showGrid:false,showColliders:false,theme:"dark",fontSize:13,gravity:600,cameraMode:"fixed",cameraZoom:1,followTargetId:"",shake:0},p.settings||{});
@@ -563,9 +563,9 @@ function xInitExtensions(){
  $("snapBtn").textContent="スナップ "+(p.settings.snapEnabled?"ON":"OFF");
  $("grid").addEventListener("click",()=>{p.settings.showGrid=!p.settings.showGrid;xRenderStage();xMark();});
 }
-function renderStage(){xRenderStage();}
-function renderLayers(){xRenderLayers();}
-function renderInspector(){xRenderInspector();}
+function renderStage(){xEnsure();xRenderStage();}
+function renderLayers(){xEnsure();xRenderLayers();}
+function renderInspector(){xEnsure();xRenderInspector();}
 function gameClick(o){xGameClick(o);}
 xInitExtensions();
 
