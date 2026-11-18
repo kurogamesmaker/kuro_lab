@@ -30,7 +30,7 @@ let kuroGameFrame = null;
 const kuroGameAuthClient = window.supabase.createClient(
  "https://cprvpphlfpmiegjiutjn.supabase.co",
  "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn",
- { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }
+ { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }, global: { fetch: KURO_GAS_TRANSPORT ? kuroGasFetch : window.fetch } }
 );
 let kuroGameAuthPromise = null;
 async function getKuroGameAuthSession() {
