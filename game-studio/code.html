@@ -14,13 +14,16 @@
 .publish-box{width:min(680px,100%);overflow:auto}.publish-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}.publish-fields label{display:grid;gap:5px;color:#bfc9dc;font-size:11px;font-weight:800}.publish-fields input,.publish-fields textarea,.publish-fields select{width:100%;border:1px solid var(--line);border-radius:8px;background:#090e18;color:#e5eaf5;padding:9px;font:12px system-ui}.publish-fields label:nth-child(3){grid-column:1/-1}.publish-fields textarea{resize:vertical}@media(max-width:520px){.publish-fields{grid-template-columns:1fr}.publish-fields label:nth-child(3){grid-column:auto}}@media(max-width:850px){.layout{grid-template-columns:1fr;height:auto;min-height:calc(100vh - 62px)}.editor{height:62vh;min-height:440px;border-right:0;border-bottom:1px solid var(--line)}.preview{height:62vh;min-height:440px}.top{gap:7px;padding:0 9px}.brand{font-size:14px}.status{display:none}.project-name{width:130px}.btn{padding:7px 9px;font-size:10px}}
 @media(max-width:520px){.sep{display:none}.top{height:56px}.layout{height:auto;min-height:calc(100vh - 56px)}.editor{height:60vh;min-height:400px}.preview{height:55vh;min-height:380px}.editor-head{padding:0 7px;gap:3px}.tab{padding:8px 9px;font-size:10px}.filetag{font-size:9px}.code{font-size:11px;padding:12px}.gutter{font-size:11px;padding-top:12px;width:37px;flex-basis:37px}.preview-head{padding:0 8px}.screen{padding:8px}.top .btn{padding:6px 7px;font-size:9px}.project-name{width:88px;font-size:10px}}
 </style>
+<style>
+.gas-mode-btn.is-active{background:#123b2c!important;border-color:#32865e!important;color:#9cf0bd!important;box-shadow:inset 0 0 0 1px #51b98140}
+</style>
 </head>
 <body>
 <header class="top">
  <a class="brand" href="/game-studio/projects.html">KURO <b>GAME STUDIO</b></a><span class="sep"></span>
  <input class="project-name" id="projectName" aria-label="プロジェクト名" value="新しいゲーム">
  <span class="spacer"></span><span class="status" id="saveStatus">● 保存済み</span>
- <a class="btn" href="/game-studio/projects.html">プロジェクト</a><a class="btn" href="/game-studio/" id="visualLink">ビジュアル編集</a>
+ <a class="btn" href="/game-studio/projects.html">プロジェクト</a><a class="btn" href="/game-studio/" id="visualLink">ビジュアル編集</a><a class="btn gas-mode-btn" href="/game-studio/code.html?transport=gas" data-gas-toggle data-gas-mode="supabase-only">GAS通信モード ↗</a>
  <button class="btn" id="saveBtn">保存</button><button class="btn" id="importCodeBtn">コード取り込み</button><button class="btn" id="validateBtn">コード検証</button><button class="btn primary" id="publishBtn">KURO GAMESに公開</button><button class="btn" id="syncBtn">ビジュアルから生成</button>
  <button class="btn" id="exportBtn">HTML書き出し</button><button class="btn primary" id="runBtn">▶ 実行</button>
 </header>
@@ -330,6 +333,24 @@ showTab("html");
 kuroApplyTransportLinks();
 run();
 if(new URLSearchParams(location.search).get("publish")==="1"){syncFromVisual();openPublishModal();}
+})();
+</script>
+<script>
+(function(){
+ const button=document.querySelector("[data-gas-toggle]");
+ if(!button)return;
+ const current=new URL(window.location.href);
+ const active=current.searchParams.get("transport")==="gas";
+ button.classList.toggle("is-active",active);
+ button.textContent=active?"✓ GAS版 使用中":"GAS通信モード ↗";
+ button.setAttribute("aria-label",active?"GAS版を使用中。クリックすると通常版に戻ります":"GAS通信モードに切り替えます");
+ button.title=active?"現在はGAS版です。クリックすると通常版に戻ります":"Supabase通信をGAS経由に切り替えます";
+ if(active)button.setAttribute("aria-current","page");
+ else button.removeAttribute("aria-current");
+ const next=new URL(current.href);
+ if(active)next.searchParams.delete("transport");
+ else next.searchParams.set("transport","gas");
+ button.href=next.pathname+next.search+next.hash;
 })();
 </script>
 </body></html>
