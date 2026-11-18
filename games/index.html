@@ -40,6 +40,10 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 .studio-game-icon{font-size:54px;filter:drop-shadow(0 8px 12px #0005);line-height:1}
 </style>
+<style>
+.lab.gas-mode-btn.is-active{background:#e8fff2;border-color:#94ddb3;color:#126c43;box-shadow:0 0 0 2px #2ca76b1c}
+@media(max-width:680px){.lab.gas-mode-btn{display:inline-flex;align-items:center;padding:7px 9px;font-size:10px}}
+</style>
 <!-- Google Analytics 4 -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MMV6DL5ZBJ"></script>
 <script>
@@ -103,7 +107,7 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 <a class="brand" href="/games/"><span class="mark">K</span><span>KURO <em>GAMES</em></span></a>
 <nav class="navlinks"><a href="#games">ゲーム一覧</a><a href="#categories">ジャンル</a></nav><div class="spacer"></div>
 <label class="search"><span>⌕</span><input id="gameSearch" type="search" placeholder="ゲームを検索..." autocomplete="off"></label>
-<a class="lab" href="/game-studio/">GAME STUDIO ↗</a><a class="lab" href="https://kurolab.cc.cd/games/?transport=gas" data-gas-mode="supabase-only">GAS通信モード ↗</a><a class="lab" href="https://kurolab.cc.cd/">KURO Lab ↗</a>
+<a class="lab" href="/game-studio/">GAME STUDIO ↗</a><a class="lab gas-mode-btn" href="https://kurolab.cc.cd/games/?transport=gas" data-gas-toggle data-gas-mode="supabase-only">GAS通信モード ↗</a><a class="lab" href="https://kurolab.cc.cd/">KURO Lab ↗</a>
 </div></header>
 <main class="wrap">
 <nav class="kuro-breadcrumb" aria-label="パンくずリスト" style="max-width:1040px;margin:0 auto 18px;padding:14px 0 4px;font-size:13px;color:#718096;display:flex;flex-wrap:wrap;gap:8px;align-items:center"><a href="/" style="color:inherit;text-decoration:underline;text-underline-offset:3px">ホーム</a><span aria-hidden="true">›</span><span aria-current="page">KURO GAMES</span></nav>
@@ -182,4 +186,22 @@ function kuroApplyTransportLinks(){
  kuroApplyTransportLinks();update();loadStudioGames();
 })();
 </script><script src="/usage-tracker.js"></script>
+<script>
+(function(){
+ const button=document.querySelector("[data-gas-toggle]");
+ if(!button)return;
+ const current=new URL(window.location.href);
+ const active=current.searchParams.get("transport")==="gas";
+ button.classList.toggle("is-active",active);
+ button.textContent=active?"✓ GAS版 使用中":"GAS通信モード ↗";
+ button.setAttribute("aria-label",active?"GAS版を使用中。クリックすると通常版に戻ります":"GAS通信モードに切り替えます");
+ button.title=active?"現在はGAS版です。クリックすると通常版に戻ります":"Supabase通信をGAS経由に切り替えます";
+ if(active)button.setAttribute("aria-current","page");
+ else button.removeAttribute("aria-current");
+ const next=new URL(current.href);
+ if(active)next.searchParams.delete("transport");
+ else next.searchParams.set("transport","gas");
+ button.href=next.pathname+next.search+next.hash;
+})();
+</script>
 </body></html>
