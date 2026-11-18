@@ -392,10 +392,9 @@ function xRenderAll(){xEnsure();xRenderStage();xRenderLayers();xRenderInspector(
 function xDock(panel,zone){
  const other=panel.classList.contains("left")?document.querySelector(".panel.right"):document.querySelector(".panel.left");
  const old=panel.dataset.dock|| (panel.classList.contains("left")?"left":"right");
- if(zone!=="float"&&other&&other.dataset.dock===zone)other.dataset.dock=old;
- panel.dataset.dock=zone;
- panel.style.gridColumn=zone==="left"?"1":zone==="right"?"3":zone==="bottom"?"1 / -1":"";
- panel.style.gridRow=zone==="bottom"?"2":"1";
+ const apply=(el,z)=>{el.dataset.dock=z;el.style.gridColumn=z==="left"?"1":z==="right"?"3":z==="bottom"?"1 / -1":"";el.style.gridRow=z==="bottom"?"2":"1";};
+ if(zone!=="float"&&other&&other.dataset.dock===zone)apply(other,old);
+ apply(panel,zone);
  toast("パネルを"+({left:"左側",right:"右側",bottom:"下部",float:"フロート"}[zone])+"へ配置しました");
 }
 function xSaveCustomLayout(){
@@ -572,7 +571,7 @@ function xInitExtensions(){
  const originalAdd=add;
  add=function(type){
   if(type==="particle"){snapshot();const n=p.objects.length+1,o={id:uid(),type:"particle",name:"パーティクル "+n,text:"✦",x:40,y:40,w:18,h:18,color:"#ffffff",bg:"transparent",size:38,radius:0,layer:"Default",tags:[],collider:{enabled:false,type:"circle",trigger:false,mass:1,gravity:0,restitution:0,friction:0}};p.objects.push(o);selected=o.id;xMulti=[o.id];xMark();render();}
-  else{originalAdd(type);const o=obj();if(o){o.layer=o.layer||"Default";o.tags=o.tags||[];o.rotation=o.rotation||0;o.collider=o.collider||{enabled:false,type:"box",trigger:false,mass:1,gravity:1,restitution:.1,friction:.4};xMulti=[o.id];}}
+  else{originalAdd(type);const o=obj();if(o){o.layer=o.layer||"Default";o.tags=o.tags||[];o.rotation=o.rotation||0;o.collider=o.collider||{enabled:false,type:"box",trigger:false,mass:1,gravity:1,restitution:.1,friction:.4};xMulti=[o.id];xMark();render();}}
  };
  const theme=localStorage.getItem("kuroGameStudio.theme")||"dark",font=localStorage.getItem("kuroGameStudio.font")||"13";xTheme(theme,font);
  $("themeSelect").value=theme;$("fontSelect").value=font;
@@ -614,7 +613,7 @@ function xInitExtensions(){
  xEnableDocking();
  xRenderAll();
  $("snapBtn").textContent="スナップ "+(p.settings.snapEnabled?"ON":"OFF");
- $("grid").addEventListener("click",()=>{p.settings.showGrid=!p.settings.showGrid;xRenderStage();xMark();});
+ $("grid").onclick=null;$("grid").addEventListener("click",()=>{p.settings.showGrid=!p.settings.showGrid;xRenderStage();xMark();});
 }
 function renderStage(){xEnsure();xRenderStage();}
 function renderLayers(){xEnsure();xRenderLayers();}
