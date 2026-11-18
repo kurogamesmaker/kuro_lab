@@ -193,10 +193,10 @@ function makeDocument(){
  const css=String(project.code.css||"").replace(/<\/style/gi,"<\\/style");
  const js=safeScript(project.code.js||"");
  const styleBlock="<style>"+css+"</style>";
- const scriptOpen=(/^\\s*(?:import|export)\\b/m.test(js)?"<scr"+"ipt type=\"module\">":"<scr"+"ipt>");
+ const scriptOpen=(/^\s*(?:import|export)\b/m.test(js)?"<scr"+"ipt type=\"module\">":"<scr"+"ipt>");
  const scriptClose="<"+"/script>";
- const logger="const __kuroSend=(level,args)=>{try{parent.postMessage({type:'kuro-studio-console',level:level,values:Array.from(args).map(v=>{try{return typeof v==='string'?v:JSON.stringify(v)}catch(_){return String(v)}})},'*')}catch(_){}};['log','info','warn','error'].forEach(level=>{const base=console[level].bind(console);console[level]=(...args)=>{base(...args);__kuroSend(level,args)}});window.addEventListener('error',function(e){try{parent.postMessage({type:'kuro-studio-error',message:e.message},'*')}catch(_){}});\\n";
- const moduleMode=/^\\s*(?:import|export)\\b/m.test(js);
+ const logger="const __kuroSend=(level,args)=>{try{parent.postMessage({type:'kuro-studio-console',level:level,values:Array.from(args).map(v=>{try{return typeof v==='string'?v:JSON.stringify(v)}catch(_){return String(v)}})},'*')}catch(_){}};['log','info','warn','error'].forEach(level=>{const base=console[level].bind(console);console[level]=(...args)=>{base(...args);__kuroSend(level,args)}});window.addEventListener('error',function(e){try{parent.postMessage({type:'kuro-studio-error',message:e.message},'*')}catch(_){}});\n";
+ const moduleMode=/^\s*(?:import|export)\b/m.test(js);
  const scriptBlock=scriptOpen+(moduleMode?"":logger)+js+scriptClose;
  if(/<html[\s>]/i.test(html)){
   let doc=html;
