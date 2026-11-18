@@ -21,7 +21,7 @@
  <input class="project-name" id="projectName" aria-label="プロジェクト名" value="新しいゲーム">
  <span class="spacer"></span><span class="status" id="saveStatus">● 保存済み</span>
  <a class="btn" href="/game-studio/" id="visualLink">ビジュアル編集</a>
- <button class="btn" id="saveBtn">保存</button><button class="btn" id="syncBtn">ビジュアルから生成</button>
+ <button class="btn" id="saveBtn">保存</button><button class="btn" id="validateBtn">コード検証</button><button class="btn" id="syncBtn">ビジュアルから生成</button>
  <button class="btn" id="exportBtn">HTML書き出し</button><button class="btn primary" id="runBtn">▶ 実行</button>
 </header>
 <main class="layout">
@@ -35,7 +35,7 @@
  </section>
  <section class="preview">
   <div class="preview-head"><strong>ライブプレビュー</strong><span class="spacer"></span><span class="muted" id="previewStatus">更新待機中</span><button class="btn" id="refreshBtn">↻ 更新</button></div>
-  <div class="screen"><iframe class="frame" id="previewFrame" title="ゲームプレビュー" sandbox="allow-scripts allow-modals" referrerpolicy="no-referrer"></iframe></div>
+  <div class="screen"><iframe class="frame" id="previewFrame" title="ゲームプレビュー" sandbox="allow-scripts allow-modals" referrerpolicy="no-referrer"></iframe></div><details class="console-panel" open><summary>実行ログ・エラー　<span id="consoleCount">0</span></summary><pre id="consoleOutput">プレビューのログがここに表示されます。</pre></details>
   <div class="preview-foot"><span>安全なサンドボックス内で実行</span><span class="spacer"></span><span id="previewSize">プレビュー</span></div>
  </section>
 </main>
