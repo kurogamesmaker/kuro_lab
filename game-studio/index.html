@@ -8,7 +8,7 @@
 @keyframes kuro-float{50%{translate:0 -8px}}
 @keyframes kuro-spin{to{rotate:360deg}}
 @keyframes kuro-pulse{50%{scale:1.1}}
-@keyframes kuro-bob{0%,100%{translate:0 0}50%{translate:0 -14px}}
+@keyframes kuro-bob{0%,100%{translate:0 0}50%{translate:0 -14px}}@keyframes kuroParticle{to{transform:translate(var(--dx),var(--dy));opacity:0}}
 
 .work{grid-template-rows:minmax(0,1fr) auto;position:relative;overflow:hidden}
 .left{grid-column:1;grid-row:1;min-width:0}
@@ -218,7 +218,7 @@ function xRenderLayers(){
  append(null,0);
 }
 function xRenderStage(){
- const stage=$("stage");if(!stage)return;stage.style.background=p.background||"#17243a";
+ const stage=$("stage");if(!stage)return;stage.style.background=p.background||"#17243a";stage.style.transform=playing&&p.settings.shake?"translate("+((Math.random()-.5)*p.settings.shake*2)+"px,"+((Math.random()-.5)*p.settings.shake*2)+"px)":"";
  stage.querySelectorAll(".obj,.tile-layer,.stage-grid").forEach(el=>el.remove());
  if(p.tilemap&&p.tilemap.enabled){
   const canvas=document.createElement("canvas");canvas.className="tile-layer";canvas.width=p.tilemap.cols;canvas.height=p.tilemap.rows;
@@ -246,7 +246,7 @@ function xRenderStage(){
    const rot=document.createElement("span");rot.className="rotate-handle";rot.title="回転";e.appendChild(rot);
    const size=document.createElement("span");size.className="resize-handle";size.title="サイズ変更";e.appendChild(size);
   }
-  if(playing){e.addEventListener("click",()=>xGameClick(o));}
+  if(playing){e.addEventListener("click",()=>{if(o.type==="particle")xAddParticles(o.x+o.w/2,o.y+o.h/2,20);xGameClick(o);});}
   else{e.addEventListener("pointerdown",ev=>xStartDrag(ev,o.id));e.addEventListener("click",ev=>{ev.stopPropagation();if(ev.ctrlKey||ev.metaKey){if(xMulti.includes(o.id))xMulti=xMulti.filter(id=>id!==o.id);else xMulti.push(o.id);selected=o.id;}else if(!xMulti.includes(o.id)){xMulti=[o.id];selected=o.id;}renderStage();renderInspector();xRenderLayers();});}
   stage.appendChild(e);
  });
@@ -372,7 +372,7 @@ function xRenderEvents(){
   ev.actions.forEach((act,ai)=>{
    const action=document.createElement("div");action.className="node-actions";
    xField(action,"アクション","type",act.type,"select",{choices:[["addScore","スコアを加算"],["setText","テキストを変更"],["moveRandom","ランダムに移動"],["particles","パーティクルを発生"],["cameraShake","カメラを揺らす"],["message","メッセージを表示"],["gameOver","ゲーム終了"]]},v=>{act.type=v;xMark();});
-   if(["addScore","message","setText"].includes(act.type))xField(action,"値","value",act.value??(act.type==="addScore"?10:"テキスト"),"text",null,v=>{act.value=v;xMark();});
+   if(["addScore","message","setText","cameraShake"].includes(act.type))xField(action,"値","value",act.value??(act.type==="addScore"?10:act.type==="cameraShake"?3:"テキスト"),"text",null,v=>{act.value=v;xMark();});
    const remove=document.createElement("button");remove.className="btn small";remove.textContent="アクション削除";remove.onclick=()=>{snapshot();ev.actions.splice(ai,1);xMark();xRenderEvents();};action.appendChild(remove);node.appendChild(action);
   });
   const row=document.createElement("div");row.style.display="flex";row.style.gap="6px";row.style.marginTop="8px";
