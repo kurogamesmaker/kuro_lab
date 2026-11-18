@@ -38,6 +38,7 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 @media(max-width:980px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.navlinks{display:none}.search{margin-left:auto}}
 @media(max-width:680px){.wrap{width:calc(100% - 26px)}header{height:63px}.nav{gap:10px}.brand{font-size:18px}.mark{width:34px;height:34px}.search{width:42px;flex:0 0 42px;padding:0 10px}.search input{display:none}.search:focus-within{width:min(210px,45vw);flex-basis:min(210px,45vw)}.search:focus-within input{display:block}.lab{display:none}.hero{margin-top:14px;min-height:0;padding:25px 22px 18px;grid-template-columns:1fr;border-radius:19px}.hero h1{font-size:36px;letter-spacing:-1.5px}.hero p{font-size:12px}.hero-art{min-height:150px}.sushi{width:140px;height:140px;font-size:75px}.spark.one{top:4px}.spark.two{top:8px}.spark.three{bottom:2px}section.library{padding:34px 0 48px}.section-head h2{font-size:24px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.cover{aspect-ratio:1.16/1}.emoji{font-size:64px}.card-body{padding:10px 11px 12px}.card-body h3{font-size:12px}.filters{gap:7px}.filter{padding:8px 12px;font-size:11px}.filter.fav{margin-left:0}.more{padding:17px;gap:11px;align-items:flex-start}.more-icon{width:42px;height:42px}.more small{display:none}.foot{font-size:10px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+.studio-game-icon{font-size:54px;filter:drop-shadow(0 8px 12px #0005);line-height:1}
 </style>
 <!-- Google Analytics 4 -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MMV6DL5ZBJ"></script>
@@ -116,7 +117,7 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 </section>
 <section class="library" id="games">
 <div class="section-head"><div><span class="kicker">DISCOVER YOUR NEXT GAME</span><h2>ゲームを見つけよう。</h2><p>好きなゲームを選んで、すぐにプレイ。</p></div><span class="count" id="gameCount">公開中 1 GAME</span></div>
-<div class="filters" id="categories"><button class="filter active" data-filter="all">すべて</button><button class="filter" data-filter="typing">タイピング</button><button class="filter" data-filter="puzzle">パズル</button><button class="filter fav" id="favoriteFilter">♡ お気に入り</button></div>
+<div class="filters" id="categories"><button class="filter active" data-filter="all">すべて</button><button class="filter" data-filter="typing">タイピング</button><button class="filter" data-filter="puzzle">パズル</button><button class="filter" data-filter="action">アクション</button><button class="filter" data-filter="other">その他</button><button class="filter fav" id="favoriteFilter">♡ お気に入り</button></div>
 <div class="grid" id="gameGrid">
 <article class="game-card" data-title="回転寿司タイピング sushi typing すし 寿司" data-category="typing" data-id="sushi">
 <a class="game-open" href="/game/kaiten-sushi-typing/"><div class="cover"><span class="tag">PLAY NOW</span><img class="game-cover-image" src="/games/sushi-cover.svg" alt="回転寿司タイピング"><span class="play">▶</span></div><div class="card-body"><h3>回転寿司タイピング</h3><div class="meta"><span class="type">タイピング</span><span>無料・ブラウザ</span></div></div></a>
@@ -132,18 +133,33 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 </section>
 </main>
 <footer><div class="wrap foot"><span>© 2026 <b>KURO GAMES</b></span><span>Operated by KURO Lab · <a href="https://kurolab.cc.cd/">KURO Lab公式サイト ↗</a></span></div></footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
- const search=document.getElementById("gameSearch"),cards=[...document.querySelectorAll(".game-card")],filters=[...document.querySelectorAll("[data-filter]")],count=document.getElementById("gameCount"),empty=document.getElementById("empty"),favButton=document.getElementById("favoriteFilter");
+ const search=document.getElementById("gameSearch"),cards=[...document.querySelectorAll(".game-card")],filters=[...document.querySelectorAll("[data-filter]")],count=document.getElementById("gameCount"),empty=document.getElementById("empty"),favButton=document.getElementById("favoriteFilter"),grid=document.getElementById("gameGrid");
+ let dynamicCards=[];function allCards(){return cards.concat(dynamicCards);}
  let active="all",favOnly=false,favorites=[];
  try{favorites=JSON.parse(localStorage.getItem("kuroGamesFavorites")||"[]");if(!Array.isArray(favorites))favorites=[];}catch(e){favorites=[];}
  function save(){try{localStorage.setItem("kuroGamesFavorites",JSON.stringify(favorites));}catch(e){}}
- function update(){const q=(search.value||"").trim().toLowerCase();let shown=0;cards.forEach(card=>{const id=card.dataset.id,visible=(card.dataset.title||"").toLowerCase().includes(q)&&(active==="all"||card.dataset.category===active)&&(!favOnly||favorites.includes(id));card.hidden=!visible;if(visible)shown++;const heart=card.querySelector(".heart"),on=favorites.includes(id);heart.classList.toggle("on",on);heart.textContent=on?"♥":"♡";heart.setAttribute("aria-label",on?"お気に入りから削除":"お気に入りに追加");});count.textContent="表示中 "+shown+" / "+cards.length+" GAME";empty.style.display=shown?"none":"block";favButton.classList.toggle("active",favOnly);favButton.textContent=favOnly?"♥ お気に入り表示中":"♡ お気に入り";}
+ function update(){const q=(search.value||"").trim().toLowerCase();let shown=0;allCards().forEach(card=>{const id=card.dataset.id,visible=(card.dataset.title||"").toLowerCase().includes(q)&&(active==="all"||card.dataset.category===active)&&(!favOnly||favorites.includes(id));card.hidden=!visible;if(visible)shown++;const heart=card.querySelector(".heart"),on=favorites.includes(id);heart.classList.toggle("on",on);heart.textContent=on?"♥":"♡";heart.setAttribute("aria-label",on?"お気に入りから削除":"お気に入りに追加");});count.textContent="表示中 "+shown+" / "+allCards().length+" GAME";empty.style.display=shown?"none":"block";favButton.classList.toggle("active",favOnly);favButton.textContent=favOnly?"♥ お気に入り表示中":"♡ お気に入り";}
  filters.forEach(b=>b.addEventListener("click",()=>{active=b.dataset.filter;filters.forEach(x=>x.classList.toggle("active",x===b));favOnly=false;update();}));
  favButton.addEventListener("click",()=>{favOnly=!favOnly;filters.forEach(x=>x.classList.toggle("active",x.dataset.filter===active));update();});
  search.addEventListener("input",update);
- cards.forEach(card=>card.querySelector(".heart").addEventListener("click",()=>{const id=card.dataset.id;favorites=favorites.includes(id)?favorites.filter(x=>x!==id):favorites.concat(id);save();update();}));
- update();
+ function bindHeart(card){card.querySelector(".heart").addEventListener("click",()=>{const id=card.dataset.id;favorites=favorites.includes(id)?favorites.filter(x=>x!==id):favorites.concat(id);save();update();});}
+ cards.forEach(bindHeart);
+ async function loadStudioGames(){
+  if(!window.supabase||!window.supabase.createClient)return;
+  try{const db=window.supabase.createClient("https://cprvpphlfpmiegjiutjn.supabase.co","sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn");
+   const {data,error}=await db.from("game_studio_games").select("id,title,description,category,icon,published_at").eq("status","published").order("published_at",{ascending:false}).limit(60);if(error)throw error;
+   (data||[]).forEach(game=>{const card=document.createElement("article");card.className="game-card";card.dataset.id="studio-"+game.id;card.dataset.category=game.category||"other";card.dataset.title=(game.title+" "+(game.description||"")).toLowerCase();
+    const link=document.createElement("a");link.className="game-open";link.href="/games/play/?id="+encodeURIComponent(game.id);
+    const cover=document.createElement("div");cover.className="cover";const tag=document.createElement("span");tag.className="tag";tag.textContent="KURO STUDIO";const glyph=document.createElement("span");glyph.className="studio-game-icon";glyph.textContent=game.icon||"🎮";const play=document.createElement("span");play.className="play";play.textContent="▶";cover.append(tag,glyph,play);
+    const body=document.createElement("div");body.className="card-body";const heading=document.createElement("h3");heading.textContent=game.title;const meta=document.createElement("div");meta.className="meta";const type=document.createElement("span");type.className="type";type.textContent=({typing:"タイピング",puzzle:"パズル",action:"アクション",other:"その他"})[game.category]||"その他";const free=document.createElement("span");free.textContent="無料・ブラウザ";meta.append(type,free);body.append(heading,meta);link.append(cover,body);
+    const heart=document.createElement("button");heart.className="heart";heart.type="button";heart.textContent="♡";heart.setAttribute("aria-label","お気に入りに追加");heart.title="お気に入り";card.append(link,heart);grid.appendChild(card);dynamicCards.push(card);bindHeart(card);
+   });update();
+  }catch(error){console.warn("KURO STUDIO games could not be loaded",error);}
+ }
+ update();loadStudioGames();
 })();
 </script><script src="/usage-tracker.js"></script>
 </body></html>
