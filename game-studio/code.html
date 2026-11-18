@@ -63,7 +63,13 @@ function makeVisualCode(p){
   const style='left:'+Number(o.x||0)+'%;top:'+Number(o.y||0)+'%;width:'+Number(o.w||20)+'%;height:'+Number(o.h||12)+'%;color:'+(o.color||"#fff")+';background:'+(o.bg||"transparent")+';font-size:clamp(8px,'+(size/960*100)+'vw,'+size+'px);border-radius:'+(Number(o.radius)||0)+'px';
   return '  <div class="game-object" data-id="'+escapeHTML(o.id)+'" data-kind="'+escapeHTML(o.type)+'" style="'+style+'">'+text+'</div>';
  }).join("\n")+'\n</main>';
- const css='*{box-sizing:border-box}\\nbody{margin:0;min-height:100vh;display:grid;place-items:center;padding:2vw;background:#0b1020;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#fff}\\n#kuro-game{position:relative;width:min(960px,96vw);aspect-ratio:16/9;overflow:hidden;border-radius:14px;background:'+(p.background||"#17243a")+';box-shadow:0 20px 60px #0008}\\n.game-object{position:absolute;display:flex;align-items:center;justify-content:center;text-align:center;white-space:pre-wrap;word-break:break-word;line-height:1.2;user-select:none}\\n.game-object[data-kind="button"],.game-object[data-kind="emoji"]{cursor:pointer}\\n';
+ const css=[
+  '*{box-sizing:border-box}',
+  'body{margin:0;min-height:100vh;display:grid;place-items:center;padding:2vw;background:#0b1020;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#fff}',
+  '#kuro-game{position:relative;width:min(960px,96vw);aspect-ratio:16/9;overflow:hidden;border-radius:14px;background:'+(p.background||"#17243a")+';box-shadow:0 20px 60px #0008}',
+  '.game-object{position:absolute;display:flex;align-items:center;justify-content:center;text-align:center;white-space:pre-wrap;word-break:break-word;line-height:1.2;user-select:none}',
+  '.game-object[data-kind="button"],.game-object[data-kind="emoji"]{cursor:pointer}'
+ ].join("\n");
  const buttonIds=objects.filter(o=>o.type==="button").map(o=>o.id);
  const target=objects.find(o=>o.id==="target");
  const type=JSON.stringify(p.type||"custom");
@@ -71,7 +77,33 @@ function makeVisualCode(p){
  const buttons=JSON.stringify(buttonIds);
  const correct=JSON.stringify("a");
  const targetId=JSON.stringify(target?target.id:"target");
- const js='// KURO GAME STUDIO - ゲームの動作を編集できます\\nconst gameType = '+type+';\\nconst scoreId = '+scoreId+';\\nconst buttonIds = '+buttons+';\\nconst correctAnswerId = '+correct+';\\nconst targetId = '+targetId+';\\nlet score = 0;\\nconst root = document.querySelector("#kuro-game");\\nroot.addEventListener("click", (event) => {\\n  const item = event.target.closest(".game-object");\\n  if (!item) return;\\n  if (gameType === "clicker" && buttonIds.includes(item.dataset.id)) {\\n    score += 1;\\n    const scoreNode = root.querySelector(\\'[data-id="\\' + scoreId + \\'"]\\');\\n    if (scoreNode) scoreNode.textContent = "SCORE  " + score;\\n  } else if (gameType === "quiz" && buttonIds.includes(item.dataset.id)) {\\n    alert(item.dataset.id === correctAnswerId ? "正解！" : "もう一度挑戦！");\\n  } else if (gameType === "target" && item.dataset.id === targetId) {\\n    score += 10;\\n    const scoreNode = root.querySelector(\\'[data-id="\\' + scoreId + \\'"]\\');\\n    if (scoreNode) scoreNode.textContent = "SCORE  " + score;\\n    item.style.left = (5 + Math.random() * 75) + "%";\\n    item.style.top = (20 + Math.random() * 60) + "%";\\n  }\\n});\\n';
+ const js=[
+  "// KURO GAME STUDIO - ゲームの動作を編集できます",
+  "const gameType = "+type+";",
+  "const scoreId = "+scoreId+";",
+  "const buttonIds = "+buttons+";",
+  "const correctAnswerId = "+correct+";",
+  "const targetId = "+targetId+";",
+  "let score = 0;",
+  'const root = document.querySelector("#kuro-game");',
+  'root.addEventListener("click", (event) => {',
+  '  const item = event.target.closest(".game-object");',
+  "  if (!item) return;",
+  '  if (gameType === "clicker" && buttonIds.includes(item.dataset.id)) {',
+  "    score += 1;",
+  "    const scoreNode = root.querySelector('[data-id=\"' + scoreId + '\"]');",
+  '    if (scoreNode) scoreNode.textContent = "SCORE  " + score;',
+  '  } else if (gameType === "quiz" && buttonIds.includes(item.dataset.id)) {',
+  '    alert(item.dataset.id === correctAnswerId ? "正解！" : "もう一度挑戦！");',
+  '  } else if (gameType === "target" && item.dataset.id === targetId) {',
+  "    score += 10;",
+  "    const scoreNode = root.querySelector('[data-id=\"' + scoreId + '\"]');",
+  '    if (scoreNode) scoreNode.textContent = "SCORE  " + score;',
+  '    item.style.left = (5 + Math.random() * 75) + "%";',
+  '    item.style.top = (20 + Math.random() * 60) + "%";',
+  "  }",
+  "});"
+ ].join("\n");
  return {html,css,js};
 }
 function getStoredProject(){
@@ -121,7 +153,7 @@ function makeDocument(){
  const styleBlock="<style>"+css+"</style>";
  const scriptOpen="<scr"+"ipt>";
  const scriptClose="<"+"/script>";
- const scriptBlock=scriptOpen+"window.addEventListener('error',function(e){try{parent.postMessage({type:'kuro-studio-error',message:e.message},'*')}catch(_){}});\\n"+js+scriptClose;
+ const scriptBlock=scriptOpen+"window.addEventListener('error',function(e){try{parent.postMessage({type:'kuro-studio-error',message:e.message},'*')}catch(_){}});\n"+js+scriptClose;
  if(/<html[\s>]/i.test(html)){
   let doc=html;
   if(/<\/head>/i.test(doc))doc=doc.replace(/<\/head>/i,styleBlock+"</head>");
