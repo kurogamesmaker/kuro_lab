@@ -5,6 +5,8 @@
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 80% -20%,#242044 0,transparent 42%),var(--bg);color:var(--text);font:14px Inter,system-ui,"Noto Sans JP",sans-serif}button,input,select{font:inherit}button{cursor:pointer}.wrap{width:min(1180px,calc(100% - 36px));margin:auto}.top{height:66px;border-bottom:1px solid var(--line);background:#0c101bdc;backdrop-filter:blur(14px);display:flex;align-items:center;padding:0 max(18px,calc((100% - 1180px)/2));gap:13px;position:sticky;top:0;z-index:5}.brand{font-weight:950;font-size:17px;letter-spacing:-.3px;color:white;text-decoration:none}.brand b{color:var(--accent)}.crumb{color:var(--muted);font-size:11px}.spacer{flex:1}.btn{border:1px solid var(--line);background:#ffffff08;color:var(--text);border-radius:9px;padding:9px 13px;font-size:11px;font-weight:800}.btn:hover{background:#ffffff13;border-color:#526080}.btn.primary{background:linear-gradient(110deg,#9277ff,#657dff);border-color:transparent}.btn.danger{color:#ff9d9d}.hero{padding:38px 0 25px;display:flex;align-items:end;justify-content:space-between;gap:20px}.eyebrow{font-size:10px;letter-spacing:2px;font-weight:950;color:#a99bff}.hero h1{font-size:clamp(28px,4vw,42px);letter-spacing:-1.5px;margin:8px 0}.hero p{color:var(--muted);font-size:12px;line-height:1.8;margin:0}.hero-actions{display:flex;gap:8px;flex-wrap:wrap}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0 25px}.stat{padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(140deg,#151b2a,#101522)}.stat small{display:block;color:var(--muted);font-size:10px;font-weight:800}.stat strong{display:block;font-size:22px;margin-top:4px;font-variant-numeric:tabular-nums}.bar{display:flex;align-items:center;gap:10px;margin:20px 0 14px;flex-wrap:wrap}.bar h2{font-size:16px;margin:0}.search{margin-left:auto;width:min(280px,100%);padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#101522;color:white;font-size:11px}.filters{display:flex;gap:6px;flex-wrap:wrap}.filter{border:1px solid var(--line);border-radius:99px;background:transparent;color:var(--muted);padding:7px 12px;font-size:10px;font-weight:800}.filter.active{background:#292343;color:#fff;border-color:#6254a4}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;padding-bottom:50px}.card{min-width:0;border:1px solid var(--line);border-radius:14px;background:linear-gradient(145deg,#151b2a,#101521);overflow:hidden;transition:.18s}.card:hover{transform:translateY(-3px);border-color:#665ba0;box-shadow:0 14px 32px #0005}.preview{height:145px;position:relative;display:grid;place-items:center;overflow:hidden;background:radial-gradient(circle at 50% 30%,#34466b,#172239 70%)}.preview:before,.preview:after{content:"";position:absolute;border:1px solid #ffffff18;border-radius:50%;width:180px;height:180px}.preview:after{width:125px;height:125px}.glyph{position:relative;z-index:1;font-size:54px;filter:drop-shadow(0 9px 12px #0008)}.type-tag{position:absolute;top:10px;left:10px;z-index:2;padding:5px 8px;border-radius:6px;background:#0b101bcc;border:1px solid #ffffff18;color:#c9c1ff;font-size:9px;font-weight:900}.card-body{padding:13px}.card-title{font-size:14px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.card-meta{display:flex;justify-content:space-between;gap:8px;margin-top:6px;color:var(--muted);font-size:10px}.card-actions{display:flex;gap:6px;padding:0 13px 13px}.card-actions .btn{flex:1;text-align:center;padding:8px 6px;font-size:10px}.empty{display:none;text-align:center;padding:55px 15px;border:1px dashed #3b4660;border-radius:14px;color:var(--muted);grid-column:1/-1}.empty strong{display:block;color:#e9eafa;font-size:16px;margin-bottom:8px}.empty .btn{margin-top:15px}.modalbg{position:fixed;inset:0;z-index:20;background:#000c;display:none;place-items:center;padding:18px}.modalbg.open{display:grid}.modal{width:min(720px,100%);max-height:90vh;overflow:auto;border:1px solid #39445c;border-radius:16px;background:#121827;padding:22px;box-shadow:0 25px 80px #000a}.modal h2{font-size:19px;margin:0 0 5px}.modal p{font-size:11px;color:var(--muted);margin:0 0 17px;line-height:1.7}.field{display:grid;gap:6px;margin:12px 0}.field label{font-size:10px;color:#c0c9da;font-weight:800}.field input,.field select{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:8px;background:#0b101a;color:white;font-size:12px}.types{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.type{border:1px solid var(--line);border-radius:10px;background:#1a2233;color:white;text-align:left;padding:12px}.type.active{border-color:var(--accent);background:#292343;box-shadow:inset 0 0 0 1px #8d78ff55}.type span{display:block;font-size:24px;margin-bottom:7px}.type b{font-size:11px}.type small{display:block;color:var(--muted);font-size:9px;line-height:1.5;margin-top:4px}.modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);padding:10px 15px;background:#202b40;border:1px solid #485675;border-radius:9px;color:white;font-size:11px;opacity:0;transition:.2s;pointer-events:none}.toast.show{opacity:1}
 @media(max-width:800px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.wrap{width:calc(100% - 24px)}.top{height:58px;padding:0 12px}.hero{padding-top:26px;align-items:start;flex-direction:column}.stats{gap:7px}.stat{padding:11px}.stat strong{font-size:18px}.grid{grid-template-columns:1fr}.preview{height:120px}.types{grid-template-columns:1fr 1fr}.search{order:3;width:100%;margin:0}.bar{gap:8px}}
 </style><style>
+.published-status{color:var(--muted);font-size:11px}.published-card .preview{background:radial-gradient(circle at 50% 30%,#285747,#142a2a 70%)}.published-card .type-tag{color:#a5f0c7}
+</style><style>
 .gas-mode-btn.is-active{background:#123b2c!important;border-color:#32865e!important;color:#9cf0bd!important;box-shadow:inset 0 0 0 1px #51b98140}
 </style>
 </head><body>
@@ -14,6 +16,8 @@
 <section class="stats"><div class="stat"><small>すべてのプロジェクト</small><strong id="totalCount">0</strong></div><div class="stat"><small>最近編集したプロジェクト</small><strong id="recentCount">0</strong></div><div class="stat"><small>制作モード</small><strong>2D</strong></div></section>
 <div class="bar"><h2>マイプロジェクト</h2><div class="filters"><button class="filter active" data-filter="all">すべて</button><button class="filter" data-filter="recent">最近使った</button><button class="filter" data-filter="clicker">クリック</button><button class="filter" data-filter="quiz">クイズ</button><button class="filter" data-filter="platformer">アクション</button></div><input class="search" id="search" placeholder="プロジェクトを検索..."></div>
 <section class="grid" id="projectGrid"><div class="empty" id="empty"><strong>まだプロジェクトがありません</strong>最初のゲームを作成してみましょう。<br><button class="btn primary" id="emptyCreate">＋ プロジェクトを作成</button></div></section>
+<div class="bar"><h2>公開済みゲーム</h2><span class="published-status" id="publishedStatus">公開作品を確認しています…</span></div>
+<section class="grid" id="publishedGrid"><div class="empty" id="publishedEmpty" style="display:block"><strong>公開済みゲームはありません</strong>Studioから公開した作品がここに表示されます。</div></section>
 </main>
 <div class="modalbg" id="modal"><section class="modal"><h2>新しいプロジェクトを作成</h2><p>プロジェクト名とベースとなるゲームタイプを選択してください。あとからビジュアル編集・コード編集で自由に変更できます。</p>
 <div class="field"><label for="projectTitle">プロジェクト名</label><input id="projectTitle" maxlength="48" value="新しいゲーム" placeholder="例：マイアクションゲーム"></div>
@@ -26,12 +30,28 @@
 </div></div>
 <div class="field"><label for="editorMode">最初に開く編集モード</label><select id="editorMode"><option value="visual">ビジュアルエディター</option><option value="code">コードエディター</option></select></div>
 <div class="modal-foot"><button class="btn" id="cancelCreate">キャンセル</button><button class="btn primary" id="confirmCreate">作成して開く</button></div></section></div><div class="toast" id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const KURO_GAS_TRANSPORT=new URLSearchParams(location.search).get("transport")==="gas";
 function kuroApplyTransportLinks(){if(!KURO_GAS_TRANSPORT)return;document.querySelectorAll('a[href^="/game-studio/"],a[href^="/games/"]').forEach(a=>{const u=new URL(a.href,location.origin);u.searchParams.set("transport","gas");a.href=u.pathname+u.search+u.hash;});}
 (function(){
 "use strict";
 const KEY="kuroGameStudio.v1", $=id=>document.getElementById(id), clone=x=>JSON.parse(JSON.stringify(x));
+const SUPABASE_URL="https://cprvpphlfpmiegjiutjn.supabase.co",SUPABASE_KEY="sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
+const KURO_GAS_PROXY_URL="https://kurolab.cc.cd/api/kuro-gas-proxy";
+async function kuroGasFetch(input,init){
+ const req=new Request(input,init),url=new URL(req.url);
+ if(url.origin!==SUPABASE_URL)return fetch(req);
+ const bytes=new Uint8Array(await req.arrayBuffer());let binary="";
+ for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(bytes.length,i+0x8000)));
+ const headers={};req.headers.forEach((v,k)=>headers[k]=v);
+ const proxy=await fetch(KURO_GAS_PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:"game-studio-projects"})});
+ const result=await proxy.json();
+ if(!proxy.ok||!result||typeof result.status!=="number")throw new Error(result&&result.error||"GAS中継通信に失敗しました");
+ let body=null;if(result.isBinary&&result.bodyBase64){const raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);body=out;}else if(result.bodyText!==undefined&&![204,205,304].includes(result.status))body=result.bodyText;
+ return new Response(body,{status:result.status,headers:result.headers||{"Content-Type":"application/json"}});
+}
+const projectDb=window.supabase&&window.supabase.createClient?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{global:{fetch:KURO_GAS_TRANSPORT?kuroGasFetch:window.fetch},auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
 let chosen="blank",filter="all",projects=[];
 const base={
  blank:{type:"blank",background:"#17243a",objects:[]},
@@ -51,6 +71,38 @@ function render(){load();const q=$("search").value.trim().toLowerCase(),list=pro
 const grid=$("projectGrid"),empty=$("empty");grid.querySelectorAll(".card").forEach(x=>x.remove());empty.style.display=list.length?"none":"block";if(!projects.length){empty.querySelector("strong").textContent="まだプロジェクトがありません";empty.firstChild.nextSibling.textContent="最初のゲームを作成してみましょう。";}else if(!list.length){empty.querySelector("strong").textContent="一致するプロジェクトがありません";empty.firstChild.nextSibling.textContent="検索ワードやフィルターを変更してください。";}
 list.forEach(p=>{const card=document.createElement("article");card.className="card";card.innerHTML='<div class="preview"><span class="type-tag">'+esc(typeName(p))+'</span><span class="glyph">'+icon(p)+'</span></div><div class="card-body"><div class="card-title">'+esc(p.name||"無題のプロジェクト")+'</div><div class="card-meta"><span>'+esc(typeName(p))+'</span><span>更新 '+date(p.updatedAt)+'</span></div></div><div class="card-actions"><button class="btn primary" data-open="'+esc(p.id)+'">開く</button><button class="btn" data-duplicate="'+esc(p.id)+'">複製</button><button class="btn danger" data-delete="'+esc(p.id)+'">削除</button></div>';grid.insertBefore(card,empty);});}
 function open(id,mode){const p=projects.find(x=>x.id===id);if(!p)return;p.updatedAt=Date.now();saveAll();localStorage.setItem(KEY+".current",p.id);location.href=mode==="code"?"/game-studio/code.html"+(KURO_GAS_TRANSPORT?"?transport=gas":""):"/game-studio/"+(KURO_GAS_TRANSPORT?"?transport=gas":"");}
+
+async function loadPublishedGames(){
+ const status=$("publishedStatus"),grid=$("publishedGrid"),empty=$("publishedEmpty");
+ if(!projectDb){status.textContent="公開作品の取得に失敗しました（Supabase未接続）";return;}
+ try{
+  const {data:{session},error:sessionError}=await projectDb.auth.getSession();if(sessionError)throw sessionError;
+  if(!session){status.textContent="ログインすると、自分が公開したゲームをStudioで編集できます";return;}
+  const {data,error}=await projectDb.from("game_studio_games").select("id,slug,title,description,category,icon,updated_at").eq("owner_id",session.user.id).order("updated_at",{ascending:false}).limit(60);
+  if(error)throw error;
+  grid.querySelectorAll(".published-card").forEach(n=>n.remove());
+  const rows=data||[];status.textContent=rows.length+" 件";
+  if(!rows.length){empty.style.display="block";return;}
+  empty.style.display="none";
+  rows.forEach(game=>{
+   const card=document.createElement("article");card.className="card published-card";
+   const preview=document.createElement("div");preview.className="preview";
+   const tag=document.createElement("span");tag.className="type-tag";tag.textContent="公開済み";
+   const glyph=document.createElement("span");glyph.className="glyph";glyph.textContent=game.icon||"🎮";preview.append(tag,glyph);
+   const body=document.createElement("div");body.className="card-body";
+   const title=document.createElement("div");title.className="card-title";title.textContent=game.title||"無題のゲーム";
+   const meta=document.createElement("div");meta.className="card-meta";
+   const category=document.createElement("span");category.textContent=({typing:"タイピング",puzzle:"パズル",action:"アクション",other:"その他"})[game.category]||"ゲーム";
+   const updated=document.createElement("span");updated.textContent="更新 "+date(game.updated_at?new Date(game.updated_at).getTime():0);
+   meta.append(category,updated);body.append(title,meta);
+   const actions=document.createElement("div");actions.className="card-actions";
+   const edit=document.createElement("a");edit.className="btn primary";edit.textContent="Studioで編集";
+   const u=new URL("/game-studio/code.html",location.origin);u.searchParams.set("publishedId",game.id);if(KURO_GAS_TRANSPORT)u.searchParams.set("transport","gas");edit.href=u.pathname+u.search;
+   const play=document.createElement("a");play.className="btn";play.textContent="ゲームを見る";play.href="/games/play/?id="+encodeURIComponent(game.id)+(KURO_GAS_TRANSPORT?"&transport=gas":"");play.target="_blank";play.rel="noopener";
+   actions.append(edit,play);card.append(preview,body,actions);grid.insertBefore(card,empty);
+  });
+ }catch(e){status.textContent="取得できませんでした: "+(e.message||"通信エラー");}
+}
 function modal(show){$("modal").classList.toggle("open",show);if(show){$("projectTitle").focus();$("projectTitle").select();}}
 kuroApplyTransportLinks();
 function create(){const name=$("projectTitle").value.trim()||"新しいゲーム",p=fresh(chosen,name);projects.unshift(p);saveAll();localStorage.setItem(KEY+".current",p.id);open(p.id,$("editorMode").value);}
@@ -63,7 +115,7 @@ document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{filter=b.da
 $("projectGrid").onclick=e=>{const b=e.target.closest("button");if(!b)return;if(b.dataset.open)open(b.dataset.open,"visual");if(b.dataset.duplicate)duplicate(b.dataset.duplicate);if(b.dataset.delete)remove(b.dataset.delete);};
 $("importBtn").onclick=()=>$("importFile").click();$("importFile").onchange=e=>{const f=e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(reader.result),items=Array.isArray(data)?data:[data];const valid=items.filter(p=>p&&Array.isArray(p.objects)&&p.id);if(!valid.length)throw Error("invalid");const known=new Set(projects.map(p=>p.id));valid.forEach(p=>{if(known.has(p.id))p.id="kuro-import-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,6);projects.unshift(p)});saveAll();render();toast(valid.length+"件のプロジェクトを読み込みました");}catch(_){alert("読み込めるKURO GAME STUDIOプロジェクトではありません。");}};reader.readAsText(f);e.target.value="";};
 $("emptyCreate").onclick=()=>modal(true);$("modal").onclick=e=>{if(e.target===$("modal"))modal(false);};document.addEventListener("keydown",e=>{if(e.key==="Escape")modal(false);if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="n"){e.preventDefault();modal(true);}});
-render();
+render();loadPublishedGames();
 })();
 </script><script>
 (function(){
