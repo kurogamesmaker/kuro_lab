@@ -26,7 +26,21 @@ const KURO_ALLOWED_RESPONSE_HEADERS = [
  * GET is reserved for the proxy health check.
  */
 function doGet(e) {
-  return kuroJsonOutput({ ok: true, service: 'KURO SNS GAS Proxy', version: 1 });
+  // Legacy GAS buttons should open the original hosted page, not an HtmlService shell.
+  // Only Supabase API requests are routed through this GAS proxy.
+  var page = e && e.parameter ? String(e.parameter.page || '') : '';
+  var destinations = {
+    games: 'https://kurolab.cc.cd/games/?transport=gas',
+    studio: 'https://kurolab.cc.cd/game-studio/?transport=gas',
+    code: 'https://kurolab.cc.cd/game-studio/code.html?transport=gas',
+    projects: 'https://kurolab.cc.cd/game-studio/projects.html?transport=gas'
+  };
+  if (destinations[page]) {
+    var url = destinations[page];
+    var html = '<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=' + url + '"><title>KURO Labへ移動</title></head><body><p>元のページへ移動しています。<a href="' + url + '">移動しない場合はこちら</a></p><script>location.replace(' + JSON.stringify(url) + ');</script></body></html>';
+    return HtmlService.createHtmlOutput(html);
+  }
+  return kuroJsonOutput({ ok: true, service: 'KURO SNS GAS Proxy', version: 2 });
 }
 
 function doPost(e) {
