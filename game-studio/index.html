@@ -516,6 +516,7 @@ function xOverlap(a,b){
  const pair=[a.layer||"Default",b.layer||"Default"].sort().join("|");if(p.collisionMatrix[pair]===false)return false;
  return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
 }
+function xStartRuntime(){
  xDispatch("start",null);let last=performance.now();const hit=new Set();
  if(!window.__kuroPlatformBound){
   window.__kuroPlatformBound=true;
