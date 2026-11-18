@@ -91,7 +91,7 @@ body.font-xlarge{font-size:17px}
 </style></head><body>
 <header class="top"><a class="brand" href="/games/">KURO <b>GAME STUDIO</b></a><span class="muted">/ ビジュアルエディター</span><span class="spacer"></span><select class="btn" id="layoutPreset" aria-label="レイアウト"><option value="2d">2D編集</option><option value="animation">アニメーション</option><option value="debug">デバッグ</option></select><select class="btn" id="themeSelect" aria-label="テーマ"><option value="dark">ダーク</option><option value="light">ライト</option><option value="contrast">高コントラスト</option></select><select class="btn" id="fontSelect" aria-label="文字サイズ"><option value="13">文字 13px</option><option value="15">文字 15px</option><option value="17">文字 17px</option></select><button class="btn" id="commandBtn" title="Ctrl+K / F1">⌕ コマンド</button><span class="muted" id="saveState">● 保存済み</span><button class="btn" id="newBtn">新規</button><button class="btn" id="saveBtn">保存</button><button class="btn" id="exportBtn">書き出し</button><button class="btn primary" id="playBtn">▶ テスト</button></header>
 <div class="shell"><div class="work" id="workspace">
-<aside class="panel left"><div class="ph" draggable="true" data-dock-head="left">素材・オブジェクト <button class="btn" id="tplBtn">テンプレート</button><button class="btn small" data-dock-cycle="left">ドック ⋯</button></div><div class="pb"><div class="panel-tabs"><button class="panel-tab active" data-left-tab="hierarchy">ヒエラルキー</button><button class="panel-tab" data-left-tab="assets">アセット</button><button class="panel-tab" data-left-tab="tilemap">タイル</button></div><section id="leftHierarchy"><div class="label">オブジェクトを追加</div><div class="palette"><button data-add="text"><span>Ｔ</span>テキスト</button><button data-add="button"><span>▣</span>ボタン</button><button data-add="shape"><span>■</span>図形</button><button data-add="emoji"><span>🎮</span>アイコン</button><button data-add="particle"><span>✦</span>パーティクル</button></div><div class="label">シーン階層 <button class="mini-action" id="groupBtn">選択をグループ化</button></div><div class="layers" id="layers"></div><div class="hier-actions"><button class="btn small" id="ungroupBtn">グループ解除</button><button class="btn small" id="prefabBtn">選択をPrefab化</button></div></section><section id="leftAssets" hidden><div class="label">素材を取り込む</div><input id="assetInput" type="file" accept="image/*,audio/*" multiple hidden><button class="btn primary" id="assetImportBtn">＋ 画像・音声を追加</button><button class="btn small" id="packageExportBtn">素材パッケージを書き出し</button><div class="asset-list" id="assetList"></div><div class="label">プレハブ</div><div class="asset-list" id="prefabList"></div></section><section id="leftTilemap" hidden><div class="label">2Dタイルマップ</div><div class="hint">セルをクリックして塗り替え。ゲーム背景やステージ作成に使えます。</div><div class="tile-palette" id="tilePalette"></div><canvas id="tilemapCanvas" width="400" height="240"></canvas><div class="row"><button class="btn small" id="tileClearBtn">クリア</button><button class="btn small" id="tileToggleBtn">シーンに表示</button></div></section></div></aside>
+<aside class="panel left"><div class="ph" draggable="true" data-dock-head="left">素材・オブジェクト <button class="btn" id="tplBtn">テンプレート</button><button class="btn small" data-dock-cycle="left">ドック ⋯</button></div><div class="pb"><div class="panel-tabs"><button class="panel-tab active" data-left-tab="hierarchy">ヒエラルキー</button><button class="panel-tab" data-left-tab="assets">アセット</button><button class="panel-tab" data-left-tab="tilemap">タイル</button></div><section id="leftHierarchy"><div class="label">オブジェクトを追加</div><div class="palette"><button data-add="text"><span>Ｔ</span>テキスト</button><button data-add="button"><span>▣</span>ボタン</button><button data-add="shape"><span>■</span>図形</button><button data-add="emoji"><span>🎮</span>アイコン</button><button data-add="particle"><span>✦</span>パーティクル</button></div><div class="label">シーン階層 <button class="mini-action" id="groupBtn">選択をグループ化</button></div><div class="layers" id="layers"></div><div class="hier-actions"><button class="btn small" id="ungroupBtn">グループ解除</button><button class="btn small" id="prefabBtn">選択をPrefab化</button></div></section><section id="leftAssets" hidden><div class="label">素材を取り込む</div><input id="assetInput" type="file" accept="image/*,audio/*" multiple hidden><button class="btn primary" id="assetImportBtn">＋ 画像・音声を追加</button><button class="btn small" id="packageExportBtn">素材パッケージを書き出し</button><input id="packageInput" type="file" accept=".kuroasset.json,application/json" hidden><button class="btn small" id="packageImportBtn">パッケージを読み込む</button><div class="asset-list" id="assetList"></div><div class="label">プレハブ</div><div class="asset-list" id="prefabList"></div></section><section id="leftTilemap" hidden><div class="label">2Dタイルマップ</div><div class="hint">セルをクリックして塗り替え。ゲーム背景やステージ作成に使えます。</div><div class="tile-palette" id="tilePalette"></div><canvas id="tilemapCanvas" width="400" height="240"></canvas><div class="row"><button class="btn small" id="tileClearBtn">クリア</button><button class="btn small" id="tileToggleBtn">シーンに表示</button></div></section></div></aside>
 <main class="center"><div class="toolbar"><button class="btn" id="undo">↶</button><button class="btn" id="redo">↷</button><button class="btn" id="grid">▦ グリッド</button><select class="btn" id="transformMode" aria-label="変形モード"><option value="move">移動</option><option value="rotate">回転</option><option value="scale">サイズ</option></select><button class="btn" id="snapBtn">スナップ ON</button><button class="btn" id="delete">削除</button><a class="btn" href="/game-studio/code.html" id="codeBtn" style="text-decoration:none">コード編集 ↗</a><span class="spacer"></span><span class="muted" id="projectName">新しいゲーム</span></div><div class="stagewrap" id="stageDropZone"><div class="stage" id="stage"></div></div><div class="foot"><span>960 × 540</span><span>・</span><span id="selectedLabel">未選択</span><span class="spacer"></span><span id="typeLabel">クリックゲーム</span></div></main>
 <aside class="panel right"><div class="ph" draggable="true" data-dock-head="right">プロパティ・イベント <button class="btn small" data-dock-cycle="right">ドック ⋯</button></div><div class="pb"><div class="panel-tabs"><button class="panel-tab active" data-right-tab="inspector">プロパティ</button><button class="panel-tab" data-right-tab="events">ビジュアルロジック</button><button class="panel-tab" data-right-tab="settings">シーン設定</button></div><section id="inspector"><div class="empty">オブジェクトを選択すると、ここで編集できます。</div></section><section id="eventEditor" hidden></section><section id="settingsEditor" hidden></section></div></aside>
 </div><footer class="bottom"><button class="bottom-tab active" data-right-tab="inspector">シーン</button><button class="bottom-tab" data-right-tab="events">イベント</button><button class="bottom-tab" data-left-tab="assets">素材</button><button class="bottom-tab" data-left-tab="tilemap">タイルマップ</button><span class="spacer"></span><span id="runtimeStatus">2D Web Runtime · BETA</span></footer></div>
@@ -136,7 +136,7 @@ document.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLower
 let init;try{let all=JSON.parse(localStorage.getItem(KEY)||"[]"),id=localStorage.getItem(KEY+".current");init=all.find(x=>x.id===id)||all[0]}catch(e){}setProject(init||fresh("clicker"));
 
 /* ---- KURO GAME STUDIO: 2D editor extensions ---- */
-var xMulti=[],xDrag=null,xRuntimeFrame=0,xLastTime=0,xTimer=null,xTileColor=0,xCommands=[],xCommandIndex=0;
+var xMulti=[],xDrag=null,xRuntimeFrame=0,xLastTime=0,xTimer=null,xTileColor=0,xCommands=[],xCommandIndex=0,xAutoTimer=null;
 const xTileColors=["#26364f","#4d8a72","#b58d55","#8f536e","#6f83b7","#c3c9d4","#e5b35d","#1d2431"];
 function xEnsure(){
  p.settings=Object.assign({grid:5,snapEnabled:true,showGrid:false,showColliders:false,theme:"dark",fontSize:13,gravity:600,cameraMode:"fixed",cameraZoom:1,followTargetId:"",shake:0},p.settings||{});
@@ -155,7 +155,7 @@ function xEnsure(){
  });
  if(!Array.isArray(xMulti)||!xMulti.length)xMulti=selected?[selected]:[];
 }
-function xMark(){dirty();}
+function xMark(){dirty();clearTimeout(xAutoTimer);xAutoTimer=setTimeout(()=>{try{let all=JSON.parse(localStorage.getItem(KEY)||"[]"),i=all.findIndex(v=>v.id===p.id);p.updatedAt=Date.now();if(i>=0)all[i]=clone(p);else all.unshift(clone(p));localStorage.setItem(KEY,JSON.stringify(all));localStorage.setItem(KEY+".current",p.id);$("saveState").textContent="● 自動保存済み";$("saveState").style.color="var(--good)";}catch(_){$("saveState").textContent="● 保存容量不足";$("saveState").style.color="#ff9b9b";}},1300);}
 function xTab(group,tab){
  if(group==="left"){
   ["hierarchy","assets","tilemap"].forEach(k=>{const el=$(k==="hierarchy"?"leftHierarchy":k==="assets"?"leftAssets":"leftTilemap");if(el)el.hidden=k!==tab;});
@@ -383,7 +383,10 @@ function xRenderSettings(){
  const layers=document.createElement("details");layers.className="inspector-section";layers.open=true;layers.innerHTML="<summary>レイヤー管理・衝突マトリックス</summary>";box.appendChild(layers);
  p.layers.forEach((name,i)=>{const row=document.createElement("div");row.className="asset-item";const text=document.createElement("b");text.textContent=name;row.appendChild(text);if(i>0){const del=document.createElement("button");del.textContent="削除";del.onclick=()=>{p.layers.splice(i,1);p.objects.forEach(o=>{if(o.layer===name)o.layer="Default";});xMark();xRenderSettings();};row.appendChild(del);}layers.appendChild(row);});
  const addLayer=document.createElement("button");addLayer.className="btn small";addLayer.textContent="＋ レイヤー追加";addLayer.onclick=()=>{const name=prompt("レイヤー名");if(name&&!p.layers.includes(name)){p.layers.push(name);xMark();xRenderSettings();}};layers.appendChild(addLayer);
- const cm=document.createElement("p");cm.className="setting-note";cm.textContent="異なるレイヤー間の衝突判定マトリックスは簡易版です。レイヤー割当はオブジェクトのインスペクターから変更できます。";layers.appendChild(cm);
+ const matrix=document.createElement("div");matrix.className="inspector-section";const mt=document.createElement("div");mt.className="label";mt.textContent="衝突判定マトリックス";matrix.appendChild(mt);
+ p.layers.forEach((a,i)=>p.layers.slice(i).forEach(b=>{const key=[a,b].sort().join("|");const row=document.createElement("label");row.className="checkline";const cb=document.createElement("input");cb.type="checkbox";cb.checked=p.collisionMatrix[key]!==false;cb.addEventListener("change",()=>{p.collisionMatrix[key]=cb.checked;xMark();});const t=document.createElement("span");t.textContent=a+" × "+b;row.append(cb,t);matrix.appendChild(row);}));
+ layers.appendChild(matrix);
+ const cm=document.createElement("p");cm.className="setting-note";cm.textContent="チェックを外すと、そのレイヤー同士の2D衝突判定を無効化します。";layers.appendChild(cm);
 }
 function xRenderAll(){xEnsure();xRenderStage();xRenderLayers();xRenderInspector();xRenderEvents();xRenderSettings();xRenderAssets();xRenderTileEditor();}
 function xDock(panel,zone){
@@ -394,6 +397,18 @@ function xDock(panel,zone){
  panel.style.gridColumn=zone==="left"?"1":zone==="right"?"3":zone==="bottom"?"1 / -1":"";
  panel.style.gridRow=zone==="bottom"?"2":"1";
  toast("パネルを"+({left:"左側",right:"右側",bottom:"下部",float:"フロート"}[zone])+"へ配置しました");
+}
+function xSaveCustomLayout(){
+ const name=prompt("レイアウト名を入力","マイレイアウト");if(!name)return;
+ const data={name,left:document.querySelector(".panel.left").dataset.dock||"left",right:document.querySelector(".panel.right").dataset.dock||"right",leftTab:$("leftHierarchy").hidden?($("leftAssets").hidden?"tilemap":"assets"):"hierarchy",rightTab:$("eventEditor").hidden?($("settingsEditor").hidden?"inspector":"settings"):"events"};
+ try{const all=JSON.parse(localStorage.getItem("kuroGameStudio.customLayouts")||"[]");all.push(data);localStorage.setItem("kuroGameStudio.customLayouts",JSON.stringify(all));toast("レイアウトを保存しました");}catch(_){toast("レイアウトを保存できません");}
+}
+function xLoadCustomLayout(){
+ let all=[];try{all=JSON.parse(localStorage.getItem("kuroGameStudio.customLayouts")||"[]");}catch(_){}
+ if(!all.length){toast("保存済みレイアウトがありません");return;}
+ const name=prompt("読み込むレイアウト名\n"+all.map(x=>x.name).join("\n"),all[all.length-1].name);if(!name)return;
+ const item=all.find(x=>x.name===name);if(!item){toast("そのレイアウトは見つかりません");return;}
+ xDock(document.querySelector(".panel.left"),item.left);xDock(document.querySelector(".panel.right"),item.right);xTab("left",item.leftTab);xTab("right",item.rightTab);toast("レイアウトを読み込みました");
 }
 function xCycleDock(id){
  const panel=document.querySelector(".panel."+id),zones=["left","right","bottom","float"],current=panel.dataset.dock||(id==="left"?"left":"right"),next=zones[(zones.indexOf(current)+1)%zones.length];xDock(panel,next);
@@ -425,7 +440,9 @@ const xCommandList=[
  ["コライダー表示","当たり判定の形状を表示","colliders"],
  ["ゲームをテスト","プレビューを実行","play"],
  ["保存","プロジェクトを保存","save"],
- ["Prefab化","選択中の要素をPrefab化","prefab"]
+ ["Prefab化","選択中の要素をPrefab化","prefab"],
+ ["レイアウトを保存","現在のパネル配置を名前を付けて保存","layoutSave"],
+ ["保存済みレイアウトを開く","自分で保存したレイアウトを読み込む","layoutLoad"]
 ];
 function xOpenCommands(){const modal=$("commandModal");modal.classList.add("open");$("commandSearch").value="";xCommandIndex=0;xRenderCommands();$("commandSearch").focus();}
 function xRenderCommands(){
@@ -447,6 +464,7 @@ function xRunCommand(command){
  else if(command==="play")$("playBtn").click();
  else if(command==="save")save();
  else if(command==="prefab")xCreatePrefab();
+ else if(command==="layoutSave")xSaveCustomLayout();else if(command==="layoutLoad")xLoadCustomLayout();
 }
 function xAddParticles(x,y,count){
  const stage=$("stage");for(let i=0;i<(count||16);i++){const el=document.createElement("i");el.textContent=["✦","•","✧","◆"][i%4];el.style.cssText="position:absolute;z-index:40;left:"+x+"%;top:"+y+"%;color:"+["#f8d46a","#74d9e8","#b99cff","#ff9ba8"][i%4]+";font-size:"+(8+Math.random()*15)+"px;pointer-events:none;animation:kuroParticle .75s ease-out forwards;--dx:"+((Math.random()-.5)*110)+"px;--dy:"+((Math.random()-.5)*110)+"px";stage.appendChild(el);setTimeout(()=>el.remove(),800);}
@@ -525,6 +543,11 @@ function xEnableDocking(){
 }
 function xInitExtensions(){
  xEnsure();
+ const originalAdd=add;
+ add=function(type){
+  if(type==="particle"){snapshot();const n=p.objects.length+1,o={id:uid(),type:"particle",name:"パーティクル "+n,text:"✦",x:40,y:40,w:18,h:18,color:"#ffffff",bg:"transparent",size:38,radius:0,layer:"Default",tags:[],collider:{enabled:false,type:"circle",trigger:false,mass:1,gravity:0,restitution:0,friction:0}};p.objects.push(o);selected=o.id;xMulti=[o.id];xMark();render();}
+  else{originalAdd(type);const o=obj();if(o){o.layer=o.layer||"Default";o.tags=o.tags||[];o.rotation=o.rotation||0;o.collider=o.collider||{enabled:false,type:"box",trigger:false,mass:1,gravity:1,restitution:.1,friction:.4};xMulti=[o.id];}}
+ };
  const theme=localStorage.getItem("kuroGameStudio.theme")||"dark",font=localStorage.getItem("kuroGameStudio.font")||"13";xTheme(theme,font);
  $("themeSelect").value=theme;$("fontSelect").value=font;
  const preset=localStorage.getItem("kuroGameStudio.layoutPreset")||p.layoutPreset||"2d";xSetPreset(preset);
@@ -536,6 +559,7 @@ function xInitExtensions(){
  $("assetImportBtn").addEventListener("click",()=>$("assetInput").click());
  $("assetInput").addEventListener("change",e=>{xImportFiles(e.target.files);e.target.value="";});
  $("packageExportBtn").addEventListener("click",xExportPackage);
+ $("packageImportBtn").addEventListener("click",()=>$("packageInput").click());$("packageInput").addEventListener("change",e=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(reader.result);if(data.format!=="kuro-assets-v1")throw new Error("format");p.assets.push(...(Array.isArray(data.assets)?data.assets:[]));p.prefabs.push(...(Array.isArray(data.prefabs)?data.prefabs:[]));xMark();xRenderAssets();toast("素材パッケージを読み込みました");}catch(_){toast("対応していない素材パッケージです");}};reader.readAsText(file);e.target.value="";});
  $("tilemapCanvas").addEventListener("pointerdown",e=>{e.currentTarget.setPointerCapture(e.pointerId);xPaintTile(e);});
  $("tilemapCanvas").addEventListener("pointermove",e=>{if(e.buttons===1)xPaintTile(e);});
  $("tileClearBtn").addEventListener("click",()=>{p.tilemap.cells.fill(-1);xRenderTileEditor();xRenderStage();xMark();});
