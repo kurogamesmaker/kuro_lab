@@ -26,16 +26,70 @@ function kuroApplyTransportLinks(){
  document.querySelectorAll('a[href^="/game-studio/"],a[href^="/games/"]').forEach(a=>{const u=new URL(a.href,location.origin);u.searchParams.set("transport","gas");a.href=u.pathname+u.search+u.hash;});
 }
 
+let kuroGameFrame = null;
+const kuroGameAuthClient = window.supabase.createClient(
+ "https://cprvpphlfpmiegjiutjn.supabase.co",
+ "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn",
+ { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }
+);
+let kuroGameAuthPromise = null;
+async function getKuroGameAuthSession() {
+ if (!kuroGameAuthPromise) kuroGameAuthPromise = (async () => {
+  let { data, error } = await kuroGameAuthClient.auth.getSession();
+  if (error) throw error;
+  if (!data.session) {
+   const signed = await kuroGameAuthClient.auth.signInAnonymously();
+   if (signed.error) throw signed.error;
+   data = { session: signed.data.session };
+  }
+  return data.session;
+ })();
+ return kuroGameAuthPromise;
+}
+window.addEventListener("message", async event => {
+ if (!kuroGameFrame || event.source !== kuroGameFrame.contentWindow || !event.data) return;
+ const msg = event.data;
+ if (msg.type === "kuro-werewolf-storage-set" && typeof msg.key === "string" && msg.key.startsWith("werewolf_")) {
+  localStorage.setItem("kuro-werewolf-session:" + msg.key, String(msg.value ?? ""));
+  return;
+ }
+ if (msg.type === "kuro-werewolf-storage-remove" && typeof msg.key === "string" && msg.key.startsWith("werewolf_")) {
+  localStorage.removeItem("kuro-werewolf-session:" + msg.key);
+  return;
+ }
+ if (msg.type !== "kuro-werewolf-auth-request") return;
+ try {
+  const session = await getKuroGameAuthSession();
+  const storage = {};
+  const prefix = "kuro-werewolf-session:";
+  for (let i = 0; i < localStorage.length; i++) {
+   const key = localStorage.key(i);
+   if (key && key.startsWith(prefix)) storage[key.slice(prefix.length)] = localStorage.getItem(key);
+  }
+  event.source.postMessage({
+   type: "kuro-werewolf-auth",
+   access_token: session.access_token,
+   refresh_token: session.refresh_token,
+   storage
+  }, "*");
+ } catch (error) {
+  event.source.postMessage({
+   type: "kuro-werewolf-auth-error",
+   message: error?.message || "Supabase認証に失敗しました"
+  }, "*");
+ }
+});
+
 (async function(){
  const $=id=>document.getElementById(id),params=new URLSearchParams(location.search),id=params.get("id");
  kuroApplyTransportLinks();
  function fail(message){$("state").innerHTML="<strong>ゲームを開けませんでした</strong>"+message;}
  if(!id||!/^[0-9a-f-]{36}$/i.test(id)){fail("ゲームIDが正しくありません。");return;}
  if(!window.supabase||!window.supabase.createClient){fail("通信ライブラリを読み込めませんでした。");return;}
- try{const db=window.supabase.createClient("https://cprvpphlfpmiegjiutjn.supabase.co","sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn",{global:{fetch:KURO_GAS_TRANSPORT?kuroGasFetch:window.fetch}});
+ try{const db=kuroGameAuthClient;
   const {data,error}=await db.from("game_studio_games").select("title,description,icon,html_content").eq("id",id).eq("status","published").maybeSingle();if(error)throw error;if(!data){fail("公開が終了したか、URLが正しくありません。");return;}
   $("gameTitle").textContent=data.title;$("gameDescription").textContent=data.description||"KURO GAME STUDIOで作成されたゲーム";$("gameIcon").textContent=data.icon||"🎮";$("gameInfo").hidden=false;
-  const frame=document.createElement("iframe");frame.className="game-frame";frame.title=data.title;frame.setAttribute("sandbox","allow-scripts allow-forms allow-modals");frame.referrerPolicy="no-referrer";frame.srcdoc=data.html_content;$("frameWrap").replaceChildren(frame);
+  const frame=document.createElement("iframe");frame.className="game-frame";frame.title=data.title;frame.setAttribute("sandbox","allow-scripts allow-forms allow-modals");frame.referrerPolicy="no-referrer";kuroGameFrame=frame;$("frameWrap").replaceChildren(frame);frame.srcdoc=data.html_content;
  }catch(error){fail(error.message||"通信エラーが発生しました。");}
 })();
 </script></body></html>
