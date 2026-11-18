@@ -1,25 +1,31 @@
 # KURO GAME STUDIO GAS Edition
 
 ## 役割
-- このApps ScriptプロジェクトはGAS版の入口を提供します。
+- 既存の **KURO SNS GAS Bridge** にGame Studioの画面表示機能を追加します。
 - UI本体はKURO LabのGame Studioページをiframeで表示します。
 - GAS版URLから開いたページには `transport=gas` が付与されます。
-- Game StudioのSupabase Auth / Data API通信は、ブラウザから直接Supabaseへ送らず、次の経路を通ります。
+- Supabase通信は既存の経路を維持します。
 
-`Browser → https://kurolab.cc.cd/api/kuro-gas-proxy → Apps Script Web App → Supabase`
+`Browser → Cloudflare Worker /api/kuro-gas-proxy → 既存Apps Script doPost → Supabase`
 
-## デプロイ
-1. Google Apps Scriptで新しいプロジェクトを作成します。
-2. `Code.gs` の内容をスクリプトファイルに貼り付けます。
-3. `Index.html` の内容をHTMLファイルに貼り付け、ファイル名を `Index` にします。
-4. 「デプロイ」→「新しいデプロイ」→「ウェブアプリ」を選びます。
-5. 実行ユーザーは自分、アクセスできるユーザーは既存KURO GASリレーの設定と同じ範囲にします。
-6. このGAS版UIのデプロイURLを利用者向けに案内します。
-7. **Cloudflare Workerの `KURO_GAS_WEB_APP_URL` は変更しないでください。** Supabase通信は既存のKURO GAS Proxyへ送られます。今回のUIラッパーは別プロジェクトとしてデプロイし、既存Proxyの `doPost` を置き換えない構成です。
-8. `KURO_GAS_PROXY_SECRET` は既存の秘密値を維持し、HTMLやGitHubへ書き込まないでください。
+## 重要：既存GASプロジェクトへ統合する
+1. 既存のKURO SNS GAS Bridgeプロジェクトを開きます。
+2. このフォルダの `Code.gs` の内容で既存の `Code.gs` を更新します。**既存の `doPost`、認証、許可パス、レート制限を含むプロキシ処理は残してあります。**
+3. `Index.html` を同じGASプロジェクトに追加し、ファイル名を `Index` にします。
+4. ウェブアプリを新しいバージョンとして再デプロイします。既存のデプロイURLを維持してください。
+5. 既存の `KURO_GAS_PROXY_SECRET` スクリプトプロパティはそのまま維持します。新しく初期化したり、値を変更したりしないでください。
+6. Cloudflare Workerの `KURO_GAS_WEB_APP_URL` とVercel側のsecretは変更しません。
 
-## 注意
-- この `Code.gs` の `doPost` はUIラッパー用の案内応答です。Supabase中継処理ではありません。必ず既存KURO GAS Proxyをそのまま使ってください。
-- このリポジトリにあるのはGAS版のソースです。Google Apps Scriptへの実デプロイはApps Scriptエディタ側で行う必要があります。
-- 既存KURO GASリレーのURL/secretを変更する必要はありません。既存リレーをそのまま使うのが基本です。
-- Supabaseのservice_role/secret keyはブラウザにもHTMLにも置きません。既存のRLSとユーザーJWTを維持します。
+## GAS版URL
+同じウェブアプリURLに次のクエリを付けて開きます。
+- `?page=studio` : ビジュアルエディター
+- `?page=code` : コードエディター
+- `?page=projects` : プロジェクト一覧
+- `?page=games` : KURO GAMES
+- `?health=1` : 既存プロキシのヘルスチェック
+
+## セキュリティ・注意
+- `doPost` は既存のSupabaseプロキシ処理を維持しています。別の `doPost` を追加しないでください。
+- `KURO_GAS_PROXY_SECRET` はスクリプトプロパティで管理し、HTMLやGitHubへ書き込まないでください。
+- Supabaseのservice_role/secret keyは使用しません。既存のpublishable key、ユーザーJWT、RLSを維持します。
+- このリポジトリの変更だけではApps Scriptの実デプロイは完了しません。既存GASプロジェクトへの反映と再デプロイはApps Script側で行ってください。
