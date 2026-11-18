@@ -33,6 +33,7 @@ const kuroGameAuthClient = window.supabase.createClient(
  { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }, global: { fetch: KURO_GAS_TRANSPORT ? kuroGasFetch : window.fetch } }
 );
 let kuroGameAuthPromise = null;
+const kuroGameRealtimeChannels = new Map();
 async function getKuroGameAuthSession() {
  if (!kuroGameAuthPromise) kuroGameAuthPromise = (async () => {
   let { data, error } = await kuroGameAuthClient.auth.getSession();
@@ -49,6 +50,71 @@ async function getKuroGameAuthSession() {
 window.addEventListener("message", async event => {
  if (!kuroGameFrame || event.source !== kuroGameFrame.contentWindow || !event.data) return;
  const msg = event.data;
+ if (msg.type === "kuro-werewolf-realtime-subscribe") {
+  const requestId = msg.requestId;
+  const roomCode = msg.roomCode;
+  if (typeof requestId !== "string" || !/^[A-Za-z0-9_-]{1,80}$/.test(requestId) ||
+      typeof roomCode !== "string" || !/^\\d{4}$/.test(roomCode)) return;
+  const previous = kuroGameRealtimeChannels.get(requestId);
+  if (previous && previous.source === event.source) {
+   kuroGameRealtimeChannels.delete(requestId);
+   if (previous.channel) void kuroGameAuthClient.removeChannel(previous.channel);
+  }
+  try {
+   await getKuroGameAuthSession();
+   const entry = { source: event.source, channel: null };
+   kuroGameRealtimeChannels.set(requestId, entry);
+   entry.channel = kuroGameAuthClient
+    .channel("kuro-werewolf-" + roomCode + "-" + requestId)
+    .on("postgres_changes", {
+     event: "*", schema: "public", table: "werewolf_rooms", filter: "room_code=eq." + roomCode
+    }, payload => {
+     if (kuroGameRealtimeChannels.get(requestId) !== entry) return;
+     try {
+      entry.source.postMessage({
+       type: "kuro-werewolf-realtime-event",
+       requestId,
+       eventType: payload.eventType
+      }, "*");
+     } catch (_) {}
+    })
+    .subscribe((status, error) => {
+     if (kuroGameRealtimeChannels.get(requestId) !== entry) return;
+     try {
+      entry.source.postMessage({
+       type: "kuro-werewolf-realtime-status",
+       requestId,
+       status,
+       detail: error ? String(error.message || error).slice(0, 240) : ""
+      }, "*");
+     } catch (_) {}
+     if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+      kuroGameRealtimeChannels.delete(requestId);
+     }
+    });
+  } catch (error) {
+   try {
+    event.source.postMessage({
+     type: "kuro-werewolf-realtime-status",
+     requestId,
+     status: "CHANNEL_ERROR",
+     detail: String(error && error.message || error).slice(0, 240)
+    }, "*");
+   } catch (_) {}
+  }
+  return;
+ }
+ if (msg.type === "kuro-werewolf-realtime-unsubscribe") {
+  const requestId = msg.requestId;
+  if (typeof requestId === "string") {
+   const entry = kuroGameRealtimeChannels.get(requestId);
+   if (entry && entry.source === event.source) {
+    kuroGameRealtimeChannels.delete(requestId);
+    if (entry.channel) void kuroGameAuthClient.removeChannel(entry.channel);
+   }
+  }
+  return;
+ }
  if (msg.type === "kuro-werewolf-proxy-request") {
   if (!KURO_GAS_TRANSPORT || typeof msg.requestId !== "string" || typeof msg.path !== "string" ||
       (!msg.path.startsWith("/rest/v1/") && !msg.path.startsWith("/auth/v1/") && !msg.path.startsWith("/storage/v1/"))) return;
