@@ -175,10 +175,10 @@ function splitMixedCode(source){
  }
  if(!parts.html&&!parts.css&&!parts.js)throw new Error("コードを判別できませんでした。");
  if(parts.html){
-  parts.html=parts.html.replace(/<style\\b[^>]*>([\\s\\S]*?)<\\/style\\s*>/gi,(_,body)=>{parts.css+=(parts.css?"\\n\\n":"")+body.trim();return"<!-- CSSをstyle.cssへ分離 -->";});
-  parts.html=parts.html.replace(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script\\s*>/gi,(whole,attrs,body)=>{
-   if(/\\bsrc\\s*=/.test(attrs)){notes.push("外部script読み込みタグはHTML内に保持しました。");return whole;}
-   if(body.trim()){parts.js+=(parts.js?"\\n\\n":"")+body.trim();if(/\\btype\\s*=\\s*["']module["']/.test(attrs))notes.push("module形式のJavaScriptを検出しました。import文を保持しています。");}
+  parts.html=parts.html.replace(/<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi,(_,body)=>{parts.css+=(parts.css?"\n\n":"")+body.trim();return"<!-- CSSをstyle.cssへ分離 -->";});
+  parts.html=parts.html.replace(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi,(whole,attrs,body)=>{
+   if(/\bsrc\s*=/.test(attrs)){notes.push("外部script読み込みタグはHTML内に保持しました。");return whole;}
+   if(body.trim()){parts.js+=(parts.js?"\n\n":"")+body.trim();if(/\btype\s*=\s*["']module["']/.test(attrs))notes.push("module形式のJavaScriptを検出しました。import文を保持しています。");}
    return"<!-- JavaScriptをgame.jsへ分離 -->";
   });
  }
