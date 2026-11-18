@@ -21,31 +21,12 @@ const KURO_ALLOWED_RESPONSE_HEADERS = [
 ];
 
 /**
- * One shared GAS Web App entry:
- * - no page / ?health=1: existing SNS proxy health check
- * - ?page=studio|code|projects|games: KURO GAME STUDIO shell
+ * GAS is a Supabase communication bridge only.
+ * All UI pages and static assets remain hosted on kurolab.cc.cd.
+ * GET is reserved for the proxy health check.
  */
 function doGet(e) {
-  var params = (e && e.parameter) || {};
-  var page = String(params.page || '');
-  if (!page || String(params.health || '') === '1') {
-    return kuroJsonOutput({ ok: true, service: 'KURO SNS GAS Proxy', version: 1 });
-  }
-
-  var routes = {
-    studio: 'https://kurolab.cc.cd/game-studio/?transport=gas',
-    code: 'https://kurolab.cc.cd/game-studio/code.html?transport=gas',
-    projects: 'https://kurolab.cc.cd/game-studio/projects.html?transport=gas',
-    games: 'https://kurolab.cc.cd/games/?transport=gas'
-  };
-  if (!Object.prototype.hasOwnProperty.call(routes, page)) page = 'studio';
-
-  var template = HtmlService.createTemplateFromFile('Index');
-  template.appUrl = routes[page];
-  template.activePage = page;
-  return template.evaluate()
-    .setTitle('KURO GAME STUDIO | GAS')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  return kuroJsonOutput({ ok: true, service: 'KURO SNS GAS Proxy', version: 1 });
 }
 
 function doPost(e) {
