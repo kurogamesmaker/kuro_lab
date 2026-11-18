@@ -134,5 +134,440 @@ document.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>add(b.dataset.a
 $("codeBtn").addEventListener("click",()=>{save();});$("tplBtn").onclick=openModal;$("closeModal").onclick=()=>$("modal").classList.remove("open");$("newBtn").onclick=()=>{if(confirm("現在のゲームを保存して、新しいテンプレートを選びますか？")){save();openModal()}};$("saveBtn").onclick=save;$("exportBtn").onclick=exportGame;$("playBtn").onclick=()=>{playing=!playing;selected=null;render()};$("delete").onclick=deleteSelected;$("grid").onclick=()=>$("stage").style.backgroundImage=$("stage").style.backgroundImage?"":"linear-gradient(#ffffff12 1px,transparent 1px),linear-gradient(90deg,#ffffff12 1px,transparent 1px)";$("stage").onclick=e=>{if(e.target===$("stage")){selected=null;render()}};$("undo").onclick=()=>{if(undoStack.length){redoStack.push(clone(p));p=undoStack.pop();selected=null;dirty();render()}};$("redo").onclick=()=>{if(redoStack.length){undoStack.push(clone(p));p=redoStack.pop();selected=null;dirty();render()}};
 document.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="s"){e.preventDefault();save()}if(e.key==="Delete"&&!["INPUT","TEXTAREA"].includes(document.activeElement.tagName))deleteSelected()});
 let init;try{let all=JSON.parse(localStorage.getItem(KEY)||"[]"),id=localStorage.getItem(KEY+".current");init=all.find(x=>x.id===id)||all[0]}catch(e){}setProject(init||fresh("clicker"));
+
+/* ---- KURO GAME STUDIO: 2D editor extensions ---- */
+let xMulti=[],xDrag=null,xRuntimeFrame=0,xLastTime=0,xTimer=null,xTileColor=0,xCommands=[],xCommandIndex=0;
+const xTileColors=["#26364f","#4d8a72","#b58d55","#8f536e","#6f83b7","#c3c9d4","#e5b35d","#1d2431"];
+function xEnsure(){
+ p.settings=Object.assign({grid:5,snapEnabled:true,showGrid:false,showColliders:false,theme:"dark",fontSize:13,gravity:600,cameraMode:"fixed",cameraZoom:1,followTargetId:"",shake:0},p.settings||{});
+ p.assets=Array.isArray(p.assets)?p.assets:[];
+ p.prefabs=Array.isArray(p.prefabs)?p.prefabs:[];
+ p.events=Array.isArray(p.events)?p.events:[];
+ p.layers=Array.isArray(p.layers)?p.layers:["Default","Player","Enemy","Ground","Item"];
+ p.collisionMatrix=p.collisionMatrix||{};
+ p.tilemap=p.tilemap||{cols:20,rows:12,cells:Array(240).fill(-1),enabled:false};
+ p.objects.forEach(o=>{
+  if(!o.layer)o.layer="Default";
+  if(!Array.isArray(o.tags))o.tags=[];
+  if(!o.collider)o.collider={enabled:o.type==="shape",type:"box",trigger:false,mass:1,gravity:1,restitution:.1,friction:.4};
+  if(typeof o.rotation!=="number")o.rotation=0;
+  if(o.visible===undefined)o.visible=true;
+ });
+ if(!Array.isArray(xMulti)||!xMulti.length)xMulti=selected?[selected]:[];
+}
+function xMark(){dirty();}
+function xTab(group,tab){
+ if(group==="left"){
+  ["hierarchy","assets","tilemap"].forEach(k=>{const el=$(k==="hierarchy"?"leftHierarchy":k==="assets"?"leftAssets":"leftTilemap");if(el)el.hidden=k!==tab;});
+  document.querySelectorAll("[data-left-tab]").forEach(b=>b.classList.toggle("active",b.dataset.leftTab===tab));
+ }else{
+  ["inspector","events","settings"].forEach(k=>{const el=$(k==="inspector"?"inspector":k==="events"?"eventEditor":"settingsEditor");if(el)el.hidden=k!==tab;});
+  document.querySelectorAll("[data-right-tab]").forEach(b=>b.classList.toggle("active",b.dataset.rightTab===tab));
+ }
+}
+function xField(parent,label,key,value,type,opts,change){
+ const wrap=document.createElement("div");wrap.className="field";
+ const lab=document.createElement("label");lab.textContent=label;wrap.appendChild(lab);
+ let input;
+ if(type==="select"){input=document.createElement("select");(opts&&opts.choices||[]).forEach(item=>{const op=document.createElement("option");op.value=item[0];op.textContent=item[1];input.appendChild(op);});}
+ else {input=document.createElement("input");input.type=type||"text";}
+ input.value=value===undefined||value===null?"":value;
+ if(opts){if(opts.min!==undefined)input.min=opts.min;if(opts.max!==undefined)input.max=opts.max;if(opts.step!==undefined)input.step=opts.step;}
+ input.addEventListener("change",()=>{if(change)change(input.value,input);});
+ wrap.appendChild(input);parent.appendChild(wrap);return input;
+}
+function xCheck(parent,label,checked,change){
+ const line=document.createElement("label");line.className="checkline";
+ const input=document.createElement("input");input.type="checkbox";input.checked=!!checked;
+ input.addEventListener("change",()=>change(input.checked));
+ line.appendChild(input);const span=document.createElement("span");span.textContent=label;line.appendChild(span);parent.appendChild(line);return input;
+}
+function xUpdatePrefab(obj){
+ if(!obj||!obj.prefabId)return;
+ const prefab=p.prefabs.find(x=>x.id===obj.prefabId);if(!prefab)return;
+ const keys=["name","text","color","bg","size","radius","collider","tags","layer","rotation","visible"];
+ prefab.objects[0]=prefab.objects[0]||{};
+ keys.forEach(k=>{prefab.objects[0][k]=clone(obj[k]);});
+ p.objects.filter(x=>x.prefabId===obj.prefabId).forEach(x=>{keys.forEach(k=>{if(prefab.objects[0][k]!==undefined)x[k]=clone(prefab.objects[0][k]);});});
+}
+function xSelection(){return p.objects.filter(o=>xMulti.includes(o.id));}
+function xRenderLayers(){
+ const box=$("layers");if(!box)return;box.innerHTML="";
+ const append=(parent,depth)=>{
+  p.objects.filter(o=>(o.parentId||null)===parent).forEach(o=>{
+   const b=document.createElement("button");b.className="layer"+(o.id===selected?" active":"")+(xMulti.includes(o.id)&&xMulti.length>1?" multi":"");
+   b.style.setProperty("--depth",depth);
+   const ico=document.createElement("span");ico.className="layer-ico";ico.textContent=o.type==="group"?"▸":o.type==="image"?"▧":o.type==="particle"?"✦":o.type==="button"?"▣":o.type==="text"?"T":"■";
+   const name=document.createElement("span");name.className="layer-name";name.textContent=o.name||o.type;
+   const meta=document.createElement("span");meta.className="layer-meta";meta.textContent=o.visible===false?"非表示":o.locked?"🔒":"";
+   b.append(ico,name,meta);b.addEventListener("click",e=>{
+    if(e.ctrlKey||e.metaKey){if(xMulti.includes(o.id))xMulti=xMulti.filter(id=>id!==o.id);else xMulti.push(o.id);selected=o.id;}
+    else if(e.shiftKey&&xMulti.length){const ids=p.objects.map(x=>x.id),a=ids.indexOf(xMulti[xMulti.length-1]),z=ids.indexOf(o.id);xMulti=ids.slice(Math.min(a,z),Math.max(a,z)+1);selected=o.id;}
+    else{xMulti=[o.id];selected=o.id;}
+    renderStage();renderInspector();xRenderLayers();
+   });box.appendChild(b);
+   if(o.type==="group")append(o.id,depth+1);
+  });
+ };
+ append(null,0);
+}
+function xRenderStage(){
+ const stage=$("stage");if(!stage)return;
+ stage.querySelectorAll(".obj,.tile-layer,.stage-grid").forEach(el=>el.remove());
+ if(p.tilemap&&p.tilemap.enabled){
+  const canvas=document.createElement("canvas");canvas.className="tile-layer";canvas.width=p.tilemap.cols;canvas.height=p.tilemap.rows;
+  const ctx=canvas.getContext("2d");
+  p.tilemap.cells.forEach((v,i)=>{if(v<0)return;const x=i%p.tilemap.cols,y=Math.floor(i/p.tilemap.cols);ctx.fillStyle=xTileColors[v%xTileColors.length];ctx.fillRect(x,y,1,1);});
+  ctx.strokeStyle="rgba(255,255,255,.13)";ctx.lineWidth=.025;
+  for(let x=0;x<=p.tilemap.cols;x++){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,p.tilemap.rows);ctx.stroke();}
+  for(let y=0;y<=p.tilemap.rows;y++){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(p.tilemap.cols,y);ctx.stroke();}
+  stage.appendChild(canvas);
+ }
+ if(p.settings.showGrid){const g=document.createElement("div");g.className="stage-grid";stage.appendChild(g);}
+ const cameraTarget=p.objects.find(o=>o.id===p.settings.followTargetId);
+ let camX=0,camY=0;
+ if(playing&&p.settings.cameraMode==="follow"&&cameraTarget){camX=50-(cameraTarget.x+cameraTarget.w/2);camY=50-(cameraTarget.y+cameraTarget.h/2);}
+ p.objects.forEach(o=>{
+  if(o.type==="group"||o.visible===false)return;
+  const e=document.createElement("div");e.className="obj"+(xMulti.includes(o.id)&&xMulti.length>1?" multi":"")+(o.id===selected&&!playing?" sel":"");
+  e.dataset.id=o.id;e.style.left=(o.x+camX)+"%";e.style.top=(o.y+camY)+"%";e.style.width=o.w+"%";e.style.height=o.h+"%";e.style.color=o.color||"#fff";e.style.background=o.bg||"transparent";e.style.fontSize=Math.max(10,(o.size||20)/540*100)+"cqh";e.style.borderRadius=(o.radius||0)+"px";e.style.transform="rotate("+(o.rotation||0)+"deg)";
+  if(o.type==="shape")e.style.border="0";
+  if(o.type==="emoji"||o.type==="particle"){e.style.fontSize=Math.max(18,o.size||32)+"px";e.textContent=o.type==="particle"?"✦":o.text;}
+  else if(o.type==="image"&&o.imageData){const img=document.createElement("img");img.className="asset-img";img.src=o.imageData;img.alt=o.name||"画像";e.appendChild(img);}
+  else e.textContent=o.text||"";
+  if(o.collider&&o.collider.enabled){const col=document.createElement("span");col.className="collider-visual";col.style.borderRadius=o.collider.type==="circle"?"50%":o.radius+"px";e.appendChild(col);}
+  if(!playing&&o.id===selected){
+   const rot=document.createElement("span");rot.className="rotate-handle";rot.title="回転";e.appendChild(rot);
+   const size=document.createElement("span");size.className="resize-handle";size.title="サイズ変更";e.appendChild(size);
+  }
+  if(playing){e.addEventListener("click",()=>xGameClick(o));}
+  else{e.addEventListener("pointerdown",ev=>xStartDrag(ev,o.id));e.addEventListener("click",ev=>{ev.stopPropagation();if(ev.ctrlKey||ev.metaKey){if(xMulti.includes(o.id))xMulti=xMulti.filter(id=>id!==o.id);else xMulti.push(o.id);selected=o.id;}else if(!xMulti.includes(o.id)){xMulti=[o.id];selected=o.id;}renderStage();renderInspector();xRenderLayers();});}
+  stage.appendChild(e);
+ });
+ stage.classList.toggle("show-grid",!!p.settings.showGrid);
+ stage.classList.toggle("show-colliders",!!p.settings.showColliders);
+ stage.classList.toggle("playing",playing);
+}
+function xStartDrag(e,id){
+ if(playing)return;
+ e.preventDefault();e.stopPropagation();
+ const o=p.objects.find(x=>x.id===id);if(!o||o.locked)return;
+ if(e.ctrlKey||e.metaKey){if(xMulti.includes(id))xMulti=xMulti.filter(x=>x!==id);else xMulti.push(id);selected=id;}
+ else if(!xMulti.includes(id)){xMulti=[id];selected=id;}
+ else selected=id;
+ snapshot();
+ const r=$("stage").getBoundingClientRect();
+ const mode=e.target.classList.contains("rotate-handle")?"rotate":e.target.classList.contains("resize-handle")?"scale":$("transformMode").value;
+ const center={x:r.left+(o.x+o.w/2)*r.width/100,y:r.top+(o.y+o.h/2)*r.height/100};
+ xDrag={id,mode,sx:e.clientX,sy:e.clientY,w:r.width,h:r.height,center,angle:Math.atan2(e.clientY-center.y,e.clientX-center.x),rotation:o.rotation||0,objects:xSelection().map(x=>({id:x.id,x:x.x,y:x.y,w:x.w,h:x.h,rotation:x.rotation||0}))};
+ try{e.currentTarget.setPointerCapture(e.pointerId);}catch(_){}
+ renderInspector();xRenderLayers();
+}
+function xStartDragMove(e){
+ if(!xDrag)return;
+ const d=xDrag,o=p.objects.find(x=>x.id===d.id);if(!o)return;
+ if(d.mode==="rotate"){o.rotation=d.rotation+(Math.atan2(e.clientY-d.center.y,e.clientX-d.center.x)-d.angle)*180/Math.PI;}
+ else if(d.mode==="scale"){const base=d.objects.find(x=>x.id===d.id);o.w=Math.max(1,Math.min(100,base.w+(e.clientX-d.sx)/d.w*100));o.h=Math.max(1,Math.min(100,base.h+(e.clientY-d.sy)/d.h*100));}
+ else{
+  const dx=(e.clientX-d.sx)/d.w*100,dy=(e.clientY-d.sy)/d.h*100;
+  d.objects.forEach(base=>{const x=p.objects.find(v=>v.id===base.id);if(!x)return;x.x=Math.max(0,Math.min(100-x.w,base.x+dx));x.y=Math.max(0,Math.min(100-x.h,base.y+dy));});
+  if(p.settings.snapEnabled){const step=Math.max(1,Number(p.settings.grid)||5);x.x=Math.round(x.x/step)*step;x.y=Math.round(x.y/step)*step;const others=p.objects.filter(v=>!xMulti.includes(v.id)&&v.type!=="group");for(const other of others){if(Math.abs(x.x-other.x)<1.1)x.x=other.x;if(Math.abs(x.y-other.y)<1.1)x.y=other.y;if(Math.abs(x.x+x.w-other.x)<1.1)x.x=other.x-x.w;if(Math.abs(x.y+x.h-other.y)<1.1)x.y=other.y-x.h;}}
+ }
+ xRenderStage();
+}
+function xEndDrag(){if(!xDrag)return;xDrag=null;xMark();renderInspector();xRenderLayers();}
+document.addEventListener("pointermove",xStartDragMove);
+document.addEventListener("pointerup",xEndDrag);
+function xDeleteSelection(){if(!xMulti.length&&selected)xMulti=[selected];if(!xMulti.length)return;snapshot();const ids=new Set(xMulti);p.objects=p.objects.filter(o=>!ids.has(o.id)&&!ids.has(o.parentId));selected=null;xMulti=[];xMark();render();}
+function xGroupSelection(){
+ const chosen=xSelection().filter(o=>o.type!=="group");if(chosen.length<2){toast("グループ化する要素を2つ以上選択してください");return;}
+ snapshot();const group={id:uid(),type:"group",name:"グループ "+(p.objects.filter(o=>o.type==="group").length+1),x:0,y:0,w:100,h:100,layer:"Default",tags:[],visible:true};
+ p.objects.push(group);chosen.forEach(o=>o.parentId=group.id);selected=group.id;xMulti=[group.id];xMark();render();
+}
+function xUngroup(){const group=p.objects.find(o=>o.id===selected&&o.type==="group");if(!group)return;snapshot();p.objects.forEach(o=>{if(o.parentId===group.id)delete o.parentId;});p.objects=p.objects.filter(o=>o.id!==group.id);selected=null;xMulti=[];xMark();render();}
+function xCreatePrefab(){
+ const chosen=xSelection().filter(o=>o.type!=="group");if(!chosen.length){toast("Prefab化するオブジェクトを選択してください");return;}
+ snapshot();const id=uid(),name=prompt("Prefab名を入力","Prefab "+(p.prefabs.length+1));if(!name)return;
+ const copies=chosen.map(o=>clone(o));p.prefabs.push({id,name,objects:copies,updatedAt:Date.now()});chosen.forEach(o=>o.prefabId=id);xMark();xRenderAssets();toast("Prefabを作成しました");
+}
+function xInstantiatePrefab(id){
+ const prefab=p.prefabs.find(x=>x.id===id);if(!prefab)return;
+ snapshot();const made=prefab.objects.map(base=>{const o=clone(base);o.id=uid();o.prefabId=id;o.x=Math.min(90,(o.x||20)+5);o.y=Math.min(90,(o.y||20)+5);return o;});
+ p.objects.push(...made);selected=made[0].id;xMulti=made.map(o=>o.id);xMark();render();
+}
+function xRenderAssets(){
+ const list=$("assetList"),prefabs=$("prefabList");if(!list||!prefabs)return;list.innerHTML="";prefabs.innerHTML="";
+ p.assets.forEach(asset=>{const row=document.createElement("div");row.className="asset-item";if(asset.type==="image"&&asset.data){const img=document.createElement("img");img.className="asset-thumb";img.src=asset.data;row.appendChild(img);}else{const icon=document.createElement("span");icon.className="asset-thumb";icon.textContent="♫";icon.style.display="grid";icon.style.placeItems="center";row.appendChild(icon);}const name=document.createElement("b");name.textContent=asset.name;row.appendChild(name);if(asset.type==="image"){const addBtn=document.createElement("button");addBtn.textContent="配置";addBtn.onclick=()=>{snapshot();const o={id:uid(),type:"image",name:asset.name,text:"",imageData:asset.data,x:30,y:25,w:35,h:35,color:"#fff",bg:"transparent",size:20,radius:0,layer:"Default",tags:[],collider:{enabled:false,type:"box",trigger:false,mass:1,gravity:1,restitution:.1,friction:.4}};p.objects.push(o);selected=o.id;xMulti=[o.id];xMark();xTab("left","hierarchy");render();};row.appendChild(addBtn);}list.appendChild(row);});
+ p.prefabs.forEach(prefab=>{const row=document.createElement("div");row.className="asset-item";const name=document.createElement("b");name.textContent="▣ "+prefab.name;row.appendChild(name);const addBtn=document.createElement("button");addBtn.textContent="配置";addBtn.onclick=()=>xInstantiatePrefab(prefab.id);row.appendChild(addBtn);prefabs.appendChild(row);});
+}
+function xImportFiles(files){
+ [...files].forEach(file=>{
+  if(file.size>1200000){toast(file.name+" は1.2MBを超えるため追加できません");return;}
+  const reader=new FileReader();reader.onload=()=>{const type=file.type.startsWith("image/")?"image":file.type.startsWith("audio/")?"audio":null;if(!type){toast("画像または音声ファイルを選択してください");return;}p.assets.push({id:uid(),name:file.name,type,mime:file.type,data:reader.result,size:file.size});xMark();xRenderAssets();};reader.onerror=()=>toast(file.name+" の読み込みに失敗しました");reader.readAsDataURL(file);
+ });
+}
+function xExportPackage(){
+ const blob=new Blob([JSON.stringify({format:"kuro-assets-v1",assets:p.assets,prefabs:p.prefabs},null,2)],{type:"application/json"});
+ const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="kuro-assets.kuroasset.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);
+}
+function xRenderTileEditor(){
+ const canvas=$("tilemapCanvas");if(!canvas)return;
+ const ctx=canvas.getContext("2d"),m=p.tilemap,cellW=canvas.width/m.cols,cellH=canvas.height/m.rows;ctx.clearRect(0,0,canvas.width,canvas.height);
+ m.cells.forEach((v,i)=>{if(v<0)return;ctx.fillStyle=xTileColors[v%xTileColors.length];ctx.fillRect((i%m.cols)*cellW,Math.floor(i/m.cols)*cellH,cellW,cellH);});
+ ctx.strokeStyle="#ffffff30";ctx.lineWidth=1;
+ for(let x=0;x<=m.cols;x++){ctx.beginPath();ctx.moveTo(x*cellW,0);ctx.lineTo(x*cellW,canvas.height);ctx.stroke();}
+ for(let y=0;y<=m.rows;y++){ctx.beginPath();ctx.moveTo(0,y*cellH);ctx.lineTo(canvas.width,y*cellH);ctx.stroke();}
+ const pal=$("tilePalette");if(pal){pal.innerHTML="";xTileColors.forEach((c,i)=>{const b=document.createElement("button");b.style.background=c;b.title="タイル "+(i+1);b.style.outline=xTileColor===i?"2px solid white":"none";b.onclick=()=>{xTileColor=i;xRenderTileEditor();};pal.appendChild(b);});}
+}
+function xPaintTile(e){
+ const canvas=$("tilemapCanvas"),r=canvas.getBoundingClientRect(),x=Math.floor((e.clientX-r.left)/r.width*p.tilemap.cols),y=Math.floor((e.clientY-r.top)/r.height*p.tilemap.rows);
+ if(x<0||y<0||x>=p.tilemap.cols||y>=p.tilemap.rows)return;
+ const i=y*p.tilemap.cols+x;p.tilemap.cells[i]=p.tilemap.cells[i]===xTileColor?-1:xTileColor;xRenderTileEditor();xMark();
+}
+function xRenderInspector(){
+ const box=$("inspector");if(!box)return;box.innerHTML="";
+ const chosen=xSelection(),o=p.objects.find(v=>v.id===selected);
+ if(!o){box.innerHTML='<div class="empty">オブジェクトを選択すると、ここで詳細を編集できます。</div>';return;}
+ if(chosen.length>1){const h=document.createElement("div");h.className="label";h.textContent=chosen.length+" 個のオブジェクトを選択中";box.appendChild(h);xField(box,"レイヤー","layer",o.layer,"select",{choices:p.layers.map(x=>[x,x])},v=>{snapshot();chosen.forEach(a=>a.layer=v);xMark();});xField(box,"タグ","tags",(o.tags||[]).join(", "),"text",null,v=>{snapshot();chosen.forEach(a=>a.tags=v.split(",").map(x=>x.trim()).filter(Boolean));xMark();});const b=document.createElement("button");b.className="btn";b.textContent="選択をPrefab化";b.onclick=xCreatePrefab;box.appendChild(b);return;}
+ const label=document.createElement("div");label.className="label";label.textContent="選択中："+o.name;box.appendChild(label);
+ const bind=(lab,key,type,opts)=>xField(box,lab,key,o[key],type,opts,v=>{snapshot();const value=type==="number"?Number(v):v;if(o.prefabId){p.objects.filter(a=>a.prefabId===o.prefabId).forEach(a=>a[key]=value);xUpdatePrefab(o);}else o[key]=value;xMark();xRenderStage();xRenderLayers();});
+ bind("名前","name","text");if(o.type!=="image"&&o.type!=="particle"&&o.type!=="group")bind("表示テキスト","text","text");
+ let r=document.createElement("div");r.className="row";box.appendChild(r);xField(r,"X (%)","x",o.x,"number",{min:0,max:100},v=>{snapshot();o.x=Number(v);xMark();xRenderStage();});xField(r,"Y (%)","y",o.y,"number",{min:0,max:100},v=>{snapshot();o.y=Number(v);xMark();xRenderStage();});
+ r=document.createElement("div");r.className="row";box.appendChild(r);xField(r,"幅 (%)","w",o.w,"number",{min:1,max:100},v=>{snapshot();o.w=Number(v);xMark();xRenderStage();});xField(r,"高さ (%)","h",o.h,"number",{min:1,max:100},v=>{snapshot();o.h=Number(v);xMark();xRenderStage();});
+ r=document.createElement("div");r.className="row";box.appendChild(r);xField(r,"回転 (°)","rotation",o.rotation||0,"number",{min:-360,max:360},v=>{snapshot();o.rotation=Number(v);xMark();xRenderStage();});xField(r,"レイヤー","layer",o.layer,"select",{choices:p.layers.map(x=>[x,x])},v=>{snapshot();o.layer=v;xMark();});
+ bind("文字色","color","color");bind("背景色","bg","color");
+ xField(box,"タグ（カンマ区切り）","tags",(o.tags||[]).join(", "),"text",null,v=>{snapshot();o.tags=v.split(",").map(x=>x.trim()).filter(Boolean);xMark();});
+ const phy=document.createElement("details");phy.className="inspector-section";phy.open=true;phy.innerHTML="<summary>2D 物理・コライダー</summary>";box.appendChild(phy);
+ xCheck(phy,"当たり判定を有効にする",o.collider.enabled,v=>{o.collider.enabled=v;xMark();xRenderStage();});
+ xField(phy,"形状","colliderType",o.collider.type||"box","select",{choices:[["box","ボックス"],["circle","サークル"],["polygon","ポリゴン（近似）"]]},v=>{o.collider.type=v;xMark();xRenderStage();});
+ xCheck(phy,"トリガー（すり抜け判定）",o.collider.trigger,v=>{o.collider.trigger=v;xMark();});
+ let r2=document.createElement("div");r2.className="row";phy.appendChild(r2);xField(r2,"質量","mass",o.collider.mass||1,"number",{min:.1,max:1000,step:.1},v=>{o.collider.mass=Number(v);xMark();});xField(r2,"重力倍率","gravity",o.collider.gravity===undefined?1:o.collider.gravity,"number",{min:-5,max:5,step:.1},v=>{o.collider.gravity=Number(v);xMark();});
+ r2=document.createElement("div");r2.className="row";phy.appendChild(r2);xField(r2,"反発係数","restitution",o.collider.restitution||0,"number",{min:0,max:1,step:.05},v=>{o.collider.restitution=Number(v);xMark();});xField(r2,"摩擦係数","friction",o.collider.friction||0,"number",{min:0,max:1,step:.05},v=>{o.collider.friction=Number(v);xMark();});
+ const help=document.createElement("p");help.className="setting-note";help.textContent="2D Web Runtimeの簡易物理設定です。円・ポリゴンは現在、矩形近似で接触を判定します。";phy.appendChild(help);
+ if(o.prefabId){const pref=p.prefabs.find(x=>x.id===o.prefabId);const b=document.createElement("button");b.className="btn";b.textContent="Prefabを全インスタンスへ反映";b.onclick=()=>{snapshot();xUpdatePrefab(o);xMark();render();};box.appendChild(b);const t=document.createElement("p");t.className="setting-note";t.textContent="Prefab: "+(pref?pref.name:"");box.appendChild(t);}
+ const del=document.createElement("button");del.className="btn";del.style.marginTop="10px";del.textContent="選択要素を削除";del.onclick=xDeleteSelection;box.appendChild(del);
+}
+function xRenderEvents(){
+ const box=$("eventEditor");if(!box)return;box.innerHTML="";
+ const add=document.createElement("button");add.className="btn primary";add.textContent="＋ イベントノードを追加";add.onclick=()=>{snapshot();p.events.push({id:uid(),trigger:"click",targetId:"*",actions:[{type:"addScore",value:10}]});xMark();xRenderEvents();};box.appendChild(add);
+ const desc=document.createElement("p");desc.className="setting-note";desc.textContent="イベント → 条件 → アクションの順で処理します。カードが上から順番に実行されます。";box.appendChild(desc);
+ p.events.forEach((ev,index)=>{
+  const node=document.createElement("div");node.className="event-node";
+  const title=document.createElement("div");title.className="node-title";title.innerHTML='<i class="node-dot"></i><span>EVENT NODE '+(index+1)+'</span>';node.appendChild(title);
+  xField(node,"イベント","trigger",ev.trigger,"select",{choices:[["start","ゲーム開始時"],["click","クリック時"],["overlap","衝突・接触時"],["timer","毎秒"]]},v=>{ev.trigger=v;xMark();});
+  xField(node,"対象オブジェクト","targetId",ev.targetId,"select",{choices:[["*","すべてのオブジェクト"],...p.objects.filter(o=>o.type!=="group").map(o=>[o.id,o.name])]},v=>{ev.targetId=v;xMark();});
+  ev.actions=Array.isArray(ev.actions)?ev.actions:[];
+  ev.actions.forEach((act,ai)=>{
+   const action=document.createElement("div");action.className="node-actions";
+   xField(action,"アクション","type",act.type,"select",{choices:[["addScore","スコアを加算"],["setText","テキストを変更"],["moveRandom","ランダムに移動"],["particles","パーティクルを発生"],["message","メッセージを表示"],["gameOver","ゲーム終了"]]},v=>{act.type=v;xMark();});
+   if(["addScore","message","setText"].includes(act.type))xField(action,"値","value",act.value??(act.type==="addScore"?10:"テキスト"),"text",null,v=>{act.value=v;xMark();});
+   const remove=document.createElement("button");remove.className="btn small";remove.textContent="アクション削除";remove.onclick=()=>{snapshot();ev.actions.splice(ai,1);xMark();xRenderEvents();};action.appendChild(remove);node.appendChild(action);
+  });
+  const row=document.createElement("div");row.style.display="flex";row.style.gap="6px";row.style.marginTop="8px";
+  const actionBtn=document.createElement("button");actionBtn.className="btn small";actionBtn.textContent="＋ アクション";actionBtn.onclick=()=>{snapshot();ev.actions.push({type:"addScore",value:10});xMark();xRenderEvents();};
+  const removeBtn=document.createElement("button");removeBtn.className="btn small";removeBtn.textContent="ノード削除";removeBtn.onclick=()=>{snapshot();p.events.splice(index,1);xMark();xRenderEvents();};
+  row.append(actionBtn,removeBtn);node.appendChild(row);box.appendChild(node);
+ });
+}
+function xRenderSettings(){
+ const box=$("settingsEditor");if(!box)return;box.innerHTML="";
+ xField(box,"シーン名","name",p.name,"text",null,v=>{p.name=v;$("projectName").textContent=v;xMark();});
+ xField(box,"背景色","background",p.background,"color",null,v=>{p.background=v;xMark();xRenderStage();});
+ xField(box,"グリッド間隔 (%)","grid",p.settings.grid,"number",{min:1,max:20},v=>{p.settings.grid=Number(v);xMark();});
+ xCheck(box,"グリッドを表示",p.settings.showGrid,v=>{p.settings.showGrid=v;xMark();xRenderStage();});
+ xCheck(box,"コライダーを表示",p.settings.showColliders,v=>{p.settings.showColliders=v;xMark();xRenderStage();});
+ const cam=document.createElement("details");cam.className="inspector-section";cam.open=true;cam.innerHTML="<summary>2D カメラ</summary>";box.appendChild(cam);
+ xField(cam,"カメラモード","cameraMode",p.settings.cameraMode,"select",{choices:[["fixed","固定カメラ"],["follow","ターゲット追従"]]},v=>{p.settings.cameraMode=v;xMark();xRenderStage();});
+ xField(cam,"追従対象","followTargetId",p.settings.followTargetId,"select",{choices:[["","未設定"],...p.objects.filter(o=>o.type!=="group").map(o=>[o.id,o.name])]},v=>{p.settings.followTargetId=v;xMark();});
+ xField(cam,"ズーム","cameraZoom",p.settings.cameraZoom,"number",{min:.5,max:2,step:.1},v=>{p.settings.cameraZoom=Number(v);xMark();});
+ const layers=document.createElement("details");layers.className="inspector-section";layers.open=true;layers.innerHTML="<summary>レイヤー管理・衝突マトリックス</summary>";box.appendChild(layers);
+ p.layers.forEach((name,i)=>{const row=document.createElement("div");row.className="asset-item";const text=document.createElement("b");text.textContent=name;row.appendChild(text);if(i>0){const del=document.createElement("button");del.textContent="削除";del.onclick=()=>{p.layers.splice(i,1);p.objects.forEach(o=>{if(o.layer===name)o.layer="Default";});xMark();xRenderSettings();};row.appendChild(del);}layers.appendChild(row);});
+ const addLayer=document.createElement("button");addLayer.className="btn small";addLayer.textContent="＋ レイヤー追加";addLayer.onclick=()=>{const name=prompt("レイヤー名");if(name&&!p.layers.includes(name)){p.layers.push(name);xMark();xRenderSettings();}};layers.appendChild(addLayer);
+ const cm=document.createElement("p");cm.className="setting-note";cm.textContent="異なるレイヤー間の衝突判定マトリックスは簡易版です。レイヤー割当はオブジェクトのインスペクターから変更できます。";layers.appendChild(cm);
+}
+function xRenderAll(){xEnsure();xRenderStage();xRenderLayers();xRenderInspector();xRenderEvents();xRenderSettings();xRenderAssets();xRenderTileEditor();}
+function xDock(panel,zone){
+ const other=panel.classList.contains("left")?document.querySelector(".panel.right"):document.querySelector(".panel.left");
+ const old=panel.dataset.dock|| (panel.classList.contains("left")?"left":"right");
+ if(zone!=="float"&&other&&other.dataset.dock===zone)other.dataset.dock=old;
+ panel.dataset.dock=zone;
+ panel.style.gridColumn=zone==="left"?"1":zone==="right"?"3":zone==="bottom"?"1 / -1":"";
+ panel.style.gridRow=zone==="bottom"?"2":"1";
+ toast("パネルを"+({left:"左側",right:"右側",bottom:"下部",float:"フロート"}[zone])+"へ配置しました");
+}
+function xCycleDock(id){
+ const panel=document.querySelector(".panel."+id),zones=["left","right","bottom","float"],current=panel.dataset.dock||(id==="left"?"left":"right"),next=zones[(zones.indexOf(current)+1)%zones.length];xDock(panel,next);
+}
+function xSetPreset(name){
+ const left=document.querySelector(".panel.left"),right=document.querySelector(".panel.right");
+ if(name==="2d"){xDock(left,"left");xDock(right,"right");xTab("left","hierarchy");xTab("right","inspector");}
+ else if(name==="animation"){xDock(left,"left");xDock(right,"bottom");xTab("left","assets");xTab("right","inspector");}
+ else{xDock(left,"float");xDock(right,"right");xTab("left","hierarchy");xTab("right","events");}
+ p.layoutPreset=name;localStorage.setItem("kuroGameStudio.layoutPreset",name);
+ xMark();$("layoutPreset").value=name;
+}
+function xTheme(theme,font){
+ document.body.dataset.theme=theme;
+ document.body.classList.toggle("font-large",font==="15");document.body.classList.toggle("font-xlarge",font==="17");
+ localStorage.setItem("kuroGameStudio.theme",theme);localStorage.setItem("kuroGameStudio.font",font);
+}
+const xCommandList=[
+ ["新しいゲーム","テンプレート選択を開く","template"],
+ ["テキストを追加","シーンにテキストを配置","add:text"],
+ ["ボタンを追加","シーンにボタンを配置","add:button"],
+ ["図形を追加","シーンに図形を配置","add:shape"],
+ ["画像を追加","アセットを取り込む","assets"],
+ ["タイルマップ","2Dタイル編集を開く","tilemap"],
+ ["ビジュアルロジック","イベントノードを編集","events"],
+ ["シーン設定","カメラ・レイヤーを設定","settings"],
+ ["コードエディター","HTML・CSS・JSを編集","code"],
+ ["グリッド切替","グリッド表示を切り替え","grid"],
+ ["コライダー表示","当たり判定の形状を表示","colliders"],
+ ["ゲームをテスト","プレビューを実行","play"],
+ ["保存","プロジェクトを保存","save"],
+ ["Prefab化","選択中の要素をPrefab化","prefab"]
+];
+function xOpenCommands(){const modal=$("commandModal");modal.classList.add("open");$("commandSearch").value="";xCommandIndex=0;xRenderCommands();$("commandSearch").focus();}
+function xRenderCommands(){
+ const q=$("commandSearch").value.toLowerCase(),items=xCommandList.filter(x=>(x[0]+" "+x[1]).toLowerCase().includes(q));
+ const box=$("commandResults");box.innerHTML="";items.forEach((item,i)=>{const b=document.createElement("button");b.className="command-result"+(i===xCommandIndex?" active":"");const t=document.createElement("span");t.textContent=item[0];const h=document.createElement("small");h.textContent=item[1];b.append(t,h);b.onclick=()=>xRunCommand(item[2]);box.appendChild(b);});
+ if(!items.length){const p=document.createElement("p");p.className="hint";p.textContent="一致するコマンドがありません";box.appendChild(p);}
+}
+function xRunCommand(command){
+ $("commandModal").classList.remove("open");
+ if(command==="template")openModal();
+ else if(command.startsWith("add:"))add(command.split(":")[1]);
+ else if(command==="assets")xTab("left","assets");
+ else if(command==="tilemap")xTab("left","tilemap");
+ else if(command==="events")xTab("right","events");
+ else if(command==="settings")xTab("right","settings");
+ else if(command==="code"){save();location.href="/game-studio/code.html";}
+ else if(command==="grid"){p.settings.showGrid=!p.settings.showGrid;xRenderStage();xMark();}
+ else if(command==="colliders"){p.settings.showColliders=!p.settings.showColliders;xRenderStage();xMark();}
+ else if(command==="play")$("playBtn").click();
+ else if(command==="save")save();
+ else if(command==="prefab")xCreatePrefab();
+}
+function xAddParticles(x,y,count){
+ const stage=$("stage");for(let i=0;i<(count||16);i++){const el=document.createElement("i");el.textContent=["✦","•","✧","◆"][i%4];el.style.cssText="position:absolute;z-index:40;left:"+x+"%;top:"+y+"%;color:"+["#f8d46a","#74d9e8","#b99cff","#ff9ba8"][i%4]+";font-size:"+(8+Math.random()*15)+"px;pointer-events:none;animation:kuroParticle .75s ease-out forwards;--dx:"+((Math.random()-.5)*110)+"px;--dy:"+((Math.random()-.5)*110)+"px";stage.appendChild(el);setTimeout(()=>el.remove(),800);}
+}
+function xRunActions(ev,target){
+ (ev.actions||[]).forEach(act=>{
+  if(act.type==="addScore"){const node=p.objects.find(o=>o.id==="score");if(node){const now=Number((String(node.text).match(/-?\d+/)||["0"])[0]);node.text="SCORE  "+(now+Number(act.value||0));}}
+  else if(act.type==="setText"&&target)target.text=String(act.value||"");
+  else if(act.type==="moveRandom"&&target){target.x=5+Math.random()*75;target.y=5+Math.random()*75;}
+  else if(act.type==="particles"){const a=target||{x:45,y:45,w:10,h:10};xAddParticles(a.x+a.w/2,a.y+a.h/2,20);}
+  else if(act.type==="message")toast(String(act.value||"イベント"));
+  else if(act.type==="gameOver"){playing=false;cancelAnimationFrame(xRuntimeFrame);if(xTimer)clearInterval(xTimer);toast("ゲーム終了");}
+ });
+ xRenderStage();
+}
+function xDispatch(trigger,target){
+ p.events.filter(ev=>ev.trigger===trigger&&(ev.targetId==="*"||!target||ev.targetId===target.id)).forEach(ev=>xRunActions(ev,target));
+}
+function xGameClick(o){
+ if(p.type==="clicker"&&o.type==="button"){const score=p.objects.find(x=>x.id==="score");if(score)score.text="SCORE  "+((Number((String(score.text).match(/\d+/)||["0"])[0]))+1);}
+ else if(p.type==="quiz"&&o.type==="button")toast(o.id==="a"?"正解！":"もう一度挑戦！");
+ else if(p.type==="target"&&o.id==="target"){const score=p.objects.find(x=>x.id==="score");if(score)score.text="SCORE  "+((Number((String(score.text).match(/\d+/)||["0"])[0]))+10);o.x=5+Math.random()*75;o.y=25+Math.random()*55;}
+ xDispatch("click",o);
+}
+function xOverlap(a,b){
+ if(!a.collider||!a.collider.enabled||!b.collider||!b.collider.enabled)return false;
+ return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
+}
+function xStartRuntime(){
+ cancelAnimationFrame(xRuntimeFrame);if(xTimer)clearInterval(xTimer);
+ xDispatch("start",null);let last=performance.now();const hit=new Set();
+ xTimer=setInterval(()=>{if(playing)xDispatch("timer",null);},1000);
+ const tick=now=>{
+  if(!playing)return;const dt=Math.min(.04,(now-last)/1000);last=now;
+  const bodies=p.objects.filter(o=>o.collider&&o.collider.enabled&&o.visible!==false&&o.type!=="group");
+  bodies.forEach(o=>{
+   if(o.collider.gravity){o.vy=(o.vy||0)+Number(p.settings.gravity||600)*Number(o.collider.gravity)*dt/540*100;o.y+=o.vy*dt;}
+   if(o.y+o.h>100){o.y=100-o.h;o.vy=-(o.vy||0)*Number(o.collider.restitution||0);if(Math.abs(o.vy)<.3)o.vy=0;}
+   if(o.y<0){o.y=0;o.vy=Math.abs(o.vy||0);}
+  });
+  for(let i=0;i<bodies.length;i++)for(let j=i+1;j<bodies.length;j++){
+   const a=bodies[i],b=bodies[j],key=[a.id,b.id].sort().join(":");
+   const overlap=xOverlap(a,b);
+   if(overlap&&!hit.has(key)){hit.add(key);xDispatch("overlap",a);}
+   if(!overlap)hit.delete(key);
+   if(overlap&&!a.collider.trigger&&!b.collider.trigger&&a.vy>0&&a.y+a.h-b.y<6){a.y=b.y-a.h;a.vy=-(a.vy||0)*Number(a.collider.restitution||0);}
+  }
+  xRenderStage();xRuntimeFrame=requestAnimationFrame(tick);
+ };
+ xRuntimeFrame=requestAnimationFrame(tick);
+}
+function xStopRuntime(){cancelAnimationFrame(xRuntimeFrame);if(xTimer)clearInterval(xTimer);p.objects.forEach(o=>{delete o.vy;});}
+function xSetPlay(){
+ playing=!playing;
+ if(playing){selected=null;xMulti=[];xStartRuntime();$("runtimeStatus").textContent="● RUNNING · 2D";$("runtimeStatus").style.color="var(--good)";}
+ else{xStopRuntime();$("runtimeStatus").textContent="2D Web Runtime · READY";$("runtimeStatus").style.color="";}
+ render();$("playBtn").textContent=playing?"■ 停止して編集":"▶ テスト";
+}
+function xEnableDocking(){
+ document.querySelectorAll("[data-dock-head]").forEach(head=>{
+  head.addEventListener("dragstart",e=>{if(e.target.closest("button")){e.preventDefault();return;}e.dataTransfer.setData("text/kuro-panel",head.dataset.dockHead);$("dockHint").classList.add("show");});
+  head.addEventListener("dragend",()=>$("dockHint").classList.remove("show"));
+ });
+ const ws=$("workspace");
+ ws.addEventListener("dragover",e=>{if(e.dataTransfer.types.includes("text/kuro-panel"))e.preventDefault();});
+ ws.addEventListener("drop",e=>{
+  const id=e.dataTransfer.getData("text/kuro-panel");if(!id)return;e.preventDefault();$("dockHint").classList.remove("show");
+  const r=ws.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;
+  const zone=y>.78?"bottom":x<.25?"left":x>.75?"right":(e.clientX<r.left+r.width/2?"left":"right");
+  const panel=document.querySelector(".panel."+id);if(panel)xDock(panel,zone);
+ });
+ document.querySelectorAll("[data-dock-cycle]").forEach(b=>b.addEventListener("click",()=>xCycleDock(b.dataset.dockCycle)));
+}
+function xInitExtensions(){
+ xEnsure();
+ const theme=localStorage.getItem("kuroGameStudio.theme")||"dark",font=localStorage.getItem("kuroGameStudio.font")||"13";xTheme(theme,font);
+ $("themeSelect").value=theme;$("fontSelect").value=font;
+ const preset=localStorage.getItem("kuroGameStudio.layoutPreset")||p.layoutPreset||"2d";xSetPreset(preset);
+ document.querySelectorAll("[data-left-tab]").forEach(b=>b.addEventListener("click",()=>{xTab("left",b.dataset.leftTab);if(b.dataset.leftTab==="assets")xRenderAssets();if(b.dataset.leftTab==="tilemap")xRenderTileEditor();}));
+ document.querySelectorAll("[data-right-tab]").forEach(b=>b.addEventListener("click",()=>xTab("right",b.dataset.rightTab)));
+ $("transformMode").addEventListener("change",()=>{$("runtimeStatus").textContent="変形モード："+$("transformMode").selectedOptions[0].textContent;});
+ $("snapBtn").addEventListener("click",()=>{p.settings.snapEnabled=!p.settings.snapEnabled;$("snapBtn").textContent="スナップ "+(p.settings.snapEnabled?"ON":"OFF");xMark();});
+ $("groupBtn").addEventListener("click",xGroupSelection);$("ungroupBtn").addEventListener("click",xUngroup);$("prefabBtn").addEventListener("click",xCreatePrefab);
+ $("assetImportBtn").addEventListener("click",()=>$("assetInput").click());
+ $("assetInput").addEventListener("change",e=>{xImportFiles(e.target.files);e.target.value="";});
+ $("packageExportBtn").addEventListener("click",xExportPackage);
+ $("tilemapCanvas").addEventListener("pointerdown",e=>{e.currentTarget.setPointerCapture(e.pointerId);xPaintTile(e);});
+ $("tilemapCanvas").addEventListener("pointermove",e=>{if(e.buttons===1)xPaintTile(e);});
+ $("tileClearBtn").addEventListener("click",()=>{p.tilemap.cells.fill(-1);xRenderTileEditor();xRenderStage();xMark();});
+ $("tileToggleBtn").addEventListener("click",()=>{p.tilemap.enabled=!p.tilemap.enabled;$("tileToggleBtn").textContent=p.tilemap.enabled?"シーンから非表示":"シーンに表示";xRenderStage();xMark();});
+ $("layoutPreset").addEventListener("change",e=>xSetPreset(e.target.value));
+ $("themeSelect").addEventListener("change",e=>{xTheme(e.target.value,$("fontSelect").value);});
+ $("fontSelect").addEventListener("change",e=>xTheme($("themeSelect").value,e.target.value));
+ $("commandBtn").addEventListener("click",xOpenCommands);
+ $("commandSearch").addEventListener("input",()=>{xCommandIndex=0;xRenderCommands();});
+ $("commandSearch").addEventListener("keydown",e=>{
+  const items=[...$("commandResults").querySelectorAll(".command-result")];
+  if(e.key==="ArrowDown"){e.preventDefault();xCommandIndex=Math.min(items.length-1,xCommandIndex+1);xRenderCommands();}
+  if(e.key==="ArrowUp"){e.preventDefault();xCommandIndex=Math.max(0,xCommandIndex-1);xRenderCommands();}
+  if(e.key==="Enter"&&items[xCommandIndex])items[xCommandIndex].click();
+  if(e.key==="Escape")$("commandModal").classList.remove("open");
+ });
+ $("commandModal").addEventListener("click",e=>{if(e.target===$("commandModal"))$("commandModal").classList.remove("open");});
+ $("playBtn").onclick=xSetPlay;
+ $("delete").onclick=xDeleteSelection;
+ $("codeBtn").addEventListener("click",()=>{save();});
+ document.addEventListener("keydown",e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"){e.preventDefault();xOpenCommands();}
+  if(e.key==="F1"){e.preventDefault();xOpenCommands();}
+  if(e.key==="Escape")$("commandModal").classList.remove("open");
+ });
+ xEnableDocking();
+ xRenderAll();
+ $("snapBtn").textContent="スナップ "+(p.settings.snapEnabled?"ON":"OFF");
+ $("grid").addEventListener("click",()=>{p.settings.showGrid=!p.settings.showGrid;xRenderStage();xMark();});
+}
+function renderStage(){xRenderStage();}
+function renderLayers(){xRenderLayers();}
+function renderInspector(){xRenderInspector();}
+function gameClick(o){xGameClick(o);}
+xInitExtensions();
+
 })();
 </script></body></html>
