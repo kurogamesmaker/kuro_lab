@@ -61,7 +61,8 @@ function makeVisualCode(p){
   const text=escapeHTML(o.text||"");
   const size=Number(o.size)||20;
   const style='left:'+Number(o.x||0)+'%;top:'+Number(o.y||0)+'%;width:'+Number(o.w||20)+'%;height:'+Number(o.h||12)+'%;color:'+(o.color||"#fff")+';background:'+(o.bg||"transparent")+';font-size:clamp(8px,'+(size/960*100)+'vw,'+size+'px);border-radius:'+(Number(o.radius)||0)+'px;transform:rotate('+(Number(o.rotation)||0)+'deg)';
-  const content=o.type==="image"&&o.imageData?'<img alt="" src="'+o.imageData+'" style="width:100%;height:100%;object-fit:fill">':o.type==="particle"?"✦":text;
+  const asset=(p.assets||[]).find(a=>a.id===o.assetId),imageSrc=o.imageData||(asset&&asset.data);
+  const content=o.type==="image"&&imageSrc?'<img alt="" src="'+imageSrc+'" style="width:100%;height:100%;object-fit:fill">':o.type==="particle"?"✦":text;
   return '  <div class="game-object" data-id="'+escapeHTML(o.id)+'" data-kind="'+escapeHTML(o.type)+'" style="'+style+'">'+content+'</div>';
  }).join("\n")+'\n</main>';
  const css=[
