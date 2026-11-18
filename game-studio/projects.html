@@ -24,6 +24,8 @@
 <div class="field"><label for="editorMode">最初に開く編集モード</label><select id="editorMode"><option value="visual">ビジュアルエディター</option><option value="code">コードエディター</option></select></div>
 <div class="modal-foot"><button class="btn" id="cancelCreate">キャンセル</button><button class="btn primary" id="confirmCreate">作成して開く</button></div></section></div><div class="toast" id="toast"></div>
 <script>
+const KURO_GAS_TRANSPORT=new URLSearchParams(location.search).get("transport")==="gas";
+function kuroApplyTransportLinks(){if(!KURO_GAS_TRANSPORT)return;document.querySelectorAll('a[href^="/game-studio/"],a[href^="/games/"]').forEach(a=>{const u=new URL(a.href,location.origin);u.searchParams.set("transport","gas");a.href=u.pathname+u.search+u.hash;});}
 (function(){
 "use strict";
 const KEY="kuroGameStudio.v1", $=id=>document.getElementById(id), clone=x=>JSON.parse(JSON.stringify(x));
@@ -45,8 +47,9 @@ function date(v){if(!v)return"未編集";try{return new Date(v).toLocaleString("
 function render(){load();const q=$("search").value.trim().toLowerCase(),list=projects.filter(p=>(filter==="all"||filter==="recent"&&p.updatedAt>=Date.now()-30*864e5||filter===p.type)&&(!q||(p.name||"").toLowerCase().includes(q)));list.sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));$("totalCount").textContent=projects.length;$("recentCount").textContent=projects.filter(p=>p.updatedAt>=Date.now()-30*864e5).length;
 const grid=$("projectGrid"),empty=$("empty");grid.querySelectorAll(".card").forEach(x=>x.remove());empty.style.display=list.length?"none":"block";if(!projects.length){empty.querySelector("strong").textContent="まだプロジェクトがありません";empty.firstChild.nextSibling.textContent="最初のゲームを作成してみましょう。";}else if(!list.length){empty.querySelector("strong").textContent="一致するプロジェクトがありません";empty.firstChild.nextSibling.textContent="検索ワードやフィルターを変更してください。";}
 list.forEach(p=>{const card=document.createElement("article");card.className="card";card.innerHTML='<div class="preview"><span class="type-tag">'+esc(typeName(p))+'</span><span class="glyph">'+icon(p)+'</span></div><div class="card-body"><div class="card-title">'+esc(p.name||"無題のプロジェクト")+'</div><div class="card-meta"><span>'+esc(typeName(p))+'</span><span>更新 '+date(p.updatedAt)+'</span></div></div><div class="card-actions"><button class="btn primary" data-open="'+esc(p.id)+'">開く</button><button class="btn" data-duplicate="'+esc(p.id)+'">複製</button><button class="btn danger" data-delete="'+esc(p.id)+'">削除</button></div>';grid.insertBefore(card,empty);});}
-function open(id,mode){const p=projects.find(x=>x.id===id);if(!p)return;p.updatedAt=Date.now();saveAll();localStorage.setItem(KEY+".current",p.id);location.href=mode==="code"?"/game-studio/code.html":"/game-studio/";}
+function open(id,mode){const p=projects.find(x=>x.id===id);if(!p)return;p.updatedAt=Date.now();saveAll();localStorage.setItem(KEY+".current",p.id);location.href=mode==="code"?"/game-studio/code.html"+(KURO_GAS_TRANSPORT?"?transport=gas":""):"/game-studio/"+(KURO_GAS_TRANSPORT?"?transport=gas":"");}
 function modal(show){$("modal").classList.toggle("open",show);if(show){$("projectTitle").focus();$("projectTitle").select();}}
+kuroApplyTransportLinks();
 function create(){const name=$("projectTitle").value.trim()||"新しいゲーム",p=fresh(chosen,name);projects.unshift(p);saveAll();localStorage.setItem(KEY+".current",p.id);open(p.id,$("editorMode").value);}
 function duplicate(id){const p=projects.find(x=>x.id===id);if(!p)return;const c=clone(p);c.id="kuro-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7);c.name=(p.name||"ゲーム")+" のコピー";c.createdAt=Date.now();c.updatedAt=Date.now();projects.unshift(c);saveAll();render();toast("プロジェクトを複製しました");}
 function remove(id){const p=projects.find(x=>x.id===id);if(!p||!confirm("「"+p.name+"」を削除しますか？この操作は元に戻せません。"))return;projects=projects.filter(x=>x.id!==id);saveAll();if(localStorage.getItem(KEY+".current")===id)localStorage.removeItem(KEY+".current");render();toast("削除しました");}
