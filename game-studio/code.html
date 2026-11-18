@@ -56,53 +56,51 @@ const fallback={id:"studio-new",name:"新しいゲーム",type:"clicker",backgro
 ]};
 let project,activeTab="html",saveTimer=null,previewTimer=null,toastTimer=null;
 function makeVisualCode(p){
- const objects=Array.isArray(p.objects)?p.objects:[];
+ const objects=Array.isArray(p.objects)?p.objects.filter(o=>o.type!=="group"&&o.visible!==false):[];
  const html='<main id="kuro-game" aria-label="'+escapeHTML(p.name||"KURO Game")+'">\n'+objects.map(o=>{
   const text=escapeHTML(o.text||"");
   const size=Number(o.size)||20;
-  const style='left:'+Number(o.x||0)+'%;top:'+Number(o.y||0)+'%;width:'+Number(o.w||20)+'%;height:'+Number(o.h||12)+'%;color:'+(o.color||"#fff")+';background:'+(o.bg||"transparent")+';font-size:clamp(8px,'+(size/960*100)+'vw,'+size+'px);border-radius:'+(Number(o.radius)||0)+'px';
-  return '  <div class="game-object" data-id="'+escapeHTML(o.id)+'" data-kind="'+escapeHTML(o.type)+'" style="'+style+'">'+text+'</div>';
+  const style='left:'+Number(o.x||0)+'%;top:'+Number(o.y||0)+'%;width:'+Number(o.w||20)+'%;height:'+Number(o.h||12)+'%;color:'+(o.color||"#fff")+';background:'+(o.bg||"transparent")+';font-size:clamp(8px,'+(size/960*100)+'vw,'+size+'px);border-radius:'+(Number(o.radius)||0)+'px;transform:rotate('+(Number(o.rotation)||0)+'deg)';
+  const content=o.type==="image"&&o.imageData?'<img alt="" src="'+o.imageData+'" style="width:100%;height:100%;object-fit:fill">':o.type==="particle"?"✦":text;
+  return '  <div class="game-object" data-id="'+escapeHTML(o.id)+'" data-kind="'+escapeHTML(o.type)+'" style="'+style+'">'+content+'</div>';
  }).join("\n")+'\n</main>';
  const css=[
   '*{box-sizing:border-box}',
   'body{margin:0;min-height:100vh;display:grid;place-items:center;padding:2vw;background:#0b1020;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#fff}',
   '#kuro-game{position:relative;width:min(960px,96vw);aspect-ratio:16/9;overflow:hidden;border-radius:14px;background:'+(p.background||"#17243a")+';box-shadow:0 20px 60px #0008}',
   '.game-object{position:absolute;display:flex;align-items:center;justify-content:center;text-align:center;white-space:pre-wrap;word-break:break-word;line-height:1.2;user-select:none}',
-  '.game-object[data-kind="button"],.game-object[data-kind="emoji"]{cursor:pointer}'
+  '.game-object[data-kind="button"],.game-object[data-kind="emoji"],.game-object[data-kind="particle"]{cursor:pointer}',
+  '.kuro-tilemap{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}',
+  '@keyframes kuro-float{50%{translate:0 -8px}}@keyframes kuro-spin{to{rotate:360deg}}@keyframes kuro-pulse{50%{scale:1.1}}@keyframes kuro-bob{0%,100%{translate:0 0}50%{translate:0 -14px}}'
  ].join("\n");
- const buttonIds=objects.filter(o=>o.type==="button").map(o=>o.id);
- const target=objects.find(o=>o.id==="target");
  const type=JSON.stringify(p.type||"custom");
- const scoreId=JSON.stringify((objects.find(o=>o.id==="score")||{}).id||"score");
- const buttons=JSON.stringify(buttonIds);
- const correct=JSON.stringify("a");
- const targetId=JSON.stringify(target?target.id:"target");
+ const model=JSON.stringify(objects).replace(/</g,"\\u003c");
+ const events=JSON.stringify(Array.isArray(p.events)?p.events:[]).replace(/</g,"\\u003c");
+ const settings=JSON.stringify(p.settings||{}).replace(/</g,"\\u003c");
+ const tilemap=JSON.stringify(p.tilemap||null).replace(/</g,"\\u003c");
+ const collisions=JSON.stringify(p.collisionMatrix||{}).replace(/</g,"\\u003c");
  const js=[
-  "// KURO GAME STUDIO - ゲームの動作を編集できます",
+  "// KURO GAME STUDIO - Visual project runtime",
   "const gameType = "+type+";",
-  "const scoreId = "+scoreId+";",
-  "const buttonIds = "+buttons+";",
-  "const correctAnswerId = "+correct+";",
-  "const targetId = "+targetId+";",
-  "let score = 0;",
+  "const objects = "+model+";",
+  "const events = "+events+";",
+  "const settings = "+settings+";",
+  "const tilemap = "+tilemap+";",
+  "const collisionMatrix = "+collisions+";",
   'const root = document.querySelector("#kuro-game");',
-  'root.addEventListener("click", (event) => {',
-  '  const item = event.target.closest(".game-object");',
-  "  if (!item) return;",
-  '  if (gameType === "clicker" && buttonIds.includes(item.dataset.id)) {',
-  "    score += 1;",
-  "    const scoreNode = root.querySelector('[data-id=\"' + scoreId + '\"]');",
-  '    if (scoreNode) scoreNode.textContent = "SCORE  " + score;',
-  '  } else if (gameType === "quiz" && buttonIds.includes(item.dataset.id)) {',
-  '    alert(item.dataset.id === correctAnswerId ? "正解！" : "もう一度挑戦！");',
-  '  } else if (gameType === "target" && item.dataset.id === targetId) {',
-  "    score += 10;",
-  "    const scoreNode = root.querySelector('[data-id=\"' + scoreId + '\"]');",
-  '    if (scoreNode) scoreNode.textContent = "SCORE  " + score;',
-  '    item.style.left = (5 + Math.random() * 75) + "%";',
-  '    item.style.top = (20 + Math.random() * 60) + "%";',
-  "  }",
-  "});"
+  'const nodes = new Map(); let score = 0, running = true;',
+  'const tileColors = ["#26364f","#4d8a72","#b58d55","#8f536e","#6f83b7","#c3c9d4","#e5b35d","#1d2431"];',
+  'if(tilemap && tilemap.enabled){const c=document.createElement("canvas");c.className="kuro-tilemap";c.width=tilemap.cols;c.height=tilemap.rows;const ctx=c.getContext("2d");tilemap.cells.forEach((v,i)=>{if(v<0)return;ctx.fillStyle=tileColors[v%tileColors.length];ctx.fillRect(i%tilemap.cols,Math.floor(i/tilemap.cols),1,1);});root.prepend(c);}',
+  'objects.forEach(o=>{const e=root.querySelector(\'[data-id="\'+CSS.escape(o.id)+\'"]\');if(!e)return;nodes.set(o.id,e);if(o.animation&&o.animation.enabled)e.style.animation="kuro-"+o.animation.type+" "+Math.max(.1,Number(o.animation.duration)||1.2)+"s "+(o.animation.loop===false?"1":"infinite")+" ease-in-out";});',
+  'function particles(x,y,n=18){for(let i=0;i<n;i++){const el=document.createElement("i");el.textContent=["✦","•","✧"][i%3];el.style.cssText="position:absolute;z-index:50;left:"+x+"%;top:"+y+"%;color:"+tileColors[i%tileColors.length]+";pointer-events:none;animation:kuro-particle .7s ease-out forwards;--dx:"+((Math.random()-.5)*100)+"px;--dy:"+((Math.random()-.5)*100)+"px";root.appendChild(el);setTimeout(()=>el.remove(),750);}}',
+  'function runEvents(trigger,target){events.filter(ev=>ev.trigger===trigger&&(ev.targetId==="*"||!target||ev.targetId===target.id)).forEach(ev=>(ev.actions||[]).forEach(a=>{if(a.type==="addScore"){score+=Number(a.value||0);const scoreObj=objects.find(o=>o.id==="score");const el=scoreObj&&nodes.get(scoreObj.id);if(el)el.textContent="SCORE  "+score;}else if(a.type==="setText"&&target){const el=nodes.get(target.id);if(el)el.textContent=String(a.value||"");}else if(a.type==="moveRandom"&&target){target.x=5+Math.random()*75;target.y=5+Math.random()*75;const el=nodes.get(target.id);if(el){el.style.left=target.x+"%";el.style.top=target.y+"%";}}else if(a.type==="particles"){const t=target||{x:45,y:45,w:10,h:10};particles(t.x+t.w/2,t.y+t.h/2);}else if(a.type==="cameraShake"){root.animate([{translate:"-3px 2px"},{translate:"3px -2px"},{translate:"0 0"}],{duration:450});}else if(a.type==="message"){console.log(String(a.value||""));alert(String(a.value||""));}else if(a.type==="gameOver"){running=false;console.log("Game over");}}));}',
+  'root.addEventListener("click",event=>{const el=event.target.closest(".game-object");if(!el)return;const obj=objects.find(o=>o.id===el.dataset.id);if(!obj)return;if(gameType==="clicker"&&obj.type==="button"){score++;const scoreObj=objects.find(o=>o.id==="score");const scoreNode=scoreObj&&nodes.get(scoreObj.id);if(scoreNode)scoreNode.textContent="SCORE  "+score;}else if(gameType==="quiz"&&obj.type==="button"){alert(obj.id==="a"?"正解！":"もう一度挑戦！");}else if(gameType==="target"&&obj.id==="target"){score+=10;const scoreObj=objects.find(o=>o.id==="score");const scoreNode=scoreObj&&nodes.get(scoreObj.id);if(scoreNode)scoreNode.textContent="SCORE  "+score;obj.x=5+Math.random()*75;obj.y=20+Math.random()*60;el.style.left=obj.x+"%";el.style.top=obj.y+"%";}if(obj.type==="particle")particles(obj.x+obj.w/2,obj.y+obj.h/2);runEvents("click",obj);});',
+  'function intersects(a,b){const pair=[a.layer||"Default",b.layer||"Default"].sort().join("|");if(collisionMatrix[pair]===false)return false;return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;}',
+  'function raycast(x,y,dx,dy,maxDistance=100){const steps=Math.max(1,Math.ceil(maxDistance));for(let i=0;i<=steps;i++){const px=x+dx*i,py=y+dy*i;for(const o of objects){if(!o.collider||!o.collider.enabled)continue;if(px>=o.x&&px<=o.x+o.w&&py>=o.y&&py<=o.y+o.h)return {object:o,x:px,y:py,distance:i};}}return null;}',
+  'let last=performance.now();const hit=new Set();function tick(now){if(!running)return;const dt=Math.min(.04,(now-last)/1000);last=now;const bodies=objects.filter(o=>o.collider&&o.collider.enabled);bodies.forEach(o=>{if(o.collider.gravity){o.vy=(o.vy||0)+Number(settings.gravity||600)*Number(o.collider.gravity)*dt/540*100/Math.max(.1,Number(o.collider.mass||1));o.y+=o.vy*dt;}if(o.y+o.h>100){o.y=100-o.h;o.vy=-(o.vy||0)*Number(o.collider.restitution||0);}const el=nodes.get(o.id);if(el){el.style.left=o.x+"%";el.style.top=o.y+"%";}});for(let i=0;i<bodies.length;i++)for(let j=i+1;j<bodies.length;j++){const a=bodies[i],b=bodies[j],key=[a.id,b.id].sort().join(":");const hitNow=intersects(a,b);if(hitNow&&!hit.has(key)){hit.add(key);runEvents("overlap",a);}if(!hitNow&&hit.has(key)){hit.delete(key);runEvents("overlapExit",a);}}requestAnimationFrame(tick);}',
+  'window.Kuro2D={objects:objects,raycast:raycast,runEvents:runEvents};',
+  'runEvents("start",null);setInterval(()=>{if(running)runEvents("timer",null);},1000);',
+  'if(objects.some(o=>o.collider&&o.collider.enabled))requestAnimationFrame(tick);'
  ].join("\n");
  return {html,css,js};
 }
