@@ -74,6 +74,7 @@ window.addEventListener("message", async event => {
     type: "kuro-online-auth",
     requestId: msg.requestId,
     access_token: session.access_token,
+    useGasProxy: KURO_GAS_TRANSPORT,
     user: session.user ? { id: session.user.id, email: session.user.email ?? null } : null
    }, "*");
   } catch (error) {
@@ -82,6 +83,26 @@ window.addEventListener("message", async event => {
     requestId: msg.requestId,
     message: error?.message || "KUROGAMES認証に失敗しました"
    }, "*");
+  }
+  return;
+ }
+ if (msg.type === "kuro-online-proxy-request") {
+  if (!KURO_GAS_TRANSPORT || typeof msg.requestId !== "string" || msg.requestId.length > 120 ||
+      msg.path !== "/functions/v1/kurogames-online" || msg.method !== "POST") return;
+  try {
+   const bytes = msg.bodyBase64 ? Uint8Array.from(atob(msg.bodyBase64), ch => ch.charCodeAt(0)) : new Uint8Array();
+   const request = new Request("https://cprvpphlfpmiegjiutjn.supabase.co" + msg.path, {
+    method: "POST", headers: msg.headers || {}, body: bytes
+   });
+   const response = await kuroGasFetch(request);
+   const responseBytes = new Uint8Array(await response.arrayBuffer());
+   let binary = "";
+   for (let i = 0; i < responseBytes.length; i += 0x8000) binary += String.fromCharCode.apply(null, responseBytes.subarray(i, Math.min(i + 0x8000, responseBytes.length)));
+   const responseHeaders = {}; response.headers.forEach((value, key) => { responseHeaders[key] = value; });
+   event.source.postMessage({ type: "kuro-online-proxy-response", requestId: msg.requestId,
+    response: { status: response.status, headers: responseHeaders, bodyBase64: responseBytes.length ? btoa(binary) : "" } }, "*");
+  } catch (error) {
+   event.source.postMessage({ type: "kuro-online-proxy-response", requestId: msg.requestId, error: error?.message || "GAS中継エラー" }, "*");
   }
   return;
  }
