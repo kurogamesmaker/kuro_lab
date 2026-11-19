@@ -496,13 +496,7 @@ body{background:#63c8e4!important;color:#17233a!important;background-image:radia
 <body>
 <header class="top"><a class="logo" href="/games/">KURO<span>GAMES</span></a><a href="/games/">ゲーム一覧へ　↗</a></header>
 <div class="layout">
-<aside class="rail left" aria-label="おすすめゲーム">
-<a class="rail-card" href="/game/kaiten-sushi-typing/">
-<div class="rail-art"><img src="/games/sushi-cover.svg" alt="回転寿司タイピング"></div>
-<div class="rail-copy"><strong>🍣 回転寿司タイピング</strong><small>無料でプレイ · タイピング</small></div>
-</a>
-<div class="rail-note"><b>🎮 すぐに遊べる</b><span>インストール不要。ブラウザでそのままプレイ！</span></div>
-</aside>
+<aside class="rail left" aria-label="おすすめゲーム"><div data-kuro-recommendations></div></aside>
 <section class="center" aria-label="ゲームプレイ画面">
 <div class="frame-head"><span>NOW PLAYING</span><span class="dots"><i></i><i></i><i></i></span></div>
 <div id="game-app"><div id="game-stage"><!-- 固定デザイン幅 850px。表示倍率だけを画面に合わせる --><!-- ヘッダー / ロゴ -->
@@ -766,13 +760,7 @@ body{background:#63c8e4!important;color:#17233a!important;background-image:radia
   </footer></div></div>
 <button class="fullscreen-btn" id="fullscreenButton" type="button" aria-label="全画面表示">⛶ 全画面</button>
 </section>
-<aside class="rail right" aria-label="ゲームを探す">
-<a class="rail-card" href="/games/">
-<div class="rail-art"><img src="/games/sushi-cover.svg" alt=""></div>
-<div class="rail-copy"><strong>ほかのゲームを探す ↗</strong><small>KURO GAMESのゲーム一覧へ</small></div>
-</a>
-<div class="rail-note"><b>✨ 新作準備中</b><span>新しいゲームは完成しだい追加します。</span></div>
-</aside>
+<aside class="rail right" aria-label="ほかのゲーム"><div data-kuro-recommendations></div></aside>
 
 <section class="game-info" aria-label="ゲーム情報">
 <div><h2>回転寿司タイピング</h2><p>流れてくるお寿司のネタをローマ字で入力するタイピングゲーム。コースやモードを選んで、自己ベスト更新を目指そう。</p><span class="genre">タイピング · 無料 · ブラウザでプレイ</span></div>
@@ -2349,4 +2337,5 @@ chooseMode("normal");
 })();
 </script>
 <script src="/usage-tracker.js"></script>
+<script src="/games/recommendations.js?v=20261119"></script>
 </body></html>
