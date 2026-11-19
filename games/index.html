@@ -349,7 +349,14 @@ function kuroApplyTransportLinks(){
    if(!data?.ok)throw new Error(data?.error||"秘密コードを確認できませんでした。");
    codeInput.value="";renderRoom(data);
   }catch(error){
-   status.textContent=error?.message||"認証に失敗しました。";
+   let message=error?.message||"認証に失敗しました。";
+   try{
+    if(error?.context&&typeof error.context.clone==="function"){
+     const detail=await error.context.clone().json();
+     if(detail?.error)message=detail.error;
+    }
+   }catch(_){}
+   status.textContent=message;
    codeInput.select();
   }finally{submit.disabled=false;}
  });
