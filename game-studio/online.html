@@ -31,7 +31,7 @@ const KURO_GAS_TRANSPORT=new URLSearchParams(location.search).get("transport")==
 const KURO_GAS_PROXY_URL="/api/kuro-gas-proxy";
 function kuroGasClientId(){try{let value=localStorage.getItem("kuro_gas_client_id_online_v1");if(!value){value=crypto.randomUUID();localStorage.setItem("kuro_gas_client_id_online_v1",value);}return value;}catch(_){return "kuro-online-"+Date.now().toString(36);}}
 async function kuroGasFetch(input,init){
- const req=new Request(input,init),url=new URL(req.url);
+ const req=new Request(input,init),url=new window.URL(req.url);
  if(url.origin!==URL)return fetch(req);
  const bytes=new Uint8Array(await req.arrayBuffer());let binary="";
  for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
@@ -43,10 +43,10 @@ async function kuroGasFetch(input,init){
  return new Response(body,{status:result.status,headers:result.headers||{"Content-Type":"application/json"}});
 }
 function applyGasLinks(){
- const link=document.getElementById("gasModeLink");const next=new URL(location.href);
+ const link=document.getElementById("gasModeLink");const next=new window.URL(location.href);
  if(KURO_GAS_TRANSPORT){next.searchParams.delete("transport");link.textContent="通常通信モード";}else{next.searchParams.set("transport","gas");link.textContent="GAS通信モード";}
  link.href=next.pathname+next.search+next.hash;
- document.querySelectorAll('a[href^="/game-studio/"]').forEach(a=>{const u=new URL(a.href,location.origin);if(KURO_GAS_TRANSPORT)u.searchParams.set("transport","gas");a.href=u.pathname+u.search+u.hash;});
+ document.querySelectorAll('a[href^="/game-studio/"]').forEach(a=>{const u=new window.URL(a.href,location.origin);if(KURO_GAS_TRANSPORT)u.searchParams.set("transport","gas");a.href=u.pathname+u.search+u.hash;});
 }
 const db=window.supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},global:{fetch:KURO_GAS_TRANSPORT?kuroGasFetch:window.fetch}});
 applyGasLinks();
