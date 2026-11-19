@@ -68,6 +68,18 @@ window.addEventListener("message", async event => {
   const roomCode = msg.roomCode;
   if (typeof requestId !== "string" || !/^[A-Za-z0-9_-]{1,80}$/.test(requestId) ||
       typeof roomCode !== "string" || !/^\d{4}$/.test(roomCode)) return;
+  // GAS transport cannot carry WebSocket upgrades. Use the verified GAS polling path instead.
+  if (KURO_GAS_TRANSPORT) {
+   try {
+    event.source.postMessage({
+     type: "kuro-werewolf-realtime-status",
+     requestId,
+     status: "POLLING_ONLY",
+     detail: "GAS mode: using HTTP polling"
+    }, "*");
+   } catch (_) {}
+   return;
+  }
   const previous = kuroGameRealtimeChannels.get(requestId);
   if (previous && previous.source === event.source) {
    kuroGameRealtimeChannels.delete(requestId);
