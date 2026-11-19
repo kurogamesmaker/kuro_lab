@@ -380,7 +380,7 @@ async function handle(req: Request) {
     }
 
     if (action === "room_create") {
-      const maxPlayers = Math.max(2, Math.min(8, Math.floor(Number(body.maxPlayers) || 4)));
+      const maxPlayers = Math.max(2, Math.min(35, Math.floor(Number(body.maxPlayers) || 4)));
       let room: Record<string, unknown> | null = null;
       for (let attempt = 0; attempt < 6 && !room; attempt++) {
         const bytes = crypto.getRandomValues(new Uint8Array(6));
