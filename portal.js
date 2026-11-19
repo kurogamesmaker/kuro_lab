@@ -431,6 +431,7 @@ function setRecoveryMode(active){
 }
 function updateAccountUI(){var account=$("#portal-account-button");if(account){account.textContent=st.user?"マイページ":"ログイン";account.setAttribute("aria-label",st.user?"ログイン中。マイページを開く":"ログイン・新規登録");}}
 function initLogin(){
+ if(new URLSearchParams(location.search).get("auth")==="1")openLogin();
  var account=$("#portal-account-button");if(account)account.onclick=function(){if(st.user)location.href="/mypage/";else openLogin();};updateAccountUI();
  var transport=$("#portal-transport-button");if(transport){transport.textContent=useGas?"GAS版（使用中）":"通常版";transport.onclick=function(){var next=useGas?"direct":"gas";safeStorageSet("localStorage","kuro_portal_transport",next);var u=new URL(location.href);u.searchParams.set("transport",next);location.href=u.pathname+u.search;};}
  var close=$("#portal-login-close");if(close)close.onclick=function(){var m=$("#portal-login-modal");if(m)m.hidden=true;};
