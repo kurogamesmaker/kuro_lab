@@ -12,7 +12,7 @@
 </head><body>
 <header class="top"><a class="brand" href="/game-studio/projects.html">KURO <b>GAME STUDIO</b></a><span class="crumb">/ プロジェクト</span><span class="spacer"></span><a class="btn" href="/games/">KURO GAMES ↗</a><a class="btn gas-mode-btn" href="/game-studio/projects.html?transport=gas" data-gas-toggle data-gas-mode="supabase-only">GAS通信モード ↗</a></header>
 <main class="wrap">
-<section class="hero"><div><div class="eyebrow">YOUR CREATIVE WORKSPACE</div><h1>プロジェクト</h1><p>ゲーム制作をここから始めよう。プロジェクトを作成して、2Dビジュアル編集やコード編集を進められます。</p></div><div class="hero-actions"><button class="btn import-btn" id="importBtn" type="button" title="JSON形式のKURO GAME STUDIOプロジェクトを読み込みます">プロジェクトを読み込む</button><button class="btn primary" id="createBtn">＋ 新しいプロジェクト</button><input type="file" id="importFile" accept=".json,application/json" hidden></div></section>
+<section class="hero"><div><div class="eyebrow">YOUR CREATIVE WORKSPACE</div><h1>プロジェクト</h1><p>ゲーム制作をここから始めよう。プロジェクトを作成して、2Dビジュアル編集やコード編集を進められます。</p></div><div class="hero-actions"><button class="btn import-btn" id="importBtn" type="button" title="JSON形式のKURO GAME STUDIOプロジェクトを読み込みます">プロジェクトを読み込む</button><button class="btn primary" id="createBtn">＋ 新しいプロジェクト</button><input type="file" id="importFile" accept=".json,.html,.htm,.xhtml,.css,.js,.mjs,.jsx,.ts,.tsx,.txt,.xml,.svg,.md,application/json,text/html,text/css,text/javascript,text/plain" multiple hidden></div></section>
 <section class="stats"><div class="stat"><small>すべてのプロジェクト</small><strong id="totalCount">0</strong></div><div class="stat"><small>最近編集したプロジェクト</small><strong id="recentCount">0</strong></div><div class="stat"><small>制作モード</small><strong>2D</strong></div></section>
 <div class="bar"><h2>マイプロジェクト</h2><div class="filters"><button class="filter active" data-filter="all">すべて</button><button class="filter" data-filter="recent">最近使った</button><button class="filter" data-filter="clicker">クリック</button><button class="filter" data-filter="quiz">クイズ</button><button class="filter" data-filter="platformer">アクション</button></div><input class="search" id="search" placeholder="プロジェクトを検索..."></div>
 <section class="grid" id="projectGrid"><div class="empty" id="empty"><strong>まだプロジェクトがありません</strong>最初のゲームを作成してみましょう。<br><button class="btn primary" id="emptyCreate">＋ プロジェクトを作成</button></div></section>
@@ -112,7 +112,43 @@ document.querySelectorAll("[data-type]").forEach(b=>b.onclick=()=>{chosen=b.data
 document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{filter=b.dataset.filter;document.querySelectorAll(".filter").forEach(x=>x.classList.toggle("active",x===b));render();});
 $("projectGrid").onclick=async e=>{const b=e.target.closest("button");if(!b)return;if(b.dataset.open)open(b.dataset.open,"visual");if(b.dataset.duplicate)duplicate(b.dataset.duplicate);if(b.dataset.delete)remove(b.dataset.delete);if(b.dataset.publishedDelete){const id=b.dataset.publishedDelete;if(!confirm("この公開ゲームをKURO GAMESから削除しますか？この操作は元に戻せません。"))return;b.disabled=true;try{const {data:{session},error:authError}=await projectDb.auth.getSession();if(authError)throw authError;if(!session)throw new Error("ログインしてください");const {data,error}=await projectDb.from("game_studio_games").delete().eq("id",id).eq("owner_id",session.user.id).select("id").maybeSingle();if(error)throw error;if(!data)throw new Error("削除できませんでした。権限またはRLS設定を確認してください");toast("公開ゲームを削除しました");loadPublishedGames();}catch(err){toast("削除失敗: "+(err.message||"通信エラー"));b.disabled=false;}}};
 $("publishedGrid").onclick=async e=>{const b=e.target.closest("button[data-published-delete]");if(!b)return;const id=b.dataset.publishedDelete;if(!confirm("この公開ゲームをKURO GAMESから削除しますか？この操作は元に戻せません。"))return;b.disabled=true;try{const {data:{session},error:authError}=await projectDb.auth.getSession();if(authError)throw authError;if(!session)throw new Error("ログインしてください");const {data,error}=await projectDb.from("game_studio_games").delete().eq("id",id).eq("owner_id",session.user.id).select("id").maybeSingle();if(error)throw error;if(!data)throw new Error("削除できませんでした。権限またはRLS設定を確認してください");toast("公開ゲームを削除しました");loadPublishedGames();}catch(err){toast("削除失敗: "+(err.message||"通信エラー"));b.disabled=false;}};
-$("importBtn").onclick=()=>$("importFile").click();$("importFile").onchange=e=>{const f=e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(reader.result),items=Array.isArray(data)?data:[data];const valid=items.filter(p=>p&&Array.isArray(p.objects)&&p.id);if(!valid.length)throw Error("invalid");const known=new Set(projects.map(p=>p.id));valid.forEach(p=>{if(known.has(p.id))p.id="kuro-import-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,6);projects.unshift(p)});saveAll();render();toast(valid.length+"件のプロジェクトを読み込みました");}catch(_){alert("読み込めるKURO GAME STUDIOプロジェクトではありません。");}};reader.readAsText(f);e.target.value="";};
+$("importBtn").onclick=()=>$("importFile").click();
+function splitImportedCode(source){
+ let input=String(source||"").replace(/^\\uFEFF/,"").trim(),parts={html:"",css:"",js:""};
+ const fenced=[...input.matchAll(/\x60{3}([\\w+-]*)\\s*\\n([\\s\\S]*?)\x60{3}/g)];
+ if(fenced.length){
+  for(const m of fenced){const lang=(m[1]||"").toLowerCase(),body=m[2].trim();if(["html","htm","xhtml"].includes(lang))parts.html+=body+"\\n";else if(["css","scss","less"].includes(lang))parts.css+=body+"\\n";else if(["js","javascript","mjs","jsx","ts","typescript"].includes(lang))parts.js+=body+"\\n";else if(/<(!doctype|html|head|body|div|main|section|style|script)\\b/i.test(body))parts.html+=body+"\\n";else if(/(^|\\n)\\s*(@media|@keyframes|:root|[.#][\\w-]+\\s*\\{)/.test(body))parts.css+=body+"\\n";else parts.js+=body+"\\n";}
+  input="";
+ }else if(!/<(!doctype|html|head|body|style|script)\\b/i.test(input)&&/(^|\\n)\\s*(@media|@keyframes|:root|[.#][\\w-]+\\s*\\{)/.test(input)){parts.css=input;input="";}
+ else if(!/<(!doctype|html|head|body|style|script)\\b/i.test(input)&&/\\b(const|let|var|function|import|export|document\\.|window\\.|console\\.)/.test(input)){parts.js=input;input="";}
+ if(input){input=input.replace(/<style\\b[^>]*>([\\s\\S]*?)<\\/style\\s*>/gi,(_,v)=>{parts.css+=v+"\\n";return"";});input=input.replace(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script\\s*>/gi,(whole,attrs,body)=>{if(/\\bsrc\\s*=/.test(attrs))return whole;parts.js+=body+"\\n";return"";});parts.html=input;}
+ return parts;
+}
+$("importFile").onchange=async e=>{
+ const files=Array.from(e.target.files||[]);e.target.value="";if(!files.length)return;
+ try{
+  const jsonFiles=files.filter(f=>f.name.toLowerCase().endsWith(".json"));
+  if(jsonFiles.length){
+   if(files.length!==1)throw new Error("JSONプロジェクトは、コードファイルとは別に1つずつ読み込んでください。");
+   const data=JSON.parse(await jsonFiles[0].text()),items=Array.isArray(data)?data:[data],valid=items.filter(p=>p&&Array.isArray(p.objects)&&p.id);
+   if(!valid.length)throw new Error("読み込めるKURO GAME STUDIOプロジェクトではありません。");
+   const known=new Set(projects.map(p=>p.id));valid.forEach(p=>{if(known.has(p.id))p.id="kuro-import-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,6);projects.unshift(p);});
+   saveAll();render();toast(valid.length+"件のプロジェクトを読み込みました");return;
+  }
+  const parts={html:[],css:[],js:[]};
+  for(const f of files){
+   const ext=(f.name.split(".").pop()||"").toLowerCase(),src=await f.text();
+   if(["html","htm","xhtml","txt"].includes(ext)){const p=splitImportedCode(src);Object.keys(parts).forEach(k=>{if(p[k].trim())parts[k].push(p[k].trim());});}
+   else if(ext==="css")parts.css.push(src);
+   else if(["js","mjs","jsx","ts","tsx","json","md"].includes(ext))parts.js.push(src);
+   else if(["xml","svg"].includes(ext))parts.html.push(src);
+   else throw new Error("未対応のファイル形式です: "+f.name);
+  }
+  const code={html:parts.html.join("\\n\\n")||"<!-- HTMLを書いてください -->",css:parts.css.join("\\n\\n")||"/* CSSを書いてください */",js:parts.js.join("\\n\\n")||"// JavaScriptを書いてください"};
+  const title=(files.find(f=>/\\.(html?|xhtml)$/i.test(f.name))||files[0]).name.replace(/\\.[^.]+$/,"")||"読み込んだゲーム";
+  const p=fresh("blank",title);p.name=title;p.code=code;projects.unshift(p);saveAll();render();toast(files.length+"個のファイルからコードプロジェクトを作成しました");
+ }catch(err){alert("ファイルを読み込めませんでした。\\n"+(err.message||"形式を確認してください"));}
+};
 $("emptyCreate").onclick=()=>modal(true);$("modal").onclick=e=>{if(e.target===$("modal"))modal(false);};document.addEventListener("keydown",e=>{if(e.key==="Escape")modal(false);if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="n"){e.preventDefault();modal(true);}});
 render();loadPublishedGames();
 })();
