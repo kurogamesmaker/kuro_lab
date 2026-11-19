@@ -1999,7 +1999,7 @@
         }
 
         async function sendEmailOtp() {
-            const identity = document.getElementById('authEmail').value.trim();
+            const email = document.getElementById('authEmail').value.trim();
             const name = document.getElementById('authName').value.trim();
             const handle = document.getElementById('authHandle').value.trim().replace(/^@/, '');
             const button = document.getElementById('emailOtpSendButton');
