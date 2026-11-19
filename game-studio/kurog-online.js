@@ -107,7 +107,7 @@ async function connectRoomPolling(roomData, members, session) {
   const messageCallbacks = new Set(); const playerCallbacks = new Set();
   let active = true; let afterId = null; let timer = null; let busy = false; let cachedPlayers = [];
   function emitPlayers(next) {
-    cachedPlayers = (next || []).map((m) => ({ userId: m.userId, displayName: m.user && m.user.display_name || "プレイヤー", joinedAt: m.joinedAt }));
+    cachedPlayers = (next || []).map((m) => ({ userId: m.userId, kuroId: m.user && m.user.kuroId || null, displayName: m.user && m.user.display_name || "プレイヤー", joinedAt: m.joinedAt }));
     playerCallbacks.forEach((cb) => { try { cb(cachedPlayers.slice()); } catch (e) { console.error(e); } });
   }
   async function poll() {
@@ -207,6 +207,7 @@ async function connectRoom(roomData, members) {
     metadata.display_name || metadata.username || "プレイヤー";
   await channel.track({
     userId: session.user.id,
+    kuroId: ownMember && ownMember.user && ownMember.user.kuroId || null,
     displayName: String(displayName).slice(0, 40),
     joinedAt: new Date().toISOString(),
   });
@@ -279,6 +280,14 @@ const KuroGames = {
       ensureReady();
       const session = await requestParentSession();
       return session.user;
+    },
+    async getProfile() {
+      const result = await invoke("profile_me");
+      return result.profile || null;
+    },
+    async getKuroId() {
+      const result = await invoke("profile_me");
+      return result.profile && result.profile.kuroId || null;
     },
     onChange(callback) {
       if (typeof callback !== "function") return function () {};
