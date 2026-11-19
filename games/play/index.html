@@ -26,7 +26,8 @@ function kuroApplyTransportLinks(){
  document.querySelectorAll('a[href^="/game-studio/"],a[href^="/games/"]').forEach(a=>{const u=new URL(a.href,location.origin);u.searchParams.set("transport","gas");a.href=u.pathname+u.search+u.hash;});
 }
 
-let kuroGameFrame = null;\nlet kuroGameFrameLayout = null;\nwindow.addEventListener("resize",()=>{if(kuroGameFrameLayout)kuroGameFrameLayout();});
+let kuroGameFrame = null;
+let kuroGameFrameLayout = null;\nwindow.addEventListener("resize",()=>{if(kuroGameFrameLayout)kuroGameFrameLayout();});
 const kuroGameAuthClient = window.supabase.createClient(
  "https://cprvpphlfpmiegjiutjn.supabase.co",
  "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn",
