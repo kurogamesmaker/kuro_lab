@@ -497,10 +497,22 @@ window.addEventListener("message",async event=>{
    }
    const session=data.session;
    if(!session||!session.access_token)throw new Error("KUROGAMES認証情報を取得できませんでした");
-   event.source.postMessage({type:"kuro-online-auth",requestId:msg.requestId,access_token:session.access_token,user:session.user?{id:session.user.id,email:session.user.email??null}:null},"*");
+   event.source.postMessage({type:"kuro-online-auth",requestId:msg.requestId,access_token:session.access_token,useGasProxy:KURO_GAS_TRANSPORT,user:session.user?{id:session.user.id,email:session.user.email??null}:null},"*");
   }catch(error){
    event.source.postMessage({type:"kuro-online-auth-error",requestId:msg.requestId,message:error&&error.message||"KUROGAMES認証に失敗しました"},"*");
   }
+  return;
+ }
+ if(msg.type==="kuro-online-proxy-request"){
+  if(!KURO_GAS_TRANSPORT||typeof msg.requestId!=="string"||msg.requestId.length>120||msg.path!=="/functions/v1/kurogames-online"||msg.method!=="POST")return;
+  try{
+   const bytes=msg.bodyBase64?Uint8Array.from(atob(msg.bodyBase64),ch=>ch.charCodeAt(0)):new Uint8Array();
+   const request=new Request(SUPABASE_URL+msg.path,{method:"POST",headers:msg.headers||{},body:bytes});
+   const response=await kuroGasFetch(request),responseBytes=new Uint8Array(await response.arrayBuffer());
+   let binary="";for(let i=0;i<responseBytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,responseBytes.subarray(i,Math.min(i+0x8000,responseBytes.length)));
+   const responseHeaders={};response.headers.forEach((v,k)=>responseHeaders[k]=v);
+   event.source.postMessage({type:"kuro-online-proxy-response",requestId:msg.requestId,response:{status:response.status,headers:responseHeaders,bodyBase64:responseBytes.length?btoa(binary):""}},"*");
+  }catch(error){event.source.postMessage({type:"kuro-online-proxy-response",requestId:msg.requestId,error:error&&error.message||"GAS中継エラー"},"*");}
   return;
  }
  if(msg.type==="kuro-werewolf-auth-request"){
