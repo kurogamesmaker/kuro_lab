@@ -114,14 +114,14 @@ $("projectGrid").onclick=async e=>{const b=e.target.closest("button");if(!b)retu
 $("publishedGrid").onclick=async e=>{const b=e.target.closest("button[data-published-delete]");if(!b)return;const id=b.dataset.publishedDelete;if(!confirm("この公開ゲームをKURO GAMESから削除しますか？この操作は元に戻せません。"))return;b.disabled=true;try{const {data:{session},error:authError}=await projectDb.auth.getSession();if(authError)throw authError;if(!session)throw new Error("ログインしてください");const {data,error}=await projectDb.from("game_studio_games").delete().eq("id",id).eq("owner_id",session.user.id).select("id").maybeSingle();if(error)throw error;if(!data)throw new Error("削除できませんでした。権限またはRLS設定を確認してください");toast("公開ゲームを削除しました");loadPublishedGames();}catch(err){toast("削除失敗: "+(err.message||"通信エラー"));b.disabled=false;}};
 $("importBtn").onclick=()=>$("importFile").click();
 function splitImportedCode(source){
- let input=String(source||"").replace(/^\\uFEFF/,"").trim(),parts={html:"",css:"",js:""};
- const fenced=[...input.matchAll(/\x60{3}([\\w+-]*)\\s*\\n([\\s\\S]*?)\x60{3}/g)];
+ let input=String(source||"").replace(/^\uFEFF/,"").trim(),parts={html:"",css:"",js:""};
+ const fenced=[...input.matchAll(/\x60{3}([\w+-]*)\s*\n([\s\S]*?)\x60{3}/g)];
  if(fenced.length){
-  for(const m of fenced){const lang=(m[1]||"").toLowerCase(),body=m[2].trim();if(["html","htm","xhtml"].includes(lang))parts.html+=body+"\\n";else if(["css","scss","less"].includes(lang))parts.css+=body+"\\n";else if(["js","javascript","mjs","jsx","ts","typescript"].includes(lang))parts.js+=body+"\\n";else if(/<(!doctype|html|head|body|div|main|section|style|script)\\b/i.test(body))parts.html+=body+"\\n";else if(/(^|\\n)\\s*(@media|@keyframes|:root|[.#][\\w-]+\\s*\\{)/.test(body))parts.css+=body+"\\n";else parts.js+=body+"\\n";}
+  for(const m of fenced){const lang=(m[1]||"").toLowerCase(),body=m[2].trim();if(["html","htm","xhtml"].includes(lang))parts.html+=body+"\n";else if(["css","scss","less"].includes(lang))parts.css+=body+"\n";else if(["js","javascript","mjs","jsx","ts","typescript"].includes(lang))parts.js+=body+"\n";else if(/<(!doctype|html|head|body|div|main|section|style|script)\b/i.test(body))parts.html+=body+"\n";else if(/(^|\n)\s*(@media|@keyframes|:root|[.#][\w-]+\s*\{)/.test(body))parts.css+=body+"\n";else parts.js+=body+"\n";}
   input="";
- }else if(!/<(!doctype|html|head|body|style|script)\\b/i.test(input)&&/(^|\\n)\\s*(@media|@keyframes|:root|[.#][\\w-]+\\s*\\{)/.test(input)){parts.css=input;input="";}
- else if(!/<(!doctype|html|head|body|style|script)\\b/i.test(input)&&/\\b(const|let|var|function|import|export|document\\.|window\\.|console\\.)/.test(input)){parts.js=input;input="";}
- if(input){input=input.replace(/<style\\b[^>]*>([\\s\\S]*?)<\\/style\\s*>/gi,(_,v)=>{parts.css+=v+"\\n";return"";});input=input.replace(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script\\s*>/gi,(whole,attrs,body)=>{if(/\\bsrc\\s*=/.test(attrs))return whole;parts.js+=body+"\\n";return"";});parts.html=input;}
+ }else if(!/<(!doctype|html|head|body|style|script)\b/i.test(input)&&/(^|\n)\s*(@media|@keyframes|:root|[.#][\w-]+\s*\{)/.test(input)){parts.css=input;input="";}
+ else if(!/<(!doctype|html|head|body|style|script)\b/i.test(input)&&/\b(const|let|var|function|import|export|document\.|window\.|console\.)/.test(input)){parts.js=input;input="";}
+ if(input){input=input.replace(/<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi,(_,v)=>{parts.css+=v+"\n";return"";});input=input.replace(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi,(whole,attrs,body)=>{if(/\bsrc\s*=/.test(attrs))return whole;parts.js+=body+"\n";return"";});parts.html=input;}
  return parts;
 }
 $("importFile").onchange=async e=>{
@@ -144,10 +144,10 @@ $("importFile").onchange=async e=>{
    else if(["xml","svg"].includes(ext))parts.html.push(src);
    else throw new Error("未対応のファイル形式です: "+f.name);
   }
-  const code={html:parts.html.join("\\n\\n")||"<!-- HTMLを書いてください -->",css:parts.css.join("\\n\\n")||"/* CSSを書いてください */",js:parts.js.join("\\n\\n")||"// JavaScriptを書いてください"};
-  const title=(files.find(f=>/\\.(html?|xhtml)$/i.test(f.name))||files[0]).name.replace(/\\.[^.]+$/,"")||"読み込んだゲーム";
+  const code={html:parts.html.join("\n\n")||"<!-- HTMLを書いてください -->",css:parts.css.join("\n\n")||"/* CSSを書いてください */",js:parts.js.join("\n\n")||"// JavaScriptを書いてください"};
+  const title=(files.find(f=>/\.(html?|xhtml)$/i.test(f.name))||files[0]).name.replace(/\.[^.]+$/,"")||"読み込んだゲーム";
   const p=fresh("blank",title);p.name=title;p.code=code;projects.unshift(p);saveAll();render();toast(files.length+"個のファイルからコードプロジェクトを作成しました");
- }catch(err){alert("ファイルを読み込めませんでした。\\n"+(err.message||"形式を確認してください"));}
+ }catch(err){alert("ファイルを読み込めませんでした。\n"+(err.message||"形式を確認してください"));}
 };
 $("emptyCreate").onclick=()=>modal(true);$("modal").onclick=e=>{if(e.target===$("modal"))modal(false);};document.addEventListener("keydown",e=>{if(e.key==="Escape")modal(false);if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="n"){e.preventDefault();modal(true);}});
 render();loadPublishedGames();
