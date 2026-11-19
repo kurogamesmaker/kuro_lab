@@ -34,6 +34,24 @@ function safeError(error: unknown) {
   return String((error as { message?: string })?.message || error || "Unknown error").slice(0, 240);
 }
 
+async function kuroSecretHmacHex(secret: string, message: string) {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(message));
+  return Array.from(new Uint8Array(signature), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function kuroSecretDate(value: unknown): string | null | undefined {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = new Date(String(value));
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
+}
+
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("Origin");
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders(origin) });
@@ -1052,6 +1070,176 @@ Deno.serve(async (req: Request) => {
       return reply({ ok: true, message: "Password reset email requested" }, 200, origin);
     }
 
+
+    if (action === "list_secret_codes") {
+      const { data, error } = await admin.from("kuro_secret_codes")
+        .select("id,label,description,room_key,room_title,enabled,starts_at,expires_at,max_uses,use_count,created_at,updated_at")
+        .order("created_at", { ascending: false }).limit(300);
+      if (error) throw error;
+      return reply({ codes: data || [] }, 200, origin);
+    }
+
+    if (action === "save_secret_code") {
+      const id = typeof body.id === "string" ? body.id.trim() : "";
+      const code = typeof body.code === "string" ? body.code.trim() : "";
+      const label = typeof body.label === "string" ? body.label.trim() : "";
+      const description = typeof body.description === "string" ? body.description.trim() : "";
+      const roomKey = typeof body.room_key === "string" ? body.room_key.trim().toLowerCase() : "";
+      const roomTitle = typeof body.room_title === "string" ? body.room_title.trim() : "";
+      const startsAt = kuroSecretDate(body.starts_at);
+      const expiresAt = kuroSecretDate(body.expires_at);
+      const maxUses = body.max_uses === null || body.max_uses === undefined || body.max_uses === ""
+        ? null : Number(body.max_uses);
+      if (id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+        return reply({ error: "Invalid secret code ID" }, 400, origin);
+      }
+      if (!label || label.length > 80 || description.length > 500) return reply({ error: "コード名または説明が長すぎます。" }, 400, origin);
+      if (!/^[a-z0-9][a-z0-9_-]{1,48}$/.test(roomKey)) return reply({ error: "部屋キーは英小文字・数字・ハイフン・アンダースコアで2〜49文字にしてください。" }, 400, origin);
+      if (!roomTitle || roomTitle.length > 80) return reply({ error: "部屋名は1〜80文字で入力してください。" }, 400, origin);
+      if (code && !/^\d{4,12}$/.test(code)) return reply({ error: "秘密コードは4〜12桁の数字にしてください。" }, 400, origin);
+      if (!id && !code) return reply({ error: "新しいコードを入力してください。" }, 400, origin);
+      if (startsAt === undefined || expiresAt === undefined || (startsAt && expiresAt && new Date(expiresAt) <= new Date(startsAt))) {
+        return reply({ error: "有効期間を確認してください。" }, 400, origin);
+      }
+      if (maxUses !== null && (!Number.isInteger(maxUses) || maxUses < 1 || maxUses > 1000000)) {
+        return reply({ error: "利用上限は1〜1,000,000回、または空欄（無制限）にしてください。" }, 400, origin);
+      }
+      const row: Record<string, unknown> = {
+        label, description, room_key: roomKey, room_title: roomTitle,
+        enabled: body.enabled === true, starts_at: startsAt, expires_at: expiresAt,
+        max_uses: maxUses, updated_at: new Date().toISOString()
+      };
+      if (code) row.code_hash = await kuroSecretHmacHex(service, "kuro-secret-code:v1:" + code);
+      let saved;
+      if (id) {
+        const { data, error } = await admin.from("kuro_secret_codes").update(row).eq("id", id)
+          .select("id,label,room_key,room_title,enabled,starts_at,expires_at,max_uses,use_count").maybeSingle();
+        if (error) throw error;
+        if (!data) return reply({ error: "秘密コードが見つかりません。" }, 404, origin);
+        saved = data;
+      } else {
+        row.created_by = caller.id;
+        const { data, error } = await admin.from("kuro_secret_codes").insert(row)
+          .select("id,label,room_key,room_title,enabled,starts_at,expires_at,max_uses,use_count").single();
+        if (error) throw error;
+        saved = data;
+      }
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id,
+        action: id ? "kurogames_secret.code.update" : "kurogames_secret.code.create",
+        metadata: saved
+      });
+      if (auditError) throw auditError;
+      return reply({ code: saved }, 200, origin);
+    }
+
+    if (action === "delete_secret_code") {
+      const id = typeof body.id === "string" ? body.id.trim() : "";
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+        return reply({ error: "Invalid secret code ID" }, 400, origin);
+      }
+      const { data, error } = await admin.from("kuro_secret_codes").delete().eq("id", id)
+        .select("id,label,room_key").maybeSingle();
+      if (error) throw error;
+      if (!data) return reply({ error: "秘密コードが見つかりません。" }, 404, origin);
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id, action: "kurogames_secret.code.delete", metadata: data
+      });
+      if (auditError) throw auditError;
+      return reply({ ok: true }, 200, origin);
+    }
+
+    if (action === "list_secret_content") {
+      const { data, error } = await admin.from("kuro_secret_content")
+        .select("id,room_key,content_type,title,body,href,icon,reward,sort_order,published,starts_at,ends_at,created_at,updated_at")
+        .order("room_key", { ascending: true }).order("sort_order", { ascending: true })
+        .order("created_at", { ascending: false }).limit(500);
+      if (error) throw error;
+      return reply({ items: data || [] }, 200, origin);
+    }
+
+    if (action === "save_secret_content") {
+      const id = typeof body.id === "string" ? body.id.trim() : "";
+      const roomKey = typeof body.room_key === "string" ? body.room_key.trim().toLowerCase() : "";
+      const contentType = typeof body.content_type === "string" ? body.content_type : "";
+      const title = typeof body.title === "string" ? body.title.trim() : "";
+      const content = typeof body.body === "string" ? body.body.trim() : "";
+      const href = typeof body.href === "string" ? body.href.trim() : "";
+      const icon = typeof body.icon === "string" ? body.icon.trim() : "";
+      const reward = typeof body.reward === "string" ? body.reward.trim() : "";
+      const startsAt = kuroSecretDate(body.starts_at);
+      const endsAt = kuroSecretDate(body.ends_at);
+      const sortOrder = Number(body.sort_order ?? 100);
+      if (id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+        return reply({ error: "Invalid content ID" }, 400, origin);
+      }
+      if (!/^[a-z0-9][a-z0-9_-]{1,48}$/.test(roomKey)) return reply({ error: "部屋キーは英小文字・数字・ハイフン・アンダースコアで2〜49文字にしてください。" }, 400, origin);
+      if (!["game", "diary", "mission", "news"].includes(contentType)) return reply({ error: "コンテンツ種類が正しくありません。" }, 400, origin);
+      if (!title || title.length > 120 || content.length > 12000 || icon.length > 24 || reward.length > 120) {
+        return reply({ error: "タイトル・本文・アイコン・報酬の文字数を確認してください。" }, 400, origin);
+      }
+      if (!Number.isInteger(sortOrder) || sortOrder < -10000 || sortOrder > 10000) return reply({ error: "表示順は整数で入力してください。" }, 400, origin);
+      if (startsAt === undefined || endsAt === undefined || (startsAt && endsAt && new Date(endsAt) <= new Date(startsAt))) {
+        return reply({ error: "公開期間を確認してください。" }, 400, origin);
+      }
+      if (contentType === "game" && !href) return reply({ error: "隠しゲームにはゲームURLが必要です。" }, 400, origin);
+      if (href) {
+        if (href.startsWith("/") && !href.startsWith("//")) {
+          // Same-site relative path is allowed.
+        } else {
+          try {
+            const parsed = new URL(href);
+            if (parsed.protocol !== "https:" || parsed.hostname !== "kurolab.cc.cd") {
+              return reply({ error: "リンクはKURO Lab内の相対URL、またはhttps://kurolab.cc.cd のURLにしてください。" }, 400, origin);
+            }
+          } catch {
+            return reply({ error: "リンクURLが正しくありません。" }, 400, origin);
+          }
+        }
+      }
+      const row: Record<string, unknown> = {
+        room_key: roomKey, content_type: contentType, title, body: content, href, icon, reward,
+        sort_order: sortOrder, published: body.published === true,
+        starts_at: startsAt, ends_at: endsAt, updated_at: new Date().toISOString()
+      };
+      let saved;
+      if (id) {
+        const { data, error } = await admin.from("kuro_secret_content").update(row).eq("id", id)
+          .select("id,room_key,content_type,title,published").maybeSingle();
+        if (error) throw error;
+        if (!data) return reply({ error: "秘密コンテンツが見つかりません。" }, 404, origin);
+        saved = data;
+      } else {
+        row.created_by = caller.id;
+        const { data, error } = await admin.from("kuro_secret_content").insert(row)
+          .select("id,room_key,content_type,title,published").single();
+        if (error) throw error;
+        saved = data;
+      }
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id,
+        action: id ? "kurogames_secret.content.update" : "kurogames_secret.content.create",
+        metadata: saved
+      });
+      if (auditError) throw auditError;
+      return reply({ item: saved }, 200, origin);
+    }
+
+    if (action === "delete_secret_content") {
+      const id = typeof body.id === "string" ? body.id.trim() : "";
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+        return reply({ error: "Invalid content ID" }, 400, origin);
+      }
+      const { data, error } = await admin.from("kuro_secret_content").delete().eq("id", id)
+        .select("id,room_key,content_type,title").maybeSingle();
+      if (error) throw error;
+      if (!data) return reply({ error: "秘密コンテンツが見つかりません。" }, 404, origin);
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id, action: "kurogames_secret.content.delete", metadata: data
+      });
+      if (auditError) throw auditError;
+      return reply({ ok: true }, 200, origin);
+    }
 
     if (action === "list_feature_flags") {
       const { data, error } = await admin.from("feature_flags")
