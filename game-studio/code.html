@@ -154,7 +154,11 @@ if(!project.code||typeof project.code!=="object")project.code=makeVisualCode(pro
 function setStatus(text,color){$("saveStatus").textContent=text;$("saveStatus").style.color=color||"var(--good)"}
 function toast(s){$("toast").textContent=s;$("toast").classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>$("toast").classList.remove("show"),2200)}
 function persist(silent){
- if(requestedPublishedGameId){setStatus("● 公開作品（公開時に反映）","var(--good)");return true;}
+ if(requestedPublishedGameId){
+  if(!project.publishedGameId){setStatus("● 公開作品を読み込み中","var(--warn)");return true;}
+  try{project.updatedAt=Date.now();localStorage.setItem("kuroGameStudio.publishedDraft."+requestedPublishedGameId,JSON.stringify(project));setStatus("● 下書き保存済み","var(--good)");if(!silent)toast("公開作品の下書きを保存しました");return true;}
+  catch(e){setStatus("● 下書き保存エラー","#ff9292");if(!silent)toast("下書きを保存できませんでした");return false;}
+ }
  try{
   let all=JSON.parse(localStorage.getItem(KEY)||"[]");
   const i=all.findIndex(x=>x.id===project.id);
@@ -290,7 +294,7 @@ async function publishCurrentGame(){
  project.code[activeTab]=currentValue();const html=makeDocument();if(html.length>1000000){toast("ゲームのHTMLが大きすぎます（上限約1MB）");return;}
  $("confirmPublish").disabled=true;$("publishStatus").textContent="KURO GAMESへ公開中…";
  try{const payload={owner_id:publishUser.id,slug,title,description,category,icon,html_content:html,status:"published",updated_at:new Date().toISOString(),published_at:new Date().toISOString()};let data,error;if(project.publishedGameId){const result=await publishDb.from("game_studio_games").update(payload).eq("id",project.publishedGameId).eq("owner_id",publishUser.id).select("id,slug").single();data=result.data;error=result.error;}else{const result=await publishDb.from("game_studio_games").upsert(payload,{onConflict:"slug"}).select("id,slug").single();data=result.data;error=result.error;}if(error)throw error;project.publishedGameId=data.id;project.publishedMeta={slug,title,description,category,icon};
-  persist(true);$("publishStatus").textContent="公開しました！\n"+location.origin+"/games/play/?id="+data.id;toast("KURO GAMESに公開しました");$("confirmPublish").disabled=false;
+  try{localStorage.removeItem("kuroGameStudio.publishedDraft."+data.id);}catch(_){} $("publishStatus").textContent="公開しました！\n"+location.origin+"/games/play/?id="+data.id;toast("KURO GAMESに公開しました");$("confirmPublish").disabled=false;
  }catch(e){$("publishStatus").textContent="公開できませんでした: "+(e.message||"不明なエラー");$("confirmPublish").disabled=false;}
 }
 $("publishBtn").addEventListener("click",openPublishModal);$("cancelPublish").addEventListener("click",()=>$("publishModal").classList.remove("open"));$("publishModal").addEventListener("click",e=>{if(e.target===$("publishModal"))$("publishModal").classList.remove("open");});$("confirmPublish").addEventListener("click",publishCurrentGame);
@@ -302,11 +306,14 @@ async function loadPublishedGameFromCloud(){
  try{
   const {data:{session},error:authError}=await publishDb.auth.getSession();if(authError)throw authError;
   if(!session){toast("公開作品を編集するにはログインしてください");return;}
-  const {data,error}=await publishDb.from("game_studio_games").select("id,slug,title,description,category,icon,html_content").eq("id",id).eq("owner_id",session.user.id).maybeSingle();
+  const {data,error}=await publishDb.from("game_studio_games").select("id,slug,title,description,category,icon,html_content,updated_at").eq("id",id).eq("owner_id",session.user.id).maybeSingle();
   if(error)throw error;if(!data)throw new Error("作品が見つからないか、編集権限がありません");
   const parsed=splitMixedCode(data.html_content||"");
-  project={id:"published-"+data.id,name:data.title||"公開済みゲーム",type:data.category==="action"?"platformer":"published",background:"#101522",objects:[],events:[],settings:{},tilemap:{cols:20,rows:12,cells:Array(240).fill(-1),enabled:false},assets:[],prefabs:[],layers:["Default"],collisionMatrix:{},code:parsed.parts,publishedGameId:data.id,publishedMeta:{slug:data.slug,title:data.title,description:data.description,category:data.category,icon:data.icon}};
-  $("projectName").value=project.name;setStatus("● 公開作品を読み込み済み","var(--good)");showTab("html");run();toast("公開済みゲームをStudioに読み込みました");
+  const draftKey="kuroGameStudio.publishedDraft."+data.id;let draft=null;try{draft=JSON.parse(localStorage.getItem(draftKey)||"null");}catch(_){}
+  const remoteUpdated=Date.parse(data.updated_at||"")||0;
+  const useDraft=!!(draft&&draft.publishedGameId===data.id&&Number(draft.updatedAt||0)>remoteUpdated);
+  project={id:"published-"+data.id,name:useDraft?(draft.name||data.title||"公開済みゲーム"):(data.title||"公開済みゲーム"),type:data.category==="action"?"platformer":"published",background:"#101522",objects:[],events:[],settings:{},tilemap:{cols:20,rows:12,cells:Array(240).fill(-1),enabled:false},assets:[],prefabs:[],layers:["Default"],collisionMatrix:{},code:useDraft&&draft.code?draft.code:parsed.parts,publishedGameId:data.id,publishedMeta:{slug:data.slug,title:data.title,description:data.description,category:data.category,icon:data.icon},updatedAt:useDraft?draft.updatedAt:Date.now()};
+  $("projectName").value=project.name;setStatus(useDraft?"● 下書きから復元":"● 公開作品を読み込み済み","var(--good)");showTab("html");run();toast(useDraft?"下書きを復元しました":"公開済みゲームをStudioに読み込みました");
  }catch(e){toast("読み込み失敗: "+(e.message||"不明なエラー"));}
 }
 let pendingImport=null;
