@@ -7,7 +7,7 @@ const KURO_SUPABASE_URL = 'https://cprvpphlfpmiegjiutjn.supabase.co';
 const KURO_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn';
 const KURO_SECRET_PROPERTY = 'KURO_GAS_PROXY_SECRET';
 const KURO_ALLOWED_PREFIXES = ['/rest/v1/', '/auth/v1/', '/storage/v1/'];
-const KURO_ALLOWED_FUNCTION_PATHS = ['/functions/v1/admin-console', '/functions/v1/pro-access', '/functions/v1/send-chat-push'];
+const KURO_ALLOWED_FUNCTION_PATHS = ['/functions/v1/admin-console', '/functions/v1/pro-access', '/functions/v1/send-chat-push', '/functions/v1/kurogames-online'];
 const KURO_ALLOWED_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD'];
 const KURO_ALLOWED_REQUEST_HEADERS = [
   'accept', 'accept-profile', 'authorization', 'cache-control',
