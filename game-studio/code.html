@@ -42,7 +42,7 @@
  </section>
 </main>
 <div class="help"><b>使い方：</b> HTML・CSS・JavaScriptを編集 →「テスト」で動作確認 →「公開・更新」でKURO GAMESに反映。公開される内容は、このコードエディターの3つのタブから生成したHTMLです。</div>
-<div class="modal" id="sizeModal"><section><h2>プレビュー画面サイズ</h2><p>ゲームを確認するための画面サイズです。公開されるゲームのコードやデザイン自体は変更しません。</p><div class="publish-fields"><label>幅（px）<input id="previewWidth" type="number" min="240" max="3840" step="10" value="960"></label><label>高さ（px）<input id="previewHeight" type="number" min="160" max="2160" step="10" value="540"></label></div><div class="import-actions" style="margin-top:14px"><button class="btn" id="sizeReset">標準に戻す</button><button class="btn" id="sizeCancel">キャンセル</button><button class="btn primary" id="sizeApply">適用</button></div></section></div><div class="import-modal" id="importModal"><section class="import-box"><h2>混在コードを自動で分別</h2><p>HTML全体、CSS、JavaScriptが混ざったコードを貼り付けてください。HTML内の style とインライン script も検出して各タブへ分けます。外部ライブラリの読み込みタグはHTML側に残します。</p><textarea id="importSource" spellcheck="false" placeholder="HTML / CSS / JavaScriptが混ざったコードを貼り付け"></textarea><div class="import-result" id="importResult">まだ解析していません。</div><div class="import-actions"><button class="btn" id="cancelImport">キャンセル</button><button class="btn" id="analyzeImport">自動で分別</button><button class="btn primary" id="applyImport" disabled>3つのタブに反映</button></div></section></div><div class="import-modal" id="publishModal"><section class="import-box publish-box"><h2>KURO GAMESに公開</h2><p>公開するとKURO GAMESの一覧に表示され、誰でもプレイできるようになります。公開操作はKURO Labの管理者アカウントのみ可能です。</p><div class="publish-fields"><label>ゲームタイトル<input id="publishTitle" maxlength="60"></label><label>URL用ID<input id="publishSlug" maxlength="48" placeholder="my-game"></label><label>紹介文<textarea id="publishDescription" maxlength="280" rows="3" placeholder="ゲームの内容を紹介"></textarea></label><label>ジャンル<select id="publishCategory"><option value="other">その他</option><option value="typing">タイピング</option><option value="puzzle">パズル</option><option value="action">アクション</option></select></label><label>アイコン<input id="publishIcon" maxlength="8" value="🎮"></label></div><div class="import-result" id="publishStatus">ログイン状態を確認します…</div><div class="import-actions"><button class="btn" id="cancelPublish">キャンセル</button><button class="btn primary" id="confirmPublish" disabled>公開する</button></div></section></div>
+<div class="modal" id="sizeModal"><section><h2>公開ゲーム画面サイズ</h2><p>ここで設定した幅・高さが、テストプレビューと公開後のプレイ画面に反映されます。利用者側で変更する必要はありません。</p><div class="publish-fields"><label>幅（px）<input id="previewWidth" type="number" min="240" max="3840" step="10" value="960"></label><label>高さ（px）<input id="previewHeight" type="number" min="160" max="2160" step="10" value="540"></label></div><div class="import-actions" style="margin-top:14px"><button class="btn" id="sizeReset">標準 960 × 540</button><button class="btn" id="sizeCancel">キャンセル</button><button class="btn primary" id="sizeApply">保存して適用</button></div></section></div><div class="import-modal" id="importModal"><section class="import-box"><h2>混在コードを自動で分別</h2><p>HTML全体、CSS、JavaScriptが混ざったコードを貼り付けてください。HTML内の style とインライン script も検出して各タブへ分けます。外部ライブラリの読み込みタグはHTML側に残します。</p><textarea id="importSource" spellcheck="false" placeholder="HTML / CSS / JavaScriptが混ざったコードを貼り付け"></textarea><div class="import-result" id="importResult">まだ解析していません。</div><div class="import-actions"><button class="btn" id="cancelImport">キャンセル</button><button class="btn" id="analyzeImport">自動で分別</button><button class="btn primary" id="applyImport" disabled>3つのタブに反映</button></div></section></div><div class="import-modal" id="publishModal"><section class="import-box publish-box"><h2>KURO GAMESに公開</h2><p>公開するとKURO GAMESの一覧に表示され、誰でもプレイできるようになります。公開操作はKURO Labの管理者アカウントのみ可能です。</p><div class="publish-fields"><label>ゲームタイトル<input id="publishTitle" maxlength="60"></label><label>URL用ID<input id="publishSlug" maxlength="48" placeholder="my-game"></label><label>紹介文<textarea id="publishDescription" maxlength="280" rows="3" placeholder="ゲームの内容を紹介"></textarea></label><label>ジャンル<select id="publishCategory"><option value="other">その他</option><option value="typing">タイピング</option><option value="puzzle">パズル</option><option value="action">アクション</option></select></label><label>アイコン<input id="publishIcon" maxlength="8" value="🎮"></label></div><div class="import-result" id="publishStatus">ログイン状態を確認します…</div><div class="import-actions"><button class="btn" id="cancelPublish">キャンセル</button><button class="btn primary" id="confirmPublish" disabled>公開する</button></div></section></div>
 <div class="toast" id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -231,6 +231,9 @@ function makeDocument(){
  const html=project.code.html||"";
  const css=String(project.code.css||"").replace(/<\/style/gi,"<\\/style");
  const js=safeScript(project.code.js||"");
+ const frameWidth=Math.max(240,Math.min(3840,Number(project.settings&&project.settings.gameFrameWidth)||960));
+ const frameHeight=Math.max(160,Math.min(2160,Number(project.settings&&project.settings.gameFrameHeight)||540));
+ const frameMeta='<meta name="kuro-game-frame" content="'+frameWidth+'x'+frameHeight+'">';
  const styleBlock="<style>"+css+"</style>";
  const scriptOpen=(/^\s*(?:import|export)\b/m.test(js)?"<scr"+"ipt type=\"module\">":"<scr"+"ipt>");
  const scriptClose="<"+"/script>";
@@ -239,14 +242,14 @@ function makeDocument(){
  const scriptBlock=scriptOpen+(moduleMode?"":logger)+js+scriptClose;
  if(/<html[\s>]/i.test(html)){
   let doc=html;
-  if(/<\/head>/i.test(doc))doc=doc.replace(/<\/head>/i,styleBlock+"</head>");
+  if(/<\/head>/i.test(doc))doc=doc.replace(/<\/head>/i,frameMeta+styleBlock+"</head>");
   else if(/<html[^>]*>/i.test(doc))doc=doc.replace(/<html[^>]*>/i,m=>m+"<head>"+styleBlock+"</head>");
   else doc=styleBlock+doc;
   if(/<\/body>/i.test(doc))doc=doc.replace(/<\/body>/i,scriptBlock+"</body>");
   else doc+=scriptBlock;
   return doc;
  }
- return '<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+escapeHTML(project.name||"KURO Game")+'</title>'+styleBlock+'</head><body>'+html+scriptBlock+'</body></html>';
+ return '<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+escapeHTML(project.name||"KURO Game")+'</title>'+frameMeta+styleBlock+'</head><body>'+html+scriptBlock+'</body></html>';
 }
 function applyPreviewSize(){
  const w=Math.max(240,Math.min(3840,Number(project.settings&&project.settings.previewWidth)||960));
@@ -355,11 +358,11 @@ $("saveBtn").addEventListener("click",()=>{project.code[activeTab]=currentValue(
 
 $("runBtn").addEventListener("click",()=>{project.code[activeTab]=currentValue();run();});
 $("refreshBtn").addEventListener("click",()=>{project.code[activeTab]=currentValue();run()});
-$("sizeBtn").addEventListener("click",()=>{const w=Number(project.settings&&project.settings.previewWidth)||960,h=Number(project.settings&&project.settings.previewHeight)||540;$("previewWidth").value=w;$("previewHeight").value=h;$("sizeModal").classList.add("open");});
+$("sizeBtn").addEventListener("click",()=>{const w=Number(project.settings&&project.settings.gameFrameWidth)||960,h=Number(project.settings&&project.settings.gameFrameHeight)||540;$("previewWidth").value=w;$("previewHeight").value=h;$("sizeModal").classList.add("open");});
 $("sizeCancel").addEventListener("click",()=>$("sizeModal").classList.remove("open"));
 $("sizeModal").addEventListener("click",e=>{if(e.target===$("sizeModal"))$("sizeModal").classList.remove("open");});
 $("sizeReset").addEventListener("click",()=>{$("previewWidth").value=960;$("previewHeight").value=540;});
-$("sizeApply").addEventListener("click",()=>{project.settings=project.settings||{};project.settings.previewWidth=Math.max(240,Math.min(3840,Number($("previewWidth").value)||960));project.settings.previewHeight=Math.max(160,Math.min(2160,Number($("previewHeight").value)||540));$("sizeModal").classList.remove("open");applyPreviewSize();persist(true);toast("プレビューサイズを変更しました");});
+$("sizeApply").addEventListener("click",()=>{project.settings=project.settings||{};project.settings.gameFrameWidth=Math.max(240,Math.min(3840,Number($("previewWidth").value)||960));project.settings.gameFrameHeight=Math.max(160,Math.min(2160,Number($("previewHeight").value)||540));$("sizeModal").classList.remove("open");applyPreviewSize();persist(true);toast("公開ゲーム画面サイズを保存しました");});
 if($("exportBtn"))$("exportBtn").addEventListener("click",()=>{project.code[activeTab]=currentValue();persist(true);exportHTML()});
 
 function clearConsole(){ $("consoleOutput").textContent="";$("consoleCount").textContent="0"; }
