@@ -19,7 +19,7 @@ a{color:inherit;text-decoration:none}.top{height:66px;border-bottom:1px solid va
 <section class="hero"><div class="eyebrow">ONE ONLINE LAYER FOR EVERY GAME</div><h1>KUROGAMES ONLINE</h1><p>ゲームごとに必要なオンライン機能を選択できます。ランキングとクラウドセーブは共通基盤を使うため、ゲームごとのテーブル作成やSupabase設定は不要です。設定を変更すると、このゲームのSDK利用可否にすぐ反映されます。GASモードでは通信をGAS経由にし、マルチプレイはHTTPポーリングで動作します。</p></section>
 <div id="status" class="status">ログイン状態を確認しています…</div>
 <section id="games" class="grid"></section>
-<section class="future"><h2>次の拡張機能</h2><p>マルチプレイはルーム作成・コード参加・参加者表示・リアルタイムイベントに対応しました。SDKから利用できます。</p><div class="future-tags"><span>マルチプレイ / ルーム対応</span><span>実績・バッジ</span><span>フレンド・招待</span><span>プレゼンス</span></div></section>
+<section class="future"><h2>通信機能について</h2><p>現在利用できる機能：ランキング送信・取得、個人クラウドセーブ（キー一覧を含む）、6文字ルームコード、最大35人の参加者同期、ルーム共有状態の保存・更新、リアルタイムイベント。実績・バッジ、フレンド・招待は今後の拡張予定です。</p><div class="future-tags"><span>利用可能：ランキング</span><span>利用可能：クラウドセーブ</span><span>利用可能：ルーム通信</span><span>今後：実績・バッジ</span><span>今後：フレンド・招待</span></div></section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -60,21 +60,44 @@ return [
 '<script src="/game-studio/kurog-online.js">'+'</'+'script>',
 '<script>',
 '(async function () {',
-'  await KuroGames.init({ gameId: "'+game.id+'" });',
+'  // KUROGAMESのゲームプレイヤー内で実行してください。',
+'  const { features } = await KuroGames.init({ gameId: "'+game.id+'" });',
 '',
-'  // ゲーム終了時にスコアを登録',
-'  await KuroGames.ranking.submit(finalScore);',
+'  // 個人クラウドセーブ（Studioで「クラウドセーブ」をON）',
+'  if (features.cloudSave) {',
+'    await KuroGames.save.set("progress", { level: 3 });',
+'    const progress = await KuroGames.save.get("progress");',
+'    const saveKeys = await KuroGames.save.list();',
+'    console.log(progress, saveKeys);',
+'    // await KuroGames.save.delete("progress");',
+'    // KuroGames.storage.get/set/remove/list も同じセーブ機能です。',
+'  }',
 '',
-'  // マルチプレイ：ルーム作成・参加・イベント送受信',
-'  // const room = await KuroGames.multiplayer.createRoom({ maxPlayers: 4 });\n  // console.log("ルームコード:", room.room.room_code);\n  // room.onPlayersChange(players => renderPlayers(players));\n  // const joined = await KuroGames.multiplayer.joinRoom("ABC234");',
-'  // room.onMessage(message => console.log(message.type, message.data));',
+'  // ランキング（Studioで「ランキング」をON）',
+'  // ゲーム終了時に submitRanking(finalScore) を呼び出してください。',
+'  async function submitRanking(finalScore) {',
+'    if (!features.ranking) return;',
+'    await KuroGames.ranking.submit(finalScore, { mode: "default" });',
+'  }',
+'  // const topScores = await KuroGames.ranking.get({ mode: "default", limit: 20 });',
+'',
+'  // マルチプレイ（Studioで「マルチプレイ」をON）',
+'  // 新規作成：最大35人。参加側は joinRoom("6文字コード") を使用。',
+'  // const room = await KuroGames.multiplayer.createRoom({ maxPlayers: 35 });',
+'  // const room = await KuroGames.multiplayer.joinRoom("ABC234");',
+'  // console.log("ルームコード:", room.room.room_code);',
+'  // room.onPlayersChange(players => renderPlayers(players));',
+'  // room.onMessage(event => {',
+'  //   if (event.type === "player-action") handlePlayerAction(event.data);',
+'  // });',
 '  // await room.send("player-action", { x: 10, y: 20 });',
-'  // await room.leave();',
 '',
-'  // セーブ / ロード',
-'  await KuroGames.save.set("progress", { level: 3 });',
-'  const saved = await KuroGames.save.get("progress");',
-'})();',
+'  // ルーム全員で共有する保存状態（イベント通知とは別に永続化）',
+'  // const snapshot = await room.getState();',
+'  // const result = await room.updateState({ phase: "lobby" }, snapshot.updatedAt);',
+'  // if (result.conflict) { /* 最新状態を getState() で再取得して更新 */ }',
+'  // 退出時：購読解除関数を呼び、最後に await room.leave();',
+'})().catch(error => console.error("KUROGAMES ONLINE:", error));',
 '</'+'script>'
 ].join("\n");
 }
@@ -86,7 +109,7 @@ card.innerHTML=
 '<div class="features">'+
 '<label class="feature"><span><strong>ランキング</strong><small>スコア送信・世界ランキング取得</small></span><input class="switch" type="checkbox" data-feature="ranking" '+(features.ranking?'checked':'')+'></label>'+
 '<label class="feature"><span><strong>クラウドセーブ</strong><small>ユーザーごとに最大64KBのデータを保存</small></span><input class="switch" type="checkbox" data-feature="cloudSave" '+(features.cloudSave?'checked':'')+'></label>'+
-'<label class="feature"><span><strong>マルチプレイ</strong><small>ルーム作成・コード参加・リアルタイム同期（最大8人）</small></span><input class="switch" type="checkbox" data-feature="multiplayer" '+(features.multiplayer?'checked':'')+'></label>'+
+'<label class="feature"><span><strong>マルチプレイ</strong><small>ルーム作成・6文字コード参加・リアルタイム同期（最大35人）</small></span><input class="switch" type="checkbox" data-feature="multiplayer" '+(features.multiplayer?'checked':'')+'></label>'+
 '</div>'+
 '<div class="card-foot"><span class="copy-status" aria-live="polite"></span><button class="btn primary copy-snippet" type="button">SDKコードをコピー</button></div>'+
 '<details class="snippet"><summary>SDKの使用例を表示</summary><pre></pre></details>';
