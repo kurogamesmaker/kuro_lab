@@ -277,10 +277,10 @@ function kuroApplyTransportLinks(){
  function renderRoom(data){
   room.replaceChildren();
   const hero=element("section","kuro-secret-hero");
-  hero.append(element("div","eyebrow","KUROGAMES SECRET / ACCESS GRANTED"));
-  hero.append(element("h1", "", data.room?.title||"SECRET ROOM"));
-  hero.append(element("p","",data.room?.description||"認証に成功しました。秘密のコンテンツを確認できます。"));
-  const back=element("button","back","← 通常のゲーム一覧へ戻る");
+  hero.append(element("div","eyebrow","[ KURO SYSTEM // ACCESS GRANTED ]"));
+  hero.append(element("h1", "", "KURO // CLASSIFIED TERMINAL"));
+  hero.append(element("p","","認証完了。機密データベースに接続しました。許可された情報を表示しています。"));
+  const back=element("button","back","[ EXIT TERMINAL ] 通常のゲーム一覧へ戻る");
   back.type="button";
   back.addEventListener("click",()=>{
    room.hidden=true;if(library)library.hidden=false;
