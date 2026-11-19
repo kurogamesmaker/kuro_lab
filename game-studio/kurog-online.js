@@ -138,6 +138,15 @@ async function connectRoomPolling(roomData, members, session) {
         expectedUpdatedAt: expectedUpdatedAt || null,
       });
       if (!result.conflict) {
+        const notification = {
+          type: "room-state-updated",
+          data: { updatedAt: result.updatedAt || null },
+          from: session.user.id,
+          sentAt: Date.now(),
+        };
+        messageCallbacks.forEach((callback) => {
+          try { callback(notification); } catch (error) { console.error(error); }
+        });
         await this.send("room-state-updated", { updatedAt: result.updatedAt || null });
       }
       return result;
@@ -250,6 +259,15 @@ async function connectRoom(roomData, members) {
         expectedUpdatedAt: expectedUpdatedAt || null,
       });
       if (!result.conflict) {
+        const notification = {
+          type: "room-state-updated",
+          data: { updatedAt: result.updatedAt || null },
+          from: session.user.id,
+          sentAt: Date.now(),
+        };
+        messageCallbacks.forEach((callback) => {
+          try { callback(notification); } catch (error) { console.error(error); }
+        });
         await this.send("room-state-updated", { updatedAt: result.updatedAt || null });
       }
       return result;
