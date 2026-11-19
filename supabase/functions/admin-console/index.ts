@@ -1160,7 +1160,7 @@ Deno.serve(async (req: Request) => {
 
     if (action === "save_secret_content") {
       const id = typeof body.id === "string" ? body.id.trim() : "";
-      const roomKey = typeof body.room_key === "string" ? body.room_key.trim().toLowerCase() : "";
+      const roomKey = "secret-hub";
       const contentType = typeof body.content_type === "string" ? body.content_type : "";
       const title = typeof body.title === "string" ? body.title.trim() : "";
       const content = typeof body.body === "string" ? body.body.trim() : "";
@@ -1173,7 +1173,7 @@ Deno.serve(async (req: Request) => {
       if (id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
         return reply({ error: "Invalid content ID" }, 400, origin);
       }
-      if (!/^[a-z0-9][a-z0-9_-]{1,48}$/.test(roomKey)) return reply({ error: "部屋キーは英小文字・数字・ハイフン・アンダースコアで2〜49文字にしてください。" }, 400, origin);
+      
       if (!["game", "diary", "mission", "news"].includes(contentType)) return reply({ error: "コンテンツ種類が正しくありません。" }, 400, origin);
       if (!title || title.length > 120 || content.length > 12000 || icon.length > 24 || reward.length > 120) {
         return reply({ error: "タイトル・本文・アイコン・報酬の文字数を確認してください。" }, 400, origin);
