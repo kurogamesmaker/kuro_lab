@@ -1,6 +1,6 @@
 const ALLOWED_PREFIXES = ['/rest/v1/', '/auth/v1/', '/storage/v1/'];
 // Only explicitly approved Edge Functions may pass through the GAS bridge.
-const ALLOWED_FUNCTION_PATHS = new Set(['/functions/v1/admin-console', '/functions/v1/pro-access', '/functions/v1/send-chat-push']);
+const ALLOWED_FUNCTION_PATHS = new Set(['/functions/v1/admin-console', '/functions/v1/pro-access', '/functions/v1/send-chat-push', '/functions/v1/kurogames-secret']);
 const ALLOWED_METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD']);
 
 function validatePath(value) {
