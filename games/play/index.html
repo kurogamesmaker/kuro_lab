@@ -66,6 +66,24 @@ async function getKuroGameAuthSession() {
 window.addEventListener("message", async event => {
  if (!kuroGameFrame || event.source !== kuroGameFrame.contentWindow || !event.data) return;
  const msg = event.data;
+ if (msg.type === "kuro-online-auth-request" && typeof msg.requestId === "string" && msg.requestId.length <= 100) {
+  try {
+   const session = await getKuroGameAuthSession();
+   event.source.postMessage({
+    type: "kuro-online-auth",
+    requestId: msg.requestId,
+    access_token: session.access_token,
+    user: session.user ? { id: session.user.id, email: session.user.email ?? null } : null
+   }, "*");
+  } catch (error) {
+   event.source.postMessage({
+    type: "kuro-online-auth-error",
+    requestId: msg.requestId,
+    message: error?.message || "KUROGAMES認証に失敗しました"
+   }, "*");
+  }
+  return;
+ }
  if (msg.type === "kuro-werewolf-realtime-subscribe") {
   const requestId = msg.requestId;
   const roomCode = msg.roomCode;
