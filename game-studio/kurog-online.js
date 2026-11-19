@@ -388,6 +388,18 @@ const KuroGames = {
     async delete(key) {
       return invoke("save_delete", { key: key || "default" });
     },
+    async list(options) {
+      options = options || {};
+      const result = await invoke("save_list", { limit: options.limit || 100 });
+      return result.saves || [];
+    },
+  },
+
+  storage: {
+    async get(key) { return KuroGames.save.get(key); },
+    async set(key, value) { return KuroGames.save.set(key, value); },
+    async remove(key) { return KuroGames.save.delete(key); },
+    async list(options) { return KuroGames.save.list(options); },
   },
 
   multiplayer: {
