@@ -1,28 +1,63 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-
 const DEFAULT_URL = "https://cprvpphlfpmiegjiutjn.supabase.co";
 const DEFAULT_KEY = "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
 const FUNCTION_NAME = "kurogames-online";
 
-let client = null;
 let gameId = null;
 let gameConfig = null;
+let cachedUser = null;
+let requestCounter = 0;
 
 function ensureReady() {
-  if (!client || !gameId) throw new Error("先に KuroGames.init({ gameId }) を実行してください。");
+  if (!gameId) throw new Error("先に KuroGames.init({ gameId }) を実行してください。");
+}
+
+function requestParentSession() {
+  if (window.parent === window) {
+    return Promise.reject(new Error("KUROGAMESのゲームプレイヤーまたはスタジオプレビュー内で実行してください。"));
+  }
+  const requestId = "kuro-online-" + Date.now().toString(36) + "-" + (++requestCounter);
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      window.removeEventListener("message", onMessage);
+      reject(new Error("KUROGAMES認証ブリッジが応答しません。ゲームプレイヤーから起動してください。"));
+    }, 12000);
+    function onMessage(event) {
+      if (event.source !== window.parent || !event.data || event.data.requestId !== requestId) return;
+      if (event.data.type === "kuro-online-auth-error") {
+        clearTimeout(timer);
+        window.removeEventListener("message", onMessage);
+        reject(new Error(event.data.message || "KUROGAMES認証に失敗しました。"));
+        return;
+      }
+      if (event.data.type !== "kuro-online-auth") return;
+      clearTimeout(timer);
+      window.removeEventListener("message", onMessage);
+      cachedUser = event.data.user || null;
+      resolve({ accessToken: event.data.access_token, user: cachedUser });
+    }
+    window.addEventListener("message", onMessage);
+    window.parent.postMessage({ type: "kuro-online-auth-request", requestId }, "*");
+  });
 }
 
 async function invoke(action, params = {}) {
   ensureReady();
-  const { data, error } = await client.functions.invoke(FUNCTION_NAME, {
-    body: { action, gameId, ...params },
+  const session = await requestParentSession();
+  if (!session.accessToken) throw new Error("KUROアカウントの認証情報を取得できませんでした。");
+  const response = await fetch(DEFAULT_URL + "/functions/v1/" + FUNCTION_NAME, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": DEFAULT_KEY,
+      "Authorization": "Bearer " + session.accessToken,
+    },
+    body: JSON.stringify({ action, gameId, ...params }),
   });
-  if (error) {
-    const message = error.message || "KUROGAMES ONLINEとの通信に失敗しました。";
-    throw new Error(message);
-  }
-  if (data && data.error) throw new Error(data.error);
-  return data ?? {};
+  let data;
+  try { data = await response.json(); }
+  catch (_) { throw new Error("KUROGAMES ONLINEから正しい応答を受け取れませんでした。"); }
+  if (!response.ok || data.error) throw new Error(data.error || "KUROGAMES ONLINEとの通信に失敗しました。");
+  return data;
 }
 
 const KuroGames = {
@@ -32,16 +67,9 @@ const KuroGames = {
       throw new Error("gameIdが正しくありません。Studioのオンライン設定画面からコピーしてください。");
     }
     gameId = nextGameId;
-    client = createClient(options.url || DEFAULT_URL, options.publishableKey || DEFAULT_KEY, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-      },
-      global: options.fetch ? { fetch: options.fetch } : undefined,
-    });
-    gameConfig = await invoke("get_config");
-    return { gameId, game: gameConfig.game, features: gameConfig.features };
+    const config = await invoke("get_config");
+    gameConfig = config;
+    return { gameId, game: config.game, features: config.features };
   },
 
   get config() {
@@ -51,28 +79,38 @@ const KuroGames = {
   auth: {
     async getUser() {
       ensureReady();
-      const { data, error } = await client.auth.getUser();
-      if (error && error.name !== "AuthSessionMissingError") throw error;
-      return data?.user ?? null;
+      const session = await requestParentSession();
+      return session.user;
     },
     onChange(callback) {
-      ensureReady();
-      const { data } = client.auth.onAuthStateChange((event, session) => {
-        if (typeof callback === "function") callback({ event, user: session?.user ?? null });
-      });
-      return () => data.subscription.unsubscribe();
+      if (typeof callback !== "function") return () => {};
+      let active = true;
+      let previous = null;
+      const poll = async () => {
+        if (!active) return;
+        try {
+          const session = await requestParentSession();
+          const current = session.user?.id || null;
+          if (current !== previous) {
+            previous = current;
+            callback({ event: "USER_CHANGED", user: session.user });
+          }
+        } catch (_) {}
+      };
+      void poll();
+      const timer = setInterval(poll, 30000);
+      return () => { active = false; clearInterval(timer); };
     },
   },
 
   ranking: {
     async submit(score, options = {}) {
       if (!Number.isSafeInteger(Number(score))) throw new TypeError("scoreは整数で指定してください。");
-      const submissionId = crypto.randomUUID();
       return invoke("score_submit", {
         score: Number(score),
         mode: options.mode || "default",
         metadata: options.metadata || {},
-        submissionId,
+        submissionId: crypto.randomUUID(),
       });
     },
     async get(options = {}) {
