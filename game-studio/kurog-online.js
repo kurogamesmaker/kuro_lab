@@ -140,7 +140,9 @@ async function connectRoom(roomData, members) {
   });
 
   const metadata = session.user.user_metadata || {};
-  const displayName = metadata.display_name || metadata.username || session.user.email || "プレイヤー";
+  const ownMember = (members || []).find((member) => member.userId === session.user.id);
+  const displayName = (ownMember && ownMember.user && ownMember.user.display_name) ||
+    metadata.display_name || metadata.username || "プレイヤー";
   await channel.track({
     userId: session.user.id,
     displayName: String(displayName).slice(0, 40),
