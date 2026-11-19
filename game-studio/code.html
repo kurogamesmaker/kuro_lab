@@ -425,37 +425,33 @@ const codeFileInput=$("codeFileInput");
 $("fileLoadBtn").addEventListener("click",()=>codeFileInput.click());
 codeFileInput.addEventListener("change",async()=>{
  const files=Array.from(codeFileInput.files||[]);codeFileInput.value="";if(!files.length)return;
- const updates={html:[],css:[],js:[]},notes=[],scriptFiles=new Map();
+ const updates={html:[],css:[],js:[]},notes=[],scriptFiles=new Map(),referencedScripts=new Set();
  try{
   const loaded=[];
   for(const file of files){const name=file.name||"ファイル",ext=(name.split(".").pop()||"").toLowerCase(),source=await file.text();loaded.push({name,ext,source});if(["js","mjs"].includes(ext))scriptFiles.set(name.toLowerCase(),source);}
+  const inlineFileScripts=sourceText=>sourceText.replace(/<script\b([^>]*?)\bsrc\s*=\s*(["'])([^"']+)\2([^>]*)>\s*<\/script\s*>/gi,(whole,before,quote,src,after)=>{
+   let pathname=src.split(/[?#]/)[0];try{pathname=decodeURIComponent(pathname);}catch(_){}
+   const basename=pathname.split(/[\\/]/).pop().toLowerCase(),body=scriptFiles.get(basename);if(body==null)return whole;
+   referencedScripts.add(basename);
+   const attrs=(before+" "+after).replace(/\s+(?:src|async|defer|integrity|crossorigin)\s*(?:=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?/gi,"");
+   const moduleMode=/\btype\s*=\s*["']module["']/i.test(attrs)||/\b(?:import|export)\s/.test(body)||/\bawait\b/.test(body)||/\.mjs$/i.test(basename);
+   const clean=attrs.replace(/\s+type\s*=\s*(["']).*?\1/i,"");
+   return "<scr"+"ipt"+clean+(moduleMode?' type="module"':"")+">"+safeScript(body)+"<"+"/script>";
+  });
   for(const item of loaded){
    const {name,ext,source}=item;
    if(["html","htm","xhtml","txt"].includes(ext)){
-    try{const parsed=splitMixedCode(source),p=parsed.parts;if(p.html&&!/^<!-- HTMLをここに追加できます -->$/.test(p.html))updates.html.push(p.html);if(p.css&&!/^\/\* CSSをここに追加できます \*\/$/.test(p.css))updates.css.push(p.css);if(p.js&&!/^\/\/ JavaScriptをここに追加できます$/.test(p.js))updates.js.push(p.js);notes.push(name+": HTML/CSS/JavaScriptを自動判別");if(parsed.notes.length)notes.push(...parsed.notes.map(n=>name+": "+n));}
-    catch(_){updates.html.push(source);notes.push(name+": HTMLとして読み込み");}
+    try{const prepared=inlineFileScripts(source),parsed=splitMixedCode(prepared),p=parsed.parts;if(p.html&&!/^<!-- HTMLをここに追加できます -->$/.test(p.html))updates.html.push(p.html);if(p.css&&!/^\/\* CSSをここに追加できます \*\/$/.test(p.css))updates.css.push(p.css);if(p.js&&!/^\/\/ JavaScriptをここに追加できます$/.test(p.js))updates.js.push(p.js);notes.push(name+": HTML/CSS/JavaScriptを自動判別");if(parsed.notes.length)notes.push(...parsed.notes.map(n=>name+": "+n));}
+    catch(_){updates.html.push(inlineFileScripts(source));notes.push(name+": HTMLとして読み込み");}
    }else if(ext==="css"){updates.css.push(source);notes.push(name+": CSSタブへ読み込み");}
    else if(["js","mjs","jsx","ts","tsx","json"].includes(ext)){if(!["js","mjs"].includes(ext))updates.js.push("// "+name+"\n"+source);notes.push(name+": HTMLから参照されていれば依存ファイルとして結合");}
    else if(["xml","svg"].includes(ext)){updates.html.push(source);notes.push(name+": HTMLタブへ読み込み");}
    else if(ext==="md"){updates.js.push("// "+name+"（Markdownテキスト）\n"+source);notes.push(name+": テキストとしてJavaScriptタブへ読み込み");}
    else throw new Error("未対応のファイル形式です: "+name);
   }
-  if(!updates.html.length&&!updates.css.length&&!updates.js.length)throw new Error("読み込めるコードが見つかりませんでした。");
-  const referencedScripts=new Set();
-  if(updates.html.length){
-   let html=updates.html.join("\n\n"),inlined=0;
-   html=html.replace(/<script\b([^>]*?)\bsrc\s*=\s*(["'])([^"']+)\2([^>]*)>\s*<\/script\s*>/gi,(whole,before,quote,src,after)=>{
-    let pathname=src.split(/[?#]/)[0];try{pathname=decodeURIComponent(pathname);}catch(_){}
-    const basename=pathname.split(/[\\/]/).pop().toLowerCase(),source=scriptFiles.get(basename);if(source==null)return whole;
-    inlined++;referencedScripts.add(basename);
-    const attrs=(before+" "+after).replace(/\s+(?:src|async|defer|integrity|crossorigin)\s*(?:=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?/gi,"");
-    const moduleMode=/\btype\s*=\s*["']module["']/i.test(attrs)||/\b(?:import|export)\s/.test(source)||/\bawait\b/.test(source)||/\.mjs$/i.test(basename);
-    const clean=attrs.replace(/\s+type\s*=\s*(["']).*?\1/i,"");
-    return "<scr"+"ipt"+clean+(moduleMode?' type="module"':"")+">"+safeScript(source)+"<"+"/script>";
-   });
-   updates.html=[html];if(inlined)notes.push("外部JavaScript "+inlined+"個をHTML内へ結合");
-  }
   for(const item of loaded)if(["js","mjs"].includes(item.ext)&&!referencedScripts.has(item.name.toLowerCase()))updates.js.push(item.source);
+  if(!updates.html.length&&!updates.css.length&&!updates.js.length)throw new Error("読み込めるコードが見つかりませんでした。");
+  if(referencedScripts.size)notes.push("外部JavaScript "+referencedScripts.size+"個をHTML内へ結合（読み込み順を維持）");
   const applied=Object.keys(updates).filter(tab=>updates[tab].length);project.code[activeTab]=currentValue();
   const occupied=applied.filter(tab=>{const value=String(project.code[tab]||"").trim();return value&&!["<!-- HTMLをここに追加できます -->","/* CSSをここに追加できます */","// JavaScriptをここに追加できます"].includes(value);});
   const labels={html:"HTML",css:"CSS",js:"JavaScript"},summary=applied.map(tab=>labels[tab]).join("・");
