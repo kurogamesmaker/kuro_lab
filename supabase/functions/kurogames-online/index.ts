@@ -362,7 +362,7 @@ async function handle(req: Request) {
   }
 
 
-  if (action === "room_list" || action === "room_create" || action === "room_join" || action === "room_leave" || action === "room_heartbeat" || action === "room_send" || action === "room_poll") {
+  if (action === "room_list" || action === "room_create" || action === "room_join" || action === "room_leave" || action === "room_heartbeat" || action === "room_send" || action === "room_poll" || action === "room_state_get" || action === "room_state_update") {
     const user = await getUser(req);
     requirePublished(game);
     requireMultiplayer(settings.features);
@@ -426,6 +426,42 @@ async function handle(req: Request) {
 
     const roomId = typeof body.roomId === "string" && UUID_RE.test(body.roomId) ? body.roomId : "";
     if (!roomId) throw new HttpError(400, "roomIdが正しくありません。");
+
+    if (action === "room_state_get" || action === "room_state_update") {
+      const { data: member, error: memberError } = await admin.from("game_online_room_members")
+        .select("user_id").eq("room_id", roomId).eq("user_id", user.id).maybeSingle();
+      if (memberError) throw new HttpError(500, "ルーム参加状態を確認できませんでした。");
+      if (!member) throw new HttpError(403, "このルームの参加者ではありません。");
+
+      if (action === "room_state_get") {
+        const { data: room, error } = await admin.from("game_online_rooms")
+          .select("id, game_data, game_data_updated_at, status")
+          .eq("id", roomId).eq("game_id", game.id).maybeSingle();
+        if (error || !room) throw new HttpError(404, "ルームが見つかりません。");
+        return reply(200, {
+          state: room.game_data ?? null,
+          updatedAt: room.game_data_updated_at ?? null,
+          roomStatus: room.status,
+        });
+      }
+
+      if (!Object.prototype.hasOwnProperty.call(body, "state") ||
+          !body.state || typeof body.state !== "object" || Array.isArray(body.state)) {
+        throw new HttpError(400, "保存するゲーム状態が正しくありません。");
+      }
+      const bytes = new TextEncoder().encode(JSON.stringify(body.state)).length;
+      if (bytes > 131072) throw new HttpError(413, "ルームのゲーム状態は128KB以内にしてください。");
+      const expected = typeof body.expectedUpdatedAt === "string" ? body.expectedUpdatedAt : null;
+      const updatedAt = new Date().toISOString();
+      let update = admin.from("game_online_rooms")
+        .update({ game_data: body.state, game_data_updated_at: updatedAt })
+        .eq("id", roomId).eq("game_id", game.id);
+      update = expected ? update.eq("game_data_updated_at", expected) : update.is("game_data_updated_at", null);
+      const { data: updated, error } = await update.select("game_data_updated_at").maybeSingle();
+      if (error) throw new HttpError(500, "ゲーム状態を保存できませんでした。");
+      if (!updated) return reply(200, { ok: false, conflict: true });
+      return reply(200, { ok: true, conflict: false, updatedAt: updated.game_data_updated_at });
+    }
 
     if (action === "room_send") {
       const type = typeof body.eventType === "string" ? body.eventType : "";
