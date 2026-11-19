@@ -233,22 +233,6 @@ window.addEventListener("message", async event => {
  if (msg.type !== "kuro-werewolf-auth-request") return;
  try {
   const session = await getKuroGameAuthSession();
-  let profile = null;
-  if (session.user?.id) {
-   const { data: profileData, error: profileError } = await kuroGameAuthClient
-    .from("profiles")
-    .select("kuro_id, username, display_name, avatar_url")
-    .eq("id", session.user.id)
-    .maybeSingle();
-   if (!profileError && profileData) {
-    profile = {
-     kuroId: profileData.kuro_id || null,
-     username: profileData.username || "",
-     displayName: profileData.display_name || profileData.username || "",
-     avatarUrl: profileData.avatar_url || null
-    };
-   }
-  }
   const storage = {};
   const prefix = "kuro-werewolf-session:";
   for (let i = 0; i < localStorage.length; i++) {
@@ -260,7 +244,6 @@ window.addEventListener("message", async event => {
    useGasProxy: KURO_GAS_TRANSPORT,
    access_token: session.access_token,
    refresh_token: session.refresh_token,
-   profile,
    storage
   }, "*");
  } catch (error) {
