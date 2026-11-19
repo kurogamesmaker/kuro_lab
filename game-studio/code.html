@@ -324,7 +324,7 @@ async function loadPublishedGameFromCloud(){
   const remoteUpdated=Date.parse(data.updated_at||"")||0;
   const useDraft=!!(draft&&draft.publishedGameId===data.id&&Number(draft.updatedAt||0)>remoteUpdated);
   project={id:"published-"+data.id,name:useDraft?(draft.name||data.title||"公開済みゲーム"):(data.title||"公開済みゲーム"),type:data.category==="action"?"platformer":"published",background:"#101522",objects:[],events:[],settings:{},tilemap:{cols:20,rows:12,cells:Array(240).fill(-1),enabled:false},assets:[],prefabs:[],layers:["Default"],collisionMatrix:{},code:useDraft&&draft.code?draft.code:parsed.parts,publishedGameId:data.id,publishedMeta:{slug:data.slug,title:data.title,description:data.description,category:data.category,icon:data.icon},updatedAt:useDraft?draft.updatedAt:Date.now()};
-  $("projectName").value=project.name;setStatus(useDraft?"● 下書きから復元":"● 公開作品を読み込み済み","var(--good)");showTab("html");run();toast(useDraft?"下書きを復元しました":"公開済みゲームをStudioに読み込みました");
+  $("projectName").value=project.name;$("publishBtn").textContent="公開内容を更新";setStatus(useDraft?"● 下書きから復元":"● 公開作品を読み込み済み","var(--good)");showTab("html");run();toast(useDraft?"下書きを復元しました":"公開済みゲームをStudioに読み込みました");
  }catch(e){toast("読み込み失敗: "+(e.message||"不明なエラー"));}
 }
 let pendingImport=null;
