@@ -264,8 +264,8 @@ function xRenderStage(){
   const js=String(code.js||"").replace(/<\/script/gi,"<\\/script");
   if(/<html[\s>]/i.test(html)){
    if(css){if(/<\/head>/i.test(html))html=html.replace(/<\/head>/i,"<style>"+css+"</style></head>");else html="<style>"+css+"</style>"+html;}
-   if(js){if(/<\/body>/i.test(html))html=html.replace(/<\/body>/i,"<script>"+js+"</script></body>");else html+="<script>"+js+"</script>";}
-  }else html="<!doctype html><html><head><meta charset=utf-8><meta name=viewport content=width=device-width,initial-scale=1><style>html,body{margin:0;min-height:100%;}"+css+"</style></head><body>"+html+"<script>"+js+"</script></body></html>";
+   if(js){if(/<\/body>/i.test(html))html=html.replace(/<\/body>/i,"<script>"+js+"</script></body>");else html+="<scr"+"ipt>"+js+"</scr"+"ipt>";}
+  }else html="<!doctype html><html><head><meta charset=utf-8><meta name=viewport content=width=device-width,initial-scale=1><style>html,body{margin:0;min-height:100%;}"+css+"</style></head><body>"+html+"<scr"+"ipt>"+js+"</scr"+"ipt></body></html>";
   frame.srcdoc=html;stage.appendChild(frame);return;
  }
  stage.classList.remove("code-preview-mode");
@@ -439,7 +439,7 @@ function xSetCodeScreenMode(on){
 }
 $("codeScreenBtn").addEventListener("click",()=>xSetCodeScreenMode(!codeScreenMode));
 $("frameSizeBtn").addEventListener("click",()=>{
- showPanel("right","settings");
+ xTab("right","settings");
  requestAnimationFrame(()=>{const d=$("settingsEditor")?.querySelector("details");if(d){d.open=true;d.scrollIntoView({behavior:"smooth",block:"start"});}});
 });
 function xApplyFrameSize(){const w=Math.max(160,Math.min(3840,Number(p.settings&&p.settings.width)||960)),h=Math.max(160,Math.min(2160,Number(p.settings&&p.settings.height)||540)),ratio=w/h,stage=$("stage"),foot=document.querySelector(".foot");if(!stage)return;stage.style.aspectRatio=w+" / "+h;stage.style.width="min(100%, 960px, calc((100vh - 220px) * "+ratio+"))";stage.style.maxHeight="calc(100vh - 180px)";const label=document.querySelector(".foot span");if(label)label.textContent=w+" × "+h;}
