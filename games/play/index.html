@@ -219,7 +219,7 @@ window.addEventListener("message", async event => {
   pageWrap.style.width="calc(100% - 28px)";
   pageWrap.style.maxWidth=Math.min(2200,frameWidth+28)+"px";
   kuroGameFrameLayout=()=>{
-   const availableWidth=Math.max(240,Math.min(frameWidth,pageWrap.clientWidth||frameWidth));
+   const availableWidth=Math.max(1,Math.min(frameWidth,Math.max(1,(pageWrap.clientWidth||frameWidth)-2)));
    const scale=availableWidth/frameWidth;
    frame.style.width=availableWidth+"px";
    frame.style.height=Math.round(frameHeight*scale)+"px";
