@@ -90,10 +90,11 @@ function makeVisualCode(p){
   const content=o.type==="image"&&imageSrc?'<img alt="" src="'+imageSrc+'" style="width:100%;height:100%;object-fit:fill">':o.type==="particle"?"✦":text;
   return '  <div class="game-object" data-id="'+escapeHTML(o.id)+'" data-kind="'+escapeHTML(o.type)+'" style="'+style+'">'+content+'</div>';
  }).join("\n")+'\n</main>';
+ const frameW=Math.max(160,Math.min(3840,Number(p.settings&&p.settings.width)||960)),frameH=Math.max(160,Math.min(2160,Number(p.settings&&p.settings.height)||540)),frameRatio=frameW/frameH;
  const css=[
   '*{box-sizing:border-box}',
   'body{margin:0;min-height:100vh;display:grid;place-items:center;padding:2vw;background:#0b1020;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#fff}',
-  '#kuro-game{position:relative;width:min(960px,96vw);aspect-ratio:16/9;overflow:hidden;border-radius:14px;background:'+(p.background||"#17243a")+';box-shadow:0 20px 60px #0008}',
+  '#kuro-game{position:relative;width:min(96vw,960px,calc((100vh - 40px) * '+frameRatio+'));max-height:calc(100vh - 40px);aspect-ratio:'+frameW+' / '+frameH+';overflow:hidden;border-radius:14px;background:'+(p.background||"#17243a")+';box-shadow:0 20px 60px #0008}',
   '.game-object{position:absolute;display:flex;align-items:center;justify-content:center;text-align:center;white-space:pre-wrap;word-break:break-word;line-height:1.2;user-select:none}',
   '.game-object[data-kind="button"],.game-object[data-kind="emoji"],.game-object[data-kind="particle"]{cursor:pointer}',
   '.kuro-tilemap{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}',
