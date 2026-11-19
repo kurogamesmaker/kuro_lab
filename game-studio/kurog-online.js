@@ -351,7 +351,7 @@ const KuroGames = {
     },
     async createRoom(options) {
       options = options || {};
-      const result = await invoke("room_create", { maxPlayers: options.maxPlayers || 4 });
+      const result = await invoke("room_create", { maxPlayers: Math.max(2, Math.min(35, Math.floor(Number(options.maxPlayers) || 4))) });
       return connectRoom(result.room, result.members);
     },
     async joinRoom(roomCode) {
