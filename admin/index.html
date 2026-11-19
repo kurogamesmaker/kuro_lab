@@ -1524,16 +1524,24 @@ function opsSecretIso(value){
  const d=new Date(value);return Number.isNaN(d.getTime())?null:d.toISOString();
 }
 function resetSecretCodeForm(){
- const form=$("#opsSecretCodeForm");if(!form)return;
- form.reset();$("#opsSecretCodeId").value="";
- $("#opsSecretCodeEnabled").checked=true;$("#opsSecretCodeValue").required=false;
+ if(!$("#opsSecretCodeForm"))return;
+ $("#opsSecretCodeId").value="";$("#opsSecretCodeLabel").value="";
+ $("#opsSecretCodeDescription").value="";$("#opsSecretRoomKey").value="";
+ $("#opsSecretRoomTitle").value="";$("#opsSecretCodeValue").value="";
+ $("#opsSecretCodeValue").required=true;$("#opsSecretStartsAt").value="";
+ $("#opsSecretExpiresAt").value="";$("#opsSecretMaxUses").value="";
+ $("#opsSecretCodeEnabled").checked=true;
  $("#opsSecretCodeSave").textContent="秘密コードを保存";$("#opsSecretCodeCancel").hidden=true;
 }
 function resetSecretContentForm(){
- const form=$("#opsSecretContentForm");if(!form)return;
- form.reset();$("#opsSecretContentId").value="";
- $("#opsSecretContentOrder").value=100;$("#opsSecretContentSave").textContent="コンテンツを保存";
- $("#opsSecretContentCancel").hidden=true;
+ if(!$("#opsSecretContentForm"))return;
+ $("#opsSecretContentId").value="";$("#opsSecretContentType").value="game";
+ $("#opsSecretContentRoomKey").value="";$("#opsSecretContentTitle").value="";
+ $("#opsSecretContentBody").value="";$("#opsSecretContentHref").value="";
+ $("#opsSecretContentIcon").value="";$("#opsSecretContentReward").value="";
+ $("#opsSecretContentOrder").value=100;$("#opsSecretContentStartsAt").value="";
+ $("#opsSecretContentEndsAt").value="";$("#opsSecretContentPublished").checked=false;
+ $("#opsSecretContentSave").textContent="コンテンツを保存";$("#opsSecretContentCancel").hidden=true;
 }
 async function loadOpsSecretManager(){
  $("#opsSecretCodesList").innerHTML='<div class="empty">秘密コードを読み込み中…</div>';
