@@ -519,6 +519,9 @@
   <div class="ops-nav-group"><small>07 / SYSTEM</small>
    <button data-ops-tab="flags"><b>11</b><span>システム設定・機能フラグ</span></button>
   </div>
+  <div class="ops-nav-group"><small>08 / KUROGAMES SECRET</small>
+   <button data-ops-tab="secret"><b>12</b><span>秘密機能管理</span></button>
+  </div>
  </div>
  <div class="ops-shell-bar" id="opsShellBar">
   <div><span class="ops-shell-prompt">KURO@OPS:~$</span> <strong id="opsShellName">overview</strong></div>
@@ -649,6 +652,60 @@
     <div class="ops-form-actions"><button type="submit" class="btn primary">フラグを保存</button><button class="btn" type="reset">入力をクリア</button></div>
    </form>
    <div class="list" id="opsFlagsList"><div class="empty">読み込み中…</div></div>
+  </section>
+ </div>
+ <div id="opsSecretView" hidden>
+  <section class="panel">
+   <div class="toolbar"><div><strong>SECRET ACCESS CODES</strong><div class="sns-muted">複数の数字コードから、それぞれ異なる秘密の部屋へ案内できます。コード自体は一覧に表示せず、ハッシュで安全に管理します。</div></div><button class="btn" id="opsSecretRefresh">更新</button></div>
+   <form id="opsSecretCodeForm" class="ops-form">
+    <input id="opsSecretCodeId" type="hidden">
+    <div class="ops-form-grid">
+     <label>コード名<input id="opsSecretCodeLabel" maxlength="80" required placeholder="初期メンバー用"></label>
+     <label>秘密コード（4〜12桁）<input id="opsSecretCodeValue" type="text" inputmode="numeric" pattern="[0-9]{4,12}" maxlength="12" autocomplete="off" placeholder="新しいコード。編集時は空欄で維持"></label>
+    </div>
+    <div class="ops-form-grid">
+     <label>部屋キー<input id="opsSecretRoomKey" maxlength="49" pattern="[a-z0-9][a-z0-9_-]{1,48}" required placeholder="secret-hub"></label>
+     <label>部屋の表示名<input id="opsSecretRoomTitle" maxlength="80" required placeholder="SECRET TERMINAL"></label>
+    </div>
+    <label>コードの説明<input id="opsSecretCodeDescription" maxlength="500" placeholder="どのような利用者向けのコードか"></label>
+    <div class="ops-form-grid">
+     <label>有効開始日時<input id="opsSecretStartsAt" type="datetime-local"></label>
+     <label>有効終了日時<input id="opsSecretExpiresAt" type="datetime-local"></label>
+    </div>
+    <div class="ops-form-grid">
+     <label>利用回数上限（空欄は無制限）<input id="opsSecretMaxUses" type="number" min="1" max="1000000" step="1" placeholder="無制限"></label>
+     <label class="ops-check"><input id="opsSecretCodeEnabled" type="checkbox" checked> このコードを有効にする</label>
+    </div>
+    <div class="ops-form-actions"><button type="submit" class="btn primary" id="opsSecretCodeSave">秘密コードを保存</button><button type="reset" class="btn">入力をクリア</button><button type="button" class="btn" id="opsSecretCodeCancel" hidden>編集をやめる</button></div>
+   </form>
+   <div class="list" id="opsSecretCodesList"><div class="empty">秘密コードを読み込み中…</div></div>
+  </section>
+  <section class="panel" style="margin-top:16px">
+   <div class="toolbar"><div><strong>SECRET CONTENT STUDIO</strong><div class="sns-muted">部屋キーを指定して、隠しゲーム・開発者日誌・ミッション・限定お知らせを作成します。</div></div></div>
+   <form id="opsSecretContentForm" class="ops-form">
+    <input id="opsSecretContentId" type="hidden">
+    <div class="ops-form-grid">
+     <label>コンテンツ種類<select id="opsSecretContentType"><option value="game">隠しゲーム</option><option value="diary">開発者日誌</option><option value="mission">隠しミッション</option><option value="news">限定お知らせ</option></select></label>
+     <label>部屋キー<input id="opsSecretContentRoomKey" maxlength="49" pattern="[a-z0-9][a-z0-9_-]{1,48}" required placeholder="secret-hub"></label>
+    </div>
+    <label>タイトル<input id="opsSecretContentTitle" maxlength="120" required placeholder="秘密のゲーム"></label>
+    <label>本文・説明<textarea id="opsSecretContentBody" rows="4" maxlength="12000" placeholder="表示する内容"></textarea></label>
+    <div class="ops-form-grid">
+     <label>リンクURL（ゲームは必須）<input id="opsSecretContentHref" type="text" maxlength="1000" placeholder="/game/example/ または https://kurolab.cc.cd/..."></label>
+     <label>アイコン・絵文字<input id="opsSecretContentIcon" maxlength="24" placeholder="✦"></label>
+    </div>
+    <div class="ops-form-grid">
+     <label>ミッション報酬・称号<input id="opsSecretContentReward" maxlength="120" placeholder="SECRET VISITOR"></label>
+     <label>表示順<input id="opsSecretContentOrder" type="number" min="-10000" max="10000" step="1" value="100"></label>
+    </div>
+    <div class="ops-form-grid">
+     <label>公開開始日時<input id="opsSecretContentStartsAt" type="datetime-local"></label>
+     <label>公開終了日時<input id="opsSecretContentEndsAt" type="datetime-local"></label>
+    </div>
+    <label class="ops-check"><input id="opsSecretContentPublished" type="checkbox"> 公開する（秘密の部屋に表示）</label>
+    <div class="ops-form-actions"><button type="submit" class="btn primary" id="opsSecretContentSave">コンテンツを保存</button><button type="reset" class="btn">入力をクリア</button><button type="button" class="btn" id="opsSecretContentCancel" hidden>編集をやめる</button></div>
+   </form>
+   <div class="list" id="opsSecretContentList"><div class="empty">秘密コンテンツを読み込み中…</div></div>
   </section>
  </div>
  <div id="opsAnalyticsView" hidden>
@@ -1275,10 +1332,10 @@ async function handleOpsProClick(e){
 
 function setOpsView(view){
  opsView=view;
- const shellNames={overview:"overview",users:"accounts.users",audit:"moderation.audit",reports:"moderation.reports",announcements:"content.announcements",messages:"content.broadcast",flags:"config.feature_flags",analytics:"analytics.usage",realtime:"system.realtime",logs:"system.logs",pro:"accounts.pro"};
+ const shellNames={overview:"overview",users:"accounts.users",audit:"moderation.audit",reports:"moderation.reports",announcements:"content.announcements",messages:"content.broadcast",flags:"config.feature_flags",secret:"kurogames.secret",analytics:"analytics.usage",realtime:"system.realtime",logs:"system.logs",pro:"accounts.pro"}
  const shellName=$("#opsShellName");if(shellName)shellName.textContent=shellNames[view]||view;
  const shellClock=$("#opsShellClock");if(shellClock)shellClock.textContent="LOCAL "+new Date().toLocaleTimeString("ja-JP");
- ["overview","users","audit","reports","announcements","messages","flags","analytics","realtime","logs","pro"].forEach(name=>{
+ ["overview","users","audit","reports","announcements","messages","flags","secret","analytics","realtime","logs","pro"].forEach(name=>{
   const target=$("#ops"+name.charAt(0).toUpperCase()+name.slice(1)+"View");
   if(target)target.hidden=name!==view;
   const button=$("#opsTabs [data-ops-tab='"+name+"']");
@@ -1291,6 +1348,7 @@ function setOpsView(view){
  if(view==="announcements")loadOpsAnnouncements();
  if(view==="messages")loadOpsMessages();
  if(view==="flags")loadOpsFlags();
+ if(view==="secret")loadOpsSecretManager();
  if(view==="analytics")loadOpsAnalytics();
  if(view==="logs")loadOpsLogs(true);
  if(view==="pro")loadOpsPro();
@@ -1453,6 +1511,110 @@ async function loadOpsFlags(){
    '<article class="ops-flag-item"><div class="ops-flag-copy"><div class="meta"><strong>'+esc(flag.label)+'</strong><span class="ops-flag-key">'+esc(flag.key)+'</span><span class="ops-status '+(flag.enabled?"":"banned")+'">'+(flag.enabled?"有効":"無効")+'</span><span>'+Number(flag.rollout_percentage)+'%</span></div><div class="sns-muted">'+esc(flag.description||"説明なし")+'</div></div><div class="ops-inline-actions"><button class="btn" data-flag-edit="'+esc(flag.key)+'">編集</button><button class="btn" data-flag-delete="'+esc(flag.key)+'">削除</button></div></article>'
   ).join(""):'<div class="empty">フラグはまだ登録されていません。</div>';
  }catch(e){$("#opsFlagsList").innerHTML='<div class="error">読み込みに失敗しました：'+esc(e.message)+'</div>';}
+}
+let opsSecretCodes=[];
+let opsSecretItems=[];
+function opsSecretLocalInput(value){
+ if(!value)return "";
+ const d=new Date(value);if(Number.isNaN(d.getTime()))return "";
+ return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+}
+function opsSecretIso(value){
+ if(!value)return null;
+ const d=new Date(value);return Number.isNaN(d.getTime())?null:d.toISOString();
+}
+function resetSecretCodeForm(){
+ const form=$("#opsSecretCodeForm");if(!form)return;
+ form.reset();$("#opsSecretCodeId").value="";
+ $("#opsSecretCodeEnabled").checked=true;$("#opsSecretCodeValue").required=false;
+ $("#opsSecretCodeSave").textContent="秘密コードを保存";$("#opsSecretCodeCancel").hidden=true;
+}
+function resetSecretContentForm(){
+ const form=$("#opsSecretContentForm");if(!form)return;
+ form.reset();$("#opsSecretContentId").value="";
+ $("#opsSecretContentOrder").value=100;$("#opsSecretContentSave").textContent="コンテンツを保存";
+ $("#opsSecretContentCancel").hidden=true;
+}
+async function loadOpsSecretManager(){
+ $("#opsSecretCodesList").innerHTML='<div class="empty">秘密コードを読み込み中…</div>';
+ $("#opsSecretContentList").innerHTML='<div class="empty">秘密コンテンツを読み込み中…</div>';
+ try{
+  const [codes,items]=await Promise.all([opsInvoke({action:"list_secret_codes"}),opsInvoke({action:"list_secret_content"})]);
+  opsSecretCodes=codes.codes||[];opsSecretItems=items.items||[];
+  $("#opsSecretCodesList").innerHTML=opsSecretCodes.length?opsSecretCodes.map(item=>
+   '<article class="ops-flag-item"><div class="ops-flag-copy"><div class="meta"><strong>'+esc(item.label)+'</strong><span class="ops-flag-key">'+esc(item.room_key)+'</span><span class="ops-status '+(item.enabled?"":"banned")+'">'+(item.enabled?"有効":"無効")+'</span><span>利用 '+Number(item.use_count||0)+(item.max_uses===null?" / ∞":" / "+Number(item.max_uses))+'</span></div><div class="sns-muted">'+esc(item.room_title)+' · '+esc(item.description||"説明なし")+'</div><small class="sns-muted">期間：'+esc(item.starts_at?date(item.starts_at):"即時")+' 〜 '+esc(item.expires_at?date(item.expires_at):"無期限")+'</small></div><div class="ops-inline-actions"><button class="btn" data-secret-code-edit="'+esc(item.id)+'">編集</button><button class="btn" data-secret-code-delete="'+esc(item.id)+'">削除</button></div></article>'
+  ).join(""):'<div class="empty">秘密コードはまだありません。上のフォームから追加してください。</div>';
+  const types={game:"隠しゲーム",diary:"開発者日誌",mission:"隠しミッション",news:"限定お知らせ"};
+  $("#opsSecretContentList").innerHTML=opsSecretItems.length?opsSecretItems.map(item=>
+   '<article class="ops-flag-item"><div class="ops-flag-copy"><div class="meta"><strong>'+esc(item.icon?item.icon+" ":"")+esc(item.title)+'</strong><span class="ops-flag-key">'+esc(types[item.content_type]||item.content_type)+'</span><span>'+esc(item.room_key)+'</span><span class="ops-status '+(item.published?"":"banned")+'">'+(item.published?"公開":"非公開")+'</span></div><div class="sns-muted">'+esc((item.body||"").slice(0,180)||"本文なし")+'</div><small class="sns-muted">表示順：'+Number(item.sort_order||0)+'</small></div><div class="ops-inline-actions"><button class="btn" data-secret-content-edit="'+esc(item.id)+'">編集</button><button class="btn" data-secret-content-delete="'+esc(item.id)+'">削除</button></div></article>'
+  ).join(""):'<div class="empty">秘密コンテンツはまだありません。</div>';
+ }catch(e){
+  $("#opsSecretCodesList").innerHTML='<div class="error">コード一覧を読み込めませんでした：'+esc(e.message)+'</div>';
+  $("#opsSecretContentList").innerHTML='<div class="error">コンテンツ一覧を読み込めませんでした：'+esc(e.message)+'</div>';
+ }
+}
+function editSecretCode(id){
+ const item=opsSecretCodes.find(x=>x.id===id);if(!item)return;
+ $("#opsSecretCodeId").value=item.id;$("#opsSecretCodeLabel").value=item.label||"";
+ $("#opsSecretCodeDescription").value=item.description||"";$("#opsSecretRoomKey").value=item.room_key||"";
+ $("#opsSecretRoomTitle").value=item.room_title||"";$("#opsSecretCodeValue").value="";
+ $("#opsSecretCodeValue").required=false;$("#opsSecretCodeStartsAt").value=opsSecretLocalInput(item.starts_at);
+ $("#opsSecretCodeExpiresAt").value=opsSecretLocalInput(item.expires_at);
+ $("#opsSecretMaxUses").value=item.max_uses??"";$("#opsSecretCodeEnabled").checked=!!item.enabled;
+ $("#opsSecretCodeSave").textContent="変更を保存";$("#opsSecretCodeCancel").hidden=false;
+ $("#opsSecretCodeForm").scrollIntoView({behavior:"smooth",block:"start"});
+}
+async function saveSecretCode(event){
+ event.preventDefault();const button=$("#opsSecretCodeSave");button.disabled=true;
+ try{
+  await opsInvoke({action:"save_secret_code",id:$("#opsSecretCodeId").value||null,
+   label:$("#opsSecretCodeLabel").value,code:$("#opsSecretCodeValue").value,
+   description:$("#opsSecretCodeDescription").value,room_key:$("#opsSecretRoomKey").value,
+   room_title:$("#opsSecretRoomTitle").value,starts_at:opsSecretIso($("#opsSecretStartsAt").value),
+   expires_at:opsSecretIso($("#opsSecretExpiresAt").value),
+   max_uses:$("#opsSecretMaxUses").value===""?null:Number($("#opsSecretMaxUses").value),
+   enabled:$("#opsSecretCodeEnabled").checked});
+  resetSecretCodeForm();await loadOpsSecretManager();await loadOpsAudit();
+ }catch(e){alert("秘密コードを保存できませんでした："+e.message);}
+ finally{button.disabled=false;}
+}
+async function deleteSecretCode(id){
+ const item=opsSecretCodes.find(x=>x.id===id);
+ if(!item||!confirm("「"+item.label+"」の秘密コードを削除しますか？このコードでは入室できなくなります。"))return;
+ try{await opsInvoke({action:"delete_secret_code",id});await loadOpsSecretManager();await loadOpsAudit();}
+ catch(e){alert("秘密コードを削除できませんでした："+e.message);}
+}
+function editSecretContent(id){
+ const item=opsSecretItems.find(x=>x.id===id);if(!item)return;
+ $("#opsSecretContentId").value=item.id;$("#opsSecretContentType").value=item.content_type;
+ $("#opsSecretContentRoomKey").value=item.room_key||"";$("#opsSecretContentTitle").value=item.title||"";
+ $("#opsSecretContentBody").value=item.body||"";$("#opsSecretContentHref").value=item.href||"";
+ $("#opsSecretContentIcon").value=item.icon||"";$("#opsSecretContentReward").value=item.reward||"";
+ $("#opsSecretContentOrder").value=item.sort_order??100;$("#opsSecretContentPublished").checked=!!item.published;
+ $("#opsSecretContentStartsAt").value=opsSecretLocalInput(item.starts_at);
+ $("#opsSecretContentEndsAt").value=opsSecretLocalInput(item.ends_at);
+ $("#opsSecretContentSave").textContent="変更を保存";$("#opsSecretContentCancel").hidden=false;
+ $("#opsSecretContentForm").scrollIntoView({behavior:"smooth",block:"start"});
+}
+async function saveSecretContent(event){
+ event.preventDefault();const button=$("#opsSecretContentSave");button.disabled=true;
+ try{
+  await opsInvoke({action:"save_secret_content",id:$("#opsSecretContentId").value||null,
+   content_type:$("#opsSecretContentType").value,room_key:$("#opsSecretContentRoomKey").value,
+   title:$("#opsSecretContentTitle").value,body:$("#opsSecretContentBody").value,
+   href:$("#opsSecretContentHref").value,icon:$("#opsSecretContentIcon").value,
+   reward:$("#opsSecretContentReward").value,sort_order:Number($("#opsSecretContentOrder").value),
+   starts_at:opsSecretIso($("#opsSecretContentStartsAt").value),ends_at:opsSecretIso($("#opsSecretContentEndsAt").value),
+   published:$("#opsSecretContentPublished").checked});
+  resetSecretContentForm();await loadOpsSecretManager();await loadOpsAudit();
+ }catch(e){alert("秘密コンテンツを保存できませんでした："+e.message);}
+ finally{button.disabled=false;}
+}
+async function deleteSecretContent(id){
+ const item=opsSecretItems.find(x=>x.id===id);
+ if(!item||!confirm("「"+item.title+"」を削除しますか？"))return;
+ try{await opsInvoke({action:"delete_secret_content",id});await loadOpsSecretManager();await loadOpsAudit();}
+ catch(e){alert("秘密コンテンツを削除できませんでした："+e.message);}
 }
 function resetAnnouncementForm(){
  editingAnnouncementId=null;$("#opsAnnouncementForm").reset();
@@ -1824,6 +1986,21 @@ $("#opsAnnouncementsList").addEventListener("click",e=>{const edit=e.target.clos
 $("#opsFlagForm").addEventListener("submit",saveFeatureFlag);
 $("#opsFlagForm").addEventListener("reset",()=>{setTimeout(()=>{$("#opsFlagKey").readOnly=false;$("#opsFlagRollout").value=100;},0);});
 $("#opsFlagsList").addEventListener("click",e=>{const edit=e.target.closest("[data-flag-edit]"),del=e.target.closest("[data-flag-delete]");if(edit)editFeatureFlag(edit.dataset.flagEdit);if(del)deleteFeatureFlag(del.dataset.flagDelete);});
+$("#opsSecretRefresh").addEventListener("click",loadOpsSecretManager);
+$("#opsSecretCodeForm").addEventListener("submit",saveSecretCode);
+$("#opsSecretCodeForm").addEventListener("reset",()=>setTimeout(resetSecretCodeForm,0));
+$("#opsSecretCodeCancel").addEventListener("click",resetSecretCodeForm);
+$("#opsSecretCodesList").addEventListener("click",e=>{
+ const edit=e.target.closest("[data-secret-code-edit]"),del=e.target.closest("[data-secret-code-delete]");
+ if(edit)editSecretCode(edit.dataset.secretCodeEdit);if(del)deleteSecretCode(del.dataset.secretCodeDelete);
+});
+$("#opsSecretContentForm").addEventListener("submit",saveSecretContent);
+$("#opsSecretContentForm").addEventListener("reset",()=>setTimeout(resetSecretContentForm,0));
+$("#opsSecretContentCancel").addEventListener("click",resetSecretContentForm);
+$("#opsSecretContentList").addEventListener("click",e=>{
+ const edit=e.target.closest("[data-secret-content-edit]"),del=e.target.closest("[data-secret-content-delete]");
+ if(edit)editSecretContent(edit.dataset.secretContentEdit);if(del)deleteSecretContent(del.dataset.secretContentDelete);
+});
 
 
 $("#snsTabs").addEventListener("click",async e=>{
