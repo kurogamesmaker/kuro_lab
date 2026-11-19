@@ -57,8 +57,9 @@ Deno.serve(async (req: Request) => {
 
     const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
     const visitor = String(req.headers.get("x-kuro-visitor") || "").trim().slice(0, 100);
-    const visitorIdentity = visitor || String(req.headers.get("x-forwarded-for") || "unknown").split(",")[0].trim();
-    const rateHash = await hmacHex(serviceKey, "kuro-secret-rate:v1:" + visitorIdentity);
+    const forwardedIp = String(req.headers.get("x-forwarded-for") || "").split(",")[0].trim();
+    const rateIdentity = forwardedIp || visitor || "unknown";
+    const rateHash = await hmacHex(serviceKey, "kuro-secret-rate:v1:" + rateIdentity);
 
     const { data: rateRow, error: rateError } = await admin
       .from("kuro_secret_attempt_limits")
@@ -94,12 +95,6 @@ Deno.serve(async (req: Request) => {
     if (codeError) throw codeError;
     if (!entry || !entry.enabled || !isCurrent(entry.starts_at, entry.expires_at)) return await recordFailure();
 
-    const { data: consumed, error: consumeError } = await admin.rpc("kuro_secret_consume_code", { p_code_id: entry.id });
-    if (consumeError) throw consumeError;
-    if (consumed !== true) return await recordFailure();
-
-    await admin.from("kuro_secret_attempt_limits").delete().eq("key_hash", rateHash);
-
     const { data: rows, error: contentError } = await admin
       .from("kuro_secret_content")
       .select("id,content_type,title,body,href,icon,reward,sort_order,starts_at,ends_at,created_at")
@@ -111,6 +106,11 @@ Deno.serve(async (req: Request) => {
     if (contentError) throw contentError;
 
     const items = (rows || []).filter((item) => isCurrent(item.starts_at, item.ends_at));
+    const { data: consumed, error: consumeError } = await admin.rpc("kuro_secret_consume_code", { p_code_id: entry.id });
+    if (consumeError) throw consumeError;
+    if (consumed !== true) return await recordFailure();
+
+    await admin.from("kuro_secret_attempt_limits").delete().eq("key_hash", rateHash);
     return reply({
       ok: true,
       room: {
