@@ -1,10 +1,12 @@
+(function () {
+"use strict";
+
 const DEFAULT_URL = "https://cprvpphlfpmiegjiutjn.supabase.co";
 const DEFAULT_KEY = "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
 const FUNCTION_NAME = "kurogames-online";
 
 let gameId = null;
 let gameConfig = null;
-let cachedUser = null;
 let requestCounter = 0;
 
 function ensureReady() {
@@ -32,15 +34,14 @@ function requestParentSession() {
       if (event.data.type !== "kuro-online-auth") return;
       clearTimeout(timer);
       window.removeEventListener("message", onMessage);
-      cachedUser = event.data.user || null;
-      resolve({ accessToken: event.data.access_token, user: cachedUser });
+      resolve({ accessToken: event.data.access_token, user: event.data.user || null });
     }
     window.addEventListener("message", onMessage);
     window.parent.postMessage({ type: "kuro-online-auth-request", requestId }, "*");
   });
 }
 
-async function invoke(action, params = {}) {
+async function invoke(action, params) {
   ensureReady();
   const session = await requestParentSession();
   if (!session.accessToken) throw new Error("KUROアカウントの認証情報を取得できませんでした。");
@@ -51,7 +52,7 @@ async function invoke(action, params = {}) {
       "apikey": DEFAULT_KEY,
       "Authorization": "Bearer " + session.accessToken,
     },
-    body: JSON.stringify({ action, gameId, ...params }),
+    body: JSON.stringify(Object.assign({ action: action, gameId: gameId }, params || {})),
   });
   let data;
   try { data = await response.json(); }
@@ -61,20 +62,18 @@ async function invoke(action, params = {}) {
 }
 
 const KuroGames = {
-  async init(options = {}) {
+  async init(options) {
+    options = options || {};
     const nextGameId = options.gameId;
     if (typeof nextGameId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(nextGameId)) {
       throw new Error("gameIdが正しくありません。Studioのオンライン設定画面からコピーしてください。");
     }
     gameId = nextGameId;
-    const config = await invoke("get_config");
-    gameConfig = config;
-    return { gameId, game: config.game, features: config.features };
+    gameConfig = await invoke("get_config");
+    return { gameId: gameId, game: gameConfig.game, features: gameConfig.features };
   },
 
-  get config() {
-    return gameConfig;
-  },
+  get config() { return gameConfig; },
 
   auth: {
     async getUser() {
@@ -83,14 +82,14 @@ const KuroGames = {
       return session.user;
     },
     onChange(callback) {
-      if (typeof callback !== "function") return () => {};
+      if (typeof callback !== "function") return function () {};
       let active = true;
       let previous = null;
-      const poll = async () => {
+      const poll = async function () {
         if (!active) return;
         try {
           const session = await requestParentSession();
-          const current = session.user?.id || null;
+          const current = session.user && session.user.id || null;
           if (current !== previous) {
             previous = current;
             callback({ event: "USER_CHANGED", user: session.user });
@@ -99,12 +98,13 @@ const KuroGames = {
       };
       void poll();
       const timer = setInterval(poll, 30000);
-      return () => { active = false; clearInterval(timer); };
+      return function () { active = false; clearInterval(timer); };
     },
   },
 
   ranking: {
-    async submit(score, options = {}) {
+    async submit(score, options) {
+      options = options || {};
       if (!Number.isSafeInteger(Number(score))) throw new TypeError("scoreは整数で指定してください。");
       return invoke("score_submit", {
         score: Number(score),
@@ -113,7 +113,8 @@ const KuroGames = {
         submissionId: crypto.randomUUID(),
       });
     },
-    async get(options = {}) {
+    async get(options) {
+      options = options || {};
       const result = await invoke("leaderboard", {
         mode: options.mode || "default",
         limit: options.limit || 20,
@@ -123,15 +124,15 @@ const KuroGames = {
   },
 
   save: {
-    async get(key = "default") {
-      const result = await invoke("save_get", { key });
+    async get(key) {
+      const result = await invoke("save_get", { key: key || "default" });
       return result.value;
     },
     async set(key, value) {
-      return invoke("save_set", { key: key || "default", value });
+      return invoke("save_set", { key: key || "default", value: value });
     },
-    async delete(key = "default") {
-      return invoke("save_delete", { key });
+    async delete(key) {
+      return invoke("save_delete", { key: key || "default" });
     },
   },
 
@@ -141,6 +142,5 @@ const KuroGames = {
   },
 };
 
-if (typeof window !== "undefined") window.KuroGames = KuroGames;
-export { KuroGames };
-export default KuroGames;
+window.KuroGames = KuroGames;
+})();
