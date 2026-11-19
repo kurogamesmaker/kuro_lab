@@ -235,7 +235,13 @@ function splitMixedCode(source){
 }
 function safeScript(source){return String(source||"").replace(/<\/script/gi,"<\\/script");}
 function makeDocument(){
- const html=project.code.html||"";
+ let html=project.code.html||"";
+ // HTMLタブ内のインラインscriptにもトップレベルawait対応を適用
+ html=html.replace(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi,(whole,attrs,body)=>{
+  if(!/\bawait\b/.test(body))return whole;
+  const cleanAttrs=attrs.replace(/\s+type\s*=\s*(["']).*?\1/i,"");
+  return "<scr"+"ipt"+cleanAttrs+' type="module">'+body+"</scr"+"ipt>";
+ });
  const css=String(project.code.css||"").replace(/<\/style/gi,"<\\/style");
  const js=safeScript(project.code.js||"");
  const frameWidth=Math.max(240,Math.min(3840,Number(project.settings&&project.settings.gameFrameWidth)||960));
