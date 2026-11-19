@@ -27,7 +27,8 @@ function kuroApplyTransportLinks(){
 }
 
 let kuroGameFrame = null;
-let kuroGameFrameLayout = null;\nwindow.addEventListener("resize",()=>{if(kuroGameFrameLayout)kuroGameFrameLayout();});
+let kuroGameFrameLayout = null;
+window.addEventListener("resize",()=>{if(kuroGameFrameLayout)kuroGameFrameLayout();});
 const kuroGameAuthClient = window.supabase.createClient(
  "https://cprvpphlfpmiegjiutjn.supabase.co",
  "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn",
