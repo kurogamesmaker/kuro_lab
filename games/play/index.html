@@ -233,6 +233,9 @@ window.addEventListener("message", async event => {
  if (msg.type !== "kuro-werewolf-auth-request") return;
  try {
   const session = await getKuroGameAuthSession();
+  if (session.user?.is_anonymous) {
+   throw new Error("人狼をプレイするにはKURO LABアカウントにログインしてください。");
+  }
   const storage = {};
   const prefix = "kuro-werewolf-session:";
   for (let i = 0; i < localStorage.length; i++) {
