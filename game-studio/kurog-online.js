@@ -105,7 +105,7 @@ function loadRealtimeClient() {
 
 async function connectRoomPolling(roomData, members, session) {
   const messageCallbacks = new Set(); const playerCallbacks = new Set();
-  let active = true; let afterId = 0; let timer = null; let busy = false; let cachedPlayers = [];
+  let active = true; let afterId = null; let timer = null; let busy = false; let cachedPlayers = [];
   function emitPlayers(next) {
     cachedPlayers = (next || []).map((m) => ({ userId: m.userId, displayName: m.user && m.user.display_name || "プレイヤー", joinedAt: m.joinedAt }));
     playerCallbacks.forEach((cb) => { try { cb(cachedPlayers.slice()); } catch (e) { console.error(e); } });
@@ -115,6 +115,7 @@ async function connectRoomPolling(roomData, members, session) {
     try {
       const result = await invoke("room_poll", { roomId: roomData.id, afterId });
       emitPlayers(result.members || []);
+      if (result.cursor !== undefined && afterId === null) afterId = Number(result.cursor) || 0;
       (result.messages || []).forEach((message) => {
         const id = Number(message.id); if (Number.isSafeInteger(id)) afterId = Math.max(afterId, id);
         if (message.from === session.user.id) return;
