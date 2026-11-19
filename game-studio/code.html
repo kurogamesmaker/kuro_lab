@@ -243,8 +243,8 @@ function makeDocument(){
  if(/<html[\s>]/i.test(html)){
   let doc=html;
   if(/<\/head>/i.test(doc))doc=doc.replace(/<\/head>/i,frameMeta+styleBlock+"</head>");
-  else if(/<html[^>]*>/i.test(doc))doc=doc.replace(/<html[^>]*>/i,m=>m+"<head>"+styleBlock+"</head>");
-  else doc=styleBlock+doc;
+  else if(/<html[^>]*>/i.test(doc))doc=doc.replace(/<html[^>]*>/i,m=>m+"<head>"+frameMeta+styleBlock+"</head>");
+  else doc=frameMeta+styleBlock+doc;
   if(/<\/body>/i.test(doc))doc=doc.replace(/<\/body>/i,scriptBlock+"</body>");
   else doc+=scriptBlock;
   return doc;
@@ -252,8 +252,8 @@ function makeDocument(){
  return '<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+escapeHTML(project.name||"KURO Game")+'</title>'+frameMeta+styleBlock+'</head><body>'+html+scriptBlock+'</body></html>';
 }
 function applyPreviewSize(){
- const w=Math.max(240,Math.min(3840,Number(project.settings&&project.settings.previewWidth)||960));
- const h=Math.max(160,Math.min(2160,Number(project.settings&&project.settings.previewHeight)||540));
+ const w=Math.max(240,Math.min(3840,Number(project.settings&&project.settings.gameFrameWidth)||960));
+ const h=Math.max(160,Math.min(2160,Number(project.settings&&project.settings.gameFrameHeight)||540));
  const frame=$("previewFrame");frame.style.width=w+"px";frame.style.height=h+"px";frame.style.maxWidth="100%";frame.style.maxHeight="100%";
  $("previewSize").textContent=w+" × "+h+" px";
 }
