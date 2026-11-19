@@ -35,7 +35,7 @@ function requestParentSession() {
       if (event.data.type !== "kuro-online-auth") return;
       clearTimeout(timer);
       window.removeEventListener("message", onMessage);
-      resolve({ accessToken: event.data.access_token, user: event.data.user || null });
+      resolve({ accessToken: event.data.access_token, user: event.data.user || null, useGasProxy: event.data.useGasProxy === true });
     }
     window.addEventListener("message", onMessage);
     window.parent.postMessage({ type: "kuro-online-auth-request", requestId }, "*");
@@ -46,22 +46,44 @@ async function invoke(action, params) {
   ensureReady();
   const session = await requestParentSession();
   if (!session.accessToken) throw new Error("KUROアカウントの認証情報を取得できませんでした。");
-  const response = await fetch(DEFAULT_URL + "/functions/v1/" + FUNCTION_NAME, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "apikey": DEFAULT_KEY,
-      "Authorization": "Bearer " + session.accessToken,
-    },
-    body: JSON.stringify(Object.assign({ action: action, gameId: gameId }, params || {})),
-  });
+  const path = "/functions/v1/" + FUNCTION_NAME;
+  const headers = { "Content-Type": "application/json", "apikey": DEFAULT_KEY, "Authorization": "Bearer " + session.accessToken };
+  const body = JSON.stringify(Object.assign({ action: action, gameId: gameId }, params || {}));
+  let status, text;
+  if (session.useGasProxy) {
+    const result = await parentGasRequest(path, "POST", headers, body);
+    status = result.status; text = result.text;
+  } else {
+    const response = await fetch(DEFAULT_URL + path, { method: "POST", headers, body });
+    status = response.status; text = await response.text();
+  }
   let data;
-  try { data = await response.json(); }
+  try { data = JSON.parse(text); }
   catch (_) { throw new Error("KUROGAMES ONLINEから正しい応答を受け取れませんでした。"); }
-  if (!response.ok || data.error) throw new Error(data.error || "KUROGAMES ONLINEとの通信に失敗しました。");
+  if (status < 200 || status >= 300 || data.error) throw new Error(data.error || "KUROGAMES ONLINEとの通信に失敗しました。");
   return data;
 }
 
+
+
+function encodeBase64(text) { return btoa(unescape(encodeURIComponent(text))); }
+function decodeBase64(text) { return decodeURIComponent(escape(atob(text))); }
+function parentGasRequest(path, method, headers, bodyText) {
+  const requestId = "kuro-online-proxy-" + Date.now().toString(36) + "-" + (++requestCounter);
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => { window.removeEventListener("message", onMessage); reject(new Error("GAS中継がタイムアウトしました。")); }, 30000);
+    function onMessage(event) {
+      if (event.source !== window.parent || !event.data || event.data.requestId !== requestId || event.data.type !== "kuro-online-proxy-response") return;
+      clearTimeout(timer); window.removeEventListener("message", onMessage);
+      if (event.data.error) { reject(new Error(event.data.error)); return; }
+      const result = event.data.response || {};
+      let text = ""; try { text = result.bodyBase64 ? decodeBase64(result.bodyBase64) : ""; } catch (_) { reject(new Error("GAS応答を読み取れませんでした。")); return; }
+      resolve({ status: Number(result.status) || 502, ok: Number(result.status) >= 200 && Number(result.status) < 300, text });
+    }
+    window.addEventListener("message", onMessage);
+    window.parent.postMessage({ type: "kuro-online-proxy-request", requestId, path, method, headers, bodyBase64: bodyText ? encodeBase64(bodyText) : "" }, "*");
+  });
+}
 
 function loadRealtimeClient() {
   if (window.supabase && window.supabase.createClient) return Promise.resolve(window.supabase);
@@ -80,11 +102,49 @@ function loadRealtimeClient() {
   return realtimeClientPromise;
 }
 
+
+async function connectRoomPolling(roomData, members, session) {
+  const messageCallbacks = new Set(); const playerCallbacks = new Set();
+  let active = true; let afterId = 0; let timer = null; let busy = false; let cachedPlayers = [];
+  function emitPlayers(next) {
+    cachedPlayers = (next || []).map((m) => ({ userId: m.userId, displayName: m.user && m.user.display_name || "プレイヤー", joinedAt: m.joinedAt }));
+    playerCallbacks.forEach((cb) => { try { cb(cachedPlayers.slice()); } catch (e) { console.error(e); } });
+  }
+  async function poll() {
+    if (!active || busy) return; busy = true;
+    try {
+      const result = await invoke("room_poll", { roomId: roomData.id, afterId });
+      emitPlayers(result.members || []);
+      (result.messages || []).forEach((message) => {
+        const id = Number(message.id); if (Number.isSafeInteger(id)) afterId = Math.max(afterId, id);
+        if (message.from === session.user.id) return;
+        messageCallbacks.forEach((cb) => { try { cb({ type: message.type, data: message.data, from: message.from, sentAt: new Date(message.sentAt).getTime() }); } catch (e) { console.error(e); } });
+      });
+      if (result.roomStatus === "closed") { active = false; if (timer) clearInterval(timer); }
+    } catch (error) { console.warn("KUROGAMES GAS multiplayer poll:", error); }
+    finally { busy = false; }
+  }
+  emitPlayers(members || []); await poll(); timer = setInterval(poll, 1400);
+  return {
+    room: roomData, members: members || [], getPlayers() { return cachedPlayers.slice(); },
+    onPlayersChange(callback) { if (typeof callback !== "function") return () => {}; playerCallbacks.add(callback); callback(cachedPlayers.slice()); return () => playerCallbacks.delete(callback); },
+    onMessage(callback) { if (typeof callback !== "function") return () => {}; messageCallbacks.add(callback); return () => messageCallbacks.delete(callback); },
+    async send(type, data) {
+      if (!active) throw new Error("このルームから退出済みです。");
+      if (typeof type !== "string" || !/^[A-Za-z0-9_-]{1,40}$/.test(type)) throw new TypeError("イベント名は英数字・_・-の40文字以内で指定してください。");
+      if (new TextEncoder().encode(JSON.stringify(data)).length > 32768) throw new TypeError("1回の通信データは32KB以内にしてください。");
+      return invoke("room_send", { roomId: roomData.id, eventType: type, payload: data });
+    },
+    async leave() { if (!active) return; active = false; if (timer) clearInterval(timer); try { await invoke("room_leave", { roomId: roomData.id }); } catch (e) { console.warn(e); } }
+  };
+}
+
 async function connectRoom(roomData, members) {
   const session = await requestParentSession();
   if (!session.accessToken || !session.user || !session.user.id) {
     throw new Error("KUROアカウントの認証情報を取得できませんでした。");
   }
+  if (session.useGasProxy) return connectRoomPolling(roomData, members, session);
   const library = await loadRealtimeClient();
   const client = library.createClient(DEFAULT_URL, DEFAULT_KEY, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
