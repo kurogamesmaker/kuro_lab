@@ -134,7 +134,8 @@ async function connectRoomPolling(roomData, members, session) {
       if (!active) throw new Error("このルームから退出済みです。");
       if (typeof type !== "string" || !/^[A-Za-z0-9_-]{1,40}$/.test(type)) throw new TypeError("イベント名は英数字・_・-の40文字以内で指定してください。");
       if (new TextEncoder().encode(JSON.stringify(data)).length > 32768) throw new TypeError("1回の通信データは32KB以内にしてください。");
-      return invoke("room_send", { roomId: roomData.id, eventType: type, payload: data });
+      await invoke("room_send", { roomId: roomData.id, eventType: type, payload: data });
+      return true;
     },
     async leave() { if (!active) return; active = false; if (timer) clearInterval(timer); try { await invoke("room_leave", { roomId: roomData.id }); } catch (e) { console.warn(e); } }
   };
