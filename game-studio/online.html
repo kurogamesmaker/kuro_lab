@@ -35,7 +35,9 @@ function invoke(action,gameId,extra){return db.functions.invoke("kurogames-onlin
 function escapeHtml(value){return String(value??"").replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
 function makeSnippet(game){
 return [
+'<script type="module">',
 'import KuroGames from "/game-studio/kurog-online.js";',
+'',
 'await KuroGames.init({ gameId: "'+game.id+'" });',
 '',
 '// ゲーム終了時にスコアを登録',
@@ -43,7 +45,8 @@ return [
 '',
 '// セーブ / ロード',
 'await KuroGames.save.set("progress", { level: 3 });',
-'const saved = await KuroGames.save.get("progress");'
+'const saved = await KuroGames.save.get("progress");',
+'<\\/script>'
 ].join("\n");
 }
 function renderGame(game,features){
