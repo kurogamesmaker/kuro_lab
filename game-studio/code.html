@@ -356,7 +356,7 @@ async function updatePublishTagPreview(){const preview=$("publishTagPreview"),st
 }
 async function publishCurrentGame(){
  if(!publishAllowed||!publishUser||!publishDb)return;
- const title=$("publishTitle").value.trim(),slug=$("publishSlug").value.trim().toLowerCase(),description=$("publishDescription").value.trim(),categories=[...$("publishCategories").querySelectorAll("input:checked")].map(input=>input.value),category=categories[0]||"other",icon=publishIconData||$("publishIcon").value.trim()||"🎮";
+ const title=$("publishTitle").value.trim(),slug=$("publishSlug").value.trim().toLowerCase(),description=$("publishDescription").value.trim(),categories=[...$("publishCategories").querySelectorAll("input:checked")].map(input=>input.value),category=categories[0]==="none"?"other":(categories[0]||"other"),icon=publishIconData||$("publishIcon").value.trim()||"🎮";
  if(!title||! /^[a-z0-9][a-z0-9-]{2,47}$/.test(slug)){toast("タイトルとURL用IDを確認してください");return;}
  project.code[activeTab]=currentValue();const html=makeDocument();if(html.length>1000000){toast("ゲームのHTMLが大きすぎます（上限約1MB）");return;}
  $("confirmPublish").disabled=true;$("publishStatus").textContent="KURO GAMESへ公開中…";
