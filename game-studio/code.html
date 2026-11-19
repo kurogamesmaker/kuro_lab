@@ -485,6 +485,24 @@ window.addEventListener("message",async event=>{
  const frame=$("previewFrame");
  if(event.source!==frame.contentWindow||!event.data)return;
  const msg=event.data;
+ if(msg.type==="kuro-online-auth-request"&&typeof msg.requestId==="string"&&msg.requestId.length<=100){
+  try{
+   if(!publishDb)throw new Error("Supabaseに接続できません");
+   let {data,error}=await publishDb.auth.getSession();
+   if(error)throw error;
+   if(!data.session){
+    const signed=await publishDb.auth.signInAnonymously();
+    if(signed.error)throw signed.error;
+    data={session:signed.data.session};
+   }
+   const session=data.session;
+   if(!session||!session.access_token)throw new Error("KUROGAMES認証情報を取得できませんでした");
+   event.source.postMessage({type:"kuro-online-auth",requestId:msg.requestId,access_token:session.access_token,user:session.user?{id:session.user.id,email:session.user.email??null}:null},"*");
+  }catch(error){
+   event.source.postMessage({type:"kuro-online-auth-error",requestId:msg.requestId,message:error&&error.message||"KUROGAMES認証に失敗しました"},"*");
+  }
+  return;
+ }
  if(msg.type==="kuro-werewolf-auth-request"){
   try{
    if(!publishDb)throw new Error("Supabaseに接続できません");
