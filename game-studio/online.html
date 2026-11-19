@@ -14,9 +14,9 @@ a{color:inherit;text-decoration:none}.top{height:66px;border-bottom:1px solid va
 </style>
 </head>
 <body>
-<header class="top"><a class="brand" href="/game-studio/projects.html">KURO <b>GAME STUDIO</b></a><span class="spacer"></span><a class="btn" href="/game-studio/projects.html">プロジェクトへ戻る</a></header>
+<header class="top"><a class="brand" href="/game-studio/projects.html">KURO <b>GAME STUDIO</b></a><span class="spacer"></span><a class="btn" id="gasModeLink" href="#">GAS通信モード</a><a class="btn" href="/game-studio/projects.html">プロジェクトへ戻る</a></header>
 <main class="wrap">
-<section class="hero"><div class="eyebrow">ONE ONLINE LAYER FOR EVERY GAME</div><h1>KUROGAMES ONLINE</h1><p>ゲームごとに必要なオンライン機能を選択できます。ランキングとクラウドセーブは共通基盤を使うため、ゲームごとのテーブル作成やSupabase設定は不要です。設定を変更すると、このゲームのSDK利用可否にすぐ反映されます。</p></section>
+<section class="hero"><div class="eyebrow">ONE ONLINE LAYER FOR EVERY GAME</div><h1>KUROGAMES ONLINE</h1><p>ゲームごとに必要なオンライン機能を選択できます。ランキングとクラウドセーブは共通基盤を使うため、ゲームごとのテーブル作成やSupabase設定は不要です。設定を変更すると、このゲームのSDK利用可否にすぐ反映されます。GASモードでは通信をGAS経由にし、マルチプレイはHTTPポーリングで動作します。</p></section>
 <div id="status" class="status">ログイン状態を確認しています…</div>
 <section id="games" class="grid"></section>
 <section class="future"><h2>次の拡張機能</h2><p>マルチプレイはルーム作成・コード参加・参加者表示・リアルタイムイベントに対応しました。SDKから利用できます。</p><div class="future-tags"><span>マルチプレイ / ルーム対応</span><span>実績・バッジ</span><span>フレンド・招待</span><span>プレゼンス</span></div></section>
@@ -27,7 +27,29 @@ a{color:inherit;text-decoration:none}.top{height:66px;border-bottom:1px solid va
 "use strict";
 const URL="https://cprvpphlfpmiegjiutjn.supabase.co";
 const KEY="sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
-const db=window.supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const KURO_GAS_TRANSPORT=new URLSearchParams(location.search).get("transport")==="gas";
+const KURO_GAS_PROXY_URL="/api/kuro-gas-proxy";
+function kuroGasClientId(){try{let value=localStorage.getItem("kuro_gas_client_id_online_v1");if(!value){value=crypto.randomUUID();localStorage.setItem("kuro_gas_client_id_online_v1",value);}return value;}catch(_){return "kuro-online-"+Date.now().toString(36);}}
+async function kuroGasFetch(input,init){
+ const req=new Request(input,init),url=new URL(req.url);
+ if(url.origin!==URL)return fetch(req);
+ const bytes=new Uint8Array(await req.arrayBuffer());let binary="";
+ for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
+ const headers={};req.headers.forEach((v,k)=>headers[k]=v);
+ const proxy=await fetch(KURO_GAS_PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:kuroGasClientId()})});
+ let result;try{result=await proxy.json();}catch(_){throw new Error("GAS中継サーバーの応答を読み取れませんでした");}
+ if(!proxy.ok||!result||typeof result.status!=="number")throw new Error(result&&result.error||"GAS中継通信に失敗しました");
+ let body=null;if(result.isBinary&&result.bodyBase64){const raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);body=out;}else if(result.bodyText!==undefined&&![204,205,304].includes(result.status))body=result.bodyText;
+ return new Response(body,{status:result.status,headers:result.headers||{"Content-Type":"application/json"}});
+}
+function applyGasLinks(){
+ const link=document.getElementById("gasModeLink");const next=new URL(location.href);
+ if(KURO_GAS_TRANSPORT){next.searchParams.delete("transport");link.textContent="通常通信モード";}else{next.searchParams.set("transport","gas");link.textContent="GAS通信モード";}
+ link.href=next.pathname+next.search+next.hash;
+ document.querySelectorAll('a[href^="/game-studio/"]').forEach(a=>{const u=new URL(a.href,location.origin);if(KURO_GAS_TRANSPORT)u.searchParams.set("transport","gas");a.href=u.pathname+u.search+u.hash;});
+}
+const db=window.supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},global:{fetch:KURO_GAS_TRANSPORT?kuroGasFetch:window.fetch}});
+applyGasLinks();
 const statusEl=document.getElementById("status");
 const grid=document.getElementById("games");
 function setStatus(message,kind){statusEl.textContent=message;statusEl.className="status"+(kind?" "+kind:"");}
