@@ -436,7 +436,39 @@ if($("exportBtn"))$("exportBtn").addEventListener("click",()=>{project.code[acti
 
 function clearConsole(){ $("consoleOutput").textContent="";$("consoleCount").textContent="0"; }
 function writeConsole(level,values){const out=$("consoleOutput");const line=document.createElement("div");line.className=level==="error"?"error":level==="warn"?"warn":"";line.textContent="["+String(level).toUpperCase()+"] "+(values||[]).join(" ");out.appendChild(line);out.scrollTop=out.scrollHeight;$("consoleCount").textContent=String(out.children.length);}
-window.addEventListener("message",event=>{if(event.source!==$("previewFrame").contentWindow||!event.data)return;if(event.data.type==="kuro-studio-error"){$("previewStatus").textContent="エラー: "+String(event.data.message||"実行エラー").slice(0,100);writeConsole("error",[event.data.message||"実行エラー"]);}else if(event.data.type==="kuro-studio-console"){writeConsole(event.data.level,event.data.values||[]);}});
+window.addEventListener("message",async event=>{
+ const frame=$("previewFrame");
+ if(event.source!==frame.contentWindow||!event.data)return;
+ const msg=event.data;
+ if(msg.type==="kuro-werewolf-auth-request"){
+  try{
+   if(!publishDb)throw new Error("Supabaseに接続できません");
+   let {data,error}=await publishDb.auth.getSession();
+   if(error)throw error;
+   if(!data.session){
+    const signed=await publishDb.auth.signInAnonymously();
+    if(signed.error)throw signed.error;
+    data={session:signed.data.session};
+   }
+   const session=data.session;
+   if(!session||!session.access_token)throw new Error("Supabase認証情報を取得できませんでした");
+   const storage={};
+   const prefix="kuro-werewolf-session:";
+   for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i);
+    if(key&&key.startsWith(prefix))storage[key.slice(prefix.length)]=localStorage.getItem(key);
+   }
+   event.source.postMessage({type:"kuro-werewolf-auth",useGasProxy:KURO_GAS_TRANSPORT,access_token:session.access_token,refresh_token:session.refresh_token,storage},"*");
+  }catch(error){
+   event.source.postMessage({type:"kuro-werewolf-auth-error",message:error&&error.message||"Supabase認証に失敗しました"},"*");
+  }
+  return;
+ }
+ if(msg.type==="kuro-werewolf-storage-set"&&typeof msg.key==="string"&&msg.key.startsWith("werewolf_")){localStorage.setItem("kuro-werewolf-session:"+msg.key,String(msg.value??""));return;}
+ if(msg.type==="kuro-werewolf-storage-remove"&&typeof msg.key==="string"&&msg.key.startsWith("werewolf_")){localStorage.removeItem("kuro-werewolf-session:"+msg.key);return;}
+ if(msg.type==="kuro-studio-error"){$("previewStatus").textContent="エラー: "+String(msg.message||"実行エラー").slice(0,100);writeConsole("error",[msg.message||"実行エラー"]);}
+ else if(msg.type==="kuro-studio-console"){writeConsole(msg.level,msg.values||[]);}
+});
 document.addEventListener("keydown",e=>{
  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="s"){e.preventDefault();project.code[activeTab]=currentValue();persist(false)}
  if((e.ctrlKey||e.metaKey)&&e.key==="Enter"){e.preventDefault();project.code[activeTab]=currentValue();run()}
