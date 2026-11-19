@@ -153,8 +153,9 @@ async function connectRoom(roomData, members) {
     try {
       const latest = await requestParentSession();
       if (latest.accessToken) client.realtime.setAuth(latest.accessToken);
-    } catch (_) {}
-  }, 60000);
+      await invoke("room_heartbeat", { roomId: roomData.id });
+    } catch (error) { console.warn("KUROGAMES room heartbeat:", error); }
+  }, 30000);
 
   return {
     room: roomData,
