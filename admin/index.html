@@ -656,7 +656,7 @@
  </div>
  <div id="opsSecretView" hidden>
   <section class="panel">
-   <div class="toolbar"><div><strong>SECRET ACCESS CODES</strong><div class="sns-muted">複数の数字コードから、それぞれ異なる秘密の部屋へ案内できます。コード自体は一覧に表示せず、ハッシュで安全に管理します。</div></div><button class="btn" id="opsSecretRefresh">更新</button></div>
+   <div class="toolbar"><div><strong>SECRET ACCESS CODES</strong><div class="sns-muted">複数の数字コードを発行できます。どのコードでも同じ秘密ターミナルが開きます。コード自体は一覧に表示せず、ハッシュで安全に管理します。</div></div><button class="btn" id="opsSecretRefresh">更新</button></div>
    <form id="opsSecretCodeForm" class="ops-form">
     <input id="opsSecretCodeId" type="hidden">
     <div class="ops-form-grid">
@@ -664,8 +664,7 @@
      <label>秘密コード（4〜12桁）<input id="opsSecretCodeValue" type="text" inputmode="numeric" pattern="[0-9]{4,12}" maxlength="12" autocomplete="off" required placeholder="新しいコード。編集時は空欄で維持"></label>
     </div>
     <div class="ops-form-grid">
-     <label>部屋キー<input id="opsSecretRoomKey" maxlength="49" pattern="[a-z0-9][a-z0-9_-]{1,48}" required placeholder="secret-hub"></label>
-     <label>部屋の表示名<input id="opsSecretRoomTitle" maxlength="80" required placeholder="SECRET TERMINAL"></label>
+     <input id="opsSecretRoomKey" type="hidden" value="secret-hub"><input id="opsSecretRoomTitle" type="hidden" value="KURO // CLASSIFIED TERMINAL"><div class="sns-muted">すべての秘密コードは共通の「KURO // CLASSIFIED TERMINAL」に接続します。</div>
     </div>
     <label>コードの説明<input id="opsSecretCodeDescription" maxlength="500" placeholder="どのような利用者向けのコードか"></label>
     <div class="ops-form-grid">
@@ -686,7 +685,7 @@
     <input id="opsSecretContentId" type="hidden">
     <div class="ops-form-grid">
      <label>コンテンツ種類<select id="opsSecretContentType"><option value="game">隠しゲーム</option><option value="diary">開発者日誌</option><option value="mission">隠しミッション</option><option value="news">限定お知らせ</option></select></label>
-     <label>部屋キー<input id="opsSecretContentRoomKey" maxlength="49" pattern="[a-z0-9][a-z0-9_-]{1,48}" required placeholder="secret-hub"></label>
+     <input id="opsSecretContentRoomKey" type="hidden" value="secret-hub"><div class="sns-muted">このコンテンツは共通ターミナルに表示されます。</div>
     </div>
     <label>タイトル<input id="opsSecretContentTitle" maxlength="120" required placeholder="秘密のゲーム"></label>
     <label>本文・説明<textarea id="opsSecretContentBody" rows="4" maxlength="12000" placeholder="表示する内容"></textarea></label>
