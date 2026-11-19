@@ -98,7 +98,6 @@ Deno.serve(async (req: Request) => {
     const { data: rows, error: contentError } = await admin
       .from("kuro_secret_content")
       .select("id,content_type,title,body,href,icon,reward,sort_order,starts_at,ends_at,created_at")
-      .eq("room_key", entry.room_key)
       .eq("published", true)
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false })
@@ -114,9 +113,9 @@ Deno.serve(async (req: Request) => {
     return reply({
       ok: true,
       room: {
-        key: entry.room_key,
-        title: entry.room_title,
-        description: entry.description || "",
+        key: "secret-hub",
+        title: "KURO // CLASSIFIED TERMINAL",
+        description: "すべての秘密コンテンツをまとめた共通ターミナルです。",
         accessLabel: entry.label
       },
       items
