@@ -17,7 +17,7 @@ const CORS_HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
 };
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const DEFAULT_FEATURES = { ranking: false, cloudSave: false };
+const DEFAULT_FEATURES = { ranking: false, cloudSave: false, multiplayer: false };
 
 class HttpError extends Error {
   status: number;
@@ -97,6 +97,54 @@ async function requireOwner(req: Request, game: { owner_id: string }) {
   return user;
 }
 
+
+function safeRoomCode(value: unknown) {
+  const code = typeof value === "string" ? value.trim().toUpperCase() : "";
+  if (!/^[A-Z0-9]{6}$/.test(code)) throw new HttpError(400, "ルームコードは6文字で指定してください。");
+  return code;
+}
+
+function requireMultiplayer(features: Record<string, unknown>) {
+  requireFeature(features, "multiplayer");
+}
+
+async function getRoomMembers(roomId: string) {
+  const { data: members, error } = await admin
+    .from("game_online_room_members")
+    .select("user_id, joined_at, last_seen_at")
+    .eq("room_id", roomId)
+    .gte("last_seen_at", new Date(Date.now() - 90000).toISOString())
+    .order("joined_at", { ascending: true });
+  if (error) throw new HttpError(500, "参加者一覧を取得できませんでした。");
+  const ids = (members ?? []).map((m) => m.user_id);
+  let profiles = new Map<string, { kuro_id: string; username: string; display_name: string; avatar_url: string | null }>();
+  if (ids.length) {
+    const { data, error: profileError } = await admin.from("profiles")
+      .select("id, kuro_id, username, display_name, avatar_url")
+      .in("id", ids);
+    if (profileError) throw new HttpError(500, "参加者プロフィールを取得できませんでした。");
+    profiles = new Map((data ?? []).map((p) => [p.id, {
+      kuro_id: p.kuro_id ?? "",
+      username: p.username ?? "",
+      display_name: p.display_name ?? p.username ?? "プレイヤー",
+      avatar_url: p.avatar_url ?? null,
+    }]));
+  }
+  return (members ?? []).map((m) => {
+    const profile = profiles.get(m.user_id) ?? { kuro_id: "", username: "", display_name: "プレイヤー", avatar_url: null };
+    return {
+      userId: m.user_id,
+      joinedAt: m.joined_at,
+      user: {
+        kuroId: profile.kuro_id || null,
+        username: profile.username,
+        display_name: profile.display_name,
+        avatar_url: profile.avatar_url,
+      },
+    };
+  });
+}
+
 async function handle(req: Request) {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
   if (req.method !== "POST") throw new HttpError(405, "POSTで呼び出してください。");
@@ -121,6 +169,26 @@ async function handle(req: Request) {
     });
   }
 
+  if (action === "profile_me") {
+    const user = await getUser(req);
+    requirePublished(game);
+    const { data: profile, error } = await admin
+      .from("profiles")
+      .select("kuro_id, username, display_name, avatar_url")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (error) throw new HttpError(500, "KUROプロフィールを取得できませんでした。");
+    if (!profile) throw new HttpError(404, "KUROプロフィールが見つかりません。再ログインしてください。");
+    return reply(200, {
+      profile: {
+        kuroId: profile.kuro_id,
+        username: profile.username,
+        displayName: profile.display_name,
+        avatarUrl: profile.avatar_url,
+      },
+    });
+  }
+
   if (action === "settings_get") {
     await requireOwner(req, game);
     return reply(200, {
@@ -137,7 +205,7 @@ async function handle(req: Request) {
       : {};
     const next = { ...settings.features };
     let changed = false;
-    for (const key of ["ranking", "cloudSave"]) {
+    for (const key of ["ranking", "cloudSave", "multiplayer"]) {
       if (typeof incoming[key] === "boolean") {
         next[key] = incoming[key];
         changed = true;
@@ -170,13 +238,15 @@ async function handle(req: Request) {
     if (error) throw new HttpError(500, "ランキングを取得できませんでした。");
 
     const userIds = Array.from(new Set((scores ?? []).map((row) => row.user_id)));
-    let profileMap = new Map<string, { username: string; display_name: string; avatar_url: string | null }>();
+    let profileMap = new Map<string, { kuro_id: string; username: string; display_name: string; avatar_url: string | null }>();
     if (userIds.length) {
-      const { data: profiles } = await admin
+      const { data: profiles, error: profileError } = await admin
         .from("profiles")
-        .select("id, username, display_name, avatar_url")
+        .select("id, kuro_id, username, display_name, avatar_url")
         .in("id", userIds);
+      if (profileError) throw new HttpError(500, "ランキング参加者のプロフィールを取得できませんでした。");
       profileMap = new Map((profiles ?? []).map((profile) => [profile.id, {
+        kuro_id: profile.kuro_id ?? "",
         username: profile.username ?? "",
         display_name: profile.display_name ?? profile.username ?? "プレイヤー",
         avatar_url: profile.avatar_url ?? null,
@@ -185,13 +255,21 @@ async function handle(req: Request) {
 
     return reply(200, {
       mode,
-      scores: (scores ?? []).map((row, index) => ({
-        rank: index + 1,
-        score: row.score,
-        mode: row.mode,
-        createdAt: row.created_at,
-        user: profileMap.get(row.user_id) ?? { username: "", display_name: "プレイヤー", avatar_url: null },
-      })),
+      scores: (scores ?? []).map((row, index) => {
+        const profile = profileMap.get(row.user_id) ?? { kuro_id: "", username: "", display_name: "プレイヤー", avatar_url: null };
+        return {
+          rank: index + 1,
+          score: row.score,
+          mode: row.mode,
+          createdAt: row.created_at,
+          user: {
+            kuroId: profile.kuro_id || null,
+            username: profile.username,
+            display_name: profile.display_name,
+            avatar_url: profile.avatar_url,
+          },
+        };
+      }),
     });
   }
 
@@ -281,6 +359,152 @@ async function handle(req: Request) {
     }, { onConflict: "game_id,user_id,save_key" });
     if (error) throw new HttpError(500, "セーブデータを保存できませんでした。");
     return reply(200, { ok: true, updatedAt });
+  }
+
+
+  if (action === "room_list" || action === "room_create" || action === "room_join" || action === "room_leave" || action === "room_heartbeat" || action === "room_send" || action === "room_poll") {
+    const user = await getUser(req);
+    requirePublished(game);
+    requireMultiplayer(settings.features);
+
+    if (action === "room_list") {
+      const { data, error } = await admin.from("game_online_rooms")
+        .select("id, room_code, player_count, max_players, created_at")
+        .eq("game_id", game.id)
+        .eq("status", "waiting")
+        .gt("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw new HttpError(500, "ルーム一覧を取得できませんでした。");
+      return reply(200, { rooms: data ?? [] });
+    }
+
+    if (action === "room_create") {
+      const maxPlayers = Math.max(2, Math.min(8, Math.floor(Number(body.maxPlayers) || 4)));
+      let room: Record<string, unknown> | null = null;
+      for (let attempt = 0; attempt < 6 && !room; attempt++) {
+        const bytes = crypto.getRandomValues(new Uint8Array(6));
+        const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        const code = Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
+        const { data, error } = await admin.from("game_online_rooms").insert({
+          game_id: game.id,
+          room_code: code,
+          host_user_id: user.id,
+          max_players: maxPlayers,
+          player_count: 1,
+        }).select("id, game_id, room_code, host_user_id, max_players, player_count, status, created_at").single();
+        if (!error) room = data;
+        else if (error.code !== "23505") throw new HttpError(500, "ルームを作成できませんでした。");
+      }
+      if (!room) throw new HttpError(503, "ルームコードを発行できませんでした。もう一度お試しください。");
+      const { error: memberError } = await admin.from("game_online_room_members").insert({
+        room_id: room.id,
+        user_id: user.id,
+      });
+      if (memberError) {
+        await admin.from("game_online_rooms").delete().eq("id", room.id);
+        throw new HttpError(500, "ルーム参加者を登録できませんでした。");
+      }
+      return reply(200, { room, members: await getRoomMembers(String(room.id)) });
+    }
+
+    if (action === "room_join") {
+      const code = safeRoomCode(body.roomCode);
+      const { data, error } = await admin.rpc("kuro_join_online_room", {
+        p_game_id: game.id,
+        p_room_code: code,
+        p_user_id: user.id,
+      });
+      if (error) {
+        if ((error.message || "").includes("ROOM_FULL")) throw new HttpError(409, "このルームは満員です。");
+        if ((error.message || "").includes("ROOM_NOT_FOUND")) throw new HttpError(404, "ルームが見つからないか、参加を締め切っています。");
+        throw new HttpError(500, "ルームに参加できませんでした。");
+      }
+      const room = Array.isArray(data) ? data[0] : data;
+      return reply(200, { room, members: await getRoomMembers(String(room.id)) });
+    }
+
+    const roomId = typeof body.roomId === "string" && UUID_RE.test(body.roomId) ? body.roomId : "";
+    if (!roomId) throw new HttpError(400, "roomIdが正しくありません。");
+
+    if (action === "room_send") {
+      const type = typeof body.eventType === "string" ? body.eventType : "";
+      if (!/^[A-Za-z0-9_-]{1,40}$/.test(type)) throw new HttpError(400, "イベント名が正しくありません。");
+      const payload = Object.prototype.hasOwnProperty.call(body, "payload") ? body.payload : {};
+      if (new TextEncoder().encode(JSON.stringify(payload)).length > 32768) {
+        throw new HttpError(413, "1回の通信データは32KB以内にしてください。");
+      }
+      const { data: member, error: memberError } = await admin.from("game_online_room_members")
+        .select("user_id").eq("room_id", roomId).eq("user_id", user.id).maybeSingle();
+      if (memberError) throw new HttpError(500, "ルーム参加状態を確認できませんでした。");
+      if (!member) throw new HttpError(403, "このルームの参加者ではありません。");
+      const { data: room, error: roomError } = await admin.from("game_online_rooms")
+        .select("id, game_id, status").eq("id", roomId).eq("game_id", game.id).maybeSingle();
+      if (roomError || !room) throw new HttpError(404, "ルームが見つかりません。");
+      if (room.status === "closed") throw new HttpError(410, "このルームは終了しています。");
+      const { data: inserted, error } = await admin.from("game_online_room_messages")
+        .insert({ room_id: roomId, sender_user_id: user.id, event_type: type, payload })
+        .select("id").single();
+      if (error) throw new HttpError(500, "ゲームデータを送信できませんでした。");
+      void admin.from("game_online_room_messages").delete()
+        .lt("created_at", new Date(Date.now() - 86400000).toISOString());
+      return reply(200, { ok: true, messageId: inserted.id });
+    }
+
+    if (action === "room_poll") {
+      const hasCursor = body.afterId !== null && body.afterId !== undefined;
+      let afterId = hasCursor && Number.isSafeInteger(Number(body.afterId)) && Number(body.afterId) >= 0
+        ? Number(body.afterId) : 0;
+      if (!hasCursor) {
+        const { data: latest, error: latestError } = await admin.from("game_online_room_messages")
+          .select("id").eq("room_id", roomId).order("id", { ascending: false }).limit(1).maybeSingle();
+        if (latestError) throw new HttpError(500, "マルチプレイ通信位置を取得できませんでした。");
+        afterId = latest ? Number(latest.id) : 0;
+      }
+      const { data: member, error: memberError } = await admin.from("game_online_room_members")
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq("room_id", roomId).eq("user_id", user.id)
+        .select("user_id").maybeSingle();
+      if (memberError) throw new HttpError(500, "ルーム接続を更新できませんでした。");
+      if (!member) throw new HttpError(403, "このルームの参加者ではありません。");
+      const { data: room, error: roomError } = await admin.from("game_online_rooms")
+        .select("id, game_id, status").eq("id", roomId).eq("game_id", game.id).maybeSingle();
+      if (roomError || !room) throw new HttpError(404, "ルームが見つかりません。");
+      const { data: messages, error } = await admin.from("game_online_room_messages")
+        .select("id, sender_user_id, event_type, payload, created_at")
+        .eq("room_id", roomId).gt("id", afterId)
+        .order("id", { ascending: true }).limit(100);
+      if (error) throw new HttpError(500, "マルチプレイ通信を受信できませんでした。");
+      const members = await getRoomMembers(roomId);
+      return reply(200, {
+        messages: (messages ?? []).map((m) => ({
+          id: m.id, from: m.sender_user_id, type: m.event_type,
+          data: m.payload, sentAt: m.created_at,
+        })),
+        members,
+        roomStatus: room.status,
+        cursor: afterId,
+      });
+    }
+    if (!roomId) throw new HttpError(400, "roomIdが正しくありません。");
+    if (action === "room_heartbeat") {
+      const { data, error } = await admin.from("game_online_room_members")
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq("room_id", roomId)
+        .eq("user_id", user.id)
+        .select("user_id")
+        .maybeSingle();
+      if (error) throw new HttpError(500, "ルーム接続を更新できませんでした。");
+      if (!data) throw new HttpError(403, "このルームの参加者ではありません。");
+      return reply(200, { ok: true });
+    }
+    if (!roomId) throw new HttpError(400, "roomIdが正しくありません。");
+    const { data: leaveResult, error: leaveError } = await admin.rpc("kuro_leave_online_room", {
+      p_room_id: roomId,
+      p_user_id: user.id,
+    });
+    if (leaveError) throw new HttpError(500, "ルームから退出できませんでした。");
+    return reply(200, { ok: true, left: leaveResult === true });
   }
 
   throw new HttpError(400, "未対応のactionです。");
