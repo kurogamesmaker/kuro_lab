@@ -319,7 +319,7 @@ function drawIconCrop(){
 }
 function closeIconCrop(){ $("iconCropModal").classList.remove("open");if(cropObjectUrl){URL.revokeObjectURL(cropObjectUrl);cropObjectUrl="";}cropImage=null;cropDrag=null; }
 async function openIconCrop(file){
- if(!file||!/^image\\/(png|jpeg|webp)$/.test(file.type))throw new Error("PNG・JPG・WebP画像を選択してください");
+ if(!file||!["image/png","image/jpeg","image/webp"].includes(file.type))throw new Error("PNG・JPG・WebP画像を選択してください");
  if(file.size>8*1024*1024)throw new Error("画像は8MB以下にしてください");
  if(cropObjectUrl)URL.revokeObjectURL(cropObjectUrl);
  cropObjectUrl=URL.createObjectURL(file);cropImage=new Image();
@@ -341,7 +341,7 @@ $("applyIconCrop").addEventListener("click",()=>{
  ctx.drawImage(cropImage,(256-w)/2+cropX*.8,(256-h)/2+cropY*.8,w,h);
  const data=canvas.toDataURL("image/webp",.84);
  if(data.length>420000){toast("画像を小さくしてから再度お試しください");return;}
- publishIconData=data;showPublishIconPreview();closeIconCrop();toast("切り取ったアイコンを設定しました");
+ publishIconData=data;showPublishIconPreview();$("publishIconFile").value="";closeIconCrop();toast("切り取ったアイコンを設定しました");
 });
 function slugifyGameName(value){const s=String(value||"").normalize("NFKD").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,48);return s.length>=3?s:"kuro-game-"+Date.now().toString(36);}
 async function openPublishModal(){
