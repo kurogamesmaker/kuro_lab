@@ -457,6 +457,16 @@ body{background:#63c8e4!important;color:#17233a!important;background-image:radia
   .center:fullscreen #game-app{padding-bottom:64px}
   .center:fullscreen .fullscreen-btn{right:10px;bottom:10px}
 }
+
+/* オンラインランキング */
+.sushi-ranking-panel{max-height:260px;overflow:auto;text-align:left;background:rgba(255,255,255,.94);border:2px solid #d6a84b;border-radius:16px;padding:12px;box-shadow:0 8px 22px rgba(80,45,10,.15)}
+.sushi-ranking-row{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:8px;align-items:center;padding:9px 7px;border-bottom:1px solid #eadcc4;color:#292524;font-size:13px}
+.sushi-ranking-row:last-child{border-bottom:0}
+.sushi-ranking-row.is-me{background:#fff1bd;border-radius:9px;font-weight:900}
+.sushi-ranking-place{font-weight:1000;color:#9a5b16;text-align:center}
+.sushi-ranking-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sushi-ranking-score{font-weight:1000;color:#be123c;font-variant-numeric:tabular-nums}
+
 </style>
 
 <!-- Google Analytics 4 -->
@@ -749,6 +759,17 @@ body{background:#63c8e4!important;color:#17233a!important;background-image:radia
         <button id="back" class="w-full py-3 bg-stone-200/60 hover:bg-stone-300/70 backdrop-blur-sm border border-stone-400 rounded-2xl font-bold text-stone-800 text-sm cursor-pointer">
           コース選択に戻る
         </button>
+        <button id="rankingToggle" type="button" class="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-amber-950 rounded-2xl font-black text-sm shadow-md border border-amber-700 cursor-pointer">
+          🏆 オンラインランキングを見る
+        </button>
+      </div>
+      <div id="rankingPanel" class="sushi-ranking-panel hidden">
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <strong class="text-amber-900">🏆 オンラインランキング TOP 100</strong>
+          <span id="rankingModeLabel" class="text-xs font-bold text-stone-600"></span>
+        </div>
+        <p id="rankingStatus" class="text-xs font-bold text-stone-600 mb-2" role="status">ランキングを読み込むとここに表示されます。</p>
+        <ol id="rankingList" class="m-0 p-0 list-none"></ol>
       </div>
     </section>
 
@@ -779,6 +800,7 @@ body{background:#63c8e4!important;color:#17233a!important;background-image:radia
 </section>
 
 </div>
+<script src="/game-studio/kurog-online.js"></script>
 <script>
 // 単語データバンク
 const WORD_BANK = {
@@ -1072,6 +1094,88 @@ function variantsFor(kana){ return variantsDetailed(kana).map(d=>d.s); }
 function patternsFor(word){ return variantsFor(word.kana); }
 
 const $=id=>document.getElementById(id);
+
+const SUSHI_ONLINE_GAME_ID = "5c1e658b-f6d3-412a-8b97-61d2c0457e95";
+let sushiOnlinePromise = null;
+let sushiKuroId = null;
+
+function sushiRankingMode(){
+  return mode + "_" + selected;
+}
+async function ensureSushiOnline(){
+  if(!window.KuroGames) throw new Error("オンラインランキングSDKを読み込めませんでした。");
+  if(!sushiOnlinePromise){
+    sushiOnlinePromise = window.KuroGames.init({gameId:SUSHI_ONLINE_GAME_ID}).then(async config=>{
+      if(!config.features || config.features.ranking !== true) throw new Error("このゲームのランキング機能は現在無効です。");
+      try{ sushiKuroId = await window.KuroGames.auth.getKuroId(); }catch(_){}
+      return config;
+    }).catch(error=>{
+      sushiOnlinePromise = null;
+      throw error;
+    });
+  }
+  return sushiOnlinePromise;
+}
+function setSushiRankingStatus(message, error){
+  const el=$("rankingStatus");
+  if(!el) return;
+  el.textContent=message;
+  el.classList.toggle("text-red-700",!!error);
+  el.classList.toggle("text-stone-600",!error);
+}
+function renderSushiRanking(rows){
+  const list=$("rankingList");
+  list.replaceChildren();
+  if(!rows || !rows.length){
+    const empty=document.createElement("li");
+    empty.className="text-sm text-stone-600 py-3 text-center";
+    empty.textContent="まだランキング記録がありません。最初のランカーを目指そう！";
+    list.appendChild(empty);
+    return;
+  }
+  rows.forEach(row=>{
+    const item=document.createElement("li");
+    item.className="sushi-ranking-row"+(sushiKuroId && row.user && row.user.kuroId===sushiKuroId?" is-me":"");
+    const place=document.createElement("span");
+    place.className="sushi-ranking-place";
+    place.textContent=Number(row.rank)===1?"🥇":Number(row.rank)===2?"🥈":Number(row.rank)===3?"🥉":String(row.rank);
+    const name=document.createElement("span");
+    name.className="sushi-ranking-name";
+    name.textContent=(row.user && (row.user.display_name || row.user.username)) || "プレイヤー";
+    const points=document.createElement("span");
+    points.className="sushi-ranking-score";
+    points.textContent=Number(row.score||0).toLocaleString("ja-JP")+" 点";
+    item.append(place,name,points);
+    list.appendChild(item);
+  });
+}
+async function loadSushiRanking(){
+  $("rankingModeLabel").textContent=(modeNames[mode]||mode)+"・"+(levelNames[selected]||selected);
+  setSushiRankingStatus("ランキングを読み込み中…");
+  try{
+    await ensureSushiOnline();
+    const rows=await window.KuroGames.ranking.get({mode:sushiRankingMode(),limit:100});
+    renderSushiRanking(rows);
+    setSushiRankingStatus("最新のランキングを表示しています。自分の記録は黄色で表示されます。");
+  }catch(error){
+    setSushiRankingStatus(error && error.message ? error.message : "ランキングを取得できませんでした。KUROアカウントでログインしているか確認してください。",true);
+  }
+}
+async function submitSushiRanking(){
+  try{
+    await ensureSushiOnline();
+    await window.KuroGames.ranking.submit(score,{
+      mode:sushiRankingMode(),
+      metadata:{level:selected,gameMode:mode,completed:completed,maxCombo:maxCombo,miss:miss}
+    });
+    $("rankingPanel").classList.remove("hidden");
+    $("rankingToggle").textContent="🏆 ランキングを更新";
+    await loadSushiRanking();
+    setSushiRankingStatus("スコアを登録しました！ 最新ランキングを表示しています。");
+  }catch(error){
+    setSushiRankingStatus(error && error.message ? error.message : "スコアを登録できませんでした。KUROアカウントでログインしているか確認してください。",true);
+  }
+}
 
 let selected="beginner", running=false, timeLeft=60, score=0, miss=0, combo=0, maxCombo=0, completed=0;
 let current=null, accepted=[], acceptedDetail=[], kanaParts=[], typed="", timer=null, queue=[];
@@ -2114,6 +2218,8 @@ function finishGame(reason){
       ? `🎉 NEW RECORD！（${label} ベスト更新）`
       : `${label} ベスト: ${best}`)+(mode==="endless"?` ／ 難しさ ${Math.round(diffValue)}% まで到達`:"");
 
+    // KURO Lab共通ランキングへスコアを送信（失敗しても通常プレイには影響させない）
+    void submitSushiRanking();
     celebrate(score,isNew);
   },1300);
 }
@@ -2261,6 +2367,13 @@ $("typing").addEventListener("keydown", e=>{
 $("start").addEventListener("click", startGame);
 $("again").addEventListener("click", startGame);
 $("back").addEventListener("click", showMenu);
+
+$("rankingToggle").addEventListener("click",()=>{
+  const panel=$("rankingPanel");
+  const opening=panel.classList.contains("hidden");
+  panel.classList.toggle("hidden");
+  if(opening) void loadSushiRanking();
+});
 $("typing").addEventListener("blur", ()=>{ if(running) setTimeout(()=>$("typing").focus(), 0); });
 $("sound").addEventListener("mousedown", e=>e.preventDefault());
 $("sound").addEventListener("click", ()=>{
