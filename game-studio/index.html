@@ -264,7 +264,7 @@ function xRenderStage(){
   const js=String(code.js||"").replace(/<\/script/gi,"<\\/script");
   if(/<html[\s>]/i.test(html)){
    if(css){if(/<\/head>/i.test(html))html=html.replace(/<\/head>/i,"<style>"+css+"</style></head>");else html="<style>"+css+"</style>"+html;}
-   if(js){if(/<\/body>/i.test(html))html=html.replace(/<\/body>/i,"<script>"+js+"</script></body>");else html+="<scr"+"ipt>"+js+"</scr"+"ipt>";}
+   if(js){if(/<\/body>/i.test(html))html=html.replace(/<\/body>/i,"<scr"+"ipt>"+js+"</scr"+"ipt></body>");else html+="<scr"+"ipt>"+js+"</scr"+"ipt>";}
   }else html="<!doctype html><html><head><meta charset=utf-8><meta name=viewport content=width=device-width,initial-scale=1><style>html,body{margin:0;min-height:100%;}"+css+"</style></head><body>"+html+"<scr"+"ipt>"+js+"</scr"+"ipt></body></html>";
   frame.srcdoc=html;stage.appendChild(frame);return;
  }
