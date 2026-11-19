@@ -35,7 +35,7 @@ function invoke(action,gameId,extra){return db.functions.invoke("kurogames-onlin
 function escapeHtml(value){return String(value??"").replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
 function makeSnippet(game){
 return [
-'<script src="/game-studio/kurog-online.js"><\\/script>',
+'<script src="/game-studio/kurog-online.js">'+'</'+'script>',
 '<script>',
 '(async function () {',
 '  await KuroGames.init({ gameId: "'+game.id+'" });',
