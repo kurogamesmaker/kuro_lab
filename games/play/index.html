@@ -210,7 +210,7 @@ window.addEventListener("message", async event => {
  if(!window.supabase||!window.supabase.createClient){fail("通信ライブラリを読み込めませんでした。");return;}
  try{const db=kuroGameAuthClient;
   const {data,error}=await db.from("game_studio_games").select("title,description,icon,html_content").eq("id",id).eq("status","published").maybeSingle();if(error)throw error;if(!data){fail("公開が終了したか、URLが正しくありません。");return;}
-  $("gameTitle").textContent=data.title;$("gameDescription").textContent=data.description||"KURO GAME STUDIOで作成されたゲーム";$("gameIcon").textContent=data.icon||"🎮";$("gameInfo").hidden=false;
+  $("gameTitle").textContent=data.title;$("gameDescription").textContent=data.description||"KURO GAME STUDIOで作成されたゲーム";const iconValue=data.icon||"🎮",iconNode=$("gameIcon");if(/^data:image\\//i.test(iconValue)||/^https?:\\/\\//i.test(iconValue)){const img=document.createElement("img");img.src=iconValue;img.alt="";img.style.cssText="width:100%;height:100%;object-fit:cover;border-radius:inherit";iconNode.replaceChildren(img);}else iconNode.textContent=iconValue;$("gameInfo").hidden=false;
   const frame=document.createElement("iframe");frame.className="game-frame";frame.title=data.title;frame.setAttribute("sandbox","allow-scripts allow-forms allow-modals");frame.referrerPolicy="no-referrer";
   const frameMeta=String(data.html_content||"").match(/<meta\s+name=["']kuro-game-frame["']\s+content=["'](\d{3,4})x(\d{3,4})["'][^>]*>/i);
   const frameWidth=frameMeta?Math.max(240,Math.min(3840,Number(frameMeta[1]))):960;
