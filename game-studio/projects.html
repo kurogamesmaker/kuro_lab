@@ -86,7 +86,7 @@ async function loadPublishedGames(){
    const card=document.createElement("article");card.className="card published-card";
    const preview=document.createElement("div");preview.className="preview";
    const tag=document.createElement("span");tag.className="type-tag";tag.textContent="公開済み";
-   const glyph=document.createElement("span");glyph.className="glyph";if(/^data:image\\//i.test(game.icon||"")||/^https?:\\/\\//i.test(game.icon||"")){const img=document.createElement("img");img.src=game.icon;img.alt="";glyph.append(img);}else glyph.textContent=game.icon||"🎮";preview.append(tag,glyph);
+   const glyph=document.createElement("span");glyph.className="glyph";if(/^data:image\//i.test(game.icon||"")||/^https?:\/\//i.test(game.icon||"")){const img=document.createElement("img");img.src=game.icon;img.alt="";glyph.append(img);}else glyph.textContent=game.icon||"🎮";preview.append(tag,glyph);
    const body=document.createElement("div");body.className="card-body";
    const title=document.createElement("div");title.className="card-title";title.textContent=game.title||"無題のゲーム";
    const meta=document.createElement("div");meta.className="card-meta";
