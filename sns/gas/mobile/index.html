@@ -1037,6 +1037,7 @@ body.kuro-page>.kuro-global-header{display:block!important}
                 <button id="authSubmitButton" type="submit" class="hidden w-full px-5 py-3.5 rounded-xl text-sm font-semibold bg-white text-black hover:bg-gray-200 active:scale-[.99] transition">
                     アカウントを作成
                 </button>
+                <p id="usernameSignupWarning" class="hidden text-xs text-amber-200/80 leading-relaxed">メールアドレスを登録しない場合、パスワードを忘れるとアカウントを復旧できません。安全な場所に保管してください。</p>
                 <div id="emailOtpPanel" class="space-y-3">
                     <p class="text-center text-sm text-gray-300">メールに届く確認コードで登録・ログインできます。</p>
                     <div id="emailOtpCodeField" class="hidden">
@@ -1765,9 +1766,10 @@ body.kuro-page>.kuro-global-header{display:block!important}
             setAuthMode(mode);
             document.getElementById('authEmail').parentElement.classList.remove('hidden');
             document.getElementById('emailOtpPanel').classList.remove('hidden');
+            document.getElementById('usernameSignupWarning').classList.add('hidden');
             document.getElementById('emailAuthChoice').classList.add('hidden');
             document.getElementById('authEmailFlow').classList.remove('hidden');
-            document.getElementById('authTitleText').textContent = currentAuthMode === 'signup' ? 'メールアドレスで新規登録' : 'メールアドレスでログイン';
+            document.getElementById('authTitleText').textContent = currentAuthMode === 'signup' ? 'メールアドレスで新規登録' : 'ユーザーネーム / メールアドレスでログイン';
             document.getElementById('authBackToChoiceButton').classList.remove('hidden');
             const passwordField = document.getElementById('authPasswordField');
             const passwordInput = document.getElementById('authPassword');
@@ -2049,6 +2051,8 @@ body.kuro-page>.kuro-global-header{display:block!important}
             document.getElementById('authSubmitButton').textContent = 'アカウントを作成';
             document.getElementById('authTitleText').textContent = 'ユーザーネームで新規登録';
             document.getElementById('authPasswordModeButton').classList.add('hidden');
+            document.getElementById('authPasswordSwitchRow').classList.add('hidden');
+            document.getElementById('usernameSignupWarning').classList.remove('hidden');
         }
 
 async function authenticateKuroUsername(action, username, password, displayName) {
