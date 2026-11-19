@@ -128,6 +128,20 @@ async function connectRoomPolling(roomData, members, session) {
   emitPlayers(members || []); await poll(); timer = setInterval(poll, 1400);
   return {
     room: roomData, members: members || [], getPlayers() { return cachedPlayers.slice(); },
+    async getState() {
+      return invoke("room_state_get", { roomId: roomData.id });
+    },
+    async updateState(state, expectedUpdatedAt) {
+      const result = await invoke("room_state_update", {
+        roomId: roomData.id,
+        state: state,
+        expectedUpdatedAt: expectedUpdatedAt || null,
+      });
+      if (!result.conflict) {
+        await this.send("room-state-updated", { updatedAt: result.updatedAt || null });
+      }
+      return result;
+    },
     onPlayersChange(callback) { if (typeof callback !== "function") return () => {}; playerCallbacks.add(callback); callback(cachedPlayers.slice()); return () => playerCallbacks.delete(callback); },
     onMessage(callback) { if (typeof callback !== "function") return () => {}; messageCallbacks.add(callback); return () => messageCallbacks.delete(callback); },
     async send(type, data) {
@@ -226,6 +240,20 @@ async function connectRoom(roomData, members) {
     room: roomData,
     members: members || [],
     getPlayers() { return cachedPlayers.slice(); },
+    async getState() {
+      return invoke("room_state_get", { roomId: roomData.id });
+    },
+    async updateState(state, expectedUpdatedAt) {
+      const result = await invoke("room_state_update", {
+        roomId: roomData.id,
+        state: state,
+        expectedUpdatedAt: expectedUpdatedAt || null,
+      });
+      if (!result.conflict) {
+        await this.send("room-state-updated", { updatedAt: result.updatedAt || null });
+      }
+      return result;
+    },
     onPlayersChange(callback) {
       if (typeof callback !== "function") return function () {};
       playerCallbacks.add(callback);
