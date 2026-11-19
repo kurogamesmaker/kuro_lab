@@ -1882,7 +1882,7 @@ body.kuro-page>.kuro-global-header{display:block!important}
         }
 
         async function verifyEmailOtp() {
-            const email = document.getElementById('authEmail').value.trim();
+            const identity = document.getElementById('authEmail').value.trim();
             const token = document.getElementById('emailOtpCode').value.trim();
             const button = document.getElementById('emailOtpVerifyButton');
             if (!email || !token) {
