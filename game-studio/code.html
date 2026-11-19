@@ -133,14 +133,17 @@ function makeVisualCode(p){
 }
 function getStoredProject(){
  try{
-  const all=JSON.parse(localStorage.getItem(KEY)||"[]");
   const params=new URLSearchParams(location.search);
+  if(params.get("publishedId"))return null;
+  const all=JSON.parse(localStorage.getItem(KEY)||"[]");
   const requestedId=params.get("projectId");
   const id=requestedId||localStorage.getItem(KEY+".current");
   return (id?all.find(x=>x.id===id):null)||(!requestedId?all[0]:null)||null;
  }catch(_){return null}
 }
-const requestedLocalProjectId=new URLSearchParams(location.search).get("projectId");
+const codeParams=new URLSearchParams(location.search);
+const requestedLocalProjectId=codeParams.get("projectId");
+const requestedPublishedGameId=codeParams.get("publishedId");
 project=getStoredProject();
 if(!project&&requestedLocalProjectId){location.replace("/game-studio/projects.html");return;}
 if(!project&&!new URLSearchParams(location.search).get("publishedId")){location.replace("/game-studio/projects.html");return;}
@@ -150,6 +153,7 @@ if(!project.code||typeof project.code!=="object")project.code=makeVisualCode(pro
 function setStatus(text,color){$("saveStatus").textContent=text;$("saveStatus").style.color=color||"var(--good)"}
 function toast(s){$("toast").textContent=s;$("toast").classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>$("toast").classList.remove("show"),2200)}
 function persist(silent){
+ if(requestedPublishedGameId){setStatus("● 公開作品（公開時に反映）","var(--good)");return true;}
  try{
   let all=JSON.parse(localStorage.getItem(KEY)||"[]");
   const i=all.findIndex(x=>x.id===project.id);
@@ -301,7 +305,7 @@ async function loadPublishedGameFromCloud(){
   if(error)throw error;if(!data)throw new Error("作品が見つからないか、編集権限がありません");
   const parsed=splitMixedCode(data.html_content||"");
   project={id:"published-"+data.id,name:data.title||"公開済みゲーム",type:data.category==="action"?"platformer":"published",background:"#101522",objects:[],events:[],settings:{},tilemap:{cols:20,rows:12,cells:Array(240).fill(-1),enabled:false},assets:[],prefabs:[],layers:["Default"],collisionMatrix:{},code:parsed.parts,publishedGameId:data.id,publishedMeta:{slug:data.slug,title:data.title,description:data.description,category:data.category,icon:data.icon}};
-  $("projectName").value=project.name;persist(true);showTab("html");run();toast("公開済みゲームをStudioに読み込みました");
+  $("projectName").value=project.name;setStatus("● 公開作品を読み込み済み","var(--good)");showTab("html");run();toast("公開済みゲームをStudioに読み込みました");
  }catch(e){toast("読み込み失敗: "+(e.message||"不明なエラー"));}
 }
 let pendingImport=null;
@@ -339,7 +343,7 @@ $("exportBtn").addEventListener("click",()=>{project.code[activeTab]=currentValu
 $("syncBtn").addEventListener("click",()=>$("confirmModal").classList.add("open"));
 $("cancelSync").addEventListener("click",()=>$("confirmModal").classList.remove("open"));
 $("confirmSync").addEventListener("click",()=>{$("confirmModal").classList.remove("open");project.code[activeTab]=currentValue();syncFromVisual()});
-$("visualLink").addEventListener("click",()=>{project.code[activeTab]=currentValue();persist(true)});
+const visualUrl=new URL("/game-studio/",location.origin);if(requestedLocalProjectId)visualUrl.searchParams.set("projectId",requestedLocalProjectId);if(KURO_GAS_TRANSPORT)visualUrl.searchParams.set("transport","gas");$("visualLink").href=visualUrl.pathname+visualUrl.search;$("visualLink").addEventListener("click",()=>{project.code[activeTab]=currentValue();persist(true)});
 function clearConsole(){ $("consoleOutput").textContent="";$("consoleCount").textContent="0"; }
 function writeConsole(level,values){const out=$("consoleOutput");const line=document.createElement("div");line.className=level==="error"?"error":level==="warn"?"warn":"";line.textContent="["+String(level).toUpperCase()+"] "+(values||[]).join(" ");out.appendChild(line);out.scrollTop=out.scrollHeight;$("consoleCount").textContent=String(out.children.length);}
 window.addEventListener("message",event=>{if(event.source!==$("previewFrame").contentWindow||!event.data)return;if(event.data.type==="kuro-studio-error"){$("previewStatus").textContent="エラー: "+String(event.data.message||"実行エラー").slice(0,100);writeConsole("error",[event.data.message||"実行エラー"]);}else if(event.data.type==="kuro-studio-console"){writeConsole(event.data.level,event.data.values||[]);}});
