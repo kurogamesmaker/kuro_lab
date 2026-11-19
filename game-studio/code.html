@@ -242,10 +242,10 @@ function makeDocument(){
  const frameHeight=Math.max(160,Math.min(2160,Number(project.settings&&project.settings.gameFrameHeight)||540));
  const frameMeta='<meta name="kuro-game-frame" content="'+frameWidth+'x'+frameHeight+'">';
  const styleBlock="<style>"+css+"</style>";
- const scriptOpen=(/^\s*(?:import|export)\b/m.test(js)?"<scr"+"ipt type=\"module\">":"<scr"+"ipt>");
+ const moduleMode=/^\s*(?:import|export)\b/m.test(js)||/\bawait\b/.test(js);
+ const scriptOpen=(moduleMode?"<scr"+"ipt type=\"module\">":"<scr"+"ipt>");
  const scriptClose="<"+"/script>";
  const logger="const __kuroSend=(level,args)=>{try{parent.postMessage({type:'kuro-studio-console',level:level,values:Array.from(args).map(v=>{try{return typeof v==='string'?v:JSON.stringify(v)}catch(_){return String(v)}})},'*')}catch(_){}};['log','info','warn','error'].forEach(level=>{const base=console[level].bind(console);console[level]=(...args)=>{base(...args);__kuroSend(level,args)}});window.addEventListener('error',function(e){try{parent.postMessage({type:'kuro-studio-error',message:e.message},'*')}catch(_){}});\n";
- const moduleMode=/^\s*(?:import|export)\b/m.test(js);
  const scriptBlock=scriptOpen+(moduleMode?"":logger)+js+scriptClose;
  const autoFitScript=project.settings&&project.settings.autoFitOverflow===false?"":"<scr"+"ipt>(function(){function fit(){try{var meta=document.querySelector('meta[name=\\\"kuro-game-frame\\\"]'),m=meta&&meta.content.match(/(\\d+)x(\\d+)/),tw=m?+m[1]:960,th=m?+m[2]:540,b=document.body,d=document.documentElement;if(!b)return;b.style.transform='none';b.style.width='auto';b.style.height='auto';var cw=Math.max(tw,b.scrollWidth,d.scrollWidth),ch=Math.max(th,b.scrollHeight,d.scrollHeight),scale=Math.min(1,tw/Math.max(1,cw),th/Math.max(1,ch));if(scale<.999){b.style.width=cw+'px';b.style.height=ch+'px';b.style.transformOrigin='top left';b.style.transform='scale('+scale+')';d.style.overflow='hidden';b.dataset.kuroAutoFit='1';}else{b.style.transform='';b.style.width='';b.style.height='';d.style.overflow='';delete b.dataset.kuroAutoFit;}}catch(e){console.warn('KURO auto-fit:',e);}}if(document.readyState==='complete')setTimeout(fit,60);else window.addEventListener('load',function(){setTimeout(fit,60)});window.addEventListener('resize',function(){setTimeout(fit,80)});})();<"+"/script>";
  if(/<html[\s>]/i.test(html)){
