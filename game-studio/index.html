@@ -174,6 +174,7 @@ var xMulti=[],xDrag=null,xRuntimeFrame=0,xLastTime=0,xTimer=null,xTileColor=0,xC
 const xTileColors=["#26364f","#4d8a72","#b58d55","#8f536e","#6f83b7","#c3c9d4","#e5b35d","#1d2431"];
 function xEnsure(){
  codeScreenMode=!!(p.code&&typeof p.code==="object"&&((p.code.html||"").trim()||(p.code.css||"").trim()||(p.code.js||"").trim()));
+ const codeModeBtn=$("codeScreenBtn");if(codeModeBtn){codeModeBtn.textContent=codeScreenMode?"パーツ編集に戻る":"コード画面を表示";codeModeBtn.classList.toggle("primary",codeScreenMode);}
 
  p.settings=Object.assign({width:960,height:540,grid:5,snapEnabled:true,showGrid:false,showColliders:false,theme:"dark",fontSize:13,gravity:600,cameraMode:"fixed",cameraZoom:1,followTargetId:"",shake:0},p.settings||{});
  p.assets=Array.isArray(p.assets)?p.assets:[];
