@@ -35,17 +35,18 @@ function invoke(action,gameId,extra){return db.functions.invoke("kurogames-onlin
 function escapeHtml(value){return String(value??"").replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
 function makeSnippet(game){
 return [
-'<script type="module">',
-'import KuroGames from "/game-studio/kurog-online.js";',
+'<script src="/game-studio/kurog-online.js"><\\/script>',
+'<script>',
+'(async function () {',
+'  await KuroGames.init({ gameId: "'+game.id+'" });',
 '',
-'await KuroGames.init({ gameId: "'+game.id+'" });',
+'  // ゲーム終了時にスコアを登録',
+'  await KuroGames.ranking.submit(finalScore);',
 '',
-'// ゲーム終了時にスコアを登録',
-'await KuroGames.ranking.submit(finalScore);',
-'',
-'// セーブ / ロード',
-'await KuroGames.save.set("progress", { level: 3 });',
-'const saved = await KuroGames.save.get("progress");',
+'  // セーブ / ロード',
+'  await KuroGames.save.set("progress", { level: 3 });',
+'  const saved = await KuroGames.save.get("progress");',
+'})();',
 '</'+'script>'
 ].join("\n");
 }
