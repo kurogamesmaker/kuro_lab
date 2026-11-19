@@ -232,10 +232,13 @@ window.addEventListener("message", async event => {
  }
  if (msg.type !== "kuro-werewolf-auth-request") return;
  try {
-  const session = await getKuroGameAuthSession();
-  if (session.user?.is_anonymous) {
+  const { data: authData, error: authError } = await kuroGameAuthClient.auth.getSession();
+  if (authError) throw authError;
+  const session = authData.session;
+  if (!session || session.user?.is_anonymous) {
    throw new Error("人狼をプレイするにはKURO LABアカウントにログインしてください。");
   }
+  kuroGameAuthClient.realtime.setAuth(session.access_token);
   const storage = {};
   const prefix = "kuro-werewolf-session:";
   for (let i = 0; i < localStorage.length; i++) {
