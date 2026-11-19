@@ -10,13 +10,18 @@
 
 const KURO_GAS_TRANSPORT=new URLSearchParams(location.search).get("transport")==="gas";
 const KURO_GAS_PROXY_URL="https://kurolab.cc.cd/api/kuro-gas-proxy";
+function kuroGameGasClientId(){
+ const key="kuro_gas_client_id_gameplay_v1";
+ try{let value=localStorage.getItem(key);if(!value){value=crypto.randomUUID();localStorage.setItem(key,value);}return value;}
+ catch(_){return "kuro-game-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2);}
+}
 async function kuroGasFetch(input,init){
  const req=new Request(input,init),url=new URL(req.url);
  if(url.origin!=="https://cprvpphlfpmiegjiutjn.supabase.co")return fetch(req);
  const bytes=new Uint8Array(await req.arrayBuffer());let binary="";
  for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
  const headers={};req.headers.forEach((v,k)=>{headers[k]=v;});
- const proxy=await fetch(KURO_GAS_PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:"game-studio"})});
+ const proxy=await fetch(KURO_GAS_PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:kuroGameGasClientId()})});
  let result;try{result=await proxy.json();}catch(e){throw new Error("GAS中継サーバーの応答を読み取れませんでした");}
  if(!proxy.ok||!result||typeof result.status!=="number")throw new Error(result&&result.error||"GAS中継通信に失敗しました");
  let body=null;if(result.isBinary&&result.bodyBase64){const raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);body=out;}else if(result.bodyText!==undefined&&![204,205,304].includes(result.status))body=result.bodyText;
