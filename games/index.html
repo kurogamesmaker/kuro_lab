@@ -186,7 +186,13 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 
-const KURO_GAS_TRANSPORT=new URLSearchParams(location.search).get("transport")==="gas";
+const KURO_TRANSPORT_PARAM=new URLSearchParams(location.search).get("transport");
+let KURO_GAS_TRANSPORT=KURO_TRANSPORT_PARAM==="gas";
+try{
+ if(KURO_TRANSPORT_PARAM==="gas")localStorage.setItem("kuro_portal_transport","gas");
+ else if(KURO_TRANSPORT_PARAM==="direct")localStorage.setItem("kuro_portal_transport","direct");
+ else KURO_GAS_TRANSPORT=localStorage.getItem("kuro_portal_transport")==="gas";
+}catch(_){}
 const KURO_GAS_PROXY_URL="https://kurolab.cc.cd/api/kuro-gas-proxy";
 async function kuroGasFetch(input,init){
  const req=new Request(input,init),url=new URL(req.url);
@@ -367,7 +373,7 @@ function kuroApplyTransportLinks(){
  const button=document.querySelector("[data-gas-toggle]");
  if(!button)return;
  const current=new URL(window.location.href);
- const active=current.searchParams.get("transport")==="gas";
+ const active=KURO_GAS_TRANSPORT;
  button.classList.toggle("is-active",active);
  button.textContent=active?"✓ GAS版 使用中":"GAS通信モード ↗";
  button.setAttribute("aria-label",active?"GAS版を使用中。クリックすると通常版に戻ります":"GAS通信モードに切り替えます");
@@ -375,7 +381,7 @@ function kuroApplyTransportLinks(){
  if(active)button.setAttribute("aria-current","page");
  else button.removeAttribute("aria-current");
  const next=new URL(current.href);
- if(active)next.searchParams.delete("transport");
+ if(active)next.searchParams.set("transport","direct");
  else next.searchParams.set("transport","gas");
  button.href=next.pathname+next.search+next.hash;
 })();
