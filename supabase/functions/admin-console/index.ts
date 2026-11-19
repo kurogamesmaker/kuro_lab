@@ -1084,8 +1084,8 @@ Deno.serve(async (req: Request) => {
       const code = typeof body.code === "string" ? body.code.trim() : "";
       const label = typeof body.label === "string" ? body.label.trim() : "";
       const description = typeof body.description === "string" ? body.description.trim() : "";
-      const roomKey = typeof body.room_key === "string" ? body.room_key.trim().toLowerCase() : "";
-      const roomTitle = typeof body.room_title === "string" ? body.room_title.trim() : "";
+      const roomKey = "secret-hub";
+      const roomTitle = "KURO // CLASSIFIED TERMINAL";
       const startsAt = kuroSecretDate(body.starts_at);
       const expiresAt = kuroSecretDate(body.expires_at);
       const maxUses = body.max_uses === null || body.max_uses === undefined || body.max_uses === ""
@@ -1094,8 +1094,8 @@ Deno.serve(async (req: Request) => {
         return reply({ error: "Invalid secret code ID" }, 400, origin);
       }
       if (!label || label.length > 80 || description.length > 500) return reply({ error: "コード名または説明が長すぎます。" }, 400, origin);
-      if (!/^[a-z0-9][a-z0-9_-]{1,48}$/.test(roomKey)) return reply({ error: "部屋キーは英小文字・数字・ハイフン・アンダースコアで2〜49文字にしてください。" }, 400, origin);
-      if (!roomTitle || roomTitle.length > 80) return reply({ error: "部屋名は1〜80文字で入力してください。" }, 400, origin);
+      
+      
       if (code && !/^\d{4,12}$/.test(code)) return reply({ error: "秘密コードは4〜12桁の数字にしてください。" }, 400, origin);
       if (!id && !code) return reply({ error: "新しいコードを入力してください。" }, 400, origin);
       if (startsAt === undefined || expiresAt === undefined || (startsAt && expiresAt && new Date(expiresAt) <= new Date(startsAt))) {
