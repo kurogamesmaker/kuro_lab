@@ -1,0 +1,14 @@
+name = "kuro-online-room"
+main = "online-room-worker.js"
+compatibility_date = "2026-11-20"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "Room"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["Room"]
+
+# Initial deployment is intended for workers.dev smoke tests.
+# Add production routing only after protocol compatibility is verified.
