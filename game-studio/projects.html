@@ -12,7 +12,7 @@
 </head><body>
 <header class="top"><a class="brand" href="/game-studio/projects.html">KURO <b>GAME STUDIO</b></a><span class="crumb">/ プロジェクト</span><span class="spacer"></span><a class="btn" href="/game-studio/online.html">オンライン機能</a><a class="btn" href="/?auth=1">KUROアカウント</a><a class="btn" href="/games/">KURO GAMES ↗</a><a class="btn gas-mode-btn" href="/game-studio/projects.html?transport=gas" data-gas-toggle data-gas-mode="supabase-only">GAS通信モード ↗</a></header>
 <main class="wrap">
-<section class="hero"><div><div class="eyebrow">YOUR CREATIVE WORKSPACE</div><h1>プロジェクト</h1><p>ゲーム制作をここから始めよう。プロジェクトを作成して、2Dビジュアル編集やコード編集を進められます。</p></div><div class="hero-actions"><button class="btn import-btn" id="importBtn" type="button" title="JSON形式のKURO GAME STUDIOプロジェクトを読み込みます">プロジェクトを読み込む</button><button class="btn primary" id="createBtn">＋ 新しいプロジェクト</button><input type="file" id="importFile" accept=".json,.html,.htm,.xhtml,.css,.js,.mjs,.jsx,.ts,.tsx,.txt,.xml,.svg,.md,application/json,text/html,text/css,text/javascript,text/plain" multiple hidden></div></section>
+<section class="hero"><div><div class="eyebrow">YOUR CREATIVE WORKSPACE</div><h1>プロジェクト</h1><p>ゲーム制作をここから始めよう。プロジェクトを作成して、2Dビジュアル編集やコード編集を進められます。</p></div><div class="hero-actions"><button class="btn import-btn" id="importBtn" type="button" title="HTML・CSS・JavaScriptなど複数ファイルをまとめて読み込みます。JSONプロジェクトにも対応">複数ファイル読み込み</button><button class="btn primary" id="createBtn">＋ 新しいプロジェクト</button><input type="file" id="importFile" accept=".json,.html,.htm,.xhtml,.css,.js,.mjs,.jsx,.ts,.tsx,.txt,.xml,.svg,.md,application/json,text/html,text/css,text/javascript,text/plain" multiple hidden></div></section>
 <section class="stats"><div class="stat"><small>すべてのプロジェクト</small><strong id="totalCount">0</strong></div><div class="stat"><small>最近編集したプロジェクト</small><strong id="recentCount">0</strong></div><div class="stat"><small>制作モード</small><strong>2D</strong></div></section>
 <div class="bar"><h2>マイプロジェクト</h2><div class="filters"><button class="filter active" data-filter="all">すべて</button><button class="filter" data-filter="recent">最近使った</button><button class="filter" data-filter="clicker">クリック</button><button class="filter" data-filter="quiz">クイズ</button><button class="filter" data-filter="platformer">アクション</button></div><input class="search" id="search" placeholder="プロジェクトを検索..."></div>
 <section class="grid" id="projectGrid"><div class="empty" id="empty"><strong>まだプロジェクトがありません</strong>最初のゲームを作成してみましょう。<br><button class="btn primary" id="emptyCreate">＋ プロジェクトを作成</button></div></section>
@@ -135,15 +135,32 @@ $("importFile").onchange=async e=>{
    const known=new Set(projects.map(p=>p.id));valid.forEach(p=>{if(known.has(p.id))p.id="kuro-import-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,6);projects.unshift(p);});
    saveAll();render();toast(valid.length+"件のプロジェクトを読み込みました");return;
   }
-  const parts={html:[],css:[],js:[]};
-  for(const f of files){
-   const ext=(f.name.split(".").pop()||"").toLowerCase(),src=await f.text();
-   if(["html","htm","xhtml","txt"].includes(ext)){const p=splitImportedCode(src);Object.keys(parts).forEach(k=>{if(p[k].trim())parts[k].push(p[k].trim());});}
-   else if(ext==="css")parts.css.push(src);
-   else if(["js","mjs","jsx","ts","tsx","json","md"].includes(ext))parts.js.push(src);
-   else if(["xml","svg"].includes(ext))parts.html.push(src);
-   else throw new Error("未対応のファイル形式です: "+f.name);
+  const parts={html:[],css:[],js:[]},scriptFiles=new Map(),referencedScripts=new Set(),loaded=[];
+  for(const file of files){
+   const ext=(file.name.split(".").pop()||"").toLowerCase(),src=await file.text();
+   loaded.push({file,name:file.name,ext,src});
+   if(["js","mjs"].includes(ext))scriptFiles.set(file.name.toLowerCase(),src);
   }
+  const inlineFileScripts=sourceText=>sourceText.replace(/<script\b([^>]*?)\bsrc\s*=\s*(["'])([^"']+)\2([^>]*)>\s*<\/script\s*>/gi,(whole,before,quote,src,after)=>{
+   let pathname=src.split(/[?#]/)[0];try{pathname=decodeURIComponent(pathname);}catch(_){}
+   const basename=pathname.split(/[\\/]/).pop().toLowerCase(),body=scriptFiles.get(basename);if(body==null)return whole;
+   referencedScripts.add(basename);
+   const attrs=(before+" "+after).replace(/\s+(?:src|async|defer|integrity|crossorigin)\s*(?:=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?/gi,"");
+   const moduleMode=/\btype\s*=\s*["']module["']/i.test(attrs)||/\b(?:import|export)\s/.test(body)||/\bawait\b/.test(body)||/\.mjs$/i.test(basename);
+   const clean=attrs.replace(/\s+type\s*=\s*(["']).*?\1/i,"");
+   return "<scr"+"ipt"+clean+(moduleMode?' type="module"':"")+">"+body.replace(/<\/script/gi,"<\\/script")+"<"+"/script>";
+  });
+  for(const item of loaded){
+   const {name,ext,src}=item;
+   if(["html","htm","xhtml","txt"].includes(ext)){
+    const prepared=inlineFileScripts(src),p=splitImportedCode(prepared);
+    Object.keys(parts).forEach(k=>{if(p[k].trim())parts[k].push(p[k].trim());});
+   }else if(ext==="css")parts.css.push(src);
+   else if(["js","mjs","jsx","ts","tsx","json","md"].includes(ext)){if(!["js","mjs"].includes(ext))parts.js.push("// "+name+"\n"+src);}
+   else if(["xml","svg"].includes(ext))parts.html.push(src);
+   else throw new Error("未対応のファイル形式です: "+name);
+  }
+  for(const item of loaded)if(["js","mjs"].includes(item.ext)&&!referencedScripts.has(item.name.toLowerCase()))parts.js.push(item.src);
   const code={html:parts.html.join("\n\n")||"<!-- HTMLを書いてください -->",css:parts.css.join("\n\n")||"/* CSSを書いてください */",js:parts.js.join("\n\n")||"// JavaScriptを書いてください"};
   const title=(files.find(f=>/\.(html?|xhtml)$/i.test(f.name))||files[0]).name.replace(/\.[^.]+$/,"")||"読み込んだゲーム";
   const p=fresh("blank",title);p.name=title;p.code=code;projects.unshift(p);saveAll();render();toast(files.length+"個のファイルからコードプロジェクトを作成しました");
