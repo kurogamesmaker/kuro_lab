@@ -8,27 +8,27 @@
 
 <script>
 
-const KURO_GAS_TRANSPORT=true; try{localStorage.setItem("kuro_portal_transport","cloudflare");}catch(_){}
-const KURO_GAS_PROXY_URL="https://kurolab.cc.cd/api/kuro-gas-proxy";
+const KURO_CLOUDFLARE_TRANSPORT=true; try{localStorage.setItem("kuro_portal_transport","cloudflare");}catch(_){}
+const KURO_CLOUDFLARE_PROXY_URL="https://kurolab.cc.cd/api/cloudflare-relay";
 function kuroGameGasClientId(){
- const key="kuro_gas_client_id_gameplay_v1";
+ const key="kuro_cloudflare_client_id_gameplay_v1";
  try{let value=localStorage.getItem(key);if(!value){value=crypto.randomUUID();localStorage.setItem(key,value);}return value;}
  catch(_){return "kuro-game-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2);}
 }
-async function kuroGasFetch(input,init){
+async function kuroCloudflareFetch(input,init){
  const req=new Request(input,init),url=new URL(req.url);
  if(url.origin!=="https://cprvpphlfpmiegjiutjn.supabase.co")return fetch(req);
  const bytes=new Uint8Array(await req.arrayBuffer());let binary="";
  for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
  const headers={};req.headers.forEach((v,k)=>{headers[k]=v;});
- const proxy=await fetch(KURO_GAS_PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:kuroGameGasClientId()})});
- let result;try{result=await proxy.json();}catch(e){throw new Error("GAS中継サーバーの応答を読み取れませんでした");}
- if(!proxy.ok||!result||typeof result.status!=="number")throw new Error(result&&result.error||"GAS中継通信に失敗しました");
+ const proxy=await fetch(KURO_CLOUDFLARE_PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:kuroGameGasClientId()})});
+ let result;try{result=await proxy.json();}catch(e){throw new Error("Cloudflare中継サーバーの応答を読み取れませんでした");}
+ if(!proxy.ok||!result||typeof result.status!=="number")throw new Error(result&&result.error||"Cloudflare中継通信に失敗しました");
  let body=null;if(result.isBinary&&result.bodyBase64){const raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);body=out;}else if(result.bodyText!==undefined&&![204,205,304].includes(result.status))body=result.bodyText;
  return new Response(body,{status:result.status,headers:result.headers||{"Content-Type":"application/json"}});
 }
 function kuroApplyTransportLinks(){
- if(!KURO_GAS_TRANSPORT)return;
+ if(!KURO_CLOUDFLARE_TRANSPORT)return;
  document.querySelectorAll('a[href^="/game-studio/"],a[href^="/games/"]').forEach(a=>{const u=new URL(a.href,location.origin);u.searchParams.set("transport","gas");a.href=u.pathname+u.search+u.hash;});
 }
 
@@ -40,7 +40,7 @@ const kuroGameAuthClient = window.supabase.createClient(
  "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn",
  {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
-  global: { fetch: kuroGasFetch },
+  global: { fetch: kuroCloudflareFetch },
   realtime: { params: { log_level: "info" } }
  }
 );
@@ -79,7 +79,7 @@ window.addEventListener("message", async event => {
     type: "kuro-online-auth",
     requestId: msg.requestId,
     access_token: session.access_token,
-    useGasProxy: KURO_GAS_TRANSPORT,
+    useGasProxy: KURO_CLOUDFLARE_TRANSPORT,
     user: session.user ? { id: session.user.id, email: session.user.email ?? null } : null
    }, "*");
   } catch (error) {
@@ -92,14 +92,14 @@ window.addEventListener("message", async event => {
   return;
  }
  if (msg.type === "kuro-online-proxy-request") {
-  if (!KURO_GAS_TRANSPORT || typeof msg.requestId !== "string" || msg.requestId.length > 120 ||
+  if (!KURO_CLOUDFLARE_TRANSPORT || typeof msg.requestId !== "string" || msg.requestId.length > 120 ||
       msg.path !== "/functions/v1/kurogames-online" || msg.method !== "POST") return;
   try {
    const bytes = msg.bodyBase64 ? Uint8Array.from(atob(msg.bodyBase64), ch => ch.charCodeAt(0)) : new Uint8Array();
    const request = new Request("https://cprvpphlfpmiegjiutjn.supabase.co" + msg.path, {
     method: "POST", headers: msg.headers || {}, body: bytes
    });
-   const response = await kuroGasFetch(request);
+   const response = await kuroCloudflareFetch(request);
    const responseBytes = new Uint8Array(await response.arrayBuffer());
    let binary = "";
    for (let i = 0; i < responseBytes.length; i += 0x8000) binary += String.fromCharCode.apply(null, responseBytes.subarray(i, Math.min(i + 0x8000, responseBytes.length)));
@@ -107,7 +107,7 @@ window.addEventListener("message", async event => {
    event.source.postMessage({ type: "kuro-online-proxy-response", requestId: msg.requestId,
     response: { status: response.status, headers: responseHeaders, bodyBase64: responseBytes.length ? btoa(binary) : "" } }, "*");
   } catch (error) {
-   event.source.postMessage({ type: "kuro-online-proxy-response", requestId: msg.requestId, error: error?.message || "GAS中継エラー" }, "*");
+   event.source.postMessage({ type: "kuro-online-proxy-response", requestId: msg.requestId, error: error?.message || "Cloudflare中継エラー" }, "*");
   }
   return;
  }
@@ -117,13 +117,13 @@ window.addEventListener("message", async event => {
   if (typeof requestId !== "string" || !/^[A-Za-z0-9_-]{1,80}$/.test(requestId) ||
       typeof roomCode !== "string" || !/^\d{4}$/.test(roomCode)) return;
   // GAS transport cannot carry WebSocket upgrades. Use the verified GAS polling path instead.
-  if (KURO_GAS_TRANSPORT) {
+  if (KURO_CLOUDFLARE_TRANSPORT) {
    try {
     event.source.postMessage({
      type: "kuro-werewolf-realtime-status",
      requestId,
      status: "POLLING_ONLY",
-     detail: "GAS mode: using HTTP polling"
+     detail: "Cloudflare mode: using HTTP polling"
     }, "*");
    } catch (_) {}
    return;
@@ -195,7 +195,7 @@ window.addEventListener("message", async event => {
   return;
  }
  if (msg.type === "kuro-werewolf-proxy-request") {
-  if (!KURO_GAS_TRANSPORT || typeof msg.requestId !== "string" || typeof msg.path !== "string" ||
+  if (!KURO_CLOUDFLARE_TRANSPORT || typeof msg.requestId !== "string" || typeof msg.path !== "string" ||
       (!msg.path.startsWith("/rest/v1/") && !msg.path.startsWith("/auth/v1/") && !msg.path.startsWith("/storage/v1/"))) return;
   try {
    const bytes = msg.bodyBase64 ? Uint8Array.from(atob(msg.bodyBase64), ch => ch.charCodeAt(0)) : new Uint8Array();
@@ -203,7 +203,7 @@ window.addEventListener("message", async event => {
     method: msg.method || "GET", headers: msg.headers || {},
     body: ["GET","HEAD"].includes(String(msg.method || "GET").toUpperCase()) ? undefined : bytes
    });
-   const response = await kuroGasFetch(request);
+   const response = await kuroCloudflareFetch(request);
    const responseBytes = new Uint8Array(await response.arrayBuffer());
    let binary = "";
    for (let i = 0; i < responseBytes.length; i += 0x8000) binary += String.fromCharCode.apply(null, responseBytes.subarray(i, Math.min(i + 0x8000, responseBytes.length)));
@@ -212,7 +212,7 @@ window.addEventListener("message", async event => {
    event.source.postMessage({ type: "kuro-werewolf-proxy-response", requestId: msg.requestId,
     response: { status: response.status, headers: responseHeaders, bodyBase64: responseBytes.length ? btoa(binary) : "" } }, "*");
   } catch (error) {
-   event.source.postMessage({ type: "kuro-werewolf-proxy-response", requestId: msg.requestId, error: error?.message || "GAS中継エラー" }, "*");
+   event.source.postMessage({ type: "kuro-werewolf-proxy-response", requestId: msg.requestId, error: error?.message || "Cloudflare中継エラー" }, "*");
   }
   return;
  }
@@ -241,7 +241,7 @@ window.addEventListener("message", async event => {
   }
   event.source.postMessage({
    type: "kuro-werewolf-auth",
-   useGasProxy: KURO_GAS_TRANSPORT,
+   useGasProxy: KURO_CLOUDFLARE_TRANSPORT,
    access_token: session.access_token,
    refresh_token: session.refresh_token,
    storage
