@@ -9,7 +9,6 @@ const DEFAULT_DURABLE_ENDPOINT = "https://kuro-online-room.kurogamesmaker.worker
 let gameId = null;
 let gameConfig = null;
 let requestCounter = 0;
-let realtimeClientPromise = null;
 
 function ensureReady() {
   if (!gameId) throw new Error("先に KuroGames.init({ gameId }) を実行してください。");
@@ -85,24 +84,6 @@ function parentGasRequest(path, method, headers, bodyText) {
     window.parent.postMessage({ type: "kuro-online-proxy-request", requestId, path, method, headers, bodyBase64: bodyText ? encodeBase64(bodyText) : "" }, "*");
   });
 }
-
-function loadRealtimeClient() {
-  if (window.supabase && window.supabase.createClient) return Promise.resolve(window.supabase);
-  if (realtimeClientPromise) return realtimeClientPromise;
-  realtimeClientPromise = new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
-    script.async = true;
-    script.onload = () => {
-      if (window.supabase && window.supabase.createClient) resolve(window.supabase);
-      else reject(new Error("Realtimeライブラリを読み込めませんでした。"));
-    };
-    script.onerror = () => reject(new Error("Realtimeライブラリの読み込みに失敗しました。"));
-    document.head.appendChild(script);
-  });
-  return realtimeClientPromise;
-}
-
 
 async function connectRoomPolling(roomData, members, session) {
   const messageCallbacks = new Set(); const playerCallbacks = new Set();
@@ -364,141 +345,6 @@ async function connectRoom(roomData, members) {
     }
   }
   return connectRoomPolling(roomData, members, session);
-  const library = await loadRealtimeClient();
-  const client = library.createClient(DEFAULT_URL, DEFAULT_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-    realtime: { params: { eventsPerSecond: 20 } },
-  });
-  client.realtime.setAuth(session.accessToken);
-  const topic = "kurogame:" + gameId + ":" + roomData.id;
-  const channel = client.channel(topic, {
-    config: {
-      private: true,
-      broadcast: { ack: false, self: false },
-      presence: { key: session.user.id },
-    },
-  });
-  const messageCallbacks = new Set();
-  const playerCallbacks = new Set();
-  let active = true;
-  let refreshTimer = null;
-  let cachedPlayers = [];
-
-  function readPlayers() {
-    const state = channel.presenceState();
-    const all = [];
-    Object.keys(state || {}).forEach((key) => (state[key] || []).forEach((entry) => all.push(entry)));
-    const unique = new Map();
-    all.forEach((entry) => { if (entry && entry.userId) unique.set(entry.userId, entry); });
-    cachedPlayers = Array.from(unique.values());
-    playerCallbacks.forEach((callback) => {
-      try { callback(cachedPlayers.slice()); } catch (error) { console.error(error); }
-    });
-  }
-
-  channel
-    .on("broadcast", { event: "game-event" }, (message) => {
-      const payload = message && message.payload;
-      messageCallbacks.forEach((callback) => {
-        try { callback(payload); } catch (error) { console.error(error); }
-      });
-    })
-    .on("presence", { event: "sync" }, readPlayers);
-
-  await new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error("ルームへの接続がタイムアウトしました。")), 15000);
-    channel.subscribe((status, error) => {
-      if (status === "SUBSCRIBED") {
-        clearTimeout(timeout);
-        resolve();
-      } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
-        clearTimeout(timeout);
-        reject(error || new Error("ルームに接続できませんでした: " + status));
-      }
-    });
-  });
-
-  const metadata = session.user.user_metadata || {};
-  const ownMember = (members || []).find((member) => member.userId === session.user.id);
-  const displayName = (ownMember && ownMember.user && ownMember.user.display_name) ||
-    metadata.display_name || metadata.username || "プレイヤー";
-  await channel.track({
-    userId: session.user.id,
-    kuroId: ownMember && ownMember.user && ownMember.user.kuroId || null,
-    displayName: String(displayName).slice(0, 40),
-    joinedAt: new Date().toISOString(),
-  });
-  readPlayers();
-
-  refreshTimer = setInterval(async () => {
-    if (!active) return;
-    try {
-      const latest = await requestParentSession();
-      if (latest.accessToken) client.realtime.setAuth(latest.accessToken);
-      await invoke("room_heartbeat", { roomId: roomData.id });
-    } catch (error) { console.warn("KUROGAMES room heartbeat:", error); }
-  }, 30000);
-
-  return {
-    room: roomData,
-    members: members || [],
-    getPlayers() { return cachedPlayers.slice(); },
-    async getState() {
-      return invoke("room_state_get", { roomId: roomData.id });
-    },
-    async updateState(state, expectedUpdatedAt) {
-      const result = await invoke("room_state_update", {
-        roomId: roomData.id,
-        state: state,
-        expectedUpdatedAt: expectedUpdatedAt || null,
-      });
-      if (!result.conflict) {
-        const notification = {
-          type: "room-state-updated",
-          data: { updatedAt: result.updatedAt || null },
-          from: session.user.id,
-          sentAt: Date.now(),
-        };
-        messageCallbacks.forEach((callback) => {
-          try { callback(notification); } catch (error) { console.error(error); }
-        });
-        await this.send("room-state-updated", { updatedAt: result.updatedAt || null });
-      }
-      return result;
-    },
-    onPlayersChange(callback) {
-      if (typeof callback !== "function") return function () {};
-      playerCallbacks.add(callback);
-      callback(cachedPlayers.slice());
-      return function () { playerCallbacks.delete(callback); };
-    },
-    onMessage(callback) {
-      if (typeof callback !== "function") return function () {};
-      messageCallbacks.add(callback);
-      return function () { messageCallbacks.delete(callback); };
-    },
-    async send(type, data) {
-      if (!active) throw new Error("このルームから退出済みです。");
-      if (typeof type !== "string" || !/^[A-Za-z0-9_-]{1,40}$/.test(type)) {
-        throw new TypeError("イベント名は英数字・_・-の40文字以内で指定してください。");
-      }
-      const payload = { type: type, data: data, from: session.user.id, sentAt: Date.now() };
-      if (new TextEncoder().encode(JSON.stringify(payload)).length > 32768) {
-        throw new TypeError("1回の通信データは32KB以内にしてください。");
-      }
-      const result = await channel.send({ type: "broadcast", event: "game-event", payload: payload });
-      if (result !== "ok") throw new Error("ゲームデータを送信できませんでした。");
-      return true;
-    },
-    async leave() {
-      if (!active) return;
-      active = false;
-      if (refreshTimer) clearInterval(refreshTimer);
-      try { await channel.untrack(); } catch (_) {}
-      try { await client.removeChannel(channel); } catch (_) {}
-      try { await invoke("room_leave", { roomId: roomData.id }); } catch (error) { console.warn(error); }
-    },
-  };
 }
 
 const KuroGames = {
