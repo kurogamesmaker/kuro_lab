@@ -429,8 +429,9 @@ codeFileInput.addEventListener("change",async()=>{
  try{
   project.code[activeTab]=currentValue();
   const loaded=[];
-  for(const file of files){const name=file.name||"ファイル",ext=(name.split(".").pop()||"").toLowerCase(),source=await file.text();loaded.push({name,ext,source});if(["js","mjs"].includes(ext))scriptFiles.set(name.toLowerCase(),source);}
   const normalizeScriptName=value=>{let p=String(value||"").split(/[?#]/)[0];try{p=decodeURIComponent(p);}catch(_){}return p.split(/[\/]/).pop().toLowerCase().replace(/\s*\(\d+\)(?=\.[^.]+$)/,"");};
+  const loaded=[];
+  for(const file of files){const name=file.name||"ファイル",ext=(name.split(".").pop()||"").toLowerCase(),source=await file.text();loaded.push({name,ext,source});if(["js","mjs"].includes(ext))scriptFiles.set(normalizeScriptName(name),source);}
   const inlineFileScripts=sourceText=>sourceText.replace(/<script\b([^>]*?)\bsrc\s*=\s*(["'])([^"']+)\2([^>]*)>\s*<\/script\s*>/gi,(whole,before,quote,src,after)=>{
    const body=scriptFiles.get(normalizeScriptName(src));if(body==null)return whole;
    referencedScripts.add(normalizeScriptName(src));
@@ -449,7 +450,7 @@ codeFileInput.addEventListener("change",async()=>{
     notes.push(name+": HTML/CSS/JavaScriptを自動判別");if(parsed.notes.length)notes.push(...parsed.notes.map(n=>name+": "+n));
    }else if(ext==="css"){updates.css.push(source);notes.push(name+": CSSタブへ読み込み");   }
    else if(["js","mjs"].includes(ext)){
-    const importedName=normalizeScriptName(name);let matched=false;
+    const importedName=normalizeScriptName(name);let matched=referencedScripts.has(importedName);
     const currentHtml=updates.html.length?updates.html.join("\n\n"):String(project.code.html||"");
     const updatedHtml=currentHtml.replace(/<script\b([^>]*?)\bsrc\s*=\s*(["'])([^"']+)\2([^>]*)>\s*<\/script\s*>/gi,(whole,before,quote,src,after)=>normalizeScriptName(src)===importedName?(matched=true,""):whole);
     if(updates.html.length)updates.html[updates.html.length-1]=updatedHtml;else project.code.html=updatedHtml;
