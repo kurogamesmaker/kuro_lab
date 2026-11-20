@@ -8,7 +8,9 @@ class_name = "Room"
 
 [[migrations]]
 tag = "v1"
-new_classes = ["Room"]
+new_sqlite_classes = ["Room"]
 
-# Initial deployment is intended for workers.dev smoke tests.
-# Add production routing only after protocol compatibility is verified.
+[vars]
+SUPABASE_URL = "https://cprvpphlfpmiegjiutjn.supabase.co"
+SUPABASE_ANON_KEY = "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn"
+ALLOWED_ORIGINS = "https://kurolab.cc.cd,https://www.kurolab.cc.cd"
