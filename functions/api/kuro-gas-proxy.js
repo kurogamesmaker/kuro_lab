@@ -1,142 +1,56 @@
-const ALLOWED_PREFIXES = ["/rest/v1/", "/auth/v1/", "/storage/v1/"];
-const ALLOWED_FUNCTION_PATHS = new Set(["/functions/v1/admin-console", "/functions/v1/pro-access", "/functions/v1/send-chat-push", "/functions/v1/kurogames-online", "/functions/v1/kurogames-secret"]);
-const ALLOWED_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"]);
-
+const SUPABASE_URL = "https://cprvpphlfpmiegjiutjn.supabase.co";
+const SUPABASE_KEY = "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
+const ALLOWED_PREFIXES = ["/rest/v1/","/auth/v1/","/storage/v1/"];
+const ALLOWED_FUNCTIONS = new Set(["/functions/v1/admin-console","/functions/v1/pro-access","/functions/v1/send-chat-push","/functions/v1/kurogames-online","/functions/v1/kurogames-secret"]);
+const ALLOWED_METHODS = new Set(["GET","POST","PUT","PATCH","DELETE","HEAD"]);
+function json(value,status=200) {
+  return new Response(JSON.stringify(value),{status,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"}});
+}
 function validatePath(value) {
-  const path = String(value || "");
-  if (!path.startsWith("/") || path.includes("..") || path.includes("://")) {
-    throw new Error("Invalid Supabase path");
-  }
-  const pathname = path.split("?")[0];
-  const allowedPrefix = ALLOWED_PREFIXES.some((prefix) => path.startsWith(prefix));
-  const allowedFunction = ALLOWED_FUNCTION_PATHS.has(pathname);
-  if (!allowedPrefix && !allowedFunction) {
-    throw new Error("Supabase service is not allowed through this proxy");
-  }
-  return path;
+  const path=String(value||"");
+  if(!path.startsWith("/")||path.includes("..")||path.includes("://"))throw new Error("Invalid Supabase path");
+  const pathname=path.split("?")[0];
+  if(!ALLOWED_PREFIXES.some(prefix=>pathname.startsWith(prefix))&&!ALLOWED_FUNCTIONS.has(pathname))throw new Error("Supabase service is not allowed");
+  const target=new URL(path,SUPABASE_URL);
+  if(target.origin!==SUPABASE_URL)throw new Error("Invalid Supabase origin");
+  return target;
 }
-
-function json(value, status = 200) {
-  return new Response(JSON.stringify(value), {
-    status,
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "no-store"
-    }
-  });
-}
-
 function decodeBase64(value) {
-  const binary = atob(value);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const binary=atob(String(value||""));const bytes=new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
   return bytes;
 }
-
-async function callAppsScript(payload, env) {
-  const gasUrl = env.KURO_GAS_WEB_APP_URL;
-  const secret = env.KURO_GAS_PROXY_SECRET;
-  if (!gasUrl || !secret) {
-    const error = new Error("GAS connection is not configured");
-    error.status = 503;
-    throw error;
-  }
-  if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(gasUrl)) {
-    const error = new Error("KURO_GAS_WEB_APP_URL must be the deployed Apps Script /exec URL");
-    error.status = 503;
-    throw error;
-  }
-
-  const response = await fetch(gasUrl, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=UTF-8" },
-    body: JSON.stringify({ ...payload, secret }),
-    redirect: "follow"
-  });
-  const text = await response.text();
-  let result;
-  try {
-    result = JSON.parse(text);
-  } catch {
-    throw new Error("Apps Script returned non-JSON. Check its web-app deployment access setting.");
-  }
-  if (!result || (typeof result.status !== "number" && result.service !== "KURO SNS GAS Proxy")) {
-    throw new Error("Unexpected response from Apps Script");
-  }
-  return result;
+function encodeBase64(bytes) {
+  let binary="";for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode(...bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
+  return btoa(binary);
 }
-
+function safeHeaders(input) {
+  const allowed=new Set(["authorization","apikey","content-type","accept","prefer","range","if-match","if-none-match","cache-control","accept-profile","content-profile","x-client-info","x-client-version","x-upsert","x-storage-api-version"]);
+  const h=new Headers();for(const [k,v] of Object.entries(input||{}))if(allowed.has(k.toLowerCase())&&v!=null)h.set(k,String(v));
+  if(!h.has("apikey"))h.set("apikey",SUPABASE_KEY);if(!h.has("authorization"))h.set("authorization","Bearer "+SUPABASE_KEY);
+  return h;
+}
+async function proxy(payload) {
+  const target=validatePath(payload.path),method=String(payload.method||"GET").toUpperCase();
+  if(!ALLOWED_METHODS.has(method))throw Object.assign(new Error("Method not allowed"),{status:405});
+  const body=!["GET","HEAD"].includes(method)&&payload.bodyBase64?decodeBase64(payload.bodyBase64):undefined;
+  const upstream=await fetch(target.href,{method,headers:safeHeaders(payload.headers),body,redirect:"manual"});
+  const headers={};for(const k of ["content-type","cache-control","etag","content-range","accept-ranges","last-modified","location","x-request-id"]){const v=upstream.headers.get(k);if(v)headers[k]=v;}
+  const bytes=new Uint8Array(await upstream.arrayBuffer()),type=String(upstream.headers.get("content-type")||"application/octet-stream");
+  const isBinary=!/(json|text|xml|javascript|form|csv)/i.test(type);
+  return {status:upstream.status,headers,isBinary,bodyBase64:isBinary?encodeBase64(bytes):"",bodyText:isBinary?"":new TextDecoder().decode(bytes),service:"KURO Cloudflare Supabase Proxy"};
+}
 export async function onRequest(context) {
-  const { request, env } = context;
-  try {
-    const url = new URL(request.url);
-
-    if (request.method === "GET" && url.searchParams.get("health") === "1") {
-      const gasUrl = env.KURO_GAS_WEB_APP_URL;
-      const secret = env.KURO_GAS_PROXY_SECRET;
-      if (!gasUrl || !secret) {
-        return json({ ready: false, reason: "missing_environment_variables" });
-      }
-      const ping = await fetch(gasUrl, { method: "GET", redirect: "follow" });
-      const text = await ping.text();
-      let data = {};
-      try { data = JSON.parse(text); } catch {}
-      return json({
-        ready: Boolean(ping.ok && data.ok && data.service === "KURO SNS GAS Proxy"),
-        service: data.service || null
-      });
+  const {request}=context;try {
+    const url=new URL(request.url);
+    if(request.method==="GET"&&url.searchParams.get("health")==="1")return json({ready:true,service:"KURO Cloudflare Supabase Proxy",transport:"cloudflare-worker"});
+    if(request.method==="GET") {
+      const target=validatePath(url.searchParams.get("resource"));
+      if(!target.pathname.startsWith("/storage/v1/object/public/avatars/"))return json({error:"Only public avatar images may be fetched here"},403);
+      const upstream=await fetch(target.href,{headers:safeHeaders({})});
+      return new Response(await upstream.arrayBuffer(),{status:upstream.status,headers:{"Content-Type":upstream.headers.get("content-type")||"application/octet-stream","Cache-Control":"public, max-age=300, stale-while-revalidate=600"}});
     }
-
-    if (request.method === "GET") {
-      const path = validatePath(url.searchParams.get("resource"));
-      if (!path.startsWith("/storage/v1/object/public/avatars/")) {
-        return json({ error: "Only public avatar images may be fetched here" }, 403);
-      }
-      const result = await callAppsScript({
-        path,
-        method: "GET",
-        headers: {},
-        bodyBase64: "",
-        clientId: "avatar-read"
-      }, env);
-      if (result.isBinary && result.bodyBase64) {
-        return new Response(decodeBase64(result.bodyBase64), {
-          status: result.status || 200,
-          headers: {
-            "Content-Type": result.headers?.["content-type"] || "application/octet-stream",
-            "Cache-Control": "public, max-age=300, stale-while-revalidate=600"
-          }
-        });
-      }
-      return new Response(result.bodyText || "", {
-        status: result.status || 502,
-        headers: {
-          "Content-Type": result.headers?.["content-type"] || "application/json; charset=utf-8",
-          "Cache-Control": "no-store"
-        }
-      });
-    }
-
-    if (request.method !== "POST") {
-      return json({ error: "Method not allowed" }, 405);
-    }
-
-    const input = await request.json();
-    const path = validatePath(input.path);
-    const method = String(input.method || "GET").toUpperCase();
-    if (!ALLOWED_METHODS.has(method)) {
-      return json({ error: "Supabase method is not allowed" }, 405);
-    }
-
-    const result = await callAppsScript({
-      path,
-      method,
-      headers: input.headers || {},
-      bodyBase64: String(input.bodyBase64 || ""),
-      clientId: String(input.clientId || "anonymous")
-    }, env);
-    return json(result);
-  } catch (error) {
-    return json({ ok: false, error: error?.message || "KURO GAS proxy failed" }, Number(error?.status) || 502);
-  }
+    if(request.method!=="POST")return json({error:"Method not allowed"},405);
+    return json(await proxy(await request.json()));
+  }catch(error){return json({ok:false,error:error&&error.message||"KURO Cloudflare proxy failed"},Number(error&&error.status)||502);}
 }
