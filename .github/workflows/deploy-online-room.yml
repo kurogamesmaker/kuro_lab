@@ -1,0 +1,21 @@
+name: Deploy KURO Durable Online Worker
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - online-room-worker.js
+      - wrangler-online-room.toml
+      - .github/workflows/deploy-online-room.yml
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npx wrangler deploy --config wrangler-online-room.toml
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
