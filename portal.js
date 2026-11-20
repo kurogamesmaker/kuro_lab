@@ -22,17 +22,17 @@ var supabaseReady=await ensureSupabaseSdk();
 // KURO Lab communication is forced through the same-origin Cloudflare Worker proxy.
 var useGas=true;
 safeStorageSet("localStorage","kuro_portal_transport","cloudflare");
-function gasFetch(input,init){
+function cloudflareFetch(input,init){
  var req=new Request(input,init),url=new URL(req.url),serviceInfo=url.origin===SUPABASE_URL?classifyApiRequest(url.href):null;
  if(url.origin!==SUPABASE_URL)return fetch(req);
  return req.arrayBuffer().then(function(buf){
   var bytes=new Uint8Array(buf),binary="",step=0x8000;
   for(var i=0;i<bytes.length;i+=step)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+step,bytes.length)));
   var headers={};req.headers.forEach(function(v,k){headers[k]=v;});
-  return fetch("/api/kuro-gas-proxy",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers:headers,bodyBase64:bytes.length?btoa(binary):"",clientId:safeStorageGet("localStorage","kuro_portal_guest_id")||"portal-guest"})})
+  return fetch("/api/cloudflare-relay",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers:headers,bodyBase64:bytes.length?btoa(binary):"",clientId:safeStorageGet("localStorage","kuro_portal_guest_id")||"portal-guest"})})
    .then(async function(proxyResponse){
-    var result;try{result=await proxyResponse.json();}catch(e){throw new Error("GAS中継サーバーから応答を読み取れませんでした");}
-    if(!proxyResponse.ok||!result||typeof result.status!=="number")return new Response(JSON.stringify(result||{message:"GAS proxy error"}),{status:proxyResponse.status||502,headers:{"Content-Type":"application/json"}});
+    var result;try{result=await proxyResponse.json();}catch(e){throw new Error("Cloudflare中継サーバーから応答を読み取れませんでした");}
+    if(!proxyResponse.ok||!result||typeof result.status!=="number")return new Response(JSON.stringify(result||{message:"Cloudflare proxy error"}),{status:proxyResponse.status||502,headers:{"Content-Type":"application/json"}});
     var responseHeaders=new Headers(result.headers||{}),body=null,status=result.status||502;
     if(result.isBinary&&result.bodyBase64){var raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(var j=0;j<raw.length;j++)out[j]=raw.charCodeAt(j);body=out;}
     else if(result.bodyText!==undefined&&![204,205,304].includes(status))body=result.bodyText;
@@ -41,12 +41,12 @@ function gasFetch(input,init){
    }).catch(function(error){if(serviceInfo&&!trackingWrite)queueUsageEvent("api_error",{service_key:serviceInfo.service,error_code:"network_error",widget_key:serviceInfo.widget});throw error;});
  });
 }
-var db=supabaseReady?window.supabase.createClient(SUPABASE_URL,PUBLISHABLE_KEY,{global:{fetch:useGas?gasFetch:window.fetch},auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}}):null;
+var db=supabaseReady?window.supabase.createClient(SUPABASE_URL,PUBLISHABLE_KEY,{global:{fetch:useGas?cloudflareFetch:window.fetch},auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}}):null;
 function classifyApiRequest(input){
  try{
   var raw=typeof input==="string"?input:input&&input.url?input.url:String(input||"");
   var u=new URL(raw,location.href),host=u.hostname.toLowerCase(),p=u.pathname.toLowerCase(),service="";
-  if(p.indexOf("/api/kuro-gas-proxy")===0)return null;
+  if(p.indexOf("/api/cloudflare-relay")===0)return null;
   else if(p.indexOf("/api/workspace-rss")===0||/rss|feed/.test(p))service="rss";
   else if(p.indexOf("/api/ogp")===0||/ogp|opengraph/.test(p))service="ogp";
   else if(/weather|openweathermap|weatherapi/.test(host)||/weather/.test(p))service="weather";
@@ -118,7 +118,7 @@ function bindUsageWidgetTracking(){
  },true);
 }
 
-console.info("KURO portal transport:",useGas?"GAS relay":"direct");
+console.info("KURO portal transport:",useGas?"Cloudflare relay":"direct");
 var S="kuro_portal_v1",G="kuro_portal_guest_id",path=location.pathname.replace(/\/+$/,"")||"/";
 var page=path==="/"?"home":path.split("/")[1];
 var titles={home:["KURO Lab ポータル","サービス、ゲーム、お知らせにすぐアクセス。"],search:["KURO Lab内を検索","サービス、ゲーム、ガイドをまとめて検索できます。"],notifications:["お知らせ","KURO Labからのお知らせを確認できます。"],mypage:["マイページ","アカウントと利用状況を確認できます。"],favorites:["お気に入り","保存したサービスやゲームを確認できます。"],history:["閲覧履歴","最近開いたサービスやゲームを確認できます。"],achievements:["実績","利用状況に応じた実績を確認できます。"],request:["リクエストBOX","機能やサービスのリクエストを送信できます。"],settings:["設定","ポータルの表示設定を変更できます。"],tools:["ツールボックス","天気・ニュース・世界時計・変換・RSS・稼働状況をまとめて使えます。"],pro:["KUROLAB Pro","プレミアム機能・申請状況・招待を管理します。"],"theme-studio":["KUROLAB Theme Studio","Pro限定テーマ・背景・UIカスタマイズ"],"pro-tools":["KUROLAB Pro Tools","Pro利用者向けの高度な作業ツールです。"]};
@@ -461,7 +461,7 @@ function initLogin(){
  var google=$("#portal-google-login");if(google)google.onclick=function(){oauth("google");};var apple=$("#portal-apple-login");if(apple)apple.onclick=function(){oauth("apple");};
  var modal=$("#portal-login-modal");if(modal)modal.onclick=function(e){if(e.target.id==="portal-login-modal")e.currentTarget.hidden=true;};
  var sw=$("#portal-register-switch");if(sw)sw.onclick=function(){var form=$("#portal-login-form");if(!form)return;var reg=form.dataset.mode!=="register",help=$("#portal-auth-help"),g=$("#portal-google-login"),a=$("#portal-apple-login"),note=document.querySelector("#portal-login-modal .portal-oauth-note"),warning=$("#portal-username-warning");if(warning)warning.hidden=!reg;if(help)help.hidden=reg;if(g)g.hidden=reg;if(a)a.hidden=reg;if(note)note.hidden=reg;form.dataset.mode=reg?"register":"login";var title=$("#portal-login-title"),submit=$("#portal-login-submit"),pw=$("#portal-login-password");if(title)title.textContent=reg?"KURO Labに新規登録":"KURO Labにログイン";if(submit)submit.textContent=reg?"アカウントを作成":"ログイン";sw.textContent=reg?"ログインに戻る":"新規アカウント作成";if(pw){pw.autocomplete=reg?"new-password":"current-password";pw.minLength=reg?8:1;}showLoginError(reg?"ユーザーネームまたはメールアドレスと、8文字以上のパスワードで登録できます。":"");};
- var login=$("#portal-login-form");if(login)login.onsubmit=async function(e){e.preventDefault();var b=$("#portal-login-submit"),em=$("#portal-login-email"),pw=$("#portal-login-password"),er=$("#portal-login-error");if(!b||!em||!pw)return;var reg=this.dataset.mode==="register",identity=em.value.trim(),password=pw.value;b.disabled=true;if(er)er.textContent="";try{if(!db)throw new Error("認証ライブラリを読み込めませんでした。ページを再読み込みしてお試しください。");var r;if(identity.indexOf("@")>=0){r=reg?await db.auth.signUp({email:identity,password:password,options:{emailRedirectTo:location.origin+"/mypage/"}}):await db.auth.signInWithPassword({email:identity,password:password});}else{r=await usernamePasswordAuth(reg?"register":"login",identity,password);}if(r.error)throw r.error;pw.value="";if(reg&&identity.indexOf("@")>=0&&!r.data.session){if(er)er.textContent="確認メールを送信しました。メール内のリンクから登録を完了してください。";return;}st.user=(r.data&&r.data.user)||(r.data&&r.data.session&&r.data.session.user)||st.user;updateAccountUI();loadKuroId(st.user);if(modal)modal.hidden=true;toast(reg?"アカウントを作成しました。データを同期しています。":"ログインしました。データを同期しています。");render();sync(true);}catch(err){var msg=String(err&&err.message||err||"通信エラー");if(er)er.textContent=(reg?"新規登録できませんでした：":"ログインできませんでした：")+msg+(useGas?"（GAS中継通信）":"");console.error("KURO portal auth error",err);}finally{b.disabled=false;}};
+ var login=$("#portal-login-form");if(login)login.onsubmit=async function(e){e.preventDefault();var b=$("#portal-login-submit"),em=$("#portal-login-email"),pw=$("#portal-login-password"),er=$("#portal-login-error");if(!b||!em||!pw)return;var reg=this.dataset.mode==="register",identity=em.value.trim(),password=pw.value;b.disabled=true;if(er)er.textContent="";try{if(!db)throw new Error("認証ライブラリを読み込めませんでした。ページを再読み込みしてお試しください。");var r;if(identity.indexOf("@")>=0){r=reg?await db.auth.signUp({email:identity,password:password,options:{emailRedirectTo:location.origin+"/mypage/"}}):await db.auth.signInWithPassword({email:identity,password:password});}else{r=await usernamePasswordAuth(reg?"register":"login",identity,password);}if(r.error)throw r.error;pw.value="";if(reg&&identity.indexOf("@")>=0&&!r.data.session){if(er)er.textContent="確認メールを送信しました。メール内のリンクから登録を完了してください。";return;}st.user=(r.data&&r.data.user)||(r.data&&r.data.session&&r.data.session.user)||st.user;updateAccountUI();loadKuroId(st.user);if(modal)modal.hidden=true;toast(reg?"アカウントを作成しました。データを同期しています。":"ログインしました。データを同期しています。");render();sync(true);}catch(err){var msg=String(err&&err.message||err||"通信エラー");if(er)er.textContent=(reg?"新規登録できませんでした：":"ログインできませんでした：")+msg+(useGas?"（Cloudflare中継通信）":"");console.error("KURO portal auth error",err);}finally{b.disabled=false;}};
 }
 
 /* KURO Dashboard personalization and shared portal tools */
