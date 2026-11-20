@@ -86,10 +86,11 @@ function parentCloudflareRequest(path, method, headers, bodyText) {
 }
 
 async function connectRoomPolling(roomData, members, session) {
-  const messageCallbacks = new Set(); const playerCallbacks = new Set();
+  const messageCallbacks = new Set(); const playerCallbacks = new Set(); const leftCallbacks = new Set(); const closeCallbacks = new Set();
   let active = true; let afterId = null; let timer = null; let busy = false; let cachedPlayers = [];
   function emitPlayers(next) {
-    cachedPlayers = (next || []).map((m) => ({ userId: m.userId, kuroId: m.user && m.user.kuroId || null, displayName: m.user && m.user.display_name || "プレイヤー", joinedAt: m.joinedAt }));
+    const previous = cachedPlayers.slice(); cachedPlayers = (next || []).map((m) => ({ userId: m.userId, kuroId: m.user && m.user.kuroId || null, displayName: m.user && m.user.display_name || "プレイヤー", joinedAt: m.joinedAt }));
+    const currentIds = new Set(cachedPlayers.map(p => p.userId)); previous.filter(p => !currentIds.has(p.userId)).forEach(p => leftCallbacks.forEach(cb => { try { cb(p); } catch (e) { console.error(e); } }));
     playerCallbacks.forEach((cb) => { try { cb(cachedPlayers.slice()); } catch (e) { console.error(e); } });
   }
   async function poll() {
@@ -134,6 +135,9 @@ async function connectRoomPolling(roomData, members, session) {
       return result;
     },
     onPlayersChange(callback) { if (typeof callback !== "function") return () => {}; playerCallbacks.add(callback); callback(cachedPlayers.slice()); return () => playerCallbacks.delete(callback); },
+    onPlayerLeft(callback) { if (typeof callback !== "function") return () => {}; leftCallbacks.add(callback); return () => leftCallbacks.delete(callback); },
+    onRoomClosed(callback) { if (typeof callback !== "function") return () => {}; closeCallbacks.add(callback); return () => closeCallbacks.delete(callback); },
+    async disband() { const result = await invoke("room_disband", { roomId: roomData.id }); active = false; if (timer) clearInterval(timer); closeCallbacks.forEach(cb => { try { cb({ reason: "host_disband" }); } catch (e) { console.error(e); } }); return result; },
     onMessage(callback) { if (typeof callback !== "function") return () => {}; messageCallbacks.add(callback); return () => messageCallbacks.delete(callback); },
     async send(type, data) {
       if (!active) throw new Error("このルームから退出済みです。");
@@ -168,13 +172,12 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
   }
   const wsBase = base.replace(/^https:/i, "wss:").replace(/^http:/i, "ws:");
   const wsUrl = wsBase + "/room/" + encodeURIComponent(String(roomData.id)) + "?ticket=" + encodeURIComponent(ticketData.ticket);
-  const callbacks = new Set(), playerCallbacks = new Set(), pending = new Map();
-  let active = true, cachedPlayers = [], socket = null, heartbeat = null, requestSeq = 0;
+  const callbacks = new Set(), playerCallbacks = new Set(), leftCallbacks = new Set(), closeCallbacks = new Set(), pending = new Map();
+  let active = true, cachedPlayers = [], socket = null, heartbeat = null, statusWatch = null, requestSeq = 0;
 
   function emitPlayers(list) {
-    cachedPlayers = (list || []).map(p => ({
-      userId: p.id, kuroId: null, displayName: p.name || "プレイヤー", joinedAt: p.joinedAt,
-    }));
+    const previous = cachedPlayers.slice(); cachedPlayers = (list || []).map(p => ({ userId: p.id, kuroId: null, displayName: p.name || "プレイヤー", joinedAt: p.joinedAt }));
+    const currentIds = new Set(cachedPlayers.map(p => p.userId)); previous.filter(p => !currentIds.has(p.userId)).forEach(p => leftCallbacks.forEach(cb => { try { cb(p); } catch (e) { console.error(e); } }));
     playerCallbacks.forEach(cb => { try { cb(cachedPlayers.slice()); } catch (e) { console.error(e); } });
   }
   function emitMessage(payload) {
@@ -219,7 +222,7 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
     };
     socket.onclose = () => {
       active = false;
-      if (heartbeat) clearInterval(heartbeat);
+      if (heartbeat) clearInterval(heartbeat); if (statusWatch) clearInterval(statusWatch);
       rejectPending(new Error("Durable Objects接続が閉じられました。"));
       if (!settled) {
         settled = true;
@@ -271,6 +274,7 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
       try { socket.send(JSON.stringify({ type: "ping" })); } catch (_) {}
     }
   }, 25000);
+  statusWatch = setInterval(async () => { if (!active) return; try { const status = await invoke("room_poll", { roomId: roomData.id, afterId: null }); emitPlayers(status.members || []); if (status.roomStatus === "closed") { active = false; clearInterval(heartbeat); clearInterval(statusWatch); closeCallbacks.forEach(cb => { try { cb({ reason: "disbanded" }); } catch (e) { console.error(e); } }); try { if (socket) socket.close(1000, "room closed"); } catch (_) {} } } catch (e) { console.warn("room status check failed", e); } }, 3500);
 
   return {
     room: roomData,
@@ -303,6 +307,9 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
       callback(cachedPlayers.slice());
       return function () { playerCallbacks.delete(callback); };
     },
+    onPlayerLeft(callback) { if (typeof callback !== "function") return function () {}; leftCallbacks.add(callback); return function () { leftCallbacks.delete(callback); }; },
+    onRoomClosed(callback) { if (typeof callback !== "function") return function () {}; closeCallbacks.add(callback); return function () { closeCallbacks.delete(callback); }; },
+    async disband() { const result = await invoke("room_disband", { roomId: roomData.id }); active = false; if (heartbeat) clearInterval(heartbeat); if (statusWatch) clearInterval(statusWatch); closeCallbacks.forEach(cb => { try { cb({ reason: "host_disband" }); } catch (e) { console.error(e); } }); try { if (socket) socket.close(1000, "disband"); } catch (_) {} return result; },
     onMessage(callback) {
       if (typeof callback !== "function") return function () {};
       callbacks.add(callback);
