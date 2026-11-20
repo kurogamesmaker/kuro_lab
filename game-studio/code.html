@@ -443,7 +443,7 @@ codeFileInput.addEventListener("change",async()=>{
    const {name,ext,source}=item;
    if(["js","mjs"].includes(ext)){
     const basename=name.toLowerCase();
-    project.code.html=String(project.code.html||"").replace(/<script\b([^>]*?)\bsrc\s*=\s*(["'])([^"']+)\2([^>]*)>\s*<\/script\s*>/gi,(whole,before,quote,src,after)=>{let path=src.split(/[?#]/)[0];try{path=decodeURIComponent(path);}catch(_){}return path.split(/[\\/]/).pop().toLowerCase()===basename?"":whole;});
+    project.code.html=String(project.code.html||"").replace(/<script\b([^>]*?)\bsrc\s*=\s*(["'])([^"']+)\2([^>]*)>\s*<\/script\s*>/gi,(whole,before,quote,src,after)=>{let path=src.split(/[?#]/)[0];try{path=decodeURIComponent(path);}catch(_){}const ref=path.split(/[\\/]/).pop().toLowerCase().replace(/\\s*\\(\\d+\\)(?=\\.[^.]+$)/,"");const file=basename.replace(/\\s*\\(\\d+\\)(?=\\.[^.]+$)/,"");return ref===file?"":whole;});
    }
    if(["html","htm","xhtml","txt"].includes(ext)){
     try{const prepared=inlineFileScripts(source),parsed=splitMixedCode(prepared),p=parsed.parts;if(p.html&&!/^<!-- HTMLをここに追加できます -->$/.test(p.html))updates.html.push(p.html);if(p.css&&!/^\/\* CSSをここに追加できます \*\/$/.test(p.css))updates.css.push(p.css);if(p.js&&!/^\/\/ JavaScriptをここに追加できます$/.test(p.js))updates.js.push(p.js);notes.push(name+": HTML/CSS/JavaScriptを自動判別");if(parsed.notes.length)notes.push(...parsed.notes.map(n=>name+": "+n));}
