@@ -8,13 +8,7 @@
 
 <script>
 
-const KURO_TRANSPORT_PARAM=new URLSearchParams(location.search).get("transport");
-let KURO_GAS_TRANSPORT=KURO_TRANSPORT_PARAM==="gas";
-try{
- if(KURO_TRANSPORT_PARAM==="gas")localStorage.setItem("kuro_portal_transport","gas");
- else if(KURO_TRANSPORT_PARAM==="direct")localStorage.setItem("kuro_portal_transport","direct");
- else KURO_GAS_TRANSPORT=localStorage.getItem("kuro_portal_transport")==="gas";
-}catch(_){}
+const KURO_GAS_TRANSPORT=true; try{localStorage.setItem("kuro_portal_transport","cloudflare");}catch(_){}
 const KURO_GAS_PROXY_URL="https://kurolab.cc.cd/api/kuro-gas-proxy";
 function kuroGameGasClientId(){
  const key="kuro_gas_client_id_gameplay_v1";
@@ -46,7 +40,7 @@ const kuroGameAuthClient = window.supabase.createClient(
  "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn",
  {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
-  global: { fetch: KURO_GAS_TRANSPORT ? kuroGasFetch : window.fetch },
+  global: { fetch: kuroGasFetch },
   realtime: { params: { log_level: "info" } }
  }
 );
