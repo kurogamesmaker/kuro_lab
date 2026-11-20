@@ -94,6 +94,7 @@ window.addEventListener("message", async event => {
   if (!KURO_CLOUDFLARE_TRANSPORT || typeof msg.requestId !== "string" || msg.requestId.length > 120 ||
       msg.path !== "/functions/v1/kurogames-online" || msg.method !== "POST") return;
   try {
+   if(kuroGameGuestMode){let b={};try{b=msg.bodyBase64?JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(msg.bodyBase64),ch=>ch.charCodeAt(0)))):{}}catch(_){}if(b.action==="score_submit"){event.source.postMessage({type:"kuro-online-proxy-response",requestId:msg.requestId,response:{status:200,headers:{"content-type":"application/json"},bodyBase64:btoa(JSON.stringify({ok:false,guest:true,message:"ゲストプレイではランキングに記録されません。"}))}},"*");return;}}
    const bytes = msg.bodyBase64 ? Uint8Array.from(atob(msg.bodyBase64), ch => ch.charCodeAt(0)) : new Uint8Array();
    const request = new Request("https://cprvpphlfpmiegjiutjn.supabase.co" + msg.path, {
     method: "POST", headers: msg.headers || {}, body: bytes
@@ -269,7 +270,7 @@ window.addEventListener("message", async event => {
    frame.style.maxHeight="none";
    frame.style.aspectRatio=frameWidth+" / "+frameHeight;
   };
-  kuroGameFrame=frame;$("frameWrap").replaceChildren(frame);kuroGameFrameLayout();frame.srcdoc='<script>window.KURO_GUEST_MODE='+guest+';window.KURO_GAMES_RECORDS_ENABLED=!window.KURO_GUEST_MODE;</script>'+data.html_content;};
+  kuroGameFrame=frame;$("frameWrap").replaceChildren(frame);kuroGameFrameLayout();frame.srcdoc='<script>window.KURO_GUEST_MODE='+guest+';window.KURO_GAMES_RECORDS_ENABLED=!window.KURO_GUEST_MODE;const isScoreUrl=u=>window.KURO_GUEST_MODE&&/\\/rest\\/v1\\/game_scores(?:\\?|$)/i.test(String(u));const nativeFetch=window.fetch.bind(window);window.fetch=function(input,init){const u=typeof input==="string"?input:(input&&input.url)||"";if(isScoreUrl(u)){return Promise.resolve(new Response(JSON.stringify({ok:false,guest:true,message:"ゲストプレイではランキングに記録されません。"}),{status:200,headers:{"Content-Type":"application/json"}}));}return nativeFetch(input,init);};</script>'+data.html_content;};
   choice.querySelector("#guestPlay").onclick=()=>launchGame(true);
   choice.querySelector("#accountPlay").onclick=async()=>{const s=await getKuroGameAuthSession();if(s.user?.is_anonymous){location.href="/?auth=1&return="+encodeURIComponent(location.href);return;}launchGame(false);};
  }catch(error){fail(error.message||"通信エラーが発生しました。");}
