@@ -458,7 +458,7 @@
 <body>
 <section id="loginView" class="login">
 <div class="brand"><div class="mark">K</div><div>KURO Lab<small>ADMIN CONSOLE</small></div></div>
-<div style="height:24px"></div><div class="eyebrow">Secure sign in</div><h1>管理者ログイン</h1><p>KURO Labの管理者アカウントでログインしてください。</p><div class="field"><label for="modeSelect">通信方式</label><select class="mode-select" id="modeSelect"><option value="supabase">Supabase版（直接通信）</option><option value="gas">Cloudflare版（Cloudflare経由）</option></select></div>
+<div style="height:24px"></div><div class="eyebrow">Secure sign in</div><h1>管理者ログイン</h1><p>KURO Labの管理者アカウントでログインしてください。</p>
 <form id="loginForm">
 <div class="field"><label for="email">メールアドレス</label><input id="email" type="email" value="kurogamesmaker@gmail.com" autocomplete="username" required></div>
 <div class="field"><label for="password">パスワード</label><input id="password" type="password" autocomplete="current-password" required></div>
@@ -467,7 +467,7 @@
 </form><div class="hint">この画面は管理者専用です。一般アカウントではアクセスできません。</div>
 </section>
 <div id="appView" hidden>
-<header class="top"><div class="wrap" style="display:flex;align-items:center;justify-content:space-between"><div class="brand"><div class="mark">K</div><div>KURO Lab<small>ADMIN CONSOLE</small></div></div><div class="top-right"><span id="account"></span><select class="product-select" id="productSelect" aria-label="管理対象"><option value="lab">KURO Lab</option><option value="sns">KURO SNS</option><option value="ops">運営管理</option></select><select class="mode-select" id="modeSelectTop" aria-label="通信方式"><option value="supabase">Supabase版</option><option value="gas">Cloudflare版</option></select><button class="btn" id="notifyButton">通知を許可</button><button class="btn" id="logoutButton">ログアウト</button></div></div></header>
+<header class="top"><div class="wrap" style="display:flex;align-items:center;justify-content:space-between"><div class="brand"><div class="mark">K</div><div>KURO Lab<small>ADMIN CONSOLE</small></div></div><div class="top-right"><span id="account"></span><select class="product-select" id="productSelect" aria-label="管理対象"><option value="lab">KURO Lab</option><option value="sns">KURO SNS</option><option value="ops">運営管理</option></select><button class="btn" id="notifyButton">通知を許可</button><button class="btn" id="logoutButton">ログアウト</button></div></div></header>
 <main id="labAdminSection" class="wrap main">
 <div class="eyebrow">Workspace / Requests</div>
 <div class="heading"><div><h1>リクエストBOX</h1><p>利用者から届いたリクエストを確認・管理します。</p></div><div class="statusline" id="connection">接続中…</div></div>
@@ -843,8 +843,7 @@
 const SUPABASE_URL="https://cprvpphlfpmiegjiutjn.supabase.co";
 const PUBLISHABLE_KEY="sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
 const $=s=>document.querySelector(s);
-const MODE_KEY="kuro-admin-connection-mode";
-const requestedMode="cloudflare";const storedMode="cloudflare";const mode="gas";try{localStorage.setItem(MODE_KEY,"cloudflare");}catch{}
+const mode="cloudflare";
 async function cloudflareFetch(input,init={}){
  const request=new Request(input,init);
  const target=new URL(request.url);
@@ -871,16 +870,12 @@ async function cloudflareFetch(input,init={}){
  return new Response([204,205,304].includes(status)?null:responseBody,{status,headers:result.headers||{}});
 }
 const db=window.supabase.createClient(SUPABASE_URL,PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},global:{fetch:cloudflareFetch}});
-const modeSelect=$("#modeSelect"),modeSelectTop=$("#modeSelectTop");
+
 const PRODUCT_KEY="kuro-admin-product";
 let activeProduct=["lab","sns","ops"].includes(localStorage.getItem(PRODUCT_KEY))?localStorage.getItem(PRODUCT_KEY):"ops";
 const productSelect=$("#productSelect");
-function syncModeSelectors(){if(modeSelect)modeSelect.value=mode;if(modeSelectTop)modeSelectTop.value=mode;}
 function syncProductSelector(){if(productSelect)productSelect.value=activeProduct;}
-function setMode(next){if(next!=="gas"&&next!=="supabase")return;try{localStorage.setItem(MODE_KEY,next);}catch{}const url=new URL(location.href);url.searchParams.set("connection",next);location.replace(url.toString());}
-if(modeSelect)modeSelect.addEventListener("change",()=>setMode(modeSelect.value));
-if(modeSelectTop)modeSelectTop.addEventListener("change",()=>setMode(modeSelectTop.value));
-syncModeSelectors();
+
 let rows=[],filter="all",channel=null,seen=new Set(),firstLoad=true;
 let opsUsers=[],opsAuditLogs=[],opsAnnouncements=[],opsMessages=[],opsFlags=[],opsView='overview',editingAnnouncementId=null,opsUsersPage=1,opsUsersTotal=null;
 let opsLogEntries=[],opsLogPaused=false,opsLogFilter="all",opsLogSeenKeys=new Set();
@@ -935,7 +930,7 @@ async function saveStatus(id,button){
 }
 function subscribe(){
  if(channel){db.removeChannel(channel);channel=null;}
- if(mode==="gas"){$("#connection").textContent="Cloudflare経由（45秒ごとに更新）";return;}
+ if(mode==="cloudflare"){$("#connection").textContent="Cloudflare経由（45秒ごとに更新）";return;}
  channel=db.channel("admin-portal-requests").on("postgres_changes",{event:"INSERT",schema:"public",table:"portal_requests"},payload=>{
   const r=payload.new;if(!r||rows.some(x=>x.id===r.id))return;
   rows.unshift(r);seen.add(r.id);render();$("#connection").textContent="リアルタイム接続中";
@@ -1077,7 +1072,7 @@ function queueSnsRealtimeRefresh(){
 }
 function startSnsRealtime(){
  stopSnsRealtime();
- if(mode==="gas"){
+ if(mode==="cloudflare"){
   $("#snsConnection").textContent="Cloudflare版・15秒ごとに自動同期";
   return;
  }
@@ -1860,7 +1855,7 @@ async function loadOpsUserErrors(event){
 
 function startAdminPolling(){
  if(refreshTimer)clearInterval(refreshTimer);
- const interval=activeProduct==="ops"&&opsView==="logs"?5000:(activeProduct==="ops"&&opsView==="realtime"?15000:(activeProduct==="ops"&&opsView==="overview"?300000:(activeProduct==="sns"&&mode==="gas"?15000:45000)));
+ const interval=activeProduct==="ops"&&opsView==="logs"?5000:(activeProduct==="ops"&&opsView==="realtime"?15000:(activeProduct==="ops"&&opsView==="overview"?300000:(activeProduct==="sns"&&mode==="cloudflare"?15000:45000)));
  refreshTimer=setInterval(()=>{
   if($("#appView").hidden)return;
   if(activeProduct==="lab")load();
