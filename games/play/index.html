@@ -112,18 +112,8 @@ window.addEventListener("message", async event => {
   const roomCode = msg.roomCode;
   if (typeof requestId !== "string" || !/^[A-Za-z0-9_-]{1,80}$/.test(requestId) ||
       typeof roomCode !== "string" || !/^\d{4}$/.test(roomCode)) return;
-  // The Cloudflare REST relay does not proxy WebSocket upgrades. Keep this legacy game bridge on verified HTTP polling; real-time room transport is handled by the Cloudflare Durable Objects SDK.
-  if (KURO_CLOUDFLARE_TRANSPORT) {
-   try {
-    event.source.postMessage({
-     type: "kuro-werewolf-realtime-status",
-     requestId,
-     status: "POLLING_ONLY",
-     detail: "Cloudflare relay: using HTTP polling"
-    }, "*");
-   } catch (_) {}
-   return;
-  }
+  // Realtime room notifications use Supabase's WebSocket channel directly.
+  // REST/API calls still use the Cloudflare relay; the WebSocket channel is separate.
   const previous = kuroGameRealtimeChannels.get(requestId);
   if (previous && previous.source === event.source) {
    kuroGameRealtimeChannels.delete(requestId);
