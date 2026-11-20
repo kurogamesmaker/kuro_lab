@@ -295,19 +295,24 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
     room: roomData,
     members: members || [],
     getPlayers() { return cachedPlayers.slice(); },
-    async getState() { return sendRequest("get-state"); },
+    async getState() {
+      return invoke("room_state_get", { roomId: roomData.id });
+    },
     async updateState(state, expectedUpdatedAt) {
-      const result = await sendRequest("state-update", {
-        state,
+      const result = await invoke("room_state_update", {
+        roomId: roomData.id,
+        state: state,
         expectedUpdatedAt: expectedUpdatedAt || null,
       });
       if (!result.conflict) {
-        emitMessage({
+        const notification = {
           type: "room-state-updated",
-          data: { state: result.state, updatedAt: result.updatedAt || null },
+          data: { updatedAt: result.updatedAt || null },
           from: session.user.id,
           sentAt: Date.now(),
-        });
+        };
+        emitMessage(notification);
+        await this.send("room-state-updated", { updatedAt: result.updatedAt || null });
       }
       return result;
     },
