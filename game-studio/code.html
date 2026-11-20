@@ -24,7 +24,7 @@
  <a class="brand" href="/game-studio/projects.html">KURO <b>GAME STUDIO</b></a><span class="sep"></span><a class="btn" href="/game-studio/online.html">オンライン機能</a>
  <input class="project-name" id="projectName" aria-label="プロジェクト名" value="新しいゲーム">
  <span class="spacer"></span><span class="status" id="saveStatus">● 保存済み</span>
- <a class="btn" href="/?auth=1">KUROアカウント</a><a class="btn" href="/game-studio/projects.html">プロジェクト</a><a class="btn gas-mode-btn" href="/game-studio/code.html?transport=gas" data-gas-toggle data-gas-mode="supabase-only">GAS通信モード ↗</a>
+ <a class="btn" href="/?auth=1">KUROアカウント</a><a class="btn" href="/game-studio/projects.html">プロジェクト</a><a class="btn gas-mode-btn" href="/game-studio/code.html?transport=gas" data-gas-toggle data-gas-mode="supabase-only">Cloudflare通信 ↗</a>
  <button class="btn" id="saveBtn">保存</button><button class="btn import-code-btn" id="importCodeBtn" type="button" title="HTML・CSS・JavaScriptが混ざったコードを貼り付けて自動分別">コード貼り付け</button><button class="btn file-load-btn" id="fileLoadBtn" type="button" title="HTML・CSS・JavaScriptなど複数ファイルをまとめて読み込む">複数ファイル読み込み</button><input id="codeFileInput" type="file" hidden multiple accept=".html,.htm,.xhtml,.css,.js,.mjs,.jsx,.ts,.tsx,.json,.txt,.xml,.svg,.md"><button class="btn primary" id="runBtn">▶ テスト</button><button class="btn primary" id="publishBtn">公開・更新</button>
 </header>
 <main class="layout">
@@ -53,31 +53,31 @@
 const $=id=>document.getElementById(id);
 const KEY="kuroGameStudio.v1";
 const SUPABASE_URL="https://cprvpphlfpmiegjiutjn.supabase.co",SUPABASE_KEY="sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
-const KURO_GAS_TRANSPORT=new URLSearchParams(location.search).get("transport")==="gas";
-const KURO_GAS_PROXY_URL="https://kurolab.cc.cd/api/kuro-gas-proxy";
+const KURO_CLOUDFLARE_TRANSPORT=new URLSearchParams(location.search).get("transport")==="gas";
+const KURO_CLOUDFLARE_PROXY_URL="https://kurolab.cc.cd/api/cloudflare-relay";
 function kuroGasClientId(){
- const key="kuro_gas_client_id_studio_v1";
+ const key="kuro_cloudflare_client_id_studio_v1";
  try{let value=localStorage.getItem(key);if(!value){value=window.crypto&&crypto.randomUUID?crypto.randomUUID():"kuro-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2);localStorage.setItem(key,value);}return value;}
  catch(_){return "kuro-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2);}
 }
-async function kuroGasFetch(input,init){
+async function kuroCloudflareFetch(input,init){
  const req=new Request(input,init),url=new URL(req.url);
  if(url.origin!=="https://cprvpphlfpmiegjiutjn.supabase.co")return fetch(req);
  const bytes=new Uint8Array(await req.arrayBuffer());let binary="";
  for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
  const headers={};req.headers.forEach((v,k)=>{headers[k]=v;});
- const proxy=await fetch(KURO_GAS_PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:kuroGasClientId()})});
- let result;try{result=await proxy.json();}catch(e){throw new Error("GAS中継サーバーの応答を読み取れませんでした");}
- if(!proxy.ok||!result||typeof result.status!=="number")throw new Error(result&&result.error||"GAS中継通信に失敗しました");
+ const proxy=await fetch(KURO_CLOUDFLARE_PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:kuroGasClientId()})});
+ let result;try{result=await proxy.json();}catch(e){throw new Error("Cloudflare中継サーバーの応答を読み取れませんでした");}
+ if(!proxy.ok||!result||typeof result.status!=="number")throw new Error(result&&result.error||"Cloudflare中継通信に失敗しました");
  let body=null;if(result.isBinary&&result.bodyBase64){const raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);body=out;}else if(result.bodyText!==undefined&&![204,205,304].includes(result.status))body=result.bodyText;
  return new Response(body,{status:result.status,headers:result.headers||{"Content-Type":"application/json"}});
 }
 function kuroApplyTransportLinks(){
- if(!KURO_GAS_TRANSPORT)return;
+ if(!KURO_CLOUDFLARE_TRANSPORT)return;
  document.querySelectorAll('a[href^="/game-studio/"],a[href^="/games/"]').forEach(a=>{const u=new URL(a.href,location.origin);u.searchParams.set("transport","gas");a.href=u.pathname+u.search+u.hash;});
 }
 
-const publishDb=window.supabase&&window.supabase.createClient?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{global:{fetch:KURO_GAS_TRANSPORT?kuroGasFetch:window.fetch},auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
+const publishDb=window.supabase&&window.supabase.createClient?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{global:{fetch:KURO_CLOUDFLARE_TRANSPORT?kuroCloudflareFetch:window.fetch},auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
 const clone=x=>JSON.parse(JSON.stringify(x));
 const escapeHTML=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fallback={id:"studio-new",name:"新しいゲーム",type:"clicker",background:"#17243a",objects:[
@@ -503,22 +503,22 @@ window.addEventListener("message",async event=>{
    }
    const session=data.session;
    if(!session||!session.access_token)throw new Error("KUROGAMES認証情報を取得できませんでした");
-   event.source.postMessage({type:"kuro-online-auth",requestId:msg.requestId,access_token:session.access_token,useGasProxy:KURO_GAS_TRANSPORT,user:session.user?{id:session.user.id,email:session.user.email??null}:null},"*");
+   event.source.postMessage({type:"kuro-online-auth",requestId:msg.requestId,access_token:session.access_token,useGasProxy:KURO_CLOUDFLARE_TRANSPORT,user:session.user?{id:session.user.id,email:session.user.email??null}:null},"*");
   }catch(error){
    event.source.postMessage({type:"kuro-online-auth-error",requestId:msg.requestId,message:error&&error.message||"KUROGAMES認証に失敗しました"},"*");
   }
   return;
  }
  if(msg.type==="kuro-online-proxy-request"){
-  if(!KURO_GAS_TRANSPORT||typeof msg.requestId!=="string"||msg.requestId.length>120||msg.path!=="/functions/v1/kurogames-online"||msg.method!=="POST")return;
+  if(!KURO_CLOUDFLARE_TRANSPORT||typeof msg.requestId!=="string"||msg.requestId.length>120||msg.path!=="/functions/v1/kurogames-online"||msg.method!=="POST")return;
   try{
    const bytes=msg.bodyBase64?Uint8Array.from(atob(msg.bodyBase64),ch=>ch.charCodeAt(0)):new Uint8Array();
    const request=new Request(SUPABASE_URL+msg.path,{method:"POST",headers:msg.headers||{},body:bytes});
-   const response=await kuroGasFetch(request),responseBytes=new Uint8Array(await response.arrayBuffer());
+   const response=await kuroCloudflareFetch(request),responseBytes=new Uint8Array(await response.arrayBuffer());
    let binary="";for(let i=0;i<responseBytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,responseBytes.subarray(i,Math.min(i+0x8000,responseBytes.length)));
    const responseHeaders={};response.headers.forEach((v,k)=>responseHeaders[k]=v);
    event.source.postMessage({type:"kuro-online-proxy-response",requestId:msg.requestId,response:{status:response.status,headers:responseHeaders,bodyBase64:responseBytes.length?btoa(binary):""}},"*");
-  }catch(error){event.source.postMessage({type:"kuro-online-proxy-response",requestId:msg.requestId,error:error&&error.message||"GAS中継エラー"},"*");}
+  }catch(error){event.source.postMessage({type:"kuro-online-proxy-response",requestId:msg.requestId,error:error&&error.message||"Cloudflare中継エラー"},"*");}
   return;
  }
  if(msg.type==="kuro-werewolf-auth-request"){
@@ -539,7 +539,7 @@ window.addEventListener("message",async event=>{
     const key=localStorage.key(i);
     if(key&&key.startsWith(prefix))storage[key.slice(prefix.length)]=localStorage.getItem(key);
    }
-   event.source.postMessage({type:"kuro-werewolf-auth",useGasProxy:KURO_GAS_TRANSPORT,access_token:session.access_token,refresh_token:session.refresh_token,storage},"*");
+   event.source.postMessage({type:"kuro-werewolf-auth",useGasProxy:KURO_CLOUDFLARE_TRANSPORT,access_token:session.access_token,refresh_token:session.refresh_token,storage},"*");
   }catch(error){
    event.source.postMessage({type:"kuro-werewolf-auth-error",message:error&&error.message||"Supabase認証に失敗しました"},"*");
   }
@@ -571,9 +571,9 @@ if(new URLSearchParams(location.search).get("publish")==="1"){openPublishModal()
  const current=new URL(window.location.href);
  const active=current.searchParams.get("transport")==="gas";
  button.classList.toggle("is-active",active);
- button.textContent=active?"✓ GAS版 使用中":"GAS通信モード ↗";
- button.setAttribute("aria-label",active?"GAS版を使用中。クリックすると通常版に戻ります":"GAS通信モードに切り替えます");
- button.title=active?"現在はGAS版です。クリックすると通常版に戻ります":"Supabase通信をGAS経由に切り替えます";
+ button.textContent=active?"✓ Cloudflare版 使用中":"Cloudflare通信 ↗";
+ button.setAttribute("aria-label",active?"Cloudflare版を使用中。クリックすると通常版に戻ります":"Cloudflare通信に切り替えます");
+ button.title=active?"現在はCloudflare版です。クリックすると通常版に戻ります":"Supabase通信をCloudflare経由に切り替えます";
  if(active)button.setAttribute("aria-current","page");
  else button.removeAttribute("aria-current");
  const next=new URL(current.href);
