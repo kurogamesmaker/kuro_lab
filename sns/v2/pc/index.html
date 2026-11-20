@@ -1039,7 +1039,7 @@
 }
 </style>
 
-<meta name="kuro-layout-version" content="2026-11-16-gas-layout-09">
+<meta name="kuro-layout-version" content="2026-11-16-cloudflare-layout-09">
 <script id="kuro-device-route-guard">
 (function(){
   var mobile=window.matchMedia('(max-width: 767px)').matches;
@@ -1666,7 +1666,7 @@
                 return publicUrl;
             }
         }
-        async function checkKuroGasBridge() {
+        async function checkKuroCloudflareBridge() {
             const panel = document.getElementById('kuroCloudflareStatusPanel');
             const label = document.getElementById('kuroCloudflareStatusText');
             if (!panel || !label) return;
@@ -1687,7 +1687,7 @@
             SUPABASE_PUBLISHABLE_KEY,
             { global: { fetch: kuroCloudflareFetch } }
         );
-        checkKuroGasBridge();
+        checkKuroCloudflareBridge();
 
         let currentUser = null;
         let currentAuthMode = 'signup';
@@ -5056,7 +5056,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             }
         };
     </script>
-<script>window.addEventListener('pageshow', checkKuroGasBridge);</script>
+<script>window.addEventListener('pageshow', checkKuroCloudflareBridge);</script>
 
 <style id="kuro-public-chat-fullscreen-fix">
   /* 公開チャット：入力欄を画面下中央の1段レイアウトに統一 */
