@@ -266,7 +266,7 @@ export default {
       headers.set("x-kuro-user-id", claims.sub);
       headers.set("x-kuro-user-name", claims.name || "プレイヤー");
       headers.set("x-kuro-game-id", claims.game);
-      const internalUrl = new URL(request.url);\n      internalUrl.searchParams.delete("ticket");\n      const forwarded = new Request(internalUrl.toString(), new Request(request, { headers }));
+      const forwarded = new Request(request, { headers });
       const roomKey = claims.game + ":" + roomId;
       return env.ROOMS.get(env.ROOMS.idFromName(roomKey)).fetch(forwarded);
     }
