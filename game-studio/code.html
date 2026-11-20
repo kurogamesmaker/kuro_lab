@@ -446,7 +446,7 @@ codeFileInput.addEventListener("change",async()=>{
     const normalizeScriptName=value=>String(value||"").split(/[?#]/)[0].split(/[\\/]/).pop().toLowerCase().replace(/\s*\(\d+\)(?=\.[^.]+$)/,"");
     const importedScriptName=normalizeScriptName(basename);
     let matched=false;
-    project.code.html=String(project.code.html||"").replace(/<script\\b([^>]*?)\\bsrc\\s*=\\s*(["'])([^"']+)\\2([^>]*)>\\s*<\\/script\\s*>/gi,(whole,before,quote,src,after)=>normalizeScriptName(src)===importedScriptName?(matched=true,""):whole);
+    project.code.html=String(project.code.html||"").replace(/<script\b([^>]*?)\bsrc\s*=\s*(["'])([^"']+)\2([^>]*)>\s*<\/script\s*>/gi(whole,before,quote,src,after)=>normalizeScriptName(src)===importedScriptName?(matched=true,""):whole);
     if(matched){referencedScripts.add(name.toLowerCase());project.code.js=source+"\\n\\n"+String(project.code.js||"");notes.push(name+": HTMLの参照位置に対応する依存JSを統合");}
    }
    if(["html","htm","xhtml","txt"].includes(ext)){
