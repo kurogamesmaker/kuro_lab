@@ -8,7 +8,7 @@
 .published-status{color:var(--muted);font-size:11px}.published-card .preview{background:radial-gradient(circle at 50% 30%,#285747,#142a2a 70%)}.published-card .type-tag{color:#a5f0c7}
 </style>
 </head><body>
-<header class="top"><a class="brand" href="/game-studio/projects.html">KURO <b>GAME STUDIO</b></a><span class="crumb">/ プロジェクト</span><span class="spacer"></span><a class="btn" href="/game-studio/online.html">オンライン機能</a><a class="btn" href="/?auth=1">KUROアカウント</a><a class="btn" href="/games/">KURO GAMES ↗</a><a class="btn gas-mode-btn" href="/game-studio/projects.html?transport=gas" data-gas-toggle data-gas-mode="supabase-only">Cloudflare通信 ↗</a></header>
+<header class="top"><a class="brand" href="/game-studio/projects.html">KURO <b>GAME STUDIO</b></a><span class="crumb">/ プロジェクト</span><span class="spacer"></span><a class="btn" href="/game-studio/online.html">オンライン機能</a><a class="btn" href="/?auth=1">KUROアカウント</a><a class="btn" href="/games/">KURO GAMES ↗</a></header>
 <main class="wrap">
 <section class="hero"><div><div class="eyebrow">YOUR CREATIVE WORKSPACE</div><h1>プロジェクト</h1><p>ゲーム制作をここから始めよう。プロジェクトを作成して、2Dビジュアル編集やコード編集を進められます。</p></div><div class="hero-actions"><button class="btn import-btn" id="importBtn" type="button" title="HTML・CSS・JavaScriptなど複数ファイルをまとめて読み込みます。JSONプロジェクトにも対応">複数ファイル読み込み</button><button class="btn primary" id="createBtn">＋ 新しいプロジェクト</button><input type="file" id="importFile" accept=".json,.html,.htm,.xhtml,.css,.js,.mjs,.jsx,.ts,.tsx,.txt,.xml,.svg,.md,application/json,text/html,text/css,text/javascript,text/plain" multiple hidden></div></section>
 <section class="stats"><div class="stat"><small>すべてのプロジェクト</small><strong id="totalCount">0</strong></div><div class="stat"><small>最近編集したプロジェクト</small><strong id="recentCount">0</strong></div><div class="stat"><small>制作モード</small><strong>2D</strong></div></section>
@@ -23,8 +23,6 @@
 <div class="modal-foot"><button class="btn" id="cancelCreate">キャンセル</button><button class="btn primary" id="confirmCreate">作成して開く</button></div></section></div><div class="toast" id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const KURO_CLOUDFLARE_TRANSPORT=true;
-);}
 (function(){
 "use strict";
 const KEY="kuroGameStudio.v1", $=id=>document.getElementById(id), clone=x=>JSON.parse(JSON.stringify(x));
@@ -94,7 +92,7 @@ async function loadPublishedGames(){
    const actions=document.createElement("div");actions.className="card-actions";
    const edit=document.createElement("a");edit.className="btn primary";edit.textContent="Studioで編集";
    const u=new URL("/game-studio/code.html",location.origin);u.searchParams.set("publishedId",game.id);edit.href=u.pathname+u.search;
-   const play=document.createElement("a");play.className="btn";play.textContent="ゲームを見る";play.href="/games/play/?id="+encodeURIComponent(game.id)+;play.target="_blank";play.rel="noopener";
+   const play=document.createElement("a");play.className="btn";play.textContent="ゲームを見る";play.href="/games/play/?id="+encodeURIComponent(game.id);play.target="_blank";play.rel="noopener";
    const del=document.createElement("button");del.className="btn danger";del.textContent="削除";del.dataset.publishedDelete=game.id;actions.append(edit,play,del);card.append(preview,body,actions);grid.insertBefore(card,empty);
   });
  }catch(e){status.textContent="取得できませんでした: "+(e.message||"通信エラー");}
@@ -166,23 +164,6 @@ $("importFile").onchange=async e=>{
 };
 $("emptyCreate").onclick=()=>modal(true);$("modal").onclick=e=>{if(e.target===$("modal"))modal(false);};document.addEventListener("keydown",e=>{if(e.key==="Escape")modal(false);if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="n"){e.preventDefault();modal(true);}});
 render();loadPublishedGames();
-})();
-</script><script>
-(function(){
- const button=document.querySelector("[data-gas-toggle]");
- if(!button)return;
- const current=new URL(window.location.href);
- const active=current.searchParams.get("transport")==="gas";
- button.classList.toggle("is-active",active);
- button.textContent=active?"✓ Cloudflare版 使用中":"Cloudflare通信 ↗";
- button.setAttribute("aria-label",active?"Cloudflare版を使用中。クリックすると通常版に戻ります":"Cloudflare通信に切り替えます");
- button.title=active?"現在はCloudflare版です。クリックすると通常版に戻ります":"Supabase通信をCloudflare経由に切り替えます";
- if(active)button.setAttribute("aria-current","page");
- else button.removeAttribute("aria-current");
- const next=new URL(current.href);
- if(active)next.searchParams.delete("transport");
- else next.searchParams.set("transport","gas");
- button.href=next.pathname+next.search+next.hash;
 })();
 </script>
 </body></html>
