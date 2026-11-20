@@ -844,10 +844,7 @@ const SUPABASE_URL="https://cprvpphlfpmiegjiutjn.supabase.co";
 const PUBLISHABLE_KEY="sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
 const $=s=>document.querySelector(s);
 const MODE_KEY="kuro-admin-connection-mode";
-const requestedMode=new URLSearchParams(location.search).get("connection");
-const storedMode=localStorage.getItem(MODE_KEY);
-const mode=(requestedMode==="gas"||requestedMode==="supabase")?requestedMode:(storedMode==="gas"?"gas":"supabase");
-try{localStorage.setItem(MODE_KEY,mode);}catch{}
+const requestedMode="cloudflare";const storedMode="cloudflare";const mode="gas";try{localStorage.setItem(MODE_KEY,"cloudflare");}catch{}
 async function gasFetch(input,init={}){
  const request=new Request(input,init);
  const target=new URL(request.url);
@@ -873,7 +870,7 @@ async function gasFetch(input,init={}){
  const status=result.status;
  return new Response([204,205,304].includes(status)?null:responseBody,{status,headers:result.headers||{}});
 }
-const db=window.supabase.createClient(SUPABASE_URL,PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},global:{fetch:mode==="gas"?gasFetch:fetch}});
+const db=window.supabase.createClient(SUPABASE_URL,PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},global:{fetch:gasFetch}});
 const modeSelect=$("#modeSelect"),modeSelectTop=$("#modeSelectTop");
 const PRODUCT_KEY="kuro-admin-product";
 let activeProduct=["lab","sns","ops"].includes(localStorage.getItem(PRODUCT_KEY))?localStorage.getItem(PRODUCT_KEY):"ops";
