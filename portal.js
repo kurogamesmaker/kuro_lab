@@ -19,10 +19,9 @@ async function ensureSupabaseSdk(){
  return false;
 }
 var supabaseReady=await ensureSupabaseSdk();
-var requestedTransport=new URLSearchParams(location.search).get("transport");
-// Use the same-origin GAS relay by default; direct Supabase is an explicit diagnostic override.
-var useGas=requestedTransport!=="direct";
-safeStorageSet("localStorage","kuro_portal_transport",useGas?"gas":"direct");
+// KURO Lab communication is forced through the same-origin Cloudflare Worker proxy.
+var useGas=true;
+safeStorageSet("localStorage","kuro_portal_transport","cloudflare");
 function gasFetch(input,init){
  var req=new Request(input,init),url=new URL(req.url),serviceInfo=url.origin===SUPABASE_URL?classifyApiRequest(url.href):null;
  if(url.origin!==SUPABASE_URL)return fetch(req);
@@ -451,7 +450,7 @@ function updateAccountUI(){var account=$("#portal-account-button");if(account){a
 function initLogin(){
  if(new URLSearchParams(location.search).get("auth")==="1")openLogin();
  var account=$("#portal-account-button");if(account)account.onclick=function(){if(st.user)location.href="/mypage/";else openLogin();};updateAccountUI();
- var transport=$("#portal-transport-button");if(transport){transport.textContent=useGas?"GAS版（使用中）":"通常版";transport.onclick=function(){var next=useGas?"direct":"gas";safeStorageSet("localStorage","kuro_portal_transport",next);var u=new URL(location.href);u.searchParams.set("transport",next);location.href=u.pathname+u.search;};}
+ var transport=$("#portal-transport-button");if(transport){transport.textContent="Cloudflare経由";transport.onclick=function(){toast("通信はCloudflare Worker経由に固定されています。");};}
  var close=$("#portal-login-close");if(close)close.onclick=function(){var m=$("#portal-login-modal");if(m)m.hidden=true;};
  function showLoginError(message){var el=$("#portal-login-error");if(el)el.textContent=message;}
  var forgot=$("#portal-forgot-password");if(forgot)forgot.onclick=async function(){var e=$("#portal-login-email"),email=e?e.value.trim():"";if(!email||email.indexOf("@")<0){showLoginError("パスワード再設定には登録済みメールアドレスが必要です。メールアドレスのないアカウントはパスワードを忘れると復旧できません。");if(e)e.focus();return;}var b=this;b.disabled=true;showLoginError("");try{var r=await db.auth.resetPasswordForEmail(email,{redirectTo:location.origin+"/mypage/"});if(r.error)throw r.error;showLoginError("パスワード再設定メールを送信しました。メール内のリンクを開いてください。");}catch(err){showLoginError("再設定メールを送信できませんでした："+(err.message||"時間をおいて再度お試しください。"));}b.disabled=false;};
