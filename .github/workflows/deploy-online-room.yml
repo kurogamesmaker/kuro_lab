@@ -1,14 +1,9 @@
 name: Deploy KURO Durable Online Worker
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - online-room-worker.js
-      - wrangler-online-room.toml
-      - .github/workflows/deploy-online-room.yml
 jobs:
   deploy:
+    if: vars.DEPLOY_DURABLE_OBJECTS == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
