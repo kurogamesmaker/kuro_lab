@@ -147,7 +147,7 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 <a class="brand" href="/games/"><span class="mark">K</span><span>KURO <em>GAMES</em></span></a>
 <nav class="navlinks"><a href="#games">ゲーム一覧</a><a href="#categories">ジャンル</a></nav><div class="spacer"></div>
 <label class="search"><span>⌕</span><input id="gameSearch" type="search" placeholder="ゲームを検索..." autocomplete="off"></label>
-<a class="lab" href="/game-studio/">GAME STUDIO ↗</a><a class="lab gas-mode-btn" href="https://kurolab.cc.cd/games/?transport=gas" data-gas-toggle data-gas-mode="supabase-only">GAS通信モード ↗</a><a class="lab" href="https://kurolab.cc.cd/">KURO Lab ↗</a><a class="lab" href="/?auth=1">アカウント ↗</a><button class="lab kuro-secret-trigger" id="kuroSecretOpen" type="button" aria-label="秘密の入口">✦ SECRET</button>
+<a class="lab" href="/game-studio/">GAME STUDIO ↗</a><a class="lab gas-mode-btn" href="https://kurolab.cc.cd/games/" aria-label="Cloudflare通信固定">Cloudflare通信 ↗</a><a class="lab" href="https://kurolab.cc.cd/">KURO Lab ↗</a><a class="lab" href="/?auth=1">アカウント ↗</a><button class="lab kuro-secret-trigger" id="kuroSecretOpen" type="button" aria-label="秘密の入口">✦ SECRET</button>
 </div></header>
 <main class="wrap">
 <section class="library" id="games">
@@ -227,7 +227,7 @@ function kuroApplyTransportLinks(){
  cards.forEach(bindHeart);
  async function loadStudioGames(){
   if(!window.supabase||!window.supabase.createClient)return;
-  try{const db=window.supabase.createClient("https://cprvpphlfpmiegjiutjn.supabase.co","sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn",{global:{fetch:KURO_GAS_TRANSPORT?kuroGasFetch:window.fetch}});
+  try{const db=window.supabase.createClient("https://cprvpphlfpmiegjiutjn.supabase.co","sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn",{global:{fetch:kuroGasFetch}});
    const {data,error}=await db.from("game_studio_games").select("id,title,description,category,categories,icon,tag_text,tag_style,tag_color,tag_text_color,published_at").eq("status","published").order("published_at",{ascending:false}).limit(60);if(error)throw error;
    (data||[]).forEach(game=>{const card=document.createElement("article");card.className="game-card";card.dataset.id="studio-"+game.id;const gameCategories=Array.isArray(game.categories)&&game.categories.length?game.categories:[game.category||"other"];card.dataset.category=game.category||gameCategories[0]||"other";card.dataset.categories=JSON.stringify(gameCategories);card.dataset.title=(game.title+" "+(game.description||"")).toLowerCase();
     const link=document.createElement("a");link.className="game-open";link.href="/games/play/?id="+encodeURIComponent(game.id)+(KURO_GAS_TRANSPORT?"&transport=gas":"");
