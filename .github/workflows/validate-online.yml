@@ -1,0 +1,24 @@
+name: Validate KURO online scripts
+on:
+  push:
+    branches: [main]
+    paths:
+      - online-room-worker.js
+      - game-studio/kurog-online.js
+      - wrangler-online-room.toml
+      - .github/workflows/validate-online.yml
+  pull_request:
+    paths:
+      - online-room-worker.js
+      - game-studio/kurog-online.js
+      - wrangler-online-room.toml
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --check online-room-worker.js
+      - run: node --check game-studio/kurog-online.js
