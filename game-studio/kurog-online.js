@@ -104,7 +104,7 @@ async function connectRoomPolling(roomData, members, session) {
         messageCallbacks.forEach((cb) => { try { cb({ type: message.type, data: message.data, from: message.from, sentAt: new Date(message.sentAt).getTime() }); } catch (e) { console.error(e); } });
       });
       if (result.roomStatus === "closed") { active = false; if (timer) clearInterval(timer); }
-    } catch (error) { console.warn("KUROGAMES GAS multiplayer poll:", error); }
+    } catch (error) { console.warn("KUROGAMES Cloudflare multiplayer poll:", error); }
     finally { busy = false; }
   }
   emitPlayers(members || []); await poll(); timer = setInterval(poll, 1400);
