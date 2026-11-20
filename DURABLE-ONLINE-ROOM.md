@@ -1,28 +1,37 @@
-# KURO Durable Online Room migration
+# KURO Durable Online Room
 
-## Status
-- Durable Objects room Worker source and Wrangler config are present.
-- SDK has an opt-in WebSocket adapter.
-- Existing polling remains the default and fallback.
-- Durable Objects deployment and multiplayer verification are NOT completed.
+## Live deployment
+- Worker: `kuro-online-room`
+- Public endpoint: `https://kuro-online-room.kurogamesmaker.workers.dev`
+- Health path: `/health`
+- Durable Object class: `Room`
+- Namespace ID: `9633b9fd379f4e0690c398d3933b8dcd`
+- Namespace storage: SQLite
+- Latest verified Cloudflare deployment: `d580d475-5acc-4dec-ade7-480b08d8ad5c` (100% traffic)
+- Secret binding configured: `TICKET_SECRET` (value is not stored in GitHub)
 
-## Deploy gate
-GitHub Actions workflow `.github/workflows/deploy-online-room.yml` is manual-only and requires repository variable `DEPLOY_DURABLE_OBJECTS=true` plus secrets `CF_API_TOKEN` and `CF_ACCOUNT_ID`. The token needs Workers Scripts edit permission. Do not enable the gate until the Worker has been reviewed and authentication is implemented.
+## Runtime flow
+1. The existing KuroGames SDK continues to call the current authenticated `kurogames-online` API for game configuration and room creation/join.
+2. The SDK requests a short-lived ticket from `POST /ticket` using the user's Supabase access token.
+3. The Worker validates the token with Supabase Auth and checks actual room membership via the existing `room_poll` action.
+4. The Worker signs a 60-second ticket and forwards the authenticated WebSocket to the room's Durable Object.
+5. The DO derives player identity from trusted Worker headers, never from client-supplied player IDs. It manages connection presence and broadcasts game events.
+6. Room state get/update remain on the existing authenticated API for backwards-compatible persistence and optimistic concurrency. The DO carries real-time notifications/events.
 
+## SDK behavior
+- `game-studio/kurog-online.js` uses this Worker endpoint by default for multiplayer.
+- `window.KuroGamesDurableEndpoint = ""` can temporarily disable DO and use the legacy polling transport.
+- Transient ticket/transport failures fall back to the legacy polling implementation. Authentication, missing room membership, and full-room responses fail closed rather than bypassing the checks.
+- Existing API shape remains `KuroGames.multiplayer.createRoom/joinRoom`, `room.getPlayers()`, `room.onPlayersChange()`, `room.onMessage()`, `room.send()`, `room.getState()`, `room.updateState()`, and `room.leave()`.
 
-## SDK opt-in
-Set `window.KuroGamesDurableEndpoint` to the Worker HTTPS origin (the exact workers.dev origin confirmed after deployment). The SDK converts it to WebSocket and connects at `/room/{roomId}`. Leave it unset to keep polling.
+## Verification
+- Cloudflare API confirmed the DO namespace exists and the latest Worker deployment has a 100% traffic allocation.
+- Cloudflare API confirmed the `TICKET_SECRET` binding exists.
+- GitHub Actions runs `node --check online-room-worker.js` and `node --check game-studio/kurog-online.js` on pushes and pull requests.
+- A real authenticated multi-browser gameplay test is still required. The deployment can be live while end-to-end game success remains unverified until two signed-in KURO accounts join the same room and exchange events.
 
+## Remaining migration boundary
+This stage moves multiplayer WebSocket/presence/event delivery to Cloudflare Durable Objects. Account authentication, game configuration, room create/join authorization, rankings, cloud saves, and state writes remain on the current authenticated Supabase Edge Function API. Those are separate migrations and must not be described as fully moved to Durable Objects yet.
 
-## Production blocker / security
-The prototype currently does not verify the KURO/Supabase access token or enforce a trusted identity. Client-provided player IDs are spoofable. Do NOT expose or deploy it for production gameplay until server-side JWT validation (issuer/audience/signature/expiry) or another strong authentication gate is added, plus message schema/rate limits, disconnect cleanup, room membership enforcement, and multi-client tests.
-
-
-## Migration order
-1. Secure Worker authentication and room membership.
-2. Deploy via the gated GitHub Actions workflow.
-3. Confirm Worker URL and health endpoint.
-4. Set SDK endpoint in the host page and test two separate clients.
-5. Verify room create/join, player list, event send/receive, leave/reconnect, state updates.
-6. Move room create/join/state HTTP actions to Worker/DO only after protocol and server validation are implemented.
-7. Remove polling fallback only after production verification.
+## Deployment workflow
+The manual GitHub Actions deploy workflow is gated by repository variable `DEPLOY_DURABLE_OBJECTS=true` and expects `CF_API_TOKEN` and `CF_ACCOUNT_ID` repository secrets. The Worker and secret have already been deployed directly through the connected Cloudflare account.
