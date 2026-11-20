@@ -164,12 +164,23 @@ async function connectRoomPolling(roomData, members, session) {
   };
 }
 
+async function connectRoomDurable(roomData, members, session, endpoint) {
+  const callbacks=new Set(), playerCallbacks=new Set(); let players=[], active=true, ws, timer;
+  const url=String(endpoint).replace(/^http:/i,"ws:").replace(/^https:/i,"wss:").replace(/\/$/,"")+"/room/"+encodeURIComponent(roomData.id);
+  function setPlayers(list){players=(list||[]).map(p=>({userId:p.id,kuroId:null,displayName:p.name||"プレイヤー",joinedAt:p.joinedAt}));playerCallbacks.forEach(cb=>{try{cb(players.slice())}catch(e){console.error(e)}})}
+  await new Promise((resolve,reject)=>{let done=false;const timeout=setTimeout(()=>{if(!done){done=true;try{ws.close()}catch(_){}reject(new Error("DO接続タイムアウト"))}},15000);ws=new WebSocket(url);ws.onopen=()=>{};ws.onerror=()=>{if(!done){done=true;clearTimeout(timeout);reject(new Error("DO接続エラー"))}};ws.onclose=()=>{active=false;if(timer)clearInterval(timer);if(!done){done=true;clearTimeout(timeout);reject(new Error("DO接続が閉じました"))}};ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch(_){return}if(m.type==="welcome"){setPlayers(m.players);ws.send(JSON.stringify({type:"join",playerId:session.user.id,name:session.user.user_metadata?.display_name||"プレイヤー"}));if(!done){done=true;clearTimeout(timeout);resolve()}}else if(m.type==="players")setPlayers(m.players);else if(m.type==="message"&&m.message&&m.message.from!==session.user.id)callbacks.forEach(cb=>{try{cb({type:m.message.type,data:m.message.data,from:m.message.from,sentAt:m.message.at})}catch(err){console.error(err)}})}});
+  });
+  timer=setInterval(()=>{if(ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify({type:"ping"}))},25000);
+  return {room:roomData,members:members||[],getPlayers(){return players.slice()},getState(){return invoke("room_state_get",{roomId:roomData.id})},updateState(state,expectedUpdatedAt){return invoke("room_state_update",{roomId:roomData.id,state,expectedUpdatedAt:expectedUpdatedAt||null})},onPlayersChange(cb){if(typeof cb!=="function")return()=>{};playerCallbacks.add(cb);cb(players.slice());return()=>playerCallbacks.delete(cb)},onMessage(cb){if(typeof cb!=="function")return()=>{};callbacks.add(cb);return()=>callbacks.delete(cb)},send(type,data){if(!active||ws.readyState!==WebSocket.OPEN)throw new Error("DO接続が切断されています");const payload={type:"message",playerId:session.user.id,messageType:type,data};if(new TextEncoder().encode(JSON.stringify(payload)).length>32768)throw new Error("通信サイズ上限");ws.send(JSON.stringify(payload));return Promise.resolve(true)},async leave(){if(!active)return;active=false;clearInterval(timer);try{ws.send(JSON.stringify({type:"leave",playerId:session.user.id}))}catch(_){}try{ws.close()}catch(_){}}};
+}
+
 async function connectRoom(roomData, members) {
   const session = await requestParentSession();
   if (!session.accessToken || !session.user || !session.user.id) {
     throw new Error("KUROアカウントの認証情報を取得できませんでした。");
   }
   // Cloudflare HTTP relay is the only transport; never open a direct Supabase Realtime WebSocket.
+  if (window.KuroGamesDurableEndpoint) return connectRoomDurable(roomData, members, session, window.KuroGamesDurableEndpoint);
   return connectRoomPolling(roomData, members, session);
   const library = await loadRealtimeClient();
   const client = library.createClient(DEFAULT_URL, DEFAULT_KEY, {
