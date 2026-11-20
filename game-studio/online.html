@@ -27,7 +27,7 @@ a{color:inherit;text-decoration:none}.top{height:66px;border-bottom:1px solid va
 "use strict";
 const URL="https://cprvpphlfpmiegjiutjn.supabase.co";
 const KEY="sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
-const KURO_GAS_TRANSPORT=new URLSearchParams(location.search).get("transport")==="gas";
+const KURO_GAS_TRANSPORT=true; try{localStorage.setItem("kuro_portal_transport","cloudflare");}catch(_){} 
 const KURO_GAS_PROXY_URL="/api/kuro-gas-proxy";
 function kuroGasClientId(){try{let value=localStorage.getItem("kuro_gas_client_id_online_v1");if(!value){value=crypto.randomUUID();localStorage.setItem("kuro_gas_client_id_online_v1",value);}return value;}catch(_){return "kuro-online-"+Date.now().toString(36);}}
 async function kuroGasFetch(input,init){
@@ -48,7 +48,7 @@ function applyGasLinks(){
  link.href=next.pathname+next.search+next.hash;
  document.querySelectorAll('a[href^="/game-studio/"]').forEach(a=>{const u=new window.URL(a.href,location.origin);if(KURO_GAS_TRANSPORT)u.searchParams.set("transport","gas");a.href=u.pathname+u.search+u.hash;});
 }
-const db=window.supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},global:{fetch:KURO_GAS_TRANSPORT?kuroGasFetch:window.fetch}});
+const db=window.supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},global:{fetch:kuroGasFetch}});
 applyGasLinks();
 const statusEl=document.getElementById("status");
 const grid=document.getElementById("games");
