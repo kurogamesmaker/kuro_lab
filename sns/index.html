@@ -1423,9 +1423,23 @@
         const SUPABASE_URL = "https://cprvpphlfpmiegjiutjn.supabase.co";
         const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
 
+        async function kuroCloudflareFetch(input,init){
+ const request=new Request(input,init),target=new URL(request.url);
+ if(target.origin!==SUPABASE_URL)return fetch(request);
+ const buffer=["GET","HEAD"].includes(request.method)?new ArrayBuffer(0):await request.clone().arrayBuffer();
+ const bytes=new Uint8Array(buffer);let binary="";for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
+ const headers={};request.headers.forEach((v,k)=>headers[k]=v);
+ const response=await fetch("/api/kuro-gas-proxy",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:target.pathname+target.search,method:request.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:"kuro-cloudflare"})});
+ let result;try{result=await response.json();}catch(e){throw new Error("Cloudflare relay response was not JSON");}
+ if(!response.ok||!result||typeof result.status!=="number")throw new Error(result&&result.error||"Cloudflare relay failed");
+ let body=null;if(result.isBinary&&result.bodyBase64){const raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);body=out;}else if(result.bodyText!==undefined&&![204,205,304].includes(result.status))body=result.bodyText;
+ return new Response(body,{status:result.status,headers:result.headers||{"Content-Type":"application/json"}});
+}
+
         const supabaseClient = window.supabase.createClient(
             SUPABASE_URL,
-            SUPABASE_PUBLISHABLE_KEY
+            SUPABASE_PUBLISHABLE_KEY,
+            { global: { fetch: kuroCloudflareFetch } }
         );
 
         let currentUser = null;
