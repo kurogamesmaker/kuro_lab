@@ -4,6 +4,7 @@
 const DEFAULT_URL = "https://cprvpphlfpmiegjiutjn.supabase.co";
 const DEFAULT_KEY = "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
 const FUNCTION_NAME = "kurogames-online";
+const DEFAULT_DURABLE_ENDPOINT = "https://kuro-online-room.kurogamesmaker.workers.dev";
 
 let gameId = null;
 let gameConfig = null;
@@ -180,7 +181,9 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
       invalid_or_expired_ticket: "接続チケットが無効です。再接続してください。",
       room_full: "このルームは満員です。",
     };
-    throw new Error(reasons[ticketData.error] || ticketData.error || "Durable Objects接続チケットを取得できませんでした。");
+    const ticketError = new Error(reasons[ticketData.error] || ticketData.error || "Durable Objects接続チケットを取得できませんでした。");
+    ticketError.code = ticketData.error || "ticket_error";
+    throw ticketError;
   }
   const wsBase = base.replace(/^https:/i, "wss:").replace(/^http:/i, "ws:");
   const wsUrl = wsBase + "/room/" + encodeURIComponent(String(roomData.id)) + "?ticket=" + encodeURIComponent(ticketData.ticket);
@@ -343,8 +346,18 @@ async function connectRoom(roomData, members) {
   if (!session.accessToken || !session.user || !session.user.id) {
     throw new Error("KUROアカウントの認証情報を取得できませんでした。");
   }
-  // Cloudflare HTTP relay is the only transport; never open a direct Supabase Realtime WebSocket.
-  if (typeof window.KuroGamesDurableEndpoint === "string" && window.KuroGamesDurableEndpoint.trim()) return connectRoomDurable(roomData, members, session, window.KuroGamesDurableEndpoint.trim());
+  // Durable Objects is the primary real-time transport. Keep polling as a compatibility fallback for transient transport failures.
+  const configuredEndpoint = typeof window.KuroGamesDurableEndpoint === "string"
+    ? window.KuroGamesDurableEndpoint.trim()
+    : DEFAULT_DURABLE_ENDPOINT;
+  if (configuredEndpoint) {
+    try {
+      return await connectRoomDurable(roomData, members, session, configuredEndpoint);
+    } catch (error) {
+      if (["unauthorized", "room_membership_required", "room_full"].includes(error && error.code)) throw error;
+      console.warn("KUROGAMES Durable Objects接続失敗。互換ポーリングへ切り替えます。", error);
+    }
+  }
   return connectRoomPolling(roomData, members, session);
   const library = await loadRealtimeClient();
   const client = library.createClient(DEFAULT_URL, DEFAULT_KEY, {
