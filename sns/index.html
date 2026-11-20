@@ -959,7 +959,7 @@
 </head>
 
 <body class="kuro-page kuro-theme-dark">
-<nav id="kuroDesktopVersionSwitch" aria-label="SNSバージョン切り替え"><span class="is-current">通常版</span><a href="/sns/gas/">GAS版</a></nav>
+<nav id="kuroDesktopVersionSwitch" aria-label="SNSバージョン切り替え"><span class="is-current">通常版</span><a href="/sns/gas/">Cloudflare版</a></nav>
 
 <header class="kuro-global-header">
  <div class="kuro-header-main">
@@ -1429,7 +1429,7 @@
  const buffer=["GET","HEAD"].includes(request.method)?new ArrayBuffer(0):await request.clone().arrayBuffer();
  const bytes=new Uint8Array(buffer);let binary="";for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
  const headers={};request.headers.forEach((v,k)=>headers[k]=v);
- const response=await fetch("/api/kuro-gas-proxy",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:target.pathname+target.search,method:request.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:"kuro-cloudflare"})});
+ const response=await fetch("/api/cloudflare-relay",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:target.pathname+target.search,method:request.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:"kuro-cloudflare"})});
  let result;try{result=await response.json();}catch(e){throw new Error("Cloudflare relay response was not JSON");}
  if(!response.ok||!result||typeof result.status!=="number")throw new Error(result&&result.error||"Cloudflare relay failed");
  let body=null;if(result.isBinary&&result.bodyBase64){const raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);body=out;}else if(result.bodyText!==undefined&&![204,205,304].includes(result.status))body=result.bodyText;
