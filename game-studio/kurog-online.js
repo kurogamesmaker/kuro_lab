@@ -35,7 +35,7 @@ function requestParentSession() {
       if (event.data.type !== "kuro-online-auth") return;
       clearTimeout(timer);
       window.removeEventListener("message", onMessage);
-      resolve({ accessToken: event.data.access_token, user: event.data.user || null, useGasProxy: event.data.useGasProxy === true });
+      resolve({ accessToken: event.data.access_token, user: event.data.user || null, useCloudflareProxy: event.data.useCloudflareProxy === true });
     }
     window.addEventListener("message", onMessage);
     window.parent.postMessage({ type: "kuro-online-auth-request", requestId }, "*");
@@ -50,8 +50,8 @@ async function invoke(action, params) {
   const headers = { "Content-Type": "application/json", "apikey": DEFAULT_KEY, "Authorization": "Bearer " + session.accessToken };
   const body = JSON.stringify(Object.assign({ action: action, gameId: gameId }, params || {}));
   let status, text;
-  if (session.useGasProxy) {
-    const result = await parentGasRequest(path, "POST", headers, body);
+  if (session.useCloudflareProxy) {
+    const result = await parentCloudflareRequest(path, "POST", headers, body);
     status = result.status; text = result.text;
   } else {
     const response = await fetch(DEFAULT_URL + path, { method: "POST", headers, body });
@@ -68,16 +68,16 @@ async function invoke(action, params) {
 
 function encodeBase64(text) { return btoa(unescape(encodeURIComponent(text))); }
 function decodeBase64(text) { return decodeURIComponent(escape(atob(text))); }
-function parentGasRequest(path, method, headers, bodyText) {
+function parentCloudflareRequest(path, method, headers, bodyText) {
   const requestId = "kuro-online-proxy-" + Date.now().toString(36) + "-" + (++requestCounter);
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => { window.removeEventListener("message", onMessage); reject(new Error("GAS中継がタイムアウトしました。")); }, 30000);
+    const timer = setTimeout(() => { window.removeEventListener("message", onMessage); reject(new Error("Cloudflare中継がタイムアウトしました。")); }, 30000);
     function onMessage(event) {
       if (event.source !== window.parent || !event.data || event.data.requestId !== requestId || event.data.type !== "kuro-online-proxy-response") return;
       clearTimeout(timer); window.removeEventListener("message", onMessage);
       if (event.data.error) { reject(new Error(event.data.error)); return; }
       const result = event.data.response || {};
-      let text = ""; try { text = result.bodyBase64 ? decodeBase64(result.bodyBase64) : ""; } catch (_) { reject(new Error("GAS応答を読み取れませんでした。")); return; }
+      let text = ""; try { text = result.bodyBase64 ? decodeBase64(result.bodyBase64) : ""; } catch (_) { reject(new Error("Cloudflare応答を読み取れませんでした。")); return; }
       resolve({ status: Number(result.status) || 502, ok: Number(result.status) >= 200 && Number(result.status) < 300, text });
     }
     window.addEventListener("message", onMessage);
