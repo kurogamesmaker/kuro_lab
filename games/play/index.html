@@ -253,7 +253,6 @@ window.addEventListener("message", async event => {
  try{const db=kuroGameAuthClient;
   const {data,error}=await db.from("game_studio_games").select("title,description,icon,html_content").eq("id",id).eq("status","published").maybeSingle();if(error)throw error;if(!data){fail("公開が終了したか、URLが正しくありません。");return;}
   $("gameTitle").textContent=data.title;$("gameDescription").textContent=data.description||"KURO GAME STUDIOで作成されたゲーム";const iconValue=data.icon||"🎮",iconNode=$("gameIcon");if(/^data:image\//i.test(iconValue)||/^https?:\/\//i.test(iconValue)){const img=document.createElement("img");img.src=iconValue;img.alt="";img.style.cssText="width:100%;height:100%;object-fit:cover;border-radius:inherit";iconNode.replaceChildren(img);}else iconNode.textContent=iconValue;$("gameInfo").hidden=false;
-  const choice=document.createElement("div");choice.className="guest-choice";choice.innerHTML='<div class="guest-card"><h2>プレイ方法を選択</h2><p>ゲストは遊べますが、ランキングや記録には保存されません。</p><div class="guest-actions"><button class="guest-primary" id="accountPlay">アカウントでプレイ（記録あり）</button><button class="guest-secondary" id="guestPlay">ゲストとしてプレイ（記録なし）</button></div></div>';$("frameWrap").replaceChildren(choice);
   const launchGame=(guest)=>{kuroGameGuestMode=!!guest;const frame=document.createElement("iframe");frame.className="game-frame";frame.title=data.title;frame.setAttribute("sandbox","allow-scripts allow-forms allow-modals");frame.referrerPolicy="no-referrer";
   const frameMeta=String(data.html_content||"").match(/<meta\s+name=["']kuro-game-frame["']\s+content=["'](\d{3,4})x(\d{3,4})["'][^>]*>/i);
   const frameWidth=frameMeta?Math.max(240,Math.min(3840,Number(frameMeta[1]))):960;
@@ -271,8 +270,7 @@ window.addEventListener("message", async event => {
    frame.style.aspectRatio=frameWidth+" / "+frameHeight;
   };
   kuroGameFrame=frame;$("frameWrap").replaceChildren(frame);kuroGameFrameLayout();frame.srcdoc='<script>window.KURO_GUEST_MODE='+guest+';window.KURO_GAMES_RECORDS_ENABLED=!window.KURO_GUEST_MODE;const isScoreUrl=u=>window.KURO_GUEST_MODE&&/\\/rest\\/v1\\/game_scores(?:\\?|$)/i.test(String(u));const nativeFetch=window.fetch.bind(window);window.fetch=function(input,init){const u=typeof input==="string"?input:(input&&input.url)||"";if(isScoreUrl(u)){return Promise.resolve(new Response(JSON.stringify({ok:false,guest:true,message:"ゲストプレイではランキングに記録されません。"}),{status:200,headers:{"Content-Type":"application/json"}}));}return nativeFetch(input,init);};<\/script>'+data.html_content;};
-  choice.querySelector("#guestPlay").onclick=()=>launchGame(true);
-  choice.querySelector("#accountPlay").onclick=async()=>{const s=await getKuroGameAuthSession();if(s.user?.is_anonymous){location.href="/?auth=1&return="+encodeURIComponent(location.href);return;}launchGame(false);};
+  const session=await getKuroGameAuthSession();launchGame(!!session.user?.is_anonymous);
  }catch(error){fail(error.message||"通信エラーが発生しました。");}
 })();
 </script><script src="/games/recommendations.js?v=20261119-authfix1"></script></body></html>
