@@ -83,7 +83,7 @@ async function verifyRoomMembership(env, accessToken, gameId, roomId, userId) {
   if (!response.ok) return false;
   const data = await response.json();
   if (!data || data.error || data.roomStatus === "closed" || !Array.isArray(data.members)) return false;
-  return data.members.some(member => member && String(member.userId || member.user_id || "") === userId);
+  return data.members.find(member => member && String(member.userId || member.user_id || "") === userId) || null;
 }
 async function createTicket(request, env) {
   const headers = corsHeaders();
@@ -107,10 +107,10 @@ async function createTicket(request, env) {
   try { user = await getSupabaseUser(env, token); } catch (_) { user = null; }
   if (!user) return json({ error: "unauthorized" }, 401, headers);
   let member;
-  try { member = await verifyRoomMembership(env, token, gameId, roomId, user.id); } catch (_) { member = false; }
+  try { member = await verifyRoomMembership(env, token, gameId, roomId, user.id); } catch (_) { member = null; }
   if (!member) return json({ error: "room_membership_required" }, 403, headers);
   const meta = user.user_metadata || {};
-  const name = String(meta.display_name || meta.username || "プレイヤー").slice(0, 40);
+  const name = String(member.user && member.user.display_name || meta.display_name || meta.username || "プレイヤー").slice(0, 40);
   const now = Math.floor(Date.now() / 1000);
   const ticket = await issueTicket({ sub: user.id, name, room: roomId, game: gameId, iat: now, exp: now + 60 }, env.TICKET_SECRET);
   return json({ ticket, expiresAt: (now + 60) * 1000 }, 200, headers);
