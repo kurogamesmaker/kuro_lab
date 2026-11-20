@@ -3,7 +3,7 @@
   if (window.__kuroUsageTrackerInstalled) return;
   window.__kuroUsageTrackerInstalled = true;
 
-  // Telemetry uses the same-origin GAS relay. Do not create another GoTrueClient:
+  // Telemetry uses the same-origin Cloudflare relay. Do not create another GoTrueClient:
   // the page's main Supabase client owns the auth session.
   var PUBLISHABLE_KEY = "sb_publishable_BYPUfB0lr2h26jV8_6ZQnpQ_wfAKOVyn";
   var visitorId = null, sessionId = null, queue = [], sending = false, timer = null;
@@ -64,7 +64,7 @@
     var binary = "";
     for (var i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + 0x8000, bytes.length)));
     sending = true;
-    nativeFetch("/api/kuro-gas-proxy", {
+    nativeFetch("/api/cloudflare-relay", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -104,7 +104,7 @@
     if (host === "api.microlink.io") return "ogp";
     if (/youtube|googleapis/.test(host)) return "youtube";
     if (u.origin === location.origin && path === "/api/workspace-rss") return "rss";
-    if (host === "script.google.com" || (u.origin === location.origin && path === "/api/kuro-gas-proxy")) return null;
+    if (host === "script.google.com" || (u.origin === location.origin && path === "/api/cloudflare-relay")) return null;
     if (host.endsWith(".supabase.co")) {
       if (path.startsWith("/auth/")) return "supabase_auth";
       if (path.startsWith("/storage/")) return "supabase_storage";
