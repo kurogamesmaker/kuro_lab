@@ -13,4 +13,4 @@ new_sqlite_classes = ["Room"]
 [vars]
 SUPABASE_URL = "https://cprvpphlfpmiegjiutjn.supabase.co"
 SUPABASE_ANON_KEY = "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn"
-ALLOWED_ORIGINS = "https://kurolab.cc.cd,https://www.kurolab.cc.cd"
+ALLOWED_ORIGINS = "https://kurolab.cc.cd,https://www.kurolab.cc.cd,null,https://sites.google.com"
