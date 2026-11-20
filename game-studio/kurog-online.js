@@ -169,7 +169,8 @@ async function connectRoom(roomData, members) {
   if (!session.accessToken || !session.user || !session.user.id) {
     throw new Error("KUROアカウントの認証情報を取得できませんでした。");
   }
-  if (session.useGasProxy) return connectRoomPolling(roomData, members, session);
+  // Cloudflare HTTP relay is the only transport; never open a direct Supabase Realtime WebSocket.
+  return connectRoomPolling(roomData, members, session;
   const library = await loadRealtimeClient();
   const client = library.createClient(DEFAULT_URL, DEFAULT_KEY, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
