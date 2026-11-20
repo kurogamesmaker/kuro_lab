@@ -22,7 +22,7 @@
  <a class="brand" href="/game-studio/projects.html">KURO <b>GAME STUDIO</b></a><span class="sep"></span><a class="btn" href="/game-studio/online.html">オンライン機能</a>
  <input class="project-name" id="projectName" aria-label="プロジェクト名" value="新しいゲーム">
  <span class="spacer"></span><span class="status" id="saveStatus">● 保存済み</span>
- <a class="btn" href="/?auth=1">KUROアカウント</a><a class="btn" href="/game-studio/projects.html">プロジェクト</a><a class="btn gas-mode-btn" href="/game-studio/code.html?transport=gas" data-gas-toggle data-gas-mode="supabase-only">Cloudflare通信 ↗</a>
+ <a class="btn" href="/?auth=1">KUROアカウント</a><a class="btn" href="/game-studio/projects.html">プロジェクト</a>
  <button class="btn" id="saveBtn">保存</button><button class="btn import-code-btn" id="importCodeBtn" type="button" title="HTML・CSS・JavaScriptが混ざったコードを貼り付けて自動分別">コード貼り付け</button><button class="btn file-load-btn" id="fileLoadBtn" type="button" title="HTML・CSS・JavaScriptなど複数ファイルをまとめて読み込む">複数ファイル読み込み</button><input id="codeFileInput" type="file" hidden multiple accept=".html,.htm,.xhtml,.css,.js,.mjs,.jsx,.ts,.tsx,.json,.txt,.xml,.svg,.md"><button class="btn primary" id="runBtn">▶ テスト</button><button class="btn primary" id="publishBtn">公開・更新</button>
 </header>
 <main class="layout">
@@ -70,11 +70,6 @@ async function kuroCloudflareFetch(input,init){
  let body=null;if(result.isBinary&&result.bodyBase64){const raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);body=out;}else if(result.bodyText!==undefined&&![204,205,304].includes(result.status))body=result.bodyText;
  return new Response(body,{status:result.status,headers:result.headers||{"Content-Type":"application/json"}});
 }
-function kuroApplyTransportLinks(){
- if(!KURO_CLOUDFLARE_TRANSPORT)return;
- document.querySelectorAll('a[href^="/game-studio/"],a[href^="/games/"]').forEach(a=>{const u=new URL(a.href,location.origin);u.searchParams.set("transport","gas");a.href=u.pathname+u.search+u.hash;});
-}
-
 const publishDb=window.supabase&&window.supabase.createClient?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{global:{fetch:kuroCloudflareFetch},auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
 const clone=x=>JSON.parse(JSON.stringify(x));
 const escapeHTML=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -501,7 +496,7 @@ window.addEventListener("message",async event=>{
    }
    const session=data.session;
    if(!session||!session.access_token)throw new Error("KUROGAMES認証情報を取得できませんでした");
-   event.source.postMessage({type:"kuro-online-auth",requestId:msg.requestId,access_token:session.access_token,useGasProxy:KURO_CLOUDFLARE_TRANSPORT,user:session.user?{id:session.user.id,email:session.user.email??null}:null},"*");
+   event.source.postMessage({type:"kuro-online-auth",requestId:msg.requestId,access_token:session.access_token,useCloudflareProxy:KURO_CLOUDFLARE_TRANSPORT,user:session.user?{id:session.user.id,email:session.user.email??null}:null},"*");
   }catch(error){
    event.source.postMessage({type:"kuro-online-auth-error",requestId:msg.requestId,message:error&&error.message||"KUROGAMES認証に失敗しました"},"*");
   }
@@ -537,7 +532,7 @@ window.addEventListener("message",async event=>{
     const key=localStorage.key(i);
     if(key&&key.startsWith(prefix))storage[key.slice(prefix.length)]=localStorage.getItem(key);
    }
-   event.source.postMessage({type:"kuro-werewolf-auth",useGasProxy:KURO_CLOUDFLARE_TRANSPORT,access_token:session.access_token,refresh_token:session.refresh_token,storage},"*");
+   event.source.postMessage({type:"kuro-werewolf-auth",useCloudflareProxy:KURO_CLOUDFLARE_TRANSPORT,access_token:session.access_token,refresh_token:session.refresh_token,storage},"*");
   }catch(error){
    event.source.postMessage({type:"kuro-werewolf-auth-error",message:error&&error.message||"Supabase認証に失敗しました"},"*");
   }
@@ -562,22 +557,5 @@ run();
 if(new URLSearchParams(location.search).get("publish")==="1"){openPublishModal();}
 })();
 </script>
-<script>
-(function(){
- const button=document.querySelector("[data-gas-toggle]");
- if(!button)return;
- const current=new URL(window.location.href);
- const active=current.searchParams.get("transport")==="gas";
- button.classList.toggle("is-active",active);
- button.textContent=active?"✓ Cloudflare版 使用中":"Cloudflare通信 ↗";
- button.setAttribute("aria-label",active?"Cloudflare版を使用中。クリックすると通常版に戻ります":"Cloudflare通信に切り替えます");
- button.title=active?"現在はCloudflare版です。クリックすると通常版に戻ります":"Supabase通信をCloudflare経由に切り替えます";
- if(active)button.setAttribute("aria-current","page");
- else button.removeAttribute("aria-current");
- const next=new URL(current.href);
- if(active)next.searchParams.delete("transport");
- else next.searchParams.set("transport","gas");
- button.href=next.pathname+next.search+next.hash;
-})();
-</script>
+
 </body></html>
