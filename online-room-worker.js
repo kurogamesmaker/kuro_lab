@@ -9,9 +9,16 @@ function json(data, status = 200, headers = {}) {
     headers: { "content-type": "application/json; charset=utf-8", ...headers },
   });
 }
-function corsHeaders() {
+function originAllowed(request, env) {
+  const origin = request.headers.get("origin");
+  if (!origin) return true;
+  const allowed = String(env.ALLOWED_ORIGINS || "").split(",").map(value => value.trim()).filter(Boolean);
+  return allowed.includes(origin);
+}
+function corsHeaders(request, env) {
+  const origin = request.headers.get("origin");
   return {
-    "access-control-allow-origin": "*",
+    "access-control-allow-origin": origin && originAllowed(request, env) ? origin : "null",
     "access-control-allow-methods": "POST, OPTIONS",
     "access-control-allow-headers": "authorization, content-type",
     "access-control-max-age": "600",
@@ -259,7 +266,7 @@ export default {
       headers.set("x-kuro-user-id", claims.sub);
       headers.set("x-kuro-user-name", claims.name || "プレイヤー");
       headers.set("x-kuro-game-id", claims.game);
-      const forwarded = new Request(request, { headers });
+      const internalUrl = new URL(request.url);\n      internalUrl.searchParams.delete("ticket");\n      const forwarded = new Request(internalUrl.toString(), new Request(request, { headers }));
       const roomKey = claims.game + ":" + roomId;
       return env.ROOMS.get(env.ROOMS.idFromName(roomKey)).fetch(forwarded);
     }
