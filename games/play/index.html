@@ -10,7 +10,7 @@
 
 const KURO_CLOUDFLARE_TRANSPORT=true; try{localStorage.setItem("kuro_portal_transport","cloudflare");}catch(_){}
 const KURO_CLOUDFLARE_PROXY_URL="https://kurolab.cc.cd/api/cloudflare-relay";
-function kuroGameGasClientId(){
+function kuroGameCloudflareClientId(){
  const key="kuro_cloudflare_client_id_gameplay_v1";
  try{let value=localStorage.getItem(key);if(!value){value=crypto.randomUUID();localStorage.setItem(key,value);}return value;}
  catch(_){return "kuro-game-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2);}
@@ -21,15 +21,11 @@ async function kuroCloudflareFetch(input,init){
  const bytes=new Uint8Array(await req.arrayBuffer());let binary="";
  for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
  const headers={};req.headers.forEach((v,k)=>{headers[k]=v;});
- const proxy=await fetch(KURO_CLOUDFLARE_PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:kuroGameGasClientId()})});
+ const proxy=await fetch(KURO_CLOUDFLARE_PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:kuroGameCloudflareClientId()})});
  let result;try{result=await proxy.json();}catch(e){throw new Error("Cloudflare中継サーバーの応答を読み取れませんでした");}
  if(!proxy.ok||!result||typeof result.status!=="number")throw new Error(result&&result.error||"Cloudflare中継通信に失敗しました");
  let body=null;if(result.isBinary&&result.bodyBase64){const raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);body=out;}else if(result.bodyText!==undefined&&![204,205,304].includes(result.status))body=result.bodyText;
  return new Response(body,{status:result.status,headers:result.headers||{"Content-Type":"application/json"}});
-}
-function kuroApplyTransportLinks(){
- if(!KURO_CLOUDFLARE_TRANSPORT)return;
- document.querySelectorAll('a[href^="/game-studio/"],a[href^="/games/"]').forEach(a=>{const u=new URL(a.href,location.origin);u.searchParams.set("transport","gas");a.href=u.pathname+u.search+u.hash;});
 }
 
 let kuroGameFrame = null;
@@ -79,7 +75,7 @@ window.addEventListener("message", async event => {
     type: "kuro-online-auth",
     requestId: msg.requestId,
     access_token: session.access_token,
-    useGasProxy: KURO_CLOUDFLARE_TRANSPORT,
+    useCloudflareProxy: KURO_CLOUDFLARE_TRANSPORT,
     user: session.user ? { id: session.user.id, email: session.user.email ?? null } : null
    }, "*");
   } catch (error) {
@@ -116,14 +112,14 @@ window.addEventListener("message", async event => {
   const roomCode = msg.roomCode;
   if (typeof requestId !== "string" || !/^[A-Za-z0-9_-]{1,80}$/.test(requestId) ||
       typeof roomCode !== "string" || !/^\d{4}$/.test(roomCode)) return;
-  // GAS transport cannot carry WebSocket upgrades. Use the verified GAS polling path instead.
+  // The Cloudflare REST relay does not proxy WebSocket upgrades. Keep this legacy game bridge on verified HTTP polling; real-time room transport is handled by the Cloudflare Durable Objects SDK.
   if (KURO_CLOUDFLARE_TRANSPORT) {
    try {
     event.source.postMessage({
      type: "kuro-werewolf-realtime-status",
      requestId,
      status: "POLLING_ONLY",
-     detail: "Cloudflare mode: using HTTP polling"
+     detail: "Cloudflare relay: using HTTP polling"
     }, "*");
    } catch (_) {}
    return;
@@ -241,7 +237,7 @@ window.addEventListener("message", async event => {
   }
   event.source.postMessage({
    type: "kuro-werewolf-auth",
-   useGasProxy: KURO_CLOUDFLARE_TRANSPORT,
+   useCloudflareProxy: KURO_CLOUDFLARE_TRANSPORT,
    access_token: session.access_token,
    refresh_token: session.refresh_token,
    storage
@@ -256,7 +252,7 @@ window.addEventListener("message", async event => {
 
 (async function(){
  const $=id=>document.getElementById(id),params=new URLSearchParams(location.search),id=params.get("id");
- kuroApplyTransportLinks();
+ 
  function fail(message){$("state").innerHTML="<strong>ゲームを開けませんでした</strong>"+message;}
  if(!id||!/^[0-9a-f-]{36}$/i.test(id)){fail("ゲームIDが正しくありません。");return;}
  if(!window.supabase||!window.supabase.createClient){fail("通信ライブラリを読み込めませんでした。");return;}
