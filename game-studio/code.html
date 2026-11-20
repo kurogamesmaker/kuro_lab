@@ -428,7 +428,6 @@ codeFileInput.addEventListener("change",async()=>{
  const updates={html:[],css:[],js:[]},notes=[],scriptFiles=new Map(),referencedScripts=new Set();
  try{
   project.code[activeTab]=currentValue();
-  const loaded=[];
   const normalizeScriptName=value=>{let p=String(value||"").split(/[?#]/)[0];try{p=decodeURIComponent(p);}catch(_){}return p.split(/[\/]/).pop().toLowerCase().replace(/\s*\(\d+\)(?=\.[^.]+$)/,"");};
   const loaded=[];
   for(const file of files){const name=file.name||"ファイル",ext=(name.split(".").pop()||"").toLowerCase(),source=await file.text();loaded.push({name,ext,source});if(["js","mjs"].includes(ext))scriptFiles.set(normalizeScriptName(name),source);}
