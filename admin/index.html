@@ -458,7 +458,7 @@
 <body>
 <section id="loginView" class="login">
 <div class="brand"><div class="mark">K</div><div>KURO Lab<small>ADMIN CONSOLE</small></div></div>
-<div style="height:24px"></div><div class="eyebrow">Secure sign in</div><h1>管理者ログイン</h1><p>KURO Labの管理者アカウントでログインしてください。</p><div class="field"><label for="modeSelect">通信方式</label><select class="mode-select" id="modeSelect"><option value="supabase">Supabase版（直接通信）</option><option value="gas">GAS版（GAS経由）</option></select></div>
+<div style="height:24px"></div><div class="eyebrow">Secure sign in</div><h1>管理者ログイン</h1><p>KURO Labの管理者アカウントでログインしてください。</p><div class="field"><label for="modeSelect">通信方式</label><select class="mode-select" id="modeSelect"><option value="supabase">Supabase版（直接通信）</option><option value="gas">Cloudflare版（Cloudflare経由）</option></select></div>
 <form id="loginForm">
 <div class="field"><label for="email">メールアドレス</label><input id="email" type="email" value="kurogamesmaker@gmail.com" autocomplete="username" required></div>
 <div class="field"><label for="password">パスワード</label><input id="password" type="password" autocomplete="current-password" required></div>
@@ -467,7 +467,7 @@
 </form><div class="hint">この画面は管理者専用です。一般アカウントではアクセスできません。</div>
 </section>
 <div id="appView" hidden>
-<header class="top"><div class="wrap" style="display:flex;align-items:center;justify-content:space-between"><div class="brand"><div class="mark">K</div><div>KURO Lab<small>ADMIN CONSOLE</small></div></div><div class="top-right"><span id="account"></span><select class="product-select" id="productSelect" aria-label="管理対象"><option value="lab">KURO Lab</option><option value="sns">KURO SNS</option><option value="ops">運営管理</option></select><select class="mode-select" id="modeSelectTop" aria-label="通信方式"><option value="supabase">Supabase版</option><option value="gas">GAS版</option></select><button class="btn" id="notifyButton">通知を許可</button><button class="btn" id="logoutButton">ログアウト</button></div></div></header>
+<header class="top"><div class="wrap" style="display:flex;align-items:center;justify-content:space-between"><div class="brand"><div class="mark">K</div><div>KURO Lab<small>ADMIN CONSOLE</small></div></div><div class="top-right"><span id="account"></span><select class="product-select" id="productSelect" aria-label="管理対象"><option value="lab">KURO Lab</option><option value="sns">KURO SNS</option><option value="ops">運営管理</option></select><select class="mode-select" id="modeSelectTop" aria-label="通信方式"><option value="supabase">Supabase版</option><option value="gas">Cloudflare版</option></select><button class="btn" id="notifyButton">通知を許可</button><button class="btn" id="logoutButton">ログアウト</button></div></div></header>
 <main id="labAdminSection" class="wrap main">
 <div class="eyebrow">Workspace / Requests</div>
 <div class="heading"><div><h1>リクエストBOX</h1><p>利用者から届いたリクエストを確認・管理します。</p></div><div class="statusline" id="connection">接続中…</div></div>
@@ -539,7 +539,7 @@
   </section>
   <section class="panel ops-analytics-panel"><div class="toolbar ops-live-head"><div><strong>サービス接続状況</strong><div class="sns-muted">Cloudflare・Supabase・外部APIの応答と直近の通信記録</div></div><span class="ops-health-summary" id="liveOverall">状態を確認中…</span></div>
    <div id="opsRealtimeServices" class="ops-service-grid"><div class="empty">接続状態を確認しています…</div></div>
-   <div class="ops-live-note">CloudflareとSupabaseは管理画面からの応答、GASなどは利用イベントに記録された直近の成功・失敗を表示します。記録がないサービスは未計測です。</div>
+   <div class="ops-live-note">CloudflareとSupabaseは管理画面からの応答、その他の通信は利用イベントに記録された直近の成功・失敗を表示します。記録がないサービスは未計測です。</div>
   </section>
   <section class="panel ops-analytics-panel"><div class="toolbar"><div><strong>直近15分の利用推移</strong><div class="sns-muted">1分ごとのイベント件数</div></div></div><div id="opsRealtimeBars" class="ops-live-bars"><div class="empty">データを取得しています…</div></div><div id="opsRealtimeTrendNote" class="ops-live-note">—</div></section>
  </div>
@@ -845,7 +845,7 @@ const PUBLISHABLE_KEY="sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
 const $=s=>document.querySelector(s);
 const MODE_KEY="kuro-admin-connection-mode";
 const requestedMode="cloudflare";const storedMode="cloudflare";const mode="gas";try{localStorage.setItem(MODE_KEY,"cloudflare");}catch{}
-async function gasFetch(input,init={}){
+async function cloudflareFetch(input,init={}){
  const request=new Request(input,init);
  const target=new URL(request.url);
  if(target.origin!==SUPABASE_URL)return fetch(request);
@@ -855,11 +855,11 @@ async function gasFetch(input,init={}){
  for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode(...bytes.subarray(i,i+0x8000));
  const bodyBase64=bytes.length?btoa(binary):"";
  const headers=Object.fromEntries(request.headers.entries());
- const proxyResponse=await fetch("/api/kuro-gas-proxy",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:target.pathname+target.search,method:request.method,headers,bodyBase64,clientId:"admin-console"})});
+ const proxyResponse=await fetch("/api/cloudflare-relay",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:target.pathname+target.search,method:request.method,headers,bodyBase64,clientId:"admin-console"})});
  let result;
- try{result=await proxyResponse.json();}catch{throw new Error("GASプロキシからJSON以外の応答が返されました。");}
+ try{result=await proxyResponse.json();}catch{throw new Error("CloudflareプロキシからJSON以外の応答が返されました。");}
  if(!proxyResponse.ok||!result||typeof result.status!=="number"){
-  throw new Error(result?.error||"GAS経由の通信に失敗しました。");
+  throw new Error(result?.error||"Cloudflare経由の通信に失敗しました。");
  }
  let responseBody=result.bodyText??"";
  if(result.isBinary&&result.bodyBase64){
@@ -870,7 +870,7 @@ async function gasFetch(input,init={}){
  const status=result.status;
  return new Response([204,205,304].includes(status)?null:responseBody,{status,headers:result.headers||{}});
 }
-const db=window.supabase.createClient(SUPABASE_URL,PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},global:{fetch:gasFetch}});
+const db=window.supabase.createClient(SUPABASE_URL,PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},global:{fetch:cloudflareFetch}});
 const modeSelect=$("#modeSelect"),modeSelectTop=$("#modeSelectTop");
 const PRODUCT_KEY="kuro-admin-product";
 let activeProduct=["lab","sns","ops"].includes(localStorage.getItem(PRODUCT_KEY))?localStorage.getItem(PRODUCT_KEY):"ops";
@@ -935,7 +935,7 @@ async function saveStatus(id,button){
 }
 function subscribe(){
  if(channel){db.removeChannel(channel);channel=null;}
- if(mode==="gas"){$("#connection").textContent="GAS経由（45秒ごとに更新）";return;}
+ if(mode==="gas"){$("#connection").textContent="Cloudflare経由（45秒ごとに更新）";return;}
  channel=db.channel("admin-portal-requests").on("postgres_changes",{event:"INSERT",schema:"public",table:"portal_requests"},payload=>{
   const r=payload.new;if(!r||rows.some(x=>x.id===r.id))return;
   rows.unshift(r);seen.add(r.id);render();$("#connection").textContent="リアルタイム接続中";
@@ -1078,7 +1078,7 @@ function queueSnsRealtimeRefresh(){
 function startSnsRealtime(){
  stopSnsRealtime();
  if(mode==="gas"){
-  $("#snsConnection").textContent="GAS版・15秒ごとに自動同期";
+  $("#snsConnection").textContent="Cloudflare版・15秒ごとに自動同期";
   return;
  }
  const channel=db.channel("kuro-sns-admin-live");
