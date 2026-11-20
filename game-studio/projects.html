@@ -6,8 +6,6 @@
 @media(max-width:800px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.wrap{width:calc(100% - 24px)}.top{height:58px;padding:0 12px}.hero{padding-top:26px;align-items:start;flex-direction:column}.stats{gap:7px}.stat{padding:11px}.stat strong{font-size:18px}.grid{grid-template-columns:1fr}.preview{height:120px}.types{grid-template-columns:1fr 1fr}.search{order:3;width:100%;margin:0}.bar{gap:8px}}
 </style><style>
 .published-status{color:var(--muted);font-size:11px}.published-card .preview{background:radial-gradient(circle at 50% 30%,#285747,#142a2a 70%)}.published-card .type-tag{color:#a5f0c7}
-</style><style>
-.gas-mode-btn.is-active{background:#123b2c!important;border-color:#32865e!important;color:#9cf0bd!important;box-shadow:inset 0 0 0 1px #51b98140}
 </style>
 </head><body>
 <header class="top"><a class="brand" href="/game-studio/projects.html">KURO <b>GAME STUDIO</b></a><span class="crumb">/ プロジェクト</span><span class="spacer"></span><a class="btn" href="/game-studio/online.html">オンライン機能</a><a class="btn" href="/?auth=1">KUROアカウント</a><a class="btn" href="/games/">KURO GAMES ↗</a><a class="btn gas-mode-btn" href="/game-studio/projects.html?transport=gas" data-gas-toggle data-gas-mode="supabase-only">Cloudflare通信 ↗</a></header>
@@ -25,14 +23,14 @@
 <div class="modal-foot"><button class="btn" id="cancelCreate">キャンセル</button><button class="btn primary" id="confirmCreate">作成して開く</button></div></section></div><div class="toast" id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const KURO_CLOUDFLARE_TRANSPORT=new URLSearchParams(location.search).get("transport")==="gas";
-function kuroApplyTransportLinks(){if(!KURO_CLOUDFLARE_TRANSPORT)return;document.querySelectorAll('a[href^="/game-studio/"],a[href^="/games/"]').forEach(a=>{const u=new URL(a.href,location.origin);u.searchParams.set("transport","gas");a.href=u.pathname+u.search+u.hash;});}
+const KURO_CLOUDFLARE_TRANSPORT=true;
+);}
 (function(){
 "use strict";
 const KEY="kuroGameStudio.v1", $=id=>document.getElementById(id), clone=x=>JSON.parse(JSON.stringify(x));
 const SUPABASE_URL="https://cprvpphlfpmiegjiutjn.supabase.co",SUPABASE_KEY="sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
 const KURO_CLOUDFLARE_PROXY_URL="https://kurolab.cc.cd/api/cloudflare-relay";
-function kuroGasClientId(){
+function kuroCloudflareClientId(){
  const key="kuro_cloudflare_client_id_studio_projects_v1";
  try{let value=localStorage.getItem(key);if(!value){value=window.crypto&&crypto.randomUUID?crypto.randomUUID():"kuro-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2);localStorage.setItem(key,value);}return value;}
  catch(_){return "kuro-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2);}
@@ -43,13 +41,13 @@ async function kuroCloudflareFetch(input,init){
  const bytes=new Uint8Array(await req.arrayBuffer());let binary="";
  for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(bytes.length,i+0x8000)));
  const headers={};req.headers.forEach((v,k)=>headers[k]=v);
- const proxy=await fetch(KURO_CLOUDFLARE_PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:kuroGasClientId()})});
+ const proxy=await fetch(KURO_CLOUDFLARE_PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:kuroCloudflareClientId()})});
  const result=await proxy.json();
  if(!proxy.ok||!result||typeof result.status!=="number")throw new Error(result&&result.error||"Cloudflare中継通信に失敗しました");
  let body=null;if(result.isBinary&&result.bodyBase64){const raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);body=out;}else if(result.bodyText!==undefined&&![204,205,304].includes(result.status))body=result.bodyText;
  return new Response(body,{status:result.status,headers:result.headers||{"Content-Type":"application/json"}});
 }
-const projectDb=window.supabase&&window.supabase.createClient?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{global:{fetch:KURO_CLOUDFLARE_TRANSPORT?kuroCloudflareFetch:window.fetch},auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
+const projectDb=window.supabase&&window.supabase.createClient?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{global:{fetch:kuroCloudflareFetch},auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
 let chosen="blank",filter="all",projects=[];
 const base={
  blank:{type:"blank",background:"#17243a",objects:[]},
@@ -68,7 +66,7 @@ function date(v){if(!v)return"未編集";try{return new Date(v).toLocaleString("
 function render(){load();const q=$("search").value.trim().toLowerCase(),list=projects.filter(p=>(filter==="all"||filter==="recent"&&p.updatedAt>=Date.now()-30*864e5||filter===p.type)&&(!q||(p.name||"").toLowerCase().includes(q)));list.sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));$("totalCount").textContent=projects.length;$("recentCount").textContent=projects.filter(p=>p.updatedAt>=Date.now()-30*864e5).length;
 const grid=$("projectGrid"),empty=$("empty");grid.querySelectorAll(".card").forEach(x=>x.remove());empty.style.display=list.length?"none":"block";if(!projects.length){empty.querySelector("strong").textContent="まだプロジェクトがありません";empty.firstChild.nextSibling.textContent="最初のゲームを作成してみましょう。";}else if(!list.length){empty.querySelector("strong").textContent="一致するプロジェクトがありません";empty.firstChild.nextSibling.textContent="検索ワードやフィルターを変更してください。";}
 list.forEach(p=>{const card=document.createElement("article");card.className="card";card.innerHTML='<div class="preview"><span class="type-tag">'+esc(typeName(p))+'</span><span class="glyph">'+icon(p)+'</span></div><div class="card-body"><div class="card-title">'+esc(p.name||"無題のプロジェクト")+'</div><div class="card-meta"><span>'+esc(typeName(p))+'</span><span>更新 '+date(p.updatedAt)+'</span></div></div><div class="card-actions"><button class="btn primary" data-open="'+esc(p.id)+'">Studioで編集</button><button class="btn" data-duplicate="'+esc(p.id)+'">複製</button><button class="btn danger" data-delete="'+esc(p.id)+'">削除</button></div>';grid.insertBefore(card,empty);});}
-function open(id,mode){const p=projects.find(x=>x.id===id);if(!p)return;localStorage.setItem(KEY+".current",p.id);const u=new URL("/game-studio/code.html",location.origin);u.searchParams.set("projectId",p.id);if(KURO_CLOUDFLARE_TRANSPORT)u.searchParams.set("transport","gas");location.href=u.pathname+u.search;}
+function open(id,mode){const p=projects.find(x=>x.id===id);if(!p)return;localStorage.setItem(KEY+".current",p.id);const u=new URL("/game-studio/code.html",location.origin);u.searchParams.set("projectId",p.id);location.href=u.pathname+u.search;}
 
 async function loadPublishedGames(){
  const status=$("publishedStatus"),grid=$("publishedGrid"),empty=$("publishedEmpty");
@@ -95,14 +93,14 @@ async function loadPublishedGames(){
    meta.append(category,updated);body.append(title,meta);
    const actions=document.createElement("div");actions.className="card-actions";
    const edit=document.createElement("a");edit.className="btn primary";edit.textContent="Studioで編集";
-   const u=new URL("/game-studio/code.html",location.origin);u.searchParams.set("publishedId",game.id);if(KURO_CLOUDFLARE_TRANSPORT)u.searchParams.set("transport","gas");edit.href=u.pathname+u.search;
-   const play=document.createElement("a");play.className="btn";play.textContent="ゲームを見る";play.href="/games/play/?id="+encodeURIComponent(game.id)+(KURO_CLOUDFLARE_TRANSPORT?"&transport=gas":"");play.target="_blank";play.rel="noopener";
+   const u=new URL("/game-studio/code.html",location.origin);u.searchParams.set("publishedId",game.id);edit.href=u.pathname+u.search;
+   const play=document.createElement("a");play.className="btn";play.textContent="ゲームを見る";play.href="/games/play/?id="+encodeURIComponent(game.id)+;play.target="_blank";play.rel="noopener";
    const del=document.createElement("button");del.className="btn danger";del.textContent="削除";del.dataset.publishedDelete=game.id;actions.append(edit,play,del);card.append(preview,body,actions);grid.insertBefore(card,empty);
   });
  }catch(e){status.textContent="取得できませんでした: "+(e.message||"通信エラー");}
 }
 function modal(show){$("modal").classList.toggle("open",show);if(show){$("projectTitle").focus();$("projectTitle").select();}}
-kuroApplyTransportLinks();
+
 function create(){const name=$("projectTitle").value.trim()||"新しいゲーム",p=fresh(chosen,name);projects.unshift(p);saveAll();localStorage.setItem(KEY+".current",p.id);open(p.id,"code");}
 function duplicate(id){const p=projects.find(x=>x.id===id);if(!p)return;const c=clone(p);c.id="kuro-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7);c.name=(p.name||"ゲーム")+" のコピー";c.createdAt=Date.now();c.updatedAt=Date.now();projects.unshift(c);saveAll();render();toast("プロジェクトを複製しました");}
 function remove(id){const p=projects.find(x=>x.id===id);if(!p||!confirm("「"+p.name+"」を削除しますか？この操作は元に戻せません。"))return;projects=projects.filter(x=>x.id!==id);saveAll();if(localStorage.getItem(KEY+".current")===id)localStorage.removeItem(KEY+".current");render();toast("削除しました");}
