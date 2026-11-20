@@ -443,7 +443,7 @@ codeFileInput.addEventListener("change",async()=>{
    const {name,ext,source}=item;
    if(["js","mjs"].includes(ext)){
     const basename=name.toLowerCase();
-    const normalizeScriptName=value=>String(value||"").split(/[?#]/)[0].split(/[\\/]/).pop().toLowerCase().replace(/\\s*\\(\\d+\\)(?=\\.[^.]+$)/,"");
+    const normalizeScriptName=value=>String(value||"").split(/[?#]/)[0].split(/[\\/]/).pop().toLowerCase().replace(/\s*\(\d+\)(?=\.[^.]+$)/,"");
     const importedScriptName=normalizeScriptName(basename);
     let matched=false;
     project.code.html=String(project.code.html||"").replace(/<script\\b([^>]*?)\\bsrc\\s*=\\s*(["'])([^"']+)\\2([^>]*)>\\s*<\\/script\\s*>/gi,(whole,before,quote,src,after)=>normalizeScriptName(src)===importedScriptName?(matched=true,""):whole);
