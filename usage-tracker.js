@@ -104,7 +104,7 @@
     if (host === "api.microlink.io") return "ogp";
     if (/youtube|googleapis/.test(host)) return "youtube";
     if (u.origin === location.origin && path === "/api/workspace-rss") return "rss";
-    if (host === "script.google.com" || (u.origin === location.origin && path === "/api/cloudflare-relay")) return null;
+    if (u.origin === location.origin && path === "/api/cloudflare-relay") return null;
     if (host.endsWith(".supabase.co")) {
       if (path.startsWith("/auth/")) return "supabase_auth";
       if (path.startsWith("/storage/")) return "supabase_storage";
