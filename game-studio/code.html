@@ -551,7 +551,7 @@ document.addEventListener("keydown",e=>{
 window.addEventListener("beforeunload",()=>{project.code[activeTab]=currentValue();persist(true)});
 showTab("html");
 if(project.publishedGameId)$("publishBtn").textContent="公開内容を更新";
-kuroApplyTransportLinks();
+// Supabase通信はkuroCloudflareFetchで中継済み。未定義の旧リンク変換関数を呼ばない。
 loadPublishedGameFromCloud();
 run();
 if(new URLSearchParams(location.search).get("publish")==="1"){openPublishModal();}
