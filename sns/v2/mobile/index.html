@@ -890,13 +890,15 @@ body.kuro-page>.kuro-global-header{display:block!important}
 
     
 <style id="kuro-default-avatar-style">
-/* Apply the gradient only while the fallback placeholder is actually visible.
-   Hidden placeholder nodes remain in the DOM when an uploaded avatar is shown. */
+/* Gradient is for fallback icons only. Transparent areas in uploaded PNGs use a neutral background. */
 .rounded-full:has(.fa-user:not(.hidden)),
 .rounded-full:has([id*="AvatarPlaceholder"]:not(.hidden)),
 .rounded-full:has([id*="avatarPlaceholder"]:not(.hidden)) {
  background: radial-gradient(circle at 28% 24%, #a5f3fc 0%, #67e8f9 18%, #6366f1 56%, #7c3aed 100%) !important;
  border-color: rgba(129,140,248,.55) !important;
+}
+.rounded-full:has(img:not(.hidden)) {
+ background: #111827 !important;
 }
 .rounded-full:has(.fa-user:not(.hidden)) .fa-user:not(.hidden),
 .rounded-full:has([id*="AvatarPlaceholder"]:not(.hidden)) [id*="AvatarPlaceholder"]:not(.hidden),
