@@ -416,3 +416,8 @@ body.kuro-theme-light main dd{font-size:16px!important;line-height:1.9!important
  .kuro-story-copy h2,.kuro-home-values h2{font-size:29px!important}
  body.kuro-theme-light main p,body.kuro-theme-light main li,body.kuro-theme-light main dd{font-size:15px!important}
 }
+
+
+/* KUROLAB shared header/footer logo sizing: use the uploaded transparent artwork without cropping. */
+.kuro-global-header .kuro-brand img,.kuro-global-footer .kuro-footer-brand img{width:48px;height:48px;object-fit:contain;display:block;border:0;border-radius:0;background:transparent;box-shadow:none}
+.kuro-global-footer .kuro-footer-brand img{width:42px;height:42px}
