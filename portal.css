@@ -3288,3 +3288,8 @@ body.kuro-portal #portal-quick-button span {
 .portal-brand-logo{width:48px;height:48px;object-fit:contain;display:block;flex:0 0 48px;border-radius:12px}
 .portal-side-brand-logo{width:42px;height:42px;object-fit:contain;display:block;flex:0 0 42px}
 @media(max-width:700px){.portal-brand-logo{width:40px;height:40px;flex-basis:40px}}
+
+/* Logo sizing override + cache refresh for the newly uploaded KUROLAB mark */
+body.kuro-portal .portal-header .portal-brand img.portal-brand-logo{width:48px!important;height:48px!important;object-fit:contain!important;display:block!important;border-radius:0!important}
+body.kuro-portal .portal-side .portal-side-brand img.portal-side-brand-logo{width:42px!important;height:42px!important;object-fit:contain!important;display:block!important;border-radius:0!important}
+@media(max-width:700px){body.kuro-portal .portal-header .portal-brand img.portal-brand-logo{width:40px!important;height:40px!important}}
