@@ -63,15 +63,35 @@ Deno.serve(async (req: Request) => {
     const username = String(body?.username || "").trim();
     const password = String(body?.password || "");
 
-    if (!usernamePattern.test(username)) {
-      return reply({ error: "ユーザーネームは半角英数字と_の3〜24文字で入力してください。" }, 400, origin);
+    if (action === "change_username") {
+      if (!usernamePattern.test(username)) return reply({ error: "ユーザーネームは半角英数字と_の3〜24文字で入力してください。" }, 400, origin);
+      const token = req.headers.get("Authorization")?.replace(/^Bearer\\s+/i, "") || "";
+      if (!token) return reply({ error: "ログインしてください。" }, 401, origin);
+      if (!url || !service) return reply({ error: "認証サーバーの設定が不足しています。" }, 503, origin);
+      const admin = createClient(url, service, { auth: { autoRefreshToken: false, persistSession: false } });
+      const { data: verified, error: verifyError } = await admin.auth.getUser(token);
+      if (verifyError || !verified.user) return reply({ error: "ログイン状態を確認できません。再ログインしてください。" }, 401, origin);
+      const ip = req.headers.get("cf-connecting-ip") || req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+      const { data: attempts, error: rateError } = await admin.rpc("kuro_username_auth_rate_limit", { p_key_hash: await sha256(ip), p_limit: 8, p_window_seconds: 600 });
+      if (rateError) throw rateError;
+      if (Number(attempts) > 8) return reply({ error: "試行回数が多すぎます。10分ほど待ってから再度お試しください。" }, 429, origin);
+      const escaped = escapeLike(username);
+      const { data: existing, error: lookupError } = await admin.from("profiles").select("id").ilike("username", escaped).maybeSingle();
+      if (lookupError) throw lookupError;
+      if (existing && existing.id !== verified.user.id) return reply({ error: "このユーザーネームは既に使用されています。" }, 409, origin);
+      const { data: updated, error: updateError } = await admin.from("profiles").update({ username }).eq("id", verified.user.id).select("id,username").maybeSingle();
+      if (updateError) {
+        if (/unique|duplicate/i.test(updateError.message || "")) return reply({ error: "このユーザーネームは既に使用されています。" }, 409, origin);
+        throw updateError;
+      }
+      if (!updated) return reply({ error: "プロフィールを更新できませんでした。" }, 500, origin);
+      const metaUpdate = await admin.auth.admin.updateUserById(verified.user.id, { user_metadata: { username } });
+      if (metaUpdate.error) console.warn("username metadata sync failed", metaUpdate.error.message);
+      return reply({ success: true, username: updated.username }, 200, origin);
     }
-    if (password.length < 8 || password.length > 72) {
-      return reply({ error: "パスワードは8〜72文字で入力してください。" }, 400, origin);
-    }
-    if (action !== "register" && action !== "login") {
-      return reply({ error: "不正なリクエストです。" }, 400, origin);
-    }
+    if (action !== "register" && action !== "login") return reply({ error: "不正なリクエストです。" }, 400, origin);
+    if (!usernamePattern.test(username)) return reply({ error: "ユーザーネームは半角英数字と_の3〜24文字で入力してください。" }, 400, origin);
+    if (password.length < 8 || password.length > 72) return reply({ error: "パスワードは8〜72文字で入力してください。" }, 400, origin);
 
     const ip = req.headers.get("cf-connecting-ip")
       || req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
