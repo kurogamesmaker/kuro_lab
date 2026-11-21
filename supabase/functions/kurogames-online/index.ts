@@ -117,28 +117,27 @@ async function getRoomMembers(roomId: string) {
     .order("joined_at", { ascending: true });
   if (error) throw new HttpError(500, "参加者一覧を取得できませんでした。");
   const ids = (members ?? []).map((m) => m.user_id);
-  let profiles = new Map<string, { kuro_id: string; username: string; display_name: string; avatar_url: string | null }>();
+  let profiles = new Map<string, { kuro_id: string; username: string; avatar_url: string | null }>();
   if (ids.length) {
     const { data, error: profileError } = await admin.from("profiles")
-      .select("id, kuro_id, username, display_name, avatar_url")
+      .select("id, kuro_id, username, avatar_url")
       .in("id", ids);
     if (profileError) throw new HttpError(500, "参加者プロフィールを取得できませんでした。");
     profiles = new Map((data ?? []).map((p) => [p.id, {
       kuro_id: p.kuro_id ?? "",
       username: p.username ?? "",
-      display_name: p.display_name ?? p.username ?? "プレイヤー",
       avatar_url: p.avatar_url ?? null,
     }]));
   }
   return (members ?? []).map((m) => {
-    const profile = profiles.get(m.user_id) ?? { kuro_id: "", username: "", display_name: "プレイヤー", avatar_url: null };
+    const profile = profiles.get(m.user_id) ?? { kuro_id: "", username: "プレイヤー", avatar_url: null };
     return {
       userId: m.user_id,
       joinedAt: m.joined_at,
       user: {
         kuroId: profile.kuro_id || null,
         username: profile.username,
-        display_name: profile.display_name,
+        display_name: profile.username,
         avatar_url: profile.avatar_url,
       },
     };
@@ -174,7 +173,7 @@ async function handle(req: Request) {
     requirePublished(game);
     const { data: profile, error } = await admin
       .from("profiles")
-      .select("kuro_id, username, display_name, avatar_url")
+      .select("kuro_id, username, avatar_url")
       .eq("id", user.id)
       .maybeSingle();
     if (error) throw new HttpError(500, "KUROプロフィールを取得できませんでした。");
@@ -183,7 +182,7 @@ async function handle(req: Request) {
       profile: {
         kuroId: profile.kuro_id,
         username: profile.username,
-        displayName: profile.display_name,
+        displayName: profile.username,
         avatarUrl: profile.avatar_url,
       },
     });
@@ -238,17 +237,16 @@ async function handle(req: Request) {
     if (error) throw new HttpError(500, "ランキングを取得できませんでした。");
 
     const userIds = Array.from(new Set((scores ?? []).map((row) => row.user_id)));
-    let profileMap = new Map<string, { kuro_id: string; username: string; display_name: string; avatar_url: string | null }>();
+    let profileMap = new Map<string, { kuro_id: string; username: string; avatar_url: string | null }>();
     if (userIds.length) {
       const { data: profiles, error: profileError } = await admin
         .from("profiles")
-        .select("id, kuro_id, username, display_name, avatar_url")
+        .select("id, kuro_id, username, avatar_url")
         .in("id", userIds);
       if (profileError) throw new HttpError(500, "ランキング参加者のプロフィールを取得できませんでした。");
       profileMap = new Map((profiles ?? []).map((profile) => [profile.id, {
         kuro_id: profile.kuro_id ?? "",
         username: profile.username ?? "",
-        display_name: profile.display_name ?? profile.username ?? "プレイヤー",
         avatar_url: profile.avatar_url ?? null,
       }]));
     }
@@ -256,7 +254,7 @@ async function handle(req: Request) {
     return reply(200, {
       mode,
       scores: (scores ?? []).map((row, index) => {
-        const profile = profileMap.get(row.user_id) ?? { kuro_id: "", username: "", display_name: "プレイヤー", avatar_url: null };
+        const profile = profileMap.get(row.user_id) ?? { kuro_id: "", username: "プレイヤー", avatar_url: null };
         return {
           rank: index + 1,
           score: row.score,
@@ -265,7 +263,7 @@ async function handle(req: Request) {
           user: {
             kuroId: profile.kuro_id || null,
             username: profile.username,
-            display_name: profile.display_name,
+            display_name: profile.username,
             avatar_url: profile.avatar_url,
           },
         };
