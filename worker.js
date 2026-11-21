@@ -303,6 +303,14 @@ export default {
           headers.set("Pragma", "no-cache");
           headers.delete("content-length");
           headers.delete("content-encoding");
+          headers.delete("Speculation-Rules");
+          headers.delete("Content-Security-Policy");
+          headers.delete("Content-Security-Policy-Report-Only");
+
+          // Allow portal resources while avoiding restrictive upstream CSP.
+          if (liveContentType.startsWith("text/html")) {
+            headers.set("Content-Security-Policy", "default-src 'self' https: data:; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'");
+          }
 
           // Invalidate old browser-cached shared assets on every portal subpage.
           let liveBody = liveAssetResponse.body;
