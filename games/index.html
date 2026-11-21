@@ -98,47 +98,6 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
   ]
 }
 </script>
-<style id="kuro-secret-styles">
-.kuro-secret-trigger{border-color:#244b37;background:#0a1710;color:#8cf0ad;cursor:pointer;font-weight:950;letter-spacing:.06em;white-space:nowrap}
-.kuro-secret-trigger:hover{background:#102619;border-color:#4bca79;color:#c1ffd1}
-.kuro-secret-trigger:focus-visible,.kuro-secret-modal button:focus-visible,.kuro-secret-modal input:focus-visible{outline:3px solid #54d98c;outline-offset:3px}
-.kuro-secret-modal{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:18px;background:#030a08d9;backdrop-filter:blur(12px)}
-.kuro-secret-modal[hidden]{display:none}
-.kuro-secret-dialog{width:min(450px,100%);padding:26px;border:1px solid #28563b;border-radius:18px;background:linear-gradient(160deg,#101d16,#060b08);color:#d6ffe1;box-shadow:0 24px 90px #000b;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
-.kuro-secret-eyebrow{font-size:10px;letter-spacing:.22em;color:#66cb8b;font-weight:900}
-.kuro-secret-dialog h2{margin:9px 0 6px;font-size:25px;letter-spacing:.06em}
-.kuro-secret-dialog p{color:#8eaa97;font:13px/1.8 system-ui,sans-serif;margin:0 0 18px}
-.kuro-secret-dialog label{display:block;font-size:11px;color:#a7c8b1;margin-bottom:7px}
-.kuro-secret-dialog input{width:100%;height:52px;border:1px solid #315a40;border-radius:10px;background:#030906;color:#b8ffc9;text-align:center;font:700 24px ui-monospace,monospace;letter-spacing:.3em;outline:none}
-.kuro-secret-actions{display:flex;gap:9px;margin-top:14px}
-.kuro-secret-actions button{flex:1;min-height:43px;border:1px solid #315a40;border-radius:9px;background:#12301e;color:#c7ffda;font-weight:850;cursor:pointer}
-.kuro-secret-actions button.primary{background:linear-gradient(120deg,#187342,#1d9d5b);border-color:#39bf75;color:white}
-.kuro-secret-status{min-height:22px;margin-top:12px;color:#9edbad;font:12px/1.5 system-ui,sans-serif}
-.kuro-secret-room{padding:28px 0 70px;color:#b9ffd0;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:radial-gradient(ellipse at 50% 0%,#0d2b1b 0,#030907 55%);min-height:70vh}
-.kuro-secret-hero{position:relative;overflow:hidden;padding:30px;border:1px solid #1d7041;border-radius:4px;background:linear-gradient(135deg,#06150d,#030906 70%);color:#d5ffe2;box-shadow:0 0 32px #00ff6618,inset 0 0 28px #00ff6609}
-.kuro-secret-hero:after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,#00ff6608 0,#00ff6608 1px,transparent 1px,transparent 4px);opacity:.4}
-.kuro-secret-hero .eyebrow{color:#35ff83;letter-spacing:.2em;font-size:10px;font-weight:950}
-.kuro-secret-hero h1{margin:12px 0 8px;font:900 clamp(27px,4vw,42px) ui-monospace,monospace;letter-spacing:.02em;text-shadow:0 0 16px #22ff7780}
-.kuro-secret-hero p{margin:0;color:#80b895;font:13px/1.8 ui-monospace,monospace}
-.kuro-secret-hero .back{position:relative;z-index:1;margin-top:20px;padding:10px 14px;border:1px solid #23864b;border-radius:3px;background:#071b10;color:#8cffb2;font:800 12px ui-monospace,monospace;cursor:pointer}
-.kuro-secret-groups{display:grid;gap:23px;margin-top:24px}
-.kuro-secret-group{border:1px solid #164a2c;background:#030a06;padding:16px;box-shadow:0 0 20px #00ff6608}
-.kuro-secret-group h2{font:800 14px ui-monospace,monospace;letter-spacing:.1em;margin:0 0 12px;color:#53ff91}
-.kuro-secret-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px}
-.kuro-secret-card{border:1px solid #185532;border-radius:3px;background:linear-gradient(145deg,#07160d,#030805);padding:17px;box-shadow:inset 0 0 18px #00ff6608}
-.kuro-secret-card h3{margin:0 0 9px;font:800 15px ui-monospace,monospace;color:#baffce}
-.kuro-secret-card p{margin:0;color:#80b895;font:13px/1.85 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
-.kuro-secret-card .meta{display:flex;align-items:center;gap:7px;margin-bottom:9px;color:#39e879;font-size:10px;font-weight:900;letter-spacing:.08em}
-.kuro-secret-card a,.kuro-secret-card button{display:inline-flex;margin-top:14px;padding:9px 12px;border:1px solid #237a45;border-radius:2px;background:#092313;color:#8dffb1;font:850 12px ui-monospace,monospace;text-decoration:none;cursor:pointer}
-.kuro-secret-card .reward{margin-top:10px;padding:8px 10px;border-left:2px solid #42ff87;background:#06190d;color:#8dffb1;font-size:11px;font-weight:900}
-.kuro-secret-empty{padding:28px;text-align:center;border:1px dashed #1b6339;color:#4c9969;font:12px ui-monospace,monospace}
-@media(max-width:680px){
- .kuro-secret-trigger{display:inline-flex!important;align-items:center;padding:7px 9px;font-size:10px}
- .kuro-secret-dialog{padding:22px}
- .kuro-secret-hero{padding:23px}
- .kuro-secret-room{padding-top:22px}
-}
-</style>
 <style id="kuro-account-styles">
 .kuro-account-trigger{border-color:#b9cff3;background:#eef5ff;color:#2867bf;cursor:pointer;font-weight:950;white-space:nowrap;max-width:230px;overflow:hidden;text-overflow:ellipsis}.kuro-account-trigger:hover{background:#dfeeff;border-color:#8eb8f2}.kuro-account-trigger.kuro-signed-in{font-size:12px;letter-spacing:0;text-transform:none}
 .kuro-account-modal{position:fixed;inset:0;z-index:1100;display:grid;place-items:center;padding:18px;background:#111a2bd9;backdrop-filter:blur(12px)}.kuro-account-modal[hidden]{display:none}
@@ -157,7 +116,7 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 <a class="brand" href="/games/"><span class="mark">K</span><span>KURO <em>GAMES</em></span></a>
 <nav class="navlinks"><a href="#games">ゲーム一覧</a><a href="#categories">ジャンル</a></nav><div class="spacer"></div>
 <label class="search"><span>⌕</span><input id="gameSearch" type="search" placeholder="ゲームを検索..." autocomplete="off"></label>
-<a class="lab" href="/game-studio/">GAME STUDIO ↗</a><span class="lab" aria-label="Cloudflare経由で通信">Cloudflare接続中</span><a class="lab" href="https://kurolab.cc.cd/">KURO Lab ↗</a><button class="lab kuro-account-trigger" id="kuroAccountOpen" type="button" aria-haspopup="dialog" aria-controls="kuroAccountModal">ログイン</button><button class="lab kuro-secret-trigger" id="kuroSecretOpen" type="button" aria-label="秘密の入口">✦ SECRET</button>
+<a class="lab" href="/game-studio/">GAME STUDIO ↗</a><span class="lab" aria-label="Cloudflare経由で通信">Cloudflare接続中</span><a class="lab" href="https://kurolab.cc.cd/">KURO Lab ↗</a><button class="lab kuro-account-trigger" id="kuroAccountOpen" type="button" aria-haspopup="dialog" aria-controls="kuroAccountModal">ログイン</button>
 </div></header>
 <main class="wrap">
 <section class="library" id="games">
@@ -176,25 +135,7 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 <div class="empty" id="empty"><strong>ゲームが見つかりませんでした</strong>検索ワードやジャンルを変えて、もう一度探してみてください。</div>
 <div class="more"><div class="more-icon">✦</div><div><h3>新しいゲームを準備中！</h3><p>KURO GAMESでは、これからもオリジナルゲームを追加していきます。次のゲームもお楽しみに。</p></div><small>MORE GAMES COMING SOON</small></div>
 </section>
-<section class="kuro-secret-room" id="kuroSecretRoom" hidden aria-live="polite"></section>
 </main>
-<div class="kuro-secret-modal" id="kuroSecretModal" hidden>
- <div class="kuro-secret-dialog" role="dialog" aria-modal="true" aria-labelledby="kuroSecretTitle">
-  <div class="kuro-secret-eyebrow">KUROGAMES / CLASSIFIED ACCESS</div>
-  <h2 id="kuroSecretTitle">SECRET TERMINAL</h2>
-  <p>秘密コードを入力してください。コードによってアクセスできる部屋が変わります。</p>
-  <form id="kuroSecretForm">
-   <label for="kuroSecretCode">NUMERIC ACCESS CODE</label>
-   <input id="kuroSecretCode" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{4,12}" minlength="4" maxlength="12" required>
-   <div class="kuro-secret-actions">
-    <button type="button" id="kuroSecretClose">閉じる</button>
-    <button type="submit" class="primary" id="kuroSecretSubmit">認証する</button>
-   </div>
-   <div class="kuro-secret-status" id="kuroSecretStatus" role="status" aria-live="polite"></div>
-  </form>
- </div>
-</div>
-
 <div class="kuro-account-modal" id="kuroAccountModal" hidden>
  <section class="kuro-account-dialog" role="dialog" aria-modal="true" aria-labelledby="kuroAccountTitle">
   <div class="kuro-account-head"><div><div class="kuro-account-eyebrow">KURO LAB × KURO GAMES</div><h2 id="kuroAccountTitle">KURO ACCOUNT</h2></div><button class="kuro-account-close" id="kuroAccountClose" type="button" aria-label="閉じる">×</button></div>
@@ -352,135 +293,6 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
  update();loadStudioGames();
 })();
 
-(function(){
- const openButton=document.getElementById("kuroSecretOpen");
- const modal=document.getElementById("kuroSecretModal");
- const closeButton=document.getElementById("kuroSecretClose");
- const form=document.getElementById("kuroSecretForm");
- const codeInput=document.getElementById("kuroSecretCode");
- const status=document.getElementById("kuroSecretStatus");
- const submit=document.getElementById("kuroSecretSubmit");
- const library=document.querySelector(".library");
- const room=document.getElementById("kuroSecretRoom");
- if(!openButton||!modal||!form||!room)return;
-
- function openModal(){
-  modal.hidden=false;status.textContent="";codeInput.value="";
-  setTimeout(()=>codeInput.focus(),30);
- }
- function closeModal(){modal.hidden=true;openButton.focus();}
- openButton.addEventListener("click",openModal);
- closeButton.addEventListener("click",closeModal);
- modal.addEventListener("click",e=>{if(e.target===modal)closeModal();});
- document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!modal.hidden)closeModal();});
-
- function getVisitorId(){
-  const key="kuroSecretVisitor.v1";
-  try{
-   let id=sessionStorage.getItem(key);
-   if(!id){id=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+"-"+Math.random().toString(36).slice(2));sessionStorage.setItem(key,id);}
-   return id;
-  }catch(_){return "tab-"+String(Date.now());}
- }
- function element(tag,className,text){
-  const node=document.createElement(tag);
-  if(className)node.className=className;
-  if(text!==undefined)node.textContent=String(text);
-  return node;
- }
- function renderRoom(data){
-  room.replaceChildren();
-  const hero=element("section","kuro-secret-hero");
-  hero.append(element("div","eyebrow","[ KURO SYSTEM // ACCESS GRANTED ]"));
-  hero.append(element("h1", "", "KURO // CLASSIFIED TERMINAL"));
-  hero.append(element("p","","認証完了。機密データベースに接続しました。許可された情報を表示しています。"));
-  const back=element("button","back","[ EXIT TERMINAL ] 通常のゲーム一覧へ戻る");
-  back.type="button";
-  back.addEventListener("click",()=>{
-   room.hidden=true;if(library)library.hidden=false;
-   window.scrollTo({top:0,behavior:"smooth"});openButton.focus();
-  });
-  hero.append(back);room.append(hero);
-
-  const types=[
-   {key:"game",name:"SECRET GAMES",subtitle:"隠されたゲーム"},
-   {key:"diary",name:"DEVELOPER DIARY",subtitle:"開発者の日誌"},
-   {key:"mission",name:"SECRET MISSIONS",subtitle:"秘密のミッション"},
-   {key:"news",name:"CLASSIFIED NEWS",subtitle:"限定お知らせ"}
-  ];
-  const groupWrap=element("div","kuro-secret-groups");
-  const items=Array.isArray(data.items)?data.items:[];
-  types.forEach(type=>{
-   const groupItems=items.filter(item=>item.content_type===type.key);
-   const section=element("section","kuro-secret-group");
-   section.append(element("h2","",type.name+" — "+type.subtitle));
-   if(!groupItems.length){section.append(element("div","kuro-secret-empty","現在公開されている項目はありません。"));}
-   else{
-    const cards=element("div","kuro-secret-cards");
-    groupItems.forEach(item=>{
-     const card=element("article","kuro-secret-card");
-     card.append(element("div","meta",(item.icon?item.icon+"  ":"")+type.name));
-     card.append(element("h3","",item.title||""));
-     if(item.body)card.append(element("p","",item.body));
-     if(item.reward)card.append(element("div","reward","報酬： "+item.reward));
-     if(item.href){
-      const a=element("a","","ゲームを開く ↗");a.href=item.href;
-      if(/^https:/i.test(item.href)){a.target="_blank";a.rel="noopener noreferrer";}
-      card.append(a);
-     }
-     if(type.key==="mission"){
-      const storageKey="kuroSecretMission."+item.id;
-      let done=false;try{done=localStorage.getItem(storageKey)==="1";}catch(_){}
-      const button=element("button","",done?"✓ 達成済み":"ミッション達成を記録");
-      button.type="button";button.setAttribute("aria-pressed",done?"true":"false");
-      button.addEventListener("click",()=>{
-       done=!done;button.textContent=done?"✓ 達成済み":"ミッション達成を記録";
-       button.setAttribute("aria-pressed",done?"true":"false");
-       try{if(done)localStorage.setItem(storageKey,"1");else localStorage.removeItem(storageKey);}catch(_){}
-      });
-      card.append(button);
-     }
-     cards.append(card);
-    });
-    section.append(cards);
-   }
-   groupWrap.append(section);
-  });
-  room.append(groupWrap);
-  modal.hidden=true;room.hidden=false;if(library)library.hidden=true;
-  window.scrollTo({top:0,behavior:"smooth"});
- }
-
- form.addEventListener("submit",async event=>{
-  event.preventDefault();
-  const code=codeInput.value.trim();
-  if(!/^[0-9]{4,12}$/.test(code)){status.textContent="4〜12桁の数字を入力してください。";return;}
-  submit.disabled=true;status.textContent="認証中…";
-  try{
-   const db=window.supabase.createClient("https://cprvpphlfpmiegjiutjn.supabase.co","sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn",{
-    global:{fetch:kuroCloudflareFetch},
-    auth:{autoRefreshToken:false,persistSession:false}
-   });
-   const {data,error}=await db.functions.invoke("kurogames-secret",{
-    body:{action:"unlock",code},
-    headers:{"x-kuro-visitor":getVisitorId(),"x-kuro-transport":"cloudflare"}
-   });
-   if(error)throw error;
-   if(!data?.ok)throw new Error(data?.error||"秘密コードを確認できませんでした。");
-   codeInput.value="";renderRoom(data);
-  }catch(error){
-   let message=error?.message||"認証に失敗しました。";
-   try{
-    if(error?.context&&typeof error.context.clone==="function"){
-     const detail=await error.context.clone().json();
-     if(detail?.error)message=detail.error;
-    }
-   }catch(_){}
-   status.textContent=message;
-   codeInput.select();
-  }finally{submit.disabled=false;}
- });
-})();
 </script><script src="/usage-tracker.js"></script>
 
 </body></html>
