@@ -421,7 +421,7 @@ async function loadKuroId(user){
   st.kuroProfile=result.data||null;
   st.kuroId=result.data&&result.data.kuro_id?String(result.data.kuro_id):null;
   st.kuroIdLoading=false;
-  if(page==="mypage")render();
+  if(page==="mypage"||page==="settings")render();
   return st.kuroId;
  }catch(error){
   if(st.user&&st.user.id===userId){st.kuroIdLoading=false;console.warn("KURO ID could not be loaded",error);}
