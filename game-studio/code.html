@@ -236,15 +236,18 @@ function makeDocument(){
   return "<scr"+"ipt"+cleanAttrs+' type="module">'+body+"</scr"+"ipt>";
  });
  const css=String(project.code.css||"").replace(/<\/style/gi,"<\\/style");
- const js=safeScript(project.code.js||"");
+ const rawJs=safeScript(project.code.js||"");
  const frameWidth=Math.max(240,Math.min(3840,Number(project.settings&&project.settings.gameFrameWidth)||960));
  const frameHeight=Math.max(160,Math.min(2160,Number(project.settings&&project.settings.gameFrameHeight)||540));
  const frameMeta='<meta name="kuro-game-frame" content="'+frameWidth+'x'+frameHeight+'">';
  const styleBlock="<style>"+css+"</style>";
- const moduleMode=/^\s*(?:import|export)\b/m.test(js)||/\bawait\b/.test(js);
+ const moduleMode=/^\s*(?:import|export)\b/m.test(rawJs)||/\bawait\b/.test(rawJs);
  const scriptOpen=(moduleMode?"<scr"+"ipt type=\"module\">":"<scr"+"ipt>");
  const scriptClose="<"+"/script>";
  const logger="const __kuroSend=(level,args)=>{try{parent.postMessage({type:'kuro-studio-console',level:level,values:Array.from(args).map(v=>{try{return typeof v==='string'?v:JSON.stringify(v)}catch(_){return String(v)}})},'*')}catch(_){}};['log','info','warn','error'].forEach(level=>{const base=console[level].bind(console);console[level]=(...args)=>{base(...args);__kuroSend(level,args)}});window.addEventListener('error',function(e){try{parent.postMessage({type:'kuro-studio-error',message:e.message},'*')}catch(_){}});\n";
+ // 保存済みHTMLから読み込んだ際、前回のmakeDocumentが付加したloggerを再挿入しない
+ let js=rawJs;
+ if(!moduleMode){while(js.startsWith(logger))js=js.slice(logger.length);}
  const scriptBlock=scriptOpen+(moduleMode?"":logger)+js+scriptClose;
  const autoFitScript=project.settings&&project.settings.autoFitOverflow===false?"":"<scr"+"ipt>(function(){try{document.documentElement.style.overflowX='auto';document.body.style.overflowX='auto';document.querySelectorAll('img,video,svg,iframe').forEach(function(el){el.style.maxWidth='100%';});}catch(e){console.warn('KURO responsive fit',e);}})();<"+"/script>";
  if(/<html[\s>]/i.test(html)){
