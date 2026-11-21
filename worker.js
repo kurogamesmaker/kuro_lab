@@ -197,6 +197,37 @@ export default {
       return json({ error: "Not found" }, 404);
     }
 
-    return env.ASSETS.fetch(request);
+    const assetResponse = await env.ASSETS.fetch(request);
+    const assetType = assetResponse.headers.get("content-type") || "";
+
+    // Refresh every KURO portal page's shared portal.js reference after transport fixes.
+    if (assetType.toLowerCase().includes("text/html")) {
+      const html = await assetResponse.text();
+      if (html.includes("/portal.js?")) {
+        const refreshedHtml = html.replace(/\/portal\.js\?v=[^"'&\\s]+/g, "/portal.js?v=20261121usernamefix5");
+        const headers = new Headers(assetResponse.headers);
+        headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+        headers.set("Pragma", "no-cache");
+        return new Response(refreshedHtml, {
+          status: assetResponse.status,
+          statusText: assetResponse.statusText,
+          headers
+        });
+      }
+    }
+
+    // Do not let a previously cached portal.js keep bypassing the Cloudflare relay.
+    if (url.pathname === "/portal.js") {
+      const headers = new Headers(assetResponse.headers);
+      headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+      headers.set("Pragma", "no-cache");
+      return new Response(assetResponse.body, {
+        status: assetResponse.status,
+        statusText: assetResponse.statusText,
+        headers
+      });
+    }
+
+    return assetResponse;
   }
 };
