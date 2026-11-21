@@ -902,6 +902,26 @@ body.kuro-page>.kuro-global-header{display:block!important}
 .rounded-full:has([id*="avatarPlaceholder"]) { color:#fff !important; text-shadow:0 1px 4px rgba(24,24,80,.25) !important; }
 </style>
 
+
+<style id="kuro-force-all-avatar-icons">
+/* Force a single KURO avatar design for all profile pictures, including existing uploads and placeholder variants. */
+.kuro-force-avatar, .kuro-force-avatar::before { box-sizing:border-box; }
+.kuro-force-avatar { position:relative !important; display:inline-flex !important; align-items:center !important; justify-content:center !important; overflow:hidden !important; background:radial-gradient(circle at 28% 24%,#a5f3fc 0%,#67e8f9 18%,#6366f1 56%,#7c3aed 100%) !important; border-color:rgba(129,140,248,.6) !important; }
+.kuro-force-avatar::before { content:'\\\\f007' !important; font-family:'Font Awesome 6 Free','Font Awesome 5 Free' !important; font-weight:900 !important; color:#fff !important; text-shadow:0 1px 4px rgba(24,24,80,.3) !important; display:flex !important; align-items:center !important; justify-content:center !important; position:absolute !important; inset:0 !important; font-size:clamp(12px,45%,30px) !important; z-index:3 !important; }
+.kuro-force-avatar > img, .kuro-force-avatar > i, .kuro-force-avatar > svg { visibility:hidden !important; }
+.kuro-force-avatar img.rounded-full { visibility:hidden !important; }
+.kuro-force-avatar:has(> img.rounded-full) { position:relative !important; }
+.kuro-force-avatar:has(> img.rounded-full)::before { content:'\\\\f007' !important; }
+</style>
+<script id="kuro-force-avatar-runtime">(function(){
+ const selectors=['.rounded-full:has(img)','button:has(> img.rounded-full)','div:has(> img.rounded-full)','span:has(> img.rounded-full)','.rounded-full:has(.fa-user)','.rounded-full:has([id*="AvatarPlaceholder"])'];
+ function force(){document.querySelectorAll(selectors.join(',')).forEach(el=>{
+  if(el.closest('#newGroupIconPreview,#editGroupIconPreview')) return;
+  el.classList.add('kuro-force-avatar');
+ });}
+ force(); const obs=new MutationObserver(force); obs.observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
 </head>
 
 <body class="kuro-page kuro-theme-dark">
