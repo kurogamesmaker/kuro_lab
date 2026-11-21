@@ -3298,3 +3298,12 @@ body.kuro-portal .portal-side .portal-side-brand img.portal-side-brand-logo{widt
 body.kuro-portal .portal-header .portal-brand img.portal-brand-logo{width:48px!important;height:48px!important;object-fit:contain!important;display:block!important;border-radius:0!important;background:transparent!important}
 body.kuro-portal .portal-side .portal-side-brand img.portal-side-brand-logo{width:42px!important;height:42px!important;object-fit:contain!important;display:block!important;border-radius:0!important;background:transparent!important}
 @media(max-width:700px){body.kuro-portal .portal-header .portal-brand img.portal-brand-logo{width:40px!important;height:40px!important}}
+
+
+/* KUROLAB brand logo system: transparent logo artwork replaces the temporary purple K mark. */
+body.kuro-portal .portal-header .portal-brand img,
+body.kuro-portal .portal-header .portal-brand img.portal-brand-logo{width:48px!important;height:48px!important;flex:0 0 48px!important;object-fit:contain!important;display:block!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+body.kuro-portal .portal-side .portal-side-brand img,
+body.kuro-portal .portal-side .portal-side-brand img.portal-side-brand-mark,
+body.kuro-portal .portal-side .portal-side-brand img.portal-side-brand-logo{width:42px!important;height:42px!important;flex:0 0 42px!important;object-fit:contain!important;display:block!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;padding:0!important}
+@media(max-width:700px){body.kuro-portal .portal-header .portal-brand img{width:40px!important;height:40px!important;flex-basis:40px!important}}
