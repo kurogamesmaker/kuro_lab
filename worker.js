@@ -218,7 +218,7 @@ export default {
     if (liveAssetPath) {
       try {
         const liveAssetResponse = await fetch(
-          "https://raw.githubusercontent.com/kurogamesmaker/kuro_lab/bdce77e5e8d10945abca5ad0b480ca0a14d14e5a/" + liveAssetPath,
+          "https://raw.githubusercontent.com/kurogamesmaker/kuro_lab/89152f736ff6e019a0e4fbe48ae719d2b5f1a5a5/" + liveAssetPath,
           { cf: { cacheEverything: true, cacheTtl: 60 } }
         );
         if (liveAssetResponse.ok) {
