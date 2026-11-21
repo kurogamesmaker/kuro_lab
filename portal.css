@@ -3277,3 +3277,9 @@ body.kuro-portal .portal-game-tile .tile-art,
 body.kuro-portal .portal-feature-card .feature-art {
   color:#000000 !important;
 }
+
+/* KURO Quick header button: force its label and glyph to black. */
+body.kuro-portal #portal-quick-button,
+body.kuro-portal #portal-quick-button span {
+  color:#000000 !important;
+}
