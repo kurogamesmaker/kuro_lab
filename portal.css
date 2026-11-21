@@ -3293,3 +3293,8 @@ body.kuro-portal #portal-quick-button span {
 body.kuro-portal .portal-header .portal-brand img.portal-brand-logo{width:48px!important;height:48px!important;object-fit:contain!important;display:block!important;border-radius:0!important}
 body.kuro-portal .portal-side .portal-side-brand img.portal-side-brand-logo{width:42px!important;height:42px!important;object-fit:contain!important;display:block!important;border-radius:0!important}
 @media(max-width:700px){body.kuro-portal .portal-header .portal-brand img.portal-brand-logo{width:40px!important;height:40px!important}}
+
+/* Homepage logo v2: transparent artwork, correct intrinsic proportions */
+body.kuro-portal .portal-header .portal-brand img.portal-brand-logo{width:48px!important;height:48px!important;object-fit:contain!important;display:block!important;border-radius:0!important;background:transparent!important}
+body.kuro-portal .portal-side .portal-side-brand img.portal-side-brand-logo{width:42px!important;height:42px!important;object-fit:contain!important;display:block!important;border-radius:0!important;background:transparent!important}
+@media(max-width:700px){body.kuro-portal .portal-header .portal-brand img.portal-brand-logo{width:40px!important;height:40px!important}}
