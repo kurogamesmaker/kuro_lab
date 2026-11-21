@@ -303,7 +303,30 @@ export default {
           headers.set("Pragma", "no-cache");
           headers.delete("content-length");
           headers.delete("content-encoding");
-          return new Response(liveAssetResponse.body, {
+
+          // Invalidate old browser-cached shared assets on every portal subpage.
+          let liveBody = liveAssetResponse.body;
+          if (liveContentType.startsWith("text/html")) {
+            let liveHtml = await liveAssetResponse.text();
+            const cacheVersion = "20261121subpagefix2";
+            const sharedAssetVersions = [
+              [/\/portal\.js\?v=[^"'&\\s]+/g, "/portal.js?v=" + cacheVersion],
+              [/\/portal-enhancements\.js\?v=[^"'&\\s]+/g, "/portal-enhancements.js?v=" + cacheVersion],
+              [/\/theme-studio\.js\?v=[^"'&\\s]+/g, "/theme-studio.js?v=" + cacheVersion],
+              [/\/portal\.css\?v=[^"'&\\s]+/g, "/portal.css?v=" + cacheVersion],
+              [/\/site\.css\?v=[^"'&\\s]+/g, "/site.css?v=" + cacheVersion],
+              [/\/site-fixes\.css\?v=[^"'&\\s]+/g, "/site-fixes.css?v=" + cacheVersion],
+              [/\/tools\/tools\.js\?v=[^"'&\\s]+/g, "/tools/tools.js?v=" + cacheVersion],
+              [/\/tools\/tools\.css\?v=[^"'&\\s]+/g, "/tools/tools.css?v=" + cacheVersion],
+              [/\/usage-tracker\.js\?v=[^"'&\\s]+/g, "/usage-tracker.js?v=" + cacheVersion]
+            ];
+            for (const [pattern, replacement] of sharedAssetVersions) {
+              liveHtml = liveHtml.replace(pattern, replacement);
+            }
+            liveBody = liveHtml;
+          }
+
+          return new Response(liveBody, {
             status: liveAssetResponse.status,
             statusText: liveAssetResponse.statusText,
             headers
