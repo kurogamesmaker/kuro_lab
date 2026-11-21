@@ -268,12 +268,12 @@ window.addEventListener("message", async event => {
   const launchGame=(guest)=>{kuroGameGuestMode=!!guest;const frame=document.createElement("iframe");frame.className="game-frame";frame.title=data.title;frame.setAttribute("sandbox","allow-scripts allow-forms allow-modals");frame.referrerPolicy="no-referrer";
   const frameMeta=String(data.html_content||"").match(/<meta\s+name=["']kuro-game-frame["']\s+content=["'](\d{3,4})x(\d{3,4})["'][^>]*>/i);
   const frameWidth=frameMeta?Math.max(240,Math.min(3840,Number(frameMeta[1]))):960;
-  const frameHeight=frameMeta?Math.max(160,Math.min(2160,Number(frameMeta[2]))):540;
+  const frameHeight=frameMeta?Math.max(160,Math.min(2160,Number(frameMeta[2]))):540;\n  const scaleMeta=String(data.html_content||"").match(/<meta\\s+name=["\\]kuro-game-scale["\\]\\s+content=["\\](\\d{1,3})["\\]\\s*[^>]*>/i);\n  const frameScale=scaleMeta?Math.max(25,Math.min(300,Number(scaleMeta[1])))/100:1;
   const pageWrap=$("gamePageWrap");
   pageWrap.style.width="calc(100% - 28px)";
-  pageWrap.style.maxWidth=Math.min(2200,frameWidth+28)+"px";
+  pageWrap.style.maxWidth=Math.min(4200,frameWidth*frameScale+28)+"px";
   kuroGameFrameLayout=()=>{
-   const availableWidth=Math.max(1,Math.min(frameWidth,Math.max(1,(pageWrap.clientWidth||frameWidth)-2)));
+   const desiredWidth=frameWidth*frameScale;\n   const availableWidth=Math.max(1,Math.min(desiredWidth,Math.max(1,(pageWrap.clientWidth||desiredWidth)-2)));
    const scale=availableWidth/frameWidth;
    frame.style.width=availableWidth+"px";
    frame.style.height=Math.round(frameHeight*scale)+"px";
