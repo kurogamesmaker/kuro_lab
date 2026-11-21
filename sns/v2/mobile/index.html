@@ -1446,8 +1446,7 @@ body.kuro-page>.kuro-global-header{display:block!important}
             const requestUrl = new URL(request.url);
             // Route only the chat-push Edge Function through the same-origin Cloudflare bridge to avoid browser CORS preflight.
             // Other Edge Functions retain their existing direct route.
-            if (requestUrl.origin !== SUPABASE_URL ||
-                (requestUrl.pathname.startsWith('/functions/v1/') && requestUrl.pathname !== '/functions/v1/send-chat-push')) {
+            if (requestUrl.origin !== SUPABASE_URL) {
                 return KURO_CLOUDFLARE_NATIVE_FETCH(input, init);
             }
             const bytes = new Uint8Array(await request.clone().arrayBuffer());
@@ -1506,11 +1505,22 @@ body.kuro-page>.kuro-global-header{display:block!important}
                 label.textContent = 'Cloudflare中継に接続できません。時間をおいて再読み込みしてください。';
             }
         }
+function kuroRouteCloudflareRealtime(client) {
+    const realtime = client && client.realtime;
+    if (!realtime) return;
+    const websocketBase = new URL("/api/realtime/v1", window.location.href);
+    websocketBase.protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const httpBase = new URL("/api/realtime/v1", window.location.href);
+    realtime.endPoint = websocketBase.toString().replace(/\/$/, "") + "/websocket";
+    realtime.httpEndpoint = httpBase.toString().replace(/\/$/, "");
+}
+
         const supabaseClient = window.supabase.createClient(
             SUPABASE_URL,
             SUPABASE_PUBLISHABLE_KEY,
             { global: { fetch: kuroCloudflareFetch } }
         );
+        kuroRouteCloudflareRealtime(supabaseClient);
         checkKuroCloudflareBridge();
 
         let currentUser = null;
