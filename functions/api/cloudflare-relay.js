@@ -35,7 +35,7 @@ async function proxy(payload) {
   if(!ALLOWED_METHODS.has(method))throw Object.assign(new Error("Method not allowed"),{status:405});
   const body=!["GET","HEAD"].includes(method)&&payload.bodyBase64?decodeBase64(payload.bodyBase64):undefined;
   const upstream=await fetch(target.href,{method,headers:safeHeaders(payload.headers),body,redirect:"manual"});
-  const headers={};for(const k of ["content-type","cache-control","etag","content-range","accept-ranges","last-modified","location","x-request-id"]){const v=upstream.headers.get(k);if(v)headers[k]=v;}
+  const headers={};for(const k of ["content-type","cache-control","etag","content-range","accept-ranges","last-modified","location","x-request-id","preference-applied"]){const v=upstream.headers.get(k);if(v)headers[k]=v;}
   const bytes=new Uint8Array(await upstream.arrayBuffer()),type=String(upstream.headers.get("content-type")||"application/octet-stream");
   const isBinary=!/(json|text|xml|javascript|form|csv)/i.test(type);
   return {status:upstream.status,headers,isBinary,bodyBase64:isBinary?encodeBase64(bytes):"",bodyText:isBinary?"":new TextDecoder().decode(bytes),service:"KURO Cloudflare Supabase Proxy"};
@@ -43,10 +43,10 @@ async function proxy(payload) {
 export async function onRequest(context) {
   const {request}=context;try {
     const url=new URL(request.url);
-    if(request.method==="GET"&&url.searchParams.get("health")==="1")return json({ready:true,service:"KURO Cloudflare Supabase Proxy",transport:"cloudflare-worker"});
+    if(request.method==="GET"&&url.searchParams.get("health")==="1")return json({ready:true,service:"KURO Cloudflare Supabase Proxy",transport:"cloudflare-worker",realtimeProxy:true});
     if(request.method==="GET") {
       const target=validatePath(url.searchParams.get("resource"));
-      if(!target.pathname.startsWith("/storage/v1/object/public/avatars/"))return json({error:"Only public avatar images may be fetched here"},403);
+      if(!target.pathname.startsWith("/storage/v1/object/public/"))return json({error:"Only public Storage objects may be fetched here"},403);
       const upstream=await fetch(target.href,{headers:safeHeaders({})});
       return new Response(await upstream.arrayBuffer(),{status:upstream.status,headers:{"Content-Type":upstream.headers.get("content-type")||"application/octet-stream","Cache-Control":"public, max-age=300, stale-while-revalidate=600"}});
     }
