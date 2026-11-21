@@ -1010,11 +1010,7 @@ body.kuro-page>.kuro-global-header{display:block!important}
                 <button id="authBackToChoiceButton" type="button" onclick="showAuthMethodChoice()" class="w-full text-xs text-gray-500 hover:text-white py-1 text-left"><i class="fa-solid fa-arrow-left mr-2"></i>認証方法に戻る</button>
                 <div id="signupOnlyFields" class="hidden space-y-4">
                     <div>
-                        <label for="authName" class="block text-xs font-mono text-gray-400 mb-1.5">表示名（クリエイター名）</label>
-                        <input type="text" id="authName" maxlength="40" autocomplete="nickname" placeholder="例: 黒井 開発者" class="auth-input w-full bg-kuro-950 border border-kuro-700 rounded-xl px-4 py-3.5 text-base text-gray-100 placeholder-gray-600 focus:outline-none focus:border-white">
-                    </div>
-                    <div>
-                        <label for="authHandle" class="block text-xs font-mono text-gray-400 mb-1.5">ユーザーID（@id）</label>
+                        <label for="authHandle" class="block text-xs font-mono text-gray-400 mb-1.5">ユーザーネーム</label>
                         <div class="relative">
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-mono text-sm">@</span>
                             <input type="text" id="authHandle" autocomplete="username" placeholder="kuro_creator" class="auth-input w-full bg-kuro-950 border border-kuro-700 rounded-xl pl-8 pr-4 py-3.5 text-base text-gray-100 placeholder-gray-600 focus:outline-none focus:border-white font-mono">
@@ -1134,18 +1130,14 @@ body.kuro-page>.kuro-global-header{display:block!important}
                     </button>
                 </div>
                 <div>
-                    <label for="profileDisplayName" class="block text-xs font-mono text-gray-400 mb-1.5 uppercase tracking-wider">表示名</label>
-                    <input id="profileDisplayName" required maxlength="40" class="w-full bg-kuro-950 border border-kuro-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-white" placeholder="表示名">
-                </div>
-
-                <div>
-                    <label for="profileUsername" class="block text-xs font-mono text-gray-400 mb-1.5 uppercase tracking-wider">ユーザーID（英数字・_）</label>
+                    <label for="profileUsername" class="block text-xs font-mono text-gray-400 mb-1.5 uppercase tracking-wider">ユーザーネーム</label>
                     <div class="relative">
                         <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-mono text-sm">@</span>
                         <input id="profileUsername" required minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" class="w-full bg-kuro-950 border border-kuro-700 rounded-xl pl-8 pr-4 py-3 text-white text-sm font-mono focus:outline-none focus:border-white" placeholder="kuro_user">
                     </div>
                 </div>
 
+                <p class="text-xs text-gray-500">KURO ID：<span id="profileKuroId" class="font-mono text-gray-300"></span>（変更できません）</p>
                 <div>
                     <label for="profileBio" class="block text-xs font-mono text-gray-400 mb-1.5 uppercase tracking-wider">自己紹介</label>
                     <textarea id="profileBio" maxlength="160" rows="4" class="w-full bg-kuro-950 border border-kuro-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-white resize-none" placeholder="好きなことや興味のあることを書こう（160文字まで）"></textarea>
@@ -1612,7 +1604,7 @@ body.kuro-page>.kuro-global-header{display:block!important}
                 avatar.removeAttribute('src'); avatar.classList.add('hidden'); placeholder.classList.remove('hidden');
             }
             document.getElementById('myProfileHandle').textContent = '@' + (currentUser.handle || 'user');
-            document.getElementById('myProfileName').textContent = currentUser.name || '';
+            document.getElementById('myProfileName').textContent = currentUser.kuroId ? 'KURO ID: ' + currentUser.kuroId : 'KURO IDを取得できません';
             document.getElementById('myProfileBio').textContent = currentUser.bio || '自己紹介はまだありません。';
             const ownPosts = textPosts.filter(post => String(post.user_id || '') === String(currentUser.id || '')).sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
             document.getElementById('myProfilePostCount').textContent = String(ownPosts.length);
@@ -1670,7 +1662,7 @@ body.kuro-page>.kuro-global-header{display:block!important}
 
                 const labels = container.querySelectorAll('.flex-col span');
                 labels[0].textContent = currentUser.name || '';
-                labels[1].textContent = '@' + (currentUser.handle || '');
+                labels[1].textContent = currentUser.kuroId || '';
 
                 const headerAvatar = document.getElementById('headerAvatar');
                 const headerPlaceholder = document.getElementById('headerAvatarPlaceholder');
@@ -1745,8 +1737,7 @@ body.kuro-page>.kuro-global-header{display:block!important}
                 ? 'fa-solid fa-user-plus text-sm text-emerald-400'
                 : 'fa-solid fa-right-to-bracket text-sm text-sky-400';
             document.getElementById('signupOnlyFields').classList.toggle('hidden', !isSignup);
-            document.getElementById('authName').required = isSignup;
-            document.getElementById('authHandle').required = isSignup;
+                        document.getElementById('authHandle').required = isSignup;
             document.getElementById('authPassword').required = passwordMode;
             document.getElementById('authPassword').autocomplete = isSignup ? 'new-password' : 'current-password';
             document.getElementById('authSubmitButton').classList.toggle('hidden', !passwordMode);
@@ -1797,7 +1788,6 @@ body.kuro-page>.kuro-global-header{display:block!important}
             document.getElementById('authPasswordModeButton').classList.add('hidden');
             document.getElementById('signupOnlyFields').classList.add('hidden');
             document.getElementById('authPassword').required = false;
-            document.getElementById('authName').required = false;
             document.getElementById('authHandle').required = false;
             document.getElementById('authPasswordSwitchRow').classList.add('hidden');
             resetEmailOtp();
@@ -1839,7 +1829,6 @@ body.kuro-page>.kuro-global-header{display:block!important}
 
         async function sendEmailOtp() {
             const email = document.getElementById('authEmail').value.trim();
-            const name = document.getElementById('authName').value.trim();
             const handle = document.getElementById('authHandle').value.trim().replace(/^@/, '');
             const button = document.getElementById('emailOtpSendButton');
             if (!email) {
@@ -1854,10 +1843,9 @@ body.kuro-page>.kuro-global-header{display:block!important}
                 document.getElementById('authPassword').focus();
                 return;
             }
-            if (currentAuthMode === 'signup' && (!name || !/^[A-Za-z0-9_]{3,24}$/.test(handle))) {
-                showToast('新規登録には表示名と、英数字・_のみの3〜24文字のユーザーIDが必要です');
-                if (!name) document.getElementById('authName').focus();
-                else document.getElementById('authHandle').focus();
+            if (currentAuthMode === 'signup' && !/^[A-Za-z0-9_]{3,24}$/.test(handle)) {
+                showToast('新規登録には英数字・_のみの3〜24文字のユーザーネームが必要です');
+                document.getElementById('authHandle').focus();
                 return;
             }
             if (button) { button.disabled = true; button.textContent = '送信中…'; }
@@ -1866,7 +1854,7 @@ body.kuro-page>.kuro-global-header{display:block!important}
                     shouldCreateUser: currentAuthMode === 'signup',
                     // Keep Supabase email confirmation links on the live Vercel site, not the retired GitHub Pages URL.
                     emailRedirectTo: 'https://kurolab.cc.cd/',
-                    data: currentAuthMode === 'signup' ? { name, handle, kuro_password_configured: false } : undefined
+                    data: currentAuthMode === 'signup' ? { username: handle, handle, kuro_password_configured: false } : undefined
                 };
                 if (currentAuthMode === 'signup') {
                     try { localStorage.setItem('kuro_password_setup_pending', JSON.stringify({email, provider:'email', createdAt:Date.now()})); } catch (_) {}
@@ -2055,9 +2043,9 @@ body.kuro-page>.kuro-global-header{display:block!important}
             document.getElementById('usernameSignupWarning').classList.remove('hidden');
         }
 
-async function authenticateKuroUsername(action, username, password, displayName) {
+async function authenticateKuroUsername(action, username, password) {
             const { data, error } = await supabaseClient.functions.invoke('username-auth', {
-                body: { action, username, password, displayName: displayName || username }
+                body: { action, username, password }
             });
             if (error) throw new Error(data?.error || error.message || 'ユーザーネーム認証に失敗しました。');
             if (!data?.session?.access_token || !data?.session?.refresh_token) {
@@ -2076,15 +2064,14 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
 
             const identity = document.getElementById('authEmail').value.trim();
             const password = document.getElementById('authPassword').value;
-            const name = document.getElementById('authName').value.trim();
             const handle = document.getElementById('authHandle').value.trim().replace(/^@/, '');
 
-            if ((!identity && mode === 'signin') || !password || (mode === 'signup' && (!name || !handle))) {
+            if ((!identity && mode === 'signin') || !password || (mode === 'signup' && !handle)) {
                 showToast('入力内容を確認してください');
                 return;
             }
             if (mode === 'signup' && !/^[A-Za-z0-9_]{3,24}$/.test(handle)) {
-                showToast('ユーザーIDは英数字と_のみ、3〜24文字で入力してください');
+                showToast('ユーザーネームは英数字と_のみ、3〜24文字で入力してください');
                 return;
             }
 
@@ -2094,7 +2081,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 if (mode === 'signin' && identity.indexOf('@') < 0) {
                     result = await authenticateKuroUsername('login', identity, password);
                 } else if (mode === 'signup' && identity.indexOf('@') < 0) {
-                    result = await authenticateKuroUsername('register', handle, password, name);
+                    result = await authenticateKuroUsername('register', handle, password);
                 } else if (mode === 'signin') {
                     result = await supabaseClient.auth.signInWithPassword({
                         email: identity,
@@ -2105,7 +2092,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                         email: identity,
                         password,
                         options: {
-                            data: { name, handle, kuro_password_configured: true },
+                            data: { username: handle, handle, kuro_password_configured: true },
                             // Send signup confirmation links back to the current production site.
                             emailRedirectTo: 'https://kurolab.cc.cd/'
                         }
@@ -2130,9 +2117,9 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                             currentUser = {
                                 id: authenticatedUser.id,
                                 email: authenticatedUser.email,
-                                name: String(meta.name || emailHandle || 'KUROユーザー').slice(0, 40),
-                                handle: /^[A-Za-z0-9_]{3,24}$/.test(String(meta.handle || emailHandle))
-                                    ? String(meta.handle || emailHandle)
+                                name: String(meta.username || meta.handle || emailHandle || 'KUROユーザー').slice(0, 40),
+                                handle: /^[A-Za-z0-9_]{3,24}$/.test(String(meta.username || meta.handle || emailHandle))
+                                    ? String(meta.username || meta.handle || emailHandle)
                                     : `kuro_${String(authenticatedUser.id).replace(/-/g, '').slice(0, 12)}`,
                                 bio: '',
                                 avatarUrl: ''
@@ -2222,113 +2209,41 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
         }
 
         async function syncCurrentUserImpl(user) {
-            if (!user) {
-                currentUser = null;
-                renderUserProfile();
-                return;
-            }
-
+            if (!user) { currentUser = null; renderUserProfile(); return; }
             const metadata = user.user_metadata || {};
-            const requestedHandle = String(
-                metadata.handle ||
-                (user.email || 'creator')
-                    .split('@')[0]
-                    .replace(/[^a-zA-Z0-9_]/g, '')
-                    .slice(0, 24)
-            ).replace(/^@/, '');
-            const fallbackHandle = /^[A-Za-z0-9_]{3,24}$/.test(requestedHandle)
-                ? requestedHandle
-                : `kuro_${String(user.id).replace(/-/g, '').slice(0, 12)}`;
-
-            const fallbackName = String(
-                metadata.name || (user.email || 'Creator').split('@')[0] || 'KUROユーザー'
-            ).trim().slice(0, 40) || 'KUROユーザー';
-
-            // Set an authenticated fallback immediately. Profile-table reads can fail
-            // independently of Supabase Auth; protected screens must still recognize the session.
-            currentUser = {
-                id: user.id,
-                email: user.email,
-                name: fallbackName,
-                handle: fallbackHandle,
-                bio: '',
-                avatarUrl: ''
-            };
+            const requestedUsername = String(metadata.username || metadata.handle || (user.email || 'user').split('@')[0].replace(/[^A-Za-z0-9_]/g, '').slice(0, 24)).replace(/^@/, '');
+            const fallbackUsername = /^[A-Za-z0-9_]{3,24}$/.test(requestedUsername) ? requestedUsername : `kuro_${String(user.id).replace(/-/g, '').slice(0, 12)}`;
+            currentUser = { id:user.id, email:user.email, name:fallbackUsername, handle:fallbackUsername, kuroId:'', bio:'', avatarUrl:'' };
             renderUserProfile();
-
             let profile = null;
-
-            const { data: existingProfile, error: readError } =
-                await supabaseClient
-                    .from('profiles')
-                    .select('id, username, display_name, bio, avatar_url')
-                    .eq('id', user.id)
-                    .maybeSingle();
-
-            if (readError) {
-                console.error('KURO profile read error:', readError);
-                showToast('プロフィールを読み込めませんでした');
-            } else if (existingProfile) {
-                profile = existingProfile;
-            } else {
-                const { data: newProfile, error: insertError } =
-                    await supabaseClient
-                        .from('profiles')
-                        .insert({
-                            id: user.id,
-                            username: fallbackHandle,
-                            display_name: fallbackName,
-                            bio: ''
-                        })
-                        .select('id, username, display_name, bio, avatar_url')
-                        .single();
-
+            const { data: existingProfile, error: readError } = await supabaseClient.from('profiles')
+                .select('id, username, kuro_id, bio, avatar_url').eq('id', user.id).maybeSingle();
+            if (readError) { console.error('KURO profile read error:', readError); showToast('プロフィールを読み込めませんでした'); }
+            else if (existingProfile) profile = existingProfile;
+            else {
+                const { data: newProfile, error: insertError } = await supabaseClient.from('profiles')
+                    .insert({ id:user.id, username:fallbackUsername, bio:'' })
+                    .select('id, username, kuro_id, bio, avatar_url').single();
                 if (insertError?.code === '23505') {
-                    // A parallel login callback may have created the profile already.
-                    const { data: racedProfile, error: racedReadError } = await supabaseClient
-                        .from('profiles')
-                        .select('id, username, display_name, bio, avatar_url')
-                        .eq('id', user.id)
-                        .maybeSingle();
-                    if (!racedReadError && racedProfile) {
-                        profile = racedProfile;
-                    } else {
-                        // If the username belongs to another account, retry with a UID-derived handle.
-                        const recoveryHandle = `kuro_${String(user.id).replace(/-/g, '').slice(0, 12)}`;
-                        const { data: recoveredProfile, error: recoveryError } = await supabaseClient
-                            .from('profiles')
-                            .insert({ id: user.id, username: recoveryHandle, display_name: fallbackName, bio: '' })
-                            .select('id, username, display_name, bio, avatar_url')
-                            .single();
-                        if (recoveryError) {
-                            console.error('KURO profile recovery error:', recoveryError, racedReadError);
-                            showToast('プロフィール作成に失敗しました。Supabaseの設定を確認してください');
-                        } else {
-                            profile = recoveredProfile;
-                        }
+                    const { data: racedProfile, error: racedReadError } = await supabaseClient.from('profiles')
+                        .select('id, username, kuro_id, bio, avatar_url').eq('id', user.id).maybeSingle();
+                    if (!racedReadError && racedProfile) profile = racedProfile;
+                    else {
+                        const recoveryUsername = `kuro_${String(user.id).replace(/-/g, '').slice(0, 12)}`;
+                        const { data: recoveredProfile, error: recoveryError } = await supabaseClient.from('profiles')
+                            .insert({ id:user.id, username:recoveryUsername, bio:'' })
+                            .select('id, username, kuro_id, bio, avatar_url').single();
+                        if (recoveryError) { console.error('KURO profile recovery error:', recoveryError, racedReadError); showToast('プロフィール作成に失敗しました。Supabaseの設定を確認してください'); }
+                        else profile = recoveredProfile;
                     }
-                } else if (insertError) {
-                    console.error('KURO profile create error:', insertError);
-                    showToast('プロフィール作成に失敗しました: ' + (insertError.message || '原因不明'));
-                } else {
-                    profile = newProfile;
-                }
+                } else if (insertError) { console.error('KURO profile create error:', insertError); showToast('プロフィール作成に失敗しました: ' + (insertError.message || '原因不明')); }
+                else profile = newProfile;
             }
-
-            currentUser = {
-                id: user.id,
-                email: user.email,
-                name: profile?.display_name || fallbackName,
-                handle: profile?.username || fallbackHandle,
-                bio: profile?.bio || '',
-                avatarUrl: profile?.avatar_url || ''
-            };
-
+            currentUser = { id:user.id, email:user.email, name:profile?.username || fallbackUsername, handle:profile?.username || fallbackUsername, kuroId:profile?.kuro_id || '', bio:profile?.bio || '', avatarUrl:profile?.avatar_url || '' };
             renderUserProfile();
             if (!document.getElementById('myProfileView')?.classList.contains('hidden')) renderMyProfile();
             await ensureOfficialAccountFollow(user.id);
         }
-
         // currentUser は画面用キャッシュ。空でも Supabase セッションが有効な場合は復元する。
         async function ensureCurrentUserFromSession() {
             if (currentUser?.id) return true;
@@ -2498,8 +2413,8 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             document.getElementById('profileAvatarInput').value = '';
             showAvatarPreview(currentUser.avatarUrl || '');
 
-            document.getElementById('profileDisplayName').value = currentUser.name || '';
             document.getElementById('profileUsername').value = currentUser.handle || '';
+            document.getElementById('profileKuroId').textContent = currentUser.kuroId || '取得できません';
             document.getElementById('profileBio').value = currentUser.bio || '';
 
             document.getElementById('profileModal').classList.remove('hidden');
@@ -2622,16 +2537,14 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 return;
             }
 
-            const displayName =
-                document.getElementById('profileDisplayName').value.trim();
             const username =
                 document.getElementById('profileUsername').value.trim().replace(/^@/, '');
             const bio =
                 document.getElementById('profileBio').value.trim();
             const button = document.getElementById('saveProfileButton');
 
-            if (!displayName || !/^[A-Za-z0-9_]{3,24}$/.test(username)) {
-                showToast('表示名とユーザーIDを確認してください');
+            if (!/^[A-Za-z0-9_]{3,24}$/.test(username)) {
+                showToast('ユーザーネームは英数字と_のみ、3〜24文字で入力してください');
                 return;
             }
 
@@ -2658,22 +2571,22 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 const { data, error } = await supabaseClient
                     .from('profiles')
                     .update({
-                        display_name: displayName,
                         username,
                         bio,
                         avatar_url: avatarUrl,
                         updated_at: new Date().toISOString()
                     })
                     .eq('id', userId)
-                    .select('id, username, display_name, bio, avatar_url')
+                    .select('id, username, kuro_id, bio, avatar_url')
                     .single();
 
                 if (error) throw error;
 
                 currentUser = {
                     ...currentUser,
-                    name: data.display_name,
+                    name: data.username,
                     handle: data.username,
+                    kuroId: data.kuro_id || currentUser.kuroId || '',
                     bio: data.bio || '',
                     avatarUrl: data.avatar_url || ''
                 };
@@ -2826,7 +2739,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             }
 
             feed.innerHTML = list.map(post => {
-                const name = post.display_name || post.author || 'KUROユーザー';
+                const name = post.username || post.display_name || post.author || 'KUROユーザー';
                 const handle = post.username || post.handle || 'user';
                 const avatarInner = post.avatar_url ? `<img src="${escapeHTML(post.avatar_url)}" alt="" class="w-10 h-10 rounded-full object-cover border border-kuro-700">` : `<span class="w-10 h-10 rounded-full bg-kuro-800 border border-kuro-700 flex items-center justify-center text-gray-300"><i class="fa-regular fa-user"></i></span>`;
                 const avatar = post.user_id ? `<button type="button" onclick="openPublicProfile('${escapeHTML(post.user_id)}')" class="w-10 h-10 shrink-0 rounded-full" aria-label="${escapeHTML(name)}のプロフィール">${avatarInner}</button>` : avatarInner;
@@ -2834,7 +2747,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     ? `<button type="button" data-delete-post-id="${escapeHTML(post.id)}" class="text-xs text-gray-500 hover:text-red-400 transition-colors" aria-label="このポストを削除"><i class="fa-regular fa-trash-can mr-1"></i>取り消す</button>` : '';
                 const liked = !!post.liked_by_me;
                 const replies = (post.replies || []).map(reply => {
-                    const replyName = reply.display_name || reply.username || 'KUROユーザー';
+                    const replyName = reply.username || reply.display_name || 'KUROユーザー';
                     const replyHandle = reply.username || 'user';
                     const replyAvatar = reply.avatar_url
                         ? `<img src="${escapeHTML(reply.avatar_url)}" alt="" class="w-8 h-8 rounded-full object-cover border border-kuro-700 flex-shrink-0">`
@@ -3608,12 +3521,12 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             box.innerHTML = '<p class="text-sm text-gray-500">投稿を読み込み中…</p>';
             try {
                 const {data: profile, error: profileError} = await supabaseClient.from('profiles')
-                    .select('id, username, display_name, avatar_url, bio').eq('id', userId).maybeSingle();
+                    .select('id, username, kuro_id, avatar_url, bio').eq('id', userId).maybeSingle();
                 if (profileError) throw profileError;
                 if (!profile) { box.innerHTML = '<p class="text-sm text-gray-500">プロフィールが見つかりません。</p>'; return; }
                 publicProfileUser = profile;
-                document.getElementById('publicProfileName').textContent = profile.display_name || profile.username || 'KUROユーザー';
-                document.getElementById('publicProfileHandle').textContent = '@' + (profile.username || 'user');
+                document.getElementById('publicProfileName').textContent = '@' + (profile.username || 'user');
+                document.getElementById('publicProfileHandle').textContent = profile.kuro_id || 'KURO IDを取得できません';
                 document.getElementById('publicProfileBio').textContent = profile.bio || '自己紹介はまだありません。';
                 const avatar = document.getElementById('publicProfileAvatar');
                 const placeholder = document.getElementById('publicProfileAvatarPlaceholder');
@@ -4400,8 +4313,8 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 try {
                     const safeQ = q.replace(/[,%()]/g, ' ');
                     const {data, error} = await supabaseClient.from('profiles')
-                        .select('id, username, display_name, avatar_url')
-                        .or(`username.ilike.%${safeQ}%,display_name.ilike.%${safeQ}%`)
+                        .select('id, username, avatar_url')
+                        .ilike('username', `%${safeQ}%`)
                         .limit(10);
                     if (error) throw error;
                     const users = (data || []).filter(p => p.id !== currentUser?.id);
