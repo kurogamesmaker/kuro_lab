@@ -1058,30 +1058,38 @@
 
     
 <style id="kuro-default-avatar-style">
-/* Force every avatar placeholder (not actual uploaded images) to use KURO's default appearance. */
-.rounded-full:has(.fa-user),
-.rounded-full:has([id*="AvatarPlaceholder"]),
-.rounded-full:has([id*="avatarPlaceholder"]) {
+/* Apply the gradient only while the fallback placeholder is actually visible.
+   Hidden placeholder nodes remain in the DOM when an uploaded avatar is shown. */
+.rounded-full:has(.fa-user:not(.hidden)),
+.rounded-full:has([id*="AvatarPlaceholder"]:not(.hidden)),
+.rounded-full:has([id*="avatarPlaceholder"]:not(.hidden)) {
  background: radial-gradient(circle at 28% 24%, #a5f3fc 0%, #67e8f9 18%, #6366f1 56%, #7c3aed 100%) !important;
  border-color: rgba(129,140,248,.55) !important;
 }
-.rounded-full:has(.fa-user) .fa-user,
-.rounded-full:has([id*="AvatarPlaceholder"]),
-.rounded-full:has([id*="avatarPlaceholder"]) { color:#fff !important; text-shadow:0 1px 4px rgba(24,24,80,.25) !important; }
+.rounded-full:has(.fa-user:not(.hidden)) .fa-user:not(.hidden),
+.rounded-full:has([id*="AvatarPlaceholder"]:not(.hidden)) [id*="AvatarPlaceholder"]:not(.hidden),
+.rounded-full:has([id*="avatarPlaceholder"]:not(.hidden)) [id*="avatarPlaceholder"]:not(.hidden) {
+ color:#fff !important;
+ text-shadow:0 1px 4px rgba(24,24,80,.25) !important;
+}
 </style>
 
 
 <style id="kuro-default-avatar-style">
-/* Only style placeholder avatars. Uploaded images and preview images remain untouched. */
-.rounded-full:has(.fa-user),
-.rounded-full:has([id*="AvatarPlaceholder"]),
-.rounded-full:has([id*="avatarPlaceholder"]) {
+/* Apply the gradient only while the fallback placeholder is actually visible.
+   Hidden placeholder nodes remain in the DOM when an uploaded avatar is shown. */
+.rounded-full:has(.fa-user:not(.hidden)),
+.rounded-full:has([id*="AvatarPlaceholder"]:not(.hidden)),
+.rounded-full:has([id*="avatarPlaceholder"]:not(.hidden)) {
  background: radial-gradient(circle at 28% 24%, #a5f3fc 0%, #67e8f9 18%, #6366f1 56%, #7c3aed 100%) !important;
  border-color: rgba(129,140,248,.55) !important;
 }
-.rounded-full:has(.fa-user) .fa-user,
-.rounded-full:has([id*="AvatarPlaceholder"]),
-.rounded-full:has([id*="avatarPlaceholder"]) { color:#fff !important; text-shadow:0 1px 4px rgba(24,24,80,.25) !important; }
+.rounded-full:has(.fa-user:not(.hidden)) .fa-user:not(.hidden),
+.rounded-full:has([id*="AvatarPlaceholder"]:not(.hidden)) [id*="AvatarPlaceholder"]:not(.hidden),
+.rounded-full:has([id*="avatarPlaceholder"]:not(.hidden)) [id*="avatarPlaceholder"]:not(.hidden) {
+ color:#fff !important;
+ text-shadow:0 1px 4px rgba(24,24,80,.25) !important;
+}
 </style>
 </head>
 
