@@ -1804,7 +1804,7 @@ async function switchProduct(){
 
 async function enter(user){
  try{
-  await checkAdmin(user);showApp(user);syncModeSelectors();syncProductSelector();
+  await checkAdmin(user);showApp(user);syncProductSelector();
   await switchProduct();
 
  }catch(e){await db.auth.signOut();showLogin(e.message||"管理者認証に失敗しました。");}
