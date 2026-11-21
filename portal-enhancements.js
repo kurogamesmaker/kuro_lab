@@ -34,8 +34,7 @@
     ] },
     { label: "アカウント", items: [
       { href: "/mypage/", label: "KURO ID", icon: "◎" },
-      { href: "/pro/", label: "KUROLAB Pro", icon: "✦" },
-      { href: "/pro-tools/", label: "Pro専用ツール", icon: "⚡" },
+      { href: "/pro-tools/", label: "開発ツール", icon: "⚡" }
       { href: "/theme-studio/", label: "Theme Studio", icon: "🎨" },
       { href: "/settings/", label: "設定", icon: "⚙" },
       { href: "/request/", label: "リクエストBOX", icon: "✉" }
@@ -178,9 +177,9 @@
           '<a href="/tools/?tool=convert"><span>💱</span><b>為替・単位変換</b><i>↗</i></a>' +
           '<a href="/tools/?tool=rss"><span>📡</span><b>RSSリーダー</b><i>↗</i></a>' +
           '<a href="/tools/?tool=status"><span>📶</span><b>サイト稼働状況</b><i>↗</i></a>' +
-          '<a href="/pro-tools/?tool=json"><span>{ }</span><b>JSON Formatter</b><i class="portal-toolbox-pro-mark">PRO</i></a>' +
-          '<a href="/pro-tools/?tool=convert"><span>↔</span><b>URL / Base64 Converter</b><i class="portal-toolbox-pro-mark">PRO</i></a>' +
-          '<a href="/pro-tools/?tool=uuid"><span>⌗</span><b>UUID Generator</b><i class="portal-toolbox-pro-mark">PRO</i></a>' +
+          '<a href="/pro-tools/?tool=json"><span>{ }</span><b>JSON Formatter</b><i >↗</i></a>' +
+          '<a href="/pro-tools/?tool=convert"><span>↔</span><b>URL / Base64 Converter</b><i >↗</i></a>' +
+          '<a href="/pro-tools/?tool=uuid"><span>⌗</span><b>UUID Generator</b><i >↗</i></a>' +
           '<a class="portal-toolbox-all" href="/tools/">すべてのツールを見る <i>→</i></a>' +
         '</div>';
       var accountButton = document.getElementById("portal-account-button");
@@ -343,9 +342,9 @@
   function createWorkspace() {
     var a = getApi(), p = getPrefs();
     if (!a || !p || !p.dashboardWorkspaces) return;
-    var workspaceLimit = a.hasProFeature && a.hasProFeature("workspace_plus") ? 20 : 6;
+    var workspaceLimit = 20;
     if (Object.keys(p.dashboardWorkspaces).length >= workspaceLimit) {
-      a.toast(workspaceLimit > 6 ? "Proのワークスペース上限（20個）に達しました" : "Freeの上限は6個です。Proで最大20個まで拡張できます");
+      a.toast("ワークスペースの上限（20個）に達しました");
       return;
     }
     var name = window.prompt("新しいワークスペース名を入力してください（最大16文字）");
@@ -510,9 +509,9 @@
   function importSharedTemplate() {
     var a = getApi(), p = getPrefs(), payload = readIncomingTemplate();
     if (!a || !p || !payload || !p.dashboardWorkspaces) return;
-    var workspaceLimit = a.hasProFeature && a.hasProFeature("workspace_plus") ? 20 : 6;
+    var workspaceLimit = 20;
     if (Object.keys(p.dashboardWorkspaces).length >= workspaceLimit) {
-      a.toast(workspaceLimit > 6 ? "Proのワークスペース上限（20個）に達しました" : "Freeの上限は6個です。Proで最大20個まで拡張できます");
+      a.toast("ワークスペースの上限（20個）に達しました");
       return;
     }
     captureWorkspace();
@@ -706,7 +705,7 @@
       ["notifications", "お知らせ", "KURO Labからの更新情報", "/notifications/", "♧", "お知らせ 更新 通知"],
       ["mypage", "マイページ", "アカウントと利用データ", "/mypage/", "◎", "アカウント ログイン"],
       ["settings", "表示設定", "テーマやホーム画面を変更", "/settings/", "⚙", "設定 テーマ"],
-      ["theme-studio", "Theme Studio", "Pro限定のカラー・背景・UI編集", "/theme-studio/", "🎨", "Pro テーマ デザイン"],
+      ["theme-studio", "Theme Studio", "カラー・背景・UIを自由に編集", "/theme-studio/", "🎨", "テーマ デザイン"],
       ["request", "リクエストBOX", "機能や改善をリクエスト", "/request/", "💡", "提案 改善 リクエスト"]
     ];
     more.forEach(function (x) {
