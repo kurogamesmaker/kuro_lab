@@ -1055,6 +1055,28 @@
   else if(mq.addListener) mq.addListener(onChange);
 })();
 </script>
+
+    <style id="kuro-default-avatar-style">
+      /* Colorful, consistent default avatar for accounts without a profile image */
+      .rounded-full:has(> i.fa-user),
+      .rounded-full:has(> i.fa-regular.fa-user),
+      .rounded-full:has(> #kuroHeaderAvatarPlaceholder),
+      .rounded-full:has(> #myProfileAvatarPlaceholder),
+      .rounded-full:has(> #publicProfileAvatarPlaceholder),
+      .rounded-full:has(> #profileAvatarPlaceholder) {
+        background: radial-gradient(circle at 28% 24%, #a5f3fc 0%, #67e8f9 18%, #6366f1 56%, #7c3aed 100%) !important;
+        border-color: rgba(129,140,248,.45) !important;
+      }
+      .rounded-full:has(> i.fa-user) > i.fa-user,
+      .rounded-full:has(> i.fa-regular.fa-user) > i.fa-user,
+      .rounded-full:has(> #kuroHeaderAvatarPlaceholder) > #kuroHeaderAvatarPlaceholder,
+      .rounded-full:has(> #myProfileAvatarPlaceholder) > #myProfileAvatarPlaceholder,
+      .rounded-full:has(> #publicProfileAvatarPlaceholder) > #publicProfileAvatarPlaceholder,
+      .rounded-full:has(> #profileAvatarPlaceholder) > #profileAvatarPlaceholder {
+        color: #fff !important;
+        text-shadow: 0 1px 4px rgba(24,24,80,.25);
+      }
+    </style>
 </head>
 
 <body class="kuro-page kuro-theme-dark">
