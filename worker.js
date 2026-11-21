@@ -351,7 +351,7 @@ export default {
 
     // Refresh every KURO portal page's shared portal.js reference after transport fixes.
     if (assetType.toLowerCase().includes("text/html")) {
-      const html = await assetResponse.text();
+      const html = await assetResponse.clone().text();
       if (html.includes("/portal.js?")) {
         const refreshedHtml = html.replace(/\/portal\.js\?v=[^"'&\s]+/g, "/portal.js?v=20261121usernamefix7");
         const headers = new Headers(assetResponse.headers);
