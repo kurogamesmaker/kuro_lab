@@ -232,7 +232,8 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   const username=document.getElementById("kuroAccountUsername").value.trim(),pass=password.value,displayName=document.getElementById("kuroAccountDisplayName").value.trim();
   if(!/^[A-Za-z0-9_]{3,24}$/.test(username)){status.textContent="ユーザーネームは半角英数字と _ の3〜24文字で入力してください。";return;}
   if(pass.length<8||pass.length>72){status.textContent="パスワードは8〜72文字で入力してください。";return;}
-  if(mode==="signup"&&!displayName){status.textContent="表示名を入力してください。";return;}\n  if(mode==="signup"&&displayName.length>40){status.textContent="表示名は40文字以内で入力してください。";return;}\n  if(mode==="signup"&&pass!==confirm.value){status.textContent="確認用パスワードが一致しません。";return;}
+  if(mode==="signup"&&!displayName){status.textContent="表示名を入力してください。";return;}
+  if(mode==="signup"&&displayName.length>40){status.textContent="表示名は40文字以内で入力してください。";return;}\n  if(mode==="signup"&&pass!==confirm.value){status.textContent="確認用パスワードが一致しません。";return;}
   if(!kuroGamesDB){status.textContent="認証システムを読み込めませんでした。ページを再読み込みしてください。";return;}
   submit.disabled=true;status.textContent=mode==="signup"?"アカウントを作成しています…":"ログインしています…";
   try{
