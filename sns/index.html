@@ -1428,11 +1428,22 @@
  return new Response(body,{status:result.status,headers:result.headers||{"Content-Type":"application/json"}});
 }
 
+function kuroRouteCloudflareRealtime(client) {
+    const realtime = client && client.realtime;
+    if (!realtime) return;
+    const websocketBase = new URL("/api/realtime/v1", window.location.href);
+    websocketBase.protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const httpBase = new URL("/api/realtime/v1", window.location.href);
+    realtime.endPoint = websocketBase.toString().replace(/\/$/, "") + "/websocket";
+    realtime.httpEndpoint = httpBase.toString().replace(/\/$/, "");
+}
+
         const supabaseClient = window.supabase.createClient(
             SUPABASE_URL,
             SUPABASE_PUBLISHABLE_KEY,
             { global: { fetch: kuroCloudflareFetch } }
         );
+        kuroRouteCloudflareRealtime(supabaseClient);
 
         let currentUser = null;
         let currentAuthMode = 'signup';
