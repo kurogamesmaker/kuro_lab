@@ -3208,3 +3208,29 @@ body.kuro-portal[data-theme="light"] .portal-mobile-nav {
   outline: 2px solid var(--blue) !important;
   outline-offset: 2px !important;
 }
+
+/* Username editor: explicit theme-aware text contrast (light/dark/Pro). */
+body.kuro-portal #portal-username-form #portal-new-username {
+  background-color: var(--surface2, #f7f9fc) !important;
+  color: var(--ink, #182230) !important;
+  -webkit-text-fill-color: var(--ink, #182230) !important;
+  caret-color: var(--blue, #087fbd) !important;
+  border-color: var(--line, #dbe3ed) !important;
+}
+body.kuro-portal[data-theme="dark"] #portal-username-form #portal-new-username {
+  background-color: var(--surface2, #1b2939) !important;
+  color: var(--ink, #edf4fb) !important;
+  -webkit-text-fill-color: var(--ink, #edf4fb) !important;
+  caret-color: var(--blue, #54b8ed) !important;
+}
+body.kuro-portal[data-pro-theme="on"] #portal-username-form #portal-new-username {
+  background-color: var(--surface2) !important;
+  color: var(--pro-surface-ink, var(--ink)) !important;
+  -webkit-text-fill-color: var(--pro-surface-ink, var(--ink)) !important;
+  caret-color: var(--pro-accent, var(--blue)) !important;
+}
+body.kuro-portal #portal-username-form #portal-new-username::placeholder {
+  color: var(--muted, #64748b) !important;
+  -webkit-text-fill-color: var(--muted, #64748b) !important;
+  opacity: 1 !important;
+}
