@@ -105,7 +105,7 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 .kuro-account-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:16px}.kuro-account-eyebrow{font-size:10px;font-weight:1000;letter-spacing:.18em;color:#3979d1}.kuro-account-head h2{margin:5px 0 0;font-size:24px;letter-spacing:-.7px}
 .kuro-account-close{width:34px;height:34px;border:1px solid #e5eaf2;border-radius:10px;background:#f7f9fc;color:#58677f;font-size:21px;cursor:pointer}.kuro-account-intro{margin:0 0 16px;color:#718098;font-size:12px;line-height:1.8}.kuro-account-guest{margin:0 0 14px;padding:11px 13px;border-radius:10px;background:#f2f6fb;color:#64758c;font-size:11px;line-height:1.7}.kuro-account-guest strong{color:#2867bf}
 .kuro-account-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:5px;margin-bottom:16px;border-radius:12px;background:#f1f4f9}.kuro-account-tabs button{min-height:39px;border:0;border-radius:9px;background:transparent;color:#718098;font-size:12px;font-weight:900;cursor:pointer}.kuro-account-tabs button.active{background:#fff;color:#2867bf;box-shadow:0 2px 8px #23385812}
-#kuroAccountDisplayNameRow[hidden],#kuroAccountConfirmRow[hidden]{display:none!important}
+#kuroAccountConfirmRow[hidden]{display:none!important}
 .kuro-account-field{display:block;margin:13px 0 0;color:#52627b;font-size:11px;font-weight:850}.kuro-account-field input{display:block;width:100%;height:45px;margin-top:7px;padding:0 12px;border:1px solid #dce4ef;border-radius:10px;background:#fbfcfe;color:#17243c;font-size:14px;outline:none}.kuro-account-field input:focus{border-color:#8db8f1;box-shadow:0 0 0 4px #e6f1ff}.kuro-account-help{display:block;margin-top:5px;color:#98a3b4;font-size:10px;font-weight:500}
 .kuro-account-primary,.kuro-account-logout{width:100%;min-height:46px;margin-top:18px;border:0;border-radius:11px;background:linear-gradient(120deg,#2878ee,#5265d9);color:#fff;font-size:13px;font-weight:950;cursor:pointer}.kuro-account-primary:disabled,.kuro-account-logout:disabled{opacity:.55;cursor:wait}.kuro-account-status{min-height:22px;margin-top:11px;color:#c04d3f;font-size:11px;line-height:1.6}
 .kuro-account-profile{padding:17px;border:1px solid #e1eaf6;border-radius:14px;background:#f7faff}.kuro-account-profile strong{display:block;overflow-wrap:anywhere;font-size:18px}.kuro-account-profile span{display:block;margin-top:4px;color:#6d7e97;font-size:12px}.kuro-account-common{margin:12px 0 0;color:#5680b5;font-size:11px;line-height:1.7}.kuro-account-logout{background:#fff;color:#596a83;border:1px solid #dce4ef}.kuro-account-dialog button:focus-visible{outline:3px solid #8db8f1;outline-offset:3px}
@@ -140,19 +140,18 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 <div class="kuro-account-modal" id="kuroAccountModal" hidden>
  <section class="kuro-account-dialog" role="dialog" aria-modal="true" aria-labelledby="kuroAccountTitle">
   <div class="kuro-account-head"><div><div class="kuro-account-eyebrow">KURO LAB × KURO GAMES</div><h2 id="kuroAccountTitle">KURO ACCOUNT</h2></div><button class="kuro-account-close" id="kuroAccountClose" type="button" aria-label="閉じる">×</button></div>
-  <p class="kuro-account-intro">KURO LabとKURO GAMESで共通のアカウントです。ここでログインすると、同じアカウントで各サービスを利用できます。</p>
+  <p class="kuro-account-intro">KURO Lab・KURO SNS・KURO GAMESで共通のアカウントです。ここでログインすると、3サービスを同じアカウントで利用できます。</p>
   <div class="kuro-account-guest" id="kuroAccountGuest"><strong>ゲスト（未ログイン）</strong><br>アカウントを作らなくてもゲームは遊べます。必要なときだけ登録・ログインしてください。</div>
   <div id="kuroAccountAuthPanel">
    <div class="kuro-account-tabs" role="tablist" aria-label="認証方法"><button type="button" id="kuroAccountLoginTab" class="active" aria-selected="true">ログイン</button><button type="button" id="kuroAccountSignupTab" aria-selected="false">新規登録</button></div>
    <form id="kuroAccountForm" novalidate>
     <label class="kuro-account-field">ユーザーネーム<input id="kuroAccountUsername" name="username" type="text" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="username" autocapitalize="none" spellcheck="false" required><span class="kuro-account-help">半角英数字と _ のみ、3〜24文字</span></label>
-    <label class="kuro-account-field" id="kuroAccountDisplayNameRow" hidden>表示名<input id="kuroAccountDisplayName" name="displayName" type="text" maxlength="40" autocomplete="nickname" required><span class="kuro-account-help">登録時に必須・40文字以内</span></label>
     <label class="kuro-account-field">パスワード<input id="kuroAccountPassword" name="password" type="password" minlength="8" maxlength="72" autocomplete="current-password" required><span class="kuro-account-help">8〜72文字</span></label>
     <label class="kuro-account-field" id="kuroAccountConfirmRow" hidden>パスワード（確認）<input id="kuroAccountConfirm" name="passwordConfirm" type="password" minlength="8" maxlength="72" autocomplete="new-password"></label>
     <button class="kuro-account-primary" id="kuroAccountSubmit" type="submit">ログイン</button>
    </form>
   </div>
-  <div class="kuro-account-profile" id="kuroAccountProfile" hidden><strong id="kuroAccountProfileName"></strong><span id="kuroAccountProfileHandle"></span><p class="kuro-account-common">ログイン中です。このKUROアカウントはKURO Lab側でも共通して使用されます。</p><button class="kuro-account-logout" id="kuroAccountLogout" type="button">ログアウト</button></div>
+  <div class="kuro-account-profile" id="kuroAccountProfile" hidden><strong id="kuroAccountProfileName"></strong><span id="kuroAccountProfileHandle"></span><p class="kuro-account-common">ログイン中です。このKUROアカウントはKURO Lab・KURO SNSでも共通して使用されます。</p><button class="kuro-account-logout" id="kuroAccountLogout" type="button">ログアウト</button></div>
   <div class="kuro-account-status" id="kuroAccountStatus" role="status" aria-live="polite"></div>
  </section>
 </div>
@@ -186,7 +185,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
 (function initKuroAccount(){
  const openButton=document.getElementById("kuroAccountOpen"),stateLabel=document.getElementById("kuroAccountState"),modal=document.getElementById("kuroAccountModal"),closeButton=document.getElementById("kuroAccountClose"),form=document.getElementById("kuroAccountForm");
  const authPanel=document.getElementById("kuroAccountAuthPanel"),profilePanel=document.getElementById("kuroAccountProfile"),guestPanel=document.getElementById("kuroAccountGuest"),status=document.getElementById("kuroAccountStatus");
- const loginTab=document.getElementById("kuroAccountLoginTab"),signupTab=document.getElementById("kuroAccountSignupTab"),displayRow=document.getElementById("kuroAccountDisplayNameRow"),confirmRow=document.getElementById("kuroAccountConfirmRow");
+ const loginTab=document.getElementById("kuroAccountLoginTab"),signupTab=document.getElementById("kuroAccountSignupTab"),confirmRow=document.getElementById("kuroAccountConfirmRow");
  const password=document.getElementById("kuroAccountPassword"),confirm=document.getElementById("kuroAccountConfirm"),submit=document.getElementById("kuroAccountSubmit");
  const profileName=document.getElementById("kuroAccountProfileName"),profileHandle=document.getElementById("kuroAccountProfileHandle"),logoutButton=document.getElementById("kuroAccountLogout");
  if(!openButton||!modal||!form)return;
@@ -195,8 +194,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   mode=next==="signup"?"signup":"login";const signup=mode==="signup";
   loginTab.classList.toggle("active",!signup);signupTab.classList.toggle("active",signup);
   loginTab.setAttribute("aria-selected",String(!signup));signupTab.setAttribute("aria-selected",String(signup));
-  displayRow.hidden=!signup;confirmRow.hidden=!signup;
-  document.getElementById("kuroAccountDisplayName").required=signup;
+  confirmRow.hidden=!signup;
   confirm.required=signup;confirm.disabled=!signup;
   password.autocomplete=signup?"new-password":"current-password";
   confirm.autocomplete="new-password";
@@ -206,7 +204,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
  function render(user){
   currentUser=user||null;const signedIn=!!currentUser;
   const meta=currentUser?.user_metadata||{};
-  const fallbackName=String(meta.name||meta.display_name||meta.full_name||meta.handle||meta.username||"KUROユーザー");
+  const fallbackName=String(meta.username||meta.handle||"KUROユーザー");
   const fallbackHandle=String(meta.handle||meta.username||"");
   openButton.classList.toggle("kuro-signed-in",signedIn);
   openButton.textContent=signedIn?"アカウント":"ログイン";if(stateLabel){stateLabel.textContent=signedIn?(fallbackHandle?"@"+fallbackHandle:fallbackName):"ゲスト";stateLabel.classList.toggle("is-signed-in",signedIn);}
@@ -215,12 +213,12 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   authPanel.hidden=signedIn;profilePanel.hidden=!signedIn;if(guestPanel)guestPanel.hidden=signedIn;
   if(signedIn){profileName.textContent=fallbackName;profileHandle.textContent=fallbackHandle?"@"+fallbackHandle:"KURO共通アカウント";
    const userId=currentUser.id;
-   if(kuroGamesDB)kuroGamesDB.from("profiles").select("username,display_name").eq("id",userId).maybeSingle().then(({data,error})=>{
+   if(kuroGamesDB)kuroGamesDB.from("profiles").select("username,kuro_id").eq("id",userId).maybeSingle().then(({data,error})=>{
     if(error||!data||currentUser?.id!==userId)return;
-    const n=String(data.display_name||fallbackName),h=String(data.username||fallbackHandle);
-    if(stateLabel)stateLabel.textContent=h?"@"+h:n;openButton.textContent="アカウント";openButton.title=n+(h?" (@"+h+")":"");
-    openButton.setAttribute("aria-label","ログイン中："+n+(h?"、@"+h:""));
-    profileName.textContent=n;profileHandle.textContent=h?"@"+h:"KURO共通アカウント";
+    const h=String(data.username||fallbackHandle),id=String(data.kuro_id||"");
+    if(stateLabel)stateLabel.textContent=h?"@"+h:"ログイン中";openButton.textContent="アカウント";openButton.title=(h?"@"+h:"KUROアカウント")+(id?" ("+id+")":"");
+    openButton.setAttribute("aria-label","ログイン中："+(h?"@"+h:"KUROアカウント")+(id?"、KURO ID："+id:""));
+    profileName.textContent=h?"@"+h:"KUROユーザー";profileHandle.textContent=id||"KURO IDを取得できません";
    }).catch(err=>console.warn("KURO account profile display failed:",err));
   }
  }
@@ -235,16 +233,14 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
  loginTab.addEventListener("click",()=>setMode("login"));signupTab.addEventListener("click",()=>setMode("signup"));
  form.addEventListener("submit",async event=>{
   event.preventDefault();
-  const username=document.getElementById("kuroAccountUsername").value.trim(),pass=password.value,displayName=document.getElementById("kuroAccountDisplayName").value.trim();
+  const username=document.getElementById("kuroAccountUsername").value.trim(),pass=password.value;
   if(!/^[A-Za-z0-9_]{3,24}$/.test(username)){status.textContent="ユーザーネームは半角英数字と _ の3〜24文字で入力してください。";return;}
   if(pass.length<8||pass.length>72){status.textContent="パスワードは8〜72文字で入力してください。";return;}
-  if(mode==="signup"&&!displayName){status.textContent="表示名を入力してください。";return;}
-  if(mode==="signup"&&displayName.length>40){status.textContent="表示名は40文字以内で入力してください。";return;}
   if(mode==="signup"&&pass!==confirm.value){status.textContent="確認用パスワードが一致しません。";return;}
   if(!kuroGamesDB){status.textContent="認証システムを読み込めませんでした。ページを再読み込みしてください。";return;}
   submit.disabled=true;status.textContent=mode==="signup"?"アカウントを作成しています…":"ログインしています…";
   try{
-   const {data,error}=await kuroGamesDB.functions.invoke("username-auth",{body:{action:mode==="signup"?"register":"login",username,password:pass,displayName:displayName||username}});
+   const {data,error}=await kuroGamesDB.functions.invoke("username-auth",{body:{action:mode==="signup"?"register":"login",username,password:pass}});
    if(error){
     let message=data?.error||error.message||"認証に失敗しました。";
     try{if(error.context&&typeof error.context.clone==="function"){const detail=await error.context.clone().json();if(detail?.error)message=detail.error;}}catch(_){}
