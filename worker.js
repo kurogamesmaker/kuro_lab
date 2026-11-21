@@ -305,7 +305,7 @@ export default {
     if (liveAssetPath) {
       try {
         const liveAssetResponse = await fetch(
-          "https://raw.githubusercontent.com/kurogamesmaker/kuro_lab/9ad9cc4e74092f36c770525db158da9236c13dfb/" + liveAssetPath,
+          "https://raw.githubusercontent.com/kurogamesmaker/kuro_lab/ea0421d62317b802205834ba7aac84bf4b28abe4/" + liveAssetPath,
           { cf: { cacheEverything: true, cacheTtl: 60 } }
         );
         if (liveAssetResponse.ok) {
@@ -342,7 +342,7 @@ export default {
           let liveBody = liveAssetResponse.body;
           if (liveContentType.startsWith("text/html")) {
             let liveHtml = await liveAssetResponse.text();
-            const cacheVersion = "20261121brandfix3";
+            const cacheVersion = "20261121brandfix4";
             const sharedAssetVersions = [
               [/\/portal\.js\?v=[^"'&\\s]+/g, "/portal.js?v=" + cacheVersion],
               [/\/portal-enhancements\.js\?v=[^"'&\\s]+/g, "/portal-enhancements.js?v=" + cacheVersion],
