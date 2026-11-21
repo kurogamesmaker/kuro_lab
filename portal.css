@@ -3154,37 +3154,27 @@ body.kuro-portal[data-theme="light"] .portal-mobile-nav {
 }
 
 
-/* KURO Lab homepage recovery: text-based brand mark and static first paint. */
+/* KUROLAB logo artwork: remove the deprecated purple text placeholder. */
 .portal-brand-mark,
 .portal-side-brand-mark {
-  display: inline-grid;
-  place-items: center;
-  flex: 0 0 42px;
-  width: 42px;
-  height: 42px;
-  border: 1px solid rgba(167,139,250,.35);
-  border-radius: 13px;
-  background: linear-gradient(145deg,#8b5cf6,#5145a8);
-  color: #fff;
-  font-size: 20px;
-  font-weight: 950;
-  line-height: 1;
-  letter-spacing: -.06em;
-  box-shadow: 0 5px 16px rgba(81,69,168,.24);
+  display:block;
+  width:42px;height:42px;flex:0 0 42px;
+  border:0;border-radius:0;background:transparent;
+  color:inherit;font-size:inherit;font-weight:inherit;
+  line-height:1;letter-spacing:normal;box-shadow:none;padding:0;
 }
-.portal-side-brand-mark { border-radius: 50%; }
-.portal-home-fallback { min-width: 0; }
-.portal-home-fallback .portal-right { min-width: 0; }
-.portal-home-fallback .portal-empty { line-height: 1.7; }
+.portal-side-brand-mark { object-fit:contain; }
+.portal-home-fallback { min-width:0; }
+.portal-home-fallback .portal-right { min-width:0; }
+.portal-home-fallback .portal-empty { line-height:1.7; }
 .portal-home-fallback a:focus-visible {
-  outline: 2px solid var(--blue);
-  outline-offset: 3px;
+  outline:2px solid var(--blue);
+  outline-offset:3px;
 }
 @media(max-width:700px) {
-  .portal-brand-mark { width: 37px; height: 37px; flex-basis: 37px; font-size: 18px; }
-  .portal-home-fallback .portal-right { grid-template-columns: 1fr; }
-  .portal-home-fallback .portal-feature-row { grid-template-columns: 1fr; }
-  .portal-home-fallback .portal-game-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .portal-home-fallback .portal-right { grid-template-columns:1fr; }
+  .portal-home-fallback .portal-feature-row { grid-template-columns:1fr; }
+  .portal-home-fallback .portal-game-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
 
 /* Account username editor: keep the text field interactive above card layers. */
@@ -3242,8 +3232,6 @@ body.kuro-portal #portal-username-form #portal-new-username::placeholder {
 /* Fix: icon glyphs inside square containers becoming invisible due to theme/global color inheritance. */
 body.kuro-portal .portal-icon,
 body.kuro-portal .portal-widget-title>span,
-body.kuro-portal .portal-brand-mark,
-body.kuro-portal .portal-side-brand-mark,
 body.kuro-portal .portal-side-link span,
 body.kuro-portal .portal-quick-link span,
 body.kuro-portal .portal-game-tile .tile-art,
@@ -3263,14 +3251,15 @@ body.kuro-portal[data-theme="dark"] .portal-widget-title>span {
 }
 body.kuro-portal .portal-brand-mark,
 body.kuro-portal .portal-side-brand-mark {
-  color:#ffffff !important;
+  color:inherit !important;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
 }
 
 /* Icon glyphs inside square icon tiles: force black text in both themes. */
 body.kuro-portal .portal-icon,
 body.kuro-portal .portal-widget-title>span,
-body.kuro-portal .portal-brand-mark,
-body.kuro-portal .portal-side-brand-mark,
 body.kuro-portal .portal-side-link span,
 body.kuro-portal .portal-quick-link span,
 body.kuro-portal .portal-game-tile .tile-art,
