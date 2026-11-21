@@ -19,8 +19,8 @@ self.addEventListener('push', event => {
   const title = payload.title || 'KURO';
   const options = {
     body: payload.body || '新しいメッセージが届いたよ',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    icon: '/assets/brand/logo/kurolab_icon_toumei_160.png?v=20261121logosfix',
+    badge: '/assets/brand/logo/kurolab_icon_toumei_160.png?v=20261121logosfix',
     tag: payload.tag || 'kuro-message',
     renotify: true,
     data: { url: payload.url || '/sns/' }
