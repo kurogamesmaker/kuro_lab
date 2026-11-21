@@ -912,6 +912,23 @@ body.kuro-page>.kuro-global-header{display:block!important}
 
 
 
+<style id="kuro-profile-avatar-transparency-fix">
+/* Profile-only fix: uploaded transparent PNG pixels must reveal a neutral backing, not the fallback gradient. */
+.rounded-full:has(> img#publicProfileAvatar:not(.hidden)),
+.rounded-full:has(> img#myProfileAvatar:not(.hidden)),
+.rounded-full:has(> img#profileAvatarPreview:not(.hidden)) {
+  background-color: #111827 !important;
+  background-image: none !important;
+}
+img#publicProfileAvatar:not(.hidden),
+img#myProfileAvatar:not(.hidden),
+img#profileAvatarPreview:not(.hidden) {
+  display: block !important;
+  background: transparent !important;
+  background-image: none !important;
+  object-fit: cover !important;
+}
+</style>
 </head>
 
 <body class="kuro-page kuro-theme-dark">
