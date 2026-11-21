@@ -197,6 +197,19 @@ export default {
       return json({ error: "Not found" }, 404);
     }
 
+    // KURO SNS canonical entry: force legacy routes to the V2 experience.
+    if (url.pathname === "/sns" || url.pathname === "/sns/" || url.pathname === "/sns/index.html") {
+      const destination = new URL("/sns/v2/" + url.search + url.hash, url.origin);
+      return new Response(null, {
+        status: 302,
+        headers: {
+          "Location": destination.href,
+          "Cache-Control": "no-store, max-age=0, must-revalidate",
+          "Pragma": "no-cache"
+        }
+      });
+    }
+
     const liveAssetFiles = new Map([
       ["/", "index.html"],
       ["/index.html", "index.html"],
