@@ -204,7 +204,7 @@ export default {
     if (assetType.toLowerCase().includes("text/html")) {
       const html = await assetResponse.text();
       if (html.includes("/portal.js?")) {
-        const refreshedHtml = html.replace(/\/portal\.js\?v=[^"'&\s]+/g, "/portal.js?v=20261121usernamefix6");
+        const refreshedHtml = html.replace(/\/portal\.js\?v=[^"'&\s]+/g, "/portal.js?v=20261121usernamefix7");
         const headers = new Headers(assetResponse.headers);
         headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
         headers.set("Pragma", "no-cache");
