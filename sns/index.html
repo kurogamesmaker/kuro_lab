@@ -1417,6 +1417,7 @@
 
         async function kuroCloudflareFetch(input,init){
  const request=new Request(input,init),target=new URL(request.url);
+ // Fail closed for Supabase-origin requests: all SNS database/auth/storage traffic uses the Cloudflare relay. Non-Supabase origins remain external requests.
  if(target.origin!==SUPABASE_URL)return fetch(request);
  const buffer=["GET","HEAD"].includes(request.method)?new ArrayBuffer(0):await request.clone().arrayBuffer();
  const bytes=new Uint8Array(buffer);let binary="";for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
