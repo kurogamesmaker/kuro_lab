@@ -929,6 +929,19 @@ img#profileAvatarPreview:not(.hidden) {
   object-fit: cover !important;
 }
 </style>
+<style id="kuro-avatar-position-fix">
+/* Center uploaded avatars within their circular profile frame */
+#myProfileAvatar,
+#publicProfileAvatar,
+#profileAvatarPreview {
+  object-position: 50% 50% !important;
+  position: relative !important;
+  left: 0 !important;
+  right: 0 !important;
+  margin-inline: auto !important;
+  transform: none !important;
+}
+</style>
 </head>
 
 <body class="kuro-page kuro-theme-dark">
