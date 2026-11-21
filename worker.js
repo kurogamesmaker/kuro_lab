@@ -198,12 +198,65 @@ export default {
     }
 
     const liveAssetFiles = new Map([
-      ["/portal.js", "portal.js"],
-      ["/portal-enhancements.js", "portal-enhancements.js"],
-      ["/theme-studio.js", "theme-studio.js"],
-      ["/admin", "admin/index.html"],
-      ["/admin/", "admin/index.html"],
-      ["/admin/index.html", "admin/index.html"],
+      ["/", "index.html"],
+      ["/index.html", "index.html"],
+      ["/search", "search/index.html"],
+      ["/search/", "search/index.html"],
+      ["/search/index.html", "search/index.html"],
+      ["/favorites", "favorites/index.html"],
+      ["/favorites/", "favorites/index.html"],
+      ["/favorites/index.html", "favorites/index.html"],
+      ["/history", "history/index.html"],
+      ["/history/", "history/index.html"],
+      ["/history/index.html", "history/index.html"],
+      ["/notifications", "notifications/index.html"],
+      ["/notifications/", "notifications/index.html"],
+      ["/notifications/index.html", "notifications/index.html"],
+      ["/mypage", "mypage/index.html"],
+      ["/mypage/", "mypage/index.html"],
+      ["/mypage/index.html", "mypage/index.html"],
+      ["/achievements", "achievements/index.html"],
+      ["/achievements/", "achievements/index.html"],
+      ["/achievements/index.html", "achievements/index.html"],
+      ["/request", "request/index.html"],
+      ["/request/", "request/index.html"],
+      ["/request/index.html", "request/index.html"],
+      ["/settings", "settings/index.html"],
+      ["/settings/", "settings/index.html"],
+      ["/settings/index.html", "settings/index.html"],
+      ["/tools", "tools/index.html"],
+      ["/tools/", "tools/index.html"],
+      ["/tools/index.html", "tools/index.html"],
+      ["/about", "about/index.html"],
+      ["/about/", "about/index.html"],
+      ["/about/index.html", "about/index.html"],
+      ["/guide", "guide/index.html"],
+      ["/guide/", "guide/index.html"],
+      ["/guide/index.html", "guide/index.html"],
+      ["/faq", "faq/index.html"],
+      ["/faq/", "faq/index.html"],
+      ["/faq/index.html", "faq/index.html"],
+      ["/features", "features/index.html"],
+      ["/features/", "features/index.html"],
+      ["/features/index.html", "features/index.html"],
+      ["/guidelines", "guidelines/index.html"],
+      ["/guidelines/", "guidelines/index.html"],
+      ["/guidelines/index.html", "guidelines/index.html"],
+      ["/developer", "developer/index.html"],
+      ["/developer/", "developer/index.html"],
+      ["/developer/index.html", "developer/index.html"],
+      ["/privacy", "privacy/index.html"],
+      ["/privacy/", "privacy/index.html"],
+      ["/privacy/index.html", "privacy/index.html"],
+      ["/terms", "terms/index.html"],
+      ["/terms/", "terms/index.html"],
+      ["/terms/index.html", "terms/index.html"],
+      ["/security", "security/index.html"],
+      ["/security/", "security/index.html"],
+      ["/security/index.html", "security/index.html"],
+      ["/contact", "contact/index.html"],
+      ["/contact/", "contact/index.html"],
+      ["/contact/index.html", "contact/index.html"],
       ["/pro", "pro/index.html"],
       ["/pro/", "pro/index.html"],
       ["/pro/index.html", "pro/index.html"],
@@ -212,20 +265,40 @@ export default {
       ["/pro-tools/index.html", "pro-tools/index.html"],
       ["/theme-studio", "theme-studio/index.html"],
       ["/theme-studio/", "theme-studio/index.html"],
-      ["/theme-studio/index.html", "theme-studio/index.html"]
+      ["/theme-studio/index.html", "theme-studio/index.html"],
+      ["/admin", "admin/index.html"],
+      ["/admin/", "admin/index.html"],
+      ["/admin/index.html", "admin/index.html"],
+      ["/portal.js", "portal.js"],
+      ["/portal-enhancements.js", "portal-enhancements.js"],
+      ["/theme-studio.js", "theme-studio.js"],
+      ["/portal.css", "portal.css"],
+      ["/site.css", "site.css"],
+      ["/site-fixes.css", "site-fixes.css"],
+      ["/usage-tracker.js", "usage-tracker.js"],
+      ["/tools/tools.js", "tools/tools.js"],
+      ["/tools/tools.css", "tools/tools.css"]
     ]);
     const liveAssetPath = liveAssetFiles.get(url.pathname);
     if (liveAssetPath) {
       try {
         const liveAssetResponse = await fetch(
-          "https://raw.githubusercontent.com/kurogamesmaker/kuro_lab/89152f736ff6e019a0e4fbe48ae719d2b5f1a5a5/" + liveAssetPath,
+          "https://raw.githubusercontent.com/kurogamesmaker/kuro_lab/2464a2a6cba075439131e418e2fae32c1101e7f2/" + liveAssetPath,
           { cf: { cacheEverything: true, cacheTtl: 60 } }
         );
         if (liveAssetResponse.ok) {
           const headers = new Headers(liveAssetResponse.headers);
-          headers.set("Content-Type", liveAssetPath.endsWith(".js")
+          const lowerAssetPath = liveAssetPath.toLowerCase();
+          const liveContentType = lowerAssetPath.endsWith(".js")
             ? "application/javascript; charset=utf-8"
-            : "text/html; charset=utf-8");
+            : lowerAssetPath.endsWith(".css")
+              ? "text/css; charset=utf-8"
+              : lowerAssetPath.endsWith(".json")
+                ? "application/json; charset=utf-8"
+                : lowerAssetPath.endsWith(".svg")
+                  ? "image/svg+xml"
+                  : "text/html; charset=utf-8";
+          headers.set("Content-Type", liveContentType);
           headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
           headers.set("Pragma", "no-cache");
           headers.delete("content-length");
