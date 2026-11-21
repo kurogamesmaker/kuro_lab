@@ -88,6 +88,10 @@ Deno.serve(async (req: Request) => {
 
     const body = await req.json().catch(() => ({}));
     const action = typeof body?.action === "string" ? body.action : "";
+    const retiredPlanActions = new Set(["list_pro_management","review_pro_application","create_pro_invitation","update_pro_invitation","update_pro_membership","set_pro_user_control","set_user_plan"]);
+    if (retiredPlanActions.has(action)) {
+      return reply({ error: "KURO Labのプラン区分は終了しました。すべての利用者が共通機能を利用できます。" }, 410, origin);
+    }
 
 
 
@@ -973,19 +977,16 @@ Deno.serve(async (req: Request) => {
 
       const users = data.users || [];
       const ids = users.map((u) => u.id);
-      const [profilesResult, prefsResult, membershipsResult] = ids.length ? await Promise.all([
+      const [profilesResult, prefsResult] = ids.length ? await Promise.all([
         admin.from("profiles").select("id,username,display_name").in("id", ids),
-        admin.from("portal_preferences").select("user_id,preferences").in("user_id", ids),
-        admin.from("pro_memberships").select("user_id,plan,status,expires_at").in("user_id", ids)
-      ]) : [{ data: [], error: null }, { data: [], error: null }, { data: [], error: null }];
+        admin.from("portal_preferences").select("user_id,preferences").in("user_id", ids)
+      ]) : [{ data: [], error: null }, { data: [], error: null }];
 
       if (profilesResult.error) throw profilesResult.error;
       if (prefsResult.error) throw prefsResult.error;
-      if (membershipsResult.error) throw membershipsResult.error;
 
       const profiles = new Map((profilesResult.data || []).map((p) => [p.id, p]));
       const prefs = new Map((prefsResult.data || []).map((p) => [p.user_id, p.preferences || {}]));
-      const memberships = new Map((membershipsResult.data || []).map((m) => [m.user_id, m]));
       const result = users.filter((u) => !u.is_anonymous).map((u) => {
         const profile = profiles.get(u.id);
         const pref = prefs.get(u.id) || {};
@@ -994,9 +995,6 @@ Deno.serve(async (req: Request) => {
           ? workspaces.length
           : (workspaces && typeof workspaces === "object" ? Object.keys(workspaces).length : 0);
         const widgets = Array.isArray(pref.dashboardWidgets) ? pref.dashboardWidgets.length : 0;
-        const membership = memberships.get(u.id);
-        const membershipActive = membership?.status === "active" && (!membership.expires_at || new Date(membership.expires_at).getTime() > Date.now());
-        const plan = membershipActive ? (membership.plan === "standard" ? "standard" : "pro") : "free";
         return {
           id: u.id,
           email: u.email || "",
@@ -1006,8 +1004,7 @@ Deno.serve(async (req: Request) => {
           last_sign_in_at: u.last_sign_in_at || null,
           banned_until: u.banned_until || null,
           board_count: boards,
-          widget_count: widgets,
-          plan
+          widget_count: widgets
         };
       });
 
