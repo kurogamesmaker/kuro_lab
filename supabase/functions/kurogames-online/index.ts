@@ -298,19 +298,30 @@ async function handle(req: Request) {
     const submissionId = typeof body.submissionId === "string" && UUID_RE.test(body.submissionId)
       ? body.submissionId
       : crypto.randomUUID();
-    const { data, error } = await admin.from("game_scores").insert({
-      game_id: game.id,
-      user_id: user.id,
-      mode,
-      score,
-      submission_id: submissionId,
-      metadata,
-    }).select("id, score, mode, created_at").single();
+    // Use the database's atomic accumulator. game_scores is unique per
+    // (game_id, user_id, mode), so a plain INSERT rejects every later win.
+    // The RPC deduplicates submission IDs and increments the cumulative win count.
+    const { data: submittedRows, error } = await admin.rpc("kuro_submit_game_score", {
+      p_game_id: game.id,
+      p_user_id: user.id,
+      p_mode: mode,
+      p_score: score,
+      p_submission_id: submissionId,
+      p_metadata: metadata,
+    });
     if (error) {
-      if (error.code === "23505") throw new HttpError(409, "このスコア送信は既に登録されています。");
+      console.error("[kurogames-online] score_submit RPC failed", error);
       throw new HttpError(500, "スコアを登録できませんでした。");
     }
-    return reply(200, { ok: true, score: data.score, mode: data.mode, createdAt: data.created_at });
+    const submitted = Array.isArray(submittedRows) ? submittedRows[0] : submittedRows;
+    if (!submitted) throw new HttpError(500, "スコア登録結果を取得できませんでした。");
+    return reply(200, {
+      ok: true,
+      score: Number(submitted.score) || 0,
+      mode: submitted.score_mode || mode,
+      createdAt: submitted.created_at,
+      improved: submitted.improved !== false,
+    });
   }
 
   if (action === "save_get" || action === "save_set" || action === "save_delete") {
