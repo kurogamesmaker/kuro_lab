@@ -34,7 +34,7 @@
     ] },
     { label: "アカウント", items: [
       { href: "/mypage/", label: "KURO ID", icon: "◎" },
-      { href: "/pro-tools/", label: "開発ツール", icon: "⚡" }
+      { href: "/pro-tools/", label: "開発ツール", icon: "⚡" },
       { href: "/theme-studio/", label: "Theme Studio", icon: "🎨" },
       { href: "/settings/", label: "設定", icon: "⚙" },
       { href: "/request/", label: "リクエストBOX", icon: "✉" }
