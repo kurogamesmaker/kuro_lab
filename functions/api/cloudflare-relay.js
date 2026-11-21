@@ -1,7 +1,7 @@
 const SUPABASE_URL = "https://cprvpphlfpmiegjiutjn.supabase.co";
 const SUPABASE_KEY = "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
 const ALLOWED_PREFIXES = ["/rest/v1/","/auth/v1/","/storage/v1/"];
-const ALLOWED_FUNCTIONS = new Set(["/functions/v1/admin-console","/functions/v1/pro-access","/functions/v1/send-chat-push","/functions/v1/kurogames-online","/functions/v1/kurogames-secret"]);
+const ALLOWED_FUNCTIONS = new Set(["/functions/v1/admin-console","/functions/v1/pro-access","/functions/v1/send-chat-push","/functions/v1/kurogames-online","/functions/v1/kurogames-secret","/functions/v1/username-auth"]);
 const ALLOWED_METHODS = new Set(["GET","POST","PUT","PATCH","DELETE","HEAD"]);
 function json(value,status=200) {
   return new Response(JSON.stringify(value),{status,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"}});
