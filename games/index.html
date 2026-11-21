@@ -145,7 +145,7 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
    <div class="kuro-account-tabs" role="tablist" aria-label="認証方法"><button type="button" id="kuroAccountLoginTab" class="active" aria-selected="true">ログイン</button><button type="button" id="kuroAccountSignupTab" aria-selected="false">新規登録</button></div>
    <form id="kuroAccountForm" novalidate>
     <label class="kuro-account-field">ユーザーネーム<input id="kuroAccountUsername" name="username" type="text" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="username" autocapitalize="none" spellcheck="false" required><span class="kuro-account-help">半角英数字と _ のみ、3〜24文字</span></label>
-    <label class="kuro-account-field" id="kuroAccountDisplayNameRow" hidden>表示名（省略可）<input id="kuroAccountDisplayName" name="displayName" type="text" maxlength="40" autocomplete="nickname"></label>
+    <label class="kuro-account-field" id="kuroAccountDisplayNameRow" hidden>表示名<input id="kuroAccountDisplayName" name="displayName" type="text" maxlength="40" autocomplete="nickname" required><span class="kuro-account-help">登録時に必須・40文字以内</span></label>
     <label class="kuro-account-field">パスワード<input id="kuroAccountPassword" name="password" type="password" minlength="8" maxlength="72" autocomplete="current-password" required><span class="kuro-account-help">8〜72文字</span></label>
     <label class="kuro-account-field" id="kuroAccountConfirmRow" hidden>パスワード（確認）<input id="kuroAccountConfirm" name="passwordConfirm" type="password" minlength="8" maxlength="72" autocomplete="new-password"></label>
     <button class="kuro-account-primary" id="kuroAccountSubmit" type="submit">ログイン</button>
@@ -194,7 +194,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   mode=next==="signup"?"signup":"login";const signup=mode==="signup";
   loginTab.classList.toggle("active",!signup);signupTab.classList.toggle("active",signup);
   loginTab.setAttribute("aria-selected",String(!signup));signupTab.setAttribute("aria-selected",String(signup));
-  displayRow.hidden=!signup;confirmRow.hidden=!signup;confirm.required=signup;
+  displayRow.hidden=!signup;confirmRow.hidden=!signup;confirm.required=signup;document.getElementById("kuroAccountDisplayName").required=signup;
   password.autocomplete=signup?"new-password":"current-password";submit.textContent=signup?"アカウントを作成":"ログイン";status.textContent="";
  }
  function render(user){
@@ -232,7 +232,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   const username=document.getElementById("kuroAccountUsername").value.trim(),pass=password.value,displayName=document.getElementById("kuroAccountDisplayName").value.trim();
   if(!/^[A-Za-z0-9_]{3,24}$/.test(username)){status.textContent="ユーザーネームは半角英数字と _ の3〜24文字で入力してください。";return;}
   if(pass.length<8||pass.length>72){status.textContent="パスワードは8〜72文字で入力してください。";return;}
-  if(mode==="signup"&&pass!==confirm.value){status.textContent="確認用パスワードが一致しません。";return;}
+  if(mode==="signup"&&!displayName){status.textContent="表示名を入力してください。";return;}\n  if(mode==="signup"&&displayName.length>40){status.textContent="表示名は40文字以内で入力してください。";return;}\n  if(mode==="signup"&&pass!==confirm.value){status.textContent="確認用パスワードが一致しません。";return;}
   if(!kuroGamesDB){status.textContent="認証システムを読み込めませんでした。ページを再読み込みしてください。";return;}
   submit.disabled=true;status.textContent=mode==="signup"?"アカウントを作成しています…":"ログインしています…";
   try{
