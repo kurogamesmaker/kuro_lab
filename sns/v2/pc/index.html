@@ -1612,8 +1612,8 @@
         async function kuroCloudflareFetch(input, init) {
             const request = new Request(input, init);
             const requestUrl = new URL(request.url);
-            // Route only the chat-push Edge Function through the Cloudflare bridge to avoid browser CORS preflight issues.
-            // Other Edge Functions retain their existing direct route.
+            // Route every Supabase REST/Auth/Storage/Edge Function request through the same-origin Cloudflare relay.
+            // Only non-Supabase external requests use the browser's native fetch.
             if (requestUrl.origin !== SUPABASE_URL) {
                 return KURO_CLOUDFLARE_NATIVE_FETCH(input, init);
             }
