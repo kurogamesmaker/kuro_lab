@@ -3186,3 +3186,25 @@ body.kuro-portal[data-theme="light"] .portal-mobile-nav {
   .portal-home-fallback .portal-feature-row { grid-template-columns: 1fr; }
   .portal-home-fallback .portal-game-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
+
+/* Account username editor: keep the text field interactive above card layers. */
+#portal-username-form,
+#portal-username-form .portal-field,
+#portal-username-form #portal-new-username {
+  position: relative !important;
+  z-index: 5 !important;
+  pointer-events: auto !important;
+}
+#portal-username-form #portal-new-username {
+  display: block !important;
+  width: 100% !important;
+  min-height: 48px !important;
+  cursor: text !important;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  touch-action: auto !important;
+}
+#portal-username-form #portal-new-username:focus {
+  outline: 2px solid var(--blue) !important;
+  outline-offset: 2px !important;
+}
