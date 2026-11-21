@@ -110,7 +110,7 @@ async function createTicket(request, env) {
   try { member = await verifyRoomMembership(env, token, gameId, roomId, user.id); } catch (_) { member = null; }
   if (!member) return json({ error: "room_membership_required" }, 403, headers);
   const meta = user.user_metadata || {};
-  const name = String(member.user && member.user.display_name || meta.display_name || meta.username || "プレイヤー").slice(0, 40);
+  const name = String(member.user && member.user.username || meta.username || meta.handle || "プレイヤー").slice(0, 24);
   const now = Math.floor(Date.now() / 1000);
   const ticket = await issueTicket({ sub: user.id, name, room: roomId, game: gameId, iat: now, exp: now + 60 }, env.TICKET_SECRET);
   return json({ ticket, expiresAt: (now + 60) * 1000 }, 200, headers);
