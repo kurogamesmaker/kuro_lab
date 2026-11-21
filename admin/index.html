@@ -567,7 +567,7 @@
    <section class="panel ops-overview-panel"><div class="toolbar"><div><strong>ウィジェット利用 TOP 8</strong><div class="sns-muted">閲覧・追加・削除の合計</div></div></div><div id="opsOverviewWidgets" class="ops-overview-bars"><div class="empty">集計中…</div></div></section>
    <section class="panel ops-overview-panel"><div class="toolbar"><div><strong>APIエラーの発生状況</strong><div class="sns-muted">過去7日・サービス別</div></div></div><div id="opsOverviewApi" class="ops-overview-bars"><div class="empty">集計中…</div></div></section>
   </div>
-  <div class="ops-overview-shortcuts"><button class="ops-shortcut" data-go-ops="users"><b>ユーザー管理</b><span>検索・プラン・アカウント状態</span><i>→</i></button><button class="ops-shortcut" data-go-ops="reports"><b>通報管理</b><span>報告内容と対応状況</span><i>→</i></button><button class="ops-shortcut" data-go-ops="messages"><b>サービス別配信</b><span>KUROLAB / KURO SNSのお知らせ</span><i>→</i></button><button class="ops-shortcut" data-go-ops="analytics"><b>詳細分析</b><span>定着率・API・エラーログ</span><i>→</i></button></div>
+  <div class="ops-overview-shortcuts"><button class="ops-shortcut" data-go-ops="users"><b>ユーザー管理</b><span>検索・アカウント状態</span><i>→</i></button><button class="ops-shortcut" data-go-ops="reports"><b>通報管理</b><span>報告内容と対応状況</span><i>→</i></button><button class="ops-shortcut" data-go-ops="messages"><b>サービス別配信</b><span>KUROLAB / KURO SNSのお知らせ</span><i>→</i></button><button class="ops-shortcut" data-go-ops="analytics"><b>詳細分析</b><span>定着率・API・エラーログ</span><i>→</i></button></div>
  </div>
  <div id="opsUsersView" hidden>
   <div class="stats">
@@ -1251,7 +1251,6 @@ function setOpsView(view){
  if(view==="secret")loadOpsSecretManager();
  if(view==="analytics")loadOpsAnalytics();
  if(view==="logs")loadOpsLogs(true);
- if(view==="pro")loadOpsPro();
 }
 async function opsInvoke(body){
  const {data,error}=await db.functions.invoke("admin-console",{body});
@@ -1780,7 +1779,6 @@ function startAdminPolling(){
    else if(opsView==="flags")loadOpsFlags();
    else if(opsView==="realtime")loadOpsRealtime();
    else if(opsView==="logs")loadOpsLogs();
-   else if(opsView==="pro")loadOpsPro();
    else loadOpsAnalytics();
   }
  },interval);
