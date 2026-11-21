@@ -3237,3 +3237,31 @@ body.kuro-portal #portal-username-form #portal-new-username::placeholder {
   -webkit-text-fill-color:#64748b !important;
   opacity:1 !important;
 }
+
+
+/* Fix: icon glyphs inside square containers becoming invisible due to theme/global color inheritance. */
+body.kuro-portal .portal-icon,
+body.kuro-portal .portal-widget-title>span,
+body.kuro-portal .portal-brand-mark,
+body.kuro-portal .portal-side-brand-mark,
+body.kuro-portal .portal-side-link span,
+body.kuro-portal .portal-quick-link span,
+body.kuro-portal .portal-game-tile .tile-art,
+body.kuro-portal .portal-feature-card .feature-art {
+  opacity:1 !important;
+  visibility:visible !important;
+  font-weight:700 !important;
+  line-height:1.2 !important;
+}
+body.kuro-portal[data-theme="light"] .portal-icon,
+body.kuro-portal[data-theme="light"] .portal-widget-title>span {
+  color:#5741a8 !important;
+}
+body.kuro-portal[data-theme="dark"] .portal-icon,
+body.kuro-portal[data-theme="dark"] .portal-widget-title>span {
+  color:#e6dcff !important;
+}
+body.kuro-portal .portal-brand-mark,
+body.kuro-portal .portal-side-brand-mark {
+  color:#ffffff !important;
+}
