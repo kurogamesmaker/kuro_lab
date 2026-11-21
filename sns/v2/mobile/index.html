@@ -1511,7 +1511,8 @@ function kuroRouteCloudflareRealtime(client) {
     const websocketBase = new URL("/api/realtime/v1", window.location.href);
     websocketBase.protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const httpBase = new URL("/api/realtime/v1", window.location.href);
-    realtime.endPoint = websocketBase.toString().replace(/\/$/, "") + "/websocket";
+    // realtime-js appends /websocket itself, and uses httpEndpoint for REST broadcast APIs.
+    realtime.endPoint = websocketBase.toString().replace(/\/$/, "");
     realtime.httpEndpoint = httpBase.toString().replace(/\/$/, "");
 }
 
