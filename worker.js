@@ -197,6 +197,51 @@ export default {
       return json({ error: "Not found" }, 404);
     }
 
+    const liveAssetFiles = new Map([
+      ["/portal.js", "portal.js"],
+      ["/portal-enhancements.js", "portal-enhancements.js"],
+      ["/theme-studio.js", "theme-studio.js"],
+      ["/admin", "admin/index.html"],
+      ["/admin/", "admin/index.html"],
+      ["/admin/index.html", "admin/index.html"],
+      ["/pro", "pro/index.html"],
+      ["/pro/", "pro/index.html"],
+      ["/pro/index.html", "pro/index.html"],
+      ["/pro-tools", "pro-tools/index.html"],
+      ["/pro-tools/", "pro-tools/index.html"],
+      ["/pro-tools/index.html", "pro-tools/index.html"],
+      ["/theme-studio", "theme-studio/index.html"],
+      ["/theme-studio/", "theme-studio/index.html"],
+      ["/theme-studio/index.html", "theme-studio/index.html"]
+    ]);
+    const liveAssetPath = liveAssetFiles.get(url.pathname);
+    if (liveAssetPath) {
+      try {
+        const liveAssetResponse = await fetch(
+          "https://raw.githubusercontent.com/kurogamesmaker/kuro_lab/bdce77e5e8d10945abca5ad0b480ca0a14d14e5a/" + liveAssetPath,
+          { cf: { cacheEverything: true, cacheTtl: 60 } }
+        );
+        if (liveAssetResponse.ok) {
+          const headers = new Headers(liveAssetResponse.headers);
+          headers.set("Content-Type", liveAssetPath.endsWith(".js")
+            ? "application/javascript; charset=utf-8"
+            : "text/html; charset=utf-8");
+          headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+          headers.set("Pragma", "no-cache");
+          headers.delete("content-length");
+          headers.delete("content-encoding");
+          return new Response(liveAssetResponse.body, {
+            status: liveAssetResponse.status,
+            statusText: liveAssetResponse.statusText,
+            headers
+          });
+        }
+        console.error("KURO live asset origin returned", liveAssetResponse.status, liveAssetPath);
+      } catch (error) {
+        console.error("KURO live asset origin failed", liveAssetPath, error);
+      }
+    }
+
     const assetResponse = await env.ASSETS.fetch(request);
     const assetType = assetResponse.headers.get("content-type") || "";
 
