@@ -1058,14 +1058,16 @@
 
     
 <style id="kuro-default-avatar-style">
-/* Gradient is for fallback icons only. Transparent areas in uploaded PNGs use a neutral background. */
+/* Keep the original gradient on visible fallback icons only. Uploaded profile images get a neutral backing so transparent pixels never reveal the gradient. */
 .rounded-full:has(.fa-user:not(.hidden)),
 .rounded-full:has([id*="AvatarPlaceholder"]:not(.hidden)),
 .rounded-full:has([id*="avatarPlaceholder"]:not(.hidden)) {
  background: radial-gradient(circle at 28% 24%, #a5f3fc 0%, #67e8f9 18%, #6366f1 56%, #7c3aed 100%) !important;
  border-color: rgba(129,140,248,.55) !important;
 }
-.rounded-full:has(img:not(.hidden)) {
+.rounded-full:has(#myProfileAvatar:not(.hidden)),
+.rounded-full:has(#publicProfileAvatar:not(.hidden)),
+.rounded-full:has(#profileAvatarPreview:not(.hidden)) {
  background: #111827 !important;
 }
 .rounded-full:has(.fa-user:not(.hidden)) .fa-user:not(.hidden),
