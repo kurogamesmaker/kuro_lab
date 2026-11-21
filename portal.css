@@ -3265,3 +3265,15 @@ body.kuro-portal .portal-brand-mark,
 body.kuro-portal .portal-side-brand-mark {
   color:#ffffff !important;
 }
+
+/* Icon glyphs inside square icon tiles: force black text in both themes. */
+body.kuro-portal .portal-icon,
+body.kuro-portal .portal-widget-title>span,
+body.kuro-portal .portal-brand-mark,
+body.kuro-portal .portal-side-brand-mark,
+body.kuro-portal .portal-side-link span,
+body.kuro-portal .portal-quick-link span,
+body.kuro-portal .portal-game-tile .tile-art,
+body.kuro-portal .portal-feature-card .feature-art {
+  color:#000000 !important;
+}
