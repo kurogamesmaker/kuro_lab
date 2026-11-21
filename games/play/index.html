@@ -32,6 +32,17 @@ let kuroGameFrame = null;
 let kuroGameFrameLayout = null;
 let kuroGameGuestMode = false;
 window.addEventListener("resize",()=>{if(kuroGameFrameLayout)kuroGameFrameLayout();});
+function kuroRouteCloudflareRealtime(client) {
+const realtime = client && client.realtime;
+if (!realtime) return;
+const websocketBase = new URL("/api/realtime/v1", window.location.href);
+websocketBase.protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+const httpBase = new URL("/api/realtime/v1", window.location.href);
+// realtime-js appends /websocket itself, and uses httpEndpoint for REST broadcast APIs.
+realtime.endPoint = websocketBase.toString().replace(/\/$/, "");
+realtime.httpEndpoint = httpBase.toString().replace(/\/$/, "");
+}
+
 const kuroGameAuthClient = window.supabase.createClient(
  "https://cprvpphlfpmiegjiutjn.supabase.co",
  "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn",
@@ -41,6 +52,7 @@ const kuroGameAuthClient = window.supabase.createClient(
   realtime: { params: { log_level: "info" } }
  }
 );
+kuroRouteCloudflareRealtime(kuroGameAuthClient);
 window.kuroGameAuthClient = kuroGameAuthClient;
 let kuroGameAuthPromise = null;
 const kuroGameRealtimeChannels = new Map();
