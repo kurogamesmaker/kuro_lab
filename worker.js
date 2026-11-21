@@ -211,6 +211,15 @@ export default {
     }
 
     const liveAssetFiles = new Map([
+      ["/manifest.json", "manifest.json"],
+      ["/assets/brand/logo/kurolab_icon_48.png", "assets/brand/logo/kurolab_icon_48.png"],
+      ["/assets/brand/logo/kurolab_icon_160.png", "assets/brand/logo/kurolab_icon_160.png"],
+      ["/assets/brand/logo/kurolab_icon_800.png", "assets/brand/logo/kurolab_icon_800.png"],
+      ["/assets/brand/logo/kurolab_icon_1254.png", "assets/brand/logo/kurolab_icon_1254.png"],
+      ["/assets/brand/logo/kurolab_icon_toumei_48.png", "assets/brand/logo/kurolab_icon_toumei_48.png"],
+      ["/assets/brand/logo/kurolab_icon_toumei_160.png", "assets/brand/logo/kurolab_icon_toumei_160.png"],
+      ["/assets/brand/logo/kurolab_icon_toumei_800.png", "assets/brand/logo/kurolab_icon_toumei_800.png"],
+      ["/assets/brand/logo/kurolab_icon_toumei_1254.png", "assets/brand/logo/kurolab_icon_toumei_1254.png"],
       ["/", "index.html"],
       ["/index.html", "index.html"],
       ["/search", "search/index.html"],
@@ -296,7 +305,7 @@ export default {
     if (liveAssetPath) {
       try {
         const liveAssetResponse = await fetch(
-          "https://raw.githubusercontent.com/kurogamesmaker/kuro_lab/512e88a0508c1c68734c506067130d3b7e1381ec/" + liveAssetPath,
+          "https://raw.githubusercontent.com/kurogamesmaker/kuro_lab/9ad9cc4e74092f36c770525db158da9236c13dfb/" + liveAssetPath,
           { cf: { cacheEverything: true, cacheTtl: 60 } }
         );
         if (liveAssetResponse.ok) {
@@ -310,7 +319,11 @@ export default {
                 ? "application/json; charset=utf-8"
                 : lowerAssetPath.endsWith(".svg")
                   ? "image/svg+xml"
-                  : "text/html; charset=utf-8";
+                  : lowerAssetPath.endsWith(".png")
+                    ? "image/png"
+                    : lowerAssetPath.endsWith(".ico")
+                      ? "image/x-icon"
+                      : "text/html; charset=utf-8";
           headers.set("Content-Type", liveContentType);
           headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
           headers.set("Pragma", "no-cache");
@@ -329,7 +342,7 @@ export default {
           let liveBody = liveAssetResponse.body;
           if (liveContentType.startsWith("text/html")) {
             let liveHtml = await liveAssetResponse.text();
-            const cacheVersion = "20261121subpagefix2";
+            const cacheVersion = "20261121brandfix3";
             const sharedAssetVersions = [
               [/\/portal\.js\?v=[^"'&\\s]+/g, "/portal.js?v=" + cacheVersion],
               [/\/portal-enhancements\.js\?v=[^"'&\\s]+/g, "/portal-enhancements.js?v=" + cacheVersion],
