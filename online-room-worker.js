@@ -161,6 +161,7 @@ export class Room {
     this.loaded = false;
     this.data = { state: null, updatedAt: null, unonGame: null, unonCrypto: null, unonActionIds: [], unoDeadline: null, idleDeadline: null };
     this.unonPrivateKey = null;
+    this.unonCryptoPromise = null;
   }
   withLifecycleLock(task) {
     const run = this.lifecycleTail.then(task, task);
@@ -186,12 +187,17 @@ export class Room {
   }
   async ensureUnonCrypto() {
     if (!this.data.unonCrypto) {
-      const pair = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveKey"]);
-      this.data.unonCrypto = {
-        publicKey: await crypto.subtle.exportKey("jwk", pair.publicKey),
-        privateKey: await crypto.subtle.exportKey("jwk", pair.privateKey),
-      };
-      await this.save();
+      if (!this.unonCryptoPromise) {
+        this.unonCryptoPromise = (async () => {
+          const pair = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveKey"]);
+          this.data.unonCrypto = {
+            publicKey: await crypto.subtle.exportKey("jwk", pair.publicKey),
+            privateKey: await crypto.subtle.exportKey("jwk", pair.privateKey),
+          };
+          await this.save();
+        })().finally(() => { this.unonCryptoPromise = null; });
+      }
+      await this.unonCryptoPromise;
     }
     if (!this.unonPrivateKey) {
       this.unonPrivateKey = await crypto.subtle.importKey("jwk", this.data.unonCrypto.privateKey,
@@ -476,6 +482,7 @@ export class Room {
         await this.state.storage.deleteAll();
         this.loaded = false;
         this.unonPrivateKey = null;
+        this.unonCryptoPromise = null;
         this.data = { state: null, updatedAt: null, unonGame: null, unonCrypto: null, unonActionIds: [], unoDeadline: null, idleDeadline: null };
         console.info("[kuro-online-room] cleared storage after idle timeout");
         return;
