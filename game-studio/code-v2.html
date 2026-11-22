@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex">
+<meta name="robots" content="noindex,nofollow">
 <title>KURO GAME STUDIO</title>
 </head>
 <body>
@@ -11,12 +11,11 @@
 <script>
 (function(){
   var params = new URLSearchParams(location.search);
-  params.delete("forcePublished");
-  params.set("v", "20261123studio-corefix1");
-  var target = "/game-studio/code-v3.html" + (params.toString() ? "?" + params.toString() : "") + location.hash;
+  params.set("v", "20261123studio-v4-bootfix1");
+  var target = "/game-studio/code-v4.html" + (params.toString() ? "?" + params.toString() : "") + location.hash;
   location.replace(target);
 })();
 </script>
-<noscript><a href="/game-studio/code-v3.html">新しいKURO GAME STUDIOを開く</a></noscript>
+<noscript><a href="/game-studio/code-v4.html">新しいKURO GAME STUDIOを開く</a></noscript>
 </body>
 </html>
