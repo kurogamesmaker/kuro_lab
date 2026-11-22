@@ -21,7 +21,7 @@ All online features require a signed-in KURO account authenticated by Supabase A
 - The retired `/guest-token` and `/guest/verify` routes return HTTP 410 and never issue or validate guest credentials.
 - Existing historical guest records are not deleted. Old room entries naturally expire; they cannot authenticate, create new rooms, or rejoin.
 
-- Supabase Edge Function `kurogames-online`: deployed version 33. The room-poll response includes the trusted room host ID; optional host-only state writes are checked against `game_online_rooms.host_user_id`.
+- Supabase Edge Function `kurogames-online`: deployed version 35. The room-poll response includes the trusted room host ID; optional host-only state writes are checked against `game_online_rooms.host_user_id`.
 
 ## Runtime flow
 1. The KuroGames SDK obtains the signed-in account session from the game player or Studio parent page.
