@@ -715,19 +715,22 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 }
 
 
-/* Ranking showcase: taller vertical layout */
+/* Ranking showcase: taller desktop layout */
 #kuroRankingShowcase{
-  min-height:760px;
+  min-height:1100px;
   display:flex;
   flex-direction:column;
 }
 #kuroRankingShowcase .rank-list{
   flex:1 1 auto;
-  grid-auto-rows:minmax(84px,1fr);
+  grid-auto-rows:minmax(104px,1fr);
 }
-#kuroRankingShowcase .rank-row{min-height:84px}
-#kuroRankingShowcase .rank-row:nth-child(1){min-height:110px}
+#kuroRankingShowcase .rank-row{min-height:104px}
+#kuroRankingShowcase .rank-row:nth-child(1){min-height:140px}
 #kuroRankingShowcase .rank-foot{margin-top:auto}
+@media(max-width:980px) and (min-width:681px){
+  #kuroRankingShowcase{min-height:760px}
+}
 @media(max-width:680px){
   #kuroRankingShowcase{min-height:620px}
   #kuroRankingShowcase .rank-list{grid-auto-rows:minmax(68px,1fr)}
