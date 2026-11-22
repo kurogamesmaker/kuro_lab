@@ -492,13 +492,19 @@ if($("exportBtn"))$("exportBtn").addEventListener("click",()=>{project.code[acti
 
 function clearConsole(){ $("consoleOutput").textContent="";$("consoleCount").textContent="0"; }
 function writeConsole(level,values){const out=$("consoleOutput");const line=document.createElement("div");line.className=level==="error"?"error":level==="warn"?"warn":"";line.textContent="["+String(level).toUpperCase()+"] "+(values||[]).join(" ");out.appendChild(line);out.scrollTop=out.scrollHeight;$("consoleCount").textContent=String(out.children.length);}
+const kuroStudioGuestAuthCache = new Map();
 async function getKuroStudioGuestAuth(gameId) {
  if (typeof gameId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(gameId)) return null;
+ const cached = kuroStudioGuestAuthCache.get(gameId);
+ if (cached && Number(cached.expiresAt) > Date.now() + 60000) return cached;
  const storageKey = "kurogames.guest.multiplayer.v1:" + gameId;
  try {
   const saved = JSON.parse(localStorage.getItem(storageKey) || "null");
   if (saved && typeof saved.token === "string" && saved.token.split(".").length === 2 &&
-      typeof saved.guestId === "string" && Number(saved.expiresAt) > Date.now() + 60000) return saved;
+      typeof saved.guestId === "string" && Number(saved.expiresAt) > Date.now() + 60000) {
+   kuroStudioGuestAuthCache.set(gameId, saved);
+   return saved;
+  }
  } catch (_) {}
  try {
   const response = await fetch("https://kuro-online-room.kurogamesmaker.workers.dev/guest-token", {
@@ -513,6 +519,7 @@ async function getKuroStudioGuestAuth(gameId) {
   if (!response.ok || typeof data.token !== "string" || typeof data.guestId !== "string" ||
       Number(data.expiresAt) <= Date.now()) return null;
   const guest = { token: data.token, guestId: data.guestId, name: data.name || "ゲスト", expiresAt: Number(data.expiresAt) };
+  kuroStudioGuestAuthCache.set(gameId, guest);
   try { localStorage.setItem(storageKey, JSON.stringify(guest)); } catch (_) {}
   return guest;
  } catch (error) {
