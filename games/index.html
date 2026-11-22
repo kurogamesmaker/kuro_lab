@@ -77,6 +77,12 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
   box-shadow:0 0 0 3px rgba(57,134,237,.14);
 }
 #kuroRankingShowcase .rank-game{color:#29466f}
+#kuroRankingShowcase .rank-filters{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap}
+#kuroRankingShowcase .rank-filters label{display:flex;align-items:center;gap:6px;padding:5px 7px;border:1px solid #e0e9f7;border-radius:9px;background:#fff;color:#657791;font-size:9px;font-weight:900}
+#kuroRankingShowcase .rank-filters select{max-width:112px;border:0;outline:0;background:transparent;color:#2d5f9d;font:inherit;font-size:10px;font-weight:900;cursor:pointer}
+#kuroRankingShowcase .rank-filters [hidden]{display:none!important}
+@media(max-width:680px){#kuroRankingShowcase .rank-filters{margin-top:8px}}
+
 /* Ranking title marquee is driven by Web Animations API so global reduced-motion CSS cannot accidentally freeze it. */
 #kuroRankingShowcase .rank-game.rank-marquee{
   display:flex!important;
@@ -1221,7 +1227,10 @@ body.kuro-account-open { overflow: hidden; }
 <div class="filters genre-collapsed" id="categories"><button class="filter active" data-filter="all">すべて</button><button class="filter" data-filter="typing">タイピング</button><button class="filter" data-filter="rpg">RPG</button><button class="filter" data-filter="action">アクション</button><button class="filter" data-filter="shooting">シューティング</button><button class="filter" data-filter="adventure">アドベンチャー</button><button class="filter" data-filter="simulation">シミュレーション</button><button class="filter" data-filter="strategy">ストラテジー</button><button class="filter" data-filter="puzzle">パズル</button><button class="filter" data-filter="sports">スポーツ</button><button class="filter" data-filter="racing">レース</button><button class="filter" data-filter="table">テーブル</button><button class="filter" data-filter="rhythm">リズム・音楽</button><button class="filter" data-filter="horror">ホラー</button><button class="filter" data-filter="sandbox">サンドボックス</button><button class="filter" data-filter="survival">サバイバル</button><button class="filter" data-filter="fighting">格闘</button><button class="filter" data-filter="party">パーティー</button><button class="filter" data-filter="casual">カジュアル</button><button class="filter" data-filter="education">教育・学習</button><button class="filter" data-filter="other">その他</button><button class="filter fav" id="favoriteFilter">♡ お気に入り</button></div>
 <div class="games-layout"><div class="grid" id="gameGrid">
 </div>
-<aside class="ranking-showcase" id="kuroRankingShowcase" aria-label="ゲームランキング"><span class="rank-corner-trophy" aria-hidden="true">🏆</span><div class="rank-head"><div><span class="rank-eyebrow">KURO GAMES RANKING</span><h2><span class="rank-heading-icon" aria-hidden="true">🏆</span><span>ランキング</span></h2></div><span class="rank-live"><i></i> LIVE</span></div><div class="rank-game" id="kuroRankGame">ランキング対応ゲーム</div><div class="rank-list" id="kuroRankList"><div class="rank-message">ランキングを読み込み中…</div></div><div class="rank-foot"><a id="kuroRankGameLink" href="/games/">ゲームを遊ぶ ↗</a><div class="rank-controls"><button id="kuroRankPrev" type="button" aria-label="前のランキング">‹</button><span id="kuroRankDots"></span><button id="kuroRankNext" type="button" aria-label="次のランキング">›</button></div></div></aside></div>
+<aside class="ranking-showcase" id="kuroRankingShowcase" aria-label="ゲームランキング"><span class="rank-corner-trophy" aria-hidden="true">🏆</span><div class="rank-head"><div><span class="rank-eyebrow">KURO GAMES RANKING</span><h2><span class="rank-heading-icon" aria-hidden="true">🏆</span><span>ランキング</span></h2></div><span class="rank-live"><i></i> LIVE</span></div><div class="rank-game" id="kuroRankGame">ランキング対応ゲーム</div><div class="rank-filters">
+ <label id="kuroRankLevelWrap" hidden>レベル<select id="kuroRankLevel"><option value="">すべて</option></select></label>
+ <label id="kuroRankCpuWrap" hidden>CPU難易度<select id="kuroRankCpu"><option value="">すべて</option></select></label>
+</div><div class="rank-list" id="kuroRankList"><div class="rank-message">ランキングを読み込み中…</div></div><div class="rank-foot"><a id="kuroRankGameLink" href="/games/">ゲームを遊ぶ ↗</a><div class="rank-controls"><button id="kuroRankPrev" type="button" aria-label="前のランキング">‹</button><span id="kuroRankDots"></span><button id="kuroRankNext" type="button" aria-label="次のランキング">›</button></div></div></aside></div>
 <div class="empty" id="empty"><strong>ゲームが見つかりませんでした</strong>検索ワードやジャンルを変えて、もう一度探してみてください。</div>
 <div class="more"><div class="more-icon">✦</div><div><h3>新しいゲームを準備中！</h3><p>KURO GAMESでは、これからもオリジナルゲームを追加していきます。次のゲームもお楽しみに。</p></div><small>MORE GAMES COMING SOON</small></div>
 </section>
@@ -1394,6 +1403,8 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
 <script>
 function initKuroRankingShowcase(){
  const panel=document.getElementById("kuroRankingShowcase"),listEl=document.getElementById("kuroRankList"),titleEl=document.getElementById("kuroRankGame"),linkEl=document.getElementById("kuroRankGameLink"),dotsEl=document.getElementById("kuroRankDots"),prev=document.getElementById("kuroRankPrev"),next=document.getElementById("kuroRankNext");
+ const levelSelect=document.getElementById("kuroRankLevel"),cpuSelect=document.getElementById("kuroRankCpu");
+ const levelWrap=document.getElementById("kuroRankLevelWrap"),cpuWrap=document.getElementById("kuroRankCpuWrap");
  if(!panel||!listEl||!titleEl||!linkEl)return;
  let games=[],index=0,timer=null,pausedUntil=0,busy=false,cache=new Map(),pendingSteps=0,swipeStart=null;
  const medals=["🥇","🥈","🥉","4","5"];
@@ -1403,24 +1414,38 @@ function initKuroRankingShowcase(){
  const TICTACTOE_GAME_ID="2dbd6773-2684-4f00-973e-c46acbc348e7";
  const TICTACTOE_RULES=["normal","vanish","gobble","reverse"];
  const RANK_CACHE_MS=30000;
+ function renderFilterOptions(game){
+  const levels=Array.isArray(game.levels)?game.levels:[];
+  const cpus=Array.isArray(game.cpuDifficulties)?game.cpuDifficulties:[];
+  if(levelWrap){
+   levelWrap.hidden=!levels.length;
+   const previous=levelSelect.value;
+   levelSelect.innerHTML='<option value="">すべて</option>'+levels.map(value=>'<option value="'+Number(value)+'">Lv.'+Number(value)+'</option>').join("");
+   levelSelect.value=levels.some(value=>String(value)===previous)?previous:"";
+  }
+  if(cpuWrap){
+   cpuWrap.hidden=!cpus.length;
+   const previous=cpuSelect.value;
+   const names={EASY:"よわい",NORMAL:"ふつう",HARD:"つよい",EXPERT:"Expert"};
+   cpuSelect.innerHTML='<option value="">すべて</option>'+cpus.map(value=>'<option value="'+esc(value)+'">'+esc(names[value]||value)+'</option>').join("");
+   cpuSelect.value=cpus.includes(previous)?previous:"";
+  }
+ }
  async function fetchRanking(game,forceRefresh=false){
-  const key=game.id+"::"+game.mode;
+  const selectedLevel=levelSelect?.value||"";
+  const selectedCpu=cpuSelect?.value||"";
+  const key=game.id+"::"+game.mode+"::"+selectedLevel+"::"+selectedCpu;
   const cached=cache.get(key);
   if(!forceRefresh&&cached&&Date.now()-cached.at<RANK_CACHE_MS)return cached.rows;
   try{
-   const isTicTacToe=game.id===TICTACTOE_GAME_ID;
-   const body=isTicTacToe
-    ? {action:"tictactoe_leaderboard",gameId:game.id,rule:game.mode,metric:"wins"}
-    : {action:"leaderboard",gameId:game.id,mode:game.mode,limit:5};
+   const body={action:"leaderboard",gameId:game.id,mode:game.mode,limit:5};
+   if(selectedLevel!=="")body.level=Number(selectedLevel);
+   if(selectedCpu!=="")body.cpuDifficulty=selectedCpu;
    const {data,error}=await window.kuroGamesDB.functions.invoke("kurogames-online",{body});
    if(error)throw error;
-   const sourceRows=isTicTacToe
-    ? (Array.isArray(data?.rows)?data.rows:[])
-    : (Array.isArray(data?.scores)?data.scores:[]);
+   const sourceRows=Array.isArray(data?.scores)?data.scores:[];
    const rows=sourceRows.slice(0,5).map((row,index)=>({
-    ...row,
-    rank:Number(row.rank)||index+1,
-    score:Number(row.score)||0,
+    ...row,rank:Number(row.rank)||index+1,score:Number(row.score)||0,
     user:row.user||{username:"プレイヤー",display_name:"プレイヤー"}
    }));
    cache.set(key,{rows,at:Date.now()});
@@ -1463,6 +1488,7 @@ function initKuroRankingShowcase(){
   const slideDirection=direction<0?"prev":"next";
   try{
    // 先に次のデータを取得しつつ、現在の一覧を退場させる。通信待ちで空白にならない。
+   renderFilterOptions(game);
    const rowsPromise=fetchRanking(game).then(rows=>({rows})).catch(error=>({error}));
    if(isSwitch){
     panel.dataset.rankDirection=slideDirection;
@@ -1525,6 +1551,13 @@ function initKuroRankingShowcase(){
  function go(delta){pausedUntil=Date.now()+12000;display(index+delta,delta,true);}
  prev?.addEventListener("click",()=>go(-1));
  next?.addEventListener("click",()=>go(1));
+ function applyRankingFilter(){
+  pausedUntil=Date.now()+12000;
+  cache.clear();
+  display(index,1,true);
+ }
+ levelSelect?.addEventListener("change",applyRankingFilter);
+ cpuSelect?.addEventListener("change",applyRankingFilter);
  // ランキング一覧を左右にスワイプして切り替え（縦スクロールはそのまま）。
  listEl.addEventListener("touchstart",event=>{
   if(event.touches.length!==1){swipeStart=null;return;}
@@ -1557,20 +1590,15 @@ function initKuroRankingShowcase(){
    }));
    const enabled=configs.filter(Boolean);
    const expanded=await Promise.all(enabled.map(async game=>{
-    if(game.id===TICTACTOE_GAME_ID){
-     const rules=await Promise.all(TICTACTOE_RULES.map(async mode=>{
-      const item={id:game.id,title:game.title,mode};
-      try{return (await fetchRanking(item,true)).length?item:null;}
-      catch(err){console.debug("Tic-tac-toe ranking skipped:",mode,err);return null;}
-     }));
-     return rules.filter(Boolean);
-    }
     try{
      const {data,error}=await window.kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"leaderboard_modes",gameId:game.id}});
      if(error)throw error;
-     const modes=Array.isArray(data?.modes)&&data.modes.length?data.modes:["default"];
+     const levels=Array.isArray(data?.levels)?data.levels:[];
+     const cpuDifficulties=Array.isArray(data?.cpuDifficulties)?data.cpuDifficulties:[];
+     const modes=game.id===TICTACTOE_GAME_ID?TICTACTOE_RULES:
+      (Array.isArray(data?.modes)&&data.modes.length?data.modes:["default"]);
      const available=await Promise.all(modes.map(async mode=>{
-      const item={id:game.id,title:game.title,mode};
+      const item={id:game.id,title:game.title,mode,levels,cpuDifficulties};
       try{return (await fetchRanking(item,true)).length?item:null;}
       catch(err){console.debug("Ranking data skipped:",game.id,mode,err);return null;}
      }));
