@@ -7,7 +7,7 @@
 - Durable Object class: `Room`
 - Namespace ID: `9633b9fd379f4e0690c398d3933b8dcd`
 - Namespace storage: SQLite
-- Latest verified Cloudflare deployment: `e457b0e087854bcabdb3666bb4f06cb5` (100% traffic)
+- Latest verified Cloudflare deployment: `bd8382f12a0d4974a899de3d8e89ba93` (script content updated via the Worker content endpoint)
 - Secret binding configured: `TICKET_SECRET` (value is not stored in GitHub)
 
 ## Authentication policy
@@ -21,7 +21,7 @@ All online features require a signed-in KURO account authenticated by Supabase A
 - The retired `/guest-token` and `/guest/verify` routes return HTTP 410 and never issue or validate guest credentials.
 - Existing historical guest records are not deleted. Old room entries naturally expire; they cannot authenticate, create new rooms, or rejoin.
 
-- Supabase Edge Function `kurogames-online`: deployed version 27 with account-only authorization.
+- Supabase Edge Function `kurogames-online`: deployed version 33. The room-poll response includes the trusted room host ID; optional host-only state writes are checked against `game_online_rooms.host_user_id`.
 
 ## Runtime flow
 1. The KuroGames SDK obtains the signed-in account session from the game player or Studio parent page.
@@ -30,12 +30,15 @@ All online features require a signed-in KURO account authenticated by Supabase A
 4. For Durable Objects WebSocket delivery, the Worker independently validates the Supabase access token and checks room membership.
 5. The Worker signs a short-lived account-only connection ticket and forwards the WebSocket to the room's Durable Object.
 6. The DO derives player identity from trusted Worker headers, never from client-supplied player IDs. It manages connection presence and broadcasts game events.
-7. Room state get/update remain on the authenticated Edge Function API for backwards-compatible persistence and optimistic concurrency. The DO carries real-time notifications/events.
+7. Generic `room.getState()/room.updateState()` remain on the authenticated Edge Function API for backwards compatibility. UNON opts into `room.getDurableState()/room.updateHostState()`, which read/write its active snapshot directly in the room DO and broadcast the committed state over the existing WebSocket.
 
 `get_config` remains readable before login so games can discover which online features are configured; every operation that reads or changes a player's online data requires a signed-in account.
 
 ## SDK behavior
 - `game-studio/kurog-online.js` uses this Worker endpoint by default for multiplayer.
+- Generic room-state APIs retain their existing Edge Function persistence behavior. The additional `getDurableState()/updateHostState()` methods are used by UNON to avoid an HTTP round trip for each card action.
+- The Worker derives a signed `host` claim from the authenticated room's `host_user_id`. Only the host ticket can perform `host-state-update`; ordinary room event delivery remains available to all authenticated members.
+- If the DO snapshot is empty for a room created before this transport was enabled, UNON reads its legacy Supabase snapshot once and lets the signed host seed the DO snapshot on its next write.
 - `window.KuroGamesDurableEndpoint = ""` can temporarily disable DO and use the legacy polling transport.
 - Transient ticket/transport failures fall back to the legacy polling implementation. Authentication, missing room membership, and full-room responses fail closed rather than bypassing the checks.
 - Existing API shape remains `KuroGames.multiplayer.createRoom/joinRoom`, `room.getPlayers()`, `room.onPlayersChange()`, `room.onMessage()`, `room.send()`, `room.getState()`, `room.updateState()`, and `room.leave()`.
@@ -44,10 +47,11 @@ All online features require a signed-in KURO account authenticated by Supabase A
 - Cloudflare API confirmed the DO namespace exists and the latest Worker deployment has a 100% traffic allocation.
 - Cloudflare API confirmed the `TICKET_SECRET` binding exists.
 - GitHub Actions runs `node --check online-room-worker.js`, `node --test tests/online-room-worker.test.mjs`, `node --check game-studio/kurog-online.js`, and embedded-script syntax checks on pushes and pull requests.
-- A real authenticated multi-browser gameplay test is still required. The deployment can be live while end-to-end game success remains unverified until two signed-in KURO accounts join the same room and exchange events.
+- Unit-level Worker tests cover host-only DO writes, persistence-before-broadcast, stale-write rejection, and one-time migration of older room snapshots.
+- A real authenticated multi-browser gameplay and latency test is still required. The deployment can be live while end-to-end card-action latency remains unverified until two signed-in KURO accounts complete an actual match.
 
 ## Remaining migration boundary
-This stage moves multiplayer WebSocket/presence/event delivery to Cloudflare Durable Objects. Account authentication, game configuration, room create/join authorization, rankings, cloud saves, and state writes remain on the current authenticated Supabase Edge Function API. Those are separate migrations and must not be described as fully moved to Durable Objects yet.
+This stage moves multiplayer WebSocket/presence/event delivery to Cloudflare Durable Objects. Generic room-state APIs, account authentication, game configuration, room create/join authorization, rankings, and cloud saves remain on the authenticated Supabase Edge Function API. UNON's opt-in host-authoritative game snapshot path is the exception: it writes directly to the room DO for low-latency card turns.
 
 ## Deployment workflow
 The manual GitHub Actions deploy workflow is gated by repository variable `DEPLOY_DURABLE_OBJECTS=true` and expects `CF_API_TOKEN` and `CF_ACCOUNT_ID` repository secrets. The Worker and secret have already been deployed directly through the connected Cloudflare account.
