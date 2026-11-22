@@ -719,35 +719,46 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 }
 
 
-/* Ranking showcase: compact player rows, kept in a single vertical column */
+/* Ranking showcase: fixed five-player capacity; rows never stretch when fewer players exist */
 #kuroRankingShowcase{
-  min-height:560px;
+  height:fit-content;
+  min-height:0;
+  max-height:none;
+  align-self:start;
   display:flex;
   flex-direction:column;
+  box-sizing:border-box;
 }
 #kuroRankingShowcase .rank-list{
   display:grid !important;
   grid-template-columns:minmax(0,1fr) !important;
+  grid-template-rows:78px repeat(4,58px) !important;
   grid-auto-flow:row !important;
-  grid-auto-rows:auto !important;
-  flex:0 0 auto !important;
-  align-content:start;
+  grid-auto-rows:58px !important;
+  flex:0 0 342px !important;
+  height:342px !important;
+  min-height:342px !important;
+  max-height:342px !important;
+  align-content:start !important;
   width:100%;
   margin:12px 0 0 !important;
   gap:8px !important;
+  box-sizing:border-box;
 }
 #kuroRankingShowcase .rank-row{
   display:grid !important;
   grid-template-columns:40px minmax(0,1fr) auto !important;
   align-items:center;
   width:100% !important;
-  min-height:58px !important;
+  height:58px !important;
+  min-height:0 !important;
   padding:6px 9px !important;
   gap:8px !important;
   border-radius:11px;
+  box-sizing:border-box;
 }
 #kuroRankingShowcase .rank-row:nth-child(1){
-  min-height:78px !important;
+  height:78px !important;
   padding:8px 10px !important;
 }
 #kuroRankingShowcase .rank-medal{
@@ -784,13 +795,17 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
   font-size:11px;
 }
 #kuroRankingShowcase .rank-foot{margin-top:14px}
-@media(max-width:980px) and (min-width:681px){
-  #kuroRankingShowcase{min-height:520px}
-}
 @media(max-width:680px){
-  #kuroRankingShowcase{min-height:500px}
-  #kuroRankingShowcase .rank-row{min-height:54px !important}
-  #kuroRankingShowcase .rank-row:nth-child(1){min-height:70px !important}
+  #kuroRankingShowcase .rank-list{
+    grid-template-rows:70px repeat(4,54px) !important;
+    grid-auto-rows:54px !important;
+    flex-basis:318px !important;
+    height:318px !important;
+    min-height:318px !important;
+    max-height:318px !important;
+  }
+  #kuroRankingShowcase .rank-row{height:54px !important}
+  #kuroRankingShowcase .rank-row:nth-child(1){height:70px !important}
   #kuroRankingShowcase .rank-medal{width:36px !important;height:36px !important}
 }
 </style>
@@ -994,7 +1009,7 @@ function initKuroRankingShowcase(){
  async function fetchRanking(game){
   const key=game.id+"::"+game.mode;
   if(cache.has(key))return cache.get(key);
-  const {data,error}=await kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"leaderboard",gameId:game.id,mode:game.mode,limit:3}});
+  const {data,error}=await kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"leaderboard",gameId:game.id,mode:game.mode,limit:5}});
   if(error)throw error;
   const rows=Array.isArray(data?.scores)?data.scores:[];
   cache.set(key,rows);return rows;
@@ -1021,7 +1036,7 @@ function initKuroRankingShowcase(){
    try{
     const rows=await fetchRanking(game);
     if(!rows.length){showMessage("このモードのランキングデータはまだありません。");}
-    else listEl.innerHTML=rows.slice(0,3).map((row,ri)=>'<div class="rank-row"><span class="rank-medal">'+medals[ri]+'</span><span class="rank-name">'+esc(row.user?.username||row.user?.display_name||"プレイヤー")+'</span><span class="rank-score">'+Number(row.score||0).toLocaleString("ja-JP")+'</span></div>').join("");
+    else listEl.innerHTML=rows.slice(0,5).map((row,ri)=>'<div class="rank-row"><span class="rank-medal">'+medals[ri]+'</span><span class="rank-name">'+esc(row.user?.username||row.user?.display_name||"プレイヤー")+'</span><span class="rank-score">'+Number(row.score||0).toLocaleString("ja-JP")+'</span></div>').join("");
    }catch(e){
     showMessage("ランキングを取得できませんでした。");
     console.debug("KURO ranking carousel:",e);
