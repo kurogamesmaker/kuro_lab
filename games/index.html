@@ -1164,7 +1164,7 @@ function initKuroRankingShowcase(){
    index=nextIndex;
    const displayTitle=game.title+(modeName(game.mode)?" · "+modeName(game.mode):"");
    titleEl.classList.remove("rank-marquee");titleEl.replaceChildren();titleEl.textContent=displayTitle;
-   requestAnimationFrame(()=>{if(titleEl.scrollWidth>titleEl.clientWidth+2){const track=document.createElement("span");track.className="rank-marquee-track";track.style.setProperty("--rank-title-duration",Math.max(7,displayTitle.length/2.2)+"s");const first=document.createElement("span"),second=document.createElement("span");first.textContent=displayTitle;second.textContent=displayTitle;track.append(first,second);titleEl.textContent="";titleEl.append(track);titleEl.classList.add("rank-marquee");}});
+   requestAnimationFrame(()=>{const track=document.createElement("span");track.className="rank-marquee-track";track.style.setProperty("--rank-title-duration",Math.max(7,displayTitle.length/2.2)+"s");const first=document.createElement("span"),second=document.createElement("span");first.textContent=displayTitle;second.textContent=displayTitle;track.append(first,second);titleEl.textContent="";titleEl.append(track);titleEl.classList.add("rank-marquee");});
    linkEl.href="/games/play/?id="+encodeURIComponent(game.id);
    linkEl.textContent="このゲームを遊ぶ ↗";
    renderDots();
