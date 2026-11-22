@@ -65,7 +65,7 @@ Deno.serve(async (req: Request) => {
 
     if (action === "change_username") {
       if (!usernamePattern.test(username)) return reply({ error: "ユーザーネームは半角英数字と_の3〜24文字で入力してください。" }, 400, origin);
-      const token = req.headers.get("Authorization")?.replace(/^Bearer\\s+/i, "") || "";
+      const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "").trim() || "";
       if (!token) return reply({ error: "ログインしてください。" }, 401, origin);
       if (!url || !service) return reply({ error: "認証サーバーの設定が不足しています。" }, 503, origin);
       const admin = createClient(url, service, { auth: { autoRefreshToken: false, persistSession: false } });
