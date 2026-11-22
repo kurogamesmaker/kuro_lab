@@ -250,12 +250,13 @@ function makeDocument(){
  let js=rawJs;
  if(!moduleMode){while(js.startsWith(logger))js=js.slice(logger.length);}
  const scriptBlock=scriptOpen+(moduleMode?"":logger)+js+scriptClose;
+ const authGuard='<script>(function(){const isKuroAuthCreation=u=>/\\/auth\\/v1\\/signup(?:[/?#]|$)/i.test(String(u))||/\\/auth\\/v1\\/token\\?[^\\s#]*\\bgrant_type=anonymous\\b/i.test(String(u));const notify=()=>{try{parent.postMessage({type:"kuro-online-login-required",action:"signup"},"*")}catch(_){}};const nativeFetch=window.fetch.bind(window);window.fetch=function(input,init){const u=typeof input==="string"?input:(input&&input.url)||"";if(isKuroAuthCreation(u)){notify();return Promise.resolve(new Response(JSON.stringify({error:"ゲーム内で匿名KUROアカウントは作成できません。共通アカウント画面からログインしてください。"}),{status:403,headers:{"Content-Type":"application/json"}}));}return nativeFetch(input,init);};})();<\\/script>';
  const autoFitScript=project.settings&&project.settings.autoFitOverflow===false?"":"<scr"+"ipt>(function(){try{document.documentElement.style.overflowX='auto';document.body.style.overflowX='auto';document.querySelectorAll('img,video,svg,iframe').forEach(function(el){el.style.maxWidth='100%';});}catch(e){console.warn('KURO responsive fit',e);}})();<"+"/script>";
  if(/<html[\s>]/i.test(html)){
   let doc=html;
-  if(/<\/head>/i.test(doc))doc=doc.replace(/<\/head>/i,frameMeta+styleBlock+"</head>");
-  else if(/<html[^>]*>/i.test(doc))doc=doc.replace(/<html[^>]*>/i,m=>m+"<head>"+frameMeta+styleBlock+"</head>");
-  else doc=frameMeta+styleBlock+doc;
+  if(/<head\b[^>]*>/i.test(doc))doc=doc.replace(/<head\b[^>]*>/i,m=>m+authGuard+frameMeta+styleBlock);
+  else if(/<html[^>]*>/i.test(doc))doc=doc.replace(/<html[^>]*>/i,m=>m+"<head>"+authGuard+frameMeta+styleBlock+"</head>");
+  else doc="<!doctype html><html lang=\"ja\"><head><meta charset=\"utf-8\">"+authGuard+frameMeta+styleBlock+"</head><body>"+doc+"</body></html>";
   if(/<\/body>/i.test(doc))doc=doc.replace(/<\/body>/i,scriptBlock+autoFitScript+"</body>");
   else doc+=scriptBlock+autoFitScript;
   return doc;
