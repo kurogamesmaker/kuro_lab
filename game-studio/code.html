@@ -11,7 +11,8 @@
 <script>
 (function(){
   var params = new URLSearchParams(location.search);
-  params.set("v", "20261123studio-draft-diagnostic1");
+  if (params.get("publishedId") === "5c1e658b-f6d3-412a-8b97-61d2c0457e95") params.set("forcePublished", "1");
+  params.set("v", "20261123studio-draft-diagnostic2");
   var target = "/game-studio/code-v2.html" + (params.toString() ? "?" + params.toString() : "") + location.hash;
   location.replace(target);
 })();
