@@ -480,10 +480,28 @@ window.__KURO_STUDIO_BOOT_STAGE__="binding-editor-controls";
 const tickerBtn=$("rankingTickerBtn");
 if(tickerBtn&&requestedPublishedGameId){
  tickerBtn.style.display="inline-flex";
- tickerBtn.onclick=()=>{const gameId=project.publishedGameId||requestedPublishedGameId;let map={};try{map=JSON.parse(localStorage.getItem("kuroGamesRankingTickerByGame")||"{}");}catch(_){map={};}
- const current=map[gameId]||"",value=window.prompt("このゲームのランキングバーに流す文字を入力してください。\n空欄で元のゲーム名に戻ります。",current);
- if(value===null)return;const text=value.trim();if(text)map[gameId]=text;else delete map[gameId];
- try{localStorage.setItem("kuroGamesRankingTickerByGame",JSON.stringify(map));toast(text?"ランキングバーの表示文字を保存しました":"ゲーム名表示に戻しました");}catch(e){toast("保存できませんでした");}
+ tickerBtn.onclick=()=>{
+  const gameId=project.publishedGameId||requestedPublishedGameId,original=String(project.name||"ゲーム");
+  const readMap=key=>{try{return JSON.parse(localStorage.getItem(key)||"{}")}catch(_){return {}}};
+  const map=readMap("kuroGamesRankingTickerByGame"),historyMap=readMap("kuroGamesRankingTickerHistoryByGame"),current=map[gameId]||"";
+  const overlay=document.createElement("div");overlay.style.cssText="position:fixed;inset:0;z-index:99999;background:#080d18d9;display:grid;place-items:center;padding:16px;font-family:system-ui";
+  const panel=document.createElement("section");panel.style.cssText="width:min(560px,96vw);max-height:90vh;overflow:auto;background:#111b2c;color:#edf3ff;border:1px solid #34445e;border-radius:18px;padding:20px;box-shadow:0 24px 70px #0008";
+  panel.innerHTML='<h2 style="margin:0 0 4px;font-size:19px">ランキングバー表示設定</h2><p style="margin:0 0 16px;color:#9eacc4;font-size:12px">変更内容はこのゲームだけに保存されます。</p><div style="background:#0a1220;border:1px solid #28364e;border-radius:10px;padding:11px;margin-bottom:12px"><small style="color:#8e9db6">変更前のゲーム名</small><div id="tickerOriginal" style="font-weight:700;margin-top:3px"></div></div><label style="display:block;font-size:12px;font-weight:700;margin-bottom:6px">現在の表示文字</label><textarea id="tickerEdit" maxlength="160" rows="3" style="width:100%;resize:vertical;background:#0a1220;color:#fff;border:1px solid #384966;border-radius:9px;padding:10px;font:14px system-ui"></textarea><div style="display:flex;justify-content:space-between;font-size:11px;color:#94a4bc;margin:5px 0 12px"><span>空欄なら元のゲーム名を表示</span><span id="tickerCount">0 / 160</span></div><div style="font-size:12px;font-weight:700;margin-bottom:6px">リアルタイムプレビュー</div><div id="tickerPreview" style="background:#eaf2ff;color:#164b8e;border-radius:9px;padding:12px;overflow:hidden;white-space:nowrap;font-weight:800;text-align:center;margin-bottom:14px"></div><div style="font-size:12px;font-weight:700;margin-bottom:6px">テンプレート</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px"><button data-ticker-preset="rank">🏆 ランキング</button><button data-ticker-preset="hype">🔥 盛り上げ</button><button data-ticker-preset="simple">✨ シンプル</button></div><label style="font-size:12px;font-weight:700">以前の表示文字（履歴）</label><select id="tickerHistory" style="display:block;width:100%;margin:6px 0 14px;padding:9px;background:#0a1220;color:#fff;border:1px solid #384966;border-radius:8px"><option value="">履歴から選択…</option></select><div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap"><button id="tickerCancel">キャンセル</button><button id="tickerReset">元のゲーム名に戻す</button><button id="tickerSave">保存</button></div>';
+  overlay.id="kuroTickerModal";panel.id="kuroTickerPanel";overlay.appendChild(panel);document.body.appendChild(overlay);panel.querySelectorAll("button").forEach(b=>{b.style.cssText="cursor:pointer;border:1px solid #3a4b67;background:#1b2940;color:#eaf1ff;border-radius:8px;padding:8px 11px";});panel.querySelector("#tickerOriginal").textContent=original;
+  const edit=panel.querySelector("#tickerEdit"),preview=panel.querySelector("#tickerPreview"),count=panel.querySelector("#tickerCount"),history=panel.querySelector("#tickerHistory");
+  edit.value=current;const templates={rank:"🏆 "+original+"｜ランキング挑戦中！",hype:"🔥 "+original+"をプレイ！ハイスコアを目指そう！",simple:"✨ "+original+" ✨"};
+  const update=()=>{const value=edit.value;count.textContent=value.length+" / 160";preview.textContent=value.trim()||original;};
+  update();(historyMap[gameId]||[]).slice(0,20).forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;history.appendChild(o);});
+  edit.addEventListener("input",update);history.addEventListener("change",()=>{if(history.value){edit.value=history.value;update();}});
+  panel.querySelectorAll("[data-ticker-preset]").forEach(b=>b.onclick=()=>{edit.value=templates[b.dataset.tickerPreset];update();});
+  const close=()=>overlay.remove();panel.querySelector("#tickerCancel").onclick=close;overlay.addEventListener("click",e=>{if(e.target===overlay)close();});
+  panel.querySelector("#tickerReset").onclick=()=>{edit.value="";update();};
+  panel.querySelector("#tickerSave").onclick=()=>{const value=edit.value.trim(),nextMap=readMap("kuroGamesRankingTickerByGame"),nextHistory=readMap("kuroGamesRankingTickerHistoryByGame"),previous=nextMap[gameId]||"";
+   if(previous&&previous!==value){const list=Array.isArray(nextHistory[gameId])?nextHistory[gameId]:[];nextHistory[gameId]=[previous,...list.filter(v=>v!==previous)].slice(0,20);}
+   if(value)nextMap[gameId]=value;else delete nextMap[gameId];
+   try{localStorage.setItem("kuroGamesRankingTickerByGame",JSON.stringify(nextMap));localStorage.setItem("kuroGamesRankingTickerHistoryByGame",JSON.stringify(nextHistory));close();toast(value?"表示文字を保存しました":"元のゲーム名に戻しました");}catch(e){toast("保存できませんでした");}
+  };
+  edit.focus();
  };
 }
 $("projectName").value=project.name||"新しいゲーム";
