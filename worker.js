@@ -6,8 +6,25 @@ function applyMaruFavicon(html) {
     '<link rel="icon" type="image/png" sizes="48x48" href="/assets/brand/logo/kurolab_icon_maru_48.png?v=' + FORCE_MARU_ICON_VERSION + '">' +
     '<link rel="shortcut icon" href="/assets/brand/logo/kurolab_icon_maru_48.png?v=' + FORCE_MARU_ICON_VERSION + '">' +
     '<link rel="apple-touch-icon" sizes="160x160" href="/assets/brand/logo/kurolab_icon_maru_160.png?v=' + FORCE_MARU_ICON_VERSION + '">';
+  const rankTitleStyle =
+    '<style id="kuro-rank-game-badge-worker-override">' +
+    'html body #kuroRankingShowcase #kuroRankGame{' +
+    'background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important;' +
+    '}' +
+    'html body #kuroRankingShowcase #kuroRankGame::before,' +
+    'html body #kuroRankingShowcase #kuroRankGame::after,' +
+    'html body #kuroRankingShowcase #kuroRankGame *::before,' +
+    'html body #kuroRankingShowcase #kuroRankGame *::after{' +
+    'content:none!important;display:none!important;visibility:hidden!important;opacity:0!important;' +
+    'width:0!important;height:0!important;margin:0!important;padding:0!important;border:0!important;' +
+    'background:none!important;box-shadow:none!important;' +
+    '}' +
+    '</style>';
   const cleanHtml = String(html || "").replace(iconTags, "");
-  return cleanHtml.replace(/<head\b[^>]*>/i, head => head + forcedLinks);
+  const withFavicon = cleanHtml.replace(/<head\b[^>]*>/i, head => head + forcedLinks);
+  return /<\/body>/i.test(withFavicon)
+    ? withFavicon.replace(/<\/body>/i, rankTitleStyle + "</body>")
+    : withFavicon + rankTitleStyle;
 }
 
 const SUPABASE_URL = "https://cprvpphlfpmiegjiutjn.supabase.co";
