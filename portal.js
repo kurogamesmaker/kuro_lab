@@ -355,14 +355,103 @@ function bindKuroEnginePage(){
  function renderWebResults(data){
   var rows=Array.isArray(data.results)?data.results:[];
   if(!rows.length){showEmpty("検索結果がありませんでした。別のキーワードで試してください。");return;}
-  results.innerHTML='<div class="kuro-result-root"><span>探索の起点</span><b>'+esc(query)+'</b></div>'+rows.map(function(item){
-   var href=safeHttpUrl(item.url);if(!href)return "";
-   var host="";try{host=new URL(href).hostname.replace(/^www\./,"");}catch(e){}
-   return '<article class="kuro-web-result"><a href="'+esc(href)+'" target="_blank" rel="noopener noreferrer nofollow"><div class="kuro-result-url">'+esc(host)+'</div><h2>'+esc(item.title||host)+'</h2></a><p>'+esc(item.snippet||"")+'</p>'+(item.date?'<time>'+esc(item.date)+'</time>':"")+'<button type=\"button\" class=\"kuro-branch-btn\" data-kuro-branch=\"'+esc((item.title||host).slice(0,90))+'\">＋ この情報から探索</button></article>';
-  }).filter(Boolean).join("")||'<div class="kuro-engine-empty">表示できる検索結果がありませんでした。</div>';
+  var validRows=rows.filter(function(item){return safeHttpUrl(item.url);}).slice(0,12);
+  results.innerHTML=validRows.map(function(item,index){
+   var href=safeHttpUrl(item.url),host="";
+   try{host=new URL(href).hostname.replace(/^www\./,"");}catch(e){}
+   return '<article class="kuro-web-result"><a href="'+esc(href)+'" target="_blank" rel="noopener noreferrer nofollow"><div class="kuro-result-url">'+esc(host)+'</div><h2>'+esc(item.title||host)+'</h2></a><p>'+esc(item.snippet||"")+'</p>'+(item.date?'<time>'+esc(item.date)+'</time>':"")+'<button type="button" class="kuro-branch-btn" data-graph-focus="g'+(index+1)+'">マップで見る ↗</button></article>';
+  }).join("")||'<div class="kuro-engine-empty">表示できる検索結果がありませんでした。</div>';
+  createSearchExplorer(validRows);
  }
- if(!document.getElementById("kuro-branch-style")){var branchStyle=document.createElement("style");branchStyle.id="kuro-branch-style";branchStyle.textContent=".kuro-branch-btn{margin-top:12px;border:1px solid var(--line,rgba(100,110,130,.25));background:var(--surface-2,rgba(100,110,130,.08));color:inherit;padding:8px 10px;border-radius:9px;cursor:pointer;font-weight:700}.kuro-result-root{display:flex;flex-direction:column;gap:5px;margin:12px 0 18px 0;padding:13px 16px;border:1px solid var(--portal-accent,#7180d8);border-radius:14px;background:var(--portal-accent-soft,rgba(100,100,200,.12));position:relative}.kuro-result-root span{font-size:10px;letter-spacing:.12em;color:var(--muted,#667085)}.kuro-result-root b{font-size:16px}.kuro-web-result{position:relative;margin-left:18px;border-left:2px solid var(--portal-accent,#7180d8);border-radius:0 14px 14px 0}.kuro-web-result:before{content:'';position:absolute;left:-2px;top:26px;width:18px;border-top:2px solid var(--portal-accent,#7180d8);opacity:.75}.kuro-web-result:after{content:'';position:absolute;left:-2px;bottom:-13px;height:14px;border-left:2px solid var(--portal-accent,#7180d8);opacity:.65}.kuro-branch-btn:hover{border-color:var(--portal-accent,#7180d8);transform:translateY(-1px)}";document.head.appendChild(branchStyle);}
- function renderImageResults(data){
+ function createSearchExplorer(rows){
+  var old=$("#kuro-search-explorer");if(old)old.remove();
+  var graph=document.createElement("section");graph.id="kuro-search-explorer";graph.className="kuro-search-explorer";
+  graph.innerHTML='<div class="kuro-explorer-header"><div><span class="kuro-explorer-eyebrow">KUROLAB DISCOVERY NETWORK</span><h2>関連探索マップ</h2><p>サイトやテーマをノードでつなぎ、気になる方向へ探索できます。</p></div><div class="kuro-explorer-tools"><button type="button" data-explorer-zoom="out" aria-label="縮小">−</button><button type="button" data-explorer-zoom="in" aria-label="拡大">＋</button><button type="button" data-explorer-zoom="fit">全体表示</button><button type="button" data-explorer-reset>リセット</button></div></div><div class="kuro-explorer-legend"><span><i class="kuro-legend-dot root"></i>検索テーマ</span><span><i class="kuro-legend-dot site"></i>ウェブサイト</span><span><i class="kuro-legend-line"></i>関連するサイト</span></div><div class="kuro-explorer-viewport" aria-label="関連探索マップ。ドラッグで移動、ボタンで拡大縮小できます。"><div class="kuro-explorer-spacer"><div class="kuro-explorer-stage"><svg class="kuro-explorer-svg" aria-hidden="true"></svg><div class="kuro-explorer-nodes"></div></div></div></div><div class="kuro-explorer-foot"><span class="kuro-explorer-count"></span><span>ノードを開くとサイトへ移動 ／「関連を広げる」で枝を追加</span></div>';
+  results.appendChild(graph);
+  var viewport=graph.querySelector(".kuro-explorer-viewport"),spacer=graph.querySelector(".kuro-explorer-spacer"),stage=graph.querySelector(".kuro-explorer-stage"),svg=graph.querySelector(".kuro-explorer-svg"),nodeLayer=graph.querySelector(".kuro-explorer-nodes"),countLabel=graph.querySelector(".kuro-explorer-count");
+  var nodes=[{id:"root",depth:0,parent:null,title:query,url:"",snippet:"検索したテーマ"}],edges=[],serial=0,scale=1,canvasWidth=900,canvasHeight=560;
+  rows.forEach(function(item,index){var url=safeHttpUrl(item.url);if(!url)return;var id="g"+(index+1);nodes.push({id:id,parent:"root",depth:1,title:String(item.title||url).slice(0,110),url:url,snippet:String(item.snippet||"").slice(0,220)});edges.push({from:"root",to:id,type:"branch"});});
+  function hostOf(url){try{return new URL(url).hostname.replace(/^www\./,"").toLowerCase();}catch(e){return "";}}
+  function nodeById(id){return nodes.find(function(n){return n.id===id;});}
+  function edgeExists(from,to){return edges.some(function(e){return e.from===from&&e.to===to||e.from===to&&e.to===from;});}
+  function layout(){
+   var levels={};nodes.forEach(function(n){(levels[n.depth]||(levels[n.depth]=[])).push(n);});
+   var maxDepth=Math.max.apply(null,nodes.map(function(n){return n.depth;}));
+   var maxCount=1;Object.keys(levels).forEach(function(k){maxCount=Math.max(maxCount,levels[k].length);});
+   canvasHeight=Math.max(560,maxCount*142+110);canvasWidth=100+(maxDepth+1)*330+220;
+   Object.keys(levels).forEach(function(key){var depth=Number(key),list=levels[key];list.forEach(function(n,index){n.x=48+depth*330;n.y=depth===0?canvasHeight/2:((index+1)*canvasHeight/(list.length+1));});});
+  }
+  function addPath(from,to,type){
+   if(!from||!to)return;
+   var path=document.createElementNS("http://www.w3.org/2000/svg","path"),x1=from.x+238,y1=from.y,x2=to.x,y2=to.y;
+   if(type==="related"){x1=from.x+238;y1=from.y+28;x2=to.x;y2=to.y+28;}
+   var bend=Math.max(50,Math.abs(x2-x1)*0.48);
+   path.setAttribute("d","M "+x1+" "+y1+" C "+(x1+bend)+" "+y1+", "+(x2-bend)+" "+y2+", "+x2+" "+y2);
+   path.setAttribute("class","kuro-explorer-edge "+(type==="related"?"is-related":""));
+   svg.appendChild(path);
+  }
+  function draw(){
+   layout();stage.style.width=canvasWidth+"px";stage.style.height=canvasHeight+"px";stage.style.transform="scale("+scale+")";spacer.style.width=(canvasWidth*scale)+"px";spacer.style.height=(canvasHeight*scale)+"px";
+   nodeLayer.innerHTML="";svg.innerHTML="";svg.setAttribute("width",canvasWidth);svg.setAttribute("height",canvasHeight);svg.setAttribute("viewBox","0 0 "+canvasWidth+" "+canvasHeight);
+   edges.forEach(function(edge){addPath(nodeById(edge.from),nodeById(edge.to),edge.type);});
+   var byHost={};nodes.filter(function(n){return n.url;}).forEach(function(n){var host=hostOf(n.url);if(host)(byHost[host]||(byHost[host]=[])).push(n);});
+   Object.keys(byHost).forEach(function(host){var group=byHost[host];if(group.length>1){for(var i=0;i<group.length;i++){for(var j=i+1;j<group.length;j++){if(group[i].parent===group[j].id||group[j].parent===group[i].id)continue;addPath(group[i],group[j],"related");}}}});
+   nodes.forEach(function(n){
+    var el=document.createElement("article");el.className="kuro-explorer-node "+(n.id==="root"?"is-root":"");el.dataset.explorerNode=n.id;el.style.left=n.x+"px";el.style.top=(n.y-54)+"px";
+    var domain=hostOf(n.url),link=n.url?'<a class="kuro-explorer-node-link" href="'+esc(n.url)+'" target="_blank" rel="noopener noreferrer nofollow"><strong>'+esc(n.title)+'</strong><span>'+esc(domain)+'</span></a>':'<div class="kuro-explorer-root-label"><span>SEARCH TOPIC</span><strong>'+esc(n.title)+'</strong></div>';
+    var action=n.depth<4?'<button type="button" data-explorer-expand="'+esc(n.id)+'" '+(n.busy?"disabled":"")+'>'+(n.busy?"検索中…":n.depth===0?"＋ 別の関連を探す":"＋ 関連を広げる")+'</button>':'<small class="kuro-explorer-limit">探索の深さの上限です</small>';
+    el.innerHTML=link+'<p>'+esc(n.error||n.snippet|| (n.id==="root"?"ここから探索を広げよう":"関連ページを検索できます"))+'</p>'+action;
+    nodeLayer.appendChild(el);
+   });
+   countLabel.textContent=nodes.length+" ノード · "+edges.length+" 接続";
+  }
+  async function expandNode(id){
+   var parent=nodeById(id);if(!parent||parent.busy||parent.depth>=4||nodes.length>=45)return;
+   parent.busy=true;parent.error="";draw();
+   try{
+    var response=await fetch("/api/web-search",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({query:String(parent.title||query).slice(0,180),mode:"web"})});
+    var payload=await response.json().catch(function(){return {};});
+    if(!response.ok)throw new Error(payload.message||"関連情報を取得できませんでした。");
+    var found=Array.isArray(payload.results)?payload.results:[];
+    var added=0;
+    found.slice(0,6).forEach(function(item){
+     var url=safeHttpUrl(item.url);if(!url)return;
+     var existing=nodes.find(function(n){return n.url===url;});
+     if(existing){if(!edgeExists(parent.id,existing.id))edges.push({from:parent.id,to:existing.id,type:"branch"});return;}
+     if(nodes.length>=45||added>=6)return;
+     var node={id:"g"+(++serial+rows.length),parent:parent.id,depth:parent.depth+1,title:String(item.title||url).slice(0,110),url:url,snippet:String(item.snippet||"").slice(0,220)};
+     nodes.push(node);edges.push({from:parent.id,to:node.id,type:"branch"});added++;
+    });
+    if(!added&&found.length===0)parent.error="関連する検索結果が見つかりませんでした。";
+   }catch(error){parent.error=error.message||"検索に失敗しました。";}
+   finally{parent.busy=false;draw();}
+  }
+  graph.addEventListener("click",function(event){
+   var expand=event.target.closest("[data-explorer-expand]");
+   if(expand){expandNode(expand.dataset.explorerExpand);return;}
+   var zoom=event.target.closest("[data-explorer-zoom]");
+   if(zoom){var action=zoom.dataset.explorerZoom;if(action==="in")scale=Math.min(1.65,scale+0.15);if(action==="out")scale=Math.max(0.55,scale-0.15);if(action==="fit")scale=Math.min(1,(viewport.clientWidth-24)/canvasWidth);draw();return;}
+   if(event.target.closest("[data-explorer-reset]")){scale=Math.min(1,(viewport.clientWidth-24)/canvasWidth);draw();viewport.scrollTo({left:0,top:0,behavior:"smooth"});}
+  });
+  graph.addEventListener("click",function(event){
+   var focus=event.target.closest("[data-graph-focus]");if(!focus)return;
+   var node=nodeById(focus.dataset.graphFocus);if(!node)return;
+   viewport.scrollTo({left:Math.max(0,node.x*scale-35),top:Math.max(0,(node.y-viewport.clientHeight/2)*scale),behavior:"smooth"});
+   var el=nodeLayer.querySelector('[data-explorer-node="'+node.id+'"]');if(el){el.classList.add("is-highlighted");window.setTimeout(function(){el.classList.remove("is-highlighted");},1300);}
+  });
+  var dragging=false,lastX=0,lastY=0;
+  viewport.addEventListener("pointerdown",function(event){if(event.target.closest("a,button"))return;dragging=true;lastX=event.clientX;lastY=event.clientY;viewport.classList.add("is-dragging");try{viewport.setPointerCapture(event.pointerId);}catch(e){}});
+  viewport.addEventListener("pointermove",function(event){if(!dragging)return;var dx=event.clientX-lastX,dy=event.clientY-lastY;lastX=event.clientX;lastY=event.clientY;viewport.scrollLeft-=dx;viewport.scrollTop-=dy;});
+  function stopDrag(){dragging=false;viewport.classList.remove("is-dragging");}
+  viewport.addEventListener("pointerup",stopDrag);viewport.addEventListener("pointercancel",stopDrag);viewport.addEventListener("lostpointercapture",stopDrag);
+  viewport.addEventListener("wheel",function(event){if(!event.ctrlKey)return;event.preventDefault();scale=Math.max(0.55,Math.min(1.65,scale+(event.deltaY<0?0.08:-0.08)));draw();},{passive:false});
+  if(!document.getElementById("kuro-explorer-style")){
+   var style=document.createElement("style");style.id="kuro-explorer-style";
+   style.textContent=".kuro-web-result{position:relative;padding:15px 18px;border:1px solid var(--line,rgba(100,110,130,.2));border-radius:14px;background:var(--surface,white);min-width:0}.kuro-web-result a{color:var(--text,#1e293b);text-decoration:none}.kuro-web-result h2{font-size:17px;line-height:1.45;margin:5px 0 7px}.kuro-web-result p{font-size:13px;line-height:1.7;color:var(--muted,#667085);margin:0}.kuro-result-url{font-size:11px;color:#16805d;overflow-wrap:anywhere}.kuro-web-result time{font-size:11px;color:var(--muted,#667085);margin-left:8px}.kuro-branch-btn{margin-top:11px;border:1px solid var(--line,rgba(100,110,130,.25));background:var(--surface-2,rgba(80,100,140,.09));color:inherit;padding:7px 10px;border-radius:9px;cursor:pointer;font-weight:700}.kuro-search-explorer{margin-top:24px;border:1px solid rgba(96,127,190,.22);border-radius:20px;overflow:hidden;background:linear-gradient(145deg,#fff 0%,#f6f9ff 58%,#fffdf5 100%);box-shadow:0 12px 34px rgba(57,83,132,.08);color:#192943}.kuro-explorer-header{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:17px 20px;border-bottom:1px solid rgba(100,125,170,.16);flex-wrap:wrap}.kuro-explorer-eyebrow{font-size:9px;letter-spacing:.16em;font-weight:850;color:#6681b8}.kuro-explorer-header h2{margin:4px 0;font-size:19px;color:#1c3155}.kuro-explorer-header p{margin:0;color:#72809a;font-size:12px}.kuro-explorer-tools{display:flex;gap:6px;flex-wrap:wrap}.kuro-explorer-tools button{border:1px solid #dbe4f2;border-radius:9px;background:#fff;color:#38527e;padding:8px 11px;font-size:12px;font-weight:750;cursor:pointer}.kuro-explorer-tools button:hover{background:#edf4ff;border-color:#a9c1ea}.kuro-explorer-legend{display:flex;gap:18px;align-items:center;padding:10px 20px;font-size:10px;color:#72809a}.kuro-explorer-legend span{display:flex;align-items:center;gap:6px}.kuro-legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block}.kuro-legend-dot.root{background:#5c88e6;box-shadow:0 0 0 4px #e5edff}.kuro-legend-dot.site{background:#e3b341}.kuro-legend-line{width:22px;border-top:2px dashed #e2b34a;display:inline-block}.kuro-explorer-viewport{height:570px;overflow:auto;position:relative;cursor:grab;background-image:radial-gradient(#d9e2f2 1px,transparent 1px),radial-gradient(ellipse at 15% 35%,rgba(103,153,239,.09),transparent 42%),radial-gradient(ellipse at 85% 70%,rgba(244,197,91,.10),transparent 38%);background-size:22px 22px,auto,auto;touch-action:none;scrollbar-color:#c5d3e8 transparent}.kuro-explorer-viewport.is-dragging{cursor:grabbing;user-select:none}.kuro-explorer-spacer{position:relative;min-width:100%;min-height:100%}.kuro-explorer-stage{position:absolute;left:0;top:0;transform-origin:top left}.kuro-explorer-svg{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}.kuro-explorer-edge{fill:none;stroke:#8aa9e4;stroke-width:2.6;stroke-linecap:round;opacity:.8}.kuro-explorer-edge.is-related{stroke:#e0b24c;stroke-width:2;stroke-dasharray:6 7;opacity:.9}.kuro-explorer-nodes{position:absolute;inset:0}.kuro-explorer-node{position:absolute;width:238px;min-height:108px;box-sizing:border-box;padding:12px 13px;border:1px solid #dbe5f3;border-radius:15px;background:rgba(255,255,255,.96);box-shadow:0 7px 22px rgba(48,75,121,.10);display:flex;flex-direction:column;gap:6px;z-index:1;transition:box-shadow .18s,border-color .18s,transform .18s}.kuro-explorer-node:before{content:'';position:absolute;width:7px;height:7px;border-radius:50%;left:-4px;top:18px;background:#7fa3e9;box-shadow:0 0 0 4px #edf3ff}.kuro-explorer-node.is-root{border-color:#8caae9;background:linear-gradient(135deg,#fff,#edf4ff);box-shadow:0 9px 26px rgba(70,112,190,.16)}.kuro-explorer-node.is-root:before{background:#477fe0;box-shadow:0 0 0 5px #e2ecff}.kuro-explorer-node.is-highlighted{border-color:#e1b448;box-shadow:0 0 0 5px rgba(232,190,85,.22),0 10px 30px rgba(48,75,121,.14);transform:translateY(-2px)}.kuro-explorer-node-link{color:#1d355c;text-decoration:none;display:block;min-width:0}.kuro-explorer-node-link strong,.kuro-explorer-root-label strong{font-size:12px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.kuro-explorer-node-link span,.kuro-explorer-root-label span{display:block;margin-top:4px;color:#6984b2;font-size:10px;overflow-wrap:anywhere}.kuro-explorer-root-label span{font-size:9px;letter-spacing:.12em;font-weight:850}.kuro-explorer-node p{margin:0;color:#7c879b;font-size:10px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.kuro-explorer-node button{align-self:flex-start;border:0;border-radius:8px;padding:6px 9px;background:linear-gradient(110deg,#e9f1ff,#fff5d9);color:#345582;font-size:10px;font-weight:800;cursor:pointer}.kuro-explorer-node button:disabled{opacity:.55;cursor:wait}.kuro-explorer-limit{font-size:10px;color:#9a8a65}.kuro-explorer-foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 18px;border-top:1px solid rgba(100,125,170,.16);font-size:10px;color:#8190a8}.kuro-explorer-count{font-weight:800;color:#617ba9}@media(max-width:640px){.kuro-explorer-header{padding:14px}.kuro-explorer-tools{width:100%}.kuro-explorer-tools button{flex:1}.kuro-explorer-viewport{height:490px}.kuro-explorer-legend{padding:9px 14px;gap:12px}.kuro-explorer-foot{padding:10px 13px}}";
+   document.head.appendChild(style);
+  }
+  draw();scale=Math.min(1,(viewport.clientWidth-24)/canvasWidth);draw();
+ } function renderImageResults(data){
   var rows=Array.isArray(data.images)?data.images:[];
   if(!rows.length){showEmpty("画像が見つかりませんでした。別のキーワードで試してください。");return;}
   results.innerHTML='<div class="kuro-image-results">'+rows.map(function(item){
@@ -402,7 +491,7 @@ function bindKuroEnginePage(){
    showEmpty("通信に失敗しました。インターネット接続を確認して、もう一度検索してください。");
   }
  }
- results.addEventListener("click",function(event){var b=event.target.closest("[data-kuro-branch]");if(!b)return;query=String(b.dataset.kuroBranch||"").trim().slice(0,180);input.value=query;updateAddress(true);runSearch();});
+ results.addEventListener("click",function(event){var focus=event.target.closest("[data-graph-focus]");if(!focus)return;var graph=$("#kuro-search-explorer");if(graph){var node=graph.querySelector('[data-explorer-node="'+focus.dataset.graphFocus+'"]');if(node){node.classList.add("is-highlighted");window.setTimeout(function(){node.classList.remove("is-highlighted");},1300);}}});
  form.onsubmit=function(event){event.preventDefault();query=String(input.value||"").trim().slice(0,180);input.value=query;updateAddress(true);runSearch();};
  document.querySelectorAll("[data-kuro-search-mode]").forEach(function(button){
   button.onclick=function(){var next=button.dataset.kuroSearchMode;if(!next||next===mode)return;mode=next;updateTabs();updateAddress(false);runSearch();};
