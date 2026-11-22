@@ -144,15 +144,17 @@ Deno.serve(async (req: Request) => {
       const since30 = new Date(now.getTime() - 30 * 86400000).toISOString();
       const since7 = new Date(now.getTime() - 7 * 86400000).toISOString();
       const since24 = new Date(now.getTime() - 24 * 3600000).toISOString();
-      const [profileCount, postCount, eventResult, postRows, replyRows, chatRows] = await Promise.all([
+      const chatStatsSince = new Date(now.getTime() - 31 * 86400000).toISOString().slice(0, 10);
+      const [profileCount, postCount, eventResult, postRows, replyRows, chatRows, chatStatsRows] = await Promise.all([
         admin.from("profiles").select("id", { count: "exact", head: true }),
         admin.from("posts").select("id", { count: "exact", head: true }),
         admin.from("usage_events").select("user_id,visitor_id,event_name,created_at,widget_key,service_key,status_code,error_code").gte("created_at", since30).order("created_at", { ascending: false }).range(0, 9999),
         admin.from("posts").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(0, 9999),
         admin.from("post_replies").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(0, 9999),
-        admin.from("public_chat_messages").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(0, 9999)
+        admin.from("public_chat_messages").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(0, 9999),
+        admin.from("public_chat_daily_stats").select("chat_date,message_count").gte("chat_date", chatStatsSince).order("chat_date", { ascending: true }).range(0, 9999)
       ]);
-      for (const result of [profileCount, postCount, eventResult, postRows, replyRows, chatRows]) {
+      for (const result of [profileCount, postCount, eventResult, postRows, replyRows, chatRows, chatStatsRows]) {
         if (result.error) throw result.error;
       }
       const tokyoKey = (value: string | Date) => {
@@ -176,6 +178,12 @@ Deno.serve(async (req: Request) => {
       }
       for (const row of postRows.data || []) { const point = dailyMap.get(tokyoKey(row.created_at)); if (point) point.posts++; }
       for (const row of replyRows.data || []) { const point = dailyMap.get(tokyoKey(row.created_at)); if (point) point.replies++; }
+      for (const row of chatStatsRows.data || []) {
+        const point = dailyMap.get(row.chat_date);
+        if (point) point.chat += Number(row.message_count) || 0;
+      }
+      // Count only messages still in the live table; archived dates are read from
+      // public_chat_daily_stats so the daily purge never makes the chart drop to zero.
       for (const row of chatRows.data || []) { const point = dailyMap.get(tokyoKey(row.created_at)); if (point) point.chat++; }
       const rows7 = events.filter((e) => e.created_at >= since7);
       const rows24 = events.filter((e) => e.created_at >= since24);
@@ -216,7 +224,7 @@ Deno.serve(async (req: Request) => {
         })),
         widgets: Array.from(widgetMap.values()).sort((a, b) => b.views - a.views || b.adds - a.adds).slice(0, 20),
         apis: Array.from(apiMap.values()).map((item) => ({ ...item, error_rate: item.requests ? Math.round(item.errors / item.requests * 1000) / 10 : 0 })).sort((a, b) => b.errors - a.errors || b.requests - a.requests),
-        truncated: events.length >= 10000 || (postRows.data || []).length >= 10000 || (replyRows.data || []).length >= 10000 || (chatRows.data || []).length >= 10000
+        truncated: events.length >= 10000 || (postRows.data || []).length >= 10000 || (replyRows.data || []).length >= 10000 || (chatRows.data || []).length >= 10000 || (chatStatsRows.data || []).length >= 10000
       }, 200, origin);
     }
 
