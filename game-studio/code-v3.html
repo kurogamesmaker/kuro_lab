@@ -60,20 +60,23 @@
     (document.body||document.documentElement).appendChild(panel);
    }
    var detailsNode=document.getElementById("kuro-studio-diagnostic-details");
-   if(detailsNode)detailsNode.textContent=[kind,message,filename?"ファイル: "+filename:"",line?"行: "+line+(column?" / 列: "+column:""):"",stack||""].filter(Boolean).join("\n");
+   if(detailsNode)detailsNode.textContent=[kind,message,"起動段階: "+(window.__KURO_STUDIO_BOOT_STAGE__||"early"),filename?"ファイル: "+filename:"",line?"行: "+line+(column?" / 列: "+column:""):"",stack||""].filter(Boolean).join("\n");
    console.error("[KURO Studio diagnostic]",kind,message,filename,line,column,stack||"");
   }catch(_){}
  }
+ window.__KURO_STUDIO_REPORT_ERROR__=report;
  window.addEventListener("error",function(e){report("Studioページ側のJavaScriptエラー",e.message||"Script error",e.filename||"",e.lineno||0,e.colno||0,e.error&&e.error.stack||"");},true);
  window.addEventListener("unhandledrejection",function(e){var reason=e&&e.reason;report("Studioページ側の未処理Promiseエラー",reason&&reason.message||String(reason||"unknown error"),location.href,0,0,reason&&reason.stack||"");});
- window.addEventListener("load",function(){window.setTimeout(function(){if(!window.__KURO_STUDIO_CORE_READY)report("Studio本体の起動確認に失敗","メインスクリプトが最後まで実行されていません。上のエラー情報を確認してください。",location.href,0,0,"");},1800);});
+ window.addEventListener("load",function(){window.setTimeout(function(){if(!window.__KURO_STUDIO_CORE_READY&&!window.__KURO_STUDIO_REDIRECTING)report("Studio本体の起動確認に失敗","メインスクリプトが最後まで実行されていません。起動段階を確認してください。",location.href,0,0,"");},1800);});
  window.__KURO_STUDIO_EARLY_DIAGNOSTICS__=true;
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+window.__KURO_STUDIO_BOOT_STAGE__="main-script-start";
 (function(){
 "use strict";
+window.__KURO_STUDIO_BOOT_STAGE__="loading-project-state";
 const $=id=>document.getElementById(id);
 const KEY="kuroGameStudio.v1";
 const SUPABASE_URL="https://cprvpphlfpmiegjiutjn.supabase.co",SUPABASE_KEY="sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
@@ -179,8 +182,8 @@ const codeParams=new URLSearchParams(location.search);
 const requestedLocalProjectId=codeParams.get("projectId");
 const requestedPublishedGameId=codeParams.get("publishedId");
 project=getStoredProject();
-if(!project&&requestedLocalProjectId){location.replace("/game-studio/projects.html");return;}
-if(!project&&!new URLSearchParams(location.search).get("publishedId")){location.replace("/game-studio/projects.html");return;}
+if(!project&&requestedLocalProjectId){window.__KURO_STUDIO_REDIRECTING=true;window.__KURO_STUDIO_BOOT_STAGE__="redirecting-to-project-list";window.__KURO_STUDIO_CORE_READY=true;location.replace("/game-studio/projects.html");return;}
+if(!project&&!new URLSearchParams(location.search).get("publishedId")){window.__KURO_STUDIO_REDIRECTING=true;window.__KURO_STUDIO_BOOT_STAGE__="redirecting-to-project-list";window.__KURO_STUDIO_CORE_READY=true;location.replace("/game-studio/projects.html");return;}
 project=project||clone(fallback);
 if(!project.code||typeof project.code!=="object")project.code=makeVisualCode(project);
 ["html","css","js"].forEach(k=>{if(typeof project.code[k]!=="string")project.code[k]="";});
@@ -533,6 +536,7 @@ codeFileInput.addEventListener("change",async()=>{
   showTab(applied.includes("html")?"html":applied[0]);run();markDirty();$("previewStatus").textContent="複数ファイル読み込み済み";toast(files.length+"個のファイルを読み込みました");if(notes.length)console.info("複数ファイル読み込み:\n"+notes.join("\n"));
  }catch(error){toast("読み込み失敗: "+(error.message||"ファイルを確認してください"));console.error(error);}
 });
+window.__KURO_STUDIO_BOOT_STAGE__="binding-editor-controls";
 $("projectName").value=project.name||"新しいゲーム";
 $("projectName").addEventListener("input",()=>{project.name=$("projectName").value;markDirty();});
 $("codeEditor").addEventListener("input",editCurrent);
@@ -657,12 +661,16 @@ document.addEventListener("keydown",e=>{
  if(e.key==="Tab"&&document.activeElement===$("codeEditor")){e.preventDefault();const el=$("codeEditor"),start=el.selectionStart,end=el.selectionEnd,value=el.value;el.value=value.slice(0,start)+"  "+value.slice(end);el.selectionStart=el.selectionEnd=start+2;editCurrent()}
 });
 window.addEventListener("beforeunload",()=>{project.code[activeTab]=currentValue();persist(true)});
+window.__KURO_STUDIO_BOOT_STAGE__="initializing-editor-view";
 showTab("html");
 if(project.publishedGameId)$("publishBtn").textContent="公開内容を更新";
 // Supabase通信はkuroCloudflareFetchで中継済み。未定義の旧リンク変換関数を呼ばない。
+window.__KURO_STUDIO_BOOT_STAGE__="starting-cloud-load";
 loadPublishedGameFromCloud();
+window.__KURO_STUDIO_BOOT_STAGE__="starting-preview";
 run();
 if(new URLSearchParams(location.search).get("publish")==="1"){openPublishModal();}
+window.__KURO_STUDIO_BOOT_STAGE__="studio-ready";
 window.__KURO_STUDIO_CORE_READY=true;
 })();
 </script>
