@@ -122,7 +122,7 @@
 
     currentUser = data.user;
     const providers = getProviders(currentUser);
-    accountHasPassword = providers.includes("email");
+    accountHasPassword = currentUser.app_metadata?.kuro_password_configured === true || (providers.includes("email") && currentUser.user_metadata?.kuro_password_configured !== false);
     const needsSetup = !accountHasPassword;
 
     let profile = null;
@@ -190,7 +190,7 @@
       const refreshed = await client.auth.getUser();
       if (refreshed.error || !refreshed.data.user) throw new Error("パスワードは変更されました。再ログインして状態を更新してください。");
       currentUser = refreshed.data.user;
-      accountHasPassword = getProviders(currentUser).includes("email");
+      accountHasPassword = currentUser.app_metadata?.kuro_password_configured === true || (getProviders(currentUser).includes("email") && currentUser.user_metadata?.kuro_password_configured !== false);
       $("accountCurrentPassword").value = "";
       $("accountNewPassword").value = "";
       $("accountConfirmPassword").value = "";
