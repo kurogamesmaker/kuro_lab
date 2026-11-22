@@ -309,7 +309,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
 
 </script>
 <script>
-(function initKuroRankingShowcase(){
+function initKuroRankingShowcase(){
  const panel=document.getElementById("kuroRankingShowcase"),listEl=document.getElementById("kuroRankList"),titleEl=document.getElementById("kuroRankGame"),linkEl=document.getElementById("kuroRankGameLink"),dotsEl=document.getElementById("kuroRankDots"),prev=document.getElementById("kuroRankPrev"),next=document.getElementById("kuroRankNext");
  if(!panel||!listEl||!titleEl||!linkEl)return;
  let games=[],index=0,timer=null,pausedUntil=0,busy=false,cache=new Map();
@@ -369,7 +369,8 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
    setInterval(async()=>{if(busy)return;try{const fresh=await loadRankings();if(fresh.length){games=fresh;cache.clear();index=index%games.length;if(Date.now()>=pausedUntil)display(index);}}catch(err){console.debug("KURO ranking refresh skipped:",err);}},60000);
   }catch(e){showMessage("ランキングを読み込めませんでした。");console.warn("KURO ranking showcase init:",e);}
  }
- initialize();})();
+ initialize();}
+ initKuroRankingShowcase();
 </script>
 <script src="/usage-tracker.js"></script>
 
