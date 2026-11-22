@@ -228,7 +228,7 @@ async function handle(req: Request) {
   }
 
   if (action === "leaderboard") {
-    await getUser(req);
+    // Public read-only rankings; score submission remains authenticated.
     requirePublished(game);
     requireFeature(settings.features, "ranking");
     const mode = safeMode(body.mode);
