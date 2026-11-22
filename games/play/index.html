@@ -78,18 +78,52 @@ async function getKuroGameAuthSession() {
  if (session?.access_token) kuroGameAuthClient.realtime.setAuth(session.access_token);
  return session;
 }
+
+async function getKuroGameGuestAuth(gameId) {
+ if (typeof gameId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(gameId)) return null;
+ const storageKey = "kurogames.guest.multiplayer.v1:" + gameId;
+ try {
+  const saved = JSON.parse(localStorage.getItem(storageKey) || "null");
+  if (saved && typeof saved.token === "string" && saved.token.split(".").length === 2 &&
+      typeof saved.guestId === "string" && Number(saved.expiresAt) > Date.now() + 60000) return saved;
+ } catch (_) {}
+ try {
+  const response = await fetch("https://kuro-online-room.kurogamesmaker.workers.dev/guest-token", {
+   method: "POST",
+   headers: { "content-type": "application/json" },
+   body: JSON.stringify({ gameId }),
+   credentials: "omit",
+   cache: "no-store"
+  });
+  let data = {};
+  try { data = await response.json(); } catch (_) {}
+  if (!response.ok || typeof data.token !== "string" || typeof data.guestId !== "string" ||
+      Number(data.expiresAt) <= Date.now()) {
+   console.warn("KURO guest authentication unavailable:", data.error || response.status);
+   return null;
+  }
+  const guest = { token: data.token, guestId: data.guestId, name: data.name || "ゲスト", expiresAt: Number(data.expiresAt) };
+  try { localStorage.setItem(storageKey, JSON.stringify(guest)); } catch (_) {}
+  return guest;
+ } catch (error) {
+  console.warn("KURO guest authentication unavailable:", error);
+  return null;
+ }
+}
 window.addEventListener("message", async event => {
  if (!kuroGameFrame || event.source !== kuroGameFrame.contentWindow || !event.data) return;
  const msg = event.data;
  if (msg.type === "kuro-online-auth-request" && typeof msg.requestId === "string" && msg.requestId.length <= 100) {
   try {
    const session = await getKuroGameAuthSession();
+   const guest = session ? null : await getKuroGameGuestAuth(msg.gameId === id ? id : "");
    event.source.postMessage({
     type: "kuro-online-auth",
     requestId: msg.requestId,
-    access_token: session?.access_token || null,
+    access_token: session?.access_token || guest?.token || null,
     useCloudflareProxy: KURO_CLOUDFLARE_TRANSPORT,
-    user: session?.user ? { id: session.user.id, email: session.user.email ?? null } : null,
+    user: session?.user ? { id: session.user.id, email: session.user.email ?? null }
+      : guest ? { id: guest.guestId, email: null, isGuest: true } : null,
     isGuest: !session,
     guestMode: !session || !!kuroGameGuestMode
    }, "*");
