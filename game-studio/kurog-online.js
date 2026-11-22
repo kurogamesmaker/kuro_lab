@@ -270,7 +270,7 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
         }
       } else if (message.type === "players") {
         emitPlayers(message.players || []);
-      } else if (message.type === "state-result" || message.type === "game-patch-result") {
+      } else if (message.type === "state-result" || message.type === "game-patch-result" || message.type === "unon-result") {
         const item = pending.get(message.requestId);
         if (item) {
           pending.delete(message.requestId);
@@ -384,6 +384,42 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
         from: session.user.id,
         sentAt: Date.now(),
       });
+      return result;
+    },
+    async startUnoGame(ruleMode) {
+      const result = await sendRequest("unon-start", { ruleMode: ruleMode === "local" ? "local" : "official" });
+      if (!result.ok) throw new Error(result.error || "ゲームを開始できませんでした。");
+      if (result.roomState) emitMessage({
+        type: "room-state-updated",
+        data: { state: result.roomState, updatedAt: result.updatedAt || null },
+        from: session.user.id, sentAt: Date.now(),
+      });
+      if (result.patch) emitMessage({ type: "unon-patch", data: result.patch, from: session.user.id, sentAt: Date.now() });
+      return result;
+    },
+    async submitUnoAction(actionId, action) {
+      const result = await sendRequest("unon-action", { actionId, action });
+      if (result.ok && result.patch) {
+        emitMessage({ type: "unon-patch", data: result.patch, from: session.user.id, sentAt: Date.now() });
+      }
+      return result;
+    },
+    async getUnoSnapshot() {
+      const result = await sendRequest("unon-get", {});
+      if (result.ok && result.active && result.patch) {
+        emitMessage({ type: "unon-patch", data: result.patch, from: session.user.id, sentAt: Date.now() });
+      }
+      return result;
+    },
+    async removeUnoPlayer(userId) {
+      const result = await sendRequest("unon-remove-player", { userId: userId });
+      if (!result.ok) throw new Error(result.error || "プレイヤーの退出処理に失敗しました。");
+      if (result.roomState) emitMessage({
+        type: "room-state-updated",
+        data: { state: result.roomState, updatedAt: result.updatedAt || null },
+        from: session.user.id, sentAt: Date.now(),
+      });
+      if (result.patch) emitMessage({ type: "unon-patch", data: result.patch, from: session.user.id, sentAt: Date.now() });
       return result;
     },
     onPlayersChange(callback) {
