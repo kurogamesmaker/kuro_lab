@@ -18,6 +18,9 @@ const CORS_HEADERS = {
 };
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const DEFAULT_FEATURES = { ranking: false, cloudSave: false, multiplayer: false };
+const GUEST_VERIFY_URL = "https://kuro-online-room.kurogamesmaker.workers.dev/guest/verify";
+type GuestClaims = { sub: string; name: string; game: string; scope: string; exp: number };
+const guestTokenCache = new Map<string, GuestClaims>();
 
 class HttpError extends Error {
   status: number;
@@ -47,10 +50,62 @@ function safeSaveKey(value: unknown) {
   return key;
 }
 
-async function getUser(req: Request) {
+async function verifyGuestToken(token: string): Promise<GuestClaims | null> {
+  const now = Math.floor(Date.now() / 1000);
+  const cached = guestTokenCache.get(token);
+  if (cached && cached.exp > now + 30) return cached;
+  try {
+    const response = await fetch(GUEST_VERIFY_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token }),
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    const claims = data?.claims;
+    if (data?.valid !== true || !claims ||
+        !UUID_RE.test(String(claims.sub || "")) ||
+        !UUID_RE.test(String(claims.game || "")) ||
+        claims.scope !== "multiplayer" ||
+        typeof claims.name !== "string" ||
+        !Number.isInteger(claims.exp) ||
+        claims.exp <= now || claims.exp > now + 6 * 60 * 60 + 60) return null;
+    const verified: GuestClaims = {
+      sub: claims.sub,
+      name: claims.name.slice(0, 24),
+      game: claims.game,
+      scope: claims.scope,
+      exp: claims.exp,
+    };
+    guestTokenCache.set(token, verified);
+    if (guestTokenCache.size > 512) {
+      for (const [key, value] of guestTokenCache) {
+        if (value.exp <= now) guestTokenCache.delete(key);
+      }
+      if (guestTokenCache.size > 512) guestTokenCache.clear();
+    }
+    return verified;
+  } catch (error) {
+    console.warn("[kurogames-online] guest token verification unavailable", error);
+    return null;
+  }
+}
+
+async function getUser(req: Request, options: { allowGuest?: boolean; gameId?: string } = {}) {
   const authHeader = req.headers.get("authorization") ?? "";
   const token = authHeader.match(/^Bearer\s+(.+)$/i)?.[1];
-  if (!token) throw new HttpError(401, "この機能にはKUROアカウントでのログインが必要です。");
+  if (!token || token.length > 8192) throw new HttpError(401, "この機能にはKUROアカウントでのログインが必要です。");
+  // Cloudflare guest tokens are deliberately accepted only for multiplayer room actions.
+  if (options.allowGuest && token.split(".").length === 2) {
+    const guest = await verifyGuestToken(token);
+    if (!guest || guest.game !== options.gameId) {
+      throw new HttpError(401, "ゲスト認証の有効期限が切れたか、ゲームが一致しません。再接続してください。");
+    }
+    return { id: guest.sub, user_metadata: { username: guest.name }, is_guest: true };
+  }
+  if (token.split(".").length !== 3) {
+    throw new HttpError(401, "この機能にはKURO Labアカウントでのログインが必要です。");
+  }
   const { data, error } = await admin.auth.getUser(token);
   if (error || !data.user) throw new HttpError(401, "ログイン状態を確認できません。再ログインしてください。");
   return data.user;
@@ -130,7 +185,9 @@ async function getRoomMembers(roomId: string) {
     }]));
   }
   return (members ?? []).map((m) => {
-    const profile = profiles.get(m.user_id) ?? { kuro_id: "", username: "プレイヤー", avatar_url: null };
+    const hasProfile = profiles.has(m.user_id);
+    const guestSuffix = String(m.user_id).replace(/-/g, "").slice(0, 4).toUpperCase();
+    const profile = profiles.get(m.user_id) ?? { kuro_id: "", username: "ゲスト-" + guestSuffix, avatar_url: null };
     return {
       userId: m.user_id,
       joinedAt: m.joined_at,
@@ -139,6 +196,7 @@ async function getRoomMembers(roomId: string) {
         username: profile.username,
         display_name: profile.username,
         avatar_url: profile.avatar_url,
+        isGuest: !hasProfile,
       },
     };
   });
@@ -372,7 +430,7 @@ async function handle(req: Request) {
 
 
   if (action === "room_list" || action === "room_create" || action === "room_join" || action === "room_leave" || action === "room_heartbeat" || action === "room_send" || action === "room_poll" || action === "room_state_get" || action === "room_state_update") {
-    const user = await getUser(req);
+    const user = await getUser(req, { allowGuest: true, gameId: game.id });
     requirePublished(game);
     requireMultiplayer(settings.features);
 
