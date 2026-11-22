@@ -460,23 +460,41 @@ async function handle(req: Request) {
     return reply(200,data);
   }
 
-  if (action === "matchmaking_join" || action === "matchmaking_status" ||
-      action === "matchmaking_cancel" || action === "matchmaking_ack") {
+  if (
+    action === "matchmaking_join" || action === "matchmaking_status" ||
+    action === "matchmaking_cancel" || action === "matchmaking_ack" ||
+    action === "unon_matchmaking_join" || action === "unon_matchmaking_status" ||
+    action === "unon_matchmaking_cancel" || action === "unon_matchmaking_ack"
+  ) {
     const user = await getUser(req);
     requirePublished(game);
     requireMultiplayer(settings.features);
 
-    if (action === "matchmaking_join" || action === "matchmaking_status") {
-      const rpcName = action === "matchmaking_join"
-        ? "kuro_daifugo_matchmaking_join"
-        : "kuro_daifugo_matchmaking_status";
-      const { data, error } = await admin.rpc(rpcName, {
+    const isUnon = action.startsWith("unon_matchmaking_");
+    const isJoin = action === "matchmaking_join" || action === "unon_matchmaking_join";
+    const isStatus = action === "matchmaking_status" || action === "unon_matchmaking_status";
+    const isCancel = action === "matchmaking_cancel" || action === "unon_matchmaking_cancel";
+    const ruleMode = isUnon
+      ? (body.ruleMode === "local" || body.ruleMode === "official" ? body.ruleMode : "")
+      : "";
+    if (isUnon && !ruleMode) throw new HttpError(400, "マッチングルールが正しくありません。");
+
+    if (isJoin || isStatus) {
+      const rpcName = isUnon
+        ? (isJoin ? "kuro_unon_matchmaking_join" : "kuro_unon_matchmaking_status")
+        : (isJoin ? "kuro_daifugo_matchmaking_join" : "kuro_daifugo_matchmaking_status");
+      const rpcArgs: Record<string, unknown> = {
         p_game_id: game.id,
         p_user_id: user.id,
-      });
+      };
+      if (isUnon) rpcArgs.p_rule_mode = ruleMode;
+      const { data, error } = await admin.rpc(rpcName, rpcArgs);
       if (error || !data) {
         if ((error?.message || "").includes("MATCH_USER_ALREADY_IN_ROOM")) {
           throw new HttpError(409, "すでにオンラインルームに参加しています。先に退出してください。");
+        }
+        if ((error?.message || "").includes("INVALID_MATCH_RULE")) {
+          throw new HttpError(400, "マッチングルールが正しくありません。");
         }
         console.error("[kurogames-online] matchmaking RPC failed", error);
         throw new HttpError(500, "ランダムマッチの状態を取得できませんでした。");
@@ -485,9 +503,13 @@ async function handle(req: Request) {
         return reply(200, { status: data.status === "cancelled" ? "cancelled" : "waiting" });
       }
       const { data: room, error: roomError } = await admin.from("game_online_rooms")
-        .select("id, game_id, room_code, host_user_id, max_players, player_count, status, created_at")
+        .select("id, game_id, room_code, host_user_id, max_players, player_count, status, created_at, game_data")
         .eq("id", data.room_id).eq("game_id", game.id).maybeSingle();
-      if (roomError || !room || room.status !== "waiting") {
+      const roomData = room?.game_data && typeof room.game_data === "object"
+        ? room.game_data as Record<string, unknown>
+        : {};
+      if (roomError || !room || room.status !== "waiting" ||
+          (isUnon && roomData.ruleMode !== ruleMode)) {
         await admin.rpc("kuro_daifugo_matchmaking_cancel", { p_game_id: game.id, p_user_id: user.id });
         return reply(200, { status: "cancelled" });
       }
@@ -499,7 +521,7 @@ async function handle(req: Request) {
       return reply(200, { status: "matched", room, members });
     }
 
-    if (action === "matchmaking_cancel") {
+    if (isCancel) {
       const { data, error } = await admin.rpc("kuro_daifugo_matchmaking_cancel", {
         p_game_id: game.id,
         p_user_id: user.id,
