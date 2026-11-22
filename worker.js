@@ -333,7 +333,7 @@ export default {
     if (liveAssetPath) {
       try {
         const liveAssetResponse = await fetch(
-          "https://raw.githubusercontent.com/kurogamesmaker/kuro_lab/e9dd7775da491eaca6926c6e8842af95443264f/" + liveAssetPath,
+          "https://raw.githubusercontent.com/kurogamesmaker/kuro_lab/main/" + liveAssetPath,
           { cf: { cacheEverything: true, cacheTtl: 60 } }
         );
         if (liveAssetResponse.ok) {
@@ -366,27 +366,11 @@ export default {
             headers.set("Content-Security-Policy", "default-src 'self' https: data:; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'");
           }
 
-          // Invalidate old browser-cached shared assets on every portal subpage.
+          // Keep the asset versions authored by each HTML page. Do not replace
+          // them with a fixed Worker-wide value: that can pin stale CSS and JS.
           let liveBody = liveAssetResponse.body;
           if (liveContentType.startsWith("text/html")) {
-            let liveHtml = await liveAssetResponse.text();
-            const cacheVersion = "20261122forcefavicon3";
-            const sharedAssetVersions = [
-              [/\/portal\.js\?v=[^"'&\\s]+/g, "/portal.js?v=" + cacheVersion],
-              [/\/portal-enhancements\.js\?v=[^"'&\\s]+/g, "/portal-enhancements.js?v=" + cacheVersion],
-              [/\/theme-studio\.js\?v=[^"'&\\s]+/g, "/theme-studio.js?v=" + cacheVersion],
-              [/\/portal\.css\?v=[^"'&\\s]+/g, "/portal.css?v=" + cacheVersion],
-              [/\/site\.css\?v=[^"'&\\s]+/g, "/site.css?v=" + cacheVersion],
-              [/\/site-fixes\.css\?v=[^"'&\\s]+/g, "/site-fixes.css?v=" + cacheVersion],
-              [/\/tools\/tools\.js\?v=[^"'&\\s]+/g, "/tools/tools.js?v=" + cacheVersion],
-              [/\/tools\/tools\.css\?v=[^"'&\\s]+/g, "/tools/tools.css?v=" + cacheVersion],
-              [/\/usage-tracker\.js\?v=[^"'&\\s]+/g, "/usage-tracker.js?v=" + cacheVersion]
-            ];
-            for (const [pattern, replacement] of sharedAssetVersions) {
-              liveHtml = liveHtml.replace(pattern, replacement);
-            }
-            liveHtml = applyMaruFavicon(liveHtml);
-            liveBody = liveHtml;
+            liveBody = applyMaruFavicon(await liveAssetResponse.text());
           }
 
           return new Response(liveBody, {
@@ -407,9 +391,7 @@ export default {
     // Force the circular brand icon for every HTML response, including legacy/static pages.
     if (assetType.toLowerCase().includes("text/html")) {
       let html = await assetResponse.clone().text();
-      if (html.includes("/portal.js?")) {
-        html = html.replace(/\\/portal\\.js\\?v=[^"'&\\s]+/g, "/portal.js?v=20261121usernamefix7");
-      }
+      // Preserve the portal.js version declared by the page itself.
       const refreshedHtml = applyMaruFavicon(html);
       const headers = new Headers(assetResponse.headers);
       headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
