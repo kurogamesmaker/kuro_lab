@@ -79,13 +79,19 @@ async function getKuroGameAuthSession() {
  return session;
 }
 
+const kuroGameGuestAuthCache = new Map();
 async function getKuroGameGuestAuth(gameId) {
  if (typeof gameId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(gameId)) return null;
+ const cached = kuroGameGuestAuthCache.get(gameId);
+ if (cached && Number(cached.expiresAt) > Date.now() + 60000) return cached;
  const storageKey = "kurogames.guest.multiplayer.v1:" + gameId;
  try {
   const saved = JSON.parse(localStorage.getItem(storageKey) || "null");
   if (saved && typeof saved.token === "string" && saved.token.split(".").length === 2 &&
-      typeof saved.guestId === "string" && Number(saved.expiresAt) > Date.now() + 60000) return saved;
+      typeof saved.guestId === "string" && Number(saved.expiresAt) > Date.now() + 60000) {
+   kuroGameGuestAuthCache.set(gameId, saved);
+   return saved;
+  }
  } catch (_) {}
  try {
   const response = await fetch("https://kuro-online-room.kurogamesmaker.workers.dev/guest-token", {
@@ -103,6 +109,7 @@ async function getKuroGameGuestAuth(gameId) {
    return null;
   }
   const guest = { token: data.token, guestId: data.guestId, name: data.name || "ゲスト", expiresAt: Number(data.expiresAt) };
+  kuroGameGuestAuthCache.set(gameId, guest);
   try { localStorage.setItem(storageKey, JSON.stringify(guest)); } catch (_) {}
   return guest;
  } catch (error) {
