@@ -329,31 +329,96 @@ export default {
       ["/tools/tools.js", "tools/tools.js"],
       ["/tools/tools.css", "tools/tools.css"]
     ]);
-    const liveAssetPath = liveAssetFiles.get(url.pathname);
-    if (liveAssetPath) {
+    // Resolve public site pages and static assets from the current main branch.
+    // Explicit aliases handle special routes; generic paths handle new pages/assets.
+    function liveRepoCandidates(pathname, mappedPath) {
+      if (mappedPath) return [mappedPath];
+
+      let decoded;
       try {
-        const liveAssetResponse = await fetch(
-          "https://raw.githubusercontent.com/kurogamesmaker/kuro_lab/main/" + liveAssetPath,
-          { cf: { cacheEverything: true, cacheTtl: 60 } }
-        );
-        if (liveAssetResponse.ok) {
+        decoded = decodeURIComponent(pathname);
+      } catch (_) {
+        return [];
+      }
+
+      if (
+        !decoded.startsWith("/") ||
+        decoded.includes(String.fromCharCode(92)) ||
+        decoded.includes(String.fromCharCode(0)) ||
+        decoded.split("/").some(part => part === "." || part === "..") ||
+        /^\/(?:api|functions)(?:\/|$)/i.test(decoded) ||
+        decoded.split("/").some(part => part.startsWith("."))
+      ) {
+        return [];
+      }
+
+      const relative = decoded.replace(/^\/+/, "").replace(/\/+$/, "");
+      if (!relative) return ["index.html"];
+
+      // Do not expose Worker or deployment configuration source files.
+      if (["worker.js", "online-room-worker.js", "package.json", "vercel.json", "wrangler.jsonc"].includes(relative)) {
+        return [];
+      }
+
+      const publicExtension = /[.](?:html?|css|js|mjs|json|svg|png|jpe?g|webp|avif|gif|ico|woff2?|ttf|otf|wasm|webmanifest|txt|xml|mp3|mp4|webm)$/i;
+      if (publicExtension.test(relative)) return [relative];
+
+      // Support directory index routes and legacy path.html routes.
+      return [relative + "/index.html", relative + ".html"];
+    }
+
+    const mappedLiveAssetPath = liveAssetFiles.get(url.pathname);
+    const liveAssetCandidates = liveRepoCandidates(url.pathname, mappedLiveAssetPath);
+    if (liveAssetCandidates.length) {
+      try {
+        let liveAssetResponse = null;
+        let resolvedLiveAssetPath = "";
+        for (const candidate of liveAssetCandidates) {
+          const encodedCandidate = candidate.split("/").map(part => encodeURIComponent(part)).join("/");
+          const candidateResponse = await fetch(
+            "https://raw.githubusercontent.com/kurogamesmaker/kuro_lab/main/" + encodedCandidate,
+            { cf: { cacheEverything: true, cacheTtl: 15 } }
+          );
+          if (candidateResponse.ok) {
+            liveAssetResponse = candidateResponse;
+            resolvedLiveAssetPath = candidate;
+            break;
+          }
+        }
+
+        if (liveAssetResponse) {
           const headers = new Headers(liveAssetResponse.headers);
-          const lowerAssetPath = liveAssetPath.toLowerCase();
-          const liveContentType = lowerAssetPath.endsWith(".js")
-            ? "application/javascript; charset=utf-8"
-            : lowerAssetPath.endsWith(".css")
-              ? "text/css; charset=utf-8"
-              : lowerAssetPath.endsWith(".json")
-                ? "application/json; charset=utf-8"
-                : lowerAssetPath.endsWith(".svg")
-                  ? "image/svg+xml"
-                  : lowerAssetPath.endsWith(".png")
-                    ? "image/png"
-                    : lowerAssetPath.endsWith(".ico")
-                      ? "image/x-icon"
-                      : "text/html; charset=utf-8";
+          const extension = resolvedLiveAssetPath.slice(resolvedLiveAssetPath.lastIndexOf(".") + 1).toLowerCase();
+          const contentTypes = {
+            html: "text/html; charset=utf-8",
+            htm: "text/html; charset=utf-8",
+            css: "text/css; charset=utf-8",
+            js: "application/javascript; charset=utf-8",
+            mjs: "application/javascript; charset=utf-8",
+            json: "application/json; charset=utf-8",
+            webmanifest: "application/manifest+json; charset=utf-8",
+            svg: "image/svg+xml",
+            png: "image/png",
+            jpg: "image/jpeg",
+            jpeg: "image/jpeg",
+            webp: "image/webp",
+            avif: "image/avif",
+            gif: "image/gif",
+            ico: "image/x-icon",
+            woff: "font/woff",
+            woff2: "font/woff2",
+            ttf: "font/ttf",
+            otf: "font/otf",
+            wasm: "application/wasm",
+            txt: "text/plain; charset=utf-8",
+            xml: "application/xml; charset=utf-8",
+            mp3: "audio/mpeg",
+            mp4: "video/mp4",
+            webm: "video/webm"
+          };
+          const liveContentType = contentTypes[extension] || "application/octet-stream";
           headers.set("Content-Type", liveContentType);
-          headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+          headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
           headers.set("Pragma", "no-cache");
           headers.delete("content-length");
           headers.delete("content-encoding");
@@ -361,60 +426,49 @@ export default {
           headers.delete("Content-Security-Policy");
           headers.delete("Content-Security-Policy-Report-Only");
 
-          // Allow portal resources while avoiding restrictive upstream CSP.
           if (liveContentType.startsWith("text/html")) {
             headers.set("Content-Security-Policy", "default-src 'self' https: data:; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'");
+            const liveHtml = applyMaruFavicon(await liveAssetResponse.text());
+            return new Response(liveHtml, {
+              status: liveAssetResponse.status,
+              statusText: liveAssetResponse.statusText,
+              headers
+            });
           }
 
-          // Keep the asset versions authored by each HTML page. Do not replace
-          // them with a fixed Worker-wide value: that can pin stale CSS and JS.
-          let liveBody = liveAssetResponse.body;
-          if (liveContentType.startsWith("text/html")) {
-            liveBody = applyMaruFavicon(await liveAssetResponse.text());
-          }
-
-          return new Response(liveBody, {
+          return new Response(liveAssetResponse.body, {
             status: liveAssetResponse.status,
             statusText: liveAssetResponse.statusText,
             headers
           });
         }
-        console.error("KURO live asset origin returned", liveAssetResponse.status, liveAssetPath);
       } catch (error) {
-        console.error("KURO live asset origin failed", liveAssetPath, error);
+        console.error("KURO live repository asset failed", url.pathname, error);
       }
     }
 
     const assetResponse = await env.ASSETS.fetch(request);
     const assetType = assetResponse.headers.get("content-type") || "";
 
-    // Force the circular brand icon for every HTML response, including legacy/static pages.
+    // Use the same no-stale-cache policy for every static fallback resource.
+    const fallbackHeaders = new Headers(assetResponse.headers);
+    fallbackHeaders.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+    fallbackHeaders.set("Pragma", "no-cache");
+
     if (assetType.toLowerCase().includes("text/html")) {
-      let html = await assetResponse.clone().text();
-      // Preserve the portal.js version declared by the page itself.
+      const html = await assetResponse.clone().text();
       const refreshedHtml = applyMaruFavicon(html);
-      const headers = new Headers(assetResponse.headers);
-      headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
-      headers.set("Pragma", "no-cache");
       return new Response(refreshedHtml, {
         status: assetResponse.status,
         statusText: assetResponse.statusText,
-        headers
+        headers: fallbackHeaders
       });
     }
 
-    // Do not let a previously cached portal.js keep bypassing the Cloudflare relay.
-    if (url.pathname === "/portal.js") {
-      const headers = new Headers(assetResponse.headers);
-      headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
-      headers.set("Pragma", "no-cache");
-      return new Response(assetResponse.body, {
-        status: assetResponse.status,
-        statusText: assetResponse.statusText,
-        headers
-      });
-    }
-
-    return assetResponse;
+    return new Response(assetResponse.body, {
+      status: assetResponse.status,
+      statusText: assetResponse.statusText,
+      headers: fallbackHeaders
+    });
   }
 };
