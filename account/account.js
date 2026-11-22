@@ -143,8 +143,7 @@
 
     currentUser = data.user;
     const providers = getProviders(currentUser);
-    const configured = currentUser.user_metadata && currentUser.user_metadata.kuro_password_configured;
-    accountHasPassword = configured === true || (providers.includes("email") && configured !== false);
+    accountHasPassword = providers.includes("email");
     const needsSetup = !accountHasPassword;
 
     let profile = null;
@@ -202,6 +201,18 @@
         if (!currentPassword) throw new Error("現在のパスワードを入力してください。");
         if (!currentUser.email) throw new Error("現在のログイン方法ではパスワードを確認できません。");
         await verifyCurrentPassword(currentPassword, currentUser);
+      } else {
+        const { data: sessionData, error: sessionError } = await client.auth.getSession();
+        if (sessionError || !sessionData.session) throw new Error("ログイン状態を確認できません。再ログインしてください。");
+        let authTime = 0;
+        try {
+          const payload = sessionData.session.access_token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+          const claims = JSON.parse(atob(payload.padEnd(Math.ceil(payload.length / 4) * 4, "=")));
+          authTime = Number(claims.auth_time || 0);
+        } catch (_) {}
+        if (!authTime || Math.floor(Date.now() / 1000) - authTime > 900) {
+          throw new Error("安全のため、いったんログアウトして再ログインしてから設定してください。");
+        }
       }
       setBusy(button, true, "変更中…");
       const metadata = Object.assign({}, currentUser.user_metadata || {}, { kuro_password_configured: true });
@@ -211,18 +222,23 @@
       });
       if (error) throw error;
       currentUser = data.user || currentUser;
-      accountHasPassword = true;
+      accountHasPassword = getProviders(currentUser).includes("email");
       $("accountCurrentPassword").value = "";
       $("accountNewPassword").value = "";
       $("accountConfirmPassword").value = "";
-      $("accountCurrentWrap").hidden = false;
-      $("accountCurrentPassword").required = true;
-      $("accountPasswordIntro").textContent = "KUROLAB・KURO SNS・KURO GAMES共通のパスワードを変更します。";
-      $("accountPasswordSubmit").textContent = "パスワードを変更";
-      $("accountDeletePasswordWrap").hidden = false;
-      $("accountDeletePassword").required = true;
-      $("accountDeleteReauthHint").hidden = true;
-      setStatus("accountPasswordStatus", "パスワードを設定・変更しました。3つのサービスで共通して使えます。", "success");
+      $("accountCurrentWrap").hidden = !accountHasPassword;
+      $("accountCurrentPassword").required = accountHasPassword;
+      $("accountPasswordIntro").textContent = accountHasPassword
+        ? "KUROLAB・KURO SNS・KURO GAMES共通のパスワードを変更します。"
+        : "パスワードを設定しました。次回から共通アカウントでログインできます。";
+      $("accountPasswordSubmit").textContent = accountHasPassword ? "パスワードを変更" : "パスワードを設定";
+      $("accountDeletePasswordWrap").hidden = !accountHasPassword;
+      $("accountDeletePassword").required = accountHasPassword;
+      $("accountDeleteReauthHint").hidden = accountHasPassword;
+      try { await client.auth.signOut({ scope: "others" }); } catch (revokeError) {
+        console.warn("KURO other-session signout skipped", revokeError);
+      }
+      setStatus("accountPasswordStatus", "パスワードを設定・変更しました。KUROLAB・SNS・GAMESで共通して使えます。", "success");
     } catch (error) {
       console.error("KURO account password update failed", error);
       setStatus("accountPasswordStatus", error && error.message || "パスワードを変更できませんでした。", "error");
