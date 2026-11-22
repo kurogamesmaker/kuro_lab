@@ -5,13 +5,20 @@ on:
     paths:
       - online-room-worker.js
       - game-studio/kurog-online.js
-      - wrangler-online-room.toml
+      - game-studio/code.html
+      - games/play/index.html
+      - supabase/functions/kurogames-online/index.ts
+      - supabase/migrations/**
       - .github/workflows/validate-online.yml
   pull_request:
     paths:
       - online-room-worker.js
       - game-studio/kurog-online.js
-      - wrangler-online-room.toml
+      - game-studio/code.html
+      - games/play/index.html
+      - supabase/functions/kurogames-online/index.ts
+      - supabase/migrations/**
+      - .github/workflows/validate-online.yml
 jobs:
   syntax:
     runs-on: ubuntu-latest
@@ -22,3 +29,21 @@ jobs:
           node-version: 22
       - run: node --check online-room-worker.js
       - run: node --check game-studio/kurog-online.js
+      - name: Check embedded game and Studio scripts
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          for (const file of ['games/play/index.html', 'game-studio/code.html']) {
+            const html = fs.readFileSync(file, 'utf8');
+            const scripts = [...html.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script\\s*>/gi)];
+            let checked = 0;
+            for (const [, attrs, source] of scripts) {
+              if (/\\bsrc\\s*=/.test(attrs)) continue;
+              if (/\\btype\\s*=\\s*["'](?:application\\/ld\\+json|application\\/json|importmap)["']/i.test(attrs)) continue;
+              new Function(source);
+              checked++;
+            }
+            if (!checked) throw new Error('No inline scripts checked in ' + file);
+            console.log(file + ': ' + checked + ' inline script(s) passed');
+          }
+          NODE
