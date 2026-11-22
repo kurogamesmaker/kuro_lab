@@ -467,6 +467,9 @@ test("UNON actions go directly to the server, reject wrong turns and send only c
   assert.ok(accepted.patch.publicDelta);
   assert.ok(accepted.patch.privateEnvelope);
   assert.equal(fixture.room.data.unonGame.version, 1);
+  assert.equal(fixture.room.data.state.phase, "playing");
+  assert.equal(fixture.room.data.state.matchId, "match-server");
+  assert.equal(fixture.room.data.state.game, null);
   const hostHand = await openServerEnvelope(accepted.patch.privateEnvelope, hostKeys.privateKey);
   assert.equal(hostHand.hand.length, 8);
 
