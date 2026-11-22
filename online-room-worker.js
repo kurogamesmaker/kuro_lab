@@ -120,7 +120,7 @@ async function guestGameEnabled(env, gameId) {
 async function createGuestToken(request, env) {
   const headers = corsHeaders(request, env);
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
-  if (!originAllowed(request, env)) return json({ error: "origin_not_allowed" }, 403, headers);
+  if (!request.headers.get("origin") || !originAllowed(request, env)) return json({ error: "origin_not_allowed" }, 403, headers);
   if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405, headers);
   if (!env.TICKET_SECRET || env.TICKET_SECRET.length < 32) return json({ error: "service_not_configured" }, 503, headers);
   let body;
