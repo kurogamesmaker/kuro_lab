@@ -84,7 +84,8 @@ Deno.serve(async (req: Request) => {
     const providers = Array.isArray(user.app_metadata?.providers)
       ? user.app_metadata.providers.map((value: unknown) => String(value))
       : [];
-    if (providers.includes("email") && user.user_metadata?.kuro_password_configured !== false) {
+    const passwordConfigured = user.app_metadata?.kuro_password_configured === true || (providers.includes("email") && user.user_metadata?.kuro_password_configured !== false);
+    if (passwordConfigured) {
       const password = String(body?.password || "");
       if (!password || !user.email) {
         return reply({ error: "本人確認のため、現在のパスワードを入力してください。" }, 400, origin);
