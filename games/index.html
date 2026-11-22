@@ -840,6 +840,71 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
   #kuroRankingShowcase.rank-in .rank-list,
   #kuroRankingShowcase.rank-in .rank-row{animation:none !important}
 }
+
+/* Always-on corner motion accent, independent from the ranking carousel */
+#kuroRankingShowcase .rank-live{
+  margin-right:38px;
+}
+#kuroRankingShowcase .rank-corner-orbit{
+  position:absolute;
+  z-index:3;
+  top:7px;
+  right:8px;
+  display:block;
+  width:27px;
+  height:27px;
+  border:1px solid rgba(65,145,225,.28);
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(108,190,255,.10) 0%,rgba(108,190,255,.025) 68%,transparent 72%);
+  box-shadow:0 0 12px rgba(66,151,236,.12),inset 0 0 8px rgba(66,151,236,.08);
+  pointer-events:none;
+  animation:kuroRankCornerOrbit 7s linear infinite;
+}
+#kuroRankingShowcase .rank-corner-orbit::before{
+  content:"";
+  position:absolute;
+  inset:5px;
+  border:1px dashed rgba(73,151,225,.34);
+  border-radius:50%;
+}
+#kuroRankingShowcase .rank-corner-orbit i{
+  position:absolute;
+  top:-3px;
+  left:50%;
+  width:6px;
+  height:6px;
+  border:1px solid #fff;
+  border-radius:50%;
+  background:#39a9ef;
+  box-shadow:0 0 5px 2px rgba(57,169,239,.5),0 0 12px rgba(57,169,239,.55);
+  transform:translateX(-50%);
+}
+#kuroRankingShowcase .rank-corner-orbit b{
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:5px;
+  height:5px;
+  border-radius:50%;
+  background:#f0c85a;
+  box-shadow:0 0 7px rgba(240,200,90,.65);
+  transform:translate(-50%,-50%);
+  animation:kuroRankCornerPulse 1.8s ease-in-out infinite;
+}
+@keyframes kuroRankCornerOrbit{
+  to{transform:rotate(360deg)}
+}
+@keyframes kuroRankCornerPulse{
+  0%,100%{opacity:.55;scale:.8}
+  50%{opacity:1;scale:1.4}
+}
+@media(prefers-reduced-motion:reduce){
+  #kuroRankingShowcase .rank-corner-orbit,
+  #kuroRankingShowcase .rank-corner-orbit b{
+    animation:none!important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -863,7 +928,7 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 <button class="heart" type="button" aria-label="お気に入りに追加" title="お気に入り">♡</button>
 </article>
 </div>
-<aside class="ranking-showcase" id="kuroRankingShowcase" aria-label="ゲームランキング"><div class="rank-head"><div><span class="rank-eyebrow">KURO GAMES RANKING</span><h2><span class="rank-heading-icon" aria-hidden="true">🏆</span><span>ランキング</span></h2></div><span class="rank-live"><i></i> LIVE</span></div><div class="rank-game" id="kuroRankGame">ランキング対応ゲーム</div><div class="rank-list" id="kuroRankList"><div class="rank-message">ランキングを読み込み中…</div></div><div class="rank-foot"><a id="kuroRankGameLink" href="/games/">ゲームを遊ぶ ↗</a><div class="rank-controls"><button id="kuroRankPrev" type="button" aria-label="前のランキング">‹</button><span id="kuroRankDots"></span><button id="kuroRankNext" type="button" aria-label="次のランキング">›</button></div></div></aside></div>
+<aside class="ranking-showcase" id="kuroRankingShowcase" aria-label="ゲームランキング"><span class="rank-corner-orbit" aria-hidden="true"><i></i><b></b></span><div class="rank-head"><div><span class="rank-eyebrow">KURO GAMES RANKING</span><h2><span class="rank-heading-icon" aria-hidden="true">🏆</span><span>ランキング</span></h2></div><span class="rank-live"><i></i> LIVE</span></div><div class="rank-game" id="kuroRankGame">ランキング対応ゲーム</div><div class="rank-list" id="kuroRankList"><div class="rank-message">ランキングを読み込み中…</div></div><div class="rank-foot"><a id="kuroRankGameLink" href="/games/">ゲームを遊ぶ ↗</a><div class="rank-controls"><button id="kuroRankPrev" type="button" aria-label="前のランキング">‹</button><span id="kuroRankDots"></span><button id="kuroRankNext" type="button" aria-label="次のランキング">›</button></div></div></aside></div>
 <div class="empty" id="empty"><strong>ゲームが見つかりませんでした</strong>検索ワードやジャンルを変えて、もう一度探してみてください。</div>
 <div class="more"><div class="more-icon">✦</div><div><h3>新しいゲームを準備中！</h3><p>KURO GAMESでは、これからもオリジナルゲームを追加していきます。次のゲームもお楽しみに。</p></div><small>MORE GAMES COMING SOON</small></div>
 </section>
