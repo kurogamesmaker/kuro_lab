@@ -143,6 +143,25 @@ async function connectRoomPolling(roomData, members, session) {
       }
       return result;
     },
+    async getDurableState() {
+      return invoke("room_state_get", { roomId: roomData.id });
+    },
+    async updateHostState(state, expectedUpdatedAt) {
+      const result = await invoke("room_state_update", {
+        roomId: roomData.id,
+        state: state,
+        expectedUpdatedAt: expectedUpdatedAt || null,
+        hostOnly: true,
+      });
+      if (!result.conflict) {
+        const noticeData = { state: state, updatedAt: result.updatedAt || null };
+        const notification = { type: "room-state-updated", data: noticeData, from: session.user.id, sentAt: Date.now() };
+        messageCallbacks.forEach((callback) => { try { callback(notification); } catch (error) { console.error(error); } });
+        try { await this.send("room-state-updated", noticeData); }
+        catch (error) { console.warn("KUROGAMES host-state notification failed; polling will resync:", error); }
+      }
+      return result;
+    },
     onPlayersChange(callback) { if (typeof callback !== "function") return () => {}; playerCallbacks.add(callback); callback(cachedPlayers.slice()); return () => playerCallbacks.delete(callback); },
     onPlayerLeft(callback) { if (typeof callback !== "function") return () => {}; leftCallbacks.add(callback); return () => leftCallbacks.delete(callback); },
     onRoomClosed(callback) { if (typeof callback !== "function") return () => {}; closeCallbacks.add(callback); return () => closeCallbacks.delete(callback); },
@@ -290,13 +309,42 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
     members: members || [],
     getPlayers() { return cachedPlayers.slice(); },
     async getState() {
-      // Active game state lives in its Durable Object; avoid a Supabase HTTP request per card action.
-      const result = await sendRequest("get-state", {});
-      return Object.assign({ roomStatus: "waiting" }, result || {});
+      return invoke("room_state_get", { roomId: roomData.id });
     },
     async updateState(state, expectedUpdatedAt) {
-      // The host writes directly to the room DO; it persists before broadcasting to all peers.
-      const result = await sendRequest("state-update", {
+      const result = await invoke("room_state_update", {
+        roomId: roomData.id,
+        state: state,
+        expectedUpdatedAt: expectedUpdatedAt || null,
+      });
+      if (!result.conflict) {
+        const noticeData = { state: state, updatedAt: result.updatedAt || null };
+        const notification = {
+          type: "room-state-updated",
+          data: noticeData,
+          from: session.user.id,
+          sentAt: Date.now(),
+        };
+        emitMessage(notification);
+        const wireData = new TextEncoder().encode(JSON.stringify(noticeData)).byteLength <= 28000
+          ? noticeData
+          : { updatedAt: result.updatedAt || null };
+        try { await this.send("room-state-updated", wireData); }
+        catch (error) { console.warn("KUROGAMES state notification failed; polling will resync:", error); }
+      }
+      return result;
+    },
+    async getDurableState() {
+      const result = await sendRequest("get-state", {});
+      if (result && result.state !== null && result.state !== undefined) return Object.assign({ roomStatus: "waiting" }, result);
+      // One-time bridge for rooms that were already active before this fast state transport was enabled.
+      const legacy = await invoke("room_state_get", { roomId: roomData.id });
+      return legacy && legacy.state !== null && legacy.state !== undefined
+        ? legacy
+        : Object.assign({ roomStatus: "waiting" }, result || {});
+    },
+    async updateHostState(state, expectedUpdatedAt) {
+      const result = await sendRequest("host-state-update", {
         state: state,
         expectedUpdatedAt: expectedUpdatedAt || null,
       });
