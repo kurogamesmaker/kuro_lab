@@ -42,7 +42,7 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 
 /* KURO GAMES ranking showcase */
 .games-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,300px);gap:18px;align-items:start}
-.ranking-showcase{position:relative;min-width:0;overflow:hidden;border:1px solid #e2e8f2;border-radius:19px;background:linear-gradient(145deg,#fff,#f6f8ff);box-shadow:0 8px 22px #1b30520b;padding:18px 17px;min-height:310px}
+.ranking-showcase{position:relative;min-width:0;overflow:hidden;border:1px solid #d9e7fb;border-radius:19px;background:linear-gradient(145deg,#ffffff 0%,#f4f8ff 60%,#fffdf4 100%);box-shadow:0 9px 25px #2464b50d;padding:18px 17px;min-height:310px}.ranking-showcase:before{content:"";position:absolute;inset:0 auto auto 0;width:4px;height:100%;background:linear-gradient(180,#3786f5,#f3c94c);opacity:.9}.ranking-showcase>*{position:relative}.rank-eyebrow{color:#397bd0}.rank-head h2{color:#243957}.rank-live{background:#eaf3ff;color:#3275cb}.rank-live i{background:#3986ed;box-shadow:0 0 0 3px #3986ed20}.rank-row{border-color:#e3ebf7;background:linear-gradient(100deg,#fff,#fbfdff)}.rank-score{color:#2877df}.rank-controls button:hover{background:#edf5ff;border-color:#a8ccfb}.rank-dot.active{background:#347fe2}
 .rank-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.rank-eyebrow{font-size:9px;letter-spacing:1.5px;font-weight:1000;color:#7c88a0}.rank-head h2{margin:5px 0 0;font-size:18px;letter-spacing:-.4px}.rank-live{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:5px 8px;background:#eaf8ef;color:#318257;font-size:9px;font-weight:900}.rank-live i{width:6px;height:6px;border-radius:50%;background:#35b56b;box-shadow:0 0 0 3px #35b61b1c}
 .rank-game{margin-top:16px;font-size:13px;font-weight:950;color:#273957;min-height:20px}.rank-list{margin-top:9px;display:grid;gap:7px;min-height:150px}.rank-row{display:flex;align-items:center;gap:9px;padding:9px 10px;border:1px solid #e8edf5;border-radius:12px;background:#fff;min-width:0}.rank-medal{width:27px;flex:0 0 27px;font-size:17px;text-align:center}.rank-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:850;color:#4b5b75}.rank-score{font-size:11px;font-weight:1000;color:#3c70bf;white-space:nowrap}.rank-message{display:grid;place-items:center;min-height:142px;text-align:center;padding:12px;color:#8290a5;font-size:11px;line-height:1.8}.rank-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;padding-top:11px;border-top:1px solid #e7ecf4}.rank-foot a{font-size:10px;font-weight:900;color:#3979d1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rank-controls{display:flex;align-items:center;gap:6px}.rank-controls button{width:25px;height:25px;border:1px solid #dfe6f1;border-radius:8px;background:white;color:#53637d;font-weight:900;cursor:pointer}.rank-controls button:hover{background:#eef5ff;border-color:#b9cff3}.rank-controls span{display:flex;gap:3px}.rank-dot{width:5px;height:5px;border-radius:50%;background:#d0d8e5}.rank-dot.active{background:#3979d1}
 .ranking-showcase.rank-transition .rank-list{animation:rankFade .24s ease}@keyframes rankFade{from{opacity:.35;transform:translateX(7px)}to{opacity:1;transform:translateX(0)}}
@@ -336,7 +336,7 @@ function initKuroRankingShowcase(){
   }catch(e){showMessage("ランキングを取得できませんでした。");console.debug("KURO ranking carousel:",e);}
   finally{busy=false;}
  }
- function go(delta){pausedUntil=Date.now()+16000;display(index+delta);}
+ function go(delta){pausedUntil=Date.now()+12000;display(index+delta);}
  prev?.addEventListener("click",()=>go(-1));next?.addEventListener("click",()=>go(1));
  panel.addEventListener("mouseenter",()=>pausedUntil=Date.now()+999999);
  panel.addEventListener("mouseleave",()=>pausedUntil=Date.now()+8000);
@@ -365,7 +365,7 @@ function initKuroRankingShowcase(){
    games=await loadRankings();
    if(!games.length){showMessage("現在、ランキング対応ゲームはありません。");return;}
    await display(0);
-   timer=setInterval(()=>{if(Date.now()>=pausedUntil&&!busy)display(index+1);},8000);
+   timer=setInterval(()=>{if(Date.now()>=pausedUntil&&!busy)display(index+1);},5000);
    setInterval(async()=>{if(busy)return;try{const fresh=await loadRankings();if(fresh.length){games=fresh;cache.clear();index=index%games.length;if(Date.now()>=pausedUntil)display(index);}}catch(err){console.debug("KURO ranking refresh skipped:",err);}},60000);
   }catch(e){showMessage("ランキングを読み込めませんでした。");console.warn("KURO ranking showcase init:",e);}
  }
