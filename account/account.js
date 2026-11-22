@@ -105,6 +105,7 @@
     const { data: sessionData, error: sessionError } = await client.auth.getSession();
     if (sessionError) throw sessionError;
     if (!sessionData.session) {
+      currentUser = null;
       $("accountLoggedOut").hidden = false;
       $("accountUser").hidden = true;
       $("accountPasswordCard").hidden = true;
@@ -113,6 +114,7 @@
     }
     const { data, error } = await client.auth.getUser();
     if (error || !data.user || data.user.is_anonymous) {
+      currentUser = null;
       $("accountLoggedOut").hidden = false;
       $("accountUser").hidden = true;
       $("accountPasswordCard").hidden = true;
@@ -154,6 +156,76 @@
       setStatus("accountPasswordStatus", "初回パスワードを設定すると、共通アカウントの準備が完了します。", "success");
     }
   }
+
+  async function signInWithUsername(username, password) {
+    const response = await kuroRelayFetch(SUPABASE_URL + "/functions/v1/username-auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": PUBLISHABLE_KEY
+      },
+      body: JSON.stringify({ action: "login", username, password })
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.session) {
+      throw new Error(payload.error || "ユーザーネームまたはパスワードが正しくありません。");
+    }
+    const applied = await client.auth.setSession({
+      access_token: payload.session.access_token,
+      refresh_token: payload.session.refresh_token
+    });
+    if (applied.error) throw applied.error;
+  }
+
+  $("accountLoginForm").addEventListener("submit", async function (event) {
+    event.preventDefault();
+    if (busy) return;
+    const identity = $("accountLoginIdentity").value.trim();
+    const password = $("accountLoginPassword").value;
+    if (!identity || !password) return;
+    busy = true;
+    const button = $("accountLoginSubmit");
+    setBusy(button, true, "ログイン中…");
+    setStatus("accountLoginStatus", "", "");
+    try {
+      if (identity.includes("@")) {
+        const result = await client.auth.signInWithPassword({ email: identity, password });
+        if (result.error) throw result.error;
+      } else {
+        await signInWithUsername(identity, password);
+      }
+      $("accountLoginPassword").value = "";
+      await loadAccount();
+      if (!currentUser) throw new Error("ログインは完了しましたが、アカウント情報を確認できませんでした。ページを再読み込みしてください。");
+      setStatus("accountLoginStatus", "ログインしました。アカウント管理を続けられます。", "success");
+    } catch (error) {
+      console.error("KURO account login failed", error);
+      setStatus("accountLoginStatus", error && error.message || "ログインできませんでした。", "error");
+    } finally {
+      busy = false;
+      setBusy(button, false, "ログイン");
+    }
+  });
+
+  $("accountGoogleLogin").addEventListener("click", async function () {
+    if (busy) return;
+    busy = true;
+    const button = $("accountGoogleLogin");
+    setBusy(button, true, "Googleへ移動中…");
+    setStatus("accountLoginStatus", "", "");
+    try {
+      const result = await client.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: location.origin + "/account/" }
+      });
+      if (result.error) throw result.error;
+    } catch (error) {
+      console.error("KURO account Google login failed", error);
+      setStatus("accountLoginStatus", error && error.message || "Googleログインを開始できませんでした。", "error");
+      busy = false;
+      setBusy(button, false, "Googleでログイン");
+    }
+  });
 
   $("accountPasswordForm").addEventListener("submit", async function (event) {
     event.preventDefault();
@@ -285,6 +357,14 @@
   });
 
   client.auth.onAuthStateChange(function (event, session) {
+    if (event === "SIGNED_IN" && session && !currentUser) {
+      window.setTimeout(function () {
+        loadAccount().catch(function (error) {
+          console.error("KURO account OAuth session restore failed", error);
+          setStatus("accountLoginStatus", "ログイン後のアカウント情報を読み込めませんでした。再読み込みしてください。", "error");
+        });
+      }, 0);
+    }
     if (event === "SIGNED_OUT" && currentUser) {
       currentUser = null;
       $("accountUser").hidden = true;
