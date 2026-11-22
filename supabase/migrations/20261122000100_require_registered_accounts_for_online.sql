@@ -70,3 +70,33 @@ using (
 with check (
   coalesce(((select auth.jwt()) ->> 'is_anonymous')::boolean, false) = false
 );
+
+alter policy werewolf_chat_member_insert
+on public.werewolf_chat_messages
+with check (
+  coalesce(((select auth.jwt()) ->> 'is_anonymous')::boolean, false) = false
+  and user_id = (select auth.uid())
+  and char_length(trim(message)) between 1 and 500
+  and exists (
+    select 1
+    from public.werewolf_rooms r,
+      lateral jsonb_array_elements(coalesce(r.room_data -> 'players', '[]'::jsonb)) p(value)
+    where r.room_code = werewolf_chat_messages.room_code
+      and r.status in ('lobby','playing')
+      and p.value ->> 'uid' = ((select auth.uid()))::text
+      and p.value ->> 'name' = werewolf_chat_messages.player_name
+  )
+);
+
+alter policy werewolf_chat_member_read
+on public.werewolf_chat_messages
+using (
+  coalesce(((select auth.jwt()) ->> 'is_anonymous')::boolean, false) = false
+  and exists (
+    select 1
+    from public.werewolf_rooms r,
+      lateral jsonb_array_elements(coalesce(r.room_data -> 'players', '[]'::jsonb)) p(value)
+    where r.room_code = werewolf_chat_messages.room_code
+      and p.value ->> 'uid' = ((select auth.uid()))::text
+  )
+);
