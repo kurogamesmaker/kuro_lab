@@ -287,6 +287,9 @@ async function handle(req: Request) {
       throw new HttpError(400, "スコアは0〜1,000,000,000の整数で指定してください。");
     }
     const mode = safeMode(body.mode);
+    if (game.id === "2eb37847-1b7e-43e4-ad98-901d5b830ac4" && mode === "wins-online") {
+      throw new HttpError(403, "オンライン勝利数は対局サーバーが登録します。");
+    }
     const metadata = body.metadata && typeof body.metadata === "object" && !Array.isArray(body.metadata)
       ? body.metadata as Record<string, unknown>
       : {};
