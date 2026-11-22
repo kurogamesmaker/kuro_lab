@@ -86,7 +86,7 @@ test("idle alarm clears only the room's own storage and resets its cache", async
   const fixture = createRoom();
   fixture.values.set("room-state", { state: { phase: "playing" }, updatedAt: 123 });
   fixture.room.loaded = true;
-  fixture.room.data = { state: { phase: "playing" }, updatedAt: 123 };
+  fixture.room.data = { state: { phase: "playing" }, updatedAt: 123, idleDeadline: Date.now() - 1 };
 
   await fixture.room.alarm();
 
@@ -363,4 +363,150 @@ test("compact UNON patch merges unchanged private envelopes and rejects stale ve
   assert.equal(hostMessages.at(-1).result.conflict, true);
   saved = await fixture.room.state.storage.get("room-state");
   assert.equal(saved.state.game.version, 2);
+});
+
+
+async function makePlayerKeys() {
+  const pair = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveKey"]);
+  return {
+    pub: await crypto.subtle.exportKey("jwk", pair.publicKey),
+    privateKey: pair.privateKey,
+  };
+}
+
+async function openServerEnvelope(envelope, privateKey) {
+  const remote = await crypto.subtle.importKey("jwk", envelope.epk, { name: "ECDH", namedCurve: "P-256" }, false, []);
+  const key = await crypto.subtle.deriveKey({ name: "ECDH", public: remote }, privateKey,
+    { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+  const iv = Uint8Array.from(atob(envelope.iv), c => c.charCodeAt(0));
+  const ciphertext = Uint8Array.from(atob(envelope.ct), c => c.charCodeAt(0));
+  const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
+  return JSON.parse(new TextDecoder().decode(plaintext));
+}
+
+test("UNON server starts the match and encrypts each hand only for its owner", async () => {
+  const fixture = createRoom();
+  fixture.room.loaded = true;
+  const hostKeys = await makePlayerKeys();
+  const guestKeys = await makePlayerKeys();
+  fixture.room.data.state = {
+    phase: "lobby",
+    players: [
+      { id: "host-user", name: "Host", pub: hostKeys.pub, ready: true },
+      { id: "guest-user", name: "Guest", pub: guestKeys.pub, ready: true },
+    ],
+  };
+  const hostMessages = [], guestMessages = [];
+  const hostSocket = { send(payload) { hostMessages.push(JSON.parse(payload)); } };
+  const guestSocket = { send(payload) { guestMessages.push(JSON.parse(payload)); } };
+  const host = { id: "host-user", isHost: true };
+  const guest = { id: "guest-user", isHost: false };
+  fixture.room.sockets.set(hostSocket, host);
+  fixture.room.sockets.set(guestSocket, guest);
+
+  await fixture.room.onMessage(hostSocket, host, JSON.stringify({
+    type: "unon-start", requestId: "start-1", ruleMode: "official",
+  }));
+
+  const started = hostMessages.find(item => item.type === "unon-result").result;
+  assert.equal(started.ok, true);
+  assert.equal(started.patch.public.phase, "playing");
+  assert.equal(fixture.room.data.unonGame.players.length, 2);
+  assert.equal(fixture.room.data.unonGame.players[0].hand.length, 7);
+  assert.equal(fixture.room.data.state.game, null);
+  assert.equal(started.patch.publicDelta, undefined);
+  assert.equal((await openServerEnvelope(started.patch.privateEnvelope, hostKeys.privateKey)).hand.length, 7);
+
+  const guestPatch = guestMessages.find(item => item.type === "message" && item.message.type === "unon-patch").message.data;
+  assert.equal(guestPatch.public.version, 0);
+  assert.equal(guestPatch.privateEnvelope !== null, true);
+  assert.equal((await openServerEnvelope(guestPatch.privateEnvelope, guestKeys.privateKey)).hand.length, 7);
+  assert.equal(guestPatch.privateUpdates, undefined);
+});
+
+test("UNON actions go directly to the server, reject wrong turns and send only changed public/private data", async () => {
+  const fixture = createRoom();
+  fixture.room.loaded = true;
+  const hostKeys = await makePlayerKeys();
+  const guestKeys = await makePlayerKeys();
+  fixture.room.data.state = {
+    phase: "playing",
+    players: [
+      { id: "host-user", name: "Host", pub: hostKeys.pub, ready: true },
+      { id: "guest-user", name: "Guest", pub: guestKeys.pub, ready: true },
+    ],
+  };
+  fixture.room.data.unonGame = UNON_RULES.createGame({ players: [
+    { userId: "host-user", name: "Host" }, { userId: "guest-user", name: "Guest" },
+  ], ruleMode: "official" });
+  fixture.room.data.unonGame.matchId = "match-server";
+  const hostMessages = [], guestMessages = [];
+  const hostSocket = { send(payload) { hostMessages.push(JSON.parse(payload)); } };
+  const guestSocket = { send(payload) { guestMessages.push(JSON.parse(payload)); } };
+  const host = { id: "host-user", isHost: true };
+  const guest = { id: "guest-user", isHost: false };
+  fixture.room.sockets.set(hostSocket, host);
+  fixture.room.sockets.set(guestSocket, guest);
+
+  await fixture.room.onMessage(guestSocket, guest, JSON.stringify({
+    type: "unon-action", requestId: "wrong-turn", actionId: "guest-action-1", action: { type: "draw" },
+  }));
+  const denied = guestMessages.find(item => item.type === "unon-result").result;
+  assert.equal(denied.ok, false);
+  assert.equal(denied.code, "NOT_YOUR_TURN");
+  assert.equal(fixture.room.data.unonGame.version, 0);
+
+  await fixture.room.onMessage(hostSocket, host, JSON.stringify({
+    type: "unon-action", requestId: "draw-1", actionId: "host-action-1", action: { type: "draw" },
+  }));
+  const accepted = hostMessages.filter(item => item.type === "unon-result").at(-1).result;
+  assert.equal(accepted.ok, true);
+  assert.equal(accepted.patch.public, undefined);
+  assert.ok(accepted.patch.publicDelta);
+  assert.ok(accepted.patch.privateEnvelope);
+  assert.equal(fixture.room.data.unonGame.version, 1);
+  const hostHand = await openServerEnvelope(accepted.patch.privateEnvelope, hostKeys.privateKey);
+  assert.equal(hostHand.hand.length, 8);
+
+  const peerPatch = guestMessages.filter(item => item.type === "message" && item.message.type === "unon-patch").at(-1).message.data;
+  assert.equal(peerPatch.public, undefined);
+  assert.ok(peerPatch.publicDelta);
+  assert.equal(peerPatch.privateEnvelope, null);
+  assert.equal(peerPatch.privateUpdates, undefined);
+  assert.equal(fixture.room.data.unonGame.players[1].hand.length, 7);
+});
+
+test("UNON action IDs are idempotent when a client retries after a delayed acknowledgement", async () => {
+  const fixture = createRoom();
+  fixture.room.loaded = true;
+  const hostKeys = await makePlayerKeys();
+  const guestKeys = await makePlayerKeys();
+  fixture.room.data.state = {
+    phase: "playing",
+    players: [
+      { id: "host-user", name: "Host", pub: hostKeys.pub, ready: true },
+      { id: "guest-user", name: "Guest", pub: guestKeys.pub, ready: true },
+    ],
+  };
+  fixture.room.data.unonGame = UNON_RULES.createGame({ players: [
+    { userId: "host-user", name: "Host" }, { userId: "guest-user", name: "Guest" },
+  ], ruleMode: "official" });
+  fixture.room.data.unonGame.matchId = "match-idempotent";
+  const sent = [];
+  const socket = { send(payload) { sent.push(JSON.parse(payload)); } };
+  const host = { id: "host-user", isHost: true };
+  fixture.room.sockets.set(socket, host);
+  const message = JSON.stringify({
+    type: "unon-action", requestId: "draw-first", actionId: "same-action-id", action: { type: "draw" },
+  });
+  await fixture.room.onMessage(socket, host, message);
+  const version = fixture.room.data.unonGame.version;
+  await fixture.room.onMessage(socket, host, JSON.stringify({
+    type: "unon-action", requestId: "draw-retry", actionId: "same-action-id", action: { type: "draw" },
+  }));
+  assert.equal(fixture.room.data.unonGame.version, version);
+  const retry = sent.filter(item => item.type === "unon-result").at(-1).result;
+  assert.equal(retry.ok, true);
+  assert.equal(retry.duplicate, true);
+  assert.equal(retry.patch.public.version, version);
 });
