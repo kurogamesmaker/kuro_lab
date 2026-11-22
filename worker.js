@@ -25,7 +25,7 @@ function applyMaruFavicon(html, requestPath = "") {
   if (isGamePlayPath) {
     cleanHtml = cleanHtml.replace(
       /(<script\b[^>]*\bsrc\s*=\s*["']\/games\/recommendations\.js)(?:\?[^"']*)?(["'][^>]*>)/i,
-      '$1?v=20261122-sidecards100$2'
+      '$1?v=20261122-sidecards100fix1$2'
     );
   }
   const withFavicon = cleanHtml.replace(/<head\b[^>]*>/i, head => head + forcedLinks);
