@@ -101,27 +101,6 @@
       || "KUROアカウント";
   }
 
-  async function verifyCurrentPassword(password, user) {
-    const verifier = window.supabase.createClient(SUPABASE_URL, PUBLISHABLE_KEY, {
-      global: { fetch: kuroRelayFetch },
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false,
-        storageKey: "kuro-account-verify-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2)
-      }
-    });
-    try {
-      const { error } = await verifier.auth.signInWithPassword({
-        email: user.email,
-        password
-      });
-      if (error) throw new Error("現在のパスワードが正しくありません。");
-    } finally {
-      try { await verifier.auth.signOut({ scope: "local" }); } catch (_) {}
-    }
-  }
-
   async function loadAccount() {
     const { data: sessionData, error: sessionError } = await client.auth.getSession();
     if (sessionError) throw sessionError;
@@ -197,31 +176,20 @@
     setBusy(button, true, "確認中…");
     setStatus("accountPasswordStatus", "", "");
     try {
-      if (accountHasPassword) {
-        if (!currentPassword) throw new Error("現在のパスワードを入力してください。");
-        if (!currentUser.email) throw new Error("現在のログイン方法ではパスワードを確認できません。");
-        await verifyCurrentPassword(currentPassword, currentUser);
-      } else {
-        const { data: sessionData, error: sessionError } = await client.auth.getSession();
-        if (sessionError || !sessionData.session) throw new Error("ログイン状態を確認できません。再ログインしてください。");
-        let authTime = 0;
-        try {
-          const payload = sessionData.session.access_token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
-          const claims = JSON.parse(atob(payload.padEnd(Math.ceil(payload.length / 4) * 4, "=")));
-          authTime = Number(claims.auth_time || 0);
-        } catch (_) {}
-        if (!authTime || Math.floor(Date.now() / 1000) - authTime > 900) {
-          throw new Error("安全のため、いったんログアウトして再ログインしてから設定してください。");
+      if (accountHasPassword && !currentPassword) throw new Error("現在のパスワードを入力してください。");
+      setBusy(button, true, "本人確認中…");
+      const { data: changed, error: changeError } = await client.functions.invoke("change-password", {
+        body: {
+          currentPassword: accountHasPassword ? currentPassword : undefined,
+          newPassword,
+          confirmPassword
         }
-      }
-      setBusy(button, true, "変更中…");
-      const metadata = Object.assign({}, currentUser.user_metadata || {}, { kuro_password_configured: true });
-      const { data, error } = await client.auth.updateUser({
-        password: newPassword,
-        data: metadata
       });
-      if (error) throw error;
-      currentUser = data.user || currentUser;
+      if (changeError) throw new Error(await readFunctionError(changeError));
+      if (!changed || changed.success !== true) throw new Error(changed && changed.error || "パスワードを変更できませんでした。");
+      const refreshed = await client.auth.getUser();
+      if (refreshed.error || !refreshed.data.user) throw new Error("パスワードは変更されました。再ログインして状態を更新してください。");
+      currentUser = refreshed.data.user;
       accountHasPassword = getProviders(currentUser).includes("email");
       $("accountCurrentPassword").value = "";
       $("accountNewPassword").value = "";
@@ -235,9 +203,6 @@
       $("accountDeletePasswordWrap").hidden = !accountHasPassword;
       $("accountDeletePassword").required = accountHasPassword;
       $("accountDeleteReauthHint").hidden = accountHasPassword;
-      try { await client.auth.signOut({ scope: "others" }); } catch (revokeError) {
-        console.warn("KURO other-session signout skipped", revokeError);
-      }
       setStatus("accountPasswordStatus", "パスワードを設定・変更しました。KUROLAB・SNS・GAMESで共通して使えます。", "success");
     } catch (error) {
       console.error("KURO account password update failed", error);
