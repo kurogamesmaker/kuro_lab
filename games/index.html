@@ -1499,7 +1499,7 @@ function initKuroRankingShowcase(){
    const result=await rowsPromise;
    index=nextIndex;
    const defaultTitle=game.title+(modeName(game.mode)?" · "+modeName(game.mode):"");
-   let customTicker="";try{customTicker=String(localStorage.getItem("kuroGamesRankingTickerText")||"").trim();}catch(_){}
+   let customTicker="";try{const tickerMap=JSON.parse(localStorage.getItem("kuroGamesRankingTickerByGame")||"{}");customTicker=String(tickerMap[game.id]||"").trim();}catch(_){}
    const displayTitle=customTicker||defaultTitle;
    titleEl.classList.remove("rank-marquee");titleEl.replaceChildren();titleEl.classList.add("rank-marquee");
    const track=document.createElement("span");track.className="rank-marquee-track";
