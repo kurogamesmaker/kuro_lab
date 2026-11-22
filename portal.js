@@ -497,6 +497,47 @@ function positionDashboardToolbar(){
    else headerInner.insertBefore(toolbar,topnav||headerInner.firstChild);
   }
  }
+ /* Force full contrast on the actual toolbar controls after they are moved into the header. */
+ var toolbarActions=toolbar.querySelector(".portal-dashboard-actions");
+ if(toolbarActions){
+  function applyToolbarButtonContrast(){
+   toolbar.style.setProperty("opacity","1","important");
+   toolbar.style.setProperty("filter","none","important");
+   toolbar.style.setProperty("visibility","visible","important");
+   toolbar.style.setProperty("animation","none","important");
+   toolbarActions.style.setProperty("opacity","1","important");
+   toolbarActions.style.setProperty("filter","none","important");
+   toolbarActions.style.setProperty("visibility","visible","important");
+   Array.prototype.forEach.call(toolbarActions.children,function(button){
+    if(!button||button.tagName!=="BUTTON")return;
+    button.style.setProperty("opacity","1","important");
+    button.style.setProperty("filter","none","important");
+    button.style.setProperty("visibility","visible","important");
+    button.style.setProperty("color","#17283c","important");
+    button.style.setProperty("-webkit-text-fill-color","#17283c","important");
+    button.style.setProperty("background-color","#eef2f6","important");
+    button.style.setProperty("background-image","none","important");
+    button.style.setProperty("border-color","#d5dee8","important");
+    button.style.setProperty("text-shadow","none","important");
+    button.style.setProperty("mix-blend-mode","normal","important");
+    if(button.classList.contains("primary")||button.classList.contains("is-active")||button.getAttribute("aria-pressed")==="true"){
+     button.style.setProperty("background-color","#dbeafe","important");
+     button.style.setProperty("border-color","#b8d2f3","important");
+     button.style.setProperty("color","#16416b","important");
+     button.style.setProperty("-webkit-text-fill-color","#16416b","important");
+    }
+    Array.prototype.forEach.call(button.querySelectorAll("*"),function(child){
+     child.style.setProperty("color","inherit","important");
+     child.style.setProperty("-webkit-text-fill-color","inherit","important");
+    });
+   });
+  }
+  applyToolbarButtonContrast();
+  if(!toolbarActions.__kuroContrastObserver&&window.MutationObserver){
+   toolbarActions.__kuroContrastObserver=new MutationObserver(applyToolbarButtonContrast);
+   toolbarActions.__kuroContrastObserver.observe(toolbarActions,{childList:true});
+  }
+ }
 }
 function bindDashboard(){
  positionDashboardToolbar();
