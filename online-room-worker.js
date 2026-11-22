@@ -35,6 +35,8 @@ function onLeave(state,userId,ctx={}){const rng=ctx.rng||secureRng;if(state.phas
 function split(s){return{public:{ver:s.ver,version:s.version,phase:s.phase,ruleMode:s.ruleMode,players:s.players.map(p=>({userId:p.userId,name:p.name,handCount:p.hand.length})),turn:s.players[s.turn]?.userId||null,direction:s.direction,activeColor:s.activeColor,top:s.pile[s.pile.length-1],pileCount:s.pile.length,deckCount:s.deck.length,pendingDraw:s.pendingDraw,drawnPending:!!s.drawn,unoPending:s.unoPending||null,result:s.result||null},private:Object.fromEntries(s.players.map(p=>[p.userId,{hand:p.hand,drawn:s.drawn&&p.hand.some(c=>c.id===s.drawn)?s.drawn:null}])),server:{deck:s.deck,pile:s.pile.slice(0,-1)}}}
 return{COLORS,createGame,applyAction,onLeave,split,points}})();
 
+export { UNON_RULES };
+
 function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
     status,
