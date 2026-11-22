@@ -33,6 +33,7 @@ All online features require a signed-in KURO account authenticated by Supabase A
 7. Room state get/update remain on the authenticated Edge Function API for backwards-compatible persistence and optimistic concurrency. The DO carries real-time notifications/events.
 
 `get_config` remains readable before login so games can discover which online features are configured; every operation that reads or changes a player's online data requires a signed-in account.
+
 ## SDK behavior
 - `game-studio/kurog-online.js` uses this Worker endpoint by default for multiplayer.
 - `window.KuroGamesDurableEndpoint = ""` can temporarily disable DO and use the legacy polling transport.
@@ -72,4 +73,20 @@ The manual GitHub Actions deploy workflow is gated by repository variable `DEPLO
 - Werewolf rooms are removed two hours after `gameover`, or after 24 hours without an update. Werewolf room chat and online room events are removed through their room foreign-key cascades.
 - Daifugo private hands and ready flags cascade only when the corresponding online room is safely removed.
 - The cleanup function has a read-only dry-run mode, uses batched deletes and a transaction advisory lock, and never touches accounts, profiles, ranking scores, win-event records, cloud saves, or published game assets.
-- User chats and analytics are not included. `usage_events` remains available for the admin dashboard's 30-day usage analytics; it is not currently pruned by this job.
+
+## Operational log retention
+
+- The scheduled database job `kuro-cleanup-operational-logs` runs daily at 15:30 UTC (00:30 JST).
+- `usage_events` keeps 90 days. The admin analytics endpoint reads a rolling 30-day window, so this preserves its full reporting range with a buffer.
+- `admin_audit_logs` keeps 365 days for administrator-action traceability.
+- `admin_email_logs` keeps 90 days; its date index is added by the retention migration.
+- `cron.job_run_details` keeps 14 days because pg_cron does not remove execution history automatically.
+- The function supports a read-only dry run, uses an advisory lock and batched deletes, and is not executable by public/anon/authenticated roles.
+- The cleanup does not delete accounts, profiles, ranking scores, win events, cloud saves, published assets, posts, replies, follows, or group chat content. The current 6,233 usage events and 13 audit records were preserved; the dry run reported zero deletion candidates and the first execution deleted zero rows.
+
+## Other existing chat retention jobs
+
+- `kuro-delete-public-chat-daily` clears the public lobby chat once per day. The public lobby is intentionally short-lived and currently displays at most the latest 100 messages.
+- `kuro-delete-read-chat-messages-daily` runs every 15 minutes and deletes a DM if it has any read-receipt row older than one day. During this audit, `chat_message_reads` contained zero rows, so this job had no eligible messages to delete. This rule is separate from the new operational-log cleanup and should be reviewed independently before changing its behavior.
+- Group chat messages are not included in either of those chat-retention jobs and remain stored unless a user or administrator removes them through the product.
+- KUROSNS posts and replies are not time-pruned.
