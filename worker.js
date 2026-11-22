@@ -519,8 +519,16 @@ export default {
         let resolvedLiveAssetPath = "";
         for (const candidate of liveAssetCandidates) {
           const encodedCandidate = candidate.split("/").map(part => encodeURIComponent(part)).join("/");
+          const upstreamAssetUrl = new URL(
+            "https://raw.githubusercontent.com/kurogamesmaker/kuro_lab/main/" + encodedCandidate
+          );
+          // Forward the page's version tag so each published revision gets a fresh upstream cache key.
+          const requestedAssetVersion = url.searchParams.get("v");
+          if (requestedAssetVersion && /^[A-Za-z0-9._-]{1,80}$/.test(requestedAssetVersion)) {
+            upstreamAssetUrl.searchParams.set("kuro_asset_v", requestedAssetVersion);
+          }
           const candidateResponse = await fetch(
-            "https://raw.githubusercontent.com/kurogamesmaker/kuro_lab/main/" + encodedCandidate,
+            upstreamAssetUrl.toString(),
             { cf: { cacheEverything: true, cacheTtl: 15 } }
           );
           if (candidateResponse.ok) {
