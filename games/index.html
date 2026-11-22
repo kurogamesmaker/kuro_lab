@@ -886,6 +886,49 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
   }
 }
 
+
+/* KURO ranking carousel: full horizontal slide, fixed heading and controls */
+#kuroRankingShowcase .rank-list{
+  overflow:visible;
+  will-change:transform,opacity;
+  touch-action:pan-y;
+}
+#kuroRankingShowcase[data-rank-direction="next"].rank-out .rank-list{
+  animation:kuroRankSlideExitLeft .23s cubic-bezier(.45,0,.8,.4) both;
+}
+#kuroRankingShowcase[data-rank-direction="prev"].rank-out .rank-list{
+  animation:kuroRankSlideExitRight .23s cubic-bezier(.45,0,.8,.4) both;
+}
+#kuroRankingShowcase[data-rank-direction="next"].rank-in .rank-list{
+  animation:kuroRankSlideEnterRight .34s cubic-bezier(.2,.75,.25,1) both;
+}
+#kuroRankingShowcase[data-rank-direction="prev"].rank-in .rank-list{
+  animation:kuroRankSlideEnterLeft .34s cubic-bezier(.2,.75,.25,1) both;
+}
+@keyframes kuroRankSlideExitLeft{
+  from{opacity:1;transform:translate3d(0,0,0)}
+  to{opacity:0;transform:translate3d(-100%,0,0)}
+}
+@keyframes kuroRankSlideExitRight{
+  from{opacity:1;transform:translate3d(0,0,0)}
+  to{opacity:0;transform:translate3d(100%,0,0)}
+}
+@keyframes kuroRankSlideEnterRight{
+  from{opacity:0;transform:translate3d(100%,0,0)}
+  to{opacity:1;transform:translate3d(0,0,0)}
+}
+@keyframes kuroRankSlideEnterLeft{
+  from{opacity:0;transform:translate3d(-100%,0,0)}
+  to{opacity:1;transform:translate3d(0,0,0)}
+}
+@media(prefers-reduced-motion:reduce){
+  #kuroRankingShowcase[data-rank-direction].rank-out .rank-list,
+  #kuroRankingShowcase[data-rank-direction].rank-in .rank-list{
+    animation:none!important;
+    transform:none!important;
+    opacity:1!important;
+  }
+}
 </style>
 </head>
 <body>
@@ -1075,10 +1118,10 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
 function initKuroRankingShowcase(){
  const panel=document.getElementById("kuroRankingShowcase"),listEl=document.getElementById("kuroRankList"),titleEl=document.getElementById("kuroRankGame"),linkEl=document.getElementById("kuroRankGameLink"),dotsEl=document.getElementById("kuroRankDots"),prev=document.getElementById("kuroRankPrev"),next=document.getElementById("kuroRankNext");
  if(!panel||!listEl||!titleEl||!linkEl)return;
- let games=[],index=0,timer=null,pausedUntil=0,busy=false,cache=new Map();
+ let games=[],index=0,timer=null,pausedUntil=0,busy=false,cache=new Map(),pendingSteps=0,swipeStart=null;
  const medals=["🥇","🥈","🥉","4","5"];
  function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
- function renderDots(){dotsEl.innerHTML=games.map((_,i)=>'<i class="rank-dot '+(i===index?'active':'')+'"></i>').join("");}
+ function renderDots(){if(dotsEl)dotsEl.innerHTML=games.map((_,i)=>'<i class="rank-dot '+(i===index?'active':'')+'"></i>').join("");}
  function showMessage(msg){listEl.innerHTML='<div class="rank-message">'+esc(msg)+'</div>';}
  async function fetchRanking(game){
   const key=game.id+"::"+game.mode;
@@ -1089,46 +1132,79 @@ function initKuroRankingShowcase(){
   cache.set(key,rows);return rows;
  }
  function modeName(mode){return mode==="default"?"":mode.replace(/[_-]+/g," ");}
- async function display(i){
-  if(!games.length||busy)return;
+ async function display(i,direction=1){
+  if(!games.length)return;
+  if(busy){
+   pendingSteps=Math.max(-4,Math.min(4,pendingSteps+(direction<0?-1:1)));
+   return;
+  }
   busy=true;
   const nextIndex=(i+games.length)%games.length;
+  const game=games[nextIndex];
   const isSwitch=panel.dataset.rankReady==="1"&&nextIndex!==index;
+  const slideDirection=direction<0?"prev":"next";
   try{
+   // 先に次のデータを取得しつつ、現在の一覧を退場させる。通信待ちで空白にならない。
+   const rowsPromise=fetchRanking(game).then(rows=>({rows})).catch(error=>({error}));
    if(isSwitch){
+    panel.dataset.rankDirection=slideDirection;
     panel.classList.remove("rank-in");
     panel.classList.add("rank-out");
-    await new Promise(resolve=>setTimeout(resolve,180));
+    await new Promise(resolve=>setTimeout(resolve,230));
    }
+   const result=await rowsPromise;
    index=nextIndex;
-   const game=games[index];
-   panel.classList.remove("rank-out","rank-in");
    titleEl.textContent=game.title+(modeName(game.mode)?" · "+modeName(game.mode):"");
    linkEl.href="/games/play/?id="+encodeURIComponent(game.id);
    linkEl.textContent="このゲームを遊ぶ ↗";
    renderDots();
-   try{
-    const rows=await fetchRanking(game);
-    if(!rows.length){showMessage("このモードのランキングデータはまだありません。");}
-    else listEl.innerHTML=rows.slice(0,5).map((row,ri)=>'<div class="rank-row"><span class="rank-medal">'+medals[ri]+'</span><span class="rank-name">'+esc(row.user?.username||row.user?.display_name||"プレイヤー")+'</span><span class="rank-score">'+Number(row.score||0).toLocaleString("ja-JP")+'</span></div>').join("");
-   }catch(e){
+   if(result.error){
     showMessage("ランキングを取得できませんでした。");
-    console.debug("KURO ranking carousel:",e);
+    console.debug("KURO ranking carousel:",result.error);
+   }else if(!result.rows.length){
+    showMessage("このモードのランキングデータはまだありません。");
+   }else{
+    listEl.innerHTML=result.rows.slice(0,5).map((row,ri)=>'<div class="rank-row"><span class="rank-medal">'+medals[ri]+'</span><span class="rank-name">'+esc(row.user?.username||row.user?.display_name||"プレイヤー")+'</span><span class="rank-score">'+Number(row.score||0).toLocaleString("ja-JP")+'</span></div>').join("");
    }
    panel.dataset.rankReady="1";
-   void panel.offsetWidth;
+   panel.dataset.rankDirection=slideDirection;
+   panel.classList.remove("rank-out","rank-in");
+   void listEl.offsetWidth;
    panel.classList.add("rank-in");
   }catch(e){
-   panel.classList.remove("rank-out");
+   panel.classList.remove("rank-out","rank-in");
    showMessage("ランキングを取得できませんでした。");
    console.debug("KURO ranking transition:",e);
    panel.dataset.rankReady="1";
-   void panel.offsetWidth;
+   panel.dataset.rankDirection=slideDirection;
+   void listEl.offsetWidth;
    panel.classList.add("rank-in");
-  }finally{busy=false;}
+  }finally{
+   busy=false;
+   if(pendingSteps){
+    const queued=pendingSteps;
+    pendingSteps=0;
+    display(index+queued,Math.sign(queued));
+   }
+  }
  }
- function go(delta){pausedUntil=Date.now()+12000;display(index+delta);}
- prev?.addEventListener("click",()=>go(-1));next?.addEventListener("click",()=>go(1));
+ function go(delta){pausedUntil=Date.now()+12000;display(index+delta,delta);}
+ prev?.addEventListener("click",()=>go(-1));
+ next?.addEventListener("click",()=>go(1));
+ // ランキング一覧を左右にスワイプして切り替え（縦スクロールはそのまま）。
+ listEl.addEventListener("touchstart",event=>{
+  if(event.touches.length!==1){swipeStart=null;return;}
+  const touch=event.touches[0];
+  swipeStart={x:touch.clientX,y:touch.clientY};
+  pausedUntil=Date.now()+12000;
+ },{passive:true});
+ listEl.addEventListener("touchend",event=>{
+  if(!swipeStart||!event.changedTouches.length){swipeStart=null;return;}
+  const touch=event.changedTouches[0],dx=touch.clientX-swipeStart.x,dy=touch.clientY-swipeStart.y;
+  swipeStart=null;
+  if(Math.abs(dx)>=48&&Math.abs(dx)>Math.abs(dy)*1.25)go(dx<0?1:-1);
+ },{passive:true});
+ listEl.addEventListener("touchcancel",()=>{swipeStart=null;},{passive:true});
  panel.addEventListener("mouseenter",()=>pausedUntil=Date.now()+999999);
  panel.addEventListener("mouseleave",()=>pausedUntil=Date.now()+8000);
  async function initialize(){
@@ -1155,13 +1231,23 @@ function initKuroRankingShowcase(){
   try{
    games=await loadRankings();
    if(!games.length){showMessage("スタジオの「オンライン機能」から、ランキング欄に表示するゲームを選択してください。");return;}
-   await display(0);
-   timer=setInterval(()=>{if(Date.now()>=pausedUntil&&!busy)display(index+1);},3000);
-   setInterval(async()=>{if(busy)return;try{const fresh=await loadRankings();if(fresh.length){games=fresh;cache.clear();index=index%games.length;if(Date.now()>=pausedUntil)display(index);}}catch(err){console.debug("KURO ranking refresh skipped:",err);}},60000);
+   await display(0,1);
+   if(games.length>1)timer=setInterval(()=>{if(Date.now()>=pausedUntil&&!busy)display(index+1,1);},3000);
+   setInterval(async()=>{
+    if(busy)return;
+    try{
+     const fresh=await loadRankings();
+     if(fresh.length){
+      games=fresh;cache.clear();index=index%games.length;
+      if(Date.now()>=pausedUntil)display(index,1);
+     }
+    }catch(err){console.debug("KURO ranking refresh skipped:",err);}
+   },60000);
   }catch(e){showMessage("ランキングを読み込めませんでした。");console.warn("KURO ranking showcase init:",e);}
  }
- initialize();}
- initKuroRankingShowcase();
+ initialize();
+}
+initKuroRankingShowcase();
 </script>
 
 <script src="/usage-tracker.js"></script>
