@@ -72,7 +72,7 @@ function date(v){if(!v)return"未編集";try{return new Date(v).toLocaleString("
 function render(){load();const q=$("search").value.trim().toLowerCase(),list=projects.filter(p=>(filter==="all"||filter==="recent"&&p.updatedAt>=Date.now()-30*864e5||filter===p.type)&&(!q||(p.name||"").toLowerCase().includes(q)));list.sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));$("totalCount").textContent=projects.length;$("recentCount").textContent=projects.filter(p=>p.updatedAt>=Date.now()-30*864e5).length;
 const grid=$("projectGrid"),empty=$("empty");grid.querySelectorAll(".card").forEach(x=>x.remove());empty.style.display=list.length?"none":"block";if(!projects.length){empty.querySelector("strong").textContent="まだプロジェクトがありません";empty.firstChild.nextSibling.textContent="最初のゲームを作成してみましょう。";}else if(!list.length){empty.querySelector("strong").textContent="一致するプロジェクトがありません";empty.firstChild.nextSibling.textContent="検索ワードやフィルターを変更してください。";}
 list.forEach(p=>{const card=document.createElement("article");card.className="card";card.innerHTML='<div class="preview"><span class="type-tag">'+esc(typeName(p))+'</span><span class="glyph">'+icon(p)+'</span></div><div class="card-body"><div class="card-title">'+esc(p.name||"無題のプロジェクト")+'</div><div class="card-meta"><span>'+esc(typeName(p))+'</span><span>更新 '+date(p.updatedAt)+'</span></div></div><div class="card-actions"><button class="btn primary" data-open="'+esc(p.id)+'">Studioで編集</button><button class="btn" data-duplicate="'+esc(p.id)+'">複製</button><button class="btn danger" data-delete="'+esc(p.id)+'">削除</button></div>';grid.insertBefore(card,empty);});}
-function open(id,mode){const p=projects.find(x=>x.id===id);if(!p)return;localStorage.setItem(KEY+".current",p.id);const u=new URL("/game-studio/code.html",location.origin);u.searchParams.set("projectId",p.id);location.href=u.pathname+u.search;}
+function open(id,mode){const p=projects.find(x=>x.id===id);if(!p)return;localStorage.setItem(KEY+".current",p.id);const u=new URL("/game-studio/code.html",location.origin);u.searchParams.set("projectId",p.id);u.searchParams.set("v","20261122studio-cachefix2");location.href=u.pathname+u.search;}
 
 async function loadPublishedGames(){
  const status=$("publishedStatus"),grid=$("publishedGrid"),empty=$("publishedEmpty");
@@ -99,7 +99,7 @@ async function loadPublishedGames(){
    meta.append(category,updated);body.append(title,meta);
    const actions=document.createElement("div");actions.className="card-actions";
    const edit=document.createElement("a");edit.className="btn primary";edit.textContent="Studioで編集";
-   const u=new URL("/game-studio/code.html",location.origin);u.searchParams.set("publishedId",game.id);edit.href=u.pathname+u.search;
+   const u=new URL("/game-studio/code.html",location.origin);u.searchParams.set("publishedId",game.id);u.searchParams.set("v","20261122studio-cachefix2");edit.href=u.pathname+u.search;
    const play=document.createElement("a");play.className="btn";play.textContent="ゲームを見る";play.href="/games/play/?id="+encodeURIComponent(game.id);play.target="_blank";play.rel="noopener";
    const del=document.createElement("button");del.className="btn danger";del.textContent="削除";del.dataset.publishedDelete=game.id;actions.append(edit,play,del);card.append(preview,body,actions);grid.insertBefore(card,empty);
   });
