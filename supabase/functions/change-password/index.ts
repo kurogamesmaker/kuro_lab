@@ -42,7 +42,7 @@ Deno.serve(async (req: Request) => {
     const user = data.user;
     if (error || !user || user.is_anonymous) return reply({ error: "ログイン状態を確認できません。" }, 401, origin);
     const providers = Array.isArray(user.app_metadata?.providers) ? user.app_metadata.providers : [];
-    const passwordConfigured = providers.includes("email");
+    const passwordConfigured = user.app_metadata?.kuro_password_configured === true || (providers.includes("email") && user.user_metadata?.kuro_password_configured !== false);
     if (passwordConfigured) {
       const current = String(body.currentPassword || "");
       if (!current || !user.email) return reply({ error: "現在のパスワードを入力してください。" }, 400, origin);
@@ -68,6 +68,11 @@ Deno.serve(async (req: Request) => {
     if (!update.ok) {
       return reply({ error: updatedBody.message || updatedBody.msg || "パスワードを変更できませんでした。" }, update.status, origin);
     }
+    // Persist a server-controlled marker so subsequent password changes and
+    // account deletion require the current password even for OAuth accounts.
+    const appMetadata = { ...(user.app_metadata || {}), kuro_password_configured: true };
+    const marker = await admin.auth.admin.updateUserById(user.id, { app_metadata: appMetadata });
+    if (marker.error) throw marker.error;
     try { await admin.auth.admin.signOut(token, "others"); } catch (e) { console.warn("other session revocation warning", e); }
     return reply({ success: true }, 200, origin);
   } catch (e) {
