@@ -135,7 +135,7 @@ test("non-host members cannot mutate the authoritative game state", async () => 
   fixture.room.sockets.set(socket, player);
 
   await fixture.room.onMessage(socket, player, JSON.stringify({
-    type: "state-update",
+    type: "host-state-update",
     requestId: "blocked-1",
     expectedUpdatedAt: null,
     state: { phase: "finished", winner: "player-2" },
@@ -161,7 +161,7 @@ test("host state updates persist in the room DO before broadcasting to peers", a
   const nextState = { phase: "playing", turn: "peer-user", version: 2 };
 
   await fixture.room.onMessage(hostSocket, host, JSON.stringify({
-    type: "state-update",
+    type: "host-state-update",
     requestId: "host-write-1",
     expectedUpdatedAt: null,
     state: nextState,
@@ -186,7 +186,7 @@ test("Durable Object rejects stale state updates instead of overwriting newer tu
   fixture.room.sockets.set(socket, host);
 
   await fixture.room.onMessage(socket, host, JSON.stringify({
-    type: "state-update",
+    type: "host-state-update",
     requestId: "stale-write",
     expectedUpdatedAt: 300,
     state: { version: 5 },
@@ -194,4 +194,26 @@ test("Durable Object rejects stale state updates instead of overwriting newer tu
 
   assert.deepEqual(fixture.room.data.state, { version: 4 });
   assert.equal(sent[0].result.conflict, true);
+});
+
+
+test("host can migrate an older room snapshot into an empty Durable Object", async () => {
+  const fixture = createRoom();
+  fixture.room.loaded = true;
+  const sent = [];
+  const socket = { send(payload) { sent.push(JSON.parse(payload)); } };
+  const host = { id: "host-user", isHost: true };
+  fixture.room.sockets.set(socket, host);
+  const oldSnapshot = { phase: "playing", version: 8 };
+
+  await fixture.room.onMessage(socket, host, JSON.stringify({
+    type: "host-state-update",
+    requestId: "legacy-seed",
+    expectedUpdatedAt: "2026-11-22T04:00:00.000Z",
+    state: oldSnapshot,
+  }));
+
+  const saved = await fixture.room.state.storage.get("room-state");
+  assert.deepEqual(saved.state, oldSnapshot);
+  assert.equal(sent[0].result.conflict, false);
 });
