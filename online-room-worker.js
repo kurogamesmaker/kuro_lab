@@ -85,9 +85,96 @@ async function verifyRoomMembership(env, accessToken, gameId, roomId, userId) {
   if (!data || data.error || data.roomStatus === "closed" || !Array.isArray(data.members)) return false;
   return data.members.find(member => member && String(member.userId || member.user_id || "") === userId) || null;
 }
-async function createTicket(request, env) {
-  const headers = corsHeaders();
+async function verifyGuestCredential(token, secret) {
+  const claims = await verifyTicket(token, secret);
+  const now = Math.floor(Date.now() / 1000);
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!claims || claims.typ !== "kuro_guest" ||
+      claims.iss !== "kuro-online-room" ||
+      claims.aud !== "kurogames-online" ||
+      claims.scope !== "multiplayer" ||
+      !uuid.test(String(claims.sub || "")) ||
+      !uuid.test(String(claims.game || "")) ||
+      typeof claims.name !== "string" ||
+      !Number.isInteger(claims.iat) || claims.iat > now + 60 ||
+      !Number.isInteger(claims.exp) || claims.exp <= now ||
+      claims.exp - claims.iat > 6 * 60 * 60 + 60) return null;
+  return claims;
+}
+
+async function guestGameEnabled(env, gameId) {
+  const response = await fetch(env.SUPABASE_URL.replace(/\\/$/, "") + "/functions/v1/" + SUPABASE_FUNCTION, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      apikey: env.SUPABASE_ANON_KEY,
+      authorization: "Bearer " + env.SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify({ action: "get_config", gameId }),
+  });
+  if (!response.ok) return false;
+  const data = await response.json();
+  return data && !data.error && data.features && data.features.multiplayer === true;
+}
+
+async function createGuestToken(request, env) {
+  const headers = corsHeaders(request, env);
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
+  if (!originAllowed(request, env)) return json({ error: "origin_not_allowed" }, 403, headers);
+  if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405, headers);
+  if (!env.TICKET_SECRET || env.TICKET_SECRET.length < 32) return json({ error: "service_not_configured" }, 503, headers);
+  let body;
+  try {
+    const raw = await request.text();
+    if (raw.length > 2048) return json({ error: "request_too_large" }, 413, headers);
+    body = JSON.parse(raw);
+  } catch (_) { return json({ error: "invalid_json" }, 400, headers); }
+  const gameId = String(body?.gameId || "");
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!uuid.test(gameId)) return json({ error: "invalid_game_id" }, 400, headers);
+  let enabled = false;
+  try { enabled = await guestGameEnabled(env, gameId); } catch (_) { enabled = false; }
+  if (!enabled) return json({ error: "multiplayer_not_enabled" }, 403, headers);
+  const guestId = crypto.randomUUID();
+  const name = "ゲスト-" + guestId.replace(/-/g, "").slice(0, 4).toUpperCase();
+  const now = Math.floor(Date.now() / 1000);
+  const token = await issueTicket({
+    typ: "kuro_guest",
+    iss: "kuro-online-room",
+    aud: "kurogames-online",
+    sub: guestId,
+    name,
+    game: gameId,
+    room: "guest",
+    scope: "multiplayer",
+    iat: now,
+    exp: now + 6 * 60 * 60,
+    jti: crypto.randomUUID(),
+  }, env.TICKET_SECRET);
+  return json({ token, guestId, name, expiresAt: (now + 6 * 60 * 60) * 1000 }, 200, headers);
+}
+
+async function verifyGuestRequest(request, env) {
+  if (request.method !== "POST") return json({ valid: false, error: "method_not_allowed" }, 405);
+  if (!env.TICKET_SECRET || env.TICKET_SECRET.length < 32) return json({ valid: false }, 503);
+  let body;
+  try {
+    const raw = await request.text();
+    if (raw.length > 8192) return json({ valid: false }, 413);
+    body = JSON.parse(raw);
+  } catch (_) { return json({ valid: false }, 400); }
+  const claims = await verifyGuestCredential(String(body?.token || ""), env.TICKET_SECRET);
+  if (!claims) return json({ valid: false }, 401, { "cache-control": "no-store" });
+  return json({
+    valid: true,
+    claims: { sub: claims.sub, name: claims.name, game: claims.game, scope: claims.scope, exp: claims.exp },
+  }, 200, { "cache-control": "no-store" });
+}
+
+async function createTicket(request, env) {
+  const headers = corsHeaders(request, env);
+  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
+  if (!originAllowed(request, env)) return json({ error: "origin_not_allowed" }, 403, headers);
   if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405, headers);
   if (!env.TICKET_SECRET || env.TICKET_SECRET.length < 32) return json({ error: "service_not_configured" }, 503, headers);
   const auth = request.headers.get("authorization") || "";
@@ -103,14 +190,20 @@ async function createTicket(request, env) {
   if (!validId(roomId) || !/^[0-9a-f-]{36}$/i.test(String(gameId || ""))) {
     return json({ error: "invalid_room_or_game" }, 400, headers);
   }
-  let user;
-  try { user = await getSupabaseUser(env, token); } catch (_) { user = null; }
+  let user = null;
+  let guestClaims = null;
+  try { guestClaims = await verifyGuestCredential(token, env.TICKET_SECRET); } catch (_) { guestClaims = null; }
+  if (guestClaims && guestClaims.game === gameId) {
+    user = { id: guestClaims.sub, user_metadata: { username: guestClaims.name } };
+  } else {
+    try { user = await getSupabaseUser(env, token); } catch (_) { user = null; }
+  }
   if (!user) return json({ error: "unauthorized" }, 401, headers);
   let member;
   try { member = await verifyRoomMembership(env, token, gameId, roomId, user.id); } catch (_) { member = null; }
   if (!member) return json({ error: "room_membership_required" }, 403, headers);
   const meta = user.user_metadata || {};
-  const name = String(member.user && member.user.username || meta.username || meta.handle || "プレイヤー").slice(0, 24);
+  const name = String(guestClaims ? guestClaims.name : (member.user && member.user.username || meta.username || meta.handle || "プレイヤー")).slice(0, 24);
   const now = Math.floor(Date.now() / 1000);
   const ticket = await issueTicket({ sub: user.id, name, room: roomId, game: gameId, iat: now, exp: now + 60 }, env.TICKET_SECRET);
   return json({ ticket, expiresAt: (now + 60) * 1000 }, 200, headers);
@@ -251,8 +344,10 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname === "/health") {
-      return json({ ok: true, service: "kuro-online-room", transport: "cloudflare-durable-objects", auth: "ticket+supabase-membership" });
+      return json({ ok: true, service: "kuro-online-room", transport: "cloudflare-durable-objects", auth: "ticket+account-or-ephemeral-guest" });
     }
+    if (url.pathname === "/guest-token") return createGuestToken(request, env);
+    if (url.pathname === "/guest/verify") return verifyGuestRequest(request, env);
     if (url.pathname === "/ticket") return createTicket(request, env);
     const match = url.pathname.match(/^\/room\/([A-Za-z0-9_-]{1,128})$/);
     if (match) {
