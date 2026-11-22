@@ -421,3 +421,55 @@ body.kuro-theme-light main dd{font-size:16px!important;line-height:1.9!important
 /* KUROLAB shared header/footer logo sizing: use the uploaded transparent artwork without cropping. */
 .kuro-global-header .kuro-brand img,.kuro-global-footer .kuro-footer-brand img{width:48px;height:48px;object-fit:contain;display:block;border:0;border-radius:0;background:transparent;box-shadow:none}
 .kuro-global-footer .kuro-footer-brand img{width:42px;height:42px}
+
+
+/* KURO light-page readability: dark-theme inline accents must stay readable on white surfaces. */
+body.kuro-theme-light main :is(
+  .role,
+  .step-number,
+  .kicker,
+  .eyebrow,
+  .small-label,
+  .field label,
+  .checkline,
+  .required,
+  .status,
+  .muted,
+  .hint,
+  .updated,
+  .panel dt,
+  .panel dd,
+  .section-intro,
+  .breadcrumb,
+  .faq-item h2,
+  .faq-item p
+) {
+  color:#40566d!important;
+}
+body.kuro-theme-light main :is(.kicker,.eyebrow,.small-label,.step-number) {
+  color:#6845a7!important;
+}
+body.kuro-theme-light main .required {
+  color:#a43c62!important;
+}
+body.kuro-theme-light main :is(.field label,.checkline) {
+  color:#263b50!important;
+}
+body.kuro-theme-light main .muted,
+body.kuro-theme-light main .hint,
+body.kuro-theme-light main .updated,
+body.kuro-theme-light main .breadcrumb {
+  color:#5b6f84!important;
+}
+body.kuro-theme-light main .panel,
+body.kuro-theme-light main .card,
+body.kuro-theme-light main .faq-item,
+body.kuro-theme-light main .feature-card,
+body.kuro-theme-light main .guide-card,
+body.kuro-theme-light main .content-card,
+body.kuro-theme-light main .info-card {
+  color:#263b50!important;
+}
+body.kuro-theme-light main :is(.panel,.card,.faq-item,.feature-card,.guide-card,.content-card,.info-card) :is(span,strong,b,small,dt,dd,label) {
+  color:inherit;
+}
