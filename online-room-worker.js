@@ -2,6 +2,7 @@ const encoder = new TextEncoder();
 const SUPABASE_FUNCTION = "kurogames-online";
 const MAX_MESSAGE_BYTES = 32 * 1024;
 const MAX_PLAYERS = 35;
+const ROOM_IDLE_TTL_MS = 5 * 60 * 1000;
 
 function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
@@ -123,8 +124,16 @@ export class Room {
     this.env = env;
     this.sockets = new Map();
     this.tail = Promise.resolve();
+    this.lifecycleTail = Promise.resolve();
     this.loaded = false;
     this.data = { state: null, updatedAt: null };
+  }
+  withLifecycleLock(task) {
+    const run = this.lifecycleTail.then(task, task);
+    this.lifecycleTail = run.catch(error => {
+      console.error("[kuro-online-room] lifecycle task failed:", error);
+    });
+    return run;
   }
   async load() {
     if (this.loaded) return;
@@ -152,41 +161,72 @@ export class Room {
     }
   }
   async fetch(request) {
-    await this.load();
     const userId = request.headers.get("x-kuro-user-id") || "";
     const gameId = request.headers.get("x-kuro-game-id") || "";
     const userName = (request.headers.get("x-kuro-user-name") || "プレイヤー").slice(0, 40);
     if (!userId || !gameId) return json({ error: "trusted_identity_required" }, 401);
     if (request.headers.get("Upgrade") !== "websocket") return json({ error: "websocket_required" }, 426);
-    const distinct = new Set(Array.from(this.sockets.values(), p => p.id));
-    if (!distinct.has(userId) && distinct.size >= MAX_PLAYERS) return json({ error: "room_full" }, 409);
-    const pair = new WebSocketPair();
-    const client = pair[0], server = pair[1];
-    server.accept();
-    const player = { id: userId, name: userName, gameId, joinedAt: Date.now() };
-    this.sockets.set(server, player);
-    server.addEventListener("close", () => this.removeSocket(server, userId));
-    server.addEventListener("error", () => this.removeSocket(server, userId));
-    server.addEventListener("message", event => {
-      this.tail = this.tail.then(() => this.onMessage(server, player, event.data)).catch(() => {
-        this.send(server, { type: "error", error: "internal_error" });
+
+    // Serialize new connections against the idle-cleanup alarm. A reconnect
+    // cancels the pending cleanup before loading room state.
+    return this.withLifecycleLock(async () => {
+      await this.state.storage.deleteAlarm();
+      await this.load();
+
+      const distinct = new Set(Array.from(this.sockets.values(), p => p.id));
+      if (!distinct.has(userId) && distinct.size >= MAX_PLAYERS) {
+        return json({ error: "room_full" }, 409);
+      }
+      const pair = new WebSocketPair();
+      const client = pair[0], server = pair[1];
+      server.accept();
+      const player = { id: userId, name: userName, gameId, joinedAt: Date.now() };
+      this.sockets.set(server, player);
+      server.addEventListener("close", () => this.removeSocket(server, userId));
+      server.addEventListener("error", () => this.removeSocket(server, userId));
+      server.addEventListener("message", event => {
+        this.tail = this.tail.then(() => this.onMessage(server, player, event.data)).catch(() => {
+          this.send(server, { type: "error", error: "internal_error" });
+        });
       });
+      this.send(server, {
+        type: "welcome",
+        room: this.state.id.toString(),
+        players: this.players(),
+        state: this.data.state,
+        updatedAt: this.data.updatedAt,
+      });
+      this.broadcast({ type: "players", players: this.players() }, userId);
+      return new Response(null, { status: 101, webSocket: client });
     });
-    this.send(server, {
-      type: "welcome",
-      room: this.state.id.toString(),
-      players: this.players(),
-      state: this.data.state,
-      updatedAt: this.data.updatedAt,
-    });
-    this.broadcast({ type: "players", players: this.players() }, userId);
-    return new Response(null, { status: 101, webSocket: client });
   }
   removeSocket(ws, userId) {
-    this.sockets.delete(ws);
-    if (!Array.from(this.sockets.values()).some(p => p.id === userId)) {
-      this.broadcast({ type: "players", players: this.players() });
-    }
+    const cleanup = this.withLifecycleLock(async () => {
+      const removed = this.sockets.delete(ws);
+      if (!removed) return;
+
+      if (!Array.from(this.sockets.values()).some(p => p.id === userId)) {
+        this.broadcast({ type: "players", players: this.players() });
+      }
+      if (this.sockets.size === 0) {
+        // Keep a short reconnect grace period before removing persisted state.
+        await this.state.storage.setAlarm(Date.now() + ROOM_IDLE_TTL_MS);
+      }
+    });
+    // WebSocket event listeners are not request handlers; keep the alarm write alive.
+    this.state.waitUntil(cleanup);
+  }
+  async alarm() {
+    await this.withLifecycleLock(async () => {
+      // A connection opened while the alarm was queued wins; never clear active rooms.
+      if (this.sockets.size > 0) return;
+
+      // deleteAll() is required to fully release this DO's persisted storage.
+      await this.state.storage.deleteAll();
+      this.loaded = false;
+      this.data = { state: null, updatedAt: null };
+      console.info("[kuro-online-room] cleared storage after idle timeout");
+    });
   }
   async onMessage(ws, player, raw) {
     if (!this.sockets.has(ws)) return;
