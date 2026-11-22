@@ -7,7 +7,7 @@
 - Durable Object class: `Room`
 - Namespace ID: `9633b9fd379f4e0690c398d3933b8dcd`
 - Namespace storage: SQLite
-- Latest verified Cloudflare deployment: `d580d475-5acc-4dec-ade7-480b08d8ad5c` (100% traffic)
+- Latest verified Cloudflare deployment: `87330b602d644c0b8f84ddcd32e0909e` (100% traffic)
 - Secret binding configured: `TICKET_SECRET` (value is not stored in GitHub)
 
 ## Authentication policy
@@ -20,6 +20,8 @@ All online features require a signed-in KURO account authenticated by Supabase A
 - Account connection tickets carry `typ: kuro_account`; the WebSocket endpoint rejects legacy guest tokens even if one was issued before this policy.
 - The retired `/guest-token` and `/guest/verify` routes return HTTP 410 and never issue or validate guest credentials.
 - Existing historical guest records are not deleted. Old room entries naturally expire; they cannot authenticate, create new rooms, or rejoin.
+
+- Supabase Edge Function `kurogames-online`: deployed version 22 with account-only authorization.
 
 ## Runtime flow
 1. The KuroGames SDK obtains the signed-in account session from the game player or Studio parent page.
