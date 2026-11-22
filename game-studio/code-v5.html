@@ -67,7 +67,7 @@
  window.__KURO_STUDIO_REPORT_ERROR__=report;
  window.addEventListener("error",function(e){report("Studioページ側のJavaScriptエラー",e.message||"Script error",e.filename||"",e.lineno||0,e.colno||0,e.error&&e.error.stack||"");},true);
  window.addEventListener("unhandledrejection",function(e){var reason=e&&e.reason;report("Studioページ側の未処理Promiseエラー",reason&&reason.message||String(reason||"unknown error"),location.href,0,0,reason&&reason.stack||"");});
- window.addEventListener("load",function(){window.setTimeout(function(){if(!window.__KURO_STUDIO_CORE_READY&&!window.__KURO_STUDIO_REDIRECTING)report("Studio本体の起動確認に失敗","メインスクリプトが最後まで実行されていません。起動段階を確認してください。",location.href,0,0,"");},1800);});
+ window.addEventListener("load",function(){window.setTimeout(function(){if(!window.__KURO_STUDIO_CORE_READY&&!window.__KURO_STUDIO_REDIRECTING&&!window.__KURO_STUDIO_CORE_LOAD_PENDING)report("Studio本体の起動確認に失敗","メインスクリプトが最後まで実行されていません。起動段階を確認してください。",location.href,0,0,"");},1800);});
  window.__KURO_STUDIO_EARLY_DIAGNOSTICS__=true;
 })();
 </script>
@@ -75,12 +75,14 @@
 <script>
 (function(){
   "use strict";
+  window.__KURO_STUDIO_CORE_LOAD_PENDING = true;
   var sources = [
     "/game-studio/code-core-v4.js?v=20261123studio-core-rescue5",
     "https://raw.githubusercontent.com/kurogamesmaker/kuro_lab/main/game-studio/code-core-v4.js?v=20261123studio-core-rescue5"
   ];
   function showFailure(message, source) {
     window.__KURO_STUDIO_CORE_LOAD_ERROR__ = true;
+    window.__KURO_STUDIO_CORE_LOAD_PENDING = false;
     window.__KURO_STUDIO_BOOT_STAGE__ = "core-script-load-failed";
     if (typeof window.__KURO_STUDIO_REPORT_ERROR__ === "function") {
       window.__KURO_STUDIO_REPORT_ERROR__("Studio本体スクリプトの読み込み失敗", message, source || location.href, 0, 0, "");
@@ -95,7 +97,7 @@
     script.async = false;
     script.onload = function() {
       window.setTimeout(function() {
-        if (window.__KURO_STUDIO_CORE_READY) return;
+        if (window.__KURO_STUDIO_CORE_READY) { window.__KURO_STUDIO_CORE_LOAD_PENDING = false; return; }
         var stage = window.__KURO_STUDIO_BOOT_STAGE__ || "early";
         if (index === 0 && (stage === "early" || stage === "loading-core-via-worker")) {
           load(1);
