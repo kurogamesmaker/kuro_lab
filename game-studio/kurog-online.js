@@ -358,6 +358,19 @@ async function connectRoom(roomData, members) {
   return connectRoomPolling(roomData, members, session);
 }
 
+async function connectMatchedMatchmakingResult(result) {
+  if (!result || result.status !== "matched" || !result.room || !result.room.id) {
+    return { status: result && result.status === "cancelled" ? "cancelled" : "waiting" };
+  }
+  const room = await connectRoom(result.room, result.members || []);
+  try {
+    await invoke("matchmaking_ack", { roomId: result.room.id });
+  } catch (error) {
+    console.warn("KUROGAMES matchmaking acknowledgement:", error);
+  }
+  return { status: "matched", room: room };
+}
+
 const KuroGames = {
   async init(options) {
     options = options || {};
@@ -461,6 +474,15 @@ const KuroGames = {
   },
 
   multiplayer: {
+    async findRandomMatch() {
+      return connectMatchedMatchmakingResult(await invoke("matchmaking_join"));
+    },
+    async getRandomMatchStatus() {
+      return connectMatchedMatchmakingResult(await invoke("matchmaking_status"));
+    },
+    async cancelRandomMatch() {
+      return invoke("matchmaking_cancel");
+    },
     async listRooms() {
       const result = await invoke("room_list");
       return result.rooms || [];
