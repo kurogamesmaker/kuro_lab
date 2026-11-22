@@ -684,7 +684,7 @@ async function handle(req: Request) {
       if (memberError) throw new HttpError(500, "ルーム接続を更新できませんでした。");
       if (!member) throw new HttpError(403, "このルームの参加者ではありません。");
       const { data: room, error: roomError } = await admin.from("game_online_rooms")
-        .select("id, game_id, status").eq("id", roomId).eq("game_id", game.id).maybeSingle();
+        .select("id, game_id, host_user_id, status").eq("id", roomId).eq("game_id", game.id).maybeSingle();
       if (roomError || !room) throw new HttpError(404, "ルームが見つかりません。");
       const { data: messages, error } = await admin.from("game_online_room_messages")
         .select("id, sender_user_id, event_type, payload, created_at")
@@ -699,6 +699,7 @@ async function handle(req: Request) {
         })),
         members,
         roomStatus: room.status,
+        hostUserId: room.host_user_id,
         cursor: afterId,
       });
     }
