@@ -3296,3 +3296,28 @@ body.kuro-portal .portal-side .portal-side-brand img,
 body.kuro-portal .portal-side .portal-side-brand img.portal-side-brand-mark,
 body.kuro-portal .portal-side .portal-side-brand img.portal-side-brand-logo{width:42px!important;height:42px!important;flex:0 0 42px!important;object-fit:contain!important;display:block!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;padding:0!important}
 @media(max-width:700px){body.kuro-portal .portal-header .portal-brand img{width:40px!important;height:40px!important;flex-basis:40px!important}}
+
+
+/* KURO account forms: keep entered text dark and readable in every theme. */
+body.kuro-portal #portal-login-modal input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+body.kuro-portal #portal-login-modal textarea,
+body.kuro-portal #portal-login-modal select,
+body.kuro-portal #portal-username-form #portal-new-username {
+  background-color:#ffffff!important;
+  color:#17283c!important;
+  -webkit-text-fill-color:#17283c!important;
+  caret-color:#17283c!important;
+  border-color:#dbe3ed!important;
+}
+body.kuro-portal #portal-login-modal input::placeholder,
+body.kuro-portal #portal-login-modal textarea::placeholder,
+body.kuro-portal #portal-username-form #portal-new-username::placeholder {
+  color:#748296!important;
+  -webkit-text-fill-color:#748296!important;
+  opacity:1!important;
+}
+body.kuro-portal #portal-login-modal input:-webkit-autofill,
+body.kuro-portal #portal-username-form #portal-new-username:-webkit-autofill {
+  -webkit-text-fill-color:#17283c!important;
+  -webkit-box-shadow:0 0 0 1000px #ffffff inset!important;
+}
