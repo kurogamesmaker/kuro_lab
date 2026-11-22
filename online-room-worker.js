@@ -103,7 +103,7 @@ async function verifyGuestCredential(token, secret) {
 }
 
 async function guestGameEnabled(env, gameId) {
-  const response = await fetch(env.SUPABASE_URL.replace(/\\/$/, "") + "/functions/v1/" + SUPABASE_FUNCTION, {
+  const response = await fetch(env.SUPABASE_URL.replace(/\/$/, "") + "/functions/v1/" + SUPABASE_FUNCTION, {
     method: "POST",
     headers: {
       "content-type": "application/json",
