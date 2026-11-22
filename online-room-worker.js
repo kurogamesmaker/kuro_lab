@@ -526,11 +526,11 @@ export class Room {
     if (message.type === "host-state-update") {
       const requestId = String(message.requestId || "");
       if (!player.isHost) {
-        this.send(ws, { type: "state-result", requestId, result: { ...this.data, conflict: false, forbidden: true } });
+        this.send(ws, { type: "state-result", requestId, result: { state: this.data.state, updatedAt: this.data.updatedAt, conflict: false, forbidden: true } });
         return;
       }
       if (!message.state || typeof message.state !== "object" || Array.isArray(message.state)) {
-        this.send(ws, { type: "state-result", requestId, result: { ...this.data, conflict: false, invalid: true } });
+        this.send(ws, { type: "state-result", requestId, result: { state: this.data.state, updatedAt: this.data.updatedAt, conflict: false, invalid: true } });
         return;
       }
       const expected = message.expectedUpdatedAt || null;
@@ -538,7 +538,7 @@ export class Room {
       // A host may migrate a pre-existing Supabase room snapshot into a new DO once.
       const legacySeed = player.isHost && current === null && expected !== null;
       if (expected !== current && !legacySeed) {
-        this.send(ws, { type: "state-result", requestId, result: { ...this.data, conflict: true } });
+        this.send(ws, { type: "state-result", requestId, result: { state: this.data.state, updatedAt: this.data.updatedAt, conflict: true } });
         return;
       }
       this.data = { ...this.data, state: message.state, updatedAt: Math.max(Date.now(), (Number(this.data.updatedAt) || 0) + 1) };
@@ -629,7 +629,7 @@ export class Room {
       this.send(ws, {
         type: "game-patch-result",
         requestId,
-        result: { ok: true, updatedAt: next.updatedAt, version: patch.version },
+        result: { ok: true, updatedAt: this.data.updatedAt, version: patch.version },
       });
       const common = {
         phase: patch.phase,
@@ -653,7 +653,7 @@ export class Room {
                 ? updates[peer.id]
                 : null,
             },
-            at: next.updatedAt,
+            at: this.data.updatedAt,
           },
         });
       }
