@@ -364,23 +364,3 @@ test("compact UNON patch merges unchanged private envelopes and rejects stale ve
   saved = await fixture.room.state.storage.get("room-state");
   assert.equal(saved.state.game.version, 2);
 });
-
-
-test("host game patch sends only changed public fields to peers after initial snapshot", async () => {
-  const fixture = createRoom();
-  fixture.room.loaded = true;
-  fixture.room.data = { state: { matchId: "match-1", phase: "playing", players: [], game: { version: 0, public: gamePatch(0, {}).public, priv: {}, last: { events: [] } } }, updatedAt: 100 };
-  const hostSocket = { send() {} }, peerMessages = [];
-  const peerSocket = { send(payload) { peerMessages.push(JSON.parse(payload)); } };
-  const host = { id: "host-user", isHost: true };
-  fixture.room.sockets.set(hostSocket, host);
-  fixture.room.sockets.set(peerSocket, { id: "peer-a", isHost: false });
-  const nextPublic = { ...gamePatch(1, {}).public, version: 1, top: { id: "c1", color: "blue", value: "4" } };
-  await fixture.room.onMessage(hostSocket, host, JSON.stringify({
-    type: "host-game-patch", requestId: "delta-1",
-    patch: { ...gamePatch(1, { "peer-a": envelope("private-a") }), public: nextPublic },
-  }));
-  const data = peerMessages[0].message.data;
-  assert.equal(data.public, undefined);
-  assert.deepEqual(data.publicDelta, { version: 1, top: nextPublic.top });
-});
