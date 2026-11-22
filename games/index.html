@@ -519,384 +519,261 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
     {
       "@type": "ListItem",
       "
-/* ===== Compact sizing for original 260–300px ranking sidebar ===== */
+
+/* ===== Exact compact sidebar fit: original 260–300px card ===== */
 #kuroRankingShowcase{
   width:100%;
   max-width:300px;
+  min-height:0;
   margin:0;
-}
-#kuroRankingShowcase .rank-head{gap:7px;padding:16px 14px 39px}
-#kuroRankingShowcase .rank-eyebrow{font-size:8px;letter-spacing:.19em;margin-bottom:4px}
-#kuroRankingShowcase .rank-head h2{gap:7px;font-size:21px;letter-spacing:0}
-#kuroRankingShowcase .rank-ico-trophy{width:27px;height:27px}
-#kuroRankingShowcase .rank-live{gap:5px;padding:4px 7px;font-size:8px;letter-spacing:.1em}
-#kuroRankingShowcase .rank-live i{width:6px;height:6px}
-#kuroRankingShowcase .rank-game{margin:2px 13px 11px;min-height:0;font-size:13px}
-#kuroRankingShowcase .rank-game::before{margin-right:7px;padding:3px 6px;font-size:8px;letter-spacing:.1em}
-#kuroRankingShowcase .rank-list{min-height:0;margin:0 13px;gap:8px}
-#kuroRankingShowcase .rank-row{grid-template-columns:auto minmax(0,1fr) auto;gap:8px;min-height:56px;padding:0 10px 0 0;border-radius:11px}
-#kuroRankingShowcase .rank-medal{width:55px;padding-right:7px}
-#kuroRankingShowcase .rank-medal b{font-size:28px}
-#kuroRankingShowcase .rank-row.rank-1{min-height:82px;padding-right:10px}
-#kuroRankingShowcase .rank-1 .rank-medal{width:72px}
-#kuroRankingShowcase .rank-1 .rank-medal b{font-size:40px}
-#kuroRankingShowcase .rank-name{gap:5px;font-size:13px}
-#kuroRankingShowcase .rank-1 .rank-name{gap:4px;font-size:15px}
-#kuroRankingShowcase .rank-tag{font-size:7px;letter-spacing:.1em;padding:3px 8px 3px 6px}
-#kuroRankingShowcase .rank-score{font-size:14px;white-space:nowrap}
-#kuroRankingShowcase .rank-1 .rank-score{font-size:19px}
-#kuroRankingShowcase .rank-foot{gap:7px;margin:12px 13px 0;padding:10px 0 14px}
-#kuroRankingShowcase .rank-foot>a{gap:6px;padding:8px 10px;font-size:10px;letter-spacing:0;white-space:nowrap}
-#kuroRankingShowcase .rank-foot>a svg{width:10px;height:10px}
-#kuroRankingShowcase .rank-controls{gap:5px}
-#kuroRankingShowcase .rank-controls button{width:26px;height:26px}
-#kuroRankingShowcase .rank-controls button svg{width:12px;height:12px}
-#kuroRankingShowcase #kuroRankDots{gap:4px}
-#kuroRankingShowcase #kuroRankDots>*{width:5px;height:5px}
-#kuroRankingShowcase #kuroRankDots>.active,
-#kuroRankingShowcase #kuroRankDots>.is-active,
-#kuroRankingShowcase #kuroRankDots>[aria-current="true"]{width:17px}
-#kuroRankingShowcase .rank-card{max-width:84%;padding:11px 18px 12px}
-#kuroRankingShowcase .rank-card small{font-size:8px;letter-spacing:.25em}
-#kuroRankingShowcase .rank-card b{font-size:21px;overflow-wrap:anywhere}
-#kuroRankingShowcase .rank-card em{font-size:10px;letter-spacing:.12em}
-@media(max-width:680px){
-  #kuroRankingShowcase{max-width:460px}
-  #kuroRankingShowcase .rank-head{padding:18px 16px 43px}
-  #kuroRankingShowcase .rank-head h2{font-size:23px}
-  #kuroRankingShowcase .rank-medal{width:65px}
-  #kuroRankingShowcase .rank-1 .rank-medal{width:82px}
-  #kuroRankingShowcase .rank-1 .rank-name{font-size:17px}
-  #kuroRankingShowcase .rank-score{font-size:16px}
-  #kuroRankingShowcase .rank-1 .rank-score{font-size:21px}
-}
-@media(max-width:360px){
-  #kuroRankingShowcase .rank-head{padding:16px 12px 39px}
-  #kuroRankingShowcase .rank-head h2{font-size:20px}
-  #kuroRankingShowcase .rank-row{gap:7px;padding-right:8px}
-  #kuroRankingShowcase .rank-medal{width:54px}
-  #kuroRankingShowcase .rank-1 .rank-medal{width:68px}
-  #kuroRankingShowcase .rank-1 .rank-name{font-size:14px}
-  #kuroRankingShowcase .rank-score{font-size:14px}
-  #kuroRankingShowcase .rank-1 .rank-score{font-size:18px}
-  #kuroRankingShowcase .rank-foot{gap:5px;margin-left:10px;margin-right:10px}
-  #kuroRankingShowcase .rank-foot>a{padding:8px 8px;font-size:9px}
-  #kuroRankingShowcase .rank-controls{gap:4px}
-  #kuroRankingShowcase .rank-controls button{width:24px;height:24px}
-}
-
-position": 1,
-      "item": {
-        "@type": "VideoGame",
-        "name": "回転寿司タイピング",
-        "url": "https://kurolab.cc.cd/game/kaiten-sushi-typing/"
-      }
-    },
-    {
-      "@type": "ListItem",
-      "position": 2,
-      "item": {
-        "@type": "VideoGame",
-        "name": "ブロックブラスト",
-        "url": "https://kurolab.cc.cd/game/block-blast/"
-      }
-    }
-  ]
-}
-</script>
-<style id="kuro-account-styles">
-.kuro-account-state{display:inline-flex;align-items:center;margin-left:-16px;padding:6px 10px;border-radius:99px;background:#f1f4f9;color:#66748b;font-size:11px;font-weight:900;white-space:nowrap}.kuro-account-state.is-signed-in{background:#eaf2ff;color:#2867bf}.kuro-account-trigger{border-color:#b9cff3;background:#eef5ff;color:#2867bf;cursor:pointer;font-weight:950;white-space:nowrap;max-width:230px;overflow:hidden;text-overflow:ellipsis}.kuro-account-trigger:hover{background:#dfeeff;border-color:#8eb8f2}.kuro-account-trigger.kuro-signed-in{font-size:12px;letter-spacing:0;text-transform:none}
-.kuro-account-modal{position:fixed;inset:0;z-index:1100;display:grid;place-items:center;padding:18px;background:#111a2bd9;backdrop-filter:blur(12px)}.kuro-account-modal[hidden]{display:none}
-.kuro-account-dialog{width:min(440px,100%);max-height:90vh;overflow-y:auto;overscroll-behavior:contain;padding:25px;border:1px solid #dce6f5;border-radius:20px;background:#fff;color:#17243c;box-shadow:0 25px 90px #101e3c55}
-.kuro-account-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:16px}.kuro-account-eyebrow{font-size:10px;font-weight:1000;letter-spacing:.18em;color:#3979d1}.kuro-account-head h2{margin:5px 0 0;font-size:24px;letter-spacing:-.7px}
-.kuro-account-close{width:34px;height:34px;border:1px solid #e5eaf2;border-radius:10px;background:#f7f9fc;color:#58677f;font-size:21px;cursor:pointer}.kuro-account-intro{margin:0 0 16px;color:#718098;font-size:12px;line-height:1.8}.kuro-account-guest{margin:0 0 14px;padding:11px 13px;border-radius:10px;background:#f2f6fb;color:#64758c;font-size:11px;line-height:1.7}.kuro-account-guest strong{color:#2867bf}
-.kuro-account-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:5px;margin-bottom:16px;border-radius:12px;background:#f1f4f9}.kuro-account-tabs button{min-height:39px;border:0;border-radius:9px;background:transparent;color:#718098;font-size:12px;font-weight:900;cursor:pointer}.kuro-account-tabs button.active{background:#fff;color:#2867bf;box-shadow:0 2px 8px #23385812}
-#kuroAccountConfirmRow[hidden]{display:none!important}
-.kuro-account-field{display:block;margin:13px 0 0;color:#52627b;font-size:11px;font-weight:850}.kuro-account-field input{display:block;width:100%;height:45px;margin-top:7px;padding:0 12px;border:1px solid #dce4ef;border-radius:10px;background:#fbfcfe;color:#17243c;font-size:14px;outline:none}.kuro-account-field input:focus{border-color:#8db8f1;box-shadow:0 0 0 4px #e6f1ff}.kuro-account-help{display:block;margin-top:5px;color:#98a3b4;font-size:10px;font-weight:500}
-.kuro-account-primary,.kuro-account-logout{width:100%;min-height:46px;margin-top:18px;border:0;border-radius:11px;background:linear-gradient(120deg,#2878ee,#5265d9);color:#fff;font-size:13px;font-weight:950;cursor:pointer}.kuro-account-primary:disabled,.kuro-account-logout:disabled{opacity:.55;cursor:wait}.kuro-account-status{min-height:22px;margin-top:11px;color:#c04d3f;font-size:11px;line-height:1.6}
-.kuro-account-profile{padding:17px;border:1px solid #e1eaf6;border-radius:14px;background:#f7faff}.kuro-account-profile strong{display:block;overflow-wrap:anywhere;font-size:18px}.kuro-account-profile span{display:block;margin-top:4px;color:#6d7e97;font-size:12px}.kuro-account-common{margin:12px 0 0;color:#5680b5;font-size:11px;line-height:1.7}.kuro-account-logout{background:#fff;color:#596a83;border:1px solid #dce4ef}.kuro-account-dialog button:focus-visible{outline:3px solid #8db8f1;outline-offset:3px}
-@media(max-width:680px){.kuro-account-state{margin-left:-6px;padding:5px 7px;font-size:10px}.kuro-account-trigger{display:inline-flex!important;align-items:center;justify-content:center;max-width:140px;height:34px;padding:0 9px;font-size:11px!important}.kuro-account-trigger:before{content:"";display:none}.kuro-account-trigger.kuro-signed-in{max-width:160px;font-size:10px!important}.kuro-account-modal{padding:10px;align-items:center}.kuro-account-dialog{max-height:calc(100dvh - 20px);padding:18px;overflow-y:auto}.kuro-account-head h2{font-size:21px}.kuro-account-intro{font-size:11px;line-height:1.65}.kuro-account-field input{height:43px}.kuro-account-primary,.kuro-account-logout{min-height:43px;margin-top:14px}}
-
-/* KURO ranking selection + steady-height presentation */
-#kuroRankingShowcase{
-  display:flex;
-  flex-direction:column;
-  height:auto;
-  min-height:470px;
-  overflow:visible;
-}
-#kuroRankingShowcase .rank-head{flex:0 0 auto}
-#kuroRankingShowcase .rank-game{
-  min-height:42px;
-  padding:11px 12px;
-  line-height:1.45;
-  overflow-wrap:anywhere;
-}
-#kuroRankingShowcase .rank-list{
-  flex:1 0 auto;
-  min-height:252px;
-  align-content:start;
-  gap:10px;
-}
-#kuroRankingShowcase .rank-row{
-  min-height:64px;
-  padding:11px 12px;
-  grid-template-columns:38px minmax(0,1fr) auto;
-  gap:10px;
-}
-#kuroRankingShowcase .rank-row:nth-child(1){
-  min-height:82px;
-  grid-template-columns:44px minmax(0,1fr) auto;
-}
-#kuroRankingShowcase .rank-row:nth-child(2),
-#kuroRankingShowcase .rank-row:nth-child(3){min-height:68px}
-#kuroRankingShowcase .rank-name{font-size:12px}
-#kuroRankingShowcase .rank-score{font-size:12px;white-space:nowrap}
-#kuroRankingShowcase .rank-foot{margin-top:auto;padding-top:14px}
-@media(max-width:680px){
-  #kuroRankingShowcase{min-height:450px}
-  #kuroRankingShowcase .rank-list{min-height:240px}
-}
-@media(prefers-reduced-motion:reduce){
-  #kuroRankingShowcase .rank-row{transition:none!important}
-}
-
-
-/* KURO ranking spotlight + cinematic carousel */
-#kuroRankingShowcase{
-  border:1px solid #c8ddf7;
-  background:
-    radial-gradient(260px 190px at 100% 0%,rgba(164,207,255,.34),transparent 72%),
-    radial-gradient(220px 170px at 0% 100%,rgba(255,220,131,.22),transparent 74%),
-    linear-gradient(145deg,#ffffff 0%,#f7faff 55%,#fffdf7 100%);
-  box-shadow:0 18px 44px rgba(41,105,184,.14),0 3px 12px rgba(33,70,121,.06),inset 0 1px 0 #fff;
-}
-#kuroRankingShowcase::before{
-  height:5px;
-  width:100%;
-  background:linear-gradient(90deg,#286fd0 0%,#58a4f3 48%,#a8d5ff 72%,#f2c653 100%);
-  box-shadow:0 2px 9px rgba(60,132,217,.23);
+  padding:0;
 }
 #kuroRankingShowcase .rank-head{
-  padding:3px 0 15px;
-  border-bottom:1px solid #e4edf9;
+  gap:6px;
+  padding:12px 12px 31px;
 }
-#kuroRankingShowcase .rank-heading-icon{
-  position:relative;
-  overflow:hidden;
-  border-color:#efdba5;
-  background:linear-gradient(145deg,#fff1bd 0%,#fff9e8 54%,#eaf4ff 100%);
-  box-shadow:0 5px 14px rgba(193,149,42,.18),inset 0 1px 0 #fff;
-  animation:kuroTrophyFloat 3.2s ease-in-out infinite;
+#kuroRankingShowcase .rank-eyebrow{
+  margin-bottom:3px;
+  font-size:7px;
+  line-height:1.25;
+  letter-spacing:.14em;
 }
-#kuroRankingShowcase .rank-heading-icon::after{
-  content:"";
-  position:absolute;
-  inset:-60% auto -60% -75%;
-  width:42%;
-  transform:rotate(24deg);
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent);
-  animation:kuroTrophyShine 4.8s ease-in-out infinite;
-}
-@keyframes kuroTrophyFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
-@keyframes kuroTrophyShine{0%,58%,100%{left:-75%}78%{left:145%}}
 #kuroRankingShowcase .rank-head h2{
-  font-size:22px;
-  letter-spacing:-.8px;
-  text-shadow:0 1px 0 #fff;
+  gap:6px;
+  margin:0;
+  font-size:18px;
+  line-height:1.15;
+  letter-spacing:0;
+}
+#kuroRankingShowcase .rank-ico-trophy{
+  width:23px;
+  height:23px;
 }
 #kuroRankingShowcase .rank-live{
-  position:relative;
-  padding:7px 11px;
-  border-color:#c8e4ff;
-  background:linear-gradient(110deg,#edf7ff,#fff);
-  box-shadow:0 3px 10px rgba(57,130,205,.08);
+  gap:4px;
+  padding:4px 6px;
+  font-size:7px;
+  line-height:1;
+  letter-spacing:.08em;
 }
 #kuroRankingShowcase .rank-live i{
-  box-shadow:0 0 0 4px rgba(62,147,232,.12),0 0 12px rgba(62,147,232,.5);
-  animation:kuroLiveGlow 1.8s ease-in-out infinite;
+  width:5px;
+  height:5px;
 }
-@keyframes kuroLiveGlow{0%,100%{opacity:1;box-shadow:0 0 0 3px rgba(62,147,232,.12),0 0 7px rgba(62,147,232,.35)}50%{opacity:.72;box-shadow:0 0 0 6px rgba(62,147,232,.05),0 0 13px rgba(62,147,232,.5)}}
 #kuroRankingShowcase .rank-game{
-  position:relative;
+  display:block;
+  min-width:0;
+  min-height:0;
+  margin:1px 11px 8px;
   overflow:hidden;
-  min-height:48px;
-  margin-top:15px;
-  padding:12px 13px;
-  border:1px solid #cfe2fa;
-  border-radius:14px;
-  background:linear-gradient(105deg,#eaf4ff 0%,#f8fbff 66%,#fffaf0 100%);
-  box-shadow:0 4px 13px rgba(52,112,184,.07),inset 0 1px 0 #fff;
-  color:#234a78;
-  font-size:14px;
-  font-weight:1000;
+  font-size:12px;
+  line-height:1.35;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
 #kuroRankingShowcase .rank-game::before{
-  content:"NOW PLAYING";
-  padding:5px 7px;
-  border:1px solid #d2e4fa;
-  border-radius:7px;
-  background:#fff;
-  color:#4b82be;
-  font-size:8px;
-  letter-spacing:1px;
-  box-shadow:0 2px 5px rgba(54,100,154,.05);
+  margin-right:6px;
+  padding:2px 5px;
+  font-size:7px;
+  letter-spacing:.08em;
 }
 #kuroRankingShowcase .rank-list{
-  position:relative;
-  gap:11px;
-  margin-top:14px;
-}
-#kuroRankingShowcase .rank-list::before{
-  content:"TOP 3  ·  PLAYER RANKING";
-  display:block;
-  margin:0 0 1px 2px;
-  color:#7992b2;
-  font-size:9px;
-  font-weight:1000;
-  letter-spacing:1.6px;
+  display:flex;
+  min-height:0;
+  margin:0 11px;
+  gap:6px;
+  transform:none;
 }
 #kuroRankingShowcase .rank-row{
-  position:relative;
-  overflow:hidden;
-  border-radius:15px;
-  border-color:#e0e9f5;
-  background:linear-gradient(110deg,#fff,#f9fbff);
-  box-shadow:0 4px 12px rgba(36,78,132,.055),inset 0 1px 0 #fff;
-}
-#kuroRankingShowcase .rank-row > *{position:relative;z-index:1}
-#kuroRankingShowcase .rank-row:nth-child(1){
-  border-color:#e9cc79;
-  background:linear-gradient(112deg,#fff0bd 0%,#fff9e8 43%,#fff 100%);
-  box-shadow:0 8px 22px rgba(191,146,39,.17),inset 0 1px 0 #fff;
-}
-#kuroRankingShowcase .rank-row:nth-child(1)::after{
-  content:"";
-  position:absolute;
-  z-index:0;
-  top:-45%;
-  bottom:-45%;
-  left:-75%;
-  width:42%;
-  transform:skewX(-22deg);
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.78),transparent);
-  pointer-events:none;
-}
-#kuroRankingShowcase .rank-row:nth-child(2){
-  border-color:#d8e1ec;
-  background:linear-gradient(110deg,#edf2f8 0%,#fbfcfe 57%,#fff 100%);
-  box-shadow:0 5px 14px rgba(91,111,138,.09),inset 0 1px 0 #fff;
-}
-#kuroRankingShowcase .rank-row:nth-child(3){
-  border-color:#e8cbb4;
-  background:linear-gradient(110deg,#f8e7d8 0%,#fff8f1 58%,#fff 100%);
-  box-shadow:0 5px 14px rgba(163,112,72,.09),inset 0 1px 0 #fff;
+  display:grid;
+  grid-template-columns:52px minmax(0,1fr) auto;
+  align-items:center;
+  gap:7px;
+  min-width:0;
+  min-height:42px;
+  padding:0 8px 0 0;
+  border-radius:9px;
 }
 #kuroRankingShowcase .rank-medal{
-  border:1px solid rgba(135,157,187,.15);
-  background:linear-gradient(145deg,#e9f1fb,#fff);
-  box-shadow:0 3px 8px rgba(62,91,130,.08);
+  width:52px;
+  min-width:0;
+  padding-right:6px;
 }
-#kuroRankingShowcase .rank-row:nth-child(1) .rank-medal{
-  border-color:#e8c45d;
-  background:linear-gradient(145deg,#ffd96e,#fff0b8);
-  box-shadow:0 4px 12px rgba(180,130,25,.24),inset 0 1px 0 rgba(255,255,255,.8);
-  animation:kuroGoldMedal 2.6s ease-in-out infinite;
+#kuroRankingShowcase .rank-medal b{
+  font-size:23px;
+  line-height:1;
 }
-@keyframes kuroGoldMedal{0%,100%{box-shadow:0 4px 11px rgba(180,130,25,.18),inset 0 1px 0 #ffffffb3}50%{box-shadow:0 5px 16px rgba(180,130,25,.34),0 0 0 4px rgba(255,210,93,.16),inset 0 1px 0 #ffffffb3}}
-#kuroRankingShowcase .rank-name{color:#3e5675;font-size:12px}
-#kuroRankingShowcase .rank-row:nth-child(1) .rank-name{color:#573f0e;font-size:13px}
-#kuroRankingShowcase .rank-row:nth-child(1) .rank-name::before{
-  color:#ad8120;
-  font-size:8px;
-  letter-spacing:1.6px;
+#kuroRankingShowcase .rank-row.rank-1{
+  grid-template-columns:58px minmax(0,1fr) auto;
+  min-height:64px;
+  padding-right:8px;
+}
+#kuroRankingShowcase .rank-1 .rank-medal{
+  width:58px;
+}
+#kuroRankingShowcase .rank-1 .rank-medal b{
+  font-size:34px;
+}
+#kuroRankingShowcase .rank-name{
+  display:flex;
+  min-width:0;
+  max-width:100%;
+  overflow:hidden;
+  gap:4px;
+  font-size:12px;
+  line-height:1.2;
+}
+#kuroRankingShowcase .rank-nm{
+  display:block;
+  min-width:0;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#kuroRankingShowcase .rank-1 .rank-name{
+  min-width:0;
+  max-width:100%;
+  align-items:flex-start;
+  gap:3px;
+  font-size:13px;
+}
+#kuroRankingShowcase .rank-tag{
+  max-width:100%;
+  padding:2px 6px 2px 5px;
+  overflow:hidden;
+  font-size:6px;
+  line-height:1.2;
+  letter-spacing:.08em;
+  white-space:nowrap;
 }
 #kuroRankingShowcase .rank-score{
-  padding:7px 10px;
-  border-color:#cfe2fa;
-  border-radius:10px;
-  background:linear-gradient(145deg,#fff,#edf5ff);
-  color:#236ec3;
+  max-width:66px;
+  overflow:hidden;
   font-size:12px;
-  box-shadow:0 2px 6px rgba(46,103,170,.07);
+  line-height:1;
+  text-overflow:clip;
+  white-space:nowrap;
 }
-#kuroRankingShowcase .rank-row:nth-child(1) .rank-score{
-  border-color:#e9d18f;
-  background:linear-gradient(145deg,#fffdf5,#fff);
-  color:#916b13;
-  font-size:13px;
-  box-shadow:0 3px 8px rgba(170,129,35,.10);
+#kuroRankingShowcase .rank-1 .rank-score{
+  max-width:70px;
+  font-size:15px;
 }
-#kuroRankingShowcase .rank-row:nth-child(2) .rank-score{border-color:#d9e2ed;background:#fff;color:#58728f}
-#kuroRankingShowcase .rank-row:nth-child(3) .rank-score{border-color:#ebd6c6;background:#fff;color:#9a6945}
 #kuroRankingShowcase .rank-foot{
-  border-top-color:#e2ebf7;
+  display:flex;
+  min-width:0;
+  gap:5px;
+  margin:8px 11px 0;
+  padding:7px 0 10px;
 }
-#kuroRankingShowcase .rank-foot a{
-  min-height:34px;
-  padding:0 12px;
-  border-color:#c9def8;
-  background:linear-gradient(110deg,#eaf4ff,#fff);
-  box-shadow:0 3px 9px rgba(54,117,190,.08);
+#kuroRankingShowcase .rank-foot>a{
+  min-width:0;
+  gap:4px;
+  padding:7px 8px;
+  font-size:9px;
+  line-height:1;
+  letter-spacing:0;
+  white-space:nowrap;
+}
+#kuroRankingShowcase .rank-foot>a svg{
+  width:9px;
+  height:9px;
+  flex:none;
+}
+#kuroRankingShowcase .rank-controls{
+  flex:none;
+  gap:4px;
 }
 #kuroRankingShowcase .rank-controls button{
-  width:32px;
-  height:32px;
-  border-radius:10px;
-  border-color:#cddff4;
-  color:#2d70bd;
-  box-shadow:0 3px 9px rgba(52,100,157,.08);
-  transition:transform .18s ease,box-shadow .18s ease,background .18s ease;
+  width:23px;
+  height:23px;
+  flex:none;
 }
-#kuroRankingShowcase .rank-controls button:hover{
-  transform:translateY(-2px) scale(1.04);
-  box-shadow:0 6px 13px rgba(52,100,157,.15);
+#kuroRankingShowcase .rank-controls button svg{
+  width:11px;
+  height:11px;
 }
-#kuroRankingShowcase .rank-dot.active{
-  width:17px;
-  box-shadow:0 0 8px rgba(51,126,211,.3);
+#kuroRankingShowcase #kuroRankDots{
+  display:inline-flex;
+  flex:none;
+  gap:3px;
 }
-#kuroRankingShowcase.rank-out .rank-head,
-#kuroRankingShowcase.rank-out .rank-game,
-#kuroRankingShowcase.rank-out .rank-list,
-#kuroRankingShowcase.rank-out .rank-foot{
-  opacity:0;
-  transform:translateY(9px) scale(.985);
-  transition:opacity .17s ease,transform .17s ease;
+#kuroRankingShowcase #kuroRankDots>*{
+  width:4px;
+  height:4px;
+  flex:none;
 }
-#kuroRankingShowcase.rank-in .rank-head{animation:kuroRankHeadIn .42s cubic-bezier(.2,.8,.2,1) both}
-#kuroRankingShowcase.rank-in .rank-game{animation:kuroRankGameIn .45s cubic-bezier(.2,.8,.2,1) .05s both}
-#kuroRankingShowcase.rank-in .rank-list{animation:kuroRankListIn .48s cubic-bezier(.2,.8,.2,1) .10s both}
-#kuroRankingShowcase.rank-in .rank-row:nth-child(1)::after{animation:kuroGoldSweep 1.05s ease .28s both}
-#kuroRankingShowcase.rank-in .rank-row:nth-child(1){animation:kuroChampionIn .52s cubic-bezier(.16,1,.3,1) .12s both}
-#kuroRankingShowcase.rank-in .rank-row:nth-child(2){animation:kuroRankRowIn .44s cubic-bezier(.2,.8,.2,1) .22s both}
-#kuroRankingShowcase.rank-in .rank-row:nth-child(3){animation:kuroRankRowIn .44s cubic-bezier(.2,.8,.2,1) .31s both}
-#kuroRankingShowcase.rank-in .rank-foot{animation:kuroRankFootIn .4s ease .22s both}
-@keyframes kuroRankHeadIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
-@keyframes kuroRankGameIn{from{opacity:0;transform:translateY(9px) scale(.98);filter:blur(2px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
-@keyframes kuroRankListIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-@keyframes kuroChampionIn{from{opacity:0;transform:translateY(18px) scale(.94)}to{opacity:1;transform:translateY(0) scale(1)}}
-@keyframes kuroRankRowIn{from{opacity:0;transform:translateY(13px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-@keyframes kuroRankFootIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-@keyframes kuroGoldSweep{0%,100%{left:-75%}45%,70%{left:140%}}
-@media(hover:hover){
-  #kuroRankingShowcase .rank-row:hover{transform:translateY(-2px);filter:saturate(1.06)}
+#kuroRankingShowcase #kuroRankDots>.active,
+#kuroRankingShowcase #kuroRankDots>.is-active,
+#kuroRankingShowcase #kuroRankDots>[aria-current="true"]{
+  width:13px;
 }
-@media(prefers-reduced-motion:reduce){
-  #kuroRankingShowcase .rank-heading-icon,
-  #kuroRankingShowcase .rank-heading-icon::after,
-  #kuroRankingShowcase .rank-live i,
-  #kuroRankingShowcase .rank-row:nth-child(1) .rank-medal{animation:none!important}
-  #kuroRankingShowcase.rank-out .rank-head,
-  #kuroRankingShowcase.rank-out .rank-game,
-  #kuroRankingShowcase.rank-out .rank-list,
-  #kuroRankingShowcase.rank-out .rank-foot{opacity:1;transform:none;transition:none!important}
-  #kuroRankingShowcase.rank-in .rank-head,
-  #kuroRankingShowcase.rank-in .rank-game,
-  #kuroRankingShowcase.rank-in .rank-list,
-  #kuroRankingShowcase.rank-in .rank-row,
-  #kuroRankingShowcase.rank-in .rank-foot{animation:none!important}
-  #kuroRankingShowcase .rank-controls button{transition:none!important}
+#kuroRankingShowcase .rank-card{
+  width:max-content;
+  max-width:84%;
+  padding:9px 12px 10px;
+}
+#kuroRankingShowcase .rank-card small{
+  font-size:7px;
+  letter-spacing:.18em;
+}
+#kuroRankingShowcase .rank-card b{
+  max-width:100%;
+  overflow:hidden;
+  font-size:clamp(14px,5vw,18px);
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#kuroRankingShowcase .rank-card em{
+  font-size:8px;
+  letter-spacing:.08em;
+}
+@media(max-width:980px) and (min-width:681px){
+  #kuroRankingShowcase{max-width:260px}
+  #kuroRankingShowcase .rank-head{padding-right:10px;padding-left:10px}
+  #kuroRankingShowcase .rank-list{margin-right:9px;margin-left:9px}
+  #kuroRankingShowcase .rank-game{margin-right:9px;margin-left:9px}
+  #kuroRankingShowcase .rank-row{grid-template-columns:46px minmax(0,1fr) auto;gap:5px}
+  #kuroRankingShowcase .rank-medal{width:46px}
+  #kuroRankingShowcase .rank-row.rank-1{grid-template-columns:50px minmax(0,1fr) auto}
+  #kuroRankingShowcase .rank-1 .rank-medal{width:50px}
+  #kuroRankingShowcase .rank-score{max-width:58px;font-size:11px}
+  #kuroRankingShowcase .rank-1 .rank-score{max-width:62px;font-size:13px}
+  #kuroRankingShowcase .rank-foot{margin-right:9px;margin-left:9px}
+  #kuroRankingShowcase .rank-foot>a{padding-right:6px;padding-left:6px;font-size:8px}
+}
+@media(max-width:680px){
+  #kuroRankingShowcase{
+    width:100%;
+    max-width:460px;
+  }
+  #kuroRankingShowcase .rank-head{padding:18px 16px 43px}
+  #kuroRankingShowcase .rank-head h2{font-size:23px}
+  #kuroRankingShowcase .rank-eyebrow{font-size:9px}
+  #kuroRankingShowcase .rank-live{font-size:8px}
+  #kuroRankingShowcase .rank-game{margin:2px 14px 11px;font-size:14px}
+  #kuroRankingShowcase .rank-game::before{font-size:8px}
+  #kuroRankingShowcase .rank-list{margin:0 14px;gap:8px}
+  #kuroRankingShowcase .rank-row{grid-template-columns:65px minmax(0,1fr) auto;gap:9px;min-height:54px;padding-right:10px}
+  #kuroRankingShowcase .rank-medal{width:65px}
+  #kuroRankingShowcase .rank-medal b{font-size:28px}
+  #kuroRankingShowcase .rank-row.rank-1{grid-template-columns:82px minmax(0,1fr) auto;min-height:82px;padding-right:12px}
+  #kuroRankingShowcase .rank-1 .rank-medal{width:82px}
+  #kuroRankingShowcase .rank-1 .rank-medal b{font-size:42px}
+  #kuroRankingShowcase .rank-name{font-size:15px}
+  #kuroRankingShowcase .rank-1 .rank-name{font-size:17px}
+  #kuroRankingShowcase .rank-tag{font-size:8px;padding:3px 8px 3px 6px}
+  #kuroRankingShowcase .rank-score{max-width:90px;font-size:16px}
+  #kuroRankingShowcase .rank-1 .rank-score{max-width:100px;font-size:21px}
+  #kuroRankingShowcase .rank-foot{margin:10px 14px 0;padding:9px 0 13px;gap:8px}
+  #kuroRankingShowcase .rank-foot>a{padding:9px 12px;font-size:11px}
+  #kuroRankingShowcase .rank-controls{gap:5px}
+  #kuroRankingShowcase .rank-controls button{width:27px;height:27px}
+  #kuroRankingShowcase #kuroRankDots{gap:4px}
+  #kuroRankingShowcase #kuroRankDots>*{width:5px;height:5px}
+  #kuroRankingShowcase #kuroRankDots>.active,
+  #kuroRankingShowcase #kuroRankDots>.is-active,
+  #kuroRankingShowcase #kuroRankDots>[aria-current="true"]{width:17px}
 }
 
 </style>
