@@ -151,13 +151,18 @@ export class Room {
   }
   send(ws, payload) {
     try { ws.send(JSON.stringify(payload)); return true; }
-    catch (_) { this.sockets.delete(ws); return false; }
+    catch (_) {
+      const player = this.sockets.get(ws);
+      this.removeSocket(ws, player && player.id || "");
+      return false;
+    }
   }
   broadcast(payload, exceptUserId = null) {
     const encoded = JSON.stringify(payload);
     for (const [ws, player] of this.sockets) {
       if (exceptUserId && player.id === exceptUserId) continue;
-      try { ws.send(encoded); } catch (_) { this.sockets.delete(ws); }
+      try { ws.send(encoded); }
+      catch (_) { this.removeSocket(ws, player.id); }
     }
   }
   async fetch(request) {
