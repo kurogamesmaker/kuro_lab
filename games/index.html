@@ -977,9 +977,9 @@ async function kuroCloudflareFetch(input,init){
 }
 
 
-let kuroGamesDB=null;
+window.kuroGamesDB=null;
 if(window.supabase&&typeof window.supabase.createClient==="function"){
- kuroGamesDB=window.supabase.createClient("https://cprvpphlfpmiegjiutjn.supabase.co","sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn",{
+ window.kuroGamesDB=window.supabase.createClient("https://cprvpphlfpmiegjiutjn.supabase.co","sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn",{
   global:{fetch:kuroCloudflareFetch},
   auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}
  });
@@ -1015,7 +1015,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   if(authPanel)authPanel.hidden=signedIn;if(profilePanel)profilePanel.hidden=!signedIn;if(guestPanel)guestPanel.hidden=signedIn;
   if(signedIn){if(profileName)profileName.textContent=fallbackName;if(profileHandle)profileHandle.textContent=fallbackHandle?"@"+fallbackHandle:"KURO共通アカウント";
    const userId=currentUser.id;
-   if(kuroGamesDB)kuroGamesDB.from("profiles").select("username,kuro_id").eq("id",userId).maybeSingle().then(({data,error})=>{
+   if(window.kuroGamesDB)window.kuroGamesDB.from("profiles").select("username,kuro_id").eq("id",userId).maybeSingle().then(({data,error})=>{
     if(error||!data||currentUser?.id!==userId)return;
     const h=String(data.username||fallbackHandle),id=String(data.kuro_id||"");
     if(stateLabel)stateLabel.textContent=h?"@"+h:"ログイン中";openButton.textContent="アカウント";openButton.title=(h?"@"+h:"KUROアカウント")+(id?" ("+id+")":"");
@@ -1039,17 +1039,17 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   if(!/^[A-Za-z0-9_]{3,24}$/.test(username)){status.textContent="ユーザーネームは半角英数字と _ の3〜24文字で入力してください。";return;}
   if(pass.length<8||pass.length>72){status.textContent="パスワードは8〜72文字で入力してください。";return;}
   if(mode==="signup"&&pass!==confirm.value){status.textContent="確認用パスワードが一致しません。";return;}
-  if(!kuroGamesDB){status.textContent="認証システムを読み込めませんでした。ページを再読み込みしてください。";return;}
+  if(!window.kuroGamesDB){status.textContent="認証システムを読み込めませんでした。ページを再読み込みしてください。";return;}
   submit.disabled=true;status.textContent=mode==="signup"?"アカウントを作成しています…":"ログインしています…";
   try{
-   const {data,error}=await kuroGamesDB.functions.invoke("username-auth",{body:{action:mode==="signup"?"register":"login",username,password:pass}});
+   const {data,error}=await window.kuroGamesDB.functions.invoke("username-auth",{body:{action:mode==="signup"?"register":"login",username,password:pass}});
    if(error){
     let message=data?.error||error.message||"認証に失敗しました。";
     try{if(error.context&&typeof error.context.clone==="function"){const detail=await error.context.clone().json();if(detail?.error)message=detail.error;}}catch(_){}
     throw new Error(message);
    }
    if(!data?.session?.access_token||!data?.session?.refresh_token)throw new Error(data?.error||"ログインセッションを作成できませんでした。");
-   const applied=await kuroGamesDB.auth.setSession({access_token:data.session.access_token,refresh_token:data.session.refresh_token});
+   const applied=await window.kuroGamesDB.auth.setSession({access_token:data.session.access_token,refresh_token:data.session.refresh_token});
    if(applied.error)throw applied.error;
    currentUser=applied.data?.user||data.user||currentUser;render(currentUser);
    status.textContent=mode==="signup"?"登録が完了しました。KURO共通アカウントを利用できます。":"ログインしました。KURO共通アカウントを利用できます。";
@@ -1058,15 +1058,15 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   finally{submit.disabled=false;}
  });
  logoutButton?.addEventListener("click",async()=>{
-  if(!kuroGamesDB){status.textContent="認証システムを読み込めませんでした。";return;}
+  if(!window.kuroGamesDB){status.textContent="認証システムを読み込めませんでした。";return;}
   logoutButton.disabled=true;status.textContent="ログアウトしています…";
-  try{const {error}=await kuroGamesDB.auth.signOut();if(error)throw error;currentUser=null;render(null);setMode("login");status.textContent="ログアウトしました。";}
+  try{const {error}=await window.kuroGamesDB.auth.signOut();if(error)throw error;currentUser=null;render(null);setMode("login");status.textContent="ログアウトしました。";}
   catch(error){status.textContent=error?.message||"ログアウトできませんでした.";}
   finally{logoutButton.disabled=false;}
  });
- if(kuroGamesDB){
-  kuroGamesDB.auth.onAuthStateChange((_event,session)=>render(session?.user||null));
-  kuroGamesDB.auth.getSession().then(({data,error})=>{if(error)throw error;render(data?.session?.user||null);})
+ if(window.kuroGamesDB){
+  window.kuroGamesDB.auth.onAuthStateChange((_event,session)=>render(session?.user||null));
+  window.kuroGamesDB.auth.getSession().then(({data,error})=>{if(error)throw error;render(data?.session?.user||null);})
    .catch(error=>{console.warn("KUROGAMES session restore failed:",error);status.textContent="ログイン状態を確認できませんでした。";});
  }else{openButton?.addEventListener("click",()=>{if(status)status.textContent="認証システムを読み込めませんでした。ページを再読み込みしてください。";});}
  setMode("login");
@@ -1088,8 +1088,8 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
  function bindHeart(card){const heart=card.querySelector(".heart");if(!heart)return;heart.addEventListener("click",()=>{const id=card.dataset.id;favorites=favorites.includes(id)?favorites.filter(x=>x!==id):favorites.concat(id);save();update();});}
  cards.forEach(bindHeart);
  async function loadStudioGames(){
-  if(!kuroGamesDB)return;
-  try{const db=kuroGamesDB;
+  if(!window.kuroGamesDB)return;
+  try{const db=window.kuroGamesDB;
    const {data,error}=await db.from("game_studio_games").select("id,title,description,category,categories,icon,search_aliases,tag_text,tag_style,tag_color,tag_text_color,published_at").eq("status","published").order("published_at",{ascending:false}).limit(60);if(error)throw error;
    (data||[]).forEach(game=>{const card=document.createElement("article");card.className="game-card";card.dataset.id="studio-"+game.id;const gameCategories=Array.isArray(game.categories)&&game.categories.length?game.categories:[game.category||"other"];card.dataset.category=game.category||gameCategories[0]||"other";card.dataset.categories=JSON.stringify(gameCategories);card.dataset.title=[game.title,game.description||"",...(Array.isArray(game.search_aliases)?game.search_aliases:[]),...latinWidthCaseVariants(game.title||""),kanaToHiragana(game.title||""),kanaToKatakana(game.title||""),kanaToRomaji(game.title||"","n"),kanaToRomaji(game.title||"","nn")].join(" ").toLowerCase();
     const link=document.createElement("a");link.className="game-open";link.href="/games/play/?id="+encodeURIComponent(game.id);
@@ -1115,7 +1115,7 @@ function initKuroRankingShowcase(){
  async function fetchRanking(game){
   const key=game.id+"::"+game.mode;
   if(cache.has(key))return cache.get(key);
-  const {data,error}=await kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"leaderboard",gameId:game.id,mode:game.mode,limit:5}});
+  const {data,error}=await window.kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"leaderboard",gameId:game.id,mode:game.mode,limit:5}});
   if(error)throw error;
   const rows=Array.isArray(data?.scores)?data.scores:[];
   cache.set(key,rows);return rows;
@@ -1164,19 +1164,19 @@ function initKuroRankingShowcase(){
  panel.addEventListener("mouseenter",()=>pausedUntil=Date.now()+999999);
  panel.addEventListener("mouseleave",()=>pausedUntil=Date.now()+8000);
  async function initialize(){
-  if(!kuroGamesDB){showMessage("ランキング通信を準備できませんでした。");return;}
+  if(!window.kuroGamesDB){showMessage("ランキング通信を準備できませんでした。");return;}
   async function loadRankings(){
-   const {data:published,error:gamesError}=await kuroGamesDB.from("game_studio_games").select("id,title,status").eq("status","published").order("published_at",{ascending:false}).limit(60);
+   const {data:published,error:gamesError}=await window.kuroGamesDB.from("game_studio_games").select("id,title,status").eq("status","published").order("published_at",{ascending:false}).limit(60);
    if(gamesError)throw gamesError;
    const candidates=(published||[]).filter(g=>g.id&&g.title);
    const configs=await Promise.all(candidates.map(async g=>{
-    try{const {data,error}=await kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"get_config",gameId:g.id}});if(error)throw error;return data?.features?.ranking===true&&data?.features?.rankingShowcase===true?g:null;}
+    try{const {data,error}=await window.kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"get_config",gameId:g.id}});if(error)throw error;return data?.features?.ranking===true&&data?.features?.rankingShowcase===true?g:null;}
     catch(err){console.debug("Ranking config skipped:",g.id,err);return null;}
    }));
    const enabled=configs.filter(Boolean);
    const expanded=await Promise.all(enabled.map(async game=>{
     try{
-     const {data,error}=await kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"leaderboard_modes",gameId:game.id}});
+     const {data,error}=await window.kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"leaderboard_modes",gameId:game.id}});
      if(error)throw error;
      const modes=Array.isArray(data?.modes)&&data.modes.length?data.modes:["default"];
      return modes.map(mode=>({id:game.id,title:game.title,mode}));
