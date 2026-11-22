@@ -17,7 +17,7 @@ const CORS_HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
 };
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const DEFAULT_FEATURES = { ranking: false, cloudSave: false, multiplayer: false };
+const DEFAULT_FEATURES = { ranking: false, cloudSave: false, multiplayer: false, rankingShowcase: false };
 class HttpError extends Error {
   status: number;
   constructor(status: number, message: string) {
@@ -210,11 +210,24 @@ async function handle(req: Request) {
       : {};
     const next = { ...settings.features };
     let changed = false;
-    for (const key of ["ranking", "cloudSave", "multiplayer"]) {
+    for (const key of ["ranking", "cloudSave", "multiplayer", "rankingShowcase"]) {
       if (typeof incoming[key] === "boolean") {
+        if (key === "rankingShowcase" && incoming[key] === true) {
+          if (game.status !== "published") {
+            throw new HttpError(400, "ゲームを公開してからランキング欄への掲載を選択してください。");
+          }
+          if (next.ranking !== true) {
+            throw new HttpError(400, "先にランキング機能を有効にしてください。");
+          }
+        }
         next[key] = incoming[key];
         changed = true;
       }
+    }
+    // Ranking showcase is only meaningful while score ranking itself is enabled.
+    if (incoming.ranking === false && next.rankingShowcase === true) {
+      next.rankingShowcase = false;
+      changed = true;
     }
     if (!changed) throw new HttpError(400, "変更する機能を指定してください。");
     const updatedAt = new Date().toISOString();
