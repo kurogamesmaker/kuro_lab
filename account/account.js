@@ -2,7 +2,7 @@
   "use strict";
 
   const SUPABASE_URL = "https://cprvpphlfpmiegjiutjn.supabase.co";
-  const PUBLISHABLE_KEY = "sb_publishable_BYPUfB0lrh26Jv8_6ZQnpQ_wfAKOVyn";
+  const PUBLISHABLE_KEY = "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
   const PROJECT_REF = "cprvpphlfpmiegjiutjn";
   const $ = (id) => document.getElementById(id);
   // This page is now the authentication destination itself; discard any stale
