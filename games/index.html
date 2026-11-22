@@ -1499,24 +1499,42 @@ function initKuroRankingShowcase(){
    const result=await rowsPromise;
    index=nextIndex;
    const defaultTitle=game.title+(modeName(game.mode)?" · "+modeName(game.mode):"");
-   let customTicker="";try{const tickerMap=JSON.parse(localStorage.getItem("kuroGamesRankingTickerByGame")||"{}");customTicker=String(tickerMap[game.id]||"").trim();}catch(_){}
+   let customTicker="",tickerStyle={enabled:true,speed:30,direction:"left",textColor:"#164b8e",backgroundColor:"#eaf2ff"};
+   try{
+    const tickerMap=JSON.parse(localStorage.getItem("kuroGamesRankingTickerByGame")||"{}");
+    customTicker=String(tickerMap[game.id]||"").trim();
+   }catch(_){}
+   try{
+    const styleMap=JSON.parse(localStorage.getItem("kuroGamesRankingTickerStyleByGame")||"{}");
+    if(styleMap&&styleMap[game.id]&&typeof styleMap[game.id]==="object")tickerStyle=Object.assign(tickerStyle,styleMap[game.id]);
+   }catch(_){}
+   const safeTickerColor=(value,fallback)=>/^#[0-9a-f]{6}$/i.test(String(value||""))?String(value):fallback;
+   const tickerEnabled=tickerStyle.enabled!==false;
+   const tickerSpeed=Math.max(10,Math.min(100,Math.round(Number(tickerStyle.speed)||30)));
+   const tickerDirection=tickerStyle.direction==="right"?"right":"left";
    const displayTitle=customTicker||defaultTitle;
    titleEl.classList.remove("rank-marquee");titleEl.replaceChildren();titleEl.classList.add("rank-marquee");
-   const track=document.createElement("span");track.className="rank-marquee-track";
-   const first=document.createElement("span");first.textContent=displayTitle;track.append(first);titleEl.append(track);
-   requestAnimationFrame(()=>{
-    const gap=36;
-    const textWidth=Math.max(1,first.getBoundingClientRect().width);
-    const viewportWidth=Math.max(1,titleEl.clientWidth-70);
-    const cycleDistance=textWidth+gap;
-    const copies=Math.max(3,Math.ceil((viewportWidth+textWidth)/cycleDistance)+2);
-    for(let n=1;n<copies;n++){const copy=document.createElement("span");copy.textContent=displayTitle;track.append(copy);}
-    track.style.gap=gap+"px";
-    track.animate(
-     [{transform:"translateX(0)"},{transform:"translateX(-"+cycleDistance+"px)"}],
-     {duration:Math.max(2400,cycleDistance*30),iterations:Infinity,easing:"linear"}
-    );
-   });
+   titleEl.style.setProperty("display",tickerEnabled?"flex":"none","important");
+   titleEl.style.color=safeTickerColor(tickerStyle.textColor,"#164b8e");
+   titleEl.style.backgroundColor=safeTickerColor(tickerStyle.backgroundColor,"#eaf2ff");
+   if(tickerEnabled){
+    const track=document.createElement("span");track.className="rank-marquee-track";
+    const first=document.createElement("span");first.textContent=displayTitle;track.append(first);titleEl.append(track);
+    requestAnimationFrame(()=>{
+     if(!titleEl.isConnected||!tickerEnabled)return;
+     const gap=36;
+     const textWidth=Math.max(1,first.getBoundingClientRect().width);
+     const viewportWidth=Math.max(1,titleEl.clientWidth-70);
+     const cycleDistance=textWidth+gap;
+     const copies=Math.max(3,Math.ceil((viewportWidth+textWidth)/cycleDistance)+2);
+     for(let n=1;n<copies;n++){const copy=document.createElement("span");copy.textContent=displayTitle;track.append(copy);}
+     track.style.gap=gap+"px";
+     const frames=tickerDirection==="right"
+      ?[{transform:"translateX(-"+cycleDistance+"px)"},{transform:"translateX(0)"}]
+      :[{transform:"translateX(0)"},{transform:"translateX(-"+cycleDistance+"px)"}];
+     track.animate(frames,{duration:Math.max(500,cycleDistance/tickerSpeed*1000),iterations:Infinity,easing:"linear"});
+    });
+   }
    linkEl.href="/games/play/?id="+encodeURIComponent(game.id);
    linkEl.textContent="このゲームを遊ぶ ↗";
    renderDots();
