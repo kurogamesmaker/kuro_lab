@@ -263,9 +263,10 @@ export class Room {
       this.send(ws, { type: "state-result", requestId: String(message.requestId || ""), result: { ...this.data, roomStatus: "waiting" } });
       return;
     }
-    if (message.type === "state-update") {
+    if (message.type === "state-update" || message.type === "host-state-update") {
       const requestId = String(message.requestId || "");
-      if (!player.isHost) {
+      const hostOnly = message.type === "host-state-update";
+      if (hostOnly && !player.isHost) {
         this.send(ws, { type: "state-result", requestId, result: { ...this.data, conflict: false, forbidden: true } });
         return;
       }
@@ -274,7 +275,10 @@ export class Room {
         return;
       }
       const expected = message.expectedUpdatedAt || null;
-      if (expected !== (this.data.updatedAt || null)) {
+      const current = this.data.updatedAt || null;
+      // A host may migrate a pre-existing Supabase room snapshot into a new DO once.
+      const legacySeed = hostOnly && player.isHost && current === null && expected !== null;
+      if (expected !== current && !legacySeed) {
         this.send(ws, { type: "state-result", requestId, result: { ...this.data, conflict: true } });
         return;
       }
