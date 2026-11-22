@@ -97,9 +97,20 @@ The manual GitHub Actions deploy workflow is gated by repository variable `DEPLO
 - The cleanup supports dry-run and batched deletion, uses an advisory lock, and never changes chat message bodies, group messages, admin messages, posts, or unread notifications.
 - Verification found no orphaned direct-message, group-message, or admin-message read receipts. Current data is 72 social notifications (52 unread), 1 portal request notification, 14 direct messages, and 44 group messages; the first cleanup deleted zero rows. A rollback-only test verified that aged read notices are deleted while old unread notices are preserved.
 
+
+## Public lobby chat daily analytics
+
+- The daily cleanup job continues deleting public lobby chat content at 00:00 JST, but first records message counts by Tokyo calendar date in `public_chat_daily_stats`.
+- The archive stores only the date, total message count, and update timestamp. It does not retain nicknames, message text, user IDs, or any chat content.
+- Snapshot and deletion happen atomically in one database transaction. If the transaction fails, neither the daily count nor the deletion is committed; retrying does not double-count already deleted rows.
+- KUROADMIN's `get_admin_overview` endpoint combines archived daily counts with messages still present in the live chat table. Thus a midnight content purge no longer resets earlier dates on the daily chart.
+- The daily counts are retained independently of the temporary chat rows. The snapshot table is private to the service role; anonymous and authenticated client roles cannot read it directly.
+- Verification used one temporary test message alongside the current live row: both were counted for the Tokyo date and the live table was emptied inside the test transaction. The test transaction was rolled back, restoring the live row and leaving no test snapshot.
+- Daily history begins when this snapshot system is enabled. Older daily values that were already lost through earlier full-table purges cannot be reconstructed exactly from the current database.
+
 ## Other existing chat retention jobs
 
-- `kuro-delete-public-chat-daily` clears the public lobby chat once per day. The public lobby is intentionally short-lived and currently displays at most the latest 100 messages.
+- `kuro-delete-public-chat-daily` runs daily at 15:00 UTC (00:00 JST). It now calls `kuro_archive_and_clear_public_chat()`, which groups all deleted messages by their `Asia/Tokyo` calendar date, adds those counts to `public_chat_daily_stats`, and deletes the original chat rows in the same transaction. This keeps the public lobby short-lived while preserving daily counts for KUROADMIN.
 - `kuro-delete-read-chat-messages-daily` runs every 15 minutes and deletes a DM if it has any read-receipt row older than one day. During this audit, `chat_message_reads` contained zero rows, so this job had no eligible messages to delete. This rule is separate from the new operational-log cleanup and should be reviewed independently before changing its behavior.
 - Group chat messages are not included in either of those chat-retention jobs and currently have no automatic time-based cleanup.
 - KUROSNS posts and replies are not time-pruned.
