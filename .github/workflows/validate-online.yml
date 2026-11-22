@@ -35,11 +35,11 @@ jobs:
           const fs = require('node:fs');
           for (const file of ['games/play/index.html', 'game-studio/code.html']) {
             const html = fs.readFileSync(file, 'utf8');
-            const scripts = [...html.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script\\s*>/gi)];
+            const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)];
             let checked = 0;
             for (const [, attrs, source] of scripts) {
-              if (/\\bsrc\\s*=/.test(attrs)) continue;
-              if (/\\btype\\s*=\\s*["'](?:application\\/ld\\+json|application\\/json|importmap)["']/i.test(attrs)) continue;
+              if (/\bsrc\s*=/.test(attrs)) continue;
+              if (/\btype\s*=\s*["'](?:application\/ld\+json|application\/json|importmap)["']/i.test(attrs)) continue;
               new Function(source);
               checked++;
             }
