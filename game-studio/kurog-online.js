@@ -125,16 +125,21 @@ async function connectRoomPolling(roomData, members, session) {
         expectedUpdatedAt: expectedUpdatedAt || null,
       });
       if (!result.conflict) {
+        const noticeData = { state: state, updatedAt: result.updatedAt || null };
         const notification = {
           type: "room-state-updated",
-          data: { updatedAt: result.updatedAt || null },
+          data: noticeData,
           from: session.user.id,
           sentAt: Date.now(),
         };
         messageCallbacks.forEach((callback) => {
           try { callback(notification); } catch (error) { console.error(error); }
         });
-        await this.send("room-state-updated", { updatedAt: result.updatedAt || null });
+        const wireData = new TextEncoder().encode(JSON.stringify(noticeData)).byteLength <= 28000
+          ? noticeData
+          : { updatedAt: result.updatedAt || null };
+        try { await this.send("room-state-updated", wireData); }
+        catch (error) { console.warn("KUROGAMES state notification failed; polling will resync:", error); }
       }
       return result;
     },
@@ -278,7 +283,7 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
       try { socket.send(JSON.stringify({ type: "ping" })); } catch (_) {}
     }
   }, 25000);
-  statusWatch = setInterval(async () => { if (!active) return; try { const status = await invoke("room_poll", { roomId: roomData.id, afterId: null }); emitPlayers(status.members || []); if (status.roomStatus === "closed") { active = false; clearInterval(heartbeat); clearInterval(statusWatch); closeCallbacks.forEach(cb => { try { cb({ reason: "disbanded" }); } catch (e) { console.error(e); } }); try { if (socket) socket.close(1000, "room closed"); } catch (_) {} } } catch (e) { console.warn("room status check failed", e); } }, 3500);
+  statusWatch = setInterval(async () => { if (!active) return; try { const status = await invoke("room_poll", { roomId: roomData.id, afterId: null }); emitPlayers(status.members || []); if (status.roomStatus === "closed") { active = false; clearInterval(heartbeat); clearInterval(statusWatch); closeCallbacks.forEach(cb => { try { cb({ reason: "disbanded" }); } catch (e) { console.error(e); } }); try { if (socket) socket.close(1000, "room closed"); } catch (_) {} } } catch (e) { console.warn("room status check failed", e); } }, 12000);
 
   return {
     room: roomData,
@@ -294,14 +299,19 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
         expectedUpdatedAt: expectedUpdatedAt || null,
       });
       if (!result.conflict) {
+        const noticeData = { state: state, updatedAt: result.updatedAt || null };
         const notification = {
           type: "room-state-updated",
-          data: { updatedAt: result.updatedAt || null },
+          data: noticeData,
           from: session.user.id,
           sentAt: Date.now(),
         };
         emitMessage(notification);
-        await this.send("room-state-updated", { updatedAt: result.updatedAt || null });
+        const wireData = new TextEncoder().encode(JSON.stringify(noticeData)).byteLength <= 28000
+          ? noticeData
+          : { updatedAt: result.updatedAt || null };
+        try { await this.send("room-state-updated", wireData); }
+        catch (error) { console.warn("KUROGAMES state notification failed; polling will resync:", error); }
       }
       return result;
     },
