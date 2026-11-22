@@ -7,7 +7,7 @@
 - Durable Object class: `Room`
 - Namespace ID: `9633b9fd379f4e0690c398d3933b8dcd`
 - Namespace storage: SQLite
-- Latest verified Cloudflare deployment: `87330b602d644c0b8f84ddcd32e0909e` (100% traffic)
+- Latest verified Cloudflare deployment: `e457b0e087854bcabdb3666bb4f06cb5` (100% traffic)
 - Secret binding configured: `TICKET_SECRET` (value is not stored in GitHub)
 
 ## Authentication policy
@@ -21,7 +21,7 @@ All online features require a signed-in KURO account authenticated by Supabase A
 - The retired `/guest-token` and `/guest/verify` routes return HTTP 410 and never issue or validate guest credentials.
 - Existing historical guest records are not deleted. Old room entries naturally expire; they cannot authenticate, create new rooms, or rejoin.
 
-- Supabase Edge Function `kurogames-online`: deployed version 22 with account-only authorization.
+- Supabase Edge Function `kurogames-online`: deployed version 27 with account-only authorization.
 
 ## Runtime flow
 1. The KuroGames SDK obtains the signed-in account session from the game player or Studio parent page.
@@ -42,7 +42,7 @@ All online features require a signed-in KURO account authenticated by Supabase A
 ## Verification
 - Cloudflare API confirmed the DO namespace exists and the latest Worker deployment has a 100% traffic allocation.
 - Cloudflare API confirmed the `TICKET_SECRET` binding exists.
-- GitHub Actions runs `node --check online-room-worker.js` and `node --check game-studio/kurog-online.js` on pushes and pull requests.
+- GitHub Actions runs `node --check online-room-worker.js`, `node --test tests/online-room-worker.test.mjs`, `node --check game-studio/kurog-online.js`, and embedded-script syntax checks on pushes and pull requests.
 - A real authenticated multi-browser gameplay test is still required. The deployment can be live while end-to-end game success remains unverified until two signed-in KURO accounts join the same room and exchange events.
 
 ## Remaining migration boundary
@@ -60,3 +60,16 @@ The manual GitHub Actions deploy workflow is gated by repository variable `DEPLO
 - A lifecycle lock serializes connection setup and cleanup so a reconnect arriving while cleanup is queued takes precedence, and the alarm checks for active sockets before deleting.
 - This cleanup only affects the room's own Durable Object storage. It does not delete Supabase accounts, profiles, scores, rankings, cloud saves, or published game assets.
 - Daifugo private hands/game state (`game_daifugo_private_sessions`) and ready flags (`game_daifugo_room_ready`) both have `ON DELETE CASCADE` foreign keys to `game_online_rooms`. The same safe room-expiry cleanup removes both only when the parent room is eligible for deletion; neither is separately time-pruned while a room is active.
+
+## Supabase temporary room retention
+
+- The scheduled database job `kuro-cleanup-temporary-game-data` runs every five minutes.
+- Waiting matchmaking entries are removed after two minutes without a heartbeat. Matched entries are removed after their 15-minute acknowledgement window, or when their room is no longer usable.
+- Waiting rooms are removed after 30 minutes if no member has sent a heartbeat in the previous 15 minutes.
+- Playing rooms are removed after 15 minutes without any member heartbeat. A 15-minute reconnect grace period protects recently active members.
+- Closed or expired rooms are removed only when no member has sent a heartbeat in the previous 15 minutes. Empty orphan rooms receive a 30-minute grace period.
+- Active rooms are protected by member heartbeats; when their expiry approaches, the cleanup function refreshes the expiry to two hours ahead.
+- Werewolf rooms are removed two hours after `gameover`, or after 24 hours without an update. Werewolf room chat and online room events are removed through their room foreign-key cascades.
+- Daifugo private hands and ready flags cascade only when the corresponding online room is safely removed.
+- The cleanup function has a read-only dry-run mode, uses batched deletes and a transaction advisory lock, and never touches accounts, profiles, ranking scores, win-event records, cloud saves, or published game assets.
+- User chats and analytics are not included. `usage_events` remains available for the admin dashboard's 30-day usage analytics; it is not currently pruned by this job.
