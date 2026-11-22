@@ -64,8 +64,21 @@
       </div>
       <div id="accountLoggedOut" class="account-loggedout" hidden>
         <strong>ログインが必要です</strong>
-        <p>KUROLAB共通アカウントでログインしてから、設定を変更してください。</p>
-        <a class="account-button" href="/?auth=1&amp;next=%2Faccount%2F">KUROLABでログイン</a>
+        <p>この画面から直接ログインできます。ログイン後もアカウント管理画面に留まります。</p>
+        <form id="accountLoginForm">
+          <label class="account-field">ユーザーネーム / メールアドレス
+            <input id="accountLoginIdentity" type="text" autocomplete="username" maxlength="254" required>
+          </label>
+          <label class="account-field">パスワード
+            <input id="accountLoginPassword" type="password" autocomplete="current-password" maxlength="72" required>
+          </label>
+          <div class="account-actions">
+            <button id="accountLoginSubmit" class="account-button" type="submit">ログイン</button>
+            <button id="accountGoogleLogin" class="account-button" type="button" style="background:#fff;color:#31547d;border:1px solid #d8e4f3">Googleでログイン</button>
+          </div>
+          <p id="accountLoginStatus" class="account-status" role="status" aria-live="polite"></p>
+        </form>
+        <p class="account-hint">新規登録が必要な場合は <a href="/?auth=1">KUROLABトップ</a> から登録できます。</p>
       </div>
       <nav class="account-nav" aria-label="サービスへ移動">
         <a href="/">KUROLABトップ</a><a href="/sns/">KURO SNS</a><a href="/games/">KURO GAMES</a>
@@ -113,6 +126,6 @@
       </form>
     </section>
   </main>
-  <script src="/account/account.js?v=20261122account4"></script>
+  <script src="/account/account.js?v=20261122account5"></script>
 </body>
 </html>
