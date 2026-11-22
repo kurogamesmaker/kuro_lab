@@ -59,23 +59,23 @@ const kuroGameRealtimeChannels = new Map();
 async function getKuroGameAuthSession() {
  if (!kuroGameAuthPromise) {
   kuroGameAuthPromise = (async () => {
-   let { data, error } = await kuroGameAuthClient.auth.getSession();
+   const { data, error } = await kuroGameAuthClient.auth.getSession();
    if (error) throw error;
-   if (!data.session) {
-    const signed = await kuroGameAuthClient.auth.signInAnonymously();
-    if (signed.error) throw signed.error;
-    data = { session: signed.data.session };
+   const session = data.session || null;
+   // 以前の仕様で作られた匿名セッションはこの端末からサインアウトし、新規作成もしない
+   if (session?.user?.is_anonymous) {
+    await kuroGameAuthClient.auth.signOut({ scope: "local" }).catch(() => {});
+    return null;
    }
-   if (!data.session || !data.session.access_token) throw new Error("Supabaseのログイン情報を取得できませんでした");
-   return data.session;
+   return session?.access_token ? session : null;
   })().catch(error => {
    kuroGameAuthPromise = null;
    throw error;
   });
  }
  const session = await kuroGameAuthPromise;
- // Realtime側にも現在のJWTを明示的に設定し、HTTP認証とWebSocket認証のずれを防ぐ
- kuroGameAuthClient.realtime.setAuth(session.access_token);
+ // ログイン済みユーザーだけRealtimeへJWTを設定する
+ if (session?.access_token) kuroGameAuthClient.realtime.setAuth(session.access_token);
  return session;
 }
 window.addEventListener("message", async event => {
@@ -87,11 +87,11 @@ window.addEventListener("message", async event => {
    event.source.postMessage({
     type: "kuro-online-auth",
     requestId: msg.requestId,
-    access_token: session.access_token,
+    access_token: session?.access_token || null,
     useCloudflareProxy: KURO_CLOUDFLARE_TRANSPORT,
-    user: session.user ? { id: session.user.id, email: session.user.email ?? null } : null,
-    isGuest: !!session.user?.is_anonymous,
-    guestMode: !!kuroGameGuestMode
+    user: session?.user ? { id: session.user.id, email: session.user.email ?? null } : null,
+    isGuest: !session,
+    guestMode: !session || !!kuroGameGuestMode
    }, "*");
   } catch (error) {
    event.source.postMessage({
@@ -106,7 +106,16 @@ window.addEventListener("message", async event => {
   if (!KURO_CLOUDFLARE_TRANSPORT || typeof msg.requestId !== "string" || msg.requestId.length > 120 ||
       msg.path !== "/functions/v1/kurogames-online" || msg.method !== "POST") return;
   try {
-   if(kuroGameGuestMode){let b={};try{b=msg.bodyBase64?JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(msg.bodyBase64),ch=>ch.charCodeAt(0)))):{}}catch(_){}if(b.action==="score_submit"){event.source.postMessage({type:"kuro-online-proxy-response",requestId:msg.requestId,response:{status:200,headers:{"content-type":"application/json"},bodyBase64:btoa(JSON.stringify({ok:false,guest:true,message:"ゲストプレイではランキングに記録されません。"}))}},"*");return;}}
+   if(kuroGameGuestMode){
+    let b={};
+    try{b=msg.bodyBase64?JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(msg.bodyBase64),ch=>ch.charCodeAt(0)))):{}}catch(_){}
+    const result=b.action==="score_submit"
+      ?{ok:false,guest:true,message:"ゲストプレイではランキングに記録されません。"}
+      :{error:"オンライン機能を利用するにはKURO Labアカウントへのログインが必要です。",guest:true};
+    const bodyBase64=btoa(unescape(encodeURIComponent(JSON.stringify(result))));
+    event.source.postMessage({type:"kuro-online-proxy-response",requestId:msg.requestId,response:{status:b.action==="score_submit"?200:401,headers:{"content-type":"application/json"},bodyBase64}},"*");
+    return;
+   }
    const bytes = msg.bodyBase64 ? Uint8Array.from(atob(msg.bodyBase64), ch => ch.charCodeAt(0)) : new Uint8Array();
    const request = new Request("https://cprvpphlfpmiegjiutjn.supabase.co" + msg.path, {
     method: "POST", headers: msg.headers || {}, body: bytes
@@ -228,11 +237,7 @@ window.addEventListener("message", async event => {
  }
  if (msg.type !== "kuro-werewolf-auth-request") return;
  try {
-  const { data: authData, error: authError } = await kuroGameAuthClient.auth.getSession();
-  if (authError) throw authError;
-  const session = authData.session;
-  if (!session) throw new Error("KURO GAMES認証情報を取得できませんでした。");
-  kuroGameAuthClient.realtime.setAuth(session.access_token);
+  const session = await getKuroGameAuthSession();
   const storage = {};
   const prefix = "kuro-werewolf-session:";
   for (let i = 0; i < localStorage.length; i++) {
@@ -242,10 +247,10 @@ window.addEventListener("message", async event => {
   event.source.postMessage({
    type: "kuro-werewolf-auth",
    useCloudflareProxy: KURO_CLOUDFLARE_TRANSPORT,
-   access_token: session.access_token,
-   refresh_token: session.refresh_token,
-   isGuest: !!session.user?.is_anonymous || !!kuroGameGuestMode,
-   guestMode: !!kuroGameGuestMode,
+   access_token: session?.access_token || null,
+   refresh_token: session?.refresh_token || null,
+   isGuest: !session || !!kuroGameGuestMode,
+   guestMode: !session || !!kuroGameGuestMode,
    storage
   }, "*");
  } catch (error) {
@@ -285,7 +290,7 @@ window.addEventListener("message", async event => {
    frame.style.aspectRatio=frameWidth+" / "+frameHeight;
   };
   kuroGameFrame=frame;$("frameWrap").replaceChildren(frame);kuroGameFrameLayout();frame.srcdoc='<script>window.KURO_GUEST_MODE='+guest+';window.KURO_GAMES_RECORDS_ENABLED=!window.KURO_GUEST_MODE;const isScoreUrl=u=>window.KURO_GUEST_MODE&&/\\/rest\\/v1\\/game_scores(?:\\?|$)/i.test(String(u));const nativeFetch=window.fetch.bind(window);window.fetch=function(input,init){const u=typeof input==="string"?input:(input&&input.url)||"";if(isScoreUrl(u)){return Promise.resolve(new Response(JSON.stringify({ok:false,guest:true,message:"ゲストプレイではランキングに記録されません。"}),{status:200,headers:{"Content-Type":"application/json"}}));}return nativeFetch(input,init);};<\/script>'+data.html_content;};
-  const session=await getKuroGameAuthSession();launchGame(!!session.user?.is_anonymous);
+  const session=await getKuroGameAuthSession();launchGame(!session||!!session.user?.is_anonymous);
  }catch(error){fail(error.message||"通信エラーが発生しました。");}
 })();
 </script><script src="/games/recommendations.js?v=20261119-authfix1"></script></body></html>
