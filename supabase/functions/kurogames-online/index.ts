@@ -633,6 +633,14 @@ async function handle(req: Request) {
       }
       const bytes = new TextEncoder().encode(JSON.stringify(body.state)).length;
       if (bytes > 131072) throw new HttpError(413, "ルームのゲーム状態は128KB以内にしてください。");
+      if (body.hostOnly === true) {
+        const { data: owner, error: ownerError } = await admin.from("game_online_rooms")
+          .select("host_user_id").eq("id", roomId).eq("game_id", game.id).maybeSingle();
+        if (ownerError) throw new HttpError(500, "ルームホストを確認できませんでした。");
+        if (!owner || owner.host_user_id !== user.id) {
+          throw new HttpError(403, "ゲーム状態を更新できるのはルームホストだけです。");
+        }
+      }
       const expected = typeof body.expectedUpdatedAt === "string" ? body.expectedUpdatedAt : null;
       const updatedAt = new Date().toISOString();
       let update = admin.from("game_online_rooms")
