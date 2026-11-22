@@ -358,9 +358,10 @@ function bindKuroEnginePage(){
   results.innerHTML=rows.map(function(item){
    var href=safeHttpUrl(item.url);if(!href)return "";
    var host="";try{host=new URL(href).hostname.replace(/^www\./,"");}catch(e){}
-   return '<article class="kuro-web-result"><a href="'+esc(href)+'" target="_blank" rel="noopener noreferrer nofollow"><div class="kuro-result-url">'+esc(host)+'</div><h2>'+esc(item.title||host)+'</h2></a><p>'+esc(item.snippet||"")+'</p>'+(item.date?'<time>'+esc(item.date)+'</time>':"")+'</article>';
+   return '<article class="kuro-web-result"><a href="'+esc(href)+'" target="_blank" rel="noopener noreferrer nofollow"><div class="kuro-result-url">'+esc(host)+'</div><h2>'+esc(item.title||host)+'</h2></a><p>'+esc(item.snippet||"")+'</p>'+(item.date?'<time>'+esc(item.date)+'</time>':"")+'<button type=\"button\" class=\"kuro-branch-btn\" data-kuro-branch=\"'+esc((item.title||host).slice(0,90))+'\">＋ この情報から探索</button></article>';
   }).filter(Boolean).join("")||'<div class="kuro-engine-empty">表示できる検索結果がありませんでした。</div>';
  }
+ if(!document.getElementById("kuro-branch-style")){var branchStyle=document.createElement("style");branchStyle.id="kuro-branch-style";branchStyle.textContent=".kuro-branch-btn{margin-top:12px;border:1px solid var(--line,rgba(100,110,130,.25));background:var(--surface-2,rgba(100,110,130,.08));color:inherit;padding:8px 10px;border-radius:9px;cursor:pointer;font-weight:700}.kuro-web-result{position:relative}.kuro-web-result:after{content:'';position:absolute;left:0;bottom:-7px;width:35px;border-bottom:2px solid var(--portal-accent,#7180d8);opacity:.65}.kuro-branch-btn:hover{border-color:var(--portal-accent,#7180d8);transform:translateY(-1px)}";document.head.appendChild(branchStyle);}
  function renderImageResults(data){
   var rows=Array.isArray(data.images)?data.images:[];
   if(!rows.length){showEmpty("画像が見つかりませんでした。別のキーワードで試してください。");return;}
@@ -401,6 +402,7 @@ function bindKuroEnginePage(){
    showEmpty("通信に失敗しました。インターネット接続を確認して、もう一度検索してください。");
   }
  }
+ results.addEventListener("click",function(event){var b=event.target.closest("[data-kuro-branch]");if(!b)return;query=String(b.dataset.kuroBranch||"").trim().slice(0,180);input.value=query;updateAddress(true);runSearch();});
  form.onsubmit=function(event){event.preventDefault();query=String(input.value||"").trim().slice(0,180);input.value=query;updateAddress(true);runSearch();};
  document.querySelectorAll("[data-kuro-search-mode]").forEach(function(button){
   button.onclick=function(){var next=button.dataset.kuroSearchMode;if(!next||next===mode)return;mode=next;updateTabs();updateAddress(false);runSearch();};
