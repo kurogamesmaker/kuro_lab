@@ -366,8 +366,9 @@ const KuroGames = {
     const auth = await requestParentSession();
     if (!auth.accessToken) {
       // 未ログインでもSDK初期化は成功させ、オフライン部分のゲーム進行を妨げない
-      gameConfig = { game: null, features: {} };
-      return { gameId: gameId, game: null, features: {} };
+      const offlineFeatures = { ranking: false, cloudSave: false, multiplayer: false };
+      gameConfig = { game: null, features: offlineFeatures };
+      return { gameId: gameId, game: null, features: offlineFeatures };
     }
     gameConfig = await invoke("get_config");
     return { gameId: gameId, game: gameConfig.game, features: gameConfig.features };
