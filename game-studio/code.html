@@ -70,6 +70,14 @@ async function kuroCloudflareFetch(input,init){
  let body=null;if(result.isBinary&&result.bodyBase64){const raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);body=out;}else if(result.bodyText!==undefined&&![204,205,304].includes(result.status))body=result.bodyText;
  return new Response(body,{status:result.status,headers:result.headers||{"Content-Type":"application/json"}});
 }
+async function getStudioSession(client){
+ const first=await client.auth.getSession();
+ if(first.data&&first.data.session&&!first.error)return first;
+ const refreshed=await client.auth.refreshSession();
+ if(refreshed.data&&refreshed.data.session&&!refreshed.error)return refreshed;
+ if(first.error)throw first.error;
+ return refreshed;
+}
 const publishDb=window.supabase&&window.supabase.createClient?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{global:{fetch:kuroCloudflareFetch},auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
 const clone=x=>JSON.parse(JSON.stringify(x));
 const escapeHTML=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -377,7 +385,7 @@ async function updatePublishTagPreview(){const preview=$("publishTagPreview"),st
  $("publishModal").classList.add("open");$("publishTitle").value=project.name||"新しいゲーム";$("publishSlug").value=project.publishedMeta?.slug||slugifyGameName(project.name||"");$("publishSlug").dataset.edited=project.publishedGameId?"1":"";$("publishDescription").value=project.publishedMeta?.description||"";const savedAliases=project.publishedMeta?.searchAliases||{};fillAliasFields([savedAliases.kanji||((/[一-龯々]/.test(project.name||""))?(project.name||""):""),savedAliases.hiragana||(/[ぁ-ゖァ-ヶ]/.test(project.name||"")?kanaToHiragana(project.name):""),savedAliases.katakana||(/[ぁ-ゖァ-ヶ]/.test(project.name||"")?kanaToKatakana(project.name):""),savedAliases.romaji||(/[ぁ-ゖァ-ヶ]/.test(project.name||"")?kanaToRomaji(project.name,"n"):""),savedAliases.romajiNN||(/[ぁ-ゖァ-ヶ]/.test(project.name||"")?kanaToRomaji(project.name,"nn"):""),savedAliases.other||""]);syncKanaAliases();const savedIcon=project.publishedMeta?.icon||"🎮";$("publishIcon").value=String(savedIcon).startsWith("data:image/")?"🎮":savedIcon;publishIconData=project.publishedMeta?.iconImage||(String(savedIcon).startsWith("data:image/")?savedIcon:"");showPublishIconPreview();$("publishIconFile").value="";const savedCategories=project.publishedMeta?.categories||(project.publishedMeta?.category?[project.publishedMeta.category]:[project.type==="platformer"?"action":"other"]);$("publishCategories").querySelectorAll("input").forEach(input=>{input.checked=savedCategories.includes(input.value);});$("publishTagText").value=project.publishedMeta?.tagText??"KURO STUDIO";$("publishTagStyle").value=project.publishedMeta?.tagStyle||"classic";$("publishTagColor").value=project.publishedMeta?.tagColor||"#ffffff";$("publishTagTextColor").value=project.publishedMeta?.tagTextColor||"#df6547";updatePublishTagPreview();
  $("publishStatus").textContent="ログイン状態を確認しています…";$("confirmPublish").disabled=true;publishAllowed=false;
  if(!publishDb){$("publishStatus").textContent="Supabaseに接続できません。ページを再読み込みしてください。";return;}
- try{const {data:{session},error}=await publishDb.auth.getSession();if(error)throw error;if(!session){$("publishStatus").textContent="KURO Labにログインしてください。ログイン後、この画面を再読み込みしてください。";return;}publishUser=session.user;
+ try{const {data:{session},error}=await getStudioSession(publishDb);if(error)throw error;if(!session){$("publishStatus").textContent="KURO Labにログインしてください。ログイン後、この画面を再読み込みしてください。";return;}publishUser=session.user;
   const {data:admin,error:adminError}=await publishDb.from("admin_users").select("user_id").eq("user_id",session.user.id).maybeSingle();if(adminError)throw adminError;
   if(!admin){$("publishStatus").textContent="このアカウントには公開権限がありません。KURO Lab管理者アカウントでログインしてください。";return;}
   publishAllowed=true;$("confirmPublish").disabled=false;$("publishStatus").textContent="管理者として認証済み。公開前にタイトル・説明・ジャンルを確認してください。";
@@ -413,7 +421,7 @@ async function loadPublishedGameFromCloud(){
  const id=new URLSearchParams(location.search).get("publishedId");if(!id)return;
  if(!publishDb){toast("Supabaseに接続できません");return;}
  try{
-  const {data:{session},error:authError}=await publishDb.auth.getSession();if(authError)throw authError;
+  const {data:{session},error:authError}=await getStudioSession(publishDb);if(authError)throw authError;
   if(!session){toast("公開作品を編集するにはログインしてください");return;}
   const {data,error}=await publishDb.from("game_studio_games").select("id,slug,title,description,category,categories,icon,search_aliases,tag_text,tag_style,tag_color,html_content,updated_at").eq("id",id).eq("owner_id",session.user.id).maybeSingle();
   if(error)throw error;if(!data)throw new Error("作品が見つからないか、編集権限がありません");
@@ -532,7 +540,7 @@ window.addEventListener("message",async event=>{
    let session=null;
    if(publishDb){
     try{
-     const {data,error}=await publishDb.auth.getSession();
+     const {data,error}=await getStudioSession(publishDb);
      if(error)throw error;
      session=data.session||null;
      if(session?.user?.is_anonymous){
@@ -559,7 +567,7 @@ window.addEventListener("message",async event=>{
  if(msg.type==="kuro-online-proxy-request"){
   if(!KURO_CLOUDFLARE_TRANSPORT||typeof msg.requestId!=="string"||msg.requestId.length>120||msg.path!=="/functions/v1/kurogames-online"||msg.method!=="POST")return;
   try{
-   const {data:authData,error:authError}=publishDb?await publishDb.auth.getSession():{data:{session:null},error:null};
+   const {data:authData,error:authError}=publishDb?await getStudioSession(publishDb):{data:{session:null},error:null};
    const activeSession=authData?.session;
    if(authError||!activeSession?.access_token||activeSession.user?.is_anonymous){
     const message="オンライン機能を利用するにはKUROアカウントへのログインが必要です。";
@@ -580,7 +588,7 @@ window.addEventListener("message",async event=>{
  if(msg.type==="kuro-werewolf-auth-request"){
   try{
    if(!publishDb)throw new Error("Supabaseに接続できません");
-   let {data,error}=await publishDb.auth.getSession();
+   let {data,error}=await getStudioSession(publishDb);
    if(error)throw error;
    let session=data.session||null;
    if(session?.user?.is_anonymous){
