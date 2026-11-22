@@ -1,0 +1,50 @@
+name: Deploy KURO Lab Worker
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "account/**"
+      - "sns/**"
+      - "games/**"
+      - "settings/**"
+      - "index.html"
+      - "portal.js"
+      - "portal-enhancements.js"
+      - "portal.css"
+      - "tailwind.css"
+      - "site.css"
+      - "site-fixes.css"
+      - "worker.js"
+      - "wrangler.jsonc"
+      - ".assetsignore"
+      - ".github/workflows/deploy-kuro-lab.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out KURO Lab
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install build dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build production assets
+        run: npm run build
+
+      - name: Deploy KURO Lab to Cloudflare Workers
+        run: npx --yes wrangler@latest deploy --config wrangler.jsonc
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
