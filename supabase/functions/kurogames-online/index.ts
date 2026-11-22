@@ -378,6 +378,147 @@ async function handle(req: Request) {
   }
 
 
+
+
+  if (action === "daifugo_start" || action === "daifugo_state" || action === "daifugo_action") {
+    const user = await getUser(req);
+    requirePublished(game);
+    requireMultiplayer(settings.features);
+    const roomId = typeof body.roomId === "string" && UUID_RE.test(body.roomId) ? body.roomId : "";
+    if (!roomId) throw new HttpError(400, "roomIdが正しくありません。");
+
+    const { data: member, error: memberError } = await admin.from("game_online_room_members")
+      .select("user_id").eq("room_id", roomId).eq("user_id", user.id).maybeSingle();
+    if (memberError) throw new HttpError(500, "対戦ルームの参加状態を確認できませんでした。");
+    if (!member) throw new HttpError(403, "この対戦ルームの参加者ではありません。");
+
+    const rpcError = (error: { message?: string } | null) => {
+      const message = error?.message || "";
+      const rules: Array<[string, number, string]> = [
+        ["ROOM_NOT_FOUND",404,"対戦ルームが見つかりません。"],
+        ["ROOM_MEMBERSHIP_REQUIRED",403,"対戦ルームの参加者ではありません。"],
+        ["DAIFUGO_REQUIRES_TWO_PLAYERS",409,"大富豪のランダム対戦は2人で開始します。"],
+        ["DAIFUGO_PLAYERS_NOT_READY",409,"2人の準備が完了してから開始できます。"],
+        ["DAIFUGO_GAME_NOT_STARTED",409,"対局がまだ開始されていません。"],
+        ["DAIFUGO_GAME_FINISHED",409,"この対局は終了しています。"],
+        ["DAIFUGO_NOT_YOUR_TURN",409,"今はあなたの手番ではありません。"],
+        ["DAIFUGO_CARD_NOT_IN_HAND",400,"そのカードは現在の手札にありません。"],
+        ["DAIFUGO_DIAMOND_THREE_REQUIRED",400,"最初の手番では♦3を含めて出してください。"],
+        ["DAIFUGO_INVALID_COMBINATION",400,"同じ数字のカードを組み合わせてください。"],
+        ["DAIFUGO_WRONG_CARD_COUNT",400,"場と同じ枚数のカードを出してください。"],
+        ["DAIFUGO_CARD_NOT_STRONG_ENOUGH",400,"場のカードより強い組み合わせを出してください。"],
+        ["DAIFUGO_CANNOT_PASS_ON_EMPTY_TABLE",400,"場にカードがないときはパスできません。"],
+        ["DAIFUGO_INVALID_CARD_COUNT",400,"出すカードの枚数が正しくありません。"],
+        ["DAIFUGO_DUPLICATE_CARD",400,"同じカードが重複して指定されています。"],
+        ["DAIFUGO_INVALID_ACTION",400,"操作内容が正しくありません。"]
+      ];
+      const match = rules.find(([code]) => message.includes(code));
+      if (match) throw new HttpError(match[1],match[2]);
+      console.error("[kurogames-online] Daifugo RPC failed",error);
+      throw new HttpError(500,"大富豪の対局処理に失敗しました。");
+    };
+
+    if (action === "daifugo_start") {
+      const { data: room, error: roomError } = await admin.from("game_online_rooms")
+        .select("id, game_id, game_data, status")
+        .eq("id",roomId).eq("game_id",game.id).maybeSingle();
+      if (roomError || !room) throw new HttpError(404,"対戦ルームが見つかりません。");
+      const players = await getRoomMembers(roomId);
+      const { data, error } = await admin.rpc("kuro_daifugo_game_start",{
+        p_game_id:game.id,
+        p_room_id:roomId,
+        p_user_id:user.id,
+        p_rules:(body.rules && typeof body.rules==="object" && !Array.isArray(body.rules)) ? body.rules : {},
+        p_players:players.map((p)=>({userId:p.userId,displayName:p.user.display_name || p.user.username || "プレイヤー"}))
+      });
+      if(error || !data) rpcError(error);
+      return reply(200,data);
+    }
+
+    if (action === "daifugo_state") {
+      const { data, error } = await admin.rpc("kuro_daifugo_game_state",{
+        p_game_id:game.id,p_room_id:roomId,p_user_id:user.id
+      });
+      if(error || !data) rpcError(error);
+      return reply(200,data);
+    }
+
+    const gameAction = body.gameAction === "play" || body.gameAction === "pass" ? body.gameAction : "";
+    if(!gameAction) throw new HttpError(400,"カード操作の指定が正しくありません。");
+    const rawIds = Array.isArray(body.cardIds) ? body.cardIds : [];
+    if(rawIds.length>5 || rawIds.some((id)=>!Number.isSafeInteger(Number(id)) || Number(id)<0 || Number(id)>52)) {
+      throw new HttpError(400,"カード指定が正しくありません。");
+    }
+    const { data, error } = await admin.rpc("kuro_daifugo_game_action",{
+      p_game_id:game.id,
+      p_room_id:roomId,
+      p_user_id:user.id,
+      p_action:gameAction,
+      p_card_ids:rawIds.map(Number)
+    });
+    if(error || !data) rpcError(error);
+    return reply(200,data);
+  }
+
+  if (action === "matchmaking_join" || action === "matchmaking_status" ||
+      action === "matchmaking_cancel" || action === "matchmaking_ack") {
+    const user = await getUser(req);
+    requirePublished(game);
+    requireMultiplayer(settings.features);
+
+    if (action === "matchmaking_join" || action === "matchmaking_status") {
+      const rpcName = action === "matchmaking_join"
+        ? "kuro_daifugo_matchmaking_join"
+        : "kuro_daifugo_matchmaking_status";
+      const { data, error } = await admin.rpc(rpcName, {
+        p_game_id: game.id,
+        p_user_id: user.id,
+      });
+      if (error || !data) {
+        if ((error?.message || "").includes("MATCH_USER_ALREADY_IN_ROOM")) {
+          throw new HttpError(409, "すでにオンラインルームに参加しています。先に退出してください。");
+        }
+        console.error("[kurogames-online] matchmaking RPC failed", error);
+        throw new HttpError(500, "ランダムマッチの状態を取得できませんでした。");
+      }
+      if (data.status !== "matched" || typeof data.room_id !== "string") {
+        return reply(200, { status: data.status === "cancelled" ? "cancelled" : "waiting" });
+      }
+      const { data: room, error: roomError } = await admin.from("game_online_rooms")
+        .select("id, game_id, room_code, host_user_id, max_players, player_count, status, created_at")
+        .eq("id", data.room_id).eq("game_id", game.id).maybeSingle();
+      if (roomError || !room || room.status !== "waiting") {
+        await admin.rpc("kuro_daifugo_matchmaking_cancel", { p_game_id: game.id, p_user_id: user.id });
+        return reply(200, { status: "cancelled" });
+      }
+      const members = await getRoomMembers(String(room.id));
+      if (members.length !== 2) {
+        await admin.rpc("kuro_daifugo_matchmaking_cancel", { p_game_id: game.id, p_user_id: user.id });
+        return reply(200, { status: "cancelled" });
+      }
+      return reply(200, { status: "matched", room, members });
+    }
+
+    if (action === "matchmaking_cancel") {
+      const { data, error } = await admin.rpc("kuro_daifugo_matchmaking_cancel", {
+        p_game_id: game.id,
+        p_user_id: user.id,
+      });
+      if (error) throw new HttpError(500, "マッチングをキャンセルできませんでした。");
+      return reply(200, { ok: true, cancelled: data === true });
+    }
+
+    const roomId = typeof body.roomId === "string" && UUID_RE.test(body.roomId) ? body.roomId : "";
+    if (!roomId) throw new HttpError(400, "roomIdが正しくありません。");
+    const { data, error } = await admin.rpc("kuro_daifugo_matchmaking_ack", {
+      p_game_id: game.id,
+      p_user_id: user.id,
+      p_room_id: roomId,
+    });
+    if (error) throw new HttpError(500, "マッチング完了を確定できませんでした。");
+    return reply(200, { ok: true, acknowledged: data === true });
+  }
+
   if (action === "room_list" || action === "room_create" || action === "room_join" || action === "room_leave" || action === "room_heartbeat" || action === "room_send" || action === "room_poll" || action === "room_state_get" || action === "room_state_update") {
     const user = await getUser(req);
     requirePublished(game);
@@ -498,8 +639,6 @@ async function handle(req: Request) {
         .insert({ room_id: roomId, sender_user_id: user.id, event_type: type, payload })
         .select("id").single();
       if (error) throw new HttpError(500, "ゲームデータを送信できませんでした。");
-      void admin.from("game_online_room_messages").delete()
-        .lt("created_at", new Date(Date.now() - 86400000).toISOString());
       return reply(200, { ok: true, messageId: inserted.id });
     }
 
