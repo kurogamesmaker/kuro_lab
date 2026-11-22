@@ -517,6 +517,244 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
   #kuroRankingShowcase .rank-row{transition:none!important}
 }
 
+
+/* KURO ranking spotlight + cinematic carousel */
+#kuroRankingShowcase{
+  border:1px solid #c8ddf7;
+  background:
+    radial-gradient(260px 190px at 100% 0%,rgba(164,207,255,.34),transparent 72%),
+    radial-gradient(220px 170px at 0% 100%,rgba(255,220,131,.22),transparent 74%),
+    linear-gradient(145deg,#ffffff 0%,#f7faff 55%,#fffdf7 100%);
+  box-shadow:0 18px 44px rgba(41,105,184,.14),0 3px 12px rgba(33,70,121,.06),inset 0 1px 0 #fff;
+}
+#kuroRankingShowcase::before{
+  height:5px;
+  width:100%;
+  background:linear-gradient(90deg,#286fd0 0%,#58a4f3 48%,#a8d5ff 72%,#f2c653 100%);
+  box-shadow:0 2px 9px rgba(60,132,217,.23);
+}
+#kuroRankingShowcase .rank-head{
+  padding:3px 0 15px;
+  border-bottom:1px solid #e4edf9;
+}
+#kuroRankingShowcase .rank-heading-icon{
+  position:relative;
+  overflow:hidden;
+  border-color:#efdba5;
+  background:linear-gradient(145deg,#fff1bd 0%,#fff9e8 54%,#eaf4ff 100%);
+  box-shadow:0 5px 14px rgba(193,149,42,.18),inset 0 1px 0 #fff;
+  animation:kuroTrophyFloat 3.2s ease-in-out infinite;
+}
+#kuroRankingShowcase .rank-heading-icon::after{
+  content:"";
+  position:absolute;
+  inset:-60% auto -60% -75%;
+  width:42%;
+  transform:rotate(24deg);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent);
+  animation:kuroTrophyShine 4.8s ease-in-out infinite;
+}
+@keyframes kuroTrophyFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@keyframes kuroTrophyShine{0%,58%,100%{left:-75%}78%{left:145%}}
+#kuroRankingShowcase .rank-head h2{
+  font-size:22px;
+  letter-spacing:-.8px;
+  text-shadow:0 1px 0 #fff;
+}
+#kuroRankingShowcase .rank-live{
+  position:relative;
+  padding:7px 11px;
+  border-color:#c8e4ff;
+  background:linear-gradient(110deg,#edf7ff,#fff);
+  box-shadow:0 3px 10px rgba(57,130,205,.08);
+}
+#kuroRankingShowcase .rank-live i{
+  box-shadow:0 0 0 4px rgba(62,147,232,.12),0 0 12px rgba(62,147,232,.5);
+  animation:kuroLiveGlow 1.8s ease-in-out infinite;
+}
+@keyframes kuroLiveGlow{0%,100%{opacity:1;box-shadow:0 0 0 3px rgba(62,147,232,.12),0 0 7px rgba(62,147,232,.35)}50%{opacity:.72;box-shadow:0 0 0 6px rgba(62,147,232,.05),0 0 13px rgba(62,147,232,.5)}}
+#kuroRankingShowcase .rank-game{
+  position:relative;
+  overflow:hidden;
+  min-height:48px;
+  margin-top:15px;
+  padding:12px 13px;
+  border:1px solid #cfe2fa;
+  border-radius:14px;
+  background:linear-gradient(105deg,#eaf4ff 0%,#f8fbff 66%,#fffaf0 100%);
+  box-shadow:0 4px 13px rgba(52,112,184,.07),inset 0 1px 0 #fff;
+  color:#234a78;
+  font-size:14px;
+  font-weight:1000;
+}
+#kuroRankingShowcase .rank-game::before{
+  content:"NOW PLAYING";
+  padding:5px 7px;
+  border:1px solid #d2e4fa;
+  border-radius:7px;
+  background:#fff;
+  color:#4b82be;
+  font-size:8px;
+  letter-spacing:1px;
+  box-shadow:0 2px 5px rgba(54,100,154,.05);
+}
+#kuroRankingShowcase .rank-list{
+  position:relative;
+  gap:11px;
+  margin-top:14px;
+}
+#kuroRankingShowcase .rank-list::before{
+  content:"TOP 3  ·  PLAYER RANKING";
+  display:block;
+  margin:0 0 1px 2px;
+  color:#7992b2;
+  font-size:9px;
+  font-weight:1000;
+  letter-spacing:1.6px;
+}
+#kuroRankingShowcase .rank-row{
+  position:relative;
+  overflow:hidden;
+  border-radius:15px;
+  border-color:#e0e9f5;
+  background:linear-gradient(110deg,#fff,#f9fbff);
+  box-shadow:0 4px 12px rgba(36,78,132,.055),inset 0 1px 0 #fff;
+}
+#kuroRankingShowcase .rank-row > *{position:relative;z-index:1}
+#kuroRankingShowcase .rank-row:nth-child(1){
+  border-color:#e9cc79;
+  background:linear-gradient(112deg,#fff0bd 0%,#fff9e8 43%,#fff 100%);
+  box-shadow:0 8px 22px rgba(191,146,39,.17),inset 0 1px 0 #fff;
+}
+#kuroRankingShowcase .rank-row:nth-child(1)::after{
+  content:"";
+  position:absolute;
+  z-index:0;
+  top:-45%;
+  bottom:-45%;
+  left:-75%;
+  width:42%;
+  transform:skewX(-22deg);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.78),transparent);
+  pointer-events:none;
+}
+#kuroRankingShowcase .rank-row:nth-child(2){
+  border-color:#d8e1ec;
+  background:linear-gradient(110deg,#edf2f8 0%,#fbfcfe 57%,#fff 100%);
+  box-shadow:0 5px 14px rgba(91,111,138,.09),inset 0 1px 0 #fff;
+}
+#kuroRankingShowcase .rank-row:nth-child(3){
+  border-color:#e8cbb4;
+  background:linear-gradient(110deg,#f8e7d8 0%,#fff8f1 58%,#fff 100%);
+  box-shadow:0 5px 14px rgba(163,112,72,.09),inset 0 1px 0 #fff;
+}
+#kuroRankingShowcase .rank-medal{
+  border:1px solid rgba(135,157,187,.15);
+  background:linear-gradient(145deg,#e9f1fb,#fff);
+  box-shadow:0 3px 8px rgba(62,91,130,.08);
+}
+#kuroRankingShowcase .rank-row:nth-child(1) .rank-medal{
+  border-color:#e8c45d;
+  background:linear-gradient(145deg,#ffd96e,#fff0b8);
+  box-shadow:0 4px 12px rgba(180,130,25,.24),inset 0 1px 0 rgba(255,255,255,.8);
+  animation:kuroGoldMedal 2.6s ease-in-out infinite;
+}
+@keyframes kuroGoldMedal{0%,100%{box-shadow:0 4px 11px rgba(180,130,25,.18),inset 0 1px 0 #ffffffb3}50%{box-shadow:0 5px 16px rgba(180,130,25,.34),0 0 0 4px rgba(255,210,93,.16),inset 0 1px 0 #ffffffb3}}
+#kuroRankingShowcase .rank-name{color:#3e5675;font-size:12px}
+#kuroRankingShowcase .rank-row:nth-child(1) .rank-name{color:#573f0e;font-size:13px}
+#kuroRankingShowcase .rank-row:nth-child(1) .rank-name::before{
+  color:#ad8120;
+  font-size:8px;
+  letter-spacing:1.6px;
+}
+#kuroRankingShowcase .rank-score{
+  padding:7px 10px;
+  border-color:#cfe2fa;
+  border-radius:10px;
+  background:linear-gradient(145deg,#fff,#edf5ff);
+  color:#236ec3;
+  font-size:12px;
+  box-shadow:0 2px 6px rgba(46,103,170,.07);
+}
+#kuroRankingShowcase .rank-row:nth-child(1) .rank-score{
+  border-color:#e9d18f;
+  background:linear-gradient(145deg,#fffdf5,#fff);
+  color:#916b13;
+  font-size:13px;
+  box-shadow:0 3px 8px rgba(170,129,35,.10);
+}
+#kuroRankingShowcase .rank-row:nth-child(2) .rank-score{border-color:#d9e2ed;background:#fff;color:#58728f}
+#kuroRankingShowcase .rank-row:nth-child(3) .rank-score{border-color:#ebd6c6;background:#fff;color:#9a6945}
+#kuroRankingShowcase .rank-foot{
+  border-top-color:#e2ebf7;
+}
+#kuroRankingShowcase .rank-foot a{
+  min-height:34px;
+  padding:0 12px;
+  border-color:#c9def8;
+  background:linear-gradient(110deg,#eaf4ff,#fff);
+  box-shadow:0 3px 9px rgba(54,117,190,.08);
+}
+#kuroRankingShowcase .rank-controls button{
+  width:32px;
+  height:32px;
+  border-radius:10px;
+  border-color:#cddff4;
+  color:#2d70bd;
+  box-shadow:0 3px 9px rgba(52,100,157,.08);
+  transition:transform .18s ease,box-shadow .18s ease,background .18s ease;
+}
+#kuroRankingShowcase .rank-controls button:hover{
+  transform:translateY(-2px) scale(1.04);
+  box-shadow:0 6px 13px rgba(52,100,157,.15);
+}
+#kuroRankingShowcase .rank-dot.active{
+  width:17px;
+  box-shadow:0 0 8px rgba(51,126,211,.3);
+}
+#kuroRankingShowcase.rank-out .rank-head,
+#kuroRankingShowcase.rank-out .rank-game,
+#kuroRankingShowcase.rank-out .rank-list,
+#kuroRankingShowcase.rank-out .rank-foot{
+  opacity:0;
+  transform:translateY(9px) scale(.985);
+  transition:opacity .17s ease,transform .17s ease;
+}
+#kuroRankingShowcase.rank-in .rank-head{animation:kuroRankHeadIn .42s cubic-bezier(.2,.8,.2,1) both}
+#kuroRankingShowcase.rank-in .rank-game{animation:kuroRankGameIn .45s cubic-bezier(.2,.8,.2,1) .05s both}
+#kuroRankingShowcase.rank-in .rank-list{animation:kuroRankListIn .48s cubic-bezier(.2,.8,.2,1) .10s both}
+#kuroRankingShowcase.rank-in .rank-row:nth-child(1)::after{animation:kuroGoldSweep 1.05s ease .28s both}
+#kuroRankingShowcase.rank-in .rank-row:nth-child(1){animation:kuroChampionIn .52s cubic-bezier(.16,1,.3,1) .12s both}
+#kuroRankingShowcase.rank-in .rank-row:nth-child(2){animation:kuroRankRowIn .44s cubic-bezier(.2,.8,.2,1) .22s both}
+#kuroRankingShowcase.rank-in .rank-row:nth-child(3){animation:kuroRankRowIn .44s cubic-bezier(.2,.8,.2,1) .31s both}
+#kuroRankingShowcase.rank-in .rank-foot{animation:kuroRankFootIn .4s ease .22s both}
+@keyframes kuroRankHeadIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes kuroRankGameIn{from{opacity:0;transform:translateY(9px) scale(.98);filter:blur(2px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
+@keyframes kuroRankListIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes kuroChampionIn{from{opacity:0;transform:translateY(18px) scale(.94)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes kuroRankRowIn{from{opacity:0;transform:translateY(13px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes kuroRankFootIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes kuroGoldSweep{0%,100%{left:-75%}45%,70%{left:140%}}
+@media(hover:hover){
+  #kuroRankingShowcase .rank-row:hover{transform:translateY(-2px);filter:saturate(1.06)}
+}
+@media(prefers-reduced-motion:reduce){
+  #kuroRankingShowcase .rank-heading-icon,
+  #kuroRankingShowcase .rank-heading-icon::after,
+  #kuroRankingShowcase .rank-live i,
+  #kuroRankingShowcase .rank-row:nth-child(1) .rank-medal{animation:none!important}
+  #kuroRankingShowcase.rank-out .rank-head,
+  #kuroRankingShowcase.rank-out .rank-game,
+  #kuroRankingShowcase.rank-out .rank-list,
+  #kuroRankingShowcase.rank-out .rank-foot{opacity:1;transform:none;transition:none!important}
+  #kuroRankingShowcase.rank-in .rank-head,
+  #kuroRankingShowcase.rank-in .rank-game,
+  #kuroRankingShowcase.rank-in .rank-list,
+  #kuroRankingShowcase.rank-in .rank-row,
+  #kuroRankingShowcase.rank-in .rank-foot{animation:none!important}
+  #kuroRankingShowcase .rank-controls button{transition:none!important}
+}
+
 </style>
 </head>
 <body>
@@ -725,14 +963,42 @@ function initKuroRankingShowcase(){
  }
  function modeName(mode){return mode==="default"?"":mode.replace(/[_-]+/g," ");}
  async function display(i){
-  if(!games.length||busy)return;busy=true;index=(i+games.length)%games.length;const game=games[index];
-  titleEl.textContent=game.title+(modeName(game.mode)?" · "+modeName(game.mode):"");linkEl.href="/games/play/?id="+encodeURIComponent(game.id);linkEl.textContent="このゲームを遊ぶ ↗";renderDots();panel.classList.remove("rank-transition");void panel.offsetWidth;panel.classList.add("rank-transition");
+  if(!games.length||busy)return;
+  busy=true;
+  const nextIndex=(i+games.length)%games.length;
+  const isSwitch=panel.dataset.rankReady==="1"&&nextIndex!==index;
   try{
-   const rows=await fetchRanking(game);
-   if(!rows.length){showMessage("このモードのランキングデータはまだありません。");}
-   else listEl.innerHTML=rows.slice(0,3).map((row,ri)=>'<div class="rank-row"><span class="rank-medal">'+medals[ri]+'</span><span class="rank-name">'+esc(row.user?.username||row.user?.display_name||"プレイヤー")+'</span><span class="rank-score">'+Number(row.score||0).toLocaleString("ja-JP")+'</span></div>').join("");
-  }catch(e){showMessage("ランキングを取得できませんでした。");console.debug("KURO ranking carousel:",e);}
-  finally{busy=false;}
+   if(isSwitch){
+    panel.classList.remove("rank-in");
+    panel.classList.add("rank-out");
+    await new Promise(resolve=>setTimeout(resolve,180));
+   }
+   index=nextIndex;
+   const game=games[index];
+   panel.classList.remove("rank-out","rank-in");
+   titleEl.textContent=game.title+(modeName(game.mode)?" · "+modeName(game.mode):"");
+   linkEl.href="/games/play/?id="+encodeURIComponent(game.id);
+   linkEl.textContent="このゲームを遊ぶ ↗";
+   renderDots();
+   try{
+    const rows=await fetchRanking(game);
+    if(!rows.length){showMessage("このモードのランキングデータはまだありません。");}
+    else listEl.innerHTML=rows.slice(0,3).map((row,ri)=>'<div class="rank-row"><span class="rank-medal">'+medals[ri]+'</span><span class="rank-name">'+esc(row.user?.username||row.user?.display_name||"プレイヤー")+'</span><span class="rank-score">'+Number(row.score||0).toLocaleString("ja-JP")+'</span></div>').join("");
+   }catch(e){
+    showMessage("ランキングを取得できませんでした。");
+    console.debug("KURO ranking carousel:",e);
+   }
+   panel.dataset.rankReady="1";
+   void panel.offsetWidth;
+   panel.classList.add("rank-in");
+  }catch(e){
+   panel.classList.remove("rank-out");
+   showMessage("ランキングを取得できませんでした。");
+   console.debug("KURO ranking transition:",e);
+   panel.dataset.rankReady="1";
+   void panel.offsetWidth;
+   panel.classList.add("rank-in");
+  }finally{busy=false;}
  }
  function go(delta){pausedUntil=Date.now()+12000;display(index+delta);}
  prev?.addEventListener("click",()=>go(-1));next?.addEventListener("click",()=>go(1));
