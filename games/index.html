@@ -39,6 +39,15 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 @media(max-width:680px){.wrap{width:calc(100% - 26px)}header{height:63px}.nav{gap:10px}.brand{font-size:18px}.mark{width:34px;height:34px}.search{width:42px;flex:0 0 42px;padding:0 10px}.search input{display:none}.search:focus-within{width:min(210px,45vw);flex-basis:min(210px,45vw)}.search:focus-within input{display:block}.lab{display:none}.hero{margin-top:14px;min-height:0;padding:25px 22px 18px;grid-template-columns:1fr;border-radius:19px}.hero h1{font-size:36px;letter-spacing:-1.5px}.hero p{font-size:12px}.hero-art{min-height:150px}.sushi{width:140px;height:140px;font-size:75px}.spark.one{top:4px}.spark.two{top:8px}.spark.three{bottom:2px}section.library{padding:34px 0 48px}.section-head h2{font-size:24px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.cover{aspect-ratio:1.28/1}.emoji{font-size:64px}.card-body{padding:10px 11px 12px}.card-body h3{font-size:12px}.filters{gap:7px}.filter{padding:8px 12px;font-size:11px}.filter.fav{margin-left:0}.more{padding:17px;gap:11px;align-items:flex-start}.more-icon{width:42px;height:42px}.more small{display:none}.foot{font-size:10px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 .studio-game-icon{position:absolute;inset:0;display:grid;place-items:center;width:100%;height:100%;font-size:54px;filter:drop-shadow(0 8px 12px #0005);line-height:1}.studio-game-icon img{display:block;width:100%;height:100%;object-fit:cover}
+
+/* KURO GAMES ranking showcase */
+.games-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,300px);gap:18px;align-items:start}
+.ranking-showcase{position:relative;min-width:0;overflow:hidden;border:1px solid #e2e8f2;border-radius:19px;background:linear-gradient(145deg,#fff,#f6f8ff);box-shadow:0 8px 22px #1b30520b;padding:18px 17px;min-height:310px}
+.rank-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.rank-eyebrow{font-size:9px;letter-spacing:1.5px;font-weight:1000;color:#7c88a0}.rank-head h2{margin:5px 0 0;font-size:18px;letter-spacing:-.4px}.rank-live{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:5px 8px;background:#eaf8ef;color:#318257;font-size:9px;font-weight:900}.rank-live i{width:6px;height:6px;border-radius:50%;background:#35b56b;box-shadow:0 0 0 3px #35b61b1c}
+.rank-game{margin-top:16px;font-size:13px;font-weight:950;color:#273957;min-height:20px}.rank-list{margin-top:9px;display:grid;gap:7px;min-height:150px}.rank-row{display:flex;align-items:center;gap:9px;padding:9px 10px;border:1px solid #e8edf5;border-radius:12px;background:#fff;min-width:0}.rank-medal{width:27px;flex:0 0 27px;font-size:17px;text-align:center}.rank-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:850;color:#4b5b75}.rank-score{font-size:11px;font-weight:1000;color:#3c70bf;white-space:nowrap}.rank-message{display:grid;place-items:center;min-height:142px;text-align:center;padding:12px;color:#8290a5;font-size:11px;line-height:1.8}.rank-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;padding-top:11px;border-top:1px solid #e7ecf4}.rank-foot a{font-size:10px;font-weight:900;color:#3979d1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rank-controls{display:flex;align-items:center;gap:6px}.rank-controls button{width:25px;height:25px;border:1px solid #dfe6f1;border-radius:8px;background:white;color:#53637d;font-weight:900;cursor:pointer}.rank-controls button:hover{background:#eef5ff;border-color:#b9cff3}.rank-controls span{display:flex;gap:3px}.rank-dot{width:5px;height:5px;border-radius:50%;background:#d0d8e5}.rank-dot.active{background:#3979d1}
+.ranking-showcase.rank-transition .rank-list{animation:rankFade .24s ease}@keyframes rankFade{from{opacity:.35;transform:translateX(7px)}to{opacity:1;transform:translateX(0)}}
+@media(max-width:980px){.games-layout{grid-template-columns:minmax(0,1fr) 260px;gap:13px}.ranking-showcase{padding:15px;min-height:290px}.rank-list{min-height:140px}}
+@media(max-width:680px){.games-layout{display:flex;flex-direction:column}.ranking-showcase{order:-1;width:100%;min-height:0;padding:14px}.rank-head h2{font-size:17px}.rank-game{margin-top:11px}.rank-list{min-height:0;grid-template-columns:1fr;gap:6px}.rank-row{padding:8px}.rank-foot{margin-top:10px;padding-top:9px}}
 </style>
 
 <!-- Google Analytics 4 -->
@@ -123,7 +132,7 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 <section class="library" id="games">
 
 <div class="filters" id="categories"><button class="filter active" data-filter="all">すべて</button><button class="filter" data-filter="typing">タイピング</button><button class="filter" data-filter="rpg">RPG</button><button class="filter" data-filter="action">アクション</button><button class="filter" data-filter="shooting">シューティング</button><button class="filter" data-filter="adventure">アドベンチャー</button><button class="filter" data-filter="simulation">シミュレーション</button><button class="filter" data-filter="strategy">ストラテジー</button><button class="filter" data-filter="puzzle">パズル</button><button class="filter" data-filter="sports">スポーツ</button><button class="filter" data-filter="racing">レース</button><button class="filter" data-filter="table">テーブル</button><button class="filter" data-filter="rhythm">リズム・音楽</button><button class="filter" data-filter="horror">ホラー</button><button class="filter" data-filter="sandbox">サンドボックス</button><button class="filter" data-filter="survival">サバイバル</button><button class="filter" data-filter="fighting">格闘</button><button class="filter" data-filter="party">パーティー</button><button class="filter" data-filter="casual">カジュアル</button><button class="filter" data-filter="education">教育・学習</button><button class="filter" data-filter="other">その他</button><button class="filter fav" id="favoriteFilter">♡ お気に入り</button></div>
-<div class="grid" id="gameGrid">
+<div class="games-layout"><div class="grid" id="gameGrid">
 <article class="game-card" data-title="回転寿司タイピング sushi typing すし 寿司" data-category="typing" data-id="sushi">
 <a class="game-open" href="/game/kaiten-sushi-typing/"><div class="cover"><span class="tag">PLAY NOW</span><img class="game-cover-image" src="/games/sushi-cover.svg" alt="回転寿司タイピング"><span class="play">▶</span></div><div class="card-body"><h3>回転寿司タイピング</h3><div class="meta"><span class="type">タイピング</span><span>無料・ブラウザ</span></div></div></a>
 <button class="heart" type="button" aria-label="お気に入りに追加" title="お気に入り">♡</button>
@@ -133,6 +142,7 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 <button class="heart" type="button" aria-label="お気に入りに追加" title="お気に入り">♡</button>
 </article>
 </div>
+<aside class="ranking-showcase" id="kuroRankingShowcase" aria-label="ゲームランキング"><div class="rank-head"><div><span class="rank-eyebrow">KURO GAMES RANKING</span><h2>🏆 ランキング</h2></div><span class="rank-live"><i></i> LIVE</span></div><div class="rank-game" id="kuroRankGame">ランキング対応ゲーム</div><div class="rank-list" id="kuroRankList"><div class="rank-message">ランキングを読み込み中…</div></div><div class="rank-foot"><a id="kuroRankGameLink" href="/games/">ゲームを遊ぶ ↗</a><div class="rank-controls"><button id="kuroRankPrev" type="button" aria-label="前のランキング">‹</button><span id="kuroRankDots"></span><button id="kuroRankNext" type="button" aria-label="次のランキング">›</button></div></div></aside></div>
 <div class="empty" id="empty"><strong>ゲームが見つかりませんでした</strong>検索ワードやジャンルを変えて、もう一度探してみてください。</div>
 <div class="more"><div class="more-icon">✦</div><div><h3>新しいゲームを準備中！</h3><p>KURO GAMESでは、これからもオリジナルゲームを追加していきます。次のゲームもお楽しみに。</p></div><small>MORE GAMES COMING SOON</small></div>
 </section>
@@ -297,6 +307,56 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
  update();loadStudioGames();
 })();
 
-</script><script src="/usage-tracker.js"></script>
+</script>
+<script>
+(function initKuroRankingShowcase(){
+ const panel=document.getElementById("kuroRankingShowcase"),listEl=document.getElementById("kuroRankList"),titleEl=document.getElementById("kuroRankGame"),linkEl=document.getElementById("kuroRankGameLink"),dotsEl=document.getElementById("kuroRankDots"),prev=document.getElementById("kuroRankPrev"),next=document.getElementById("kuroRankNext");
+ if(!panel||!listEl||!titleEl||!linkEl)return;
+ let games=[],index=0,timer=null,pausedUntil=0,busy=false,cache=new Map();
+ const medals=["🥇","🥈","🥉","4","5"];
+ function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+ function renderDots(){dotsEl.innerHTML=games.map((_,i)=>'<i class="rank-dot '+(i===index?'active':'')+'"></i>').join("");}
+ function showMessage(msg){listEl.innerHTML='<div class="rank-message">'+esc(msg)+'</div>';}
+ async function fetchRanking(game){
+  if(cache.has(game.id))return cache.get(game.id);
+  const {data,error}=await kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"leaderboard",gameId:game.id,mode:"default",limit:3}});
+  if(error)throw error;
+  const rows=Array.isArray(data?.scores)?data.scores:[];
+  cache.set(game.id,rows);return rows;
+ }
+ async function display(i){
+  if(!games.length||busy)return;busy=true;index=(i+games.length)%games.length;const game=games[index];
+  titleEl.textContent=game.title;linkEl.href="/games/play/?id="+encodeURIComponent(game.id);linkEl.textContent="このゲームを遊ぶ ↗";renderDots();panel.classList.remove("rank-transition");void panel.offsetWidth;panel.classList.add("rank-transition");
+  try{
+   const rows=await fetchRanking(game);
+   if(!rows.length){showMessage("まだランキングデータがありません。");}
+   else listEl.innerHTML=rows.slice(0,3).map((row,ri)=>'<div class="rank-row"><span class="rank-medal">'+medals[ri]+'</span><span class="rank-name">'+esc(row.user?.username||row.user?.display_name||"プレイヤー")+'</span><span class="rank-score">'+Number(row.score||0).toLocaleString("ja-JP")+'</span></div>').join("");
+  }catch(e){showMessage("ランキングを取得できませんでした。");console.debug("KURO ranking carousel:",e);}
+  finally{busy=false;}
+ }
+ function go(delta){pausedUntil=Date.now()+16000;display(index+delta);}
+ prev?.addEventListener("click",()=>go(-1));next?.addEventListener("click",()=>go(1));
+ panel.addEventListener("mouseenter",()=>pausedUntil=Date.now()+999999);
+ panel.addEventListener("mouseleave",()=>pausedUntil=Date.now()+8000);
+ async function initialize(){
+  if(!kuroGamesDB){showMessage("ランキング通信を準備できませんでした。");return;}
+  try{
+   const {data:sessionData}=await kuroGamesDB.auth.getSession();
+   if(!sessionData?.session){showMessage("ランキングを見るにはKUROアカウントでログインしてください。");linkEl.href="#";linkEl.textContent="ログインが必要です";linkEl.addEventListener("click",e=>{e.preventDefault();document.getElementById("kuroAccountOpen")?.click();});return;}
+   const {data:onlineSettings,error:settingsError}=await kuroGamesDB.from("game_online_settings").select("game_id,features");
+   if(settingsError)throw settingsError;
+   const enabled=new Set((onlineSettings||[]).filter(x=>x.features?.ranking===true).map(x=>x.game_id));
+   const {data:published,error:gamesError}=await kuroGamesDB.from("game_studio_games").select("id,title,status").eq("status","published").order("published_at",{ascending:false}).limit(60);
+   if(gamesError)throw gamesError;
+   games=(published||[]).filter(g=>enabled.has(g.id)).map(g=>({id:g.id,title:g.title})).filter(g=>g.title);
+   if(!games.length){showMessage("現在、ランキング対応ゲームはありません。");return;}
+   await display(0);
+   timer=setInterval(()=>{if(Date.now()>=pausedUntil&&!busy)display(index+1);},8000);
+  }catch(e){showMessage("ランキングを読み込めませんでした。");console.warn("KURO ranking showcase init:",e);}
+ }
+ initialize();
+})();
+</script>
+<script src="/usage-tracker.js"></script>
 
 </body></html>
