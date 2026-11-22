@@ -124,3 +124,74 @@ test("failed socket sends use the same disconnect cleanup path", async () => {
   assert.equal(fixture.room.sockets.size, 0);
   assert.equal(fixture.alarmAt, now + ROOM_IDLE_TTL_MS);
 });
+
+
+test("non-host members cannot mutate the authoritative game state", async () => {
+  const fixture = createRoom();
+  fixture.room.loaded = true;
+  const sent = [];
+  const socket = { send(payload) { sent.push(JSON.parse(payload)); } };
+  const player = { id: "player-2", isHost: false };
+  fixture.room.sockets.set(socket, player);
+
+  await fixture.room.onMessage(socket, player, JSON.stringify({
+    type: "state-update",
+    requestId: "blocked-1",
+    expectedUpdatedAt: null,
+    state: { phase: "finished", winner: "player-2" },
+  }));
+
+  assert.equal(fixture.room.data.state, null);
+  assert.equal(fixture.values.has("room-state"), false);
+  assert.equal(sent[0].type, "state-result");
+  assert.equal(sent[0].result.forbidden, true);
+});
+
+test("host state updates persist in the room DO before broadcasting to peers", async () => {
+  const fixture = createRoom();
+  fixture.room.loaded = true;
+  const hostMessages = [];
+  const peerMessages = [];
+  const hostSocket = { send(payload) { hostMessages.push(JSON.parse(payload)); } };
+  const peerSocket = { send(payload) { peerMessages.push(JSON.parse(payload)); } };
+  const host = { id: "host-user", isHost: true };
+  const peer = { id: "peer-user", isHost: false };
+  fixture.room.sockets.set(hostSocket, host);
+  fixture.room.sockets.set(peerSocket, peer);
+  const nextState = { phase: "playing", turn: "peer-user", version: 2 };
+
+  await fixture.room.onMessage(hostSocket, host, JSON.stringify({
+    type: "state-update",
+    requestId: "host-write-1",
+    expectedUpdatedAt: null,
+    state: nextState,
+  }));
+
+  const saved = await fixture.room.state.storage.get("room-state");
+  assert.deepEqual(saved.state, nextState);
+  assert.equal(typeof saved.updatedAt, "number");
+  assert.equal(hostMessages[0].type, "state-result");
+  assert.equal(hostMessages[0].result.conflict, false);
+  assert.equal(peerMessages[0].type, "state");
+  assert.deepEqual(peerMessages[0].state, nextState);
+});
+
+test("Durable Object rejects stale state updates instead of overwriting newer turns", async () => {
+  const fixture = createRoom();
+  fixture.room.loaded = true;
+  fixture.room.data = { state: { version: 4 }, updatedAt: 400 };
+  const sent = [];
+  const socket = { send(payload) { sent.push(JSON.parse(payload)); } };
+  const host = { id: "host-user", isHost: true };
+  fixture.room.sockets.set(socket, host);
+
+  await fixture.room.onMessage(socket, host, JSON.stringify({
+    type: "state-update",
+    requestId: "stale-write",
+    expectedUpdatedAt: 300,
+    state: { version: 5 },
+  }));
+
+  assert.deepEqual(fixture.room.data.state, { version: 4 });
+  assert.equal(sent[0].result.conflict, true);
+});
