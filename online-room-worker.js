@@ -83,8 +83,10 @@ async function verifyRoomMembership(env, accessToken, gameId, roomId, userId) {
   });
   if (!response.ok) return false;
   const data = await response.json();
-  if (!data || data.error || data.roomStatus === "closed" || !Array.isArray(data.members)) return false;
-  return data.members.find(member => member && String(member.userId || member.user_id || "") === userId) || null;
+  if (!data || data.error || data.roomStatus === "closed" || !Array.isArray(data.members) ||
+      typeof data.hostUserId !== "string" || !data.hostUserId) return null;
+  const member = data.members.find(member => member && String(member.userId || member.user_id || "") === userId);
+  return member ? { ...member, isHost: data.hostUserId === userId } : null;
 }
 async function createTicket(request, env) {
   const headers = corsHeaders(request, env);
@@ -114,7 +116,7 @@ async function createTicket(request, env) {
   const meta = user.user_metadata || {};
   const name = String(member.user && member.user.username || meta.username || meta.handle || "プレイヤー").slice(0, 24);
   const now = Math.floor(Date.now() / 1000);
-  const ticket = await issueTicket({ typ: "kuro_account", sub: user.id, name, room: roomId, game: gameId, iat: now, exp: now + 60 }, env.TICKET_SECRET);
+  const ticket = await issueTicket({ typ: "kuro_account", sub: user.id, name, room: roomId, game: gameId, host: member.isHost === true, iat: now, exp: now + 60 }, env.TICKET_SECRET);
   return json({ ticket, expiresAt: (now + 60) * 1000 }, 200, headers);
 }
 
@@ -169,6 +171,7 @@ export class Room {
     const userId = request.headers.get("x-kuro-user-id") || "";
     const gameId = request.headers.get("x-kuro-game-id") || "";
     const userName = (request.headers.get("x-kuro-user-name") || "プレイヤー").slice(0, 40);
+    const isHost = request.headers.get("x-kuro-user-host") === "1";
     if (!userId || !gameId) return json({ error: "trusted_identity_required" }, 401);
     if (request.headers.get("Upgrade") !== "websocket") return json({ error: "websocket_required" }, 426);
 
@@ -185,7 +188,7 @@ export class Room {
       const pair = new WebSocketPair();
       const client = pair[0], server = pair[1];
       server.accept();
-      const player = { id: userId, name: userName, gameId, joinedAt: Date.now() };
+      const player = { id: userId, name: userName, gameId, isHost, joinedAt: Date.now() };
       this.sockets.set(server, player);
       server.addEventListener("close", () => this.removeSocket(server, userId));
       server.addEventListener("error", () => this.removeSocket(server, userId));
@@ -257,19 +260,30 @@ export class Room {
       return;
     }
     if (message.type === "get-state") {
-      this.send(ws, { type: "state-result", requestId: String(message.requestId || ""), result: this.data });
+      this.send(ws, { type: "state-result", requestId: String(message.requestId || ""), result: { ...this.data, roomStatus: "waiting" } });
       return;
     }
     if (message.type === "state-update") {
-      const expected = message.expectedUpdatedAt || null;
-      if (expected && expected !== this.data.updatedAt) {
-        this.send(ws, { type: "state-result", requestId: String(message.requestId || ""), result: { ...this.data, conflict: true } });
+      const requestId = String(message.requestId || "");
+      if (!player.isHost) {
+        this.send(ws, { type: "state-result", requestId, result: { ...this.data, conflict: false, forbidden: true } });
         return;
       }
-      this.data = { state: message.state, updatedAt: Date.now() };
-      await this.save();
-      const result = { ...this.data, conflict: false };
-      this.send(ws, { type: "state-result", requestId: String(message.requestId || ""), result });
+      if (!message.state || typeof message.state !== "object" || Array.isArray(message.state)) {
+        this.send(ws, { type: "state-result", requestId, result: { ...this.data, conflict: false, invalid: true } });
+        return;
+      }
+      const expected = message.expectedUpdatedAt || null;
+      if (expected !== (this.data.updatedAt || null)) {
+        this.send(ws, { type: "state-result", requestId, result: { ...this.data, conflict: true } });
+        return;
+      }
+      const next = { state: message.state, updatedAt: Date.now() };
+      await this.state.storage.put("room-state", next);
+      this.data = next;
+      this.loaded = true;
+      const result = { ...this.data, conflict: false, roomStatus: "waiting" };
+      this.send(ws, { type: "state-result", requestId, result });
       this.broadcast({ type: "state", state: this.data.state, updatedAt: this.data.updatedAt, from: player.id }, player.id);
       return;
     }
@@ -316,6 +330,7 @@ export default {
       headers.delete("cookie");
       headers.set("x-kuro-user-id", claims.sub);
       headers.set("x-kuro-user-name", claims.name || "プレイヤー");
+      headers.set("x-kuro-user-host", claims.host === true ? "1" : "0");
       headers.set("x-kuro-game-id", claims.game);
       const forwarded = new Request(request, { headers });
       const roomKey = claims.game + ":" + roomId;
