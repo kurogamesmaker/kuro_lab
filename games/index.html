@@ -843,51 +843,54 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 
 /* Always-on corner motion accent, independent from the ranking carousel */
 #kuroRankingShowcase .rank-live{
-  margin-right:38px;
+  margin-right:59px;
 }
 #kuroRankingShowcase .rank-corner-orbit{
   position:absolute;
   z-index:3;
-  top:7px;
-  right:8px;
+  top:6px;
+  right:7px;
   display:block;
-  width:27px;
-  height:27px;
-  border:1px solid rgba(65,145,225,.28);
+  width:48px;
+  height:48px;
+  border:1px solid rgba(65,145,225,.38);
   border-radius:50%;
-  background:radial-gradient(circle,rgba(108,190,255,.10) 0%,rgba(108,190,255,.025) 68%,transparent 72%);
-  box-shadow:0 0 12px rgba(66,151,236,.12),inset 0 0 8px rgba(66,151,236,.08);
+  background:
+    radial-gradient(circle,rgba(108,190,255,.20) 0%,rgba(108,190,255,.07) 52%,transparent 73%),
+    linear-gradient(145deg,rgba(234,246,255,.65),rgba(255,255,255,.06));
+  box-shadow:0 0 18px rgba(66,151,236,.23),0 0 32px rgba(66,151,236,.10),inset 0 0 12px rgba(66,151,236,.14);
   pointer-events:none;
   animation:kuroRankCornerOrbit 7s linear infinite;
 }
 #kuroRankingShowcase .rank-corner-orbit::before{
   content:"";
   position:absolute;
-  inset:5px;
-  border:1px dashed rgba(73,151,225,.34);
+  inset:8px;
+  border:1px dashed rgba(55,135,218,.55);
   border-radius:50%;
+  box-shadow:0 0 8px rgba(75,158,231,.15);
 }
 #kuroRankingShowcase .rank-corner-orbit i{
   position:absolute;
-  top:-3px;
+  top:-4px;
   left:50%;
-  width:6px;
-  height:6px;
-  border:1px solid #fff;
+  width:10px;
+  height:10px;
+  border:2px solid #fff;
   border-radius:50%;
   background:#39a9ef;
-  box-shadow:0 0 5px 2px rgba(57,169,239,.5),0 0 12px rgba(57,169,239,.55);
+  box-shadow:0 0 7px 3px rgba(57,169,239,.62),0 0 17px rgba(57,169,239,.72);
   transform:translateX(-50%);
 }
 #kuroRankingShowcase .rank-corner-orbit b{
   position:absolute;
   top:50%;
   left:50%;
-  width:5px;
-  height:5px;
+  width:8px;
+  height:8px;
   border-radius:50%;
   background:#f0c85a;
-  box-shadow:0 0 7px rgba(240,200,90,.65);
+  box-shadow:0 0 9px 2px rgba(240,200,90,.72),0 0 18px rgba(240,200,90,.35);
   transform:translate(-50%,-50%);
   animation:kuroRankCornerPulse 1.8s ease-in-out infinite;
 }
