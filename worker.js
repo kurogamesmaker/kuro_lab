@@ -1,3 +1,15 @@
+const FORCE_MARU_ICON_VERSION = "20261122forcefavicon3";
+
+function applyMaruFavicon(html) {
+  const iconTags = /<link\b(?=[^>]*\brel\s*=\s*["'](?:icon|shortcut icon|apple-touch-icon)["'])[^>]*>/gi;
+  const forcedLinks =
+    '<link rel="icon" type="image/png" sizes="48x48" href="/assets/brand/logo/kurolab_icon_maru_48.png?v=' + FORCE_MARU_ICON_VERSION + '">' +
+    '<link rel="shortcut icon" href="/assets/brand/logo/kurolab_icon_maru_48.png?v=' + FORCE_MARU_ICON_VERSION + '">' +
+    '<link rel="apple-touch-icon" sizes="160x160" href="/assets/brand/logo/kurolab_icon_maru_160.png?v=' + FORCE_MARU_ICON_VERSION + '">';
+  const cleanHtml = String(html || "").replace(iconTags, "");
+  return cleanHtml.replace(/<head\b[^>]*>/i, head => head + forcedLinks);
+}
+
 const SUPABASE_URL = "https://cprvpphlfpmiegjiutjn.supabase.co";
 const SUPABASE_KEY = "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
 const ALLOWED_PREFIXES = ["/rest/v1/", "/auth/v1/", "/storage/v1/"];
@@ -210,8 +222,20 @@ export default {
       });
     }
 
+    if (url.pathname === "/favicon.ico") {
+      return new Response(null, {
+        status: 302,
+        headers: {
+          "Location": "/assets/brand/logo/kurolab_icon_maru_48.png?v=" + FORCE_MARU_ICON_VERSION,
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+          "Pragma": "no-cache"
+        }
+      });
+    }
+
     const liveAssetFiles = new Map([
       ["/manifest.json", "manifest.json"],
+      ["/sw.js", "sw.js"],
       ["/assets/brand/logo/kurolab_icon_48.png", "assets/brand/logo/kurolab_icon_48.png"],
       ["/assets/brand/logo/kurolab_icon_160.png", "assets/brand/logo/kurolab_icon_160.png"],
       ["/assets/brand/logo/kurolab_icon_800.png", "assets/brand/logo/kurolab_icon_800.png"],
@@ -309,7 +333,7 @@ export default {
     if (liveAssetPath) {
       try {
         const liveAssetResponse = await fetch(
-          "https://raw.githubusercontent.com/kurogamesmaker/kuro_lab/980d852a4cbc954ab67f0526f3416e9c38090fc3/" + liveAssetPath,
+          "https://raw.githubusercontent.com/kurogamesmaker/kuro_lab/e9dd7775da491eaca6926c6e8842af95443264f/" + liveAssetPath,
           { cf: { cacheEverything: true, cacheTtl: 60 } }
         );
         if (liveAssetResponse.ok) {
@@ -346,7 +370,7 @@ export default {
           let liveBody = liveAssetResponse.body;
           if (liveContentType.startsWith("text/html")) {
             let liveHtml = await liveAssetResponse.text();
-            const cacheVersion = "20261121marufavicon1";
+            const cacheVersion = "20261122forcefavicon3";
             const sharedAssetVersions = [
               [/\/portal\.js\?v=[^"'&\\s]+/g, "/portal.js?v=" + cacheVersion],
               [/\/portal-enhancements\.js\?v=[^"'&\\s]+/g, "/portal-enhancements.js?v=" + cacheVersion],
@@ -361,6 +385,7 @@ export default {
             for (const [pattern, replacement] of sharedAssetVersions) {
               liveHtml = liveHtml.replace(pattern, replacement);
             }
+            liveHtml = applyMaruFavicon(liveHtml);
             liveBody = liveHtml;
           }
 
@@ -379,20 +404,21 @@ export default {
     const assetResponse = await env.ASSETS.fetch(request);
     const assetType = assetResponse.headers.get("content-type") || "";
 
-    // Refresh every KURO portal page's shared portal.js reference after transport fixes.
+    // Force the circular brand icon for every HTML response, including legacy/static pages.
     if (assetType.toLowerCase().includes("text/html")) {
-      const html = await assetResponse.clone().text();
+      let html = await assetResponse.clone().text();
       if (html.includes("/portal.js?")) {
-        const refreshedHtml = html.replace(/\/portal\.js\?v=[^"'&\s]+/g, "/portal.js?v=20261121usernamefix7");
-        const headers = new Headers(assetResponse.headers);
-        headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
-        headers.set("Pragma", "no-cache");
-        return new Response(refreshedHtml, {
-          status: assetResponse.status,
-          statusText: assetResponse.statusText,
-          headers
-        });
+        html = html.replace(/\\/portal\\.js\\?v=[^"'&\\s]+/g, "/portal.js?v=20261121usernamefix7");
       }
+      const refreshedHtml = applyMaruFavicon(html);
+      const headers = new Headers(assetResponse.headers);
+      headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+      headers.set("Pragma", "no-cache");
+      return new Response(refreshedHtml, {
+        status: assetResponse.status,
+        statusText: assetResponse.statusText,
+        headers
+      });
     }
 
     // Do not let a previously cached portal.js keep bypassing the Cloudflare relay.
