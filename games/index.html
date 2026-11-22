@@ -341,14 +341,11 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
  async function initialize(){
   if(!kuroGamesDB){showMessage("ランキング通信を準備できませんでした。");return;}
   try{
-   const {data:sessionData}=await kuroGamesDB.auth.getSession();
-   if(!sessionData?.session){showMessage("ランキングを見るにはKUROアカウントでログインしてください。");linkEl.href="#";linkEl.textContent="ログインが必要です";linkEl.addEventListener("click",e=>{e.preventDefault();document.getElementById("kuroAccountOpen")?.click();});return;}
-   const {data:onlineSettings,error:settingsError}=await kuroGamesDB.from("game_online_settings").select("game_id,features");
-   if(settingsError)throw settingsError;
-   const enabled=new Set((onlineSettings||[]).filter(x=>x.features?.ranking===true).map(x=>x.game_id));
    const {data:published,error:gamesError}=await kuroGamesDB.from("game_studio_games").select("id,title,status").eq("status","published").order("published_at",{ascending:false}).limit(60);
    if(gamesError)throw gamesError;
-   games=(published||[]).filter(g=>enabled.has(g.id)).map(g=>({id:g.id,title:g.title})).filter(g=>g.title);
+   const candidates=(published||[]).filter(g=>g.id&&g.title);
+   const configs=await Promise.all(candidates.map(async g=>{try{const {data,error}=await kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"get_config",gameId:g.id}});if(error)throw error;return data?.features?.ranking===true?{id:g.id,title:g.title}:null;}catch(err){console.debug("Ranking config skipped:",g.id,err);return null;}}));
+   games=configs.filter(Boolean);
    if(!games.length){showMessage("現在、ランキング対応ゲームはありません。");return;}
    await display(0);
    timer=setInterval(()=>{if(Date.now()>=pausedUntil&&!busy)display(index+1);},8000);
