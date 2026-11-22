@@ -84,6 +84,19 @@ The manual GitHub Actions deploy workflow is gated by repository variable `DEPLO
 - The function supports a read-only dry run, uses an advisory lock and batched deletes, and is not executable by public/anon/authenticated roles.
 - The cleanup does not delete accounts, profiles, ranking scores, win events, cloud saves, published assets, posts, replies, follows, or group chat content. The current 6,233 usage events and 13 audit records were preserved; the dry run reported zero deletion candidates and the first execution deleted zero rows.
 
+
+
+## Notification and read-receipt retention
+
+- The scheduled job `kuro-cleanup-read-notifications` runs daily at 15:45 UTC (00:45 JST).
+- Social notifications are deleted only when `read_at` is at least 90 days old. Unread notifications are never removed by this job. This covers old mention notifications that remain until a user opens the linked group conversation.
+- Portal request notifications are deleted only when `read_at` is at least 180 days old. Unread request notifications remain.
+- The KUROSNS notification screen loads the latest 50 notifications. It removes viewed non-mention notifications immediately, marks remaining notifications as read, and removes a mention notification when its linked group is opened. The scheduled policy is a long-term safety net for old read notices that are not otherwise cleared.
+- Direct-message read receipts are not independently pruned: their parent messages are removed by the existing `kuro-delete-read-chat-messages-daily` job only after a receipt has been present for at least one day; deleting a message cascades its receipt.
+- Group-chat and admin-message read receipts remain attached to their messages because they are used to display read state for retained messages. The corresponding foreign keys cascade if the parent message is explicitly removed.
+- The cleanup supports dry-run and batched deletion, uses an advisory lock, and never changes chat message bodies, group messages, admin messages, posts, or unread notifications.
+- Verification found no orphaned direct-message, group-message, or admin-message read receipts. Current data is 72 social notifications (52 unread), 1 portal request notification, 14 direct messages, and 44 group messages; the first cleanup deleted zero rows. A rollback-only test verified that aged read notices are deleted while old unread notices are preserved.
+
 ## Other existing chat retention jobs
 
 - `kuro-delete-public-chat-daily` clears the public lobby chat once per day. The public lobby is intentionally short-lived and currently displays at most the latest 100 messages.
