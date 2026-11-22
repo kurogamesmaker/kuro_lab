@@ -95,7 +95,7 @@ test("idle alarm clears only the room's own storage and resets its cache", async
   assert.equal(fixture.deleteAllCalls, 1);
   assert.equal(fixture.values.size, 0);
   assert.equal(fixture.room.loaded, false);
-  assert.deepEqual(fixture.room.data, { state: null, updatedAt: null });
+  assert.deepEqual(fixture.room.data, { state: null, updatedAt: null, unonGame: null, unonCrypto: null, unonActionIds: [], unoDeadline: null, idleDeadline: null });
 });
 
 test("an alarm never clears storage while any socket is connected", async () => {
