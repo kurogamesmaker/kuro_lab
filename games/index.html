@@ -761,7 +761,7 @@ function initKuroRankingShowcase(){
   }
   try{
    games=await loadRankings();
-   if(!games.length){showMessage("現在、ランキング対応ゲームはありません。");return;}
+   if(!games.length){showMessage("スタジオの「オンライン機能」から、ランキング欄に表示するゲームを選択してください。");return;}
    await display(0);
    timer=setInterval(()=>{if(Date.now()>=pausedUntil&&!busy)display(index+1);},5000);
    setInterval(async()=>{if(busy)return;try{const fresh=await loadRankings();if(fresh.length){games=fresh;cache.clear();index=index%games.length;if(Date.now()>=pausedUntil)display(index);}}catch(err){console.debug("KURO ranking refresh skipped:",err);}},60000);
