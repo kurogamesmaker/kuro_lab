@@ -394,7 +394,24 @@ async function loadPublishedGameFromCloud(){
   const publishedHeight=publishedFrame?Math.max(160,Math.min(2160,Number(publishedFrame[2]))):540;
   if(!Number(savedSettings.gameFrameWidth))savedSettings.gameFrameWidth=publishedWidth;
   if(!Number(savedSettings.gameFrameHeight))savedSettings.gameFrameHeight=publishedHeight;
-  project={id:"published-"+data.id,name:useDraft?(draft.name||data.title||"公開済みゲーム"):(data.title||"公開済みゲーム"),type:data.category==="action"?"platformer":"published",background:"#101522",objects:[],events:[],settings:savedSettings,tilemap:{cols:20,rows:12,cells:Array(240).fill(-1),enabled:false},assets:[],prefabs:[],layers:["Default"],collisionMatrix:{},code:useDraft&&draft.code?draft.code:parsed.parts,publishedGameId:data.id,publishedMeta:{slug:data.slug,title:data.title,description:data.description,category:data.category,categories:data.categories?.length?data.categories:[data.category||"other"],icon:data.icon,searchAliases:(()=>{const a=Array.isArray(data.search_aliases)?data.search_aliases:[];return {kanji:a[0]||"",hiragana:a[1]||"",katakana:a[2]||"",romaji:a[3]||"",other:a[4]||""};})(),tagText:data.tag_text||"KURO STUDIO",tagStyle:data.tag_style||"classic",tagColor:data.tag_color||"#ffffff",tagTextColor:data.tag_text_color||"#df6547"},updatedAt:useDraft?draft.updatedAt:Date.now()};
+  // 〇✕ゲーム: carry the published layout migration into pre-existing local drafts too.
+  const loadedCode=useDraft&&draft.code?clone(draft.code):clone(parsed.parts);
+  const xoUtilityMatch=data.id==="2dbd6773-2684-4f00-973e-c46acbc348e7"
+    ?String(data.html_content||"").match(/<style\b[^>]*id=["']kuro-xo-utility-compat["'][^>]*>([\s\S]*?)<\/style\s*>/i):null;
+  if(xoUtilityMatch){
+   const utilityCss=String(xoUtilityMatch[1]||"").trim();
+   if(utilityCss&&!String(loadedCode.css||"").includes("KURO 〇✕ゲーム: Tailwind utility compatibility layer")){
+    loadedCode.css=(String(loadedCode.css||"").trim()+"\n\n"+utilityCss).trim();
+   }
+   if(Number(savedSettings.gameFrameWidth)===960&&Number(savedSettings.gameFrameHeight)===540){
+    savedSettings.gameFrameWidth=publishedWidth;
+    savedSettings.gameFrameHeight=publishedHeight;
+   }
+   if(useDraft&&draft){
+    try{localStorage.setItem("kuroGameStudio.publishedDraft."+data.id,JSON.stringify({...draft,code:loadedCode,settings:savedSettings}));}catch(_){}
+   }
+  }
+  project={id:"published-"+data.id,name:useDraft?(draft.name||data.title||"公開済みゲーム"):(data.title||"公開済みゲーム"),type:data.category==="action"?"platformer":"published",background:"#101522",objects:[],events:[],settings:savedSettings,tilemap:{cols:20,rows:12,cells:Array(240).fill(-1),enabled:false},assets:[],prefabs:[],layers:["Default"],collisionMatrix:{},code:loadedCode,publishedGameId:data.id,publishedMeta:{slug:data.slug,title:data.title,description:data.description,category:data.category,categories:data.categories?.length?data.categories:[data.category||"other"],icon:data.icon,searchAliases:(()=>{const a=Array.isArray(data.search_aliases)?data.search_aliases:[];return {kanji:a[0]||"",hiragana:a[1]||"",katakana:a[2]||"",romaji:a[3]||"",other:a[4]||""};})(),tagText:data.tag_text||"KURO STUDIO",tagStyle:data.tag_style||"classic",tagColor:data.tag_color||"#ffffff",tagTextColor:data.tag_text_color||"#df6547"},updatedAt:useDraft?draft.updatedAt:Date.now()};
   $("projectName").value=project.name;$("publishBtn").textContent="公開内容を更新";
   setStatus(useDraft?"● 下書きから復元":"● 公開作品を読み込み済み","var(--good)");
   showTab("html");run();
