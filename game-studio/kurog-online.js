@@ -38,7 +38,7 @@ function requestParentSession() {
       resolve({ accessToken: event.data.access_token || null, user: event.data.user || null, isGuest: event.data.isGuest === true, guestMode: event.data.guestMode === true, useCloudflareProxy: event.data.useCloudflareProxy === true });
     }
     window.addEventListener("message", onMessage);
-    // The parent uses this game ID to issue a narrowly scoped guest multiplayer token.
+    // The parent supplies a Supabase Auth access token only for a signed-in KURO account.
     window.parent.postMessage({ type: "kuro-online-auth-request", requestId, gameId: gameId }, "*");
   });
 }
@@ -46,7 +46,10 @@ function requestParentSession() {
 async function invoke(action, params) {
   ensureReady();
   const session = await requestParentSession();
-  if (!session.accessToken) throw new Error("オンライン機能を利用するにはKURO Labアカウントへのログインが必要です。");
+  if (!session.accessToken) {
+    try { window.parent.postMessage({ type: "kuro-online-login-required", gameId: gameId, action: action }, "*"); } catch (_) {}
+    throw new Error("オンライン機能を利用するにはKUROアカウントへのログインが必要です。");
+  }
   const path = "/functions/v1/" + FUNCTION_NAME;
   const headers = { "Content-Type": "application/json", "apikey": DEFAULT_KEY, "Authorization": "Bearer " + session.accessToken };
   const body = JSON.stringify(Object.assign({ action: action, gameId: gameId }, params || {}));
