@@ -474,6 +474,12 @@ const KuroGames = {
   },
 
   multiplayer: {
+    async setDaifugoReady(roomId, ready) {
+      return invoke("daifugo_ready_set", { roomId: roomId, ready: !!ready });
+    },
+    async getDaifugoReadyState(roomId) {
+      return invoke("daifugo_ready_state", { roomId: roomId });
+    },
     async startDaifugoGame(roomId, rules) {
       return invoke("daifugo_start", { roomId: roomId, rules: rules || {} });
     },
