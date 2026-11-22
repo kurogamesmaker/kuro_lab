@@ -474,6 +474,19 @@ const KuroGames = {
   },
 
   multiplayer: {
+    async startDaifugoGame(roomId, rules) {
+      return invoke("daifugo_start", { roomId: roomId, rules: rules || {} });
+    },
+    async getDaifugoGameState(roomId) {
+      return invoke("daifugo_state", { roomId: roomId });
+    },
+    async submitDaifugoGameAction(roomId, action, cardIds) {
+      return invoke("daifugo_action", {
+        roomId: roomId,
+        gameAction: action,
+        cardIds: Array.isArray(cardIds) ? cardIds : [],
+      });
+    },
     async findRandomMatch() {
       return connectMatchedMatchmakingResult(await invoke("matchmaking_join"));
     },
