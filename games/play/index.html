@@ -2,8 +2,18 @@
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f6f8fc"><meta name="robots" content="noindex,nofollow"><title>ゲームプレイ | KURO GAMES</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f6f8fc;color:#17243c;font-family:Inter,"Noto Sans JP",system-ui,sans-serif}.top{height:64px;display:flex;align-items:center;gap:14px;padding:0 max(18px,calc((100% - 1180px)/2));background:#fff;border-bottom:1px solid #e6ebf3}.brand{font-weight:1000;font-size:19px;color:#2878ee;text-decoration:none}.back{margin-left:auto;text-decoration:none;font-size:12px;font-weight:850;color:#53647d}.wrap{width:min(1180px,calc(100% - 28px));margin:22px auto}.info{display:flex;align-items:center;gap:14px;margin-bottom:14px}.icon{width:82px;height:64px;flex:0 0 82px;display:grid;place-items:center;overflow:hidden;border-radius:12px;background:#e5edff;font-size:28px}.icon img{display:block;width:100%;height:100%;object-fit:cover}.copy{min-width:0}.copy h1{font-size:clamp(19px,3vw,27px);margin:0 0 4px}.copy p{margin:0;color:#718098;font-size:12px;line-height:1.6}.game-description{margin:16px 0 8px;padding:14px 16px;border:1px solid #dce3ee;border-radius:12px;background:#fff;color:#596a83;font-size:13px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}.game-description[hidden]{display:none}.game-description-label{margin:0 0 5px;font-size:11px;font-weight:900;letter-spacing:.04em;color:#8794a8}.frame-wrap{display:flex;justify-content:center;overflow:hidden;border:1px solid #dce3ee;border-radius:14px;background:#fff;box-shadow:0 12px 35px #263d5b12}.game-frame{display:block;flex:0 0 auto;width:100%;height:auto;aspect-ratio:16/9;max-height:none;border:0;background:#fff}frame-wrap:fullscreen{width:100vw;height:100vh;border:0;border-radius:0;background:#101522;display:grid;place-items:center}.frame-wrap:fullscreen .game-frame{max-width:100vw;max-height:100vh}.state{padding:70px 20px;text-align:center;color:#718098}.state strong{display:block;color:#17243c;font-size:18px;margin-bottom:8px}.guest-choice{width:100%;min-height:340px;display:grid;place-items:center;padding:24px;background:#eef4ff}.guest-card{width:min(100%,440px);padding:28px 24px;background:#fff;border:1px solid #dbe5f3;border-radius:18px;text-align:center}.guest-card h2{margin:10px 0;font-size:22px}.guest-card p{color:#697a93;font-size:13px;line-height:1.7}.guest-actions{display:grid;gap:10px;margin-top:20px}.guest-actions button{border:0;border-radius:10px;padding:13px;font-weight:800;cursor:pointer}.guest-primary{background:#2878ee;color:white}.guest-secondary{background:#edf3fc;color:#244365}.hint{font-size:11px;color:#8390a5;margin:12px 4px}@media(max-width:600px){.top{height:56px;padding:0 14px}.wrap{margin:14px auto}.icon{width:72px;height:56px;flex-basis:72px}}
-</style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
+.online-auth-backdrop[hidden]{display:none!important}.online-auth-backdrop{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;padding:18px;background:#14223caa;backdrop-filter:blur(5px)}.online-auth-card{width:min(440px,100%);padding:26px 22px;border:1px solid #dce5f2;border-radius:18px;background:#fff;box-shadow:0 24px 80px #101c3340;text-align:center}.online-auth-card h2{margin:0 0 10px;color:#1d2e49;font-size:21px}.online-auth-card p{margin:0;color:#65758e;font-size:13px;line-height:1.8}.online-auth-actions{display:grid;gap:9px;margin-top:20px}.online-auth-actions a,.online-auth-actions button{display:block;width:100%;padding:12px 14px;border:0;border-radius:10px;font:800 13px system-ui;text-decoration:none;cursor:pointer}.online-auth-login{background:#2878ee;color:#fff}.online-auth-close{background:#edf2f8;color:#29415f}</style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
 <body><header class="top"><a class="brand" href="/games/">KURO GAMES</a><a class="back" href="/?auth=1">アカウント</a><a class="back" href="/games/">← ゲーム一覧へ</a></header>
+<div class="online-auth-backdrop" id="onlineAuthPrompt" hidden>
+ <section class="online-auth-card" role="dialog" aria-modal="true" aria-labelledby="onlineAuthTitle">
+  <h2 id="onlineAuthTitle">ログインが必要です</h2>
+  <p>オンライン対戦・ランキングなどのオンライン機能を使うには、KUROアカウントへのログインが必要です。オフラインプレイはそのまま続けられます。</p>
+  <div class="online-auth-actions">
+   <a class="online-auth-login" href="/?auth=1" target="_blank" rel="noopener">KUROアカウントにログイン / 新規登録</a>
+   <button class="online-auth-close" id="onlineAuthClose" type="button">ゲームに戻る</button>
+  </div>
+ </section>
+</div>
 <main class="wrap" id="gamePageWrap"><div class="info" id="gameInfo" hidden><div class="icon" id="gameIcon">🎮</div><div class="copy"><h1 id="gameTitle">読み込み中…</h1></div></div><div class="frame-wrap" id="frameWrap"><div class="state" id="state"><strong>ゲームを読み込んでいます</strong>少しお待ちください。</div></div><section class="game-description" id="gameDescriptionBox" hidden><p class="game-description-label">ゲーム説明</p><div id="gameDescription"></div></section><p class="hint">このゲームは独立したサンドボックス内で実行されます。</p></main>
 
 <script>
@@ -57,6 +67,13 @@ kuroRouteCloudflareRealtime(kuroGameAuthClient);
 window.kuroGameAuthClient = kuroGameAuthClient;
 let kuroGameAuthPromise = null;
 const kuroGameRealtimeChannels = new Map();
+kuroGameAuthClient.auth.onAuthStateChange((_event, session) => {
+ const active = session && !session.user?.is_anonymous && session.access_token ? session : null;
+ kuroGameAuthPromise = Promise.resolve(active);
+ if (active?.access_token) kuroGameAuthClient.realtime.setAuth(active.access_token);
+ const prompt = document.getElementById("onlineAuthPrompt");
+ if (active && prompt) prompt.hidden = true;
+});
 async function getKuroGameAuthSession() {
  if (!kuroGameAuthPromise) {
   kuroGameAuthPromise = (async () => {
@@ -80,58 +97,23 @@ async function getKuroGameAuthSession() {
  return session;
 }
 
-const kuroGameGuestAuthCache = new Map();
-async function getKuroGameGuestAuth(gameId) {
- if (typeof gameId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(gameId)) return null;
- const cached = kuroGameGuestAuthCache.get(gameId);
- if (cached && Number(cached.expiresAt) > Date.now() + 60000) return cached;
- const storageKey = "kurogames.guest.multiplayer.v1:" + gameId;
- try {
-  const saved = JSON.parse(localStorage.getItem(storageKey) || "null");
-  if (saved && typeof saved.token === "string" && saved.token.split(".").length === 2 &&
-      typeof saved.guestId === "string" && Number(saved.expiresAt) > Date.now() + 60000) {
-   kuroGameGuestAuthCache.set(gameId, saved);
-   return saved;
-  }
- } catch (_) {}
- try {
-  const response = await fetch("https://kuro-online-room.kurogamesmaker.workers.dev/guest-token", {
-   method: "POST",
-   headers: { "content-type": "application/json" },
-   body: JSON.stringify({ gameId }),
-   credentials: "omit",
-   cache: "no-store"
-  });
-  let data = {};
-  try { data = await response.json(); } catch (_) {}
-  if (!response.ok || typeof data.token !== "string" || typeof data.guestId !== "string" ||
-      Number(data.expiresAt) <= Date.now()) {
-   console.warn("KURO guest authentication unavailable:", data.error || response.status);
-   return null;
-  }
-  const guest = { token: data.token, guestId: data.guestId, name: data.name || "ゲスト", expiresAt: Number(data.expiresAt) };
-  kuroGameGuestAuthCache.set(gameId, guest);
-  try { localStorage.setItem(storageKey, JSON.stringify(guest)); } catch (_) {}
-  return guest;
- } catch (error) {
-  console.warn("KURO guest authentication unavailable:", error);
-  return null;
- }
-}
 window.addEventListener("message", async event => {
  if (!kuroGameFrame || event.source !== kuroGameFrame.contentWindow || !event.data) return;
  const msg = event.data;
+ if (msg.type === "kuro-online-login-required") {
+  const prompt = document.getElementById("onlineAuthPrompt");
+  if (prompt) prompt.hidden = false;
+  return;
+ }
  if (msg.type === "kuro-online-auth-request" && typeof msg.requestId === "string" && msg.requestId.length <= 100) {
   try {
    const session = await getKuroGameAuthSession();
-   const guest = session ? null : await getKuroGameGuestAuth(msg.gameId === kuroGameFrameGameId ? kuroGameFrameGameId : "");
    event.source.postMessage({
     type: "kuro-online-auth",
     requestId: msg.requestId,
-    access_token: session?.access_token || guest?.token || null,
+    access_token: session?.access_token || null,
     useCloudflareProxy: KURO_CLOUDFLARE_TRANSPORT,
-    user: session?.user ? { id: session.user.id, email: session.user.email ?? null }
-      : guest ? { id: guest.guestId, email: null, isGuest: true } : null,
+    user: session?.user ? { id: session.user.id, email: session.user.email ?? null } : null,
     isGuest: !session,
     guestMode: !session || !!kuroGameGuestMode
    }, "*");
@@ -148,14 +130,13 @@ window.addEventListener("message", async event => {
   if (!KURO_CLOUDFLARE_TRANSPORT || typeof msg.requestId !== "string" || msg.requestId.length > 120 ||
       msg.path !== "/functions/v1/kurogames-online" || msg.method !== "POST") return;
   try {
-   if(kuroGameGuestMode){
-    let b={};
-    try{b=msg.bodyBase64?JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(msg.bodyBase64),ch=>ch.charCodeAt(0)))):{}}catch(_){}
-    const result=b.action==="score_submit"
-      ?{ok:false,guest:true,message:"ゲストプレイではランキングに記録されません。"}
-      :{error:"オンライン機能を利用するにはKURO Labアカウントへのログインが必要です。",guest:true};
-    const bodyBase64=btoa(unescape(encodeURIComponent(JSON.stringify(result))));
-    event.source.postMessage({type:"kuro-online-proxy-response",requestId:msg.requestId,response:{status:b.action==="score_submit"?200:401,headers:{"content-type":"application/json"},bodyBase64}},"*");
+   const activeSession = await getKuroGameAuthSession();
+   if (!activeSession?.access_token) {
+    const message = "オンライン機能を利用するにはKUROアカウントへのログインが必要です。";
+    const prompt = document.getElementById("onlineAuthPrompt");
+    if (prompt) prompt.hidden = false;
+    const bodyBase64 = btoa(unescape(encodeURIComponent(JSON.stringify({ error: message }))));
+    event.source.postMessage({type:"kuro-online-proxy-response",requestId:msg.requestId,response:{status:401,headers:{"content-type":"application/json"},bodyBase64}},"*");
     return;
    }
    const bytes = msg.bodyBase64 ? Uint8Array.from(atob(msg.bodyBase64), ch => ch.charCodeAt(0)) : new Uint8Array();
@@ -187,7 +168,12 @@ window.addEventListener("message", async event => {
    if (previous.channel) void kuroGameAuthClient.removeChannel(previous.channel);
   }
   try {
-   await getKuroGameAuthSession();
+   const activeSession = await getKuroGameAuthSession();
+   if (!activeSession?.access_token) {
+    const prompt = document.getElementById("onlineAuthPrompt");
+    if (prompt) prompt.hidden = false;
+    throw new Error("オンライン機能を利用するにはKUROアカウントへのログインが必要です。");
+   }
    const entry = { source: event.source, channel: null };
    kuroGameRealtimeChannels.set(requestId, entry);
    entry.channel = kuroGameAuthClient
@@ -335,4 +321,4 @@ window.addEventListener("message", async event => {
   const session=await getKuroGameAuthSession();launchGame(!session||!!session.user?.is_anonymous);
  }catch(error){fail(error.message||"通信エラーが発生しました。");}
 })();
-</script><script src="/games/recommendations.js?v=20261119-authfix1"></script></body></html>
+</script><script>document.getElementById("onlineAuthClose")?.addEventListener("click",()=>{const p=document.getElementById("onlineAuthPrompt");if(p)p.hidden=true;});</script><script src="/games/recommendations.js?v=20261119-authfix1"></script></body></html>
