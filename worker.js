@@ -77,6 +77,141 @@ function base64Decode(value) {
   return bytes;
 }
 
+function safeSearchUrl(value) {
+  try {
+    const url = new URL(String(value || ""));
+    return (url.protocol === "https:" || url.protocol === "http:") && !url.username && !url.password ? url.href : "";
+  } catch (_) {
+    return "";
+  }
+}
+
+async function webSearchCacheKey(request, query, mode) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(mode + "\\n" + query.toLowerCase()));
+  const hash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+  const url = new URL("/__kuro_search_cache/" + hash, request.url);
+  return new Request(url.toString(), { method: "GET" });
+}
+
+async function handleWebSearch(request, env) {
+  if (request.method !== "POST") return json({ code: "METHOD_NOT_ALLOWED", message: "POST required" }, 405);
+  const length = Number(request.headers.get("content-length") || 0);
+  if (length > 4096) return json({ code: "REQUEST_TOO_LARGE", message: "Request too large" }, 413);
+
+  let input;
+  try {
+    input = await request.json();
+  } catch (_) {
+    return json({ code: "INVALID_JSON", message: "Invalid JSON body" }, 400);
+  }
+
+  const query = typeof input?.query === "string" ? input.query.trim().slice(0, 180) : "";
+  const mode = String(input?.mode || "web").toLowerCase();
+  if (!query) return json({ code: "QUERY_REQUIRED", message: "検索ワードを入力してください。" }, 400);
+  if (!["web", "news", "images"].includes(mode)) {
+    return json({ code: "INVALID_MODE", message: "Unsupported search mode" }, 400);
+  }
+  if (!env?.TAVILY_API_KEY) {
+    return json({
+      code: "SEARCH_PROVIDER_NOT_CONFIGURED",
+      message: "Search provider is not configured."
+    }, 503);
+  }
+
+  const cacheKey = await webSearchCacheKey(request, query, mode);
+  try {
+    const cached = await caches.default.match(cacheKey);
+    if (cached) {
+      const headers = new Headers(cached.headers);
+      headers.set("X-KURO-Search-Cache", "HIT");
+      return new Response(cached.body, { status: cached.status, headers });
+    }
+  } catch (_) {
+    // Cache is an optimization; continue with the provider request if unavailable.
+  }
+
+  const requestBody = {
+    query,
+    search_depth: "basic",
+    topic: mode === "news" ? "news" : "general",
+    max_results: 8,
+    include_answer: false,
+    include_raw_content: false,
+    include_images: mode === "images",
+    include_image_descriptions: mode === "images",
+    include_favicon: true,
+    safe_search: true
+  };
+
+  let upstream;
+  try {
+    upstream = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + env.TAVILY_API_KEY,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify(requestBody),
+      signal: AbortSignal.timeout(12000)
+    });
+  } catch (_) {
+    return json({ code: "SEARCH_UPSTREAM_UNAVAILABLE", message: "Search provider is temporarily unavailable." }, 502);
+  }
+
+  if (!upstream.ok) {
+    if (upstream.status === 401 || upstream.status === 403) {
+      return json({ code: "SEARCH_PROVIDER_AUTH_ERROR", message: "検索サービスの認証設定を確認する必要があります。" }, 503);
+    }
+    if (upstream.status === 429) {
+      return json({ code: "SEARCH_RATE_LIMITED", message: "検索が混み合っています。少し時間をおいてください。" }, 429);
+    }
+    return json({ code: "SEARCH_UPSTREAM_ERROR", message: "検索サービスでエラーが発生しました。" }, 502);
+  }
+
+  let data;
+  try {
+    data = await upstream.json();
+  } catch (_) {
+    return json({ code: "SEARCH_BAD_RESPONSE", message: "検索サービスから不正な応答が返されました。" }, 502);
+  }
+
+  const results = (Array.isArray(data.results) ? data.results : []).slice(0, 8).map(item => ({
+    title: String(item.title || "").slice(0, 300),
+    url: safeSearchUrl(item.url),
+    snippet: String(item.content || "").slice(0, 900),
+    date: String(item.published_date || "").slice(0, 40),
+    favicon: safeSearchUrl(item.favicon)
+  })).filter(item => item.url);
+
+  const images = (Array.isArray(data.images) ? data.images : []).slice(0, 24).map(item => ({
+    url: safeSearchUrl(item.url),
+    description: String(item.description || "").slice(0, 220)
+  })).filter(item => item.url);
+
+  const response = new Response(JSON.stringify({
+    query,
+    mode,
+    results,
+    images,
+    safeSearch: true
+  }), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "public, max-age=120",
+      "X-KURO-Search-Cache": "MISS"
+    }
+  });
+
+  try {
+    await caches.default.put(cacheKey, response.clone());
+  } catch (_) {
+    // Search still succeeds when edge caching is unavailable.
+  }
+  return response;
+}
+
 async function proxy(payload) {
   const target = targetFor(payload.path);
   const method = String(payload.method || "GET").toUpperCase();
@@ -182,6 +317,15 @@ async function handleRealtime(request) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    if (url.pathname === "/api/web-search") {
+      try {
+        return await handleWebSearch(request, env);
+      } catch (error) {
+        console.error("KURO web search handler failed", error);
+        return json({ code: "SEARCH_INTERNAL_ERROR", message: "検索処理に失敗しました。" }, 500);
+      }
+    }
 
     if (url.pathname === "/api/cloudflare-relay") {
       try {
