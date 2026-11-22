@@ -250,7 +250,7 @@ function makeDocument(){
  let js=rawJs;
  if(!moduleMode){while(js.startsWith(logger))js=js.slice(logger.length);}
  const scriptBlock=scriptOpen+(moduleMode?"":logger)+js+scriptClose;
- const authGuard='<script>(function(){const isKuroAuthCreation=u=>/\\/auth\\/v1\\/signup(?:[/?#]|$)/i.test(String(u))||/\\/auth\\/v1\\/token\\?[^\\s#]*\\bgrant_type=anonymous\\b/i.test(String(u));const notify=()=>{try{parent.postMessage({type:"kuro-online-login-required",action:"signup"},"*")}catch(_){}};const nativeFetch=window.fetch.bind(window);window.fetch=function(input,init){const u=typeof input==="string"?input:(input&&input.url)||"";if(isKuroAuthCreation(u)){notify();return Promise.resolve(new Response(JSON.stringify({error:"ゲーム内で匿名KUROアカウントは作成できません。共通アカウント画面からログインしてください。"}),{status:403,headers:{"Content-Type":"application/json"}}));}return nativeFetch(input,init);};})();<\\/script>';
+ const authGuard='<script>(function(){const isKuroAuthCreation=u=>/\\/auth\\/v1\\/signup(?:[/?#]|$)/i.test(String(u))||/\\/auth\\/v1\\/token\\?[^\\s#]*\\bgrant_type=anonymous\\b/i.test(String(u));const notify=()=>{try{parent.postMessage({type:"kuro-online-login-required",action:"signup"},"*")}catch(_){}};const nativeFetch=window.fetch.bind(window);window.fetch=function(input,init){const u=typeof input==="string"?input:(input&&input.url)||"";if(isKuroAuthCreation(u)){notify();return Promise.resolve(new Response(JSON.stringify({error:"ゲーム内で匿名KUROアカウントは作成できません。共通アカウント画面からログインしてください。"}),{status:403,headers:{"Content-Type":"application/json"}}));}return nativeFetch(input,init);};})();<\/script>';
  const autoFitScript=project.settings&&project.settings.autoFitOverflow===false?"":"<scr"+"ipt>(function(){try{document.documentElement.style.overflowX='auto';document.body.style.overflowX='auto';document.querySelectorAll('img,video,svg,iframe').forEach(function(el){el.style.maxWidth='100%';});}catch(e){console.warn('KURO responsive fit',e);}})();<"+"/script>";
  if(/<html[\s>]/i.test(html)){
   let doc=html;
@@ -261,7 +261,7 @@ function makeDocument(){
   else doc+=scriptBlock+autoFitScript;
   return doc;
  }
- return '<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+escapeHTML(project.name||"KURO Game")+'</title>'+frameMeta+styleBlock+'</head><body>'+html+scriptBlock+autoFitScript+'</body></html>';
+ return '<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+escapeHTML(project.name||"KURO Game")+'</title>'+authGuard+frameMeta+styleBlock+'</head><body>'+html+scriptBlock+autoFitScript+'</body></html>';
 }
 let previewMode="fit";
 function applyPreviewSize(){
