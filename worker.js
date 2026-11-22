@@ -377,6 +377,18 @@ export default {
       });
     }
 
+    // Retired legacy games are no longer served. Send old bookmarks back to the current game library.
+    if (/^\/game\/(?:kaiten-sushi-typing|block-blast)(?:\/|$)/i.test(url.pathname)) {
+      return new Response(null, {
+        status: 302,
+        headers: {
+          "Location": "/games/",
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+          "Pragma": "no-cache"
+        }
+      });
+    }
+
     const liveAssetFiles = new Map([
       ["/manifest.json", "manifest.json"],
       ["/sw.js", "sw.js"],
