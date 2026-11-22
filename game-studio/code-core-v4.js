@@ -477,12 +477,12 @@ codeFileInput.addEventListener("change",async()=>{
  }catch(error){toast("読み込み失敗: "+(error.message||"ファイルを確認してください"));console.error(error);}
 });
 window.__KURO_STUDIO_BOOT_STAGE__="binding-editor-controls";
-if(project.publishedGameId){
+if(requestedPublishedGameId){
  const tickerBtn=document.createElement("button");tickerBtn.className="btn";tickerBtn.type="button";tickerBtn.textContent="📣 表示文字";
  tickerBtn.title="このゲームのランキングバー表示文字を設定";
- tickerBtn.onclick=()=>{let map={};try{map=JSON.parse(localStorage.getItem("kuroGamesRankingTickerByGame")||"{}");}catch(_){map={};}
- const current=map[project.publishedGameId]||"",value=window.prompt("このゲームのランキングバーに流す文字を入力してください。\n空欄で元のゲーム名に戻ります。",current);
- if(value===null)return;const text=value.trim();if(text)map[project.publishedGameId]=text;else delete map[project.publishedGameId];
+ tickerBtn.onclick=()=>{const gameId=project.publishedGameId||requestedPublishedGameId;let map={};try{map=JSON.parse(localStorage.getItem("kuroGamesRankingTickerByGame")||"{}");}catch(_){map={};}
+ const current=map[gameId]||"",value=window.prompt("このゲームのランキングバーに流す文字を入力してください。\\n空欄で元のゲーム名に戻ります。",current);
+ if(value===null)return;const text=value.trim();if(text)map[gameId]=text;else delete map[gameId];
  try{localStorage.setItem("kuroGamesRankingTickerByGame",JSON.stringify(map));toast(text?"ランキングバーの表示文字を保存しました":"ゲーム名表示に戻しました");}catch(e){toast("保存できませんでした");}
  };
  const saveBtn=$("saveBtn");if(saveBtn&&saveBtn.parentNode)saveBtn.parentNode.insertBefore(tickerBtn,saveBtn);
