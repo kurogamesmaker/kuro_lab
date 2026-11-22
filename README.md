@@ -13,10 +13,6 @@ KURO Lab（KURO Lab / クロラボ）は、オリジナルのWebサービスや�
 - **KURO GAMES** — インストール不要で遊べる無料ブラウザゲームの一覧  
   https://kurolab.cc.cd/games/
 
-### KURO GAMESのゲーム
-
-- 回転寿司タイピング — https://kurolab.cc.cd/game/kaiten-sushi-typing/
-- ブロックブラスト — https://kurolab.cc.cd/game/block-blast/
 
 ## サイト情報
 
