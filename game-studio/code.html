@@ -529,11 +529,16 @@ window.addEventListener("message",async event=>{
   try{
    let session=null;
    if(publishDb){
-    const {data,error}=await publishDb.auth.getSession();
-    if(error)throw error;
-    session=data.session||null;
-    if(session?.user?.is_anonymous){
-     await publishDb.auth.signOut({scope:"local"}).catch(()=>{});
+    try{
+     const {data,error}=await publishDb.auth.getSession();
+     if(error)throw error;
+     session=data.session||null;
+     if(session?.user?.is_anonymous){
+      await publishDb.auth.signOut({scope:"local"}).catch(()=>{});
+      session=null;
+     }
+    }catch(sessionError){
+     console.warn("KURO Studio session check failed; using guest preview:",sessionError);
      session=null;
     }
    }
