@@ -472,6 +472,51 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 .kuro-account-primary,.kuro-account-logout{width:100%;min-height:46px;margin-top:18px;border:0;border-radius:11px;background:linear-gradient(120deg,#2878ee,#5265d9);color:#fff;font-size:13px;font-weight:950;cursor:pointer}.kuro-account-primary:disabled,.kuro-account-logout:disabled{opacity:.55;cursor:wait}.kuro-account-status{min-height:22px;margin-top:11px;color:#c04d3f;font-size:11px;line-height:1.6}
 .kuro-account-profile{padding:17px;border:1px solid #e1eaf6;border-radius:14px;background:#f7faff}.kuro-account-profile strong{display:block;overflow-wrap:anywhere;font-size:18px}.kuro-account-profile span{display:block;margin-top:4px;color:#6d7e97;font-size:12px}.kuro-account-common{margin:12px 0 0;color:#5680b5;font-size:11px;line-height:1.7}.kuro-account-logout{background:#fff;color:#596a83;border:1px solid #dce4ef}.kuro-account-dialog button:focus-visible{outline:3px solid #8db8f1;outline-offset:3px}
 @media(max-width:680px){.kuro-account-state{margin-left:-6px;padding:5px 7px;font-size:10px}.kuro-account-trigger{display:inline-flex!important;align-items:center;justify-content:center;max-width:140px;height:34px;padding:0 9px;font-size:11px!important}.kuro-account-trigger:before{content:"";display:none}.kuro-account-trigger.kuro-signed-in{max-width:160px;font-size:10px!important}.kuro-account-modal{padding:10px;align-items:center}.kuro-account-dialog{max-height:calc(100dvh - 20px);padding:18px;overflow-y:auto}.kuro-account-head h2{font-size:21px}.kuro-account-intro{font-size:11px;line-height:1.65}.kuro-account-field input{height:43px}.kuro-account-primary,.kuro-account-logout{min-height:43px;margin-top:14px}}
+
+/* KURO ranking selection + steady-height presentation */
+#kuroRankingShowcase{
+  display:flex;
+  flex-direction:column;
+  height:auto;
+  min-height:470px;
+  overflow:visible;
+}
+#kuroRankingShowcase .rank-head{flex:0 0 auto}
+#kuroRankingShowcase .rank-game{
+  min-height:42px;
+  padding:11px 12px;
+  line-height:1.45;
+  overflow-wrap:anywhere;
+}
+#kuroRankingShowcase .rank-list{
+  flex:1 0 auto;
+  min-height:252px;
+  align-content:start;
+  gap:10px;
+}
+#kuroRankingShowcase .rank-row{
+  min-height:64px;
+  padding:11px 12px;
+  grid-template-columns:38px minmax(0,1fr) auto;
+  gap:10px;
+}
+#kuroRankingShowcase .rank-row:nth-child(1){
+  min-height:82px;
+  grid-template-columns:44px minmax(0,1fr) auto;
+}
+#kuroRankingShowcase .rank-row:nth-child(2),
+#kuroRankingShowcase .rank-row:nth-child(3){min-height:68px}
+#kuroRankingShowcase .rank-name{font-size:12px}
+#kuroRankingShowcase .rank-score{font-size:12px;white-space:nowrap}
+#kuroRankingShowcase .rank-foot{margin-top:auto;padding-top:14px}
+@media(max-width:680px){
+  #kuroRankingShowcase{min-height:450px}
+  #kuroRankingShowcase .rank-list{min-height:240px}
+}
+@media(prefers-reduced-motion:reduce){
+  #kuroRankingShowcase .rank-row{transition:none!important}
+}
+
 </style>
 </head>
 <body>
@@ -700,7 +745,7 @@ function initKuroRankingShowcase(){
    if(gamesError)throw gamesError;
    const candidates=(published||[]).filter(g=>g.id&&g.title);
    const configs=await Promise.all(candidates.map(async g=>{
-    try{const {data,error}=await kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"get_config",gameId:g.id}});if(error)throw error;return data?.features?.ranking===true?g:null;}
+    try{const {data,error}=await kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"get_config",gameId:g.id}});if(error)throw error;return data?.features?.ranking===true&&data?.features?.rankingShowcase===true?g:null;}
     catch(err){console.debug("Ranking config skipped:",g.id,err);return null;}
    }));
    const enabled=configs.filter(Boolean);
