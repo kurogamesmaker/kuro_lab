@@ -9,6 +9,7 @@ on:
       - games/play/index.html
       - supabase/functions/kurogames-online/index.ts
       - supabase/migrations/**
+      - tests/online-room-worker.test.mjs
       - .github/workflows/validate-online.yml
   pull_request:
     paths:
@@ -18,6 +19,7 @@ on:
       - games/play/index.html
       - supabase/functions/kurogames-online/index.ts
       - supabase/migrations/**
+      - tests/online-room-worker.test.mjs
       - .github/workflows/validate-online.yml
 jobs:
   syntax:
