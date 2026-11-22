@@ -1,7 +1,7 @@
 const FORCE_MARU_ICON_VERSION = "20261122forcefavicon3";
 
 function applyMaruFavicon(html, requestPath = "") {
-  const iconTags = /<link\\b(?=[^>]*\\brel\\s*=\\s*["'](?:icon|shortcut icon|apple-touch-icon)["'])[^>]*>/gi;
+  const iconTags = /<link\b(?=[^>]*\brel\s*=\s*["'](?:icon|shortcut icon|apple-touch-icon)["'])[^>]*>/gi;
   const forcedLinks =
     '<link rel="icon" type="image/png" sizes="48x48" href="/assets/brand/logo/kurolab_icon_maru_48.png?v=' + FORCE_MARU_ICON_VERSION + '">' +
     '<link rel="shortcut icon" href="/assets/brand/logo/kurolab_icon_maru_48.png?v=' + FORCE_MARU_ICON_VERSION + '">' +
@@ -20,15 +20,15 @@ function applyMaruFavicon(html, requestPath = "") {
     'background:none!important;box-shadow:none!important;' +
     '}' +
     '</style>';
-  const isGamePlayPath = /^\\/games\\/play(?:\\/|$)/i.test(String(requestPath || ""));
+  const isGamePlayPath = /^\/games\/play(?:\/|$)/i.test(String(requestPath || ""));
   let cleanHtml = String(html || "").replace(iconTags, "");
   if (isGamePlayPath) {
     cleanHtml = cleanHtml.replace(
-      /(<script\\b[^>]*\\bsrc\\s*=\\s*["']\\/games\\/recommendations\\.js)(?:\\?[^"']*)?(["'][^>]*>)/i,
+      /(<script\b[^>]*\bsrc\s*=\s*["']\/games\/recommendations\.js)(?:\?[^"']*)?(["'][^>]*>)/i,
       '$1?v=20261122-retired-rail-guard3$2'
     );
   }
-  const withFavicon = cleanHtml.replace(/<head\\b[^>]*>/i, head => head + forcedLinks);
+  const withFavicon = cleanHtml.replace(/<head\b[^>]*>/i, head => head + forcedLinks);
   const retiredRailGuard = isGamePlayPath
     ? '<style id="kuro-retired-rail-guard-style">' +
       'a[href*="/game/kaiten-sushi-typing"],a[href*="/game/block-blast"],' +
@@ -50,8 +50,8 @@ function applyMaruFavicon(html, requestPath = "") {
       '</script>'
     : "";
   const suffix = rankTitleStyle + retiredRailGuard;
-  return /<\\/body>/i.test(withFavicon)
-    ? withFavicon.replace(/<\\/body>/i, suffix + "</body>")
+  return /<\/body>/i.test(withFavicon)
+    ? withFavicon.replace(/<\/body>/i, suffix + "</body>")
     : withFavicon + suffix;
 }
 
@@ -637,7 +637,7 @@ export default {
 
           if (liveContentType.startsWith("text/html")) {
             headers.set("Content-Security-Policy", "default-src 'self' https: data:; script-src 'self' 'unsafe-inline' https:; worker-src 'self' blob:; child-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'");
-            const liveHtml = applyMaruFavicon(await liveAssetResponse.text());
+            const liveHtml = applyMaruFavicon(await liveAssetResponse.text(), url.pathname);
             return new Response(liveHtml, {
               status: liveAssetResponse.status,
               statusText: liveAssetResponse.statusText,
@@ -666,7 +666,7 @@ export default {
 
     if (assetType.toLowerCase().includes("text/html")) {
       const html = await assetResponse.clone().text();
-      const refreshedHtml = applyMaruFavicon(html);
+      const refreshedHtml = applyMaruFavicon(html, url.pathname);
       return new Response(refreshedHtml, {
         status: assetResponse.status,
         statusText: assetResponse.statusText,
