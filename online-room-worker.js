@@ -281,7 +281,7 @@ export class Room {
         this.send(ws, { type: "state-result", requestId, result: { ...this.data, conflict: true } });
         return;
       }
-      const next = { state: message.state, updatedAt: Date.now() };
+      const next = { state: message.state, updatedAt: Math.max(Date.now(), (Number(this.data.updatedAt) || 0) + 1) };
       await this.state.storage.put("room-state", next);
       this.data = next;
       this.loaded = true;
