@@ -24,7 +24,7 @@
  <input class="project-name" id="projectName" aria-label="プロジェクト名" value="新しいゲーム">
  <span class="spacer"></span><span class="status" id="saveStatus">● 保存済み</span>
  <a class="btn" href="/?auth=1">KUROアカウント</a><a class="btn" href="/game-studio/projects.html">プロジェクト</a>
- <button class="btn" id="saveBtn">保存</button><button class="btn import-code-btn" id="importCodeBtn" type="button" title="HTML・CSS・JavaScriptが混ざったコードを貼り付けて自動分別">コード貼り付け</button><button class="btn file-load-btn" id="fileLoadBtn" type="button" title="HTML・CSS・JavaScriptなど複数ファイルをまとめて読み込む">複数ファイル読み込み</button><input id="codeFileInput" type="file" hidden multiple accept=".html,.htm,.xhtml,.css,.js,.mjs,.jsx,.ts,.tsx,.json,.txt,.xml,.svg,.md"><button class="btn primary" id="runBtn">▶ テスト</button><button class="btn primary" id="publishBtn">公開・更新</button>
+ <button class="btn" id="rankingTickerBtn" type="button" style="display:none" title="ランキングバーに流す文字を設定">📣 表示文字</button><button class="btn" id="saveBtn">保存</button><button class="btn import-code-btn" id="importCodeBtn" type="button" title="HTML・CSS・JavaScriptが混ざったコードを貼り付けて自動分別">コード貼り付け</button><button class="btn file-load-btn" id="fileLoadBtn" type="button" title="HTML・CSS・JavaScriptなど複数ファイルをまとめて読み込む">複数ファイル読み込み</button><input id="codeFileInput" type="file" hidden multiple accept=".html,.htm,.xhtml,.css,.js,.mjs,.jsx,.ts,.tsx,.json,.txt,.xml,.svg,.md"><button class="btn primary" id="runBtn">▶ テスト</button><button class="btn primary" id="publishBtn">公開・更新</button>
 </header>
 <main class="layout">
  <section class="editor">
@@ -77,8 +77,8 @@
   "use strict";
   window.__KURO_STUDIO_CORE_LOAD_PENDING = true;
   var sources = [
-    "/game-studio/code-core-v4.js?v=20261123studio-xo-previewfix7",
-    "https://raw.githubusercontent.com/kurogamesmaker/kuro_lab/main/game-studio/code-core-v4.js?v=20261123studio-xo-previewfix7"
+    "/game-studio/code-core-v4.js?v=20261123ticker-toolbar-fix2",
+    "https://raw.githubusercontent.com/kurogamesmaker/kuro_lab/main/game-studio/code-core-v4.js?v=20261123ticker-toolbar-fix2"
   ];
   function showFailure(message, source) {
     window.__KURO_STUDIO_CORE_LOAD_ERROR__ = true;
