@@ -68,7 +68,7 @@ async function getSupabaseUser(env, accessToken) {
   });
   if (!response.ok) return null;
   const user = await response.json();
-  return user && typeof user.id === "string" ? user : null;
+  return user && typeof user.id === "string" && user.is_anonymous !== true ? user : null;
 }
 async function verifyRoomMembership(env, accessToken, gameId, roomId, userId) {
   const response = await fetch(env.SUPABASE_URL.replace(/\/$/, "") + "/functions/v1/" + SUPABASE_FUNCTION, {
