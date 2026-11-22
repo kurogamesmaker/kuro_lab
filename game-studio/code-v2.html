@@ -193,6 +193,24 @@ function showTab(tab){
  $("codeEditor").value=project.code[tab]||"";
  renderGutter();
 }
+function stripStudioInjectedRuntime(source){
+ let input=String(source||"");
+ input=input.replace(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script\\s*>/gi,(whole,attrs,body)=>{
+  const lower=body.toLowerCase();
+  // Studioがプレビュー用に付加した認証ガードは、編集データに取り込まない
+  if(lower.includes("iskuroauthcreation")||lower.includes("kuro-online-login-required"))return "";
+  // エラー通知専用スクリプトはゲーム本体ではない
+  if(lower.includes("const senderror")&&lower.includes("kuro-studio-error")&&lower.includes("filename:"))return "";
+  // 旧バージョンのStudioログ送信処理だけを取り除き、後続のゲームコードは保持する
+  body=body.replace(/^const __kuroSend=\\(level,args\\)=>{[\\s\\S]*?window\\.addEventListener\\(['"]error['"],function\\(e\\){try{parent\\.postMessage\\(\\{type:['"]kuro-studio-error['"],message:e\\.message\\},['"]\\*['"]\\)\\}catch\\(_\\)\\{\\}\\}\\);[\\t ]*\\r?\\n?/,"");
+  if(lower.includes("kuro responsive fit")||lower.includes("data.kuroautofit"))return "";
+  if(!body.trim())return "";
+  return "<script"+attrs+">"+body+"</scr"+"ipt>";
+ });
+ // フレーム寸法は別途設定値として復元するため、HTML側の古いメタ情報は除去
+ input=input.replace(/<meta\\b(?=[^>]*name\\s*=\\s*["']kuro-game-(?:frame|scale)["'])[^>]*>/gi,"");
+ return input;
+}
 function splitMixedCode(source){
  let input=String(source||"").replace(/^\uFEFF/,"").trim();
  const parts={html:"",css:"",js:""},notes=[];
@@ -412,7 +430,7 @@ async function loadPublishedGameFromCloud(){
   if(!session){toast("公開作品を編集するにはログインしてください");return;}
   const {data,error}=await publishDb.from("game_studio_games").select("id,slug,title,description,category,categories,icon,search_aliases,tag_text,tag_style,tag_color,html_content,updated_at").eq("id",id).eq("owner_id",session.user.id).maybeSingle();
   if(error)throw error;if(!data)throw new Error("作品が見つからないか、編集権限がありません");
-  const parsed=splitMixedCode(data.html_content||"");
+  const cleanPublishedHtml=stripStudioInjectedRuntime(data.html_content||"");const parsed=splitMixedCode(cleanPublishedHtml);
   const draftKey="kuroGameStudio.publishedDraft."+data.id;let draft=null;try{draft=JSON.parse(localStorage.getItem(draftKey)||"null");}catch(_){}
   const remoteUpdated=Date.parse(data.updated_at||"")||0;
   let useDraft=!!(draft&&draft.publishedGameId===data.id&&Number(draft.updatedAt||0)>remoteUpdated);
