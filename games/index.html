@@ -46,6 +46,13 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 @media(max-width:980px){.games-layout{grid-template-columns:minmax(0,1fr) 260px;gap:13px}}
 @media(max-width:680px){.games-layout{display:flex;flex-direction:column}.ranking-showcase{width:100%}}
 
+
+/* KURO GAMES ranking layout */
+.games-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,300px);gap:18px;align-items:start}
+.ranking-showcase{width:100%}
+@media(max-width:980px){.games-layout{grid-template-columns:minmax(0,1fr) 260px;gap:13px}}
+@media(max-width:680px){.games-layout{display:flex;flex-direction:column}.ranking-showcase{width:100%}}
+
 /* ===== KURO Ranking Showcase v3 : Award Ceremony (light) ===== */
 
 .ranking-showcase{
@@ -829,7 +836,25 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 <button class="heart" type="button" aria-label="お気に入りに追加" title="お気に入り">♡</button>
 </article>
 </div>
-<aside class="ranking-showcase" id="kuroRankingShowcase" aria-label="ゲームランキング"><div class="rank-head"><div><span class="rank-eyebrow">KURO GAMES RANKING</span><h2><span class="rank-heading-icon" aria-hidden="true">🏆</span><span>ランキング</span></h2></div><span class="rank-live"><i></i> LIVE</span></div><div class="rank-game" id="kuroRankGame">ランキング対応ゲーム</div><div class="rank-list" id="kuroRankList"><div class="rank-message">ランキングを読み込み中…</div></div><div class="rank-foot"><a id="kuroRankGameLink" href="/games/">ゲームを遊ぶ ↗</a><div class="rank-controls"><button id="kuroRankPrev" type="button" aria-label="前のランキング">‹</button><span id="kuroRankDots"></span><button id="kuroRankNext" type="button" aria-label="次のランキング">›</button></div></div></aside></div>
+<aside class="ranking-showcase" id="kuroRankingShowcase" aria-label="ゲームランキング">
+  <div class="rank-head">
+    <div>
+      <div class="rank-eyebrow">TOP 3 · PLAYER RANKING</div>
+      <h2>🏆 ランキング</h2>
+    </div>
+    <span class="rank-live"><i></i> LIVE</span>
+  </div>
+  <div id="kuroRankGame" class="rank-game"></div>
+  <div id="kuroRankList" class="rank-list"></div>
+  <div class="rank-foot">
+    <a id="kuroRankGameLink" href="#">このゲームを遊ぶ ↗</a>
+    <div class="rank-controls">
+      <button id="kuroRankPrev" type="button" aria-label="前のゲーム">‹</button>
+      <span id="kuroRankDots"></span>
+      <button id="kuroRankNext" type="button" aria-label="次のゲーム">›</button>
+    </div>
+  </div>
+</aside></div>
 <div class="empty" id="empty"><strong>ゲームが見つかりませんでした</strong>検索ワードやジャンルを変えて、もう一度探してみてください。</div>
 <div class="more"><div class="more-icon">✦</div><div><h3>新しいゲームを準備中！</h3><p>KURO GAMESでは、これからもオリジナルゲームを追加していきます。次のゲームもお楽しみに。</p></div><small>MORE GAMES COMING SOON</small></div>
 </section>
@@ -1006,23 +1031,35 @@ function initKuroRankingShowcase(){
  const prev=document.getElementById("kuroRankPrev");
  const next=document.getElementById("kuroRankNext");
  if(!panel||!listEl||!titleEl||!linkEl||!dotsEl)return;
+
  let games=[],index=0,busy=false,cache=new Map();
- let manualUntil=0,rankHoverPaused=false;
- function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
- function renderDots(){
-  dotsEl.innerHTML=games.map((_,i)=>'<button type="button" class="rank-dot '+(i===index?'active':'')+'" data-rank-index="'+i+'" aria-label="'+(i+1)+'番目のランキング" aria-current="'+(i===index?'true':'false')+'"></button>').join("");
+ let rankHoverPaused=false;
+
+ function esc(s){
+  return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  }
- function showMessage(msg){listEl.innerHTML='<div class="rank-message rank-empty">'+esc(msg)+'</div>';}
+ function renderDots(){
+  dotsEl.innerHTML=games.map((game,i)=>
+   '<button type="button" class="rank-dot '+(i===index?'active':'')+'" data-rank-index="'+i+'" aria-label="'+(i+1)+'番目のランキング" aria-current="'+(i===index?'true':'false')+'"></button>'
+  ).join("");
+ }
+ function showMessage(msg){
+  listEl.innerHTML='<div class="rank-empty">'+esc(msg)+'</div>';
+ }
  async function fetchRanking(game){
   const key=game.id+"::"+game.mode;
   if(cache.has(key))return cache.get(key);
-  const {data,error}=await kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"leaderboard",gameId:game.id,mode:game.mode,limit:3}});
+  const {data,error}=await kuroGamesDB.functions.invoke("kurogames-online",{
+   body:{action:"leaderboard",gameId:game.id,mode:game.mode,limit:3}
+  });
   if(error)throw error;
   const rows=Array.isArray(data?.scores)?data.scores:[];
   cache.set(key,rows);
   return rows;
  }
- function modeName(mode){return mode==="default"?"":String(mode||"").replace(/[_-]+/g," ");}
+ function modeName(mode){
+  return mode==="default"?"":String(mode||"").replace(/[_-]+/g," ");
+ }
 
 /* ===== KURO Ranking FX v3 (Award Ceremony) =====
    既存の display / playCinema / setInterval / go をこのファイルの内容に差し替える。
@@ -1233,7 +1270,6 @@ function schedule(ms){
 }
 // 手動操作: 12秒は自動切り替えを止める(プログレスバーもゆっくり進む)
 function go(delta){
-  manualUntil=Date.now()+12000;
   rankNextDelay=12000;
   rankDir=delta<0?-1:1;
   display(index+delta);
@@ -1345,19 +1381,16 @@ async function display(i){
   }
 }
 
- // ドットから任意のランキングに切り替え
+ // Dot navigation (dots remain keyboard and pointer accessible).
  dotsEl.addEventListener("click",event=>{
   const dot=event.target.closest("button.rank-dot");
   if(!dot)return;
   const target=Number(dot.dataset.rankIndex);
   if(!Number.isInteger(target)||target<0||target>=games.length||target===index)return;
-  manualUntil=Date.now()+12000;
   rankNextDelay=12000;
   rankDir=target<index?-1:1;
   display(target);
  });
-
- // マウスを載せている間は自動切り替えを停止
  panel.addEventListener("pointerenter",()=>{
   rankHoverPaused=true;
   clearTimeout(rankTimer);
@@ -1373,21 +1406,26 @@ async function display(i){
    .select("id,title,status").eq("status","published")
    .order("published_at",{ascending:false}).limit(60);
   if(gamesError)throw gamesError;
-  const candidates=(published||[]).filter(g=>g.id&&g.title);
-  const configs=await Promise.all(candidates.map(async g=>{
+
+  const candidates=(published||[]).filter(game=>game.id&&game.title);
+  const configs=await Promise.all(candidates.map(async game=>{
    try{
-    const {data,error}=await kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"get_config",gameId:g.id}});
+    const {data,error}=await kuroGamesDB.functions.invoke("kurogames-online",{
+     body:{action:"get_config",gameId:game.id}
+    });
     if(error)throw error;
-    return data?.features?.ranking===true&&data?.features?.rankingShowcase===true?g:null;
+    return data?.features?.ranking===true&&data?.features?.rankingShowcase===true?game:null;
    }catch(err){
-    console.debug("Ranking config skipped:",g.id,err);
+    console.debug("Ranking config skipped:",game.id,err);
     return null;
    }
   }));
   const enabled=configs.filter(Boolean);
   const expanded=await Promise.all(enabled.map(async game=>{
    try{
-    const {data,error}=await kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"leaderboard_modes",gameId:game.id}});
+    const {data,error}=await kuroGamesDB.functions.invoke("kurogames-online",{
+     body:{action:"leaderboard_modes",gameId:game.id}
+    });
     if(error)throw error;
     const modes=Array.isArray(data?.modes)&&data.modes.length?data.modes:["default"];
     return modes.map(mode=>({id:game.id,title:game.title,mode}));
@@ -1411,37 +1449,40 @@ async function display(i){
     return;
    }
    await display(0);
-   // 公開状態やStudio設定の更新を1分ごとに反映
+
+   // Refresh publication and Studio showcase settings without changing the current game.
    setInterval(async()=>{
     if(busy)return;
     try{
      const current=games[index];
      const fresh=await loadRankings();
      if(!fresh.length){
-      games=[];cache.clear();
+      games=[];
+      cache.clear();
       showMessage("スタジオの「オンライン機能」から、ランキング欄に表示するゲームを選択してください。");
       clearTimeout(rankTimer);
       return;
      }
-     games=fresh;cache.clear();
-     const found=current?games.findIndex(g=>g.id===current.id&&g.mode===current.mode):-1;
+     games=fresh;
+     cache.clear();
+     const found=current?games.findIndex(game=>game.id===current.id&&game.mode===current.mode):-1;
      index=found>=0?found:Math.min(index,games.length-1);
      renderDots();
-     if(!rankHoverPaused&&Date.now()>=manualUntil)await display(index);
+     if(!rankHoverPaused)await display(index);
     }catch(err){
      console.debug("KURO ranking refresh skipped:",err);
     }
    },60000);
-  }catch(e){
+  }catch(error){
    showMessage("ランキングを読み込めませんでした。");
-   console.warn("KURO ranking showcase init:",e);
+   console.warn("KURO ranking showcase init:",error);
   }
  }
  initialize();
 }
 initKuroRankingShowcase();
 
-</script>
+
 <script src="/usage-tracker.js"></script>
 
 </body></html>
