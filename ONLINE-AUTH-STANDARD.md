@@ -25,3 +25,5 @@ When an unsigned-in player attempts an online action, show a login prompt with a
 
 ## Compatibility
 `get_config` may be read before login so a game can discover enabled features. All player-specific online data and actions require a real signed-in account. Historical guest room rows are retained until normal room expiry; they cannot authenticate or rejoin.
+
+The player iframe also blocks direct Supabase REST calls and Realtime WebSockets for built-in room/chat/score/save routes while signed out. RLS policies reject the `is_anonymous` JWT claim for the legacy werewolf room and chat tables. The privileged score accumulator RPC and online-room RPCs are service-role-only; the `kuro_game_win_events` table has no client-role grants.
