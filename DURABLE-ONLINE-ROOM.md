@@ -7,7 +7,7 @@
 - Durable Object class: `Room`
 - Namespace ID: `9633b9fd379f4e0690c398d3933b8dcd`
 - Namespace storage: SQLite
-- Latest verified Cloudflare deployment: `3a7a75aa46dd4204844632a783f98970` (script content updated via the Worker content endpoint)
+- Latest verified Cloudflare deployment: `a945a69c32764f6fad83cbdddd96a880` (script content updated via the Worker content endpoint)
 - Secret binding configured: `TICKET_SECRET` (value is not stored in GitHub)
 
 ## Authentication policy
@@ -30,7 +30,7 @@ All online features require a signed-in KURO account authenticated by Supabase A
 4. For Durable Objects WebSocket delivery, the Worker independently validates the Supabase access token and checks room membership.
 5. The Worker signs a short-lived account-only connection ticket and forwards the WebSocket to the room's Durable Object.
 6. The DO derives player identity from trusted Worker headers, never from client-supplied player IDs. It manages connection presence and broadcasts game events.
-7. Generic `room.getState()/room.updateState()` remain on the authenticated Edge Function API for backwards compatibility. UNON opts into `room.getDurableState()/room.updateHostState()`, which read/write its active snapshot directly in the room DO and broadcast the committed state over the existing WebSocket.
+7. Generic `room.getState()/room.updateState()` remain on the authenticated Edge Function API for backwards compatibility. UNON reads its reconnect snapshot through `room.getDurableState()` and sends live turns through the compact `room.sendHostGamePatch()` WebSocket command. `room.updateHostState()` remains available for lobby/legacy snapshot writes, not normal card turns.
 
 `get_config` remains readable before login so games can discover which online features are configured; every operation that reads or changes a player's online data requires a signed-in account.
 
@@ -43,11 +43,29 @@ All online features require a signed-in KURO account authenticated by Supabase A
 - Transient ticket/transport failures fall back to the legacy polling implementation. Authentication, missing room membership, and full-room responses fail closed rather than bypassing the checks.
 - Existing API shape remains `KuroGames.multiplayer.createRoom/joinRoom`, `room.getPlayers()`, `room.onPlayersChange()`, `room.onMessage()`, `room.send()`, `room.getState()`, `room.updateState()`, and `room.leave()`.
 
+## UNON compact turn protocol (2026-11-22)
+
+UNON keeps its existing host-authoritative rules engine for this iteration, but no longer pushes a full room snapshot for each card action.
+
+- Player intent messages remain small (`act`, action ID, and the action itself); sender identity comes from the authenticated WebSocket event, not a client-supplied user ID.
+- After the host applies an action, it computes the public game view and compares each player's private hand with the previous hand.
+- Only private hands that actually changed are encrypted. Cached ciphertext is reused for unchanged hands, avoiding repeated ECDH/AES-GCM work.
+- The host sends one compact `host-game-patch` payload containing the match ID, version, public view, changed private envelopes, small event list, and optional departed-player ID.
+- The DO persists a merged full snapshot for reconnects, but broadcasts only the public view plus the recipient's own changed private envelope. Other players' private envelopes are never included in that recipient's WebSocket frame.
+- The DO rejects non-host writes and stale/duplicate game versions. It writes the reconnect snapshot before acknowledging or broadcasting the patch.
+- Recipients apply incoming patches in order and retain their already-decrypted private hand when no private envelope changed. Initial patches also start the game view for newly joined players.
+- The redundant six-second UNON snapshot refresh interval was removed. Live turn updates arrive on the WebSocket; a full snapshot is still fetched on join/reconnect.
+
+This is a transport and payload optimization, not yet a fully server-authoritative UNO rules engine. The host browser still validates actions, so a guest action still travels to the host before the host's result is broadcast. Moving `Rules.applyAction()` and deck/hand authority into the DO is a separate architectural step and is required to remove that host round trip.
+
+SDK cache reference for the published UNON HTML: `/game-studio/kurog-online.js?v=20261122-unon-delta1`.
+
 ## Verification
 - Cloudflare API confirmed the DO namespace exists and the latest Worker deployment has a 100% traffic allocation.
 - Cloudflare API confirmed the `TICKET_SECRET` binding exists.
 - GitHub Actions runs `node --check online-room-worker.js`, `node --test tests/online-room-worker.test.mjs`, `node --check game-studio/kurog-online.js`, and embedded-script syntax checks on pushes and pull requests.
-- Unit-level Worker tests cover host-only DO writes, persistence-before-broadcast, stale-write rejection, and one-time migration of older room snapshots.
+- Unit-level Worker tests cover host-only DO writes, persistence-before-broadcast, stale-write rejection, one-time migration of older room snapshots, compact UNON patch authorization, per-recipient private-envelope isolation, envelope merging, and stale game-version rejection.
+- The current UNON HTML stores two duplicate online-module copies; both were updated together and both embedded scripts passed syntax parsing. A local Durable Object simulation verified that a compact patch persists and each recipient receives only their own changed private envelope.
 - A real authenticated multi-browser gameplay and latency test is still required. The deployment can be live while end-to-end card-action latency remains unverified until two signed-in KURO accounts complete an actual match.
 
 ## Remaining migration boundary
