@@ -808,6 +808,38 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
   #kuroRankingShowcase .rank-row:nth-child(1){height:70px !important}
   #kuroRankingShowcase .rank-medal{width:36px !important;height:36px !important}
 }
+/* Ranking carousel transition: smooth fade + slide, with subtle row stagger */
+#kuroRankingShowcase.rank-out .rank-list{
+  animation: kuroRankExit .16s ease-in both;
+}
+#kuroRankingShowcase.rank-in .rank-list{
+  animation: kuroRankEnter .32s cubic-bezier(.2,.7,.25,1) both;
+}
+#kuroRankingShowcase.rank-in .rank-row{
+  animation: kuroRankRowEnter .34s cubic-bezier(.2,.7,.25,1) both;
+}
+#kuroRankingShowcase.rank-in .rank-row:nth-child(1){animation-delay:0ms}
+#kuroRankingShowcase.rank-in .rank-row:nth-child(2){animation-delay:35ms}
+#kuroRankingShowcase.rank-in .rank-row:nth-child(3){animation-delay:65ms}
+#kuroRankingShowcase.rank-in .rank-row:nth-child(4){animation-delay:95ms}
+#kuroRankingShowcase.rank-in .rank-row:nth-child(5){animation-delay:125ms}
+@keyframes kuroRankExit{
+  from{opacity:1;transform:translateX(0) scale(1)}
+  to{opacity:0;transform:translateX(-10px) scale(.985)}
+}
+@keyframes kuroRankEnter{
+  from{opacity:0;transform:translateX(12px)}
+  to{opacity:1;transform:translateX(0)}
+}
+@keyframes kuroRankRowEnter{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@media(prefers-reduced-motion:reduce){
+  #kuroRankingShowcase.rank-out .rank-list,
+  #kuroRankingShowcase.rank-in .rank-list,
+  #kuroRankingShowcase.rank-in .rank-row{animation:none !important}
+}
 </style>
 </head>
 <body>
@@ -1082,7 +1114,7 @@ function initKuroRankingShowcase(){
    games=await loadRankings();
    if(!games.length){showMessage("スタジオの「オンライン機能」から、ランキング欄に表示するゲームを選択してください。");return;}
    await display(0);
-   timer=setInterval(()=>{if(Date.now()>=pausedUntil&&!busy)display(index+1);},5000);
+   timer=setInterval(()=>{if(Date.now()>=pausedUntil&&!busy)display(index+1);},3000);
    setInterval(async()=>{if(busy)return;try{const fresh=await loadRankings();if(fresh.length){games=fresh;cache.clear();index=index%games.length;if(Date.now()>=pausedUntil)display(index);}}catch(err){console.debug("KURO ranking refresh skipped:",err);}},60000);
   }catch(e){showMessage("ランキングを読み込めませんでした。");console.warn("KURO ranking showcase init:",e);}
  }
