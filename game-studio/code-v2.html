@@ -195,20 +195,16 @@ function showTab(tab){
 }
 function stripStudioInjectedRuntime(source){
  let input=String(source||"");
- input=input.replace(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script\\s*>/gi,(whole,attrs,body)=>{
+ input=input.replace(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi,(whole,attrs,body)=>{
   const lower=body.toLowerCase();
-  // Studioがプレビュー用に付加した認証ガードは、編集データに取り込まない
   if(lower.includes("iskuroauthcreation")||lower.includes("kuro-online-login-required"))return "";
-  // エラー通知専用スクリプトはゲーム本体ではない
   if(lower.includes("const senderror")&&lower.includes("kuro-studio-error")&&lower.includes("filename:"))return "";
-  // 旧バージョンのStudioログ送信処理だけを取り除き、後続のゲームコードは保持する
-  body=body.replace(/^const __kuroSend=\\(level,args\\)=>{[\\s\\S]*?window\\.addEventListener\\(['"]error['"],function\\(e\\){try{parent\\.postMessage\\(\\{type:['"]kuro-studio-error['"],message:e\\.message\\},['"]\\*['"]\\)\\}catch\\(_\\)\\{\\}\\}\\);[\\t ]*\\r?\\n?/,"");
+  body=body.replace(/^const __kuroSend=\(level,args\)=>{[\s\S]*?window\.addEventListener\(['"]error['"],function\(e\){try{parent\.postMessage\(\{type:['"]kuro-studio-error['"],message:e\.message\},['"]\*['"]\)\}catch\(_\)\{\}\}\);[\t ]*\r?\n?/,"");
   if(lower.includes("kuro responsive fit")||lower.includes("data.kuroautofit"))return "";
   if(!body.trim())return "";
   return "<script"+attrs+">"+body+"</scr"+"ipt>";
  });
- // フレーム寸法は別途設定値として復元するため、HTML側の古いメタ情報は除去
- input=input.replace(/<meta\\b(?=[^>]*name\\s*=\\s*["']kuro-game-(?:frame|scale)["'])[^>]*>/gi,"");
+ input=input.replace(/<meta\b(?=[^>]*name\s*=\s*["']kuro-game-(?:frame|scale)["'])[^>]*>/gi,"");
  return input;
 }
 function splitMixedCode(source){
