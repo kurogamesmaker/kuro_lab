@@ -492,21 +492,60 @@ if($("exportBtn"))$("exportBtn").addEventListener("click",()=>{project.code[acti
 
 function clearConsole(){ $("consoleOutput").textContent="";$("consoleCount").textContent="0"; }
 function writeConsole(level,values){const out=$("consoleOutput");const line=document.createElement("div");line.className=level==="error"?"error":level==="warn"?"warn":"";line.textContent="["+String(level).toUpperCase()+"] "+(values||[]).join(" ");out.appendChild(line);out.scrollTop=out.scrollHeight;$("consoleCount").textContent=String(out.children.length);}
+async function getKuroStudioGuestAuth(gameId) {
+ if (typeof gameId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(gameId)) return null;
+ const storageKey = "kurogames.guest.multiplayer.v1:" + gameId;
+ try {
+  const saved = JSON.parse(localStorage.getItem(storageKey) || "null");
+  if (saved && typeof saved.token === "string" && saved.token.split(".").length === 2 &&
+      typeof saved.guestId === "string" && Number(saved.expiresAt) > Date.now() + 60000) return saved;
+ } catch (_) {}
+ try {
+  const response = await fetch("https://kuro-online-room.kurogamesmaker.workers.dev/guest-token", {
+   method: "POST",
+   headers: { "content-type": "application/json" },
+   body: JSON.stringify({ gameId }),
+   credentials: "omit",
+   cache: "no-store"
+  });
+  let data = {};
+  try { data = await response.json(); } catch (_) {}
+  if (!response.ok || typeof data.token !== "string" || typeof data.guestId !== "string" ||
+      Number(data.expiresAt) <= Date.now()) return null;
+  const guest = { token: data.token, guestId: data.guestId, name: data.name || "ゲスト", expiresAt: Number(data.expiresAt) };
+  try { localStorage.setItem(storageKey, JSON.stringify(guest)); } catch (_) {}
+  return guest;
+ } catch (error) {
+  console.warn("KURO Studio guest authentication unavailable:", error);
+  return null;
+ }
+}
+
 window.addEventListener("message",async event=>{
  const frame=$("previewFrame");
  if(event.source!==frame.contentWindow||!event.data)return;
  const msg=event.data;
  if(msg.type==="kuro-online-auth-request"&&typeof msg.requestId==="string"&&msg.requestId.length<=100){
   try{
-   if(!publishDb)throw new Error("Supabaseに接続できません");
-   let {data,error}=await publishDb.auth.getSession();
-   if(error)throw error;
-   let session=data.session||null;
-   if(session?.user?.is_anonymous){
-    await publishDb.auth.signOut({scope:"local"}).catch(()=>{});
-    session=null;
+   let session=null;
+   if(publishDb){
+    const {data,error}=await publishDb.auth.getSession();
+    if(error)throw error;
+    session=data.session||null;
+    if(session?.user?.is_anonymous){
+     await publishDb.auth.signOut({scope:"local"}).catch(()=>{});
+     session=null;
+    }
    }
-   event.source.postMessage({type:"kuro-online-auth",requestId:msg.requestId,access_token:session?.access_token||null,useCloudflareProxy:KURO_CLOUDFLARE_TRANSPORT,user:session?.user?{id:session.user.id,email:session.user.email??null}:null,isGuest:!session,guestMode:!session},"*");
+   const guest=session?null:await getKuroStudioGuestAuth(msg.gameId);
+   event.source.postMessage({
+    type:"kuro-online-auth",requestId:msg.requestId,
+    access_token:session?.access_token||guest?.token||null,
+    useCloudflareProxy:KURO_CLOUDFLARE_TRANSPORT,
+    user:session?.user?{id:session.user.id,email:session.user.email??null}
+      :guest?{id:guest.guestId,email:null,isGuest:true}:null,
+    isGuest:!session,guestMode:!session
+   },"*");
   }catch(error){
    event.source.postMessage({type:"kuro-online-auth-error",requestId:msg.requestId,message:error&&error.message||"KUROGAMES認証に失敗しました"},"*");
   }
