@@ -427,9 +427,20 @@ async function loadPublishedGameFromCloud(){
   const {data,error}=await publishDb.from("game_studio_games").select("id,slug,title,description,category,categories,icon,search_aliases,tag_text,tag_style,tag_color,html_content,updated_at").eq("id",id).eq("owner_id",session.user.id).maybeSingle();
   if(error)throw error;if(!data)throw new Error("作品が見つからないか、編集権限がありません");
   const cleanPublishedHtml=stripStudioInjectedRuntime(data.html_content||"");const parsed=splitMixedCode(cleanPublishedHtml);
-  const draftKey="kuroGameStudio.publishedDraft."+data.id;let draft=null;try{draft=JSON.parse(localStorage.getItem(draftKey)||"null");}catch(_){}
+  const draftKey="kuroGameStudio.publishedDraft."+data.id;
+  const diagnosticPublishedOnly=new URLSearchParams(location.search).get("forcePublished")==="1";
+  let draft=null,draftBackedUp=false;
+  try{
+   const draftRaw=localStorage.getItem(draftKey);
+   if(diagnosticPublishedOnly&&draftRaw){
+    const backupKey=draftKey+".diagnostic-backup."+Date.now();
+    try{localStorage.setItem(backupKey,draftRaw);localStorage.removeItem(draftKey);draftBackedUp=true;}
+    catch(backupError){console.warn("KURO Studio: 診断用の下書きバックアップに失敗しました。下書きは保持します。",backupError);}
+   }else if(draftRaw)draft=JSON.parse(draftRaw);
+  }catch(_){}
   const remoteUpdated=Date.parse(data.updated_at||"")||0;
-  let useDraft=!!(draft&&draft.publishedGameId===data.id&&Number(draft.updatedAt||0)>remoteUpdated);
+  let useDraft=!diagnosticPublishedOnly&&!!(draft&&draft.publishedGameId===data.id&&Number(draft.updatedAt||0)>remoteUpdated);
+  if(diagnosticPublishedOnly&&draftBackedUp)toast("原因調査のためローカル下書きをバックアップし、公開版から開きました。下書きは削除していません。");
   // CSPで禁止されるnew Functionによる構文検査は行わず、プレビュー側のSyntaxErrorを検知して公開版へ自動復旧する。
   activePublishedDraft=useDraft;
   publishedFallbackCode=clone(parsed.parts);
