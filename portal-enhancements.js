@@ -33,7 +33,7 @@
       { href: "/notifications/", label: "お知らせ一覧", icon: "♧", badge: true }
     ] },
     { label: "アカウント", items: [
-      { href: "/mypage/", label: "KURO ID", icon: "◎" },
+      { href: "/account/", label: "アカウント管理", icon: "◎" },
       { href: "/pro-tools/", label: "開発ツール", icon: "⚡" },
       { href: "/theme-studio/", label: "Theme Studio", icon: "🎨" },
       { href: "/settings/", label: "設定", icon: "⚙" },
