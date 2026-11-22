@@ -38,7 +38,7 @@ function requestParentSession() {
       resolve({ accessToken: event.data.access_token || null, user: event.data.user || null, isGuest: event.data.isGuest === true, guestMode: event.data.guestMode === true, useCloudflareProxy: event.data.useCloudflareProxy === true });
     }
     window.addEventListener("message", onMessage);
-    window.parent.postMessage({ type: "kuro-online-auth-request", requestId }, "*");
+    window.parent.postMessage({ type: "kuro-online-auth-request", requestId, gameId: gameId }, "*");
   });
 }
 
