@@ -369,7 +369,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
    setInterval(async()=>{if(busy)return;try{const fresh=await loadRankings();if(fresh.length){games=fresh;cache.clear();index=index%games.length;if(Date.now()>=pausedUntil)display(index);}}catch(err){console.debug("KURO ranking refresh skipped:",err);}},60000);
   }catch(e){showMessage("ランキングを読み込めませんでした。");console.warn("KURO ranking showcase init:",e);}
  }
- initialize();();
+ initialize();})();
 })();
 </script>
 <script src="/usage-tracker.js"></script>
