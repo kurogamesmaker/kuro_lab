@@ -318,18 +318,20 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
  function renderDots(){dotsEl.innerHTML=games.map((_,i)=>'<i class="rank-dot '+(i===index?'active':'')+'"></i>').join("");}
  function showMessage(msg){listEl.innerHTML='<div class="rank-message">'+esc(msg)+'</div>';}
  async function fetchRanking(game){
-  if(cache.has(game.id))return cache.get(game.id);
-  const {data,error}=await kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"leaderboard",gameId:game.id,mode:"default",limit:3}});
+  const key=game.id+"::"+game.mode;
+  if(cache.has(key))return cache.get(key);
+  const {data,error}=await kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"leaderboard",gameId:game.id,mode:game.mode,limit:3}});
   if(error)throw error;
   const rows=Array.isArray(data?.scores)?data.scores:[];
-  cache.set(game.id,rows);return rows;
+  cache.set(key,rows);return rows;
  }
+ function modeName(mode){return mode==="default"?"":mode.replace(/[_-]+/g," ");}
  async function display(i){
   if(!games.length||busy)return;busy=true;index=(i+games.length)%games.length;const game=games[index];
-  titleEl.textContent=game.title;linkEl.href="/games/play/?id="+encodeURIComponent(game.id);linkEl.textContent="このゲームを遊ぶ ↗";renderDots();panel.classList.remove("rank-transition");void panel.offsetWidth;panel.classList.add("rank-transition");
+  titleEl.textContent=game.title+(modeName(game.mode)?" · "+modeName(game.mode):"");linkEl.href="/games/play/?id="+encodeURIComponent(game.id);linkEl.textContent="このゲームを遊ぶ ↗";renderDots();panel.classList.remove("rank-transition");void panel.offsetWidth;panel.classList.add("rank-transition");
   try{
    const rows=await fetchRanking(game);
-   if(!rows.length){showMessage("まだランキングデータがありません。");}
+   if(!rows.length){showMessage("このモードのランキングデータはまだありません。");}
    else listEl.innerHTML=rows.slice(0,3).map((row,ri)=>'<div class="rank-row"><span class="rank-medal">'+medals[ri]+'</span><span class="rank-name">'+esc(row.user?.username||row.user?.display_name||"プレイヤー")+'</span><span class="rank-score">'+Number(row.score||0).toLocaleString("ja-JP")+'</span></div>').join("");
   }catch(e){showMessage("ランキングを取得できませんでした。");console.debug("KURO ranking carousel:",e);}
   finally{busy=false;}
@@ -340,18 +342,34 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
  panel.addEventListener("mouseleave",()=>pausedUntil=Date.now()+8000);
  async function initialize(){
   if(!kuroGamesDB){showMessage("ランキング通信を準備できませんでした。");return;}
-  try{
+  async function loadRankings(){
    const {data:published,error:gamesError}=await kuroGamesDB.from("game_studio_games").select("id,title,status").eq("status","published").order("published_at",{ascending:false}).limit(60);
    if(gamesError)throw gamesError;
    const candidates=(published||[]).filter(g=>g.id&&g.title);
-   const configs=await Promise.all(candidates.map(async g=>{try{const {data,error}=await kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"get_config",gameId:g.id}});if(error)throw error;return data?.features?.ranking===true?{id:g.id,title:g.title}:null;}catch(err){console.debug("Ranking config skipped:",g.id,err);return null;}}));
-   games=configs.filter(Boolean);
+   const configs=await Promise.all(candidates.map(async g=>{
+    try{const {data,error}=await kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"get_config",gameId:g.id}});if(error)throw error;return data?.features?.ranking===true?g:null;}
+    catch(err){console.debug("Ranking config skipped:",g.id,err);return null;}
+   }));
+   const enabled=configs.filter(Boolean);
+   const expanded=await Promise.all(enabled.map(async game=>{
+    try{
+     const {data,error}=await kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"leaderboard_modes",gameId:game.id}});
+     if(error)throw error;
+     const modes=Array.isArray(data?.modes)&&data.modes.length?data.modes:["default"];
+     return modes.map(mode=>({id:game.id,title:game.title,mode}));
+    }catch(err){console.debug("Ranking modes skipped:",game.id,err);return [{id:game.id,title:game.title,mode:"default"}];}
+   }));
+   return expanded.flat();
+  }
+  try{
+   games=await loadRankings();
    if(!games.length){showMessage("現在、ランキング対応ゲームはありません。");return;}
    await display(0);
    timer=setInterval(()=>{if(Date.now()>=pausedUntil&&!busy)display(index+1);},8000);
+   setInterval(async()=>{if(busy)return;try{const fresh=await loadRankings();if(fresh.length){games=fresh;cache.clear();index=index%games.length;if(Date.now()>=pausedUntil)display(index);}}catch(err){console.debug("KURO ranking refresh skipped:",err);}},60000);
   }catch(e){showMessage("ランキングを読み込めませんでした。");console.warn("KURO ranking showcase init:",e);}
  }
- initialize();
+ initialize();();
 })();
 </script>
 <script src="/usage-tracker.js"></script>
