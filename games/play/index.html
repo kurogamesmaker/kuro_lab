@@ -46,7 +46,7 @@ button.back{font-family:inherit;cursor:pointer;background:transparent;border:0}
   <p class="kuro-account-intro">KURO Lab・KURO SNS・KURO GAMESで共通のアカウントを使用します。ここで作成したアカウントも、KURO Labでそのまま使えます。</p>
   <form id="kuroAccountForm">
    <div class="kuro-account-field"><label id="kuroAccountIdentityLabel" for="kuroAccountIdentity">ユーザーネーム / メールアドレス</label><input id="kuroAccountIdentity" type="text" autocomplete="username" placeholder="ユーザーネームまたはメールアドレス" required maxlength="254"></div>
-   <div class="kuro-account-field"><label for="kuroAccountPassword">パスワード</label><input id="kuroAccountPassword" type="password" autocomplete="current-password" placeholder="パスワード" required minlength="8" maxlength="72"></div>
+   <div class="kuro-account-field"><label for="kuroAccountPassword">パスワード</label><input id="kuroAccountPassword" type="password" autocomplete="current-password" placeholder="パスワード" required minlength="1" maxlength="254"></div>
    <p class="kuro-account-hint" id="kuroAccountHint">既にKURO Labアカウントをお持ちの場合は、同じユーザーネームとパスワードでログインしてください。</p>
    <p class="kuro-account-error" id="kuroAccountError" role="alert" aria-live="polite"></p>
    <button class="kuro-account-submit" id="kuroAccountSubmit" type="submit">ログイン</button>
