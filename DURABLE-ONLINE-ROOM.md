@@ -50,3 +50,12 @@ This stage moves multiplayer WebSocket/presence/event delivery to Cloudflare Dur
 
 ## Deployment workflow
 The manual GitHub Actions deploy workflow is gated by repository variable `DEPLOY_DURABLE_OBJECTS=true` and expects `CF_API_TOKEN` and `CF_ACCOUNT_ID` repository secrets. The Worker and secret have already been deployed directly through the connected Cloudflare account.
+
+## Temporary Durable Object storage retention
+
+- Room state stored inside the Durable Object is temporary runtime state, not the canonical game record.
+- When the last WebSocket disconnects, the Durable Object schedules a one-time cleanup alarm for five minutes later.
+- A reconnect during that grace period cancels the alarm and keeps the stored room state.
+- If the alarm runs with no connected sockets, it calls `storage.deleteAll()` and resets the in-memory cache. The next connection starts with empty Durable Object cache state; canonical room/game data remains in Supabase until the Supabase room-retention job expires the room.
+- A lifecycle lock serializes connection setup and cleanup so a reconnect arriving while cleanup is queued takes precedence, and the alarm checks for active sockets before deleting.
+- This cleanup only affects the room's own Durable Object storage. It does not delete Supabase accounts, profiles, scores, rankings, cloud saves, or published game assets.
