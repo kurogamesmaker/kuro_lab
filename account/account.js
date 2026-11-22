@@ -207,24 +207,31 @@
     }
   });
 
-  $("accountGoogleLogin").addEventListener("click", async function () {
+  async function beginOAuthLogin(provider, buttonId, label) {
     if (busy) return;
     busy = true;
-    const button = $("accountGoogleLogin");
-    setBusy(button, true, "Googleへ移動中…");
+    const button = $(buttonId);
+    setBusy(button, true, label + "へ移動中…");
     setStatus("accountLoginStatus", "", "");
     try {
       const result = await client.auth.signInWithOAuth({
-        provider: "google",
+        provider,
         options: { redirectTo: location.origin + "/account/" }
       });
       if (result.error) throw result.error;
     } catch (error) {
-      console.error("KURO account Google login failed", error);
-      setStatus("accountLoginStatus", error && error.message || "Googleログインを開始できませんでした。", "error");
+      console.error("KURO account OAuth login failed", provider, error);
+      setStatus("accountLoginStatus", error && error.message || label + "ログインを開始できませんでした。", "error");
       busy = false;
-      setBusy(button, false, "Googleでログイン");
+      setBusy(button, false, label + "でログイン");
     }
+  }
+
+  $("accountGoogleLogin").addEventListener("click", function () {
+    beginOAuthLogin("google", "accountGoogleLogin", "Google");
+  });
+  $("accountAppleLogin").addEventListener("click", function () {
+    beginOAuthLogin("apple", "accountAppleLogin", "Apple");
   });
 
   $("accountPasswordForm").addEventListener("submit", async function (event) {
