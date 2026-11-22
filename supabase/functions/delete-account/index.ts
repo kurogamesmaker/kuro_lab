@@ -79,14 +79,12 @@ Deno.serve(async (req: Request) => {
       return reply({ error: "このアカウントはKUROLABの唯一の所有者です。所有者権限を別のアカウントへ移してから削除してください。" }, 409, origin);
     }
 
+    // Providers are stored in app_metadata, which is controlled by Auth and
+    // cannot be changed by the user like user_metadata can.
     const providers = Array.isArray(user.app_metadata?.providers)
       ? user.app_metadata.providers.map((value: unknown) => String(value))
       : [];
-    const passwordConfigured = user.user_metadata?.kuro_password_configured === true;
-    const passwordExpected = user.user_metadata?.kuro_password_configured !== false
-      && (providers.includes("email") || passwordConfigured);
-
-    if (passwordExpected) {
+    if (providers.includes("email")) {
       const password = String(body?.password || "");
       if (!password || !user.email) {
         return reply({ error: "本人確認のため、現在のパスワードを入力してください。" }, 400, origin);
@@ -118,21 +116,8 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
     if (profileError) throw profileError;
 
-    const avatarUrl = String(profile?.avatar_url || "");
-    if (avatarUrl) {
-      try {
-        const parsed = new URL(avatarUrl);
-        const match = parsed.pathname.match(/\/storage\/v1\/object\/(?:public|sign)\/avatars\/(.+)$/);
-        if (match) {
-          const objectPath = decodeURIComponent(match[1]);
-          const { error: storageError } = await admin.storage.from("avatars").remove([objectPath]);
-          if (storageError) console.warn("account avatar cleanup skipped", storageError.message);
-        }
-      } catch (storageError) {
-        console.warn("account avatar cleanup skipped", storageError);
-      }
-    }
-
+    // This is the only RESTRICT foreign key from public tables to auth.users.
+    // Remove only invitations created by the deleting account before Auth deletion.
     const { error: invitationError } = await admin
       .from("pro_invitations")
       .delete()
@@ -149,11 +134,27 @@ Deno.serve(async (req: Request) => {
     const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
     if (deleteError) throw deleteError;
 
+    // Remove the avatar only after Auth deletion succeeds.
+    const avatarUrl = String(profile?.avatar_url || "");
+    if (avatarUrl) {
+      try {
+        const parsed = new URL(avatarUrl);
+        const match = parsed.pathname.match(/\/storage\/v1\/object\/(?:public|sign)\/avatars\/(.+)$/);
+        if (match) {
+          const objectPath = decodeURIComponent(match[1]);
+          const { error: storageError } = await admin.storage.from("avatars").remove([objectPath]);
+          if (storageError) console.warn("account avatar cleanup skipped", storageError.message);
+        }
+      } catch (storageError) {
+        console.warn("account avatar cleanup skipped", storageError);
+      }
+    }
+
     return reply({ success: true }, 200, origin);
   } catch (error) {
     console.error("delete-account error", error);
     return reply({
-      error: "アカウントを削除できませんでした。データは削除されていません。時間をおいて再度お試しください。",
+      error: "アカウント削除を完了できませんでした。時間をおいて再度お試しください。",
     }, 500, origin);
   }
 });
