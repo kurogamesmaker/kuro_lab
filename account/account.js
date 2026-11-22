@@ -5,6 +5,9 @@
   const PUBLISHABLE_KEY = "sb_publishable_BYPUfB0lrh26Jv8_6ZQnpQ_wfAKOVyn";
   const PROJECT_REF = "cprvpphlfpmiegjiutjn";
   const $ = (id) => document.getElementById(id);
+  // This page is now the authentication destination itself; discard any stale
+  // homepage-to-account redirect left by an earlier login attempt.
+  try { localStorage.removeItem("kuro_auth_return_path"); } catch (_) {}
 
   function sessionClientId() {
     try {
