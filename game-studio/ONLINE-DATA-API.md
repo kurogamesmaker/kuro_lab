@@ -632,7 +632,7 @@ SDKは配列を返す。
 - 同じ試合結果の再送では同じsubmissionIdを使用する。
 - DBにgameId、userId、mode、submissionId等の一意制約を設ける。
 - SDKのranking.submitはoptions.submissionIdが渡された場合、それをAPIへそのまま渡す。未指定時だけSDKがUUIDを生成する。
-- 現在GitHub上の共通SDKではsubmissionIdを毎回自動生成しており、options.submissionIdを利用していない版が確認された。仕様どおりにするにはSDKソースとゲーム内に埋め込まれたSDKを揃える必要がある。
+- 2026-11-22修正済み: 共通SDKは有効なUUID形式のoptions.submissionIdをそのままAPIへ渡し、未指定または不正な場合のみUUIDを生成する。ゲームHTML側のキャッシュキーも更新して新SDKを読み込む。
 - 重複登録を受けたときは、既存結果を二重加算せず、既登録であることを判別できる応答を返す。
 
 ### 8.6 不正対策と現在の限界
