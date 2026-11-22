@@ -270,7 +270,7 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
         }
       } else if (message.type === "players") {
         emitPlayers(message.players || []);
-      } else if (message.type === "state-result") {
+      } else if (message.type === "state-result" || message.type === "game-patch-result") {
         const item = pending.get(message.requestId);
         if (item) {
           pending.delete(message.requestId);
@@ -358,6 +358,32 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
           sentAt: Date.now(),
         });
       }
+      return result;
+    },
+    async sendHostGamePatch(patch) {
+      const result = await sendRequest("host-game-patch", { patch: patch });
+      if (result.forbidden) throw new Error("ゲーム状態を更新できるのはルームホストだけです。");
+      if (result.invalid) throw new Error("ゲーム差分の形式が正しくありません。");
+      if (result.conflict) throw new Error("古いゲーム操作は反映されませんでした。最新状態を同期してください。");
+      const privateEnvelope = patch && patch.privateUpdates &&
+        Object.prototype.hasOwnProperty.call(patch.privateUpdates, session.user.id)
+        ? patch.privateUpdates[session.user.id]
+        : null;
+      emitMessage({
+        type: "unon-patch",
+        data: {
+          phase: patch.phase,
+          matchId: patch.matchId,
+          version: patch.version,
+          public: patch.public,
+          events: patch.events || [],
+          removeId: patch.removeId || null,
+          privateEnvelope: privateEnvelope,
+          updatedAt: result.updatedAt || null,
+        },
+        from: session.user.id,
+        sentAt: Date.now(),
+      });
       return result;
     },
     onPlayersChange(callback) {
