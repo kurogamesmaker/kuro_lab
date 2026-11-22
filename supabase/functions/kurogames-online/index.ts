@@ -227,6 +227,19 @@ async function handle(req: Request) {
     return reply(200, { ok: true, features: next, updatedAt });
   }
 
+  if (action === "leaderboard_modes") {
+    requirePublished(game);
+    requireFeature(settings.features, "ranking");
+    const { data: rows, error } = await admin
+      .from("game_scores")
+      .select("mode")
+      .eq("game_id", game.id)
+      .limit(1000);
+    if (error) throw new HttpError(500, "ランキングモードを取得できませんでした。");
+    const modes = Array.from(new Set((rows ?? []).map((row) => row.mode).filter((mode) => typeof mode === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(mode)))).sort();
+    return reply(200, { modes: modes.length ? modes : ["default"] });
+  }
+
   if (action === "leaderboard") {
     // Public read-only rankings; score submission remains authenticated.
     requirePublished(game);
