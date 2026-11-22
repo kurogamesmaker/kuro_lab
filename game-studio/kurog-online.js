@@ -35,7 +35,7 @@ function requestParentSession() {
       if (event.data.type !== "kuro-online-auth") return;
       clearTimeout(timer);
       window.removeEventListener("message", onMessage);
-      resolve({ accessToken: event.data.access_token, user: event.data.user || null, useCloudflareProxy: event.data.useCloudflareProxy === true });
+      resolve({ accessToken: event.data.access_token || null, user: event.data.user || null, isGuest: event.data.isGuest === true, guestMode: event.data.guestMode === true, useCloudflareProxy: event.data.useCloudflareProxy === true });
     }
     window.addEventListener("message", onMessage);
     window.parent.postMessage({ type: "kuro-online-auth-request", requestId }, "*");
@@ -45,7 +45,7 @@ function requestParentSession() {
 async function invoke(action, params) {
   ensureReady();
   const session = await requestParentSession();
-  if (!session.accessToken) throw new Error("KUROアカウントの認証情報を取得できませんでした。");
+  if (!session.accessToken) throw new Error("オンライン機能を利用するにはKURO Labアカウントへのログインが必要です。");
   const path = "/functions/v1/" + FUNCTION_NAME;
   const headers = { "Content-Type": "application/json", "apikey": DEFAULT_KEY, "Authorization": "Bearer " + session.accessToken };
   const body = JSON.stringify(Object.assign({ action: action, gameId: gameId }, params || {}));
@@ -362,6 +362,12 @@ const KuroGames = {
       throw new Error("gameIdが正しくありません。Studioのオンライン設定画面からコピーしてください。");
     }
     gameId = nextGameId;
+    const auth = await requestParentSession();
+    if (!auth.accessToken) {
+      // 未ログインでもSDK初期化は成功させ、オフライン部分のゲーム進行を妨げない
+      gameConfig = { game: null, features: {} };
+      return { gameId: gameId, game: null, features: {} };
+    }
     gameConfig = await invoke("get_config");
     return { gameId: gameId, game: gameConfig.game, features: gameConfig.features };
   },
