@@ -1,7 +1,7 @@
 const FORCE_MARU_ICON_VERSION = "20261122forcefavicon3";
 
-function applyMaruFavicon(html) {
-  const iconTags = /<link\b(?=[^>]*\brel\s*=\s*["'](?:icon|shortcut icon|apple-touch-icon)["'])[^>]*>/gi;
+function applyMaruFavicon(html, requestPath = "") {
+  const iconTags = /<link\\b(?=[^>]*\\brel\\s*=\\s*["'](?:icon|shortcut icon|apple-touch-icon)["'])[^>]*>/gi;
   const forcedLinks =
     '<link rel="icon" type="image/png" sizes="48x48" href="/assets/brand/logo/kurolab_icon_maru_48.png?v=' + FORCE_MARU_ICON_VERSION + '">' +
     '<link rel="shortcut icon" href="/assets/brand/logo/kurolab_icon_maru_48.png?v=' + FORCE_MARU_ICON_VERSION + '">' +
@@ -20,11 +20,39 @@ function applyMaruFavicon(html) {
     'background:none!important;box-shadow:none!important;' +
     '}' +
     '</style>';
-  const cleanHtml = String(html || "").replace(iconTags, "");
-  const withFavicon = cleanHtml.replace(/<head\b[^>]*>/i, head => head + forcedLinks);
-  return /<\/body>/i.test(withFavicon)
-    ? withFavicon.replace(/<\/body>/i, rankTitleStyle + "</body>")
-    : withFavicon + rankTitleStyle;
+  const isGamePlayPath = /^\\/games\\/play(?:\\/|$)/i.test(String(requestPath || ""));
+  let cleanHtml = String(html || "").replace(iconTags, "");
+  if (isGamePlayPath) {
+    cleanHtml = cleanHtml.replace(
+      /(<script\\b[^>]*\\bsrc\\s*=\\s*["']\\/games\\/recommendations\\.js)(?:\\?[^"']*)?(["'][^>]*>)/i,
+      '$1?v=20261122-retired-rail-guard3$2'
+    );
+  }
+  const withFavicon = cleanHtml.replace(/<head\\b[^>]*>/i, head => head + forcedLinks);
+  const retiredRailGuard = isGamePlayPath
+    ? '<style id="kuro-retired-rail-guard-style">' +
+      'a[href*="/game/kaiten-sushi-typing"],a[href*="/game/block-blast"],' +
+      'a[href*="id=5c1e658b-f6d3-412a-8b97-61d2c0457e95"],' +
+      'a[href*="id=0e20bd78-127f-4473-948c-67d7282e7c71"]{display:none!important}' +
+      '</style>' +
+      '<script id="kuro-retired-rail-guard-script">' +
+      '(()=>{const ids=new Set(["5c1e658b-f6d3-412a-8b97-61d2c0457e95","0e20bd78-127f-4473-948c-67d7282e7c71"]);' +
+      'const names=["回転寿司","回転ずし","かいてんずし","ブロックブラスト","blockblast"];' +
+      'const norm=s=>String(s||"").normalize("NFKC").replace(/[\\s_-]+/g,"").toLowerCase();' +
+      'const bad=a=>{let u;try{u=new URL(a.getAttribute("href")||"",location.href)}catch(_){return false}' +
+      'const label=norm([a.textContent,a.getAttribute("title"),...Array.from(a.querySelectorAll("img"),i=>i.alt)].join(" "));' +
+      'return ids.has((u.searchParams.get("id")||"").toLowerCase())||' +
+      '/^\\/game\\/(?:kaiten-sushi-typing|block-blast)(?:\\/|$)/i.test(u.pathname)||' +
+      'names.some(n=>label.includes(norm(n)));};' +
+      'const clean=()=>{document.querySelectorAll("a[href]").forEach(a=>{if(bad(a)){(a.closest(".kuro-auto-game,.kuro-side-game,.thumb,.game-card")||a).remove()}});' +
+      'document.querySelectorAll(".kuro-game-rail").forEach(r=>{if(!r.querySelector("a[href]"))r.hidden=true})};' +
+      'clean();new MutationObserver(clean).observe(document.documentElement,{childList:true,subtree:true,characterData:true});})();' +
+      '</script>'
+    : "";
+  const suffix = rankTitleStyle + retiredRailGuard;
+  return /<\\/body>/i.test(withFavicon)
+    ? withFavicon.replace(/<\\/body>/i, suffix + "</body>")
+    : withFavicon + suffix;
 }
 
 const SUPABASE_URL = "https://cprvpphlfpmiegjiutjn.supabase.co";
