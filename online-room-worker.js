@@ -290,6 +290,120 @@ export class Room {
       this.broadcast({ type: "state", state: this.data.state, updatedAt: this.data.updatedAt, from: player.id }, player.id);
       return;
     }
+    if (message.type === "host-game-patch") {
+      const requestId = String(message.requestId || "");
+      const patch = message.patch;
+      const fail = (result) => this.send(ws, { type: "game-patch-result", requestId, result });
+      if (!player.isHost) {
+        fail({ forbidden: true });
+        return;
+      }
+      if (!patch || typeof patch !== "object" || Array.isArray(patch) ||
+          !["playing", "finished"].includes(patch.phase) ||
+          typeof patch.matchId !== "string" || patch.matchId.length < 1 || patch.matchId.length > 100 ||
+          !Number.isSafeInteger(patch.version) || patch.version < 0 ||
+          !patch.public || typeof patch.public !== "object" || Array.isArray(patch.public) ||
+          !Array.isArray(patch.public.players) ||
+          !Array.isArray(patch.events) || patch.events.length > 24 ||
+          !patch.privateUpdates || typeof patch.privateUpdates !== "object" || Array.isArray(patch.privateUpdates)) {
+        fail({ invalid: true });
+        return;
+      }
+      const publicIds = new Set(patch.public.players.map(item =>
+        item && typeof item.userId === "string" ? item.userId : ""
+      ).filter(Boolean));
+      const updates = patch.privateUpdates;
+      const updateIds = Object.keys(updates);
+      if (updateIds.some(id => !publicIds.has(id))) {
+        fail({ invalid: true });
+        return;
+      }
+      for (const id of updateIds) {
+        const envelope = updates[id];
+        if (!envelope || typeof envelope !== "object" ||
+            typeof envelope.iv !== "string" || envelope.iv.length > 128 ||
+            typeof envelope.ct !== "string" || envelope.ct.length > 12000 ||
+            !envelope.epk || typeof envelope.epk !== "object") {
+          fail({ invalid: true });
+          return;
+        }
+      }
+      const removeId = typeof patch.removeId === "string" && patch.removeId.length <= 128
+        ? patch.removeId
+        : null;
+      const currentState = this.data.state && typeof this.data.state === "object"
+        ? this.data.state
+        : {};
+      const sameMatch = currentState.matchId === patch.matchId;
+      const currentVersion = Number(currentState.game && currentState.game.version);
+      if (sameMatch && Number.isSafeInteger(currentVersion) && patch.version <= currentVersion) {
+        fail({ conflict: true, version: currentVersion });
+        return;
+      }
+
+      // Persist the complete reconnect snapshot, but send only the public delta
+      // and each recipient's own changed private-hand envelope over the socket.
+      const privateState = sameMatch && currentState.game && currentState.game.priv &&
+        typeof currentState.game.priv === "object"
+        ? { ...currentState.game.priv }
+        : {};
+      for (const [id, envelope] of Object.entries(updates)) privateState[id] = envelope;
+      if (removeId) delete privateState[removeId];
+      const roster = Array.isArray(currentState.players)
+        ? currentState.players.filter(item => !removeId || item.id !== removeId)
+        : [];
+      const nextState = {
+        ...currentState,
+        phase: patch.phase,
+        matchId: patch.matchId,
+        ...(removeId ? { players: roster } : {}),
+        game: {
+          version: patch.version,
+          public: patch.public,
+          priv: privateState,
+          last: { events: patch.events },
+        },
+      };
+      const next = {
+        state: nextState,
+        updatedAt: Math.max(Date.now(), (Number(this.data.updatedAt) || 0) + 1),
+      };
+      await this.state.storage.put("room-state", next);
+      this.data = next;
+      this.loaded = true;
+      this.send(ws, {
+        type: "game-patch-result",
+        requestId,
+        result: { ok: true, updatedAt: next.updatedAt, version: patch.version },
+      });
+      const common = {
+        phase: patch.phase,
+        matchId: patch.matchId,
+        version: patch.version,
+        public: patch.public,
+        events: patch.events,
+        removeId,
+      };
+      for (const [peerSocket, peer] of this.sockets) {
+        if (peer.id === player.id) continue;
+        this.send(peerSocket, {
+          type: "message",
+          message: {
+            id: requestId,
+            from: player.id,
+            type: "unon-patch",
+            data: {
+              ...common,
+              privateEnvelope: Object.prototype.hasOwnProperty.call(updates, peer.id)
+                ? updates[peer.id]
+                : null,
+            },
+            at: next.updatedAt,
+          },
+        });
+      }
+      return;
+    }
     if (message.type === "message") {
       const eventType = String(message.messageType || "data");
       if (!/^[A-Za-z0-9_-]{1,40}$/.test(eventType)) {
