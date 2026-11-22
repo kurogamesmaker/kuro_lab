@@ -7,7 +7,7 @@
 - Durable Object class: `Room`
 - Namespace ID: `9633b9fd379f4e0690c398d3933b8dcd`
 - Namespace storage: SQLite
-- Latest verified Cloudflare deployment: `bd8382f12a0d4974a899de3d8e89ba93` (script content updated via the Worker content endpoint)
+- Latest verified Cloudflare deployment: `15a30aecbcd348b6a6bfe85b9ddb6df1` (script content updated via the Worker content endpoint)
 - Secret binding configured: `TICKET_SECRET` (value is not stored in GitHub)
 
 ## Authentication policy
@@ -59,7 +59,7 @@ The manual GitHub Actions deploy workflow is gated by repository variable `DEPLO
 ## Temporary Durable Object storage retention
 
 - Room state stored inside the Durable Object is temporary runtime state, not the canonical game record.
-- When the last WebSocket disconnects, the Durable Object schedules a one-time cleanup alarm for five minutes later.
+- When the last WebSocket disconnects, the Durable Object schedules a one-time cleanup alarm for 15 minutes later, matching the online-room reconnect grace period.
 - A reconnect during that grace period cancels the alarm and keeps the stored room state.
 - If the alarm runs with no connected sockets, it calls `storage.deleteAll()` and resets the in-memory cache. The next connection starts with empty Durable Object cache state; canonical room/game data remains in Supabase until the Supabase room-retention job expires the room.
 - A lifecycle lock serializes connection setup and cleanup so a reconnect arriving while cleanup is queued takes precedence, and the alarm checks for active sockets before deleting.
