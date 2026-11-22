@@ -197,7 +197,7 @@ function stripStudioInjectedRuntime(source){
  let input=String(source||"");
  input=input.replace(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi,(whole,attrs,body)=>{
   const lower=body.toLowerCase();
-  if(lower.includes("iskuroauthcreation")||lower.includes("kuro-online-login-required"))return "";
+  if(lower.includes("iskuroauthcreation")&&lower.includes("kuro-online-login-required"))return "";
   if(lower.includes("const senderror")&&lower.includes("kuro-studio-error")&&lower.includes("filename:"))return "";
   body=body.replace(/^const __kuroSend=\(level,args\)=>{[\s\S]*?window\.addEventListener\(['"]error['"],function\(e\){try{parent\.postMessage\(\{type:['"]kuro-studio-error['"],message:e\.message\},['"]\*['"]\)\}catch\(_\)\{\}\}\);[\t ]*\r?\n?/,"");
   if(lower.includes("kuro responsive fit")||lower.includes("data.kuroautofit"))return "";
