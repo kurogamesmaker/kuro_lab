@@ -3385,3 +3385,43 @@ html body.kuro-portal #portal-quick-input {
   color:#17283c!important;
   -webkit-text-fill-color:#17283c!important;
 }
+
+
+/* KURO home toolbar: keep all action labels dark and separate controls from the white header. */
+body.kuro-portal[data-theme="light"] .portal-dashboard-toolbar .portal-dashboard-actions > .portal-btn,
+body.kuro-portal[data-theme="light"] .portal-header-inner .portal-dashboard-toolbar-in-header .portal-dashboard-actions > .portal-btn {
+  background:#eef2f6!important;
+  background-image:none!important;
+  color:#17283c!important;
+  -webkit-text-fill-color:#17283c!important;
+  border:1px solid #d5dee8!important;
+  box-shadow:0 1px 2px rgba(23,40,60,.06)!important;
+  text-shadow:none!important;
+}
+body.kuro-portal[data-theme="light"] .portal-dashboard-toolbar .portal-dashboard-actions > .portal-btn:hover,
+body.kuro-portal[data-theme="light"] .portal-header-inner .portal-dashboard-toolbar-in-header .portal-dashboard-actions > .portal-btn:hover {
+  background:#e2eaf2!important;
+  color:#111827!important;
+  -webkit-text-fill-color:#111827!important;
+  border-color:#bdcad8!important;
+}
+body.kuro-portal[data-theme="light"] .portal-dashboard-toolbar .portal-dashboard-actions > .portal-btn.primary,
+body.kuro-portal[data-theme="light"] .portal-header-inner .portal-dashboard-toolbar-in-header .portal-dashboard-actions > .portal-btn.primary {
+  background:#dbeafe!important;
+  color:#16416b!important;
+  -webkit-text-fill-color:#16416b!important;
+  border-color:#b8d2f3!important;
+  box-shadow:inset 0 0 0 1px rgba(22,65,107,.04)!important;
+}
+body.kuro-portal[data-theme="light"] .portal-dashboard-toolbar .portal-dashboard-actions > .portal-btn.primary:hover,
+body.kuro-portal[data-theme="light"] .portal-header-inner .portal-dashboard-toolbar-in-header .portal-dashboard-actions > .portal-btn.primary:hover {
+  background:#c9def8!important;
+  color:#123657!important;
+  -webkit-text-fill-color:#123657!important;
+  border-color:#a9c8ee!important;
+}
+body.kuro-portal[data-theme="light"] .portal-dashboard-toolbar .portal-dashboard-actions > .portal-btn:focus-visible,
+body.kuro-portal[data-theme="light"] .portal-header-inner .portal-dashboard-toolbar-in-header .portal-dashboard-actions > .portal-btn:focus-visible {
+  outline:2px solid #2878bd!important;
+  outline-offset:2px!important;
+}
