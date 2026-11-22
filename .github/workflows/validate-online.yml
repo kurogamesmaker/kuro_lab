@@ -28,6 +28,7 @@ jobs:
         with:
           node-version: 22
       - run: node --check online-room-worker.js
+      - run: node --test tests/online-room-worker.test.mjs
       - run: node --check game-studio/kurog-online.js
       - name: Check embedded game and Studio scripts
         run: |
