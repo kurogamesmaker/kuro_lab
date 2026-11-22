@@ -104,19 +104,23 @@
       || "KUROアカウント";
   }
 
-  async function loadAccount() {
-    const { data: sessionData, error: sessionError } = await client.auth.getSession();
-    if (sessionError) throw sessionError;
-    if (!sessionData.session) {
-      currentUser = null;
-      $("accountLoggedOut").hidden = false;
-      $("accountUser").hidden = true;
-      $("accountPasswordCard").hidden = true;
-      $("accountDeleteCard").hidden = true;
-      return;
+  async function loadAccount(authenticatedUser) {
+    let user = authenticatedUser || null;
+    if (!user) {
+      const { data: sessionData, error: sessionError } = await client.auth.getSession();
+      if (sessionError) throw sessionError;
+      if (!sessionData.session) {
+        currentUser = null;
+        $("accountLoggedOut").hidden = false;
+        $("accountUser").hidden = true;
+        $("accountPasswordCard").hidden = true;
+        $("accountDeleteCard").hidden = true;
+        return;
+      }
+      const { data, error } = await client.auth.getUser();
+      user = !error && data.user ? data.user : null;
     }
-    const { data, error } = await client.auth.getUser();
-    if (error || !data.user || data.user.is_anonymous) {
+    if (!user || user.is_anonymous) {
       currentUser = null;
       $("accountLoggedOut").hidden = false;
       $("accountUser").hidden = true;
@@ -125,7 +129,7 @@
       return;
     }
 
-    currentUser = data.user;
+    currentUser = user;
     const providers = getProviders(currentUser);
     accountHasPassword = currentUser.app_metadata?.kuro_password_configured === true || (providers.includes("email") && currentUser.user_metadata?.kuro_password_configured !== false);
     const needsSetup = !accountHasPassword;
@@ -178,6 +182,7 @@
       refresh_token: payload.session.refresh_token
     });
     if (applied.error) throw applied.error;
+    return applied.data && applied.data.user ? applied.data.user : payload.user || null;
   }
 
   $("accountLoginForm").addEventListener("submit", async function (event) {
@@ -191,14 +196,16 @@
     setBusy(button, true, "ログイン中…");
     setStatus("accountLoginStatus", "", "");
     try {
+      let authenticatedUser = null;
       if (identity.includes("@")) {
         const result = await client.auth.signInWithPassword({ email: identity, password });
         if (result.error) throw result.error;
+        authenticatedUser = result.data && result.data.user ? result.data.user : null;
       } else {
-        await signInWithUsername(identity, password);
+        authenticatedUser = await signInWithUsername(identity, password);
       }
       $("accountLoginPassword").value = "";
-      await loadAccount();
+      await loadAccount(authenticatedUser);
       if (!currentUser) throw new Error("ログインは完了しましたが、アカウント情報を確認できませんでした。ページを再読み込みしてください。");
       setStatus("accountLoginStatus", "ログインしました。アカウント管理を続けられます。", "success");
     } catch (error) {
