@@ -110,12 +110,19 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    const { data: profile, error: profileError } = await admin
-      .from("profiles")
-      .select("avatar_url")
-      .eq("id", user.id)
-      .maybeSingle();
-    if (profileError) throw profileError;
+    // Avatar files are stored under avatars/{userId}/. Remove every
+    // previous avatar before deleting Auth; Storage can block user deletion
+    // while an object is still owned by that user.
+    const { data: avatarFiles, error: avatarListError } = await admin
+      .storage.from("avatars").list(user.id, { limit: 1000 });
+    if (avatarListError) throw avatarListError;
+    const avatarPaths = (avatarFiles || [])
+      .filter((file: { name?: string }) => Boolean(file.name))
+      .map((file: { name: string }) => user.id + "/" + file.name);
+    if (avatarPaths.length) {
+      const { error: avatarRemoveError } = await admin.storage.from("avatars").remove(avatarPaths);
+      if (avatarRemoveError) throw avatarRemoveError;
+    }
 
     // This is the only RESTRICT foreign key from public tables to auth.users.
     // Remove only invitations created by the deleting account before Auth deletion.
@@ -134,22 +141,6 @@ Deno.serve(async (req: Request) => {
 
     const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
     if (deleteError) throw deleteError;
-
-    // Remove the avatar only after Auth deletion succeeds.
-    const avatarUrl = String(profile?.avatar_url || "");
-    if (avatarUrl) {
-      try {
-        const parsed = new URL(avatarUrl);
-        const match = parsed.pathname.match(/\/storage\/v1\/object\/(?:public|sign)\/avatars\/(.+)$/);
-        if (match) {
-          const objectPath = decodeURIComponent(match[1]);
-          const { error: storageError } = await admin.storage.from("avatars").remove([objectPath]);
-          if (storageError) console.warn("account avatar cleanup skipped", storageError.message);
-        }
-      } catch (storageError) {
-        console.warn("account avatar cleanup skipped", storageError);
-      }
-    }
 
     return reply({ success: true }, 200, origin);
   } catch (error) {
