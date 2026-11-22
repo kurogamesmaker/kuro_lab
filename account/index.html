@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#f4f7fb">
+  <title>アカウント管理｜KURO Lab</title>
+  <link rel="icon" type="image/png" href="/assets/brand/logo/kurolab_icon_maru_48.png?v=20261122marufavicon2">
+  <link rel="stylesheet" href="/portal.css?v=20261122inputcontrast2">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    .account-page{max-width:820px;margin:0 auto;padding:28px 16px 60px;color:#17243c}
+    .account-hero{padding:26px;border:1px solid #dce7f5;border-radius:22px;background:linear-gradient(120deg,#f1f7ff,#fff 72%);box-shadow:0 10px 30px #1b30520a}
+    .account-eyebrow{font-size:10px;font-weight:900;letter-spacing:1.8px;color:#3679cf}
+    .account-hero h1{margin:8px 0;font-size:clamp(25px,4vw,34px);letter-spacing:-.8px}
+    .account-hero p{margin:0;color:#687991;font-size:13px;line-height:1.8}
+    .account-user{display:flex;align-items:center;gap:12px;margin-top:18px;padding:12px 14px;border:1px solid #dce8f7;border-radius:14px;background:#fff}
+    .account-user-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:#eaf3ff;color:#2878ee;font-size:20px}
+    .account-user small{display:block;color:#8491a5;font-size:11px}
+    .account-user strong{display:block;color:#253b5c;font-size:14px;overflow-wrap:anywhere}
+    .account-card{margin-top:16px;padding:22px;border:1px solid #e2e9f2;border-radius:18px;background:#fff;box-shadow:0 8px 24px #243a5608}
+    .account-card h2{margin:0 0 7px;font-size:18px;color:#203653}
+    .account-card>p{margin:0 0 17px;color:#718097;font-size:12px;line-height:1.8}
+    .account-field{display:grid;gap:7px;margin:13px 0;color:#42546d;font-size:12px;font-weight:800}
+    .account-field input{width:100%;min-height:46px;padding:11px 13px;border:1px solid #dce5ef;border-radius:11px;background:#fbfcfe;color:#17243c;font:inherit;font-size:14px;outline:none;box-sizing:border-box}
+    .account-field input:focus{border-color:#83b4f5;box-shadow:0 0 0 3px #e8f2ff}
+    .account-hint{color:#8290a4;font-size:11px;font-weight:500;line-height:1.7}
+    .account-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 17px;border:0;border-radius:11px;background:#2878ee;color:#fff;font-size:13px;font-weight:850;cursor:pointer}
+    .account-button:hover{background:#1e65cf}
+    .account-button:disabled{opacity:.55;cursor:not-allowed}
+    .account-button.danger{background:#d83b48}
+    .account-button.danger:hover{background:#bc2937}
+    .account-status{min-height:20px;margin-top:10px;color:#52657e;font-size:12px;line-height:1.7}
+    .account-status.error{color:#c22f3e}
+    .account-status.success{color:#18794e}
+    .account-warning{padding:13px 15px;border:1px solid #f2d6d9;border-radius:12px;background:#fff8f8;color:#85404a;font-size:12px;line-height:1.85}
+    .account-check{display:flex;align-items:flex-start;gap:9px;margin:14px 0;color:#596a81;font-size:12px;line-height:1.7}
+    .account-check input{width:17px;height:17px;margin-top:2px;accent-color:#2878ee;flex:0 0 auto}
+    .account-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .account-loggedout{margin-top:18px;padding:18px;border:1px solid #dce8f7;border-radius:15px;background:#f5f9ff}
+    .account-nav{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;font-size:12px;color:#57708e}
+    .account-nav a{color:#286dcc;text-decoration:none}
+    .account-nav a:hover{text-decoration:underline}
+    [hidden]{display:none!important}
+    @media(max-width:600px){.account-page{padding:18px 12px 42px}.account-hero,.account-card{padding:18px}.account-actions .account-button{width:100%}}
+  </style>
+</head>
+<body class="kuro-portal" data-theme="light">
+  <header class="portal-header">
+    <div class="portal-header-inner">
+      <a class="portal-brand" href="/"><img src="/assets/brand/logo/kurolab_icon_toumei_160.png?v=20261121logosfix" alt=""><span><strong>KURO Lab</strong><small>YOUR DIGITAL SPACE</small></span></a>
+      <nav class="portal-topnav" aria-label="サービス"><a href="/">KUROLAB</a><a href="/sns/">SNS</a><a href="/games/">GAMES</a></nav>
+    </div>
+  </header>
+  <main class="account-page">
+    <section class="account-hero">
+      <div class="account-eyebrow">KURO ACCOUNT CENTER</div>
+      <h1>アカウント管理</h1>
+      <p>KUROLAB・KURO SNS・KURO GAMESで共通のアカウントを管理できます。ここで変更した内容は、すべてのサービスに反映されます。</p>
+      <div id="accountUser" class="account-user" hidden>
+        <div class="account-user-icon" aria-hidden="true">●</div>
+        <div><small>ログイン中のアカウント</small><strong id="accountDisplayName">確認中…</strong></div>
+      </div>
+      <div id="accountLoggedOut" class="account-loggedout" hidden>
+        <strong>ログインが必要です</strong>
+        <p>KUROLAB共通アカウントでログインしてから、設定を変更してください。</p>
+        <a class="account-button" href="/?auth=1">KUROLABでログイン</a>
+      </div>
+      <nav class="account-nav" aria-label="サービスへ移動">
+        <a href="/">KUROLABトップ</a><a href="/sns/">KURO SNS</a><a href="/games/">KURO GAMES</a>
+      </nav>
+    </section>
+
+    <section id="accountPasswordCard" class="account-card" hidden>
+      <h2>パスワード変更</h2>
+      <p id="accountPasswordIntro">KUROLAB共通アカウントのパスワードを変更します。</p>
+      <form id="accountPasswordForm">
+        <label id="accountCurrentWrap" class="account-field">現在のパスワード
+          <input id="accountCurrentPassword" type="password" autocomplete="current-password" maxlength="72">
+          <span class="account-hint">本人確認のため、現在のパスワードを入力してください。</span>
+        </label>
+        <label class="account-field">新しいパスワード
+          <input id="accountNewPassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required>
+          <span class="account-hint">8〜72文字で設定してください。</span>
+        </label>
+        <label class="account-field">新しいパスワード（確認）
+          <input id="accountConfirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required>
+        </label>
+        <div class="account-actions"><button id="accountPasswordSubmit" class="account-button" type="submit">パスワードを変更</button></div>
+        <p id="accountPasswordStatus" class="account-status" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section id="accountDeleteCard" class="account-card" hidden>
+      <h2>アカウント削除</h2>
+      <p>この操作はKUROLAB・KURO SNS・KURO GAMES共通のアカウントに適用されます。実行すると元に戻せません。</p>
+      <div class="account-warning">
+        削除されるデータ：プロフィール、投稿・返信・いいね・フォロー、アカウント内チャット、通知、ゲームのスコア・保存データ、KURO STUDIOで公開したゲームなど。<br>
+        参加者が残るグループ会話は維持し、削除した人の作成者情報だけを切り離します。問い合わせ記録や運営上必要な記録の一部は、対応履歴のため匿名化して残る場合があります。
+      </div>
+      <form id="accountDeleteForm">
+        <label id="accountDeletePasswordWrap" class="account-field">現在のパスワード
+          <input id="accountDeletePassword" type="password" autocomplete="current-password" maxlength="72">
+        </label>
+        <p id="accountDeleteReauthHint" class="account-hint" hidden>このアカウントは外部ログインを使用しています。削除前にログアウトし、もう一度ログインしてから操作してください（ログインから15分以内）。</p>
+        <label class="account-check"><input id="accountDeleteAgree" type="checkbox"><span>削除されるデータと影響を確認しました。</span></label>
+        <label class="account-field">確認のため「削除する」と入力
+          <input id="accountDeletePhrase" type="text" autocomplete="off" maxlength="10" placeholder="削除する">
+        </label>
+        <div class="account-actions"><button id="accountDeleteSubmit" class="account-button danger" type="submit" disabled>アカウントを削除する</button></div>
+        <p id="accountDeleteStatus" class="account-status" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+  </main>
+  <script src="/account/account.js?v=20261122account1"></script>
+</body>
+</html>
