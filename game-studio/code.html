@@ -245,24 +245,25 @@ function makeDocument(){
  const moduleMode=/^\s*(?:import|export)\b/m.test(rawJs)||/\bawait\b/.test(rawJs);
  const scriptOpen=(moduleMode?"<scr"+"ipt type=\"module\">":"<scr"+"ipt>");
  const scriptClose="<"+"/script>";
- const logger="const __kuroSend=(level,args)=>{try{parent.postMessage({type:'kuro-studio-console',level:level,values:Array.from(args).map(v=>{try{return typeof v==='string'?v:JSON.stringify(v)}catch(_){return String(v)}})},'*')}catch(_){}};['log','info','warn','error'].forEach(level=>{const base=console[level].bind(console);console[level]=(...args)=>{base(...args);__kuroSend(level,args)}});window.addEventListener('error',function(e){try{parent.postMessage({type:'kuro-studio-error',message:e.message},'*')}catch(_){}});\n";
+ const legacyLogger="const __kuroSend=(level,args)=>{try{parent.postMessage({type:'kuro-studio-console',level:level,values:Array.from(args).map(v=>{try{return typeof v==='string'?v:JSON.stringify(v)}catch(_){return String(v)}})},'*')}catch(_){}};['log','info','warn','error'].forEach(level=>{const base=console[level].bind(console);console[level]=(...args)=>{base(...args);__kuroSend(level,args)}});window.addEventListener('error',function(e){try{parent.postMessage({type:'kuro-studio-error',message:e.message},'*')}catch(_){}});\n";
+ const errorReporter="<script>(function(){const sendError=function(e){try{parent.postMessage({type:\"kuro-studio-error\",message:e&&e.message||\"Script error\",filename:e&&e.filename||\"\",line:e&&e.lineno||0,column:e&&e.colno||0,stack:e&&e.error&&e.error.stack||\"\"},\"*\")}catch(_){}};window.addEventListener(\"error\",sendError,true);const sendConsole=(level,args)=>{try{parent.postMessage({type:\"kuro-studio-console\",level:level,values:Array.from(args).map(v=>{try{return typeof v===\"string\"?v:JSON.stringify(v)}catch(_){return String(v)}})},\"*\")}catch(_){}};[\"log\",\"info\",\"warn\",\"error\"].forEach(level=>{const base=console[level].bind(console);console[level]=(...args)=>{base(...args);sendConsole(level,args)}});window.addEventListener(\"unhandledrejection\",function(e){const reason=e&&e.reason;try{parent.postMessage({type:\"kuro-studio-error\",message:\"Unhandled promise rejection: \"+(reason&&reason.message||String(reason||\"unknown error\")),filename:location.href,stack:reason&&reason.stack||\"\"},\"*\")}catch(_){}});})();<\/script>";
  // 保存済みHTMLから読み込んだ際、前回のmakeDocumentが付加したloggerを再挿入しない
  let js=rawJs;
- if(!moduleMode){while(js.startsWith(logger))js=js.slice(logger.length);}
- const scriptBlock=scriptOpen+(moduleMode?"":logger)+js+scriptClose;
+ while(js.startsWith(legacyLogger))js=js.slice(legacyLogger.length);
+ const scriptBlock=scriptOpen+js+scriptClose;
  const authGuard='<script>(function(){const isKuroAuthCreation=u=>/\\/auth\\/v1\\/signup(?:[/?#]|$)/i.test(String(u))||/\\/auth\\/v1\\/token\\?[^\\s#]*\\bgrant_type=anonymous\\b/i.test(String(u));const notify=()=>{try{parent.postMessage({type:"kuro-online-login-required",action:"signup"},"*")}catch(_){}};const nativeFetch=window.fetch.bind(window);window.fetch=function(input,init){const u=typeof input==="string"?input:(input&&input.url)||"";if(isKuroAuthCreation(u)){notify();return Promise.resolve(new Response(JSON.stringify({error:"ゲーム内で匿名KUROアカウントは作成できません。共通アカウント画面からログインしてください。"}),{status:403,headers:{"Content-Type":"application/json"}}));}return nativeFetch(input,init);};})();<\/script>';
  const audioUnlock='<script>(function(){function unlock(){var tone=window.Tone;if(!tone||typeof tone.start!=="function")return;try{var promise=tone.start();if(promise&&typeof promise.then==="function")promise.then(function(){document.removeEventListener("pointerdown",unlock,true);document.removeEventListener("keydown",unlock,true);}).catch(function(){});else{document.removeEventListener("pointerdown",unlock,true);document.removeEventListener("keydown",unlock,true);}}catch(_){}}document.addEventListener("pointerdown",unlock,true);document.addEventListener("keydown",unlock,true);})();<\/script>';
  const autoFitScript=project.settings&&project.settings.autoFitOverflow===false?"":"<scr"+"ipt>(function(){try{document.documentElement.style.overflowX='auto';document.body.style.overflowX='auto';document.querySelectorAll('img,video,svg,iframe').forEach(function(el){el.style.maxWidth='100%';});}catch(e){console.warn('KURO responsive fit',e);}})();<"+"/script>";
  if(/<html[\s>]/i.test(html)){
   let doc=html;
-  if(/<head\b[^>]*>/i.test(doc))doc=doc.replace(/<head\b[^>]*>/i,m=>m+authGuard+audioUnlock+frameMeta+styleBlock);
-  else if(/<html[^>]*>/i.test(doc))doc=doc.replace(/<html[^>]*>/i,m=>m+"<head>"+authGuard+audioUnlock+frameMeta+styleBlock+"</head>");
-  else doc="<!doctype html><html lang=\"ja\"><head><meta charset=\"utf-8\">"+authGuard+frameMeta+styleBlock+"</head><body>"+doc+"</body></html>";
+  if(/<head\b[^>]*>/i.test(doc))doc=doc.replace(/<head\b[^>]*>/i,m=>m+errorReporter+authGuard+audioUnlock+frameMeta+styleBlock);
+  else if(/<html[^>]*>/i.test(doc))doc=doc.replace(/<html[^>]*>/i,m=>m+"<head>"+errorReporter+authGuard+audioUnlock+frameMeta+styleBlock+"</head>");
+  else doc="<!doctype html><html lang=\"ja\"><head><meta charset=\"utf-8\">"+errorReporter+authGuard+frameMeta+styleBlock+"</head><body>"+doc+"</body></html>";
   if(/<\/body>/i.test(doc))doc=doc.replace(/<\/body>/i,scriptBlock+autoFitScript+"</body>");
   else doc+=scriptBlock+autoFitScript;
   return doc;
  }
- return '<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+escapeHTML(project.name||"KURO Game")+'</title>'+authGuard+audioUnlock+frameMeta+styleBlock+'</head><body>'+html+scriptBlock+autoFitScript+'</body></html>';
+ return '<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+escapeHTML(project.name||"KURO Game")+'</title>'+errorReporter+authGuard+audioUnlock+frameMeta+styleBlock+'</head><body>'+html+scriptBlock+autoFitScript+'</body></html>';
 }
 let previewMode="fit";
 function applyPreviewSize(){
@@ -576,7 +577,7 @@ window.addEventListener("message",async event=>{
  }
  if(msg.type==="kuro-werewolf-storage-set"&&typeof msg.key==="string"&&msg.key.startsWith("werewolf_")){localStorage.setItem("kuro-werewolf-session:"+msg.key,String(msg.value??""));return;}
  if(msg.type==="kuro-werewolf-storage-remove"&&typeof msg.key==="string"&&msg.key.startsWith("werewolf_")){localStorage.removeItem("kuro-werewolf-session:"+msg.key);return;}
- if(msg.type==="kuro-studio-error"){$("previewStatus").textContent="エラー: "+String(msg.message||"実行エラー").slice(0,100);writeConsole("error",[msg.message||"実行エラー"]);}
+ if(msg.type==="kuro-studio-error"){const message=String(msg.message||"実行エラー"),line=Number(msg.line)||0,column=Number(msg.column)||0,filename=String(msg.filename||"");const locationText=line?(filename?filename+" ":"")+"行 "+line+(column?"・"+column+"列":""):filename;const detail=message+(locationText?"\n"+locationText:"")+(msg.stack?"\n"+String(msg.stack).slice(0,1600):"");$("previewStatus").textContent=(line?"エラー（"+line+"行"+(column?"・"+column+"列":"")+"）: ":"エラー: ")+message.slice(0,80);writeConsole("error",[detail]);}
  else if(msg.type==="kuro-studio-console"){writeConsole(msg.level,msg.values||[]);}
 });
 document.addEventListener("keydown",e=>{
