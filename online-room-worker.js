@@ -4,15 +4,6 @@ const MAX_MESSAGE_BYTES = 32 * 1024;
 const MAX_PLAYERS = 35;
 const ROOM_IDLE_TTL_MS = 15 * 60 * 1000;
 
-function publicDelta(previous, next) {
-  if (!previous || typeof previous !== "object" || Array.isArray(previous)) return null;
-  const delta = {};
-  for (const key of Object.keys(next)) {
-    if (!Object.prototype.hasOwnProperty.call(previous, key) || JSON.stringify(previous[key]) !== JSON.stringify(next[key])) delta[key] = next[key];
-  }
-  for (const key of Object.keys(previous)) if (!Object.prototype.hasOwnProperty.call(next, key)) delta[key] = null;
-  return delta;
-}
 function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
     status,
@@ -385,15 +376,11 @@ export class Room {
         requestId,
         result: { ok: true, updatedAt: next.updatedAt, version: patch.version },
       });
-      const previousPublic = sameMatch && currentState.game && currentState.game.public
-        ? currentState.game.public
-        : null;
-      const delta = publicDelta(previousPublic, patch.public);
       const common = {
         phase: patch.phase,
         matchId: patch.matchId,
         version: patch.version,
-        ...(delta ? { publicDelta: delta } : { public: patch.public }),
+        public: patch.public,
         events: patch.events,
         removeId,
       };
