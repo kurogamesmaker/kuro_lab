@@ -1191,6 +1191,21 @@ body.kuro-account-open { overflow: hidden; }
 }
 </style>
 
+<style id="kuro-rank-game-badge-final-hide">
+/* Final override: the scrolling ranking title must contain only the game name. */
+#kuroRankingShowcase #kuroRankGame::before,
+#kuroRankingShowcase #kuroRankGame::after {
+  content: none !important;
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+</style>
+
 </head>
 <body>
 <header><div class="wrap nav">
