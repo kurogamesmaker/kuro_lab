@@ -458,7 +458,7 @@ const KuroGames = {
         score: Number(score),
         mode: options.mode || "default",
         metadata: options.metadata || {},
-        submissionId: crypto.randomUUID(),
+        submissionId: typeof options.submissionId === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(options.submissionId) ? options.submissionId : crypto.randomUUID(),
       });
     },
     async get(options) {
