@@ -4,6 +4,37 @@ const MAX_MESSAGE_BYTES = 32 * 1024;
 const MAX_PLAYERS = 35;
 const ROOM_IDLE_TTL_MS = 15 * 60 * 1000;
 
+const UNON_RULES=(()=>{
+const COLORS=["red","blue","yellow","green"],ACTIONS=["SKIP","REV","D2"];
+const plus=c=>!!c&&["D2","W4"].includes(c.value);
+function secureRng(){const b=new Uint32Array(1);globalThis.crypto.getRandomValues(b);return b[0]/4294967296}
+function makeDeck(){const d=[];let n=0;const add=(color,value)=>d.push({id:"c"+n++,color,value});for(const c of COLORS){add(c,"0");for(let v=1;v<=9;v++){add(c,String(v));add(c,String(v))}for(const v of ACTIONS){add(c,v);add(c,v)}}for(let k=0;k<4;k++){add("wild","W");add("wild","W4")}return d}
+function shuffle(a,rng){for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function smooth(a,rng){shuffle(a,rng);for(let i=2;i<a.length;i++){const c=a[i].color;if(c!=="wild"&&a[i-1].color===c&&a[i-2].color===c){let j=i+1;while(j<a.length&&a[j].color===c)j++;if(j<a.length)[a[i],a[j]]=[a[j],a[i]]}}return a}
+const points=c=>/^\d$/.test(c.value)?+c.value:c.color==="wild"?50:20,clone=o=>JSON.parse(JSON.stringify(o));
+function createGame({players,rng=secureRng,scoreMultiplier=2,ruleMode="official"}){if(!Array.isArray(players)||players.length<2||players.length>4)throw new Error("players must be 2-4");if(new Set(players.map(p=>p.userId)).size!==players.length)throw new Error("duplicate userId");
+ let deck,hands,tries=0;do{deck=smooth(makeDeck(),rng);hands=players.map(()=>[]);for(let r=0;r<7;r++)hands.forEach(h=>h.push(deck.pop()));tries++}while(tries<300&&!hands.every(h=>{const c={};h.forEach(x=>{if(x.color!=="wild")c[x.color]=(c[x.color]||0)+1});const v=Object.values(c);return v.length>=3&&Math.max(...v)<=4}));
+ let opening,blocked=["SKIP","REV","D2","W","W4"],guard=0;do{opening=deck.pop();if(blocked.includes(opening.value))deck.unshift(opening);guard++}while(blocked.includes(opening.value)&&guard<deck.length);
+ return{ver:1,version:0,phase:"playing",scoreMultiplier,ruleMode:ruleMode==="local"?"local":"official",players:players.map((p,i)=>({userId:p.userId,name:String(p.name||"プレイヤー").slice(0,8),hand:hands[i]})),deck,pile:[opening],turn:0,direction:1,activeColor:opening.color,pendingDraw:0,drawn:null,unoPending:null}}
+function take(s,rng){if(!s.deck.length&&s.pile.length>1){const top=s.pile.pop();s.deck=smooth(s.pile,rng);s.pile=[top]}return s.deck.pop()||null}
+function give(s,idx,n,rng,ev){let k=0;for(;k<n;k++){const c=take(s,rng);if(!c)break;s.players[idx].hand.push(c)}if(k)ev.push({type:"draw",to:s.players[idx].userId,count:k});return k}
+function advance(s,skip){const n=s.players.length;s.turn=(((s.turn+s.direction*(1+skip))%n)+n)%n;s.drawn=null}
+function finish(s,wi,reason){s.phase="finished";let pts=0;s.players.forEach((p,i)=>{if(i!==wi)p.hand.forEach(c=>pts+=points(c))});const scores={};s.players.forEach(p=>scores[p.userId]=0);scores[s.players[wi].userId]=reason==="forfeit"?0:Math.round((pts+50)*s.scoreMultiplier);s.result={winnerId:s.players[wi].userId,scores,reason}}
+function applyAction(state,actor,action,ctx={}){const rng=ctx.rng||secureRng,fail=(code,error)=>({ok:false,code,error});if(!action||typeof action!=="object")return fail("BAD_ACTION","不正な操作です");if(state.phase!=="playing")return fail("GAME_OVER","ゲームは終了しています");const s=clone(state),idx=s.players.findIndex(p=>p.userId===actor);if(idx<0)return fail("NOT_PLAYER","参加者ではありません");const ev=[];
+ if(s.unoPending&&action.type!=="uno"&&action.type!=="uno_timeout")return fail("UNO_WINDOW","UNO宣言の判定中です。3秒後に続行できます");
+ if(action.type==="uno"||action.type==="uno_timeout"){if(s.unoPending!==actor)return fail("NO_UNO_PENDING","UNO宣言の対象ではありません");s.unoPending=null;if(action.type==="uno")ev.push({type:"uno",who:actor});else{give(s,idx,2,rng,ev);ev.push({type:"uno-penalty",who:actor})}s.version++;return{ok:true,state:s,events:ev,result:s.result||null}}
+ if(idx!==s.turn)return fail("NOT_YOUR_TURN","あなたの番ではありません");const me=s.players[idx],n=s.players.length,top=()=>s.pile[s.pile.length-1],can=c=>s.ruleMode==="local"&&s.pendingDraw>0?plus(c):(c.color==="wild"||c.color===s.activeColor||c.value===top().value);
+ if(action.type==="draw"){if(s.drawn)return fail("ALREADY_DRAWN","すでにカードを引いています");if(s.ruleMode==="local"&&s.pendingDraw>0){const count=s.pendingDraw;s.pendingDraw=0;give(s,idx,count,rng,ev);ev.push({type:"stack-draw",to:actor,count})}else if(s.ruleMode==="local"){let c=null,count=0;while(count<108){c=take(s,rng);if(!c)break;me.hand.push(c);count++;if(can(c))break}if(count)ev.push({type:"draw",to:actor,count});if(c&&can(c))s.drawn=c.id;else advance(s,0)}else{const c=take(s,rng);if(c){me.hand.push(c);ev.push({type:"draw",to:actor,count:1})}if(c&&can(c))s.drawn=c.id;else advance(s,0)}}
+ else if(action.type==="pass"){if(s.ruleMode==="local")return fail("LOCAL_NO_PASS","ローカルルールではパスできません");if(!s.drawn)return fail("NOT_DRAWN","カードを引いてからターンを終了できます");advance(s,0)}
+ else if(action.type==="play"){const ids=action.cardIds;if(!Array.isArray(ids)||!ids.length||new Set(ids).size!==ids.length)return fail("BAD_CARDS","カード指定が不正です");if(s.ruleMode!=="local"&&ids.length!==1)return fail("ONE_CARD_ONLY","公式ルールは1枚ずつ出してください");const cards=ids.map(id=>me.hand.find(c=>c.id===id));if(cards.some(c=>!c))return fail("NO_SUCH_CARD","持っていないカードです");if(!can(cards[0]))return fail("CANNOT_PLAY","そのカードは出せません");const same=cards.every(c=>c.value===cards[0].value),stack=s.ruleMode==="local"&&s.pendingDraw>0&&cards.every(plus);if(!same&&!stack)return fail("SAME_VALUE","同じ数字・記号か、重ね出しできる＋カードを選んでください");if(s.drawn){const drawn=me.hand.find(c=>c.id===s.drawn);if(!ids.includes(s.drawn)&&!(s.ruleMode==="local"&&drawn&&cards.every(c=>c.value===drawn.value)))return fail("ONLY_DRAWN","引いたカード、または同じ数字のカードを出してください")}if(cards.some(c=>c.color==="wild")&&!COLORS.includes(action.color))return fail("NEED_COLOR","色を選んでください");
+ me.hand=me.hand.filter(c=>!ids.includes(c.id));let skip=0,extra=0;for(const c of cards){s.pile.push(c);s.activeColor=c.color==="wild"?action.color:c.color;if(c.value==="SKIP")skip++;else if(c.value==="REV"){s.direction*=-1;if(n===2)skip++}else if(c.value==="D2"){extra+=2;skip=1}else if(c.value==="W4"){extra+=4;skip=1}}ev.push({type:"play",by:actor,cards:cards.map(({id,color,value})=>({id,color,value})),color:s.activeColor});s.drawn=null;
+ if(me.hand.length===0){const actionCard=cards.some(c=>["SKIP","REV","D2","W4","W"].includes(c.value));if(s.ruleMode==="local"&&actionCard){give(s,idx,2,rng,ev);ev.push({type:"action-finish-penalty",who:actor})}else{finish(s,idx,"win");ev.push({type:"win",by:actor})}}
+ if(s.phase!=="finished"){if(extra&&s.ruleMode==="local"){s.pendingDraw+=extra;skip=0}else if(extra){const target=(((idx+s.direction)%n)+n)%n;give(s,target,extra,rng,ev)}if(me.hand.length===1){s.unoPending=actor;ev.push({type:"uno-pending",who:actor})}advance(s,skip)}}
+ else return fail("UNKNOWN_ACTION","未対応の操作です");s.version++;return{ok:true,state:s,events:ev,result:s.result||null}}
+function onLeave(state,userId,ctx={}){const rng=ctx.rng||secureRng;if(state.phase!=="playing")return{ok:true,state,events:[],result:state.result||null};const s=clone(state),idx=s.players.findIndex(p=>p.userId===userId);if(idx<0)return{ok:false,code:"NOT_PLAYER",error:"参加者ではありません"};const[left]=s.players.splice(idx,1),ev=[{type:"leave",who:userId}];s.deck=smooth(s.deck.concat(left.hand),rng);if(s.unoPending===userId)s.unoPending=null;if(idx<s.turn)s.turn--;else if(idx===s.turn){s.drawn=null;const n=s.players.length;s.turn=s.direction===1?idx%n:(idx-1+n)%n}if(s.players.length===1){finish(s,0,"forfeit");ev.push({type:"win",by:s.players[0].userId})}else if(s.turn>=s.players.length)s.turn=0;s.version++;return{ok:true,state:s,events:ev,result:s.result||null}}
+function split(s){return{public:{ver:s.ver,version:s.version,phase:s.phase,ruleMode:s.ruleMode,players:s.players.map(p=>({userId:p.userId,name:p.name,handCount:p.hand.length})),turn:s.players[s.turn]?.userId||null,direction:s.direction,activeColor:s.activeColor,top:s.pile[s.pile.length-1],pileCount:s.pile.length,deckCount:s.deck.length,pendingDraw:s.pendingDraw,drawnPending:!!s.drawn,unoPending:s.unoPending||null,result:s.result||null},private:Object.fromEntries(s.players.map(p=>[p.userId,{hand:p.hand,drawn:s.drawn&&p.hand.some(c=>c.id===s.drawn)?s.drawn:null}])),server:{deck:s.deck,pile:s.pile.slice(0,-1)}}}
+return{COLORS,createGame,applyAction,onLeave,split,points}})();
+
 function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
     status,
@@ -128,7 +159,8 @@ export class Room {
     this.tail = Promise.resolve();
     this.lifecycleTail = Promise.resolve();
     this.loaded = false;
-    this.data = { state: null, updatedAt: null };
+    this.data = { state: null, updatedAt: null, unonGame: null, unonCrypto: null, unonActionIds: [], unoDeadline: null, idleDeadline: null };
+    this.unonPrivateKey = null;
   }
   withLifecycleLock(task) {
     const run = this.lifecycleTail.then(task, task);
@@ -140,11 +172,219 @@ export class Room {
   async load() {
     if (this.loaded) return;
     const saved = await this.state.storage.get("room-state");
-    if (saved && typeof saved === "object") this.data = saved;
+    if (saved && typeof saved === "object") this.data = { unonGame: null, unonCrypto: null, unonActionIds: [], unoDeadline: null, idleDeadline: null, ...saved };
     this.loaded = true;
   }
   async save() {
     await this.state.storage.put("room-state", this.data);
+  }
+
+  async scheduleAlarm() {
+    const deadlines = [this.data.unoDeadline, this.data.idleDeadline].filter(value => Number.isFinite(value) && value > 0);
+    if (deadlines.length) await this.state.storage.setAlarm(Math.min(...deadlines));
+    else await this.state.storage.deleteAlarm();
+  }
+  async ensureUnonCrypto() {
+    if (!this.data.unonCrypto) {
+      const pair = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveKey"]);
+      this.data.unonCrypto = {
+        publicKey: await crypto.subtle.exportKey("jwk", pair.publicKey),
+        privateKey: await crypto.subtle.exportKey("jwk", pair.privateKey),
+      };
+      await this.save();
+    }
+    if (!this.unonPrivateKey) {
+      this.unonPrivateKey = await crypto.subtle.importKey("jwk", this.data.unonCrypto.privateKey,
+        { name: "ECDH", namedCurve: "P-256" }, false, ["deriveKey"]);
+    }
+    return this.data.unonCrypto.publicKey;
+  }
+  async sealUnonPrivate(userId, value) {
+    const roster = this.data.state && Array.isArray(this.data.state.players) ? this.data.state.players : [];
+    const member = roster.find(item => item && item.id === userId);
+    const pub = member && member.pub;
+    if (!pub || pub.kty !== "EC" || pub.crv !== "P-256" || typeof pub.x !== "string" || typeof pub.y !== "string") {
+      throw new Error("player_public_key_missing");
+    }
+    const epk = await this.ensureUnonCrypto();
+    const remote = await crypto.subtle.importKey("jwk", pub, { name: "ECDH", namedCurve: "P-256" }, false, []);
+    const key = await crypto.subtle.deriveKey({ name: "ECDH", public: remote }, this.unonPrivateKey,
+      { name: "AES-GCM", length: 256 }, false, ["encrypt"]);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ciphertext = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key,
+      encoder.encode(JSON.stringify(value))));
+    const toBase64 = bytes => {
+      let binary = "";
+      for (const byte of bytes) binary += String.fromCharCode(byte);
+      return btoa(binary);
+    };
+    return { epk, iv: toBase64(iv), ct: toBase64(ciphertext) };
+  }
+  async makeUnonPatch(userId, previousGame, nextGame, events, removeId, forceFull = false) {
+    const nextSplit = UNON_RULES.split(nextGame);
+    const previousSplit = previousGame ? UNON_RULES.split(previousGame) : null;
+    const previousPublic = previousSplit && previousSplit.public;
+    const nextPublic = nextSplit.public;
+    const delta = {};
+    if (!forceFull && previousPublic) {
+      for (const key of Object.keys(nextPublic)) {
+        if (!Object.prototype.hasOwnProperty.call(previousPublic, key) ||
+            JSON.stringify(previousPublic[key]) !== JSON.stringify(nextPublic[key])) delta[key] = nextPublic[key];
+      }
+      for (const key of Object.keys(previousPublic)) {
+        if (!Object.prototype.hasOwnProperty.call(nextPublic, key)) delta[key] = null;
+      }
+    }
+    const previousPrivate = previousSplit && previousSplit.private[userId];
+    const nextPrivate = nextSplit.private[userId];
+    let privateEnvelope = null;
+    if (nextPrivate && (!previousSplit || JSON.stringify(previousPrivate) !== JSON.stringify(nextPrivate))) {
+      privateEnvelope = await this.sealUnonPrivate(userId, nextPrivate);
+    }
+    return {
+      phase: nextGame.phase === "finished" ? "finished" : "playing",
+      matchId: nextGame.matchId,
+      version: nextGame.version,
+      ...(forceFull || !previousPublic ? { public: nextPublic } : { publicDelta: delta }),
+      events: Array.isArray(events) ? events.slice(0, 24) : [],
+      removeId: removeId || null,
+      privateEnvelope,
+    };
+  }
+  async broadcastUnonPatch(previousGame, nextGame, events, removeId, sourceSocket) {
+    const recipients = [];
+    for (const [socket, peer] of this.sockets) {
+      if (socket === sourceSocket || !nextGame.players.some(item => item.userId === peer.id)) continue;
+      recipients.push({ socket, peer });
+    }
+    await Promise.all(recipients.map(async ({ socket, peer }) => {
+      const data = await this.makeUnonPatch(peer.id, previousGame, nextGame, events, removeId, !previousGame);
+      this.send(socket, { type: "message", message: {
+        id: crypto.randomUUID(), from: "", type: "unon-patch", data, at: this.data.updatedAt,
+      } });
+    }));
+  }
+  unonFailure(ws, requestId, error, code = "UNON_ERROR") {
+    this.send(ws, { type: "unon-result", requestId, result: { ok: false, code, error } });
+  }
+  async startUnonGame(ws, player, message) {
+    const requestId = String(message.requestId || "");
+    if (!player.isHost) return this.unonFailure(ws, requestId, "ホストだけがゲームを開始できます。", "FORBIDDEN");
+    if (this.data.unonGame && this.data.unonGame.phase === "playing") {
+      return this.unonFailure(ws, requestId, "ゲームはすでに進行中です。", "ALREADY_STARTED");
+    }
+    const roomState = this.data.state;
+    const roster = roomState && Array.isArray(roomState.players) ? roomState.players : [];
+    if (!roomState || roomState.phase !== "lobby" || roster.length < 2 || roster.length > 4 ||
+        !roster.every(item => item && item.ready === true)) {
+      return this.unonFailure(ws, requestId, "2〜4人が参加し、全員が準備OKになると開始できます。", "NOT_READY");
+    }
+    for (const item of roster) {
+      if (!item.pub || item.pub.kty !== "EC" || item.pub.crv !== "P-256" ||
+          typeof item.pub.x !== "string" || typeof item.pub.y !== "string") {
+        return this.unonFailure(ws, requestId, "プレイヤーの暗号鍵を確認できません。再入室してください。", "KEY_MISSING");
+      }
+    }
+    const ruleMode = message.ruleMode === "local" ? "local" : "official";
+    let game;
+    try {
+      game = UNON_RULES.createGame({ players: roster.map(item => ({ userId: item.id, name: item.name })), ruleMode });
+      game.matchId = crypto.randomUUID();
+    } catch (error) {
+      return this.unonFailure(ws, requestId, error && error.message || "ゲームを開始できません。");
+    }
+    const nextState = { ...roomState, phase: "playing", ruleMode, matchId: game.matchId, game: null };
+    this.data = { ...this.data, state: nextState, unonGame: game, unonActionIds: [], unoDeadline: null,
+      updatedAt: Math.max(Date.now(), (Number(this.data.updatedAt) || 0) + 1) };
+    await this.save();
+    await this.scheduleAlarm();
+    this.broadcast({ type: "state", state: nextState, updatedAt: this.data.updatedAt, from: player.id });
+    const patch = await this.makeUnonPatch(player.id, null, game, [], null, true);
+    this.send(ws, { type: "unon-result", requestId, result: { ok: true, patch, roomState: nextState, updatedAt: this.data.updatedAt } });
+    await this.broadcastUnonPatch(null, game, [], null, ws);
+  }
+  async getUnonSnapshot(ws, player, message) {
+    const requestId = String(message.requestId || "");
+    const game = this.data.unonGame;
+    if (!game || !game.players.some(item => item.userId === player.id)) {
+      return this.send(ws, { type: "unon-result", requestId, result: { ok: false, inactive: true } });
+    }
+    const patch = await this.makeUnonPatch(player.id, null, game, [], null, true);
+    this.send(ws, { type: "unon-result", requestId, result: { ok: true, active: true, patch, roomState: this.data.state } });
+  }
+  async submitUnonAction(ws, player, message) {
+    const requestId = String(message.requestId || "");
+    const actionId = message.actionId;
+    const action = message.action;
+    if (typeof actionId !== "string" || actionId.length < 1 || actionId.length > 80 ||
+        !action || typeof action !== "object" || Array.isArray(action) ||
+        !["play", "draw", "pass", "uno"].includes(action.type) ||
+        (action.type === "play" && (!Array.isArray(action.cardIds) || action.cardIds.length < 1 || action.cardIds.length > 4 ||
+          action.cardIds.some(id => typeof id !== "string" || id.length > 40) ||
+          (action.color !== undefined && !UNON_RULES.COLORS.includes(action.color))))) {
+      return this.unonFailure(ws, requestId, "操作データが正しくありません。", "BAD_ACTION");
+    }
+    const game = this.data.unonGame;
+    if (!game || game.phase !== "playing") return this.unonFailure(ws, requestId, "ゲームは終了しています。", "GAME_OVER");
+    if (!game.players.some(item => item.userId === player.id)) return this.unonFailure(ws, requestId, "参加者ではありません。", "NOT_PLAYER");
+    const actionKey = player.id + ":" + actionId;
+    const seen = Array.isArray(this.data.unonActionIds) ? this.data.unonActionIds : [];
+    if (seen.includes(actionKey)) {
+      const patch = await this.makeUnonPatch(player.id, null, game, [], null, true);
+      return this.send(ws, { type: "unon-result", requestId, result: { ok: true, duplicate: true, patch, updatedAt: this.data.updatedAt } });
+    }
+    const applied = UNON_RULES.applyAction(game, player.id, action);
+    if (!applied.ok) return this.send(ws, { type: "unon-result", requestId, result: applied });
+    this.data.unonGame = applied.state;
+    this.data.unonActionIds = seen.concat(actionKey).slice(-128);
+    this.data.unoDeadline = applied.state.unoPending ? Date.now() + 3000 : null;
+    this.data.updatedAt = Math.max(Date.now(), (Number(this.data.updatedAt) || 0) + 1);
+    await this.save();
+    await this.scheduleAlarm();
+    const patch = await this.makeUnonPatch(player.id, game, applied.state, applied.events, null, false);
+    this.send(ws, { type: "unon-result", requestId, result: { ok: true, patch, updatedAt: this.data.updatedAt } });
+    await this.broadcastUnonPatch(game, applied.state, applied.events, null, ws);
+  }
+  async removeUnonPlayer(ws, player, message) {
+    const requestId = String(message.requestId || "");
+    const targetId = message.userId;
+    if (!player.isHost) return this.unonFailure(ws, requestId, "ホストだけが退出処理できます。", "FORBIDDEN");
+    if (typeof targetId !== "string" || !targetId || targetId === player.id) return this.unonFailure(ws, requestId, "退出対象が正しくありません。", "BAD_PLAYER");
+    const game = this.data.unonGame;
+    const roomState = this.data.state || {};
+    const roster = Array.isArray(roomState.players) ? roomState.players.filter(item => item.id !== targetId) : [];
+    if (game && game.phase === "playing" && game.players.some(item => item.userId === targetId)) {
+      const applied = UNON_RULES.onLeave(game, targetId);
+      if (!applied.ok) return this.unonFailure(ws, requestId, applied.error, applied.code);
+      this.data.unonGame = applied.state;
+      this.data.state = { ...roomState, players: roster, phase: applied.state.phase, matchId: applied.state.matchId };
+      this.data.unoDeadline = applied.state.unoPending ? Date.now() + 3000 : null;
+      this.data.updatedAt = Math.max(Date.now(), (Number(this.data.updatedAt) || 0) + 1);
+      await this.save();
+      await this.scheduleAlarm();
+      this.broadcast({ type: "state", state: this.data.state, updatedAt: this.data.updatedAt, from: player.id });
+      const patch = await this.makeUnonPatch(player.id, game, applied.state, applied.events, targetId, false);
+      this.send(ws, { type: "unon-result", requestId, result: { ok: true, patch, roomState: this.data.state, updatedAt: this.data.updatedAt } });
+      await this.broadcastUnonPatch(game, applied.state, applied.events, targetId, ws);
+    } else {
+      this.data.state = { ...roomState, players: roster };
+      this.data.updatedAt = Math.max(Date.now(), (Number(this.data.updatedAt) || 0) + 1);
+      await this.save();
+      this.broadcast({ type: "state", state: this.data.state, updatedAt: this.data.updatedAt, from: player.id });
+      this.send(ws, { type: "unon-result", requestId, result: { ok: true, roomState: this.data.state, updatedAt: this.data.updatedAt } });
+    }
+  }
+  async handleUnonAlarm() {
+    const game = this.data.unonGame;
+    if (!game || !game.unoPending || !this.data.unoDeadline || this.data.unoDeadline > Date.now()) return;
+    const applied = UNON_RULES.applyAction(game, game.unoPending, { type: "uno_timeout" });
+    this.data.unoDeadline = null;
+    if (!applied.ok) return;
+    this.data.unonGame = applied.state;
+    this.data.updatedAt = Math.max(Date.now(), (Number(this.data.updatedAt) || 0) + 1);
+    await this.save();
+    await this.scheduleAlarm();
+    await this.broadcastUnonPatch(game, applied.state, applied.events, null, null);
   }
   players() {
     const unique = new Map();
@@ -178,8 +418,10 @@ export class Room {
     // Serialize new connections against the idle-cleanup alarm. A reconnect
     // cancels the pending cleanup before loading room state.
     return this.withLifecycleLock(async () => {
-      await this.state.storage.deleteAlarm();
       await this.load();
+      this.data.idleDeadline = null;
+      await this.save();
+      await this.scheduleAlarm();
 
       const distinct = new Set(Array.from(this.sockets.values(), p => p.id));
       if (!distinct.has(userId) && distinct.size >= MAX_PLAYERS) {
@@ -218,7 +460,9 @@ export class Room {
       }
       if (this.sockets.size === 0) {
         // Keep a short reconnect grace period before removing persisted state.
-        await this.state.storage.setAlarm(Date.now() + ROOM_IDLE_TTL_MS);
+        this.data.idleDeadline = Date.now() + ROOM_IDLE_TTL_MS;
+        await this.save();
+        await this.scheduleAlarm();
       }
     });
     // WebSocket event listeners are not request handlers; keep the alarm write alive.
@@ -226,14 +470,17 @@ export class Room {
   }
   async alarm() {
     await this.withLifecycleLock(async () => {
-      // A connection opened while the alarm was queued wins; never clear active rooms.
-      if (this.sockets.size > 0) return;
-
-      // deleteAll() is required to fully release this DO's persisted storage.
-      await this.state.storage.deleteAll();
-      this.loaded = false;
-      this.data = { state: null, updatedAt: null };
-      console.info("[kuro-online-room] cleared storage after idle timeout");
+      await this.load();
+      if (this.data.unoDeadline && this.data.unoDeadline <= Date.now()) await this.handleUnonAlarm();
+      if (this.sockets.size === 0 && this.data.idleDeadline && this.data.idleDeadline <= Date.now()) {
+        await this.state.storage.deleteAll();
+        this.loaded = false;
+        this.unonPrivateKey = null;
+        this.data = { state: null, updatedAt: null, unonGame: null, unonCrypto: null, unonActionIds: [], unoDeadline: null, idleDeadline: null };
+        console.info("[kuro-online-room] cleared storage after idle timeout");
+        return;
+      }
+      await this.scheduleAlarm();
     });
   }
   async onMessage(ws, player, raw) {
@@ -260,9 +507,13 @@ export class Room {
       return;
     }
     if (message.type === "get-state") {
-      this.send(ws, { type: "state-result", requestId: String(message.requestId || ""), result: { ...this.data, roomStatus: "waiting" } });
+      this.send(ws, { type: "state-result", requestId: String(message.requestId || ""), result: { state: this.data.state, updatedAt: this.data.updatedAt, roomStatus: "waiting" } });
       return;
     }
+    if (message.type === "unon-start") return this.startUnonGame(ws, player, message);
+    if (message.type === "unon-get") return this.getUnonSnapshot(ws, player, message);
+    if (message.type === "unon-action") return this.submitUnonAction(ws, player, message);
+    if (message.type === "unon-remove-player") return this.removeUnonPlayer(ws, player, message);
     if (message.type === "host-state-update") {
       const requestId = String(message.requestId || "");
       if (!player.isHost) {
@@ -281,11 +532,10 @@ export class Room {
         this.send(ws, { type: "state-result", requestId, result: { ...this.data, conflict: true } });
         return;
       }
-      const next = { state: message.state, updatedAt: Math.max(Date.now(), (Number(this.data.updatedAt) || 0) + 1) };
-      await this.state.storage.put("room-state", next);
-      this.data = next;
+      this.data = { ...this.data, state: message.state, updatedAt: Math.max(Date.now(), (Number(this.data.updatedAt) || 0) + 1) };
+      await this.save();
       this.loaded = true;
-      const result = { ...this.data, conflict: false, roomStatus: "waiting" };
+      const result = { state: this.data.state, updatedAt: this.data.updatedAt, conflict: false, roomStatus: "waiting" };
       this.send(ws, { type: "state-result", requestId, result });
       this.broadcast({ type: "state", state: this.data.state, updatedAt: this.data.updatedAt, from: player.id }, player.id);
       return;
@@ -364,12 +614,8 @@ export class Room {
           last: { events: patch.events },
         },
       };
-      const next = {
-        state: nextState,
-        updatedAt: Math.max(Date.now(), (Number(this.data.updatedAt) || 0) + 1),
-      };
-      await this.state.storage.put("room-state", next);
-      this.data = next;
+      this.data = { ...this.data, state: nextState, updatedAt: Math.max(Date.now(), (Number(this.data.updatedAt) || 0) + 1) };
+      await this.save();
       this.loaded = true;
       this.send(ws, {
         type: "game-patch-result",
