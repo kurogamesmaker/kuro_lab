@@ -69,8 +69,8 @@ async function getKuroGameAuthSession() {
    }
    return session?.access_token ? session : null;
   })().catch(error => {
-   kuroGameAuthPromise = null;
-   throw error;
+   console.warn("KURO GAMES session check failed; continuing in guest mode:", error);
+   return null;
   });
  }
  const session = await kuroGameAuthPromise;
