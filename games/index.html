@@ -401,6 +401,198 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
   #kuroRankingShowcase.rank-transition .rank-list{animation:none!important}
 }
 
+
+/* KURO ranking super-cinema effects */
+#kuroRankingShowcase{isolation:isolate}
+#kuroRankingShowcase .rank-cinema-layer{
+  position:absolute!important;
+  inset:0;
+  z-index:1!important;
+  overflow:hidden;
+  border-radius:inherit;
+  pointer-events:none;
+  contain:layout paint;
+}
+#kuroRankingShowcase .rank-head,
+#kuroRankingShowcase .rank-game,
+#kuroRankingShowcase .rank-list,
+#kuroRankingShowcase .rank-foot{position:relative;z-index:2}
+#kuroRankingShowcase .rank-cinema-flare{
+  position:absolute;
+  top:-45%;
+  bottom:-45%;
+  left:-65%;
+  width:48%;
+  opacity:0;
+  transform:translateX(-120%) rotate(12deg);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.68),rgba(255,232,164,.35),transparent);
+  filter:blur(2px);
+}
+#kuroRankingShowcase .rank-cinema-ring{
+  position:absolute;
+  left:50%;
+  top:54%;
+  width:34px;
+  height:34px;
+  border:2px solid rgba(255,211,103,.8);
+  border-radius:50%;
+  opacity:0;
+  transform:translate(-50%,-50%) scale(.2);
+  box-shadow:0 0 18px rgba(255,204,85,.35),inset 0 0 12px rgba(255,255,255,.35);
+}
+#kuroRankingShowcase .rank-cinema-particle{
+  position:absolute;
+  left:50%;
+  top:52%;
+  color:var(--spark-color,#f3c65b);
+  font-size:var(--spark-size,15px);
+  line-height:1;
+  opacity:0;
+  text-shadow:0 2px 9px rgba(91,119,158,.16);
+  transform:translate(-50%,-50%) scale(.15) rotate(0deg);
+}
+#kuroRankingShowcase.rank-cinema{
+  animation:kuroCinemaCard .95s ease-out both;
+}
+#kuroRankingShowcase.rank-cinema .rank-cinema-flare{
+  animation:kuroCinemaSweep .95s cubic-bezier(.2,.7,.2,1) both;
+}
+#kuroRankingShowcase.rank-cinema .rank-cinema-ring{
+  animation:kuroCinemaRing .9s cubic-bezier(.16,.75,.24,1) both;
+}
+#kuroRankingShowcase.rank-cinema .rank-cinema-particle{
+  animation:kuroCinemaSpark .95s cubic-bezier(.12,.7,.25,1) var(--spark-delay,0s) both;
+}
+#kuroRankingShowcase.rank-cinema .rank-heading-icon{
+  animation:kuroTrophyLaunch .78s cubic-bezier(.16,1,.3,1) both;
+}
+#kuroRankingShowcase.rank-cinema .rank-live{
+  animation:kuroLiveFlash .65s ease-out both;
+}
+#kuroRankingShowcase.rank-cinema .rank-game{
+  animation:kuroGamePlate .58s cubic-bezier(.16,1,.3,1) both;
+}
+#kuroRankingShowcase.rank-cinema .rank-row:nth-child(1) .rank-medal{
+  animation:kuroMedalSpin .9s cubic-bezier(.16,1,.3,1) .12s both,kuroMedalFloat 2.8s ease-in-out 1.05s infinite;
+}
+#kuroRankingShowcase.rank-cinema .rank-row:nth-child(1) .rank-score{
+  animation:kuroScorePop .62s cubic-bezier(.16,1,.3,1) .28s both;
+}
+#kuroRankingShowcase.rank-cinema .rank-row:nth-child(2) .rank-medal{
+  animation:kuroSilverPop .55s cubic-bezier(.16,1,.3,1) .25s both;
+}
+#kuroRankingShowcase.rank-cinema .rank-row:nth-child(3) .rank-medal{
+  animation:kuroBronzePop .55s cubic-bezier(.16,1,.3,1) .34s both;
+}
+#kuroRankingShowcase .rank-heading-icon{
+  position:relative;
+  overflow:visible;
+}
+#kuroRankingShowcase .rank-heading-icon::after{
+  content:"✦";
+  position:absolute;
+  top:-9px;
+  right:-8px;
+  color:#efbd48;
+  font-size:13px;
+  opacity:0;
+  transform:scale(.2) rotate(-35deg);
+  text-shadow:0 2px 7px rgba(210,160,45,.28);
+}
+#kuroRankingShowcase.rank-cinema .rank-heading-icon::after{
+  animation:kuroTrophySpark .72s ease-out .2s both;
+}
+#kuroRankingShowcase .rank-row:nth-child(1){
+  position:relative;
+  border-color:#efd17b;
+}
+#kuroRankingShowcase.rank-cinema .rank-row:nth-child(1){
+  box-shadow:0 10px 26px rgba(197,151,44,.22),0 0 0 1px rgba(255,219,127,.4),inset 0 1px 0 #fff;
+}
+#kuroRankingShowcase .rank-row:nth-child(1) .rank-score{
+  transform-origin:center;
+}
+#kuroRankingShowcase .rank-controls button{
+  transition:transform .2s ease,box-shadow .2s ease,background .2s ease;
+}
+#kuroRankingShowcase .rank-controls button:active{
+  transform:scale(.88);
+  box-shadow:0 0 0 4px rgba(57,134,237,.12);
+}
+@keyframes kuroCinemaCard{
+  0%{box-shadow:0 18px 42px rgba(42,79,133,.09),0 0 0 0 rgba(255,207,91,0)}
+  35%{box-shadow:0 20px 48px rgba(42,79,133,.14),0 0 0 5px rgba(255,207,91,.18)}
+  100%{box-shadow:0 18px 42px rgba(42,79,133,.09),0 0 0 0 rgba(255,207,91,0)}
+}
+@keyframes kuroCinemaSweep{
+  0%{opacity:0;transform:translateX(-120%) rotate(12deg)}
+  18%{opacity:1}
+  75%{opacity:.9}
+  100%{opacity:0;transform:translateX(420%) rotate(12deg)}
+}
+@keyframes kuroCinemaRing{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.2)}
+  22%{opacity:.8}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(9)}
+}
+@keyframes kuroCinemaSpark{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.15) rotate(0)}
+  18%{opacity:1}
+  100%{opacity:0;transform:translate(calc(-50% + var(--spark-x)),calc(-50% + var(--spark-y))) scale(1) rotate(var(--spark-rotate))}
+}
+@keyframes kuroTrophyLaunch{
+  0%{transform:rotate(-18deg) scale(.5)}
+  55%{transform:rotate(12deg) scale(1.22)}
+  76%{transform:rotate(-5deg) scale(.96)}
+  100%{transform:rotate(0) scale(1)}
+}
+@keyframes kuroTrophySpark{
+  0%{opacity:0;transform:scale(.2) rotate(-35deg)}
+  45%{opacity:1;transform:scale(1.35) rotate(18deg)}
+  100%{opacity:0;transform:scale(.85) rotate(55deg)}
+}
+@keyframes kuroLiveFlash{
+  0%{filter:brightness(1)}
+  35%{filter:brightness(1.3)}
+  100%{filter:brightness(1)}
+}
+@keyframes kuroGamePlate{
+  0%{transform:translateY(9px) scale(.96);filter:brightness(1)}
+  58%{transform:translateY(-2px) scale(1.025);filter:brightness(1.08)}
+  100%{transform:translateY(0) scale(1);filter:brightness(1)}
+}
+@keyframes kuroMedalSpin{
+  0%{transform:perspective(180px) rotateY(-100deg) scale(.65)}
+  65%{transform:perspective(180px) rotateY(18deg) scale(1.18)}
+  100%{transform:perspective(180px) rotateY(0) scale(1)}
+}
+@keyframes kuroMedalFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@keyframes kuroScorePop{
+  0%{transform:scale(.65);filter:brightness(1)}
+  58%{transform:scale(1.16);filter:brightness(1.2)}
+  100%{transform:scale(1);filter:brightness(1)}
+}
+@keyframes kuroSilverPop{
+  0%{transform:scale(.55) rotate(-20deg)}
+  70%{transform:scale(1.14) rotate(7deg)}
+  100%{transform:scale(1) rotate(0)}
+}
+@keyframes kuroBronzePop{
+  0%{transform:scale(.55) rotate(20deg)}
+  70%{transform:scale(1.14) rotate(-7deg)}
+  100%{transform:scale(1) rotate(0)}
+}
+@media(prefers-reduced-motion:reduce){
+  #kuroRankingShowcase.rank-cinema,
+  #kuroRankingShowcase.rank-cinema *,
+  #kuroRankingShowcase.rank-cinema *::before,
+  #kuroRankingShowcase.rank-cinema *::after{
+    animation:none!important;
+    transition:none!important;
+  }
+  #kuroRankingShowcase .rank-cinema-layer{display:none!important}
+}
+
 </style>
 
 <!-- Google Analytics 4 -->
@@ -962,6 +1154,43 @@ function initKuroRankingShowcase(){
   cache.set(key,rows);return rows;
  }
  function modeName(mode){return mode==="default"?"":mode.replace(/[_-]+/g," ");}
+
+ function playCinema(){
+  let layer=panel.querySelector(".rank-cinema-layer");
+  if(!layer){
+   layer=document.createElement("div");
+   layer.className="rank-cinema-layer";
+   layer.setAttribute("aria-hidden","true");
+   const flare=document.createElement("span");flare.className="rank-cinema-flare";
+   const ring=document.createElement("span");ring.className="rank-cinema-ring";
+   layer.append(flare,ring);
+   panel.prepend(layer);
+  }
+  layer.querySelectorAll(".rank-cinema-particle").forEach(node=>node.remove());
+  const sparks=[
+   ["✦",-104,-62,-90,18,"#f0bd4b"],["✧",92,-70,75,15,"#74aef3"],
+   ["◆",-125,8,-60,12,"#e8bb56"],["✦",116,18,110,19,"#7bb9ee"],
+   ["✧",-72,88,-125,14,"#f2ce72"],["★",72,91,140,15,"#f0bd4b"],
+   ["·",-145,-42,-45,22,"#9ac8f5"],["·",145,-46,90,20,"#f2d17b"],
+   ["✦",-35,-112,-80,12,"#8cbdf0"],["✧",38,-118,95,14,"#f4cf70"],
+   ["◆",-96,112,-130,11,"#83b8ec"],["✦",102,111,125,13,"#efc45e"]
+  ];
+  sparks.forEach(([glyph,x,y,rotate,size,color],i)=>{
+   const particle=document.createElement("span");
+   particle.className="rank-cinema-particle";
+   particle.textContent=glyph;
+   particle.style.setProperty("--spark-x",x+"px");
+   particle.style.setProperty("--spark-y",y+"px");
+   particle.style.setProperty("--spark-rotate",rotate+"deg");
+   particle.style.setProperty("--spark-size",size+"px");
+   particle.style.setProperty("--spark-color",color);
+   particle.style.setProperty("--spark-delay",(i%4)*.025+"s");
+   layer.appendChild(particle);
+  });
+  panel.classList.remove("rank-cinema");
+  void panel.offsetWidth;
+  panel.classList.add("rank-cinema");
+ }
  async function display(i){
   if(!games.length||busy)return;
   busy=true;
@@ -991,6 +1220,7 @@ function initKuroRankingShowcase(){
    panel.dataset.rankReady="1";
    void panel.offsetWidth;
    panel.classList.add("rank-in");
+   playCinema();
   }catch(e){
    panel.classList.remove("rank-out");
    showMessage("ランキングを取得できませんでした。");
