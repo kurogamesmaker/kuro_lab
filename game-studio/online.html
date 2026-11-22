@@ -9,14 +9,14 @@
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 85% -10%,#282048 0,transparent 42%),var(--bg);color:var(--text);font:14px Inter,system-ui,"Noto Sans JP",sans-serif}
 a{color:inherit;text-decoration:none}.top{height:66px;border-bottom:1px solid var(--line);background:#0c101bdc;display:flex;align-items:center;padding:0 max(18px,calc((100% - 1120px)/2));gap:13px;position:sticky;top:0;z-index:5}.brand{font-weight:950;font-size:17px}.brand b{color:var(--accent)}.spacer{flex:1}.btn{border:1px solid var(--line);background:#ffffff08;color:var(--text);border-radius:9px;padding:9px 13px;font-size:11px;font-weight:850;cursor:pointer}.btn:hover{background:#ffffff13}.btn.primary{background:linear-gradient(110deg,#9277ff,#657dff);border-color:transparent}
 .wrap{width:min(1120px,calc(100% - 36px));margin:auto}.hero{padding:40px 0 25px}.eyebrow{font-size:10px;letter-spacing:2px;font-weight:950;color:#a99bff}.hero h1{font-size:clamp(28px,4vw,42px);letter-spacing:-1.4px;margin:8px 0}.hero p{color:var(--muted);font-size:12px;line-height:1.8;max-width:700px;margin:0}.status{margin:16px 0;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#121827;color:var(--muted);font-size:11px;line-height:1.7}.status.good{border-color:#2e7359;color:#9de7c5}.status.error{border-color:#754349;color:#ffb4b4}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:8px 0 44px}.card{min-width:0;padding:18px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(145deg,#151b2a,#101521)}.card-head{display:flex;align-items:flex-start;gap:12px}.glyph{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border-radius:11px;background:#292343;font-size:20px}.card h2{font-size:15px;margin:1px 0 4px}.meta{font-size:10px;color:var(--muted)}.pill{display:inline-flex;padding:4px 7px;border:1px solid #3d4960;border-radius:99px;font-size:9px;color:#c8d3e5;margin-left:5px}.features{display:grid;gap:9px;margin-top:17px}.feature{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid #293247;border-radius:10px;background:#0c111c}.feature strong{display:block;font-size:12px}.feature small{display:block;color:var(--muted);font-size:10px;margin-top:3px}.switch{width:42px;height:24px;flex:0 0 42px;appearance:none;border:1px solid #49546a;background:#252c3b;border-radius:99px;position:relative;cursor:pointer;transition:.18s}.switch:before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;border-radius:50%;background:#a8b2c5;transition:.18s}.switch:checked{background:#4c3b9a;border-color:#9685ff}.switch:checked:before{left:21px;background:white}.switch:disabled{opacity:.45;cursor:not-allowed}.card-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:14px;flex-wrap:wrap}.copy-status{font-size:10px;color:var(--good)}.snippet{margin-top:12px;border:1px solid var(--line);border-radius:10px;background:#080d16;overflow:hidden}.snippet summary{padding:10px 12px;font-size:10px;font-weight:850;color:#d8dff0;cursor:pointer}.snippet pre{margin:0;padding:12px;overflow:auto;font:11px/1.65 ui-monospace,monospace;color:#cad5eb;white-space:pre}.future{margin:0 0 50px;padding:18px;border:1px dashed #354058;border-radius:13px;background:#101521}.future h2{font-size:14px;margin:0 0 7px}.future p{font-size:11px;line-height:1.7;color:var(--muted);margin:0}.future-tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.future-tags span{padding:6px 9px;border-radius:8px;background:#1a2233;color:#c0cbe0;font-size:10px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:8px 0 44px}.card{min-width:0;padding:18px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(145deg,#151b2a,#101521)}.card-head{display:flex;align-items:flex-start;gap:12px}.glyph{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border-radius:11px;background:#292343;font-size:20px}.card h2{font-size:15px;margin:1px 0 4px}.meta{font-size:10px;color:var(--muted)}.pill{display:inline-flex;padding:4px 7px;border:1px solid #3d4960;border-radius:99px;font-size:9px;color:#c8d3e5;margin-left:5px}.features{display:grid;gap:9px;margin-top:17px}.feature{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid #293247;border-radius:10px;background:#0c111c}.feature strong{display:block;font-size:12px}.feature small{display:block;color:var(--muted);font-size:10px;margin-top:3px}.switch{width:42px;height:24px;flex:0 0 42px;appearance:none;border:1px solid #49546a;background:#252c3b;border-radius:99px;position:relative;cursor:pointer;transition:.18s}.switch:before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;border-radius:50%;background:#a8b2c5;transition:.18s}.switch:checked{background:#4c3b9a;border-color:#9685ff}.switch:checked:before{left:21px;background:white}.switch:disabled{opacity:.45;cursor:not-allowed}.card-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:14px;flex-wrap:wrap}.feature.showcase-feature{border-color:#354c6c;background:linear-gradient(110deg,#122035,#101827)}.feature.showcase-feature strong{color:#dcecff}.feature.showcase-feature small{color:#9eb2ce}.feature.showcase-feature .switch:checked{background:#347fd5;border-color:#75b5f5}.copy-status{font-size:10px;color:var(--good)}.snippet{margin-top:12px;border:1px solid var(--line);border-radius:10px;background:#080d16;overflow:hidden}.snippet summary{padding:10px 12px;font-size:10px;font-weight:850;color:#d8dff0;cursor:pointer}.snippet pre{margin:0;padding:12px;overflow:auto;font:11px/1.65 ui-monospace,monospace;color:#cad5eb;white-space:pre}.future{margin:0 0 50px;padding:18px;border:1px dashed #354058;border-radius:13px;background:#101521}.future h2{font-size:14px;margin:0 0 7px}.future p{font-size:11px;line-height:1.7;color:var(--muted);margin:0}.future-tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.future-tags span{padding:6px 9px;border-radius:8px;background:#1a2233;color:#c0cbe0;font-size:10px}
 @media(max-width:720px){.top{height:58px;padding:0 12px}.wrap{width:calc(100% - 24px)}.hero{padding-top:27px}.grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <header class="top"><a class="brand" href="/game-studio/projects.html">KURO <b>GAME STUDIO</b></a><span class="spacer"></span><span class="btn" aria-label="Cloudflare経由で通信">Cloudflare接続中</span><a class="btn" href="/game-studio/projects.html">プロジェクトへ戻る</a></header>
 <main class="wrap">
-<section class="hero"><div class="eyebrow">ONE ONLINE LAYER FOR EVERY GAME</div><h1>KUROGAMES ONLINE</h1><p>ゲームごとに必要なオンライン機能を選択できます。ランキングとクラウドセーブは共通基盤を使うため、ゲームごとのテーブル作成やSupabase設定は不要です。設定を変更すると、このゲームのSDK利用可否にすぐ反映されます。ルームのリアルタイム通信はCloudflare Durable Objectsを使用し、認証・ルーム作成などの管理APIは既存の共通基盤を利用します。</p></section>
+<section class="hero"><div class="eyebrow">ONE ONLINE LAYER FOR EVERY GAME</div><h1>KUROGAMES ONLINE</h1><p>ゲームごとにオンライン機能を設定できます。ランキングを有効にしたゲームは、さらに「ランキング欄に表示」をONにするとKURO GAMESのランキング欄に掲載されます。下書きは選択できず、公開済みゲームだけが対象です。</p></section>
 <div id="status" class="status">ログイン状態を確認しています…</div>
 <section id="games" class="grid"></section>
 <section class="future"><h2>通信機能について</h2><p>現在利用できる機能：ランキング送信・取得、個人クラウドセーブ（キー一覧を含む）、6文字ルームコード、最大35人の参加者同期、ルーム共有状態の保存・更新、リアルタイムイベント。実績・バッジ、フレンド・招待は今後の拡張予定です。</p><div class="future-tags"><span>利用可能：ランキング</span><span>利用可能：クラウドセーブ</span><span>利用可能：ルーム通信</span><span>今後：実績・バッジ</span><span>今後：フレンド・招待</span></div></section>
@@ -95,20 +95,23 @@ return [
 ].join("\n");
 }
 function renderGame(game,features){
-const card=document.createElement("article");card.className="card";card.dataset.gameId=game.id;
-const statusText=game.status==="published"?"公開中":"非公開";
-card.innerHTML=
-'<div class="card-head"><div class="glyph">🎮</div><div><h2>'+escapeHtml(game.title||"無題のゲーム")+' <span class="pill">'+statusText+'</span></h2><div class="meta">ID: '+escapeHtml(game.id)+'</div></div></div>'+
-'<div class="features">'+
-'<label class="feature"><span><strong>ランキング</strong><small>スコア送信・世界ランキング取得</small></span><input class="switch" type="checkbox" data-feature="ranking" '+(features.ranking?'checked':'')+'></label>'+
-'<label class="feature"><span><strong>クラウドセーブ</strong><small>ユーザーごとに最大64KBのデータを保存</small></span><input class="switch" type="checkbox" data-feature="cloudSave" '+(features.cloudSave?'checked':'')+'></label>'+
-'<label class="feature"><span><strong>マルチプレイ</strong><small>ルーム作成・6文字コード参加・リアルタイム同期（最大35人）</small></span><input class="switch" type="checkbox" data-feature="multiplayer" '+(features.multiplayer?'checked':'')+'></label>'+
-'</div>'+
-'<div class="card-foot"><span class="copy-status" aria-live="polite"></span><button class="btn primary copy-snippet" type="button">SDKコードをコピー</button></div>'+
-'<details class="snippet"><summary>SDKの使用例を表示</summary><pre></pre></details>';
-card.querySelector(".snippet pre").textContent=makeSnippet(game);
-grid.appendChild(card);
-}
+ const card=document.createElement("article");card.className="card";card.dataset.gameId=game.id;card.dataset.gameStatus=game.status||"";
+ const statusText=game.status==="published"?"公開中":"非公開";
+ const canFeatureRanking=game.status==="published"&&features.ranking===true;
+ const showcaseHint=game.status!=="published"?"公開後に選択できます":features.ranking?"ランキング欄にこのゲームのTOP3を掲載します":"先に「ランキング」をONにしてください";
+ card.innerHTML=
+ '<div class="card-head"><div class="glyph">🎮</div><div><h2>'+escapeHtml(game.title||"無題のゲーム")+' <span class="pill">'+statusText+'</span></h2><div class="meta">ID: '+escapeHtml(game.id)+'</div></div></div>'+
+ '<div class="features">'+
+ '<label class="feature"><span><strong>ランキング</strong><small>スコア送信・世界ランキング取得</small></span><input class="switch" type="checkbox" data-feature="ranking" '+(features.ranking?'checked':'')+'></label>'+
+ '<label class="feature showcase-feature"><span><strong>ランキング欄に表示</strong><small>'+escapeHtml(showcaseHint)+'</small></span><input class="switch" type="checkbox" data-feature="rankingShowcase" '+(features.rankingShowcase===true&&canFeatureRanking?'checked':'')+' '+(!canFeatureRanking?'disabled':'')+'></label>'+
+ '<label class="feature"><span><strong>クラウドセーブ</strong><small>ユーザーごとに最大64KBのデータを保存</small></span><input class="switch" type="checkbox" data-feature="cloudSave" '+(features.cloudSave?'checked':'')+'></label>'+
+ '<label class="feature"><span><strong>マルチプレイ</strong><small>ルーム作成・6文字コード参加・リアルタイム同期（最大35人）</small></span><input class="switch" type="checkbox" data-feature="multiplayer" '+(features.multiplayer?'checked':'')+'></label>'+
+ '</div>'+
+ '<div class="card-foot"><span class="copy-status" aria-live="polite"></span><button class="btn primary copy-snippet" type="button">SDKコードをコピー</button></div>'+
+ '<details class="snippet"><summary>SDKの使用例を表示</summary><pre></pre></details>';
+ card.querySelector(".snippet pre").textContent=makeSnippet(game);
+ grid.appendChild(card);
+ }
 async function load(){
 try{
 const {data:{session},error:sessionError}=await db.auth.getSession();
@@ -127,15 +130,27 @@ setStatus(games.length+"件のゲームを読み込みました。変更はゲ�
 }catch(error){setStatus("読み込みに失敗しました: "+(error.message||"通信エラー"),"error");}
 }
 grid.addEventListener("change",async function(event){
-const input=event.target.closest("input[data-feature]");
-if(!input)return;
-const card=input.closest(".card"),gameId=card.dataset.gameId,feature=input.dataset.feature;
-const previous=!input.checked;input.disabled=true;
-const {error}=await invoke("settings_update",gameId,{features:{[feature]:input.checked}});
-input.disabled=false;
-if(error){input.checked=previous;card.querySelector(".copy-status").textContent="保存失敗: "+(error.message||"通信エラー");return;}
-card.querySelector(".copy-status").textContent="保存しました";
-});
+ const input=event.target.closest("input[data-feature]");
+ if(!input)return;
+ const card=input.closest(".card"),gameId=card.dataset.gameId,feature=input.dataset.feature;
+ const previous=!input.checked;input.disabled=true;
+ const {data,error}=await invoke("settings_update",gameId,{features:{[feature]:input.checked}});
+ if(error){
+  input.checked=previous;
+  input.disabled=feature==="rankingShowcase"&&(card.dataset.gameStatus!=="published"||card.querySelector('[data-feature="ranking"]')?.checked!==true);
+  card.querySelector(".copy-status").textContent="保存失敗: "+(error.message||"通信エラー");return;
+ }
+ const saved=data?.features||{};
+ const rankingInput=card.querySelector('[data-feature="ranking"]');
+ const showcaseInput=card.querySelector('[data-feature="rankingShowcase"]');
+ if(rankingInput)rankingInput.checked=saved.ranking===true;
+ if(showcaseInput){
+  showcaseInput.checked=saved.rankingShowcase===true;
+  showcaseInput.disabled=card.dataset.gameStatus!=="published"||saved.ranking!==true;
+ }
+ input.disabled=false;
+ card.querySelector(".copy-status").textContent="保存しました";
+ });
 grid.addEventListener("click",async function(event){
 const button=event.target.closest(".copy-snippet");if(!button)return;
 const card=button.closest(".card"),gameId=card.dataset.gameId;
