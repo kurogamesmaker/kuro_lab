@@ -433,12 +433,6 @@ function bindKuroEnginePage(){
    if(zoom){var action=zoom.dataset.explorerZoom;if(action==="in")scale=Math.min(1.65,scale+0.15);if(action==="out")scale=Math.max(0.55,scale-0.15);if(action==="fit")scale=Math.min(1,(viewport.clientWidth-24)/canvasWidth);draw();return;}
    if(event.target.closest("[data-explorer-reset]")){scale=Math.min(1,(viewport.clientWidth-24)/canvasWidth);draw();viewport.scrollTo({left:0,top:0,behavior:"smooth"});}
   });
-  graph.addEventListener("click",function(event){
-   var focus=event.target.closest("[data-graph-focus]");if(!focus)return;
-   var node=nodeById(focus.dataset.graphFocus);if(!node)return;
-   viewport.scrollTo({left:Math.max(0,node.x*scale-35),top:Math.max(0,(node.y-viewport.clientHeight/2)*scale),behavior:"smooth"});
-   var el=nodeLayer.querySelector('[data-explorer-node="'+node.id+'"]');if(el){el.classList.add("is-highlighted");window.setTimeout(function(){el.classList.remove("is-highlighted");},1300);}
-  });
   var dragging=false,lastX=0,lastY=0;
   viewport.addEventListener("pointerdown",function(event){if(event.target.closest("a,button"))return;dragging=true;lastX=event.clientX;lastY=event.clientY;viewport.classList.add("is-dragging");try{viewport.setPointerCapture(event.pointerId);}catch(e){}});
   viewport.addEventListener("pointermove",function(event){if(!dragging)return;var dx=event.clientX-lastX,dy=event.clientY-lastY;lastX=event.clientX;lastY=event.clientY;viewport.scrollLeft-=dx;viewport.scrollTop-=dy;});
@@ -491,7 +485,7 @@ function bindKuroEnginePage(){
    showEmpty("通信に失敗しました。インターネット接続を確認して、もう一度検索してください。");
   }
  }
- results.addEventListener("click",function(event){var focus=event.target.closest("[data-graph-focus]");if(!focus)return;var graph=$("#kuro-search-explorer");if(graph){var node=graph.querySelector('[data-explorer-node="'+focus.dataset.graphFocus+'"]');if(node){node.classList.add("is-highlighted");window.setTimeout(function(){node.classList.remove("is-highlighted");},1300);}}});
+ results.addEventListener("click",function(event){var focus=event.target.closest("[data-graph-focus]");if(!focus)return;var graph=$("#kuro-search-explorer");if(graph){var node=graph.querySelector('[data-explorer-node="'+focus.dataset.graphFocus+'"]');if(node){node.scrollIntoView({behavior:"smooth",block:"center",inline:"center"});node.classList.add("is-highlighted");window.setTimeout(function(){node.classList.remove("is-highlighted");},1300);}}});
  form.onsubmit=function(event){event.preventDefault();query=String(input.value||"").trim().slice(0,180);input.value=query;updateAddress(true);runSearch();};
  document.querySelectorAll("[data-kuro-search-mode]").forEach(function(button){
   button.onclick=function(){var next=button.dataset.kuroSearchMode;if(!next||next===mode)return;mode=next;updateTabs();updateAddress(false);runSearch();};
