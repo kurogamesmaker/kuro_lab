@@ -1132,7 +1132,7 @@ function initKuroRankingShowcase(){
   cache.set(key,rows);return rows;
  }
  function modeName(mode){return mode==="default"?"":mode.replace(/[_-]+/g," ");}
- async function display(i,direction=1){
+ async function display(i,direction=1,forceTransition=false){
   if(!games.length)return;
   if(busy){
    pendingSteps=Math.max(-4,Math.min(4,pendingSteps+(direction<0?-1:1)));
@@ -1141,7 +1141,7 @@ function initKuroRankingShowcase(){
   busy=true;
   const nextIndex=(i+games.length)%games.length;
   const game=games[nextIndex];
-  const isSwitch=panel.dataset.rankReady==="1"&&nextIndex!==index;
+  const isSwitch=panel.dataset.rankReady==="1"&&(nextIndex!==index||forceTransition);
   const slideDirection=direction<0?"prev":"next";
   try{
    // 先に次のデータを取得しつつ、現在の一覧を退場させる。通信待ちで空白にならない。
@@ -1184,11 +1184,11 @@ function initKuroRankingShowcase(){
    if(pendingSteps){
     const queued=pendingSteps;
     pendingSteps=0;
-    display(index+queued,Math.sign(queued));
+    display(index+queued,Math.sign(queued),true);
    }
   }
  }
- function go(delta){pausedUntil=Date.now()+12000;display(index+delta,delta);}
+ function go(delta){pausedUntil=Date.now()+12000;display(index+delta,delta,true);}
  prev?.addEventListener("click",()=>go(-1));
  next?.addEventListener("click",()=>go(1));
  // ランキング一覧を左右にスワイプして切り替え（縦スクロールはそのまま）。
