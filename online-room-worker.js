@@ -228,6 +228,15 @@ export class Room {
     };
     return { epk, iv: toBase64(iv), ct: toBase64(ciphertext) };
   }
+  syncUnonRoomMetadata(game) {
+    if (!game || !this.data.state || typeof this.data.state !== "object") return;
+    this.data.state = {
+      ...this.data.state,
+      phase: game.phase === "finished" ? "finished" : "playing",
+      matchId: game.matchId,
+      game: null,
+    };
+  }
   async makeUnonPatch(userId, previousGame, nextGame, events, removeId, forceFull = false) {
     const nextSplit = UNON_RULES.split(nextGame);
     const previousSplit = previousGame ? UNON_RULES.split(previousGame) : null;
@@ -344,6 +353,7 @@ export class Room {
     const applied = UNON_RULES.applyAction(game, player.id, action);
     if (!applied.ok) return this.send(ws, { type: "unon-result", requestId, result: applied });
     this.data.unonGame = applied.state;
+    this.syncUnonRoomMetadata(applied.state);
     this.data.unonActionIds = seen.concat(actionKey).slice(-128);
     this.data.unoDeadline = applied.state.unoPending ? Date.now() + 3000 : null;
     this.data.updatedAt = Math.max(Date.now(), (Number(this.data.updatedAt) || 0) + 1);
@@ -389,6 +399,7 @@ export class Room {
     this.data.unoDeadline = null;
     if (!applied.ok) return;
     this.data.unonGame = applied.state;
+    this.syncUnonRoomMetadata(applied.state);
     this.data.updatedAt = Math.max(Date.now(), (Number(this.data.updatedAt) || 0) + 1);
     await this.save();
     await this.scheduleAlarm();
