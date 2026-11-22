@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { Room } from "../online-room-worker.js";
 
-const ROOM_IDLE_TTL_MS = 5 * 60 * 1000;
+const ROOM_IDLE_TTL_MS = 15 * 60 * 1000;
 
 function createRoom() {
   const values = new Map();
