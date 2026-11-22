@@ -2796,7 +2796,11 @@ body.kuro-portal[data-pro-theme="on"] .portal-settings-row small,
 body.kuro-portal[data-pro-theme="on"] .portal-footer-inner{
   color:var(--pro-surface-muted)!important;
 }
-body.kuro-portal[data-pro-theme="on"] .portal-btn:not(.primary),
+body.kuro-portal[data-pro-theme="on"] .portal-btn:not(.primary){
+  background:var(--surface2)!important;
+  color:var(--pro-surface-ink)!important;
+  border-color:var(--line)!important;
+}
 body.kuro-portal[data-pro-theme="on"] .portal-select,
 body.kuro-portal[data-pro-theme="on"] .portal-input,
 body.kuro-portal[data-pro-theme="on"] .portal-textarea,
@@ -2903,7 +2907,11 @@ body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-kicker,
 body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-dashboard-hero h1 em{
   color:var(--blue)!important;
 }
-body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-btn:not(.primary),
+body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-btn:not(.primary){
+  background:var(--surface2)!important;
+  color:var(--ink)!important;
+  border-color:var(--line)!important;
+}
 body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-select,
 body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-input,
 body.kuro-portal[data-theme]:not([data-pro-theme="on"]) .portal-textarea,
