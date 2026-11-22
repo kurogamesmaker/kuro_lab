@@ -885,8 +885,8 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
   animation:kuroRankTrophySparkle 2.1s ease-in-out infinite;
 }
 @keyframes kuroRankTrophyFloat{
-  0%,100%{transform:translateY(0) rotate(-3deg)}
-  50%{transform:translateY(-8px) rotate(3deg)}
+  0%,100%{transform:translateY(0) rotate(-4deg) scale(1)}
+  50%{transform:translateY(-14px) rotate(4deg) scale(1.05)}
 }
 @keyframes kuroRankTrophyGlow{
   0%,100%{opacity:.55;transform:scale(.88)}
@@ -897,10 +897,14 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
   50%{opacity:1;transform:scale(1.15) rotate(22deg)}
 }
 @media(prefers-reduced-motion:reduce){
-  #kuroRankingShowcase .rank-corner-trophy,
-  #kuroRankingShowcase .rank-corner-trophy::before,
+  #kuroRankingShowcase .rank-corner-trophy{
+    animation:kuroRankTrophyFloat 2.2s ease-in-out infinite!important;
+  }
+  #kuroRankingShowcase .rank-corner-trophy::before{
+    animation:kuroRankTrophyGlow 2.2s ease-in-out infinite!important;
+  }
   #kuroRankingShowcase .rank-corner-trophy::after{
-    animation:none!important;
+    animation:kuroRankTrophySparkle 1.8s ease-in-out infinite!important;
   }
 }
 
