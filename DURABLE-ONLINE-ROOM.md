@@ -88,5 +88,5 @@ The manual GitHub Actions deploy workflow is gated by repository variable `DEPLO
 
 - `kuro-delete-public-chat-daily` clears the public lobby chat once per day. The public lobby is intentionally short-lived and currently displays at most the latest 100 messages.
 - `kuro-delete-read-chat-messages-daily` runs every 15 minutes and deletes a DM if it has any read-receipt row older than one day. During this audit, `chat_message_reads` contained zero rows, so this job had no eligible messages to delete. This rule is separate from the new operational-log cleanup and should be reviewed independently before changing its behavior.
-- Group chat messages are not included in either of those chat-retention jobs and remain stored unless a user or administrator removes them through the product.
+- Group chat messages are not included in either of those chat-retention jobs and currently have no automatic time-based cleanup.
 - KUROSNS posts and replies are not time-pruned.
