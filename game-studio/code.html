@@ -10,7 +10,9 @@
 <p>新しいKURO GAME STUDIOを開いています…</p>
 <script>
 (function(){
-  var target = "/game-studio/code-v2.html" + location.search + location.hash;
+  var params = new URLSearchParams(location.search);
+  params.set("v", "20261122studio-runtime-cleanup1");
+  var target = "/game-studio/code-v2.html" + (params.toString() ? "?" + params.toString() : "") + location.hash;
   location.replace(target);
 })();
 </script>
