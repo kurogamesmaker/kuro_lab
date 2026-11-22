@@ -7,7 +7,7 @@
 - Durable Object class: `Room`
 - Namespace ID: `9633b9fd379f4e0690c398d3933b8dcd`
 - Namespace storage: SQLite
-- Latest verified Cloudflare deployment: `15a30aecbcd348b6a6bfe85b9ddb6df1` (script content updated via the Worker content endpoint)
+- Latest verified Cloudflare deployment: `3a7a75aa46dd4204844632a783f98970` (script content updated via the Worker content endpoint)
 - Secret binding configured: `TICKET_SECRET` (value is not stored in GitHub)
 
 ## Authentication policy
