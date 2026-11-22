@@ -390,6 +390,7 @@ function bindKuroEnginePage(){
    var payload=await response.json().catch(function(){return {};});
    if(!response.ok){
     if(response.status===503||payload.code==="SEARCH_PROVIDER_NOT_CONFIGURED"){status.textContent="外部検索の接続準備が必要です。";showEmpty("検索エンジンのバックエンドに検索APIキーがまだ設定されていません。KURO Labの画面にはキーを公開せず、Cloudflareの秘密設定に登録する必要があります。");return;}
+    if(response.status===404){status.textContent="検索サーバーの更新が必要です。";showEmpty("Cloudflare Workerの検索APIがまだ公開されていません。Workerの更新後に利用できるようになります。");return;}
     if(response.status===429){status.textContent="検索が混み合っています。";showEmpty("少し時間をおいてから、もう一度検索してください。");return;}
     throw new Error(payload.message||"検索に失敗しました。");
    }
