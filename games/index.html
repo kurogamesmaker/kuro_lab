@@ -48,6 +48,72 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 .ranking-showcase.rank-transition .rank-list{animation:rankFade .24s ease}@keyframes rankFade{from{opacity:.35;transform:translateX(7px)}to{opacity:1;transform:translateX(0)}}
 @media(max-width:980px){.games-layout{grid-template-columns:minmax(0,1fr) 260px;gap:13px}.ranking-showcase{padding:15px;min-height:290px}.rank-list{min-height:140px}}
 @media(max-width:680px){.games-layout{display:flex;flex-direction:column}.ranking-showcase{order:-1;width:100%;min-height:0;padding:14px}.rank-head h2{font-size:17px}.rank-game{margin-top:11px}.rank-list{min-height:0;grid-template-columns:1fr;gap:6px}.rank-row{padding:8px}.rank-foot{margin-top:10px;padding-top:9px}}
+
+/* KURO ranking display v2: final palette overrides */
+#kuroRankingShowcase{
+  border:1px solid #d8e6fa;
+  border-radius:20px;
+  background:linear-gradient(145deg,#ffffff 0%,#f3f8ff 62%,#fffaf0 100%);
+  box-shadow:0 10px 28px rgba(43,103,180,.09);
+}
+#kuroRankingShowcase::before{
+  width:4px;
+  background:linear-gradient(180deg,#3987ef 0%,#70b5ff 55%,#f2c94c 100%);
+}
+#kuroRankingShowcase .rank-eyebrow{color:#3478cc}
+#kuroRankingShowcase .rank-head h2{color:#203a60}
+#kuroRankingShowcase .rank-live{
+  background:#eaf3ff;
+  color:#2d70c5;
+  border:1px solid #d5e7ff;
+}
+#kuroRankingShowcase .rank-live i{
+  background:#3986ed;
+  box-shadow:0 0 0 3px rgba(57,134,237,.14);
+}
+#kuroRankingShowcase .rank-game{color:#29466f}
+#kuroRankingShowcase .rank-row{
+  border-color:#e1eafa;
+  background:linear-gradient(100deg,#ffffff 0%,#f9fbff 100%);
+  box-shadow:0 2px 7px rgba(38,78,132,.035);
+  transition:border-color .16s ease,background .16s ease,transform .16s ease;
+}
+#kuroRankingShowcase .rank-row:nth-child(1){
+  border-color:#f0d68f;
+  background:linear-gradient(100deg,#fff9e9 0%,#ffffff 88%);
+}
+#kuroRankingShowcase .rank-row:nth-child(2){
+  border-color:#dfe5ee;
+  background:linear-gradient(100deg,#f7f9fc 0%,#ffffff 88%);
+}
+#kuroRankingShowcase .rank-row:nth-child(3){
+  border-color:#ecd6c2;
+  background:linear-gradient(100deg,#fff7f0 0%,#ffffff 88%);
+}
+#kuroRankingShowcase .rank-name{color:#405674}
+#kuroRankingShowcase .rank-score{color:#2875d5}
+#kuroRankingShowcase .rank-foot{border-top-color:#e2eafa}
+#kuroRankingShowcase .rank-foot a{color:#3279d2}
+#kuroRankingShowcase .rank-controls button{
+  border-color:#d8e5f7;
+  background:#ffffff;
+  color:#356fae;
+}
+#kuroRankingShowcase .rank-controls button:hover{
+  background:#edf5ff;
+  border-color:#9fc5f5;
+}
+#kuroRankingShowcase .rank-dot{background:#cbd8e9}
+#kuroRankingShowcase .rank-dot.active{background:#347fe2}
+#kuroRankingShowcase.rank-transition .rank-list{animation:rankFade .24s ease}
+@media(hover:hover){
+  #kuroRankingShowcase .rank-row:hover{transform:translateY(-1px);border-color:#b9d4f8}
+}
+@media(prefers-reduced-motion:reduce){
+  #kuroRankingShowcase.rank-transition .rank-list{animation:none!important}
+  #kuroRankingShowcase .rank-row{transition:none!important}
+}
+
 </style>
 
 <!-- Google Analytics 4 -->
