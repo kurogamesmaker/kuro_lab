@@ -77,6 +77,14 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
   box-shadow:0 0 0 3px rgba(57,134,237,.14);
 }
 #kuroRankingShowcase .rank-game{color:#29466f}
+/* Long ranking game titles scroll only when they exceed the available width. */
+#kuroRankingShowcase .rank-game{overflow:hidden;white-space:nowrap;position:relative;}
+#kuroRankingShowcase .rank-game.rank-marquee{display:block;}
+#kuroRankingShowcase .rank-marquee-track{display:inline-flex;width:max-content;align-items:center;gap:42px;animation:kuroRankTitleScroll var(--rank-title-duration,8s) linear infinite;will-change:transform;}
+#kuroRankingShowcase .rank-marquee-track span{display:inline-block;flex:none;}
+@keyframes kuroRankTitleScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media(prefers-reduced-motion:reduce){#kuroRankingShowcase .rank-marquee-track{animation:none!important}}
+
 #kuroRankingShowcase .rank-row{
   border-color:#e1eafa;
   background:linear-gradient(100deg,#ffffff 0%,#f9fbff 100%);
@@ -1154,7 +1162,9 @@ function initKuroRankingShowcase(){
    }
    const result=await rowsPromise;
    index=nextIndex;
-   titleEl.textContent=game.title+(modeName(game.mode)?" · "+modeName(game.mode):"");
+   const displayTitle=game.title+(modeName(game.mode)?" · "+modeName(game.mode):"");
+   titleEl.classList.remove("rank-marquee");titleEl.replaceChildren();titleEl.textContent=displayTitle;
+   requestAnimationFrame(()=>{if(titleEl.scrollWidth>titleEl.clientWidth+2){const track=document.createElement("span");track.className="rank-marquee-track";track.style.setProperty("--rank-title-duration",Math.max(7,displayTitle.length/2.2)+"s");const first=document.createElement("span"),second=document.createElement("span");first.textContent=displayTitle;second.textContent=displayTitle;track.append(first,second);titleEl.textContent="";titleEl.append(track);titleEl.classList.add("rank-marquee");}});
    linkEl.href="/games/play/?id="+encodeURIComponent(game.id);
    linkEl.textContent="このゲームを遊ぶ ↗";
    renderDots();
