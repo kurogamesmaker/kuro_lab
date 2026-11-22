@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { Room } from "../online-room-worker.js";
+import { webcrypto } from "node:crypto";
+if (!globalThis.crypto) globalThis.crypto = webcrypto;
+import { Room, UNON_RULES } from "../online-room-worker.js";
 
 const ROOM_IDLE_TTL_MS = 15 * 60 * 1000;
 
