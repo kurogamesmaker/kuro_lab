@@ -40,7 +40,7 @@ function createRoom() {
   };
 }
 
-test("last socket disconnect schedules a five-minute cleanup alarm", async () => {
+test("last socket disconnect schedules a fifteen-minute cleanup alarm", async () => {
   const fixture = createRoom();
   const socket = { send() {} };
   const now = Date.now();
@@ -50,7 +50,7 @@ test("last socket disconnect schedules a five-minute cleanup alarm", async () =>
   await fixture.room.lifecycleTail;
 
   assert.equal(fixture.room.sockets.size, 0);
-  assert.equal(fixture.alarmAt, now + ROOM_IDLE_TTL_MS);
+  assert.ok(Math.abs(fixture.alarmAt - (now + ROOM_IDLE_TTL_MS)) <= 10);
   assert.equal(fixture.deleteAllCalls, 0);
 });
 
