@@ -512,3 +512,31 @@ test("UNON action IDs are idempotent when a client retries after a delayed ackno
   assert.equal(retry.duplicate, true);
   assert.equal(retry.patch.public.version, version);
 });
+
+
+test("generic room snapshots never expose the server-only UNON deck, hands or ECDH private key", async () => {
+  const fixture = createRoom();
+  fixture.room.loaded = true;
+  fixture.room.data = {
+    state: { phase: "playing", matchId: "private-match", game: null },
+    updatedAt: 900,
+    unonGame: { deck: [{ id: "hidden-card" }], players: [{ userId: "secret", hand: [{ id: "private-card" }] }] },
+    unonCrypto: { privateKey: { d: "server-private-key" }, publicKey: { kty: "EC" } },
+    unonActionIds: ["user:action"],
+    unoDeadline: null,
+    idleDeadline: null,
+  };
+  const sent = [];
+  const socket = { send(payload) { sent.push(JSON.parse(payload)); } };
+  const player = { id: "host-user", isHost: true };
+  fixture.room.sockets.set(socket, player);
+
+  await fixture.room.onMessage(socket, player, JSON.stringify({ type: "get-state", requestId: "safe-state" }));
+  const result = sent[0].result;
+  assert.deepEqual(result.state, fixture.room.data.state);
+  assert.equal(result.unonGame, undefined);
+  assert.equal(result.unonCrypto, undefined);
+  assert.equal(result.unonActionIds, undefined);
+  assert.equal(JSON.stringify(sent[0]).includes("server-private-key"), false);
+  assert.equal(JSON.stringify(sent[0]).includes("private-card"), false);
+});
