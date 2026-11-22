@@ -2518,25 +2518,8 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 showToast('設定を開くにはログインしてください');
                 return;
             }
-            accountSettingsRequiredSetup = !!forceSetup || data.user.user_metadata?.kuro_password_configured === false;
-            document.getElementById('accountSettingsTitle').innerHTML = accountSettingsRequiredSetup
-                ? '<i class="fa-solid fa-shield-halved mr-2 text-violet-300"></i>パスワード設定'
-                : '<i class="fa-solid fa-gear mr-2 text-violet-300"></i>アカウント設定';
-            document.getElementById('accountSettingsDescription').textContent = accountSettingsRequiredSetup
-                ? '登録を完了するため、パスワードを設定してください。'
-                : 'パスワードを新しく設定したり、変更したりできます。';
-            document.getElementById('accountSettingsCloseButton').classList.toggle('hidden', accountSettingsRequiredSetup);
-            document.getElementById('accountSettingsCancelButton').classList.toggle('hidden', accountSettingsRequiredSetup);
-            document.getElementById('accountPasswordModeChoice').classList.toggle('hidden', accountSettingsRequiredSetup);
-            const radios = document.querySelectorAll('input[name="accountPasswordMode"]');
-            radios.forEach(radio => { radio.checked = radio.value === (accountSettingsRequiredSetup ? 'set' : (data.user.user_metadata?.kuro_password_configured === true ? 'change' : 'set')); });
-            document.getElementById('accountCurrentPassword').value = '';
-            document.getElementById('accountNewPassword').value = '';
-            document.getElementById('accountConfirmPassword').value = '';
-            document.getElementById('accountSettingsModal').classList.remove('hidden');
-            document.body.classList.add('overflow-hidden');
-            toggleAccountPasswordMode();
-            document.getElementById('accountNewPassword').focus();
+            const needsSetup = !!forceSetup || data.user.user_metadata?.kuro_password_configured === false;
+            location.href = '/account/' + (needsSetup ? '?setup=1' : '');
         }
 
         function toggleAccountPasswordMode() {
