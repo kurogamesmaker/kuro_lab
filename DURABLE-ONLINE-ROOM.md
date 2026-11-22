@@ -54,7 +54,7 @@ UNON keeps its existing host-authoritative rules engine for this iteration, but 
 - The DO persists a merged full snapshot for reconnects, but broadcasts only the public view plus the recipient's own changed private envelope. Other players' private envelopes are never included in that recipient's WebSocket frame.
 - The DO rejects non-host writes and stale/duplicate game versions. It writes the reconnect snapshot before acknowledging or broadcasting the patch.
 - Recipients apply incoming patches in order and retain their already-decrypted private hand when no private envelope changed. Initial patches also start the game view for newly joined players.
-- The redundant six-second UNON snapshot refresh interval was removed. Live turn updates arrive on the WebSocket; a full snapshot is still fetched on join/reconnect.
+- The redundant six-second UNON snapshot refresh interval was removed. Live turn updates arrive on the WebSocket; a full snapshot is still fetched on join/reconnect. A two-second local-only presence timer handles disconnect grace checks without polling or sending network data.
 
 This is a transport and payload optimization, not yet a fully server-authoritative UNO rules engine. The host browser still validates actions, so a guest action still travels to the host before the host's result is broadcast. Moving `Rules.applyAction()` and deck/hand authority into the DO is a separate architectural step and is required to remove that host round trip.
 
