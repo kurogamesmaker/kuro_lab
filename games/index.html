@@ -869,8 +869,8 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
  try{favorites=JSON.parse(localStorage.getItem("kuroGamesFavorites")||"[]");if(!Array.isArray(favorites))favorites=[];}catch(e){favorites=[];}
  function save(){try{localStorage.setItem("kuroGamesFavorites",JSON.stringify(favorites));}catch(e){}}
  function update(){const q=searchNormalize(search?.value||"");let shown=0;allCards().forEach(card=>{const id=card.dataset.id,visible=(card.dataset.title||"").toLowerCase().includes(q)&&(active==="all"||(card.dataset.categories?JSON.parse(card.dataset.categories).includes(active):card.dataset.category===active))&&(!favOnly||favorites.includes(id));card.hidden=!visible;if(visible)shown++;const heart=card.querySelector(".heart"),on=favorites.includes(id);if(heart){heart.classList.toggle("on",on);heart.textContent=on?"♥":"♡";heart.setAttribute("aria-label",on?"お気に入りから削除":"お気に入りに追加");}});if(count)count.textContent="表示中 "+shown+" / "+allCards().length+" GAME";if(empty)empty.style.display=shown?"none":"block";if(favButton){favButton.classList.toggle("active",favOnly);favButton.textContent=favOnly?"♥ お気に入り表示中":"♡ お気に入り";}}
- filters.forEach(b=>b.addEventListener("click",()=>{active=b.dataset.filter;filters.forEach(x=>x.classList.toggle("active",x===b));favOnly=false;update();}));
- favButton?.addEventListener("click",()=>{favOnly=!favOnly;filters.forEach(x=>x.classList.toggle("active",x.dataset.filter===active));update();});
+ filters.forEach(b=>{if(b)b.addEventListener("click",()=>{active=b.dataset.filter;filters.forEach(x=>x.classList.toggle("active",x===b));favOnly=false;update();});});
+ if(favButton){favButton.addEventListener("click",()=>{favOnly=!favOnly;filters.forEach(x=>x.classList.toggle("active",x.dataset.filter===active));update();});}
  search?.addEventListener("input",update);
  function bindHeart(card){const heart=card.querySelector(".heart");if(!heart)return;heart.addEventListener("click",()=>{const id=card.dataset.id;favorites=favorites.includes(id)?favorites.filter(x=>x!==id):favorites.concat(id);save();update();});}
  cards.forEach(bindHeart);
