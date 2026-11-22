@@ -45,6 +45,14 @@ async function kuroCloudflareFetch(input,init){
  let body=null;if(result.isBinary&&result.bodyBase64){const raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);body=out;}else if(result.bodyText!==undefined&&![204,205,304].includes(result.status))body=result.bodyText;
  return new Response(body,{status:result.status,headers:result.headers||{"Content-Type":"application/json"}});
 }
+async function getStudioSession(client){
+ const first=await client.auth.getSession();
+ if(first.data&&first.data.session&&!first.error)return first;
+ const refreshed=await client.auth.refreshSession();
+ if(refreshed.data&&refreshed.data.session&&!refreshed.error)return refreshed;
+ if(first.error)throw first.error;
+ return refreshed;
+}
 const projectDb=window.supabase&&window.supabase.createClient?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{global:{fetch:kuroCloudflareFetch},auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
 let chosen="blank",filter="all",projects=[];
 const base={
@@ -70,7 +78,7 @@ async function loadPublishedGames(){
  const status=$("publishedStatus"),grid=$("publishedGrid"),empty=$("publishedEmpty");
  if(!projectDb){status.textContent="公開作品の取得に失敗しました（Supabase未接続）";return;}
  try{
-  const {data:{session},error:sessionError}=await projectDb.auth.getSession();if(sessionError)throw sessionError;
+  const {data:{session},error:sessionError}=await getStudioSession(projectDb);if(sessionError)throw sessionError;
   if(!session){status.textContent="ログインすると、自分が公開したゲームをStudioで編集できます";return;}
   const {data,error}=await projectDb.from("game_studio_games").select("id,slug,title,description,category,icon,updated_at").eq("owner_id",session.user.id).order("updated_at",{ascending:false}).limit(60);
   if(error)throw error;
@@ -106,8 +114,8 @@ let toastTimer;function toast(s){$("toast").textContent=s;$("toast").classList.a
 $("createBtn").onclick=()=>modal(true);$("emptyCreate").onclick=()=>modal(true);$("cancelCreate").onclick=()=>modal(false);$("confirmCreate").onclick=create;$("search").oninput=render;
 document.querySelectorAll("[data-type]").forEach(b=>b.onclick=()=>{chosen=b.dataset.type;document.querySelectorAll(".type").forEach(x=>x.classList.toggle("active",x===b));});
 document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{filter=b.dataset.filter;document.querySelectorAll(".filter").forEach(x=>x.classList.toggle("active",x===b));render();});
-$("projectGrid").onclick=async e=>{const b=e.target.closest("button");if(!b)return;if(b.dataset.open)open(b.dataset.open,"visual");if(b.dataset.duplicate)duplicate(b.dataset.duplicate);if(b.dataset.delete)remove(b.dataset.delete);if(b.dataset.publishedDelete){const id=b.dataset.publishedDelete;if(!confirm("この公開ゲームをKURO GAMESから削除しますか？この操作は元に戻せません。"))return;b.disabled=true;try{const {data:{session},error:authError}=await projectDb.auth.getSession();if(authError)throw authError;if(!session)throw new Error("ログインしてください");const {data,error}=await projectDb.from("game_studio_games").delete().eq("id",id).eq("owner_id",session.user.id).select("id").maybeSingle();if(error)throw error;if(!data)throw new Error("削除できませんでした。権限またはRLS設定を確認してください");toast("公開ゲームを削除しました");loadPublishedGames();}catch(err){toast("削除失敗: "+(err.message||"通信エラー"));b.disabled=false;}}};
-$("publishedGrid").onclick=async e=>{const b=e.target.closest("button[data-published-delete]");if(!b)return;const id=b.dataset.publishedDelete;if(!confirm("この公開ゲームをKURO GAMESから削除しますか？この操作は元に戻せません。"))return;b.disabled=true;try{const {data:{session},error:authError}=await projectDb.auth.getSession();if(authError)throw authError;if(!session)throw new Error("ログインしてください");const {data,error}=await projectDb.from("game_studio_games").delete().eq("id",id).eq("owner_id",session.user.id).select("id").maybeSingle();if(error)throw error;if(!data)throw new Error("削除できませんでした。権限またはRLS設定を確認してください");toast("公開ゲームを削除しました");loadPublishedGames();}catch(err){toast("削除失敗: "+(err.message||"通信エラー"));b.disabled=false;}};
+$("projectGrid").onclick=async e=>{const b=e.target.closest("button");if(!b)return;if(b.dataset.open)open(b.dataset.open,"visual");if(b.dataset.duplicate)duplicate(b.dataset.duplicate);if(b.dataset.delete)remove(b.dataset.delete);if(b.dataset.publishedDelete){const id=b.dataset.publishedDelete;if(!confirm("この公開ゲームをKURO GAMESから削除しますか？この操作は元に戻せません。"))return;b.disabled=true;try{const {data:{session},error:authError}=await getStudioSession(projectDb);if(authError)throw authError;if(!session)throw new Error("ログインしてください");const {data,error}=await projectDb.from("game_studio_games").delete().eq("id",id).eq("owner_id",session.user.id).select("id").maybeSingle();if(error)throw error;if(!data)throw new Error("削除できませんでした。権限またはRLS設定を確認してください");toast("公開ゲームを削除しました");loadPublishedGames();}catch(err){toast("削除失敗: "+(err.message||"通信エラー"));b.disabled=false;}}};
+$("publishedGrid").onclick=async e=>{const b=e.target.closest("button[data-published-delete]");if(!b)return;const id=b.dataset.publishedDelete;if(!confirm("この公開ゲームをKURO GAMESから削除しますか？この操作は元に戻せません。"))return;b.disabled=true;try{const {data:{session},error:authError}=await getStudioSession(projectDb);if(authError)throw authError;if(!session)throw new Error("ログインしてください");const {data,error}=await projectDb.from("game_studio_games").delete().eq("id",id).eq("owner_id",session.user.id).select("id").maybeSingle();if(error)throw error;if(!data)throw new Error("削除できませんでした。権限またはRLS設定を確認してください");toast("公開ゲームを削除しました");loadPublishedGames();}catch(err){toast("削除失敗: "+(err.message||"通信エラー"));b.disabled=false;}};
 $("importBtn").onclick=()=>$("importFile").click();
 function splitImportedCode(source){
  let input=String(source||"").replace(/^\uFEFF/,"").trim(),parts={html:"",css:"",js:""};
