@@ -177,7 +177,12 @@ window.addEventListener("message", async event => {
       msg.path !== "/functions/v1/kurogames-online" || msg.method !== "POST") return;
   try {
    const activeSession = await getKuroGameAuthSession();
-   if (!activeSession?.access_token) {
+   const bytes = msg.bodyBase64 ? Uint8Array.from(atob(msg.bodyBase64), ch => ch.charCodeAt(0)) : new Uint8Array();
+   let action = "";
+   try { action = String(JSON.parse(new TextDecoder().decode(bytes)).action || ""); } catch (_) {}
+   // 公開ランキングの閲覧だけはゲストにも許可。記録・設定変更・セーブ等はログイン必須。
+   const publicActions = new Set(["get_config", "leaderboard", "leaderboard_modes", "tictactoe_leaderboard"]);
+   if (!activeSession?.access_token && !publicActions.has(action)) {
     const message = "オンライン機能を利用するにはKUROアカウントへのログインが必要です。";
     const prompt = document.getElementById("onlineAuthPrompt");
     if (prompt) prompt.hidden = false;
@@ -185,9 +190,12 @@ window.addEventListener("message", async event => {
     event.source.postMessage({type:"kuro-online-proxy-response",requestId:msg.requestId,response:{status:401,headers:{"content-type":"application/json"},bodyBase64}},"*");
     return;
    }
-   const bytes = msg.bodyBase64 ? Uint8Array.from(atob(msg.bodyBase64), ch => ch.charCodeAt(0)) : new Uint8Array();
+   const proxyHeaders = new Headers(msg.headers || {});
+   proxyHeaders.set("apikey", "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn");
+   if (activeSession?.access_token) proxyHeaders.set("Authorization", "Bearer " + activeSession.access_token);
+   else proxyHeaders.delete("Authorization");
    const request = new Request("https://cprvpphlfpmiegjiutjn.supabase.co" + msg.path, {
-    method: "POST", headers: msg.headers || {}, body: bytes
+    method: "POST", headers: proxyHeaders, body: bytes
    });
    const response = await kuroCloudflareFetch(request);
    const responseBytes = new Uint8Array(await response.arrayBuffer());
