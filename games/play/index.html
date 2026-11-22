@@ -29,6 +29,7 @@ async function kuroCloudflareFetch(input,init){
 }
 
 let kuroGameFrame = null;
+let kuroGameFrameGameId = null;
 let kuroGameFrameLayout = null;
 let kuroGameGuestMode = false;
 window.addEventListener("resize",()=>{if(kuroGameFrameLayout)kuroGameFrameLayout();});
@@ -123,7 +124,7 @@ window.addEventListener("message", async event => {
  if (msg.type === "kuro-online-auth-request" && typeof msg.requestId === "string" && msg.requestId.length <= 100) {
   try {
    const session = await getKuroGameAuthSession();
-   const guest = session ? null : await getKuroGameGuestAuth(msg.gameId === id ? id : "");
+   const guest = session ? null : await getKuroGameGuestAuth(msg.gameId === kuroGameFrameGameId ? kuroGameFrameGameId : "");
    event.source.postMessage({
     type: "kuro-online-auth",
     requestId: msg.requestId,
@@ -330,7 +331,7 @@ window.addEventListener("message", async event => {
    frame.style.maxHeight="none";
    frame.style.aspectRatio=frameWidth+" / "+frameHeight;
   };
-  kuroGameFrame=frame;$("frameWrap").replaceChildren(frame);kuroGameFrameLayout();frame.srcdoc='<script>window.KURO_GUEST_MODE='+guest+';window.KURO_GAMES_RECORDS_ENABLED=!window.KURO_GUEST_MODE;const isScoreUrl=u=>window.KURO_GUEST_MODE&&/\\/rest\\/v1\\/game_scores(?:\\?|$)/i.test(String(u));const nativeFetch=window.fetch.bind(window);window.fetch=function(input,init){const u=typeof input==="string"?input:(input&&input.url)||"";if(isScoreUrl(u)){return Promise.resolve(new Response(JSON.stringify({ok:false,guest:true,message:"ゲストプレイではランキングに記録されません。"}),{status:200,headers:{"Content-Type":"application/json"}}));}return nativeFetch(input,init);};<\/script>'+data.html_content;};
+  kuroGameFrame=frame;kuroGameFrameGameId=id;$("frameWrap").replaceChildren(frame);kuroGameFrameLayout();frame.srcdoc='<script>window.KURO_GUEST_MODE='+guest+';window.KURO_GAMES_RECORDS_ENABLED=!window.KURO_GUEST_MODE;const isScoreUrl=u=>window.KURO_GUEST_MODE&&/\\/rest\\/v1\\/game_scores(?:\\?|$)/i.test(String(u));const nativeFetch=window.fetch.bind(window);window.fetch=function(input,init){const u=typeof input==="string"?input:(input&&input.url)||"";if(isScoreUrl(u)){return Promise.resolve(new Response(JSON.stringify({ok:false,guest:true,message:"ゲストプレイではランキングに記録されません。"}),{status:200,headers:{"Content-Type":"application/json"}}));}return nativeFetch(input,init);};<\/script>'+data.html_content;};
   const session=await getKuroGameAuthSession();launchGame(!session||!!session.user?.is_anonymous);
  }catch(error){fail(error.message||"通信エラーが発生しました。");}
 })();
