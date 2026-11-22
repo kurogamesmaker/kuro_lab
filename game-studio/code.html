@@ -227,6 +227,21 @@ function splitMixedCode(source){
  return {parts,notes};
 }
 function safeScript(source){return String(source||"").replace(/<\/script/gi,"<\\/script");}
+function validateProjectCodeSyntax(code){
+ const errors=[];
+ const check=(label,source,isModule)=>{
+  const body=String(source||"").trim();
+  if(!body||isModule||/^\s*(?:import|export)\b/m.test(body)||/\bawait\b/.test(body)||/\bimport\s*\.\s*meta\b/.test(body))return;
+  try{new Function(body);}catch(error){errors.push(label+": "+(error&&error.message||"構文エラー"));}
+ };
+ check("game.js",code&&code.js,false);
+ const html=String(code&&code.html||"");
+ html.replace(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi,(whole,attrs,body)=>{
+  if(!/\bsrc\s*=/.test(attrs))check("index.html内のscript",body,/\btype\s*=\s*["']module["']/i.test(attrs));
+  return whole;
+ });
+ return errors;
+}
 function makeDocument(){
  let html=project.code.html||"";
  // HTMLタブ内のインラインscriptにもトップレベルawait対応を適用
@@ -405,7 +420,13 @@ async function loadPublishedGameFromCloud(){
   const parsed=splitMixedCode(data.html_content||"");
   const draftKey="kuroGameStudio.publishedDraft."+data.id;let draft=null;try{draft=JSON.parse(localStorage.getItem(draftKey)||"null");}catch(_){}
   const remoteUpdated=Date.parse(data.updated_at||"")||0;
-  const useDraft=!!(draft&&draft.publishedGameId===data.id&&Number(draft.updatedAt||0)>remoteUpdated);
+  let useDraft=!!(draft&&draft.publishedGameId===data.id&&Number(draft.updatedAt||0)>remoteUpdated);
+  const draftSyntaxErrors=useDraft?validateProjectCodeSyntax(draft.code||{}):[];
+  const rejectedDraft=useDraft&&draftSyntaxErrors.length>0;
+  if(rejectedDraft){
+   useDraft=false;
+   console.warn("KURO Studio: 保存済み下書きに構文エラーがあるため、公開版を読み込みます。",draftSyntaxErrors);
+  }
   const savedSettings=useDraft&&draft.settings&&typeof draft.settings==="object"?clone(draft.settings):{};
   const publishedFrame=String(data.html_content||"").match(/<meta\s+name=["']kuro-game-frame["']\s+content=["'](\d{3,4})x(\d{3,4})["'][^>]*>/i);
   const publishedWidth=publishedFrame?Math.max(240,Math.min(3840,Number(publishedFrame[1]))):960;
@@ -413,7 +434,10 @@ async function loadPublishedGameFromCloud(){
   if(!Number(savedSettings.gameFrameWidth))savedSettings.gameFrameWidth=publishedWidth;
   if(!Number(savedSettings.gameFrameHeight))savedSettings.gameFrameHeight=publishedHeight;
   project={id:"published-"+data.id,name:useDraft?(draft.name||data.title||"公開済みゲーム"):(data.title||"公開済みゲーム"),type:data.category==="action"?"platformer":"published",background:"#101522",objects:[],events:[],settings:savedSettings,tilemap:{cols:20,rows:12,cells:Array(240).fill(-1),enabled:false},assets:[],prefabs:[],layers:["Default"],collisionMatrix:{},code:useDraft&&draft.code?draft.code:parsed.parts,publishedGameId:data.id,publishedMeta:{slug:data.slug,title:data.title,description:data.description,category:data.category,categories:data.categories?.length?data.categories:[data.category||"other"],icon:data.icon,searchAliases:(()=>{const a=Array.isArray(data.search_aliases)?data.search_aliases:[];return {kanji:a[0]||"",hiragana:a[1]||"",katakana:a[2]||"",romaji:a[3]||"",other:a[4]||""};})(),tagText:data.tag_text||"KURO STUDIO",tagStyle:data.tag_style||"classic",tagColor:data.tag_color||"#ffffff",tagTextColor:data.tag_text_color||"#df6547"},updatedAt:useDraft?draft.updatedAt:Date.now()};
-  $("projectName").value=project.name;$("publishBtn").textContent="公開内容を更新";setStatus(useDraft?"● 下書きから復元":"● 公開作品を読み込み済み","var(--good)");showTab("html");run();toast(useDraft?"下書きを復元しました":"公開済みゲームをStudioに読み込みました");
+  $("projectName").value=project.name;$("publishBtn").textContent="公開内容を更新";
+  setStatus(rejectedDraft?"● 公開版を読み込み済み（下書きに構文エラー）":useDraft?"● 下書きから復元":"● 公開作品を読み込み済み",rejectedDraft?"var(--warn)":"var(--good)");
+  showTab("html");run();
+  toast(rejectedDraft?"下書きの構文エラーを検出したため、公開版を読み込みました":"公開済みゲームをStudioに読み込みました");
  }catch(e){toast("読み込み失敗: "+(e.message||"不明なエラー"));}
 }
 let pendingImport=null;
