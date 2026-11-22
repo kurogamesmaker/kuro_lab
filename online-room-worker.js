@@ -2,7 +2,7 @@ const encoder = new TextEncoder();
 const SUPABASE_FUNCTION = "kurogames-online";
 const MAX_MESSAGE_BYTES = 32 * 1024;
 const MAX_PLAYERS = 35;
-const ROOM_IDLE_TTL_MS = 5 * 60 * 1000;
+const ROOM_IDLE_TTL_MS = 15 * 60 * 1000;
 
 function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
