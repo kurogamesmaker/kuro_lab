@@ -41,17 +41,60 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 .studio-game-icon{position:absolute;inset:0;display:grid;place-items:center;width:100%;height:100%;font-size:54px;filter:drop-shadow(0 8px 12px #0005);line-height:1}.studio-game-icon img{display:block;width:100%;height:100%;object-fit:cover}
 
 
-/* KURO GAMES ranking layout */
-.games-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,300px);gap:18px;align-items:start}
-@media(max-width:980px){.games-layout{grid-template-columns:minmax(0,1fr) 260px;gap:13px}}
-@media(max-width:680px){.games-layout{display:flex;flex-direction:column}.ranking-showcase{width:100%}}
 
-
-/* KURO GAMES ranking layout */
-.games-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,300px);gap:18px;align-items:start}
-.ranking-showcase{width:100%}
-@media(max-width:980px){.games-layout{grid-template-columns:minmax(0,1fr) 260px;gap:13px}}
-@media(max-width:680px){.games-layout{display:flex;flex-direction:column}.ranking-showcase{width:100%}}
+/* KURO GAMES ranking layout: award card needs its designed 460px width */
+.games-layout{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(400px,460px);
+  gap:18px;
+  align-items:start;
+}
+.games-layout > .grid{min-width:0}
+#kuroRankingShowcase{
+  width:100%;
+  max-width:460px;
+  margin:0;
+  justify-self:stretch;
+}
+/* 参加者が少ない場合に、順位リスト下へ不自然な空白を作らない */
+#kuroRankingShowcase .rank-list{min-height:0}
+@media(max-width:1040px){
+  .games-layout{grid-template-columns:minmax(0,1fr)}
+  .games-layout > #kuroRankingShowcase{
+    order:-1;
+    justify-self:center;
+    width:min(100%,460px);
+    margin:0 auto 18px;
+  }
+  .games-layout > .grid{width:100%}
+}
+@media(max-width:680px){
+  .games-layout{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .games-layout > #kuroRankingShowcase{
+    width:100%;
+    max-width:460px;
+    margin:0 auto 12px;
+  }
+  .games-layout > .grid{width:100%}
+}
+/* Very narrow phones: compact the champion plate without hiding the score */
+@media(max-width:360px){
+  #kuroRankingShowcase .rank-row{gap:8px;padding-right:10px}
+  #kuroRankingShowcase .rank-medal{width:64px}
+  #kuroRankingShowcase .rank-1 .rank-medal{width:72px}
+  #kuroRankingShowcase .rank-1 .rank-name{font-size:15px}
+  #kuroRankingShowcase .rank-tag{font-size:8px;padding:3px 7px 3px 6px}
+  #kuroRankingShowcase .rank-score{font-size:15px}
+  #kuroRankingShowcase .rank-1 .rank-score{font-size:19px}
+  #kuroRankingShowcase .rank-foot{gap:6px;margin-left:12px;margin-right:12px}
+  #kuroRankingShowcase .rank-foot>a{padding:9px 11px;font-size:11px}
+  #kuroRankingShowcase .rank-controls{gap:5px}
+  #kuroRankingShowcase .rank-controls button{width:27px;height:27px}
+}
 
 /* ===== KURO Ranking Showcase v3 : Award Ceremony (light) ===== */
 
@@ -1263,7 +1306,9 @@ function restartProgress(ms){
 function schedule(ms){
   clearTimeout(rankTimer);
   restartProgress(ms);
+  if(rankHoverPaused)return;
   rankTimer=setTimeout(()=>{
+    if(rankHoverPaused)return;
     if(busy||rankCovering){schedule(400);return;}   // 切り替え中なら少し待つ
     display(index+1);
   },ms);
