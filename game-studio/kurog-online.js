@@ -290,28 +290,25 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
     members: members || [],
     getPlayers() { return cachedPlayers.slice(); },
     async getState() {
-      return invoke("room_state_get", { roomId: roomData.id });
+      // Active game state lives in its Durable Object; avoid a Supabase HTTP request per card action.
+      const result = await sendRequest("get-state", {});
+      return Object.assign({ roomStatus: "waiting" }, result || {});
     },
     async updateState(state, expectedUpdatedAt) {
-      const result = await invoke("room_state_update", {
-        roomId: roomData.id,
+      // The host writes directly to the room DO; it persists before broadcasting to all peers.
+      const result = await sendRequest("state-update", {
         state: state,
         expectedUpdatedAt: expectedUpdatedAt || null,
       });
+      if (result.forbidden) throw new Error("ゲーム状態を更新できるのはルームホストだけです。");
+      if (result.invalid) throw new Error("ゲーム状態の形式が正しくありません。");
       if (!result.conflict) {
-        const noticeData = { state: state, updatedAt: result.updatedAt || null };
-        const notification = {
+        emitMessage({
           type: "room-state-updated",
-          data: noticeData,
+          data: { state: state, updatedAt: result.updatedAt || null },
           from: session.user.id,
           sentAt: Date.now(),
-        };
-        emitMessage(notification);
-        const wireData = new TextEncoder().encode(JSON.stringify(noticeData)).byteLength <= 28000
-          ? noticeData
-          : { updatedAt: result.updatedAt || null };
-        try { await this.send("room-state-updated", wireData); }
-        catch (error) { console.warn("KUROGAMES state notification failed; polling will resync:", error); }
+        });
       }
       return result;
     },
