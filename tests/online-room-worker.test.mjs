@@ -217,3 +217,150 @@ test("host can migrate an older room snapshot into an empty Durable Object", asy
   assert.deepEqual(saved.state, oldSnapshot);
   assert.equal(sent[0].result.conflict, false);
 });
+
+
+function envelope(value) {
+  return {
+    epk: { kty: "EC", crv: "P-256", x: "x", y: "y" },
+    iv: "a".repeat(16),
+    ct: value,
+  };
+}
+
+function gamePatch(version, privateUpdates, matchId = "match-1") {
+  return {
+    phase: "playing",
+    matchId,
+    version,
+    public: {
+      version,
+      phase: "playing",
+      ruleMode: "official",
+      players: [
+        { userId: "host-user", name: "Host", handCount: 6 },
+        { userId: "peer-a", name: "A", handCount: 7 },
+        { userId: "peer-b", name: "B", handCount: 7 },
+      ],
+      top: { id: "c0", color: "red", value: "3" },
+    },
+    privateUpdates,
+    events: [],
+  };
+}
+
+test("non-host members cannot submit compact UNON game patches", async () => {
+  const fixture = createRoom();
+  fixture.room.loaded = true;
+  const sent = [];
+  const socket = { send(payload) { sent.push(JSON.parse(payload)); } };
+  const guest = { id: "peer-a", isHost: false };
+  fixture.room.sockets.set(socket, guest);
+
+  await fixture.room.onMessage(socket, guest, JSON.stringify({
+    type: "host-game-patch",
+    requestId: "guest-patch",
+    patch: gamePatch(0, { "peer-a": envelope("private-a") }),
+  }));
+
+  assert.equal(fixture.room.data.state, null);
+  assert.equal(fixture.values.has("room-state"), false);
+  assert.equal(sent[0].type, "game-patch-result");
+  assert.equal(sent[0].result.forbidden, true);
+});
+
+test("host compact patch persists full reconnect state and sends recipient-only private data", async () => {
+  const fixture = createRoom();
+  fixture.room.loaded = true;
+  fixture.room.data = {
+    state: {
+      phase: "lobby",
+      players: [
+        { id: "host-user", name: "Host" },
+        { id: "peer-a", name: "A" },
+        { id: "peer-b", name: "B" },
+      ],
+      game: null,
+    },
+    updatedAt: 100,
+  };
+  const hostMessages = [], aMessages = [], bMessages = [];
+  const hostSocket = { send(payload) { hostMessages.push(JSON.parse(payload)); } };
+  const aSocket = { send(payload) { aMessages.push(JSON.parse(payload)); } };
+  const bSocket = { send(payload) { bMessages.push(JSON.parse(payload)); } };
+  const host = { id: "host-user", isHost: true };
+  fixture.room.sockets.set(hostSocket, host);
+  fixture.room.sockets.set(aSocket, { id: "peer-a", isHost: false });
+  fixture.room.sockets.set(bSocket, { id: "peer-b", isHost: false });
+
+  await fixture.room.onMessage(hostSocket, host, JSON.stringify({
+    type: "host-game-patch",
+    requestId: "patch-0",
+    patch: gamePatch(0, {
+      "host-user": envelope("private-host"),
+      "peer-a": envelope("private-a"),
+      "peer-b": envelope("private-b"),
+    }),
+  }));
+
+  const saved = await fixture.room.state.storage.get("room-state");
+  assert.equal(saved.state.phase, "playing");
+  assert.equal(saved.state.game.version, 0);
+  assert.equal(saved.state.game.priv["peer-a"].ct, "private-a");
+  assert.equal(saved.state.game.priv["peer-b"].ct, "private-b");
+  assert.equal(hostMessages[0].type, "game-patch-result");
+  assert.equal(hostMessages[0].result.ok, true);
+
+  const updateA = aMessages.find(item => item.type === "message" && item.message.type === "unon-patch");
+  const updateB = bMessages.find(item => item.type === "message" && item.message.type === "unon-patch");
+  assert.equal(updateA.message.data.privateEnvelope.ct, "private-a");
+  assert.equal(updateB.message.data.privateEnvelope.ct, "private-b");
+  assert.equal(JSON.stringify(updateA).includes("private-b"), false);
+  assert.equal(JSON.stringify(updateB).includes("private-a"), false);
+});
+
+test("compact UNON patch merges unchanged private envelopes and rejects stale versions", async () => {
+  const fixture = createRoom();
+  fixture.room.loaded = true;
+  fixture.room.data = {
+    state: {
+      phase: "playing",
+      matchId: "match-1",
+      players: [{ id: "host-user" }, { id: "peer-a" }, { id: "peer-b" }],
+      game: {
+        version: 1,
+        public: { version: 1, players: [] },
+        priv: {
+          "host-user": envelope("old-host"),
+          "peer-a": envelope("old-a"),
+          "peer-b": envelope("keep-b"),
+        },
+      },
+    },
+    updatedAt: 200,
+  };
+  const hostMessages = [], peerMessages = [];
+  const hostSocket = { send(payload) { hostMessages.push(JSON.parse(payload)); } };
+  const peerSocket = { send(payload) { peerMessages.push(JSON.parse(payload)); } };
+  const host = { id: "host-user", isHost: true };
+  fixture.room.sockets.set(hostSocket, host);
+  fixture.room.sockets.set(peerSocket, { id: "peer-b", isHost: false });
+
+  const patch = gamePatch(2, { "peer-a": envelope("new-a") });
+  await fixture.room.onMessage(hostSocket, host, JSON.stringify({
+    type: "host-game-patch", requestId: "patch-2", patch,
+  }));
+  let saved = await fixture.room.state.storage.get("room-state");
+  assert.equal(saved.state.game.priv["peer-a"].ct, "new-a");
+  assert.equal(saved.state.game.priv["peer-b"].ct, "keep-b");
+  const update = peerMessages.find(item => item.type === "message");
+  assert.equal(update.message.data.privateEnvelope, null);
+  assert.equal(JSON.stringify(update).includes("new-a"), false);
+
+  await fixture.room.onMessage(hostSocket, host, JSON.stringify({
+    type: "host-game-patch", requestId: "stale-patch", patch,
+  }));
+  assert.equal(hostMessages.at(-1).type, "game-patch-result");
+  assert.equal(hostMessages.at(-1).result.conflict, true);
+  saved = await fixture.room.state.storage.get("room-state");
+  assert.equal(saved.state.game.version, 2);
+});
