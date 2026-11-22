@@ -942,6 +942,255 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
   }
 }
 </style>
+
+<style id="kuro-account-modal-fix">
+/* Keep the KURO GAMES account dialog out of normal document flow. */
+#kuroAccountModal[hidden] { display: none !important; }
+#kuroAccountModal.kuro-account-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: clamp(12px, 3vw, 28px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: rgba(18, 31, 52, .58);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+#kuroAccountModal .kuro-account-dialog {
+  position: relative;
+  width: min(460px, 100%);
+  max-height: min(90vh, 800px);
+  max-height: min(90dvh, 800px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: auto;
+  padding: 27px;
+  border: 1px solid #dce6f3;
+  border-radius: 22px;
+  background: #fff;
+  color: #17243c;
+  box-shadow: 0 28px 90px rgba(16, 28, 51, .28);
+  text-align: left;
+  animation: kuroAccountDialogIn .2s ease-out both;
+}
+#kuroAccountModal .kuro-account-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-right: 38px;
+}
+#kuroAccountModal .kuro-account-eyebrow {
+  margin-bottom: 6px;
+  color: #397bd0;
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: 1.5px;
+}
+#kuroAccountModal .kuro-account-head h2 {
+  margin: 0;
+  color: #203653;
+  font-size: 23px;
+  font-weight: 1000;
+  letter-spacing: -.6px;
+  line-height: 1.2;
+}
+#kuroAccountModal .kuro-account-close {
+  position: absolute;
+  top: 17px;
+  right: 17px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #e2eaf4;
+  border-radius: 11px;
+  background: #f5f8fc;
+  color: #52637a;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+#kuroAccountModal .kuro-account-close:hover {
+  border-color: #c6d9f2;
+  background: #edf5ff;
+  color: #2878ee;
+}
+#kuroAccountModal .kuro-account-intro {
+  margin: 16px 0;
+  color: #697990;
+  font-size: 12px;
+  line-height: 1.8;
+}
+#kuroAccountModal .kuro-account-guest {
+  margin: 0 0 17px;
+  padding: 12px 14px;
+  border: 1px solid #dceafe;
+  border-radius: 12px;
+  background: #f3f8ff;
+  color: #60738f;
+  font-size: 11px;
+  line-height: 1.75;
+}
+#kuroAccountModal .kuro-account-guest strong {
+  color: #2b5f9f;
+  font-size: 12px;
+}
+#kuroAccountModal .kuro-account-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  margin: 0 0 16px;
+  padding: 4px;
+  border: 1px solid #e7edf5;
+  border-radius: 12px;
+  background: #f5f7fb;
+}
+#kuroAccountModal .kuro-account-tabs button {
+  min-width: 0;
+  min-height: 39px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #718098;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+#kuroAccountModal .kuro-account-tabs button.active,
+#kuroAccountModal .kuro-account-tabs button[aria-selected="true"] {
+  background: #fff;
+  color: #2878ee;
+  box-shadow: 0 2px 8px rgba(35, 67, 111, .09);
+}
+#kuroAccountModal #kuroAccountForm {
+  display: grid;
+  gap: 13px;
+  margin: 0;
+}
+#kuroAccountModal .kuro-account-field {
+  display: grid;
+  gap: 7px;
+  color: #44566f;
+  font-size: 11px;
+  font-weight: 850;
+}
+#kuroAccountModal .kuro-account-field input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 45px;
+  padding: 10px 12px;
+  border: 1px solid #dce5f0;
+  border-radius: 10px;
+  outline: none;
+  background: #fbfcfe;
+  color: #17243c;
+  font-size: 14px;
+  font-weight: 500;
+}
+#kuroAccountModal .kuro-account-field input:focus {
+  border-color: #83b4f5;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(40, 120, 238, .12);
+}
+#kuroAccountModal .kuro-account-help {
+  color: #95a1b2;
+  font-size: 10px;
+  font-weight: 500;
+}
+#kuroAccountModal .kuro-account-primary,
+#kuroAccountModal .kuro-account-logout {
+  min-height: 45px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 11px;
+  background: #2878ee;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: background .16s ease, transform .16s ease, opacity .16s ease;
+}
+#kuroAccountModal .kuro-account-primary:hover,
+#kuroAccountModal .kuro-account-logout:hover {
+  transform: translateY(-1px);
+  background: #1768dc;
+}
+#kuroAccountModal .kuro-account-primary:disabled,
+#kuroAccountModal .kuro-account-logout:disabled {
+  opacity: .58;
+  cursor: wait;
+  transform: none;
+}
+#kuroAccountModal .kuro-account-profile {
+  display: grid;
+  gap: 8px;
+  padding: 15px;
+  border: 1px solid #e0eaf7;
+  border-radius: 14px;
+  background: #f7faff;
+}
+#kuroAccountModal .kuro-account-profile strong {
+  color: #233d60;
+  font-size: 16px;
+}
+#kuroAccountModal .kuro-account-profile > span {
+  color: #397bd0;
+  font-size: 11px;
+  font-weight: 850;
+}
+#kuroAccountModal .kuro-account-common {
+  margin: 4px 0 8px;
+  color: #75849a;
+  font-size: 11px;
+  line-height: 1.75;
+}
+#kuroAccountModal .kuro-account-logout {
+  background: #eef4fc;
+  color: #526780;
+}
+#kuroAccountModal .kuro-account-logout:hover {
+  background: #e2edfb;
+  color: #315f9c;
+}
+#kuroAccountModal .kuro-account-status {
+  margin-top: 13px;
+  color: #3972b8;
+  font-size: 11px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+#kuroAccountModal .kuro-account-status:empty { display: none; }
+#kuroAccountModal [hidden] { display: none !important; }
+body.kuro-account-open { overflow: hidden; }
+#kuroAccountOpen { cursor: pointer; }
+@keyframes kuroAccountDialogIn {
+  from { opacity: 0; transform: translateY(8px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (max-width: 520px) {
+  #kuroAccountModal.kuro-account-modal { padding: 10px; }
+  #kuroAccountModal .kuro-account-dialog {
+    width: 100%;
+    max-height: 94vh;
+    max-height: 94dvh;
+    padding: 22px 17px 18px;
+    border-radius: 18px;
+  }
+  #kuroAccountModal .kuro-account-head h2 { font-size: 21px; }
+  #kuroAccountModal .kuro-account-close { top: 13px; right: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #kuroAccountModal .kuro-account-dialog { animation: none; }
+  #kuroAccountModal .kuro-account-primary,
+  #kuroAccountModal .kuro-account-logout { transition: none; }
+}
+</style>
+
 </head>
 <body>
 <header><div class="wrap nav">
@@ -1048,10 +1297,11 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   }
  }
  function openModal(){
+  document.body.classList.add("kuro-account-open");
   modal.hidden=false;status.textContent="";render(currentUser);if(!currentUser)setMode("login");
   setTimeout(()=>{const target=currentUser?logoutButton:document.getElementById("kuroAccountUsername");target?.focus();},20);
  }
- function closeModal(){modal.hidden=true;openButton.focus();}
+ function closeModal(){modal.hidden=true;document.body.classList.remove("kuro-account-open");openButton.focus();}
  openButton?.addEventListener("click",openModal);closeButton?.addEventListener("click",closeModal);
  modal?.addEventListener("click",event=>{if(event.target===modal)closeModal();});
  document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!modal.hidden)closeModal();});
