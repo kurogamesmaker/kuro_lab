@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#090b12">
+<title>ゲーム制作マニュアル | KURO GAME STUDIO</title>
+<style>
+:root{color-scheme:dark;--bg:#090b12;--panel:#111522;--panel2:#171e2d;--line:#293247;--text:#f4f6fc;--muted:#929db2;--accent:#8d78ff;--cyan:#62d9ee;--good:#52c99a;--warn:#f0bd69;--red:#ff9292}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:88px}body{margin:0;background:radial-gradient(ellipse at 75% -12%,#282048 0,transparent 40%),radial-gradient(ellipse at 0 35%,#10283b 0,transparent 34%),var(--bg);color:var(--text);font:14px/1.75 Inter,system-ui,"Noto Sans JP",sans-serif}a{color:#b9c8ff;text-decoration:none}a:hover{color:white;text-decoration:underline}button{font:inherit}.top{height:66px;position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;padding:0 max(18px,calc((100% - 1440px)/2));border-bottom:1px solid #ffffff14;background:#090b12dc;backdrop-filter:blur(16px)}.brand{color:#fff;font-size:16px;font-weight:950;white-space:nowrap}.brand b{color:var(--accent)}.crumb{color:var(--muted);font-size:11px}.spacer{flex:1}.btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:9px;background:#ffffff08;color:var(--text);padding:8px 12px;font-size:11px;font-weight:850}.btn:hover{background:#ffffff14;text-decoration:none}.btn.primary{background:linear-gradient(110deg,#9277ff,#657dff);border-color:transparent}.layout{width:min(1440px,100%);margin:auto;display:grid;grid-template-columns:250px minmax(0,1fr);gap:28px;padding:26px 22px 70px}.side{position:sticky;top:88px;align-self:start;max-height:calc(100vh - 108px);overflow:auto;padding:14px 12px;border:1px solid var(--line);border-radius:14px;background:#101521b8}.side-title{padding:4px 8px 12px;color:#b8a9ff;font-size:10px;font-weight:950;letter-spacing:1.8px}.side a{display:flex;gap:9px;align-items:center;padding:8px 9px;border-radius:8px;color:#aeb8cb;font-size:11px}.side a:hover{background:#ffffff0b;color:white;text-decoration:none}.side .group{margin:12px 8px 5px;color:#64718a;font-size:9px;font-weight:900;letter-spacing:1.1px}.content{min-width:0;max-width:1050px}.hero{position:relative;overflow:hidden;padding:34px;border:1px solid #4c4674;border-radius:18px;background:linear-gradient(120deg,#1b1b35ee,#111d2bee 65%,#10222cee);box-shadow:0 18px 55px #0005}.hero:after{content:"";position:absolute;right:-65px;top:-95px;width:320px;height:320px;border:1px solid #ffffff19;border-radius:50%;box-shadow:0 0 0 34px #ffffff08,0 0 0 68px #ffffff05}.eyebrow{color:#bcb0ff;font-size:10px;font-weight:950;letter-spacing:2.4px}.hero h1{margin:9px 0 12px;font-size:clamp(28px,4vw,44px);line-height:1.2;letter-spacing:-1.5px}.hero p{max-width:790px;margin:0;color:#c5cde0;font-size:13px}.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:20px}.chip{padding:5px 9px;border:1px solid #ffffff20;border-radius:99px;background:#ffffff09;color:#e0e5f1;font-size:10px;font-weight:800}.principles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin:14px 0 30px}.principle{padding:13px 11px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(145deg,#151b2a,#101521);min-width:0}.principle strong{display:block;font-size:12px}.principle span{display:block;margin-top:4px;color:var(--muted);font-size:10px;line-height:1.5}.section{margin-top:30px;scroll-margin-top:88px}.section h2{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-size:21px;letter-spacing:-.5px}.num{display:grid;place-items:center;width:28px;height:28px;flex:0 0 28px;border:1px solid #776ac4;border-radius:8px;background:#292343;color:#d9d0ff;font-size:11px}.section-intro{margin:-5px 0 14px;color:#b2bdd1;font-size:12px}.card{padding:18px;border:1px solid var(--line);border-radius:13px;background:linear-gradient(145deg,#141a29,#101521);margin:10px 0}.card h3{margin:0 0 9px;font-size:14px}.card p{margin:7px 0;color:#b9c3d6;font-size:12px}.card ul,.card ol{margin:8px 0;padding-left:21px;color:#c5cee0;font-size:12px}.card li{margin:5px 0}.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.grid2 .card,.grid3 .card{margin:0}.tag{display:inline-block;padding:3px 7px;border-radius:5px;font-size:9px;font-weight:900;letter-spacing:.3px}.tag.ok{background:#123328;color:#92e6c1}.tag.partial{background:#3a2b14;color:#f4cd82}.tag.future{background:#252b3c;color:#bdc8df}.tag.warn{background:#421e24;color:#ffb0b0}.flow{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:7px;margin:14px 0}.step{padding:10px 12px;border:1px solid #3a4560;border-radius:9px;background:#111b2a;text-align:center;font-size:11px;font-weight:850}.arrow{color:#8b9abb;font-size:16px}.callout{margin:12px 0;padding:12px 14px;border-left:3px solid var(--cyan);border-radius:0 9px 9px 0;background:#112033;color:#d0def2;font-size:11px}.callout.warn{border-left-color:var(--warn);background:#2a2114}.callout.danger{border-left-color:var(--red);background:#2a171b}.callout.good{border-left-color:var(--good);background:#13261f}pre{max-width:100%;overflow:auto;margin:10px 0;padding:14px;border:1px solid #2b3448;border-radius:10px;background:#080d16;color:#d7e2f6;font:11px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre}.muted{color:var(--muted)}table{width:100%;border-collapse:collapse;margin:10px 0;font-size:11px}th,td{padding:9px 10px;border-bottom:1px solid #293247;text-align:left;vertical-align:top}th{background:#151d2c;color:#dfe5f2;font-size:10px}td{color:#bdc7d9}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px;margin:10px 0} .table-wrap table{margin:0;min-width:620px}.status-line{display:flex;gap:8px;align-items:flex-start;margin:8px 0;color:#c5cee0;font-size:12px}.status-line .tag{flex:0 0 auto;margin-top:2px}.subhead{margin:18px 0 7px;font-size:13px;font-weight:900;color:#e1e7f4}.toc-mini{display:flex;flex-wrap:wrap;gap:7px}.toc-mini a{border:1px solid var(--line);border-radius:8px;padding:6px 9px;background:#ffffff07;font-size:10px}.checklist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 18px}.checklist label{display:flex;align-items:flex-start;gap:8px;padding:5px 0;color:#c7d0e1;font-size:11px}.checklist input{margin-top:4px;accent-color:#8d78ff}.foot{margin-top:30px;padding:18px;border-top:1px solid var(--line);color:var(--muted);font-size:10px}.kbd{display:inline-block;border:1px solid #4b5670;border-radius:5px;background:#0d1420;padding:1px 5px;color:#d4def0;font:10px ui-monospace,monospace}code{color:#d4cbff;font-family:ui-monospace,monospace;font-size:.95em}.section details{margin:8px 0;border:1px solid var(--line);border-radius:10px;background:#101622}.section summary{padding:11px 13px;cursor:pointer;color:#dfe6f4;font-size:12px;font-weight:850}.section details .detail-body{padding:0 14px 13px;color:#bdc7d9;font-size:11px}
+@media(max-width:1000px){.layout{grid-template-columns:210px minmax(0,1fr);gap:16px;padding:18px 14px 50px}.principles{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:720px){.top{height:58px;padding:0 12px}.crumb{display:none}.layout{display:block;padding:12px 12px 44px}.side{position:relative;top:auto;max-height:none;display:flex;gap:5px;overflow:auto;white-space:nowrap;margin-bottom:12px;padding:7px}.side-title,.side .group{display:none}.side a{flex:0 0 auto;padding:7px 9px}.hero{padding:23px 18px}.principles{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2,.grid3{grid-template-columns:1fr}.section h2{font-size:18px}.checklist{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="top">
+ <a class="brand" href="/game-studio/projects.html">KURO <b>GAME STUDIO</b></a><span class="crumb">/ 制作マニュアル</span><span class="spacer"></span>
+ <a class="btn" href="/game-studio/online.html">オンライン機能</a><a class="btn" href="/game-studio/projects.html">プロジェクト</a>
+</header>
+<div class="layout">
+<nav class="side" aria-label="マニュアル目次">
+ <div class="side-title">DEVELOPMENT GUIDE</div>
+ <div class="group">基本</div>
+ <a href="#principles">01 基本原則</a><a href="#architecture">02 全体構成</a><a href="#start">03 制作開始・認証</a>
+ <div class="group">ゲーム設計</div>
+ <a href="#instant">04 即時反応・先行反映</a><a href="#animation">05 演出・パフォーマンス</a><a href="#data">06 データ設計</a>
+ <div class="group">オンライン</div>
+ <a href="#supabase">07 Supabase通信</a><a href="#matching">08 マッチング規格</a><a href="#rooms">09 ルーム・同期</a><a href="#ranking">10 ランキング</a>
+ <div class="group">品質・運用</div>
+ <a href="#cache">11 キャッシュ・保存</a><a href="#recovery">12 エラー・再接続</a><a href="#security">13 セキュリティ</a><a href="#testing">14 テスト・公開判定</a><a href="#status">15 実装状況</a><a href="#refs">参考資料</a>
+</nav>
+<main class="content">
+<section class="hero">
+ <div class="eyebrow">KUROGAMES GAME DEVELOPMENT STANDARD / VERSION 1.0</div>
+ <h1>ゲーム制作マニュアル</h1>
+ <p>ゲームの楽しさや豪華な演出は妥協せず、裏側の通信・データ処理・同期を最適化するための共通規格です。新しいゲームの制作、既存ゲームの改修、オンライン機能の追加は、このマニュアルを基準にします。</p>
+ <div class="chips"><span class="chip">更新日：2026-11-23</span><span class="chip">対象：KURO GAME STUDIO</span><span class="chip">Supabase + Cloudflare</span><span class="chip">PC / Mobile</span></div>
+</section>
+<div class="principles" id="principles">
+ <div class="principle"><strong>🎮 楽しさ優先</strong><span>ゲーム性と演出を弱めない</span></div>
+ <div class="principle"><strong>⚡ 即時反応</strong><span>ローカルでできる表示は先に反映</span></div>
+ <div class="principle"><strong>📡 低通信</strong><span>必要なデータだけを必要な時に送る</span></div>
+ <div class="principle"><strong>🛡️ サーバー検証</strong><span>勝敗・権限・重要状態はサーバー確定</span></div>
+ <div class="principle"><strong>🧩 共通化</strong><span>既存SDK・共通機能を再利用</span></div>
+</div>
+
+<section class="section" id="architecture">
+ <h2><span class="num">02</span>全体アーキテクチャ</h2>
+ <p class="section-intro">ゲームごとに独自の通信接続を作らず、共通SDKの窓口を通します。</p>
+ <div class="flow">
+  <div class="step">ゲーム画面<br><span class="muted">HTML / CSS / JS</span></div><span class="arrow">→</span>
+  <div class="step">KuroGames SDK<br><span class="muted">kurog-online.js</span></div><span class="arrow">→</span>
+  <div class="step">認証・API<br><span class="muted">Supabase Edge Function</span></div><span class="arrow">→</span>
+  <div class="step">永続DB<br><span class="muted">Supabase Postgres</span></div>
+ </div>
+ <div class="flow">
+  <div class="step">KuroGames SDK</div><span class="arrow">→</span><div class="step">Cloudflare Worker</div><span class="arrow">→</span><div class="step">Durable Objects<br><span class="muted">WebSocket / ルーム単位</span></div>
+ </div>
+ <div class="grid2">
+  <div class="card"><h3>ブラウザが担当すること</h3><ul><li>画面・入力・アニメーション・効果音</li><li>一時的な選択状態・操作演出</li><li>オフライン・CPU戦のゲーム進行</li><li>サーバー確定結果の表示</li></ul></div>
+  <div class="card"><h3>サーバーが担当すること</h3><ul><li>ログイン本人・権限・ゲーム公開状態の検証</li><li>ルーム参加者・マッチング・永続データ</li><li>対戦ゲームの合法手・ターン・勝敗の検証</li><li>ランキングなど重要記録の確定</li></ul></div>
+ </div>
+ <div class="callout good">原則：ゲーム側は <code>KuroGames</code> SDKを利用する。Supabase URL・独自認証・Service Roleキー・個別のDB書き込み処理を各ゲームへコピーしない。</div>
+</section>
+
+<section class="section" id="start">
+ <h2><span class="num">03</span>制作開始・認証</h2>
+ <div class="card">
+  <h3>標準初期化</h3>
+  <pre><code>&lt;script src="/game-studio/kurog-online.js?v=20261122-unon-server1"&gt;&lt;/script&gt;
+&lt;script&gt;
+(async function () {
+  const config = await KuroGames.init({
+    gameId: "Studioに表示されるゲームUUID"
+  });
+
+  // config.featuresで利用可能な機能を確認
+  const rankingEnabled = config.features.ranking;
+  const multiplayerEnabled = config.features.multiplayer;
+})();
+&lt;/script&gt;</code></pre>
+  <p>SDKの配信URL・バージョンは公開時点のStudio共通設定に合わせる。例のキャッシュ文字列を永続的に固定せず、SDKを更新したらHTML側の参照も同期する。</p>
+ </div>
+ <div class="grid2">
+  <div class="card"><h3><span class="tag ok">利用可能</span> ログイン済み</h3><p>サーバーがSupabase Authのアクセストークンを検証し、内部ユーザーIDを確定します。プロフィール名やクライアントから送られたuserIdで本人確認しません。</p></div>
+  <div class="card"><h3><span class="tag partial">オフライン動作</span> 未ログイン</h3><p>SDK初期化時にオンライン機能がfalseでも、CPU戦・ローカルゲーム・ローカル設定を遊べる設計にします。オンライン操作だけログイン案内を表示します。</p></div>
+ </div>
+ <div class="callout warn">オンライン対戦・オンラインランキング・クラウド保存はKUROアカウントへのログインが必要です。匿名Auth・ゲストトークン・ゲーム独自の認証方式は追加しません。</div>
+</section>
+
+<section class="section" id="instant">
+ <h2><span class="num">04</span>即時反応・先行反映（Optimistic UI）</h2>
+ <p class="section-intro">押した瞬間の反応を大切にします。ただし、画面上の仮反映とサーバー確定を混同しません。</p>
+ <div class="flow">
+  <div class="step">操作</div><span class="arrow">→</span><div class="step">ローカルUIを即更新</div><span class="arrow">→</span><div class="step">裏で送信</div><span class="arrow">→</span><div class="step">確定 / 復元</div>
+ </div>
+ <div class="card">
+  <h3>推奨パターン</h3>
+  <pre><code>const previous = state.likes;
+state.likes = previous + 1;
+render(); // 先に表示を更新
+
+try {
+  await KuroGames.social.like(targetId);
+  // サーバー成功。表示はそのまま
+} catch (error) {
+  state.likes = previous; // 失敗したら元に戻す
+  render();
+  showError("反映できませんでした。もう一度お試しください。");
+}</code></pre>
+  <p class="muted">上は動作イメージです。social.likeは説明用の仮名であり、現行SDK APIではありません。各ゲームでは実際に存在するSDKメソッドだけを使用してください。</p>
+ </div>
+ <div class="table-wrap"><table><thead><tr><th>操作</th><th>先行反映</th><th>確定の扱い</th></tr></thead><tbody>
+ <tr><td>タブ・メニュー・選択・演出</td><td>すぐ反映</td><td>ローカルで完結</td></tr>
+ <tr><td>準備OK・投票</td><td>すぐ押下状態を表示</td><td>サーバー受付後に確定。失敗時は戻す</td></tr>
+ <tr><td>カードを出す・ターン操作</td><td>移動演出や仮表示を先に行ってよい</td><td>サーバーが合法手とターンを検証するまで確定扱いにしない</td></tr>
+ <tr><td>購入・ポイント・勝敗・ランキング</td><td>処理中表示や仮演出は可</td><td>サーバー確定前に残高・勝利・報酬を確定しない</td></tr>
+ </tbody></table></div>
+ <div class="callout">UI状態は <b>pending → confirmed</b> または <b>pending → rejected → rollback</b> と区別します。オンラインアクションの再送では同じactionIdを再利用し、二重処理を防ぎます。</div>
+</section>
+
+<section class="section" id="animation">
+ <h2><span class="num">05</span>演出・パフォーマンス規格</h2>
+ <div class="callout good"><b>アニメーションを特に減らさない。</b> 見た目を簡素化して軽くする方針は採用しません。勝利演出、パーティクル、カード移動、スライド、揺れ、光、コンボ、フィーバーなどはゲーム体験に必要なら自由に使います。</div>
+ <div class="grid2">
+  <div class="card"><h3>維持するもの</h3><ul><li>勝利・敗北・レベルアップ演出</li><li>画面遷移・スライド・フェード</li><li>パーティクル・光・揺れ・コンボ</li><li>カード・ピース・キャラクターの動き</li><li>ゲーム固有の派手な演出・音</li></ul></div>
+  <div class="card"><h3>最適化するもの</h3><ul><li>同じデータやDOMを何度も作り直さない</li><li>1フレームごとにサーバーへ通信しない</li><li>使い終えたタイマー・イベントを解除</li><li>画像・音声・アセットを適切に読み込む</li><li>同じ演出の重複計算を避ける</li></ul></div>
+ </div>
+ <p class="section-intro">軽量化は原則として実装の効率化で行います。演出の数・長さ・派手さを勝手に削る変更はしません。端末負荷が高い場合は、ゲーム性や主要演出を保ったまま段階的な品質調整を検討します。</p>
+</section>
+
+<section class="section" id="data">
+ <h2><span class="num">06</span>データ設計・公開範囲</h2>
+ <p class="section-intro">オンラインゲームのデータは、誰が見られるかで必ず3つに分けます。</p>
+ <div class="grid3">
+  <div class="card"><h3>🌐 公開データ</h3><p>参加者全員に見せてよい盤面、公開ターン、公開スコア、公開プレイヤー一覧。</p><span class="tag ok">room state / public event</span></div>
+  <div class="card"><h3>👤 個人専用</h3><p>本人の手札・役職・秘密目標・本人だけの選択など。他の参加者へ送らない。</p><span class="tag partial">専用APIが必要</span></div>
+  <div class="card"><h3>🔒 サーバー専用</h3><p>山札全体、全員の秘密情報、乱数シード、不正検出情報。ブラウザへ返さない。</p><span class="tag partial">サーバー側に保持</span></div>
+ </div>
+ <div class="callout danger"><b>重大：</b> 現行の <code>room.getState()</code> はルーム参加者全員が取得できる共有状態です。手札・秘密役職を入れてはいけません。個人専用状態APIとサーバー専用状態管理が整っていないゲームは、秘密情報を必要とする対戦を安全に公開できると判断しないでください。</div>
+</section>
+
+<section class="section" id="supabase">
+ <h2><span class="num">07</span>Supabase通信規格</h2>
+ <p class="section-intro">Supabaseを使うゲームも、接続・認証・データ保存の入口はKuroGames共通SDKに統一します。</p>
+ <div class="table-wrap"><table><thead><tr><th>データ / 操作</th><th>通信タイミング</th><th>ルール</th></tr></thead><tbody>
+ <tr><td>プロフィール</td><td>必要時・キャッシュ失効時</td><td>ユーザー切替時はキャッシュを分離・破棄</td></tr>
+ <tr><td>ランキング</td><td>初回表示・更新時</td><td>必要件数だけ取得。全件取得しない</td></tr>
+ <tr><td>ルーム作成・参加</td><td>押下時に1回</td><td>サーバーで参加条件・満員・重複を検証</td></tr>
+ <tr><td>ゲーム操作</td><td>状態が変わる操作だけ</td><td>操作差分だけを送信。毎フレーム送らない</td></tr>
+ <tr><td>ゲーム結果</td><td>結果確定時</td><td>同じ試合は同じsubmissionIdで一度だけ登録</td></tr>
+ <tr><td>設定・クラウド保存</td><td>変更時・チェックポイント</td><td>入力ごとの連続保存を避ける</td></tr>
+ <tr><td>演出・カーソル・選択途中</td><td>原則通信なし</td><td>ブラウザ内で処理</td></tr>
+ </tbody></table></div>
+ <div class="subhead">通信量を減らす標準ルール</div>
+ <div class="card"><ul><li>画面再表示のたびに同じデータを取り直さない。キャッシュを再利用し、更新対象だけ取得する。</li><li>必要な列・行・件数だけ読む。ランキングや履歴で全件SELECTしない。</li><li>短い文字入力などはdebounceし、まとめられる設定更新はまとめる。</li><li>ゲーム中の演出やドラッグ位置をDBに保存しない。</li><li>Realtimeを使う場合は必要なルーム・イベントだけ購読し、画面離脱時に解除する。</li><li>500msごとの常時ポーリングを標準にしない。イベント通知を優先し、ポーリングは必要時の補助にする。</li><li>読み取りと書き込みを区別し、書き込みの再送には重複防止IDを付ける。</li></ul></div>
+ <div class="subhead">Supabaseクライアント直書きの禁止</div>
+ <div class="callout warn">ゲームHTMLごとにSupabaseクライアントを新規作成し、ランキング・ルーム・アカウント情報を直接書き換える設計は禁止します。既存の共通SDK・認証ブリッジ・Cloudflare通信経路を使用します。Service Roleキーや秘密鍵をフロントエンドに含めてはいけません。</div>
+</section>
+
+<section class="section" id="matching">
+ <h2><span class="num">08</span>オンラインマッチング規格</h2>
+ <p class="section-intro">マッチングは「待機中」の表示だけでは完成ではありません。キュー登録からルーム割当、接続確認、準備、開始、キャンセル、離脱、復帰、期限切れまでを一つのライフサイクルとして設計します。</p>
+ <div class="callout warn"><b>現行実装との区別：</b> 現在のSDKには大富豪系の <code>findRandomMatch()</code>、UNO用の <code>findUnoRandomMatch(ruleMode)</code> とステータス・キャンセルAPIが存在します。Edge Functionはゲーム別RPCへ振り分けています。七並べにも専用アクションがあります。これらは「全ゲーム共通の汎用マッチングAPI」ではありません。新しいゲームで既存関数をそのまま流用せず、専用バックエンド対応の有無を確認してください。</div>
+ <div class="subhead">8.1 マッチングの状態遷移</div>
+ <div class="flow">
+  <div class="step">idle<br><span class="muted">未参加</span></div><span class="arrow">→</span>
+  <div class="step">waiting<br><span class="muted">キュー待機</span></div><span class="arrow">→</span>
+  <div class="step">matched<br><span class="muted">対戦相手確定</span></div><span class="arrow">→</span>
+  <div class="step">connected<br><span class="muted">ルーム接続・ACK</span></div><span class="arrow">→</span>
+  <div class="step">lobby<br><span class="muted">準備・開始確認</span></div><span class="arrow">→</span>
+  <div class="step">playing<br><span class="muted">対戦中</span></div><span class="arrow">→</span>
+  <div class="step">finished<br><span class="muted">結果確定</span></div>
+ </div>
+ <p class="muted">各状態から cancelled / expired / failed / disconnected へ遷移する条件も実装します。画面上の表示とサーバーの状態を一致させます。</p>
+ <div class="subhead">8.2 マッチング条件</div>
+ <div class="table-wrap"><table><thead><tr><th>条件</th><th>標準ルール</th></tr></thead><tbody>
+ <tr><td>gameId</td><td>ゲームIDを必ず分離。別ゲームのキューを混ぜない</td></tr>
+ <tr><td>mode / ruleMode</td><td>ルールモード・難易度・公式/ローカル等を一致させる</td></tr>
+ <tr><td>rulesetVersion</td><td>互換性のないルールバージョンを混ぜない</td></tr>
+ <tr><td>人数</td><td>minPlayers / maxPlayers をサーバー側で検証</td></tr>
+ <tr><td>skill / region</td><td>必要なゲームだけ利用。待機が長い場合は段階的に条件を広げる</td></tr>
+ <tr><td>party / team</td><td>グループ参加を実装する場合はパーティー単位で割り当てる</td></tr>
+ </tbody></table></div>
+ <div class="subhead">8.3 標準的なマッチング手順</div>
+ <div class="card">
+  <ol>
+   <li><b>参加ボタン：</b> 画面はすぐ「相手を探しています」に切り替える。二重押しを止める。</li>
+   <li><b>キュー登録：</b> SDK経由で1回送信。サーバーは認証・公開状態・multiplayer機能・条件・重複参加を検証する。</li>
+   <li><b>待機：</b> joinを連打しない。statusを使って既存の待機状態を確認する。通信中のstatusは同時に1件まで。</li>
+   <li><b>マッチ成立：</b> サーバー側のトランザクションで参加者を確定し、ルームと参加者レコードを作成する。クライアントにルームを別々に作らせない。</li>
+   <li><b>ルーム接続：</b> 割り当てられたroomIdに接続し、接続できたプレイヤーだけACKする。SDKがACKするAPIではゲームから二重ACKしない。</li>
+   <li><b>ロビー：</b> 全員の参加状態を表示する。ReadyとStart投票は別の状態として扱う。</li>
+   <li><b>開始：</b> サーバーが開始条件を再検証し、参加者一覧を固定してplayingへ移行する。</li>
+   <li><b>終了：</b> サーバー確定結果を記録し、ルームを終了状態へ移す。ランキングは同じ試合IDで一度だけ反映する。</li>
+  </ol>
+ </div>
+ <div class="subhead">8.4 Ready / Startの共通ルール</div>
+ <div class="card">
+  <p>人数が最大人数に達していなくても、ゲームの最小人数を満たしており、現在の参加者全員が開始を承認した場合は開始できる設計を標準とします。</p>
+  <div class="table-wrap"><table><thead><tr><th>項目</th><th>意味</th><th>動作</th></tr></thead><tbody>
+  <tr><td>Ready</td><td>参加準備ができた</td><td>各プレイヤーがON/OFF。状態を全員へ共有</td></tr>
+  <tr><td>Start vote</td><td>今のメンバーで開始したい</td><td>全員の投票がそろったら開始条件を満たす</td></tr>
+  <tr><td>Start commit</td><td>サーバーが開始を確定</td><td>最小人数・全員Ready・全員投票・ルーム状態を再確認</td></tr>
+  </tbody></table></div>
+  <ul><li>開始条件の基本式：参加人数がminPlayers以上、全員Ready、全員Start投票済み。</li><li>誰かが退出・切断・新規参加した場合は開始投票をリセットし、残りの参加者に再確認する。</li><li>開始確定時に参加者を固定し、以後の参加は拒否する。</li><li>ホストだけが独断で開始できる方式は、ゲームルールで明示的に必要な場合に限る。</li></ul>
+ </div>
+ <div class="subhead">8.5 キャンセル・切断・再接続</div>
+ <div class="card">
+  <ul><li>キャンセルボタンは即時にSearching表示を解除するが、サーバーの取消結果を確認する。マッチ成立と取消が競合した場合は、サーバーの最終状態に従う。</li><li>待機中にページを再読み込みしても、新しいキューを重複作成せず、statusで既存の状態を復元する。</li><li>一時切断と正式退出を区別する。再接続猶予中は同じルームに復帰させる。</li><li>再接続時はルーム全体の公開スナップショットと本人に必要な個人データだけを取り直す。</li><li>タイムアウト・期限切れになったキューやルームはサーバー側で掃除する。クライアントが画面を閉じただけで永久に待機者を残さない。</li></ul>
+  <div class="callout">現在の一時データ掃除では、待機キューは最終更新から2分経過すると削除対象、マッチ済みキューは15分のACK猶予などで整理されます。新しい汎用キューを導入する際は、待機中の有効性更新と実際のRPC挙動を確認し、UIのstatus更新間隔とDBの期限を揃えます。</div>
+ </div>
+ <div class="subhead">8.6 キュー実装のサーバー要件</div>
+ <div class="card"><ul><li>同一ユーザーが同一ゲーム・同一モードで複数の有効キューに入れないよう、一意制約とトランザクションで防止する。</li><li>マッチ成立はDBトランザクション内で行い、同じ参加者が同時に別ルームへ割り当てられないようロックする。</li><li>roomId、status、matchedAt、ack状態をサーバー側で確定する。クライアント指定のuserIdを信用しない。</li><li>満員・ルール不一致・ゲームID不一致・すでに別ルーム参加中の状態は明示的に拒否する。</li><li>キュー行は一時データとして期限切れ削除する。プロフィール・ランキング・ユーザー記録はキュー掃除の対象にしない。</li><li>待機状況の通知はRealtime / DOイベントを優先。代替ポーリングは低頻度・バックオフ付き・in-flight重複禁止にする。</li></ul></div>
+ <div class="subhead">8.7 現行SDKで確認できるマッチングAPI</div>
+ <div class="table-wrap"><table><thead><tr><th>API</th><th>対象</th><th>状態</th></tr></thead><tbody>
+ <tr><td><code>findRandomMatch()</code></td><td>大富豪系の専用ランダムマッチ</td><td><span class="tag ok">実装済み</span></td></tr>
+ <tr><td><code>getRandomMatchStatus()</code></td><td>上記の待機状態確認</td><td><span class="tag ok">実装済み</span></td></tr>
+ <tr><td><code>cancelRandomMatch()</code></td><td>上記のキャンセル</td><td><span class="tag ok">実装済み</span></td></tr>
+ <tr><td><code>findUnoRandomMatch(ruleMode)</code></td><td>UNO。ruleModeはofficial / local</td><td><span class="tag ok">実装済み</span></td></tr>
+ <tr><td><code>getUnoRandomMatchStatus(ruleMode)</code></td><td>UNOの待機状態確認</td><td><span class="tag ok">実装済み</span></td></tr>
+ <tr><td><code>cancelUnoRandomMatch()</code></td><td>UNOのキャンセル</td><td><span class="tag ok">実装済み</span></td></tr>
+ <tr><td>七並べ専用 matchmaking アクション</td><td>七並べ用の2〜4人の専用処理</td><td><span class="tag partial">専用経路あり</span></td></tr>
+ <tr><td>全ゲーム共通の汎用matchmaking API</td><td>任意の新作ゲーム</td><td><span class="tag future">未実装・設計基準</span></td></tr>
+ </tbody></table></div>
+ <div class="callout danger">大富豪・UNOの既存APIはゲーム別RPCへ接続されています。七並べも専用のEdge Functionアクションがあります。新しいゲームは、汎用マッチング基盤が整うまで専用APIを追加するか、既存の専用対応ゲームに限定して利用します。メソッド名だけを見て任意のゲームで動くと判断しないでください。</div>
+</section>
+
+<section class="section" id="rooms">
+ <h2><span class="num">09</span>ルーム・リアルタイム同期</h2>
+ <div class="card">
+  <h3>現在の共通ルームAPI</h3>
+  <pre><code>const room = await KuroGames.multiplayer.createRoom({
+  maxPlayers: 4
+});
+
+// ルーム参加
+const joined = await KuroGames.multiplayer.joinRoom("ABC234");
+
+// 公開状態の取得・更新
+const current = await room.getState();
+await room.updateState(
+  { phase: "lobby", publicPlayers: [] },
+  current.updatedAt
+);
+
+// イベント受信
+const offMessage = room.onMessage((event) => {
+  // event.type / event.data
+});
+
+// 購読解除・退出
+offMessage();
+await room.leave();</code></pre>
+ </div>
+ <div class="table-wrap"><table><thead><tr><th>項目</th><th>共通仕様</th></tr></thead><tbody>
+ <tr><td>ルームコード</td><td>6文字英数字。読み間違いやすい文字を除外</td></tr>
+ <tr><td>人数</td><td>2〜35人。maxPlayers既定値は4人</td></tr>
+ <tr><td>イベント名</td><td>英数字・_・-、1〜40文字</td></tr>
+ <tr><td>イベントサイズ</td><td>1イベントあたり32KB以内</td></tr>
+ <tr><td>状態競合</td><td>updateStateにexpectedUpdatedAtを渡す。競合時は最新状態を取り直し再計算</td></tr>
+ <tr><td>リアルタイム</td><td>Cloudflare Durable Objects WebSocketを優先。SDK互換用にHTTPポーリング経路あり</td></tr>
+ </tbody></table></div>
+ <div class="card"><h3>イベントと永続状態を使い分ける</h3><ul><li>一瞬の通知・演出・「誰かが準備OKを押した」通知はイベント向き。</li><li>再読み込み後も必要なルーム状態や進行状態はサーバー側の状態保存を使う。</li><li>イベントだけを唯一の保存場所にしない。再接続時はスナップショットから復元する。</li><li>参加者変更・ルーム終了・ゲーム終了時にすべての購読を解除する。</li></ul></div>
+ <div class="callout warn">room.getState() / updateState() は全員に見える公開状態専用です。秘密の手札・役職・山札は保存しません。UNOのサーバー権威型機能などゲーム専用の安全な仕組みがある場合は、その専用APIを使用します。</div>
+</section>
+
+<section class="section" id="ranking">
+ <h2><span class="num">10</span>ランキング規格</h2>
+ <div class="card">
+  <h3>現行SDKの登録・取得</h3>
+  <pre><code>// スコア登録
+await KuroGames.ranking.submit(15000, {
+  mode: "default",
+  metadata: { difficulty: "normal" },
+  submissionId: roundId
+});
+
+// 上位20件を取得
+const rows = await KuroGames.ranking.get({
+  mode: "default",
+  limit: 20
+});</code></pre>
+  <p><code>submissionId</code> は試合ごとのUUIDを使い、同じ試合の再送では同じIDを使います。SDKは指定IDが有効なら引き継ぎ、未指定・不正時のみUUIDを生成します。</p>
+ </div>
+ <div class="table-wrap"><table><thead><tr><th>項目</th><th>標準値・規則</th></tr></thead><tbody>
+ <tr><td>機能有効化</td><td>Studioのranking機能をONにする</td></tr>
+ <tr><td>mode</td><td>ランキング分類キー。異なるモードを混ぜない</td></tr>
+ <tr><td>limit</td><td>既定20件、最大100件</td></tr>
+ <tr><td>score</td><td>0〜1,000,000,000の整数</td></tr>
+ <tr><td>metadata</td><td>オブジェクト、8KB以内。秘密情報を入れない</td></tr>
+ <tr><td>同点</td><td>通常スコアは先に達成した記録を上位にする。最後も安定した順序を使う</td></tr>
+ <tr><td>重複防止</td><td>gameId + userId + mode + submissionId等で二重加算を防ぐ</td></tr>
+ </tbody></table></div>
+ <div class="subhead">ランキング形式の例</div>
+ <ul><li><b>ハイスコア：</b> score降順。modeごとに分離。</li><li><b>勝利数：</b> 試合ごとの勝利を1件ずつ記録し、ユーザー単位で累計集計する。</li><li><b>最速タイム：</b> 小さい値が上位になるようサーバー側の並び順を定義する。上位20件を取得した後にブラウザで並べ替える方式は禁止。</li><li><b>Bot / Online：</b> 公平性が異なる場合は別modeに分ける。</li><li><b>シーズン：</b> シーズンIDをmodeまたは明確な分類キーで管理する。</li></ul>
+ <div class="callout danger"><b>不正対策：</b> 現行のscore_submitには本人確認・数値/サイズ/頻度の基本検証がありますが、クライアントが申告したスコアの正しさを一般的に証明するものではありません。競技性の高い正式ランキングは、サーバー側でゲーム操作と勝敗を検証できるようにしてから接続します。クライアントから送った「勝った」「このスコアだった」だけで正式結果を確定しません。</div>
+</section>
+
+<section class="section" id="cache">
+ <h2><span class="num">11</span>キャッシュ・保存規格</h2>
+ <div class="table-wrap"><table><thead><tr><th>情報</th><th>キャッシュ方針</th><th>更新条件</th></tr></thead><tbody>
+ <tr><td>ゲーム一覧・静的設定</td><td>長めに保持</td><td>公開情報更新時</td></tr>
+ <tr><td>プロフィール表示</td><td>短〜中時間</td><td>プロフィール編集・アカウント切替時</td></tr>
+ <tr><td>ランキング</td><td>短時間保持</td><td>試合終了・明示更新・TTL失効時</td></tr>
+ <tr><td>ルーム参加者・ターン</td><td>古い値で確定しない</td><td>イベント・再接続スナップショット</td></tr>
+ <tr><td>認証・権限</td><td>古い状態を信頼しない</td><td>親ページの認証ブリッジで再確認</td></tr>
+ <tr><td>演出・一時選択</td><td>ブラウザ内だけ</td><td>ゲーム状態に応じて破棄</td></tr>
+ </tbody></table></div>
+ <div class="card"><h3>保存のルール</h3><ul><li>クラウド保存は <code>KuroGames.save.get/set/delete/list</code> を利用する。</li><li>設定変更・チェックポイント・ゲーム終了など、意味のあるタイミングで保存する。</li><li>毎フレーム・毎ドラッグ位置・毎アニメーションフレームを保存しない。</li><li>アカウント切替時に前のユーザーのデータを次のユーザーへ表示しない。</li><li>ランキング・勝敗・課金相当のデータは単なるキャッシュを正本として使わない。</li></ul></div>
+</section>
+
+<section class="section" id="recovery">
+ <h2><span class="num">12</span>エラー・再試行・復帰</h2>
+ <div class="table-wrap"><table><thead><tr><th>状況</th><th>標準対応</th></tr></thead><tbody>
+ <tr><td>通信失敗</td><td>状態を保持し、操作の種類に応じて再試行・復元する</td></tr>
+ <tr><td>401 / 認証失効</td><td>認証ブリッジで再確認。未ログインならログイン案内</td></tr>
+ <tr><td>403 / 権限なし</td><td>自動再試行しない。機能設定・参加権限を表示</td></tr>
+ <tr><td>409 / 状態競合</td><td>最新状態を再取得し、操作を再計算。古い状態を上書きしない</td></tr>
+ <tr><td>二重送信</td><td>同じactionId/submissionIdで重複排除</td></tr>
+ <tr><td>相手の切断</td><td>一時切断として表示。ルールの猶予時間に沿って再接続</td></tr>
+ <tr><td>ルーム期限切れ</td><td>正直に終了表示し、安全にロビーへ戻す</td></tr>
+ </tbody></table></div>
+ <div class="card"><h3>再試行の目安</h3><pre><code>1回目の一時エラー：少し待って再試行
+2回目：待機時間を延ばして再試行
+3回目：自動再試行を止め、利用者へ通知</code></pre><p>実装では指数バックオフ＋ランダムな揺らぎを利用し、回数に上限を設定します。読み取りは再取得しやすい一方、書き込みは同じIDで重複排除できる場合だけ安全に再送します。入力内容や進行状況を失わせないようにします。</p></div>
+</section>
+
+<section class="section" id="security">
+ <h2><span class="num">13</span>セキュリティ必須規格</h2>
+ <div class="card">
+  <ul><li>publicなどData APIに公開するスキーマの全テーブルでRLSを有効にする。</li><li>RLSは「ログイン済み」だけでなく、auth.uid()と所有者・ルーム参加者を照合する。</li><li>クライアントから渡されたuserId、username、KURO IDを本人確認・権限判定に使わない。</li><li>ユーザーが変更できるuser_metadataを認可判断に使用しない。</li><li>Service Roleキー・秘密鍵・サーバーチケット署名秘密をブラウザへ出さない。</li><li>ランキング、勝敗、ルーム参加者、準備状態など重要データをクライアントから直接自由更新させない。</li><li>イベント・共有ルーム状態・ランキングmetadataに秘密情報を含めない。</li><li>UPDATEポリシーはUSINGだけでなくWITH CHECKで所有者変更を防ぐ。</li></ul>
+ </div>
+ <div class="callout danger">「ボタンを隠す」「CSSで非表示」「JSの変数名を難読化」はセキュリティ対策ではありません。重要な検証は必ずサーバー側で行います。</div>
+</section>
+
+<section class="section" id="testing">
+ <h2><span class="num">14</span>テスト・公開前チェック</h2>
+ <div class="card">
+  <h3>リリースチェックリスト</h3>
+  <div class="checklist">
+   <label><input type="checkbox">ゲームのルール・勝敗・終了条件が正しい</label>
+   <label><input type="checkbox">PC / スマホで画面が崩れない</label>
+   <label><input type="checkbox">押下時の反応が即時に表示される</label>
+   <label><input type="checkbox">演出・アニメーションが意図どおり動く</label>
+   <label><input type="checkbox">不要な通信・重複取得がない</label>
+   <label><input type="checkbox">二重クリック・二重送信を防いでいる</label>
+   <label><input type="checkbox">ログアウト時にオンライン操作が拒否される</label>
+   <label><input type="checkbox">他人のuserIdを指定しても権限を越えられない</label>
+   <label><input type="checkbox">キュー登録を連打しても重複しない</label>
+   <label><input type="checkbox">同時マッチ成立で二重ルームにならない</label>
+   <label><input type="checkbox">キャンセルとマッチ成立の競合を処理できる</label>
+   <label><input type="checkbox">マッチ後のACK失敗・待機切れを扱える</label>
+   <label><input type="checkbox">Ready / Startの条件がサーバー検証される</label>
+   <label><input type="checkbox">切断・再接続・退出・期限切れを試した</label>
+   <label><input type="checkbox">ルーム共有データに秘密情報がない</label>
+   <label><input type="checkbox">試合結果が同じIDで一度だけ登録される</label>
+   <label><input type="checkbox">ランキングの順序・同点・mode分離が正しい</label>
+   <label><input type="checkbox">Consoleエラー・未処理Promise拒否がない</label>
+  </div>
+ </div>
+ <div class="callout">オンライン対戦は、同じ端末のローカルテストだけでは不十分です。別アカウント・別ブラウザ・異なるネットワークで、マッチング競合、退出、再接続、ランキング重複登録まで確認します。</div>
+</section>
+
+<section class="section" id="status">
+ <h2><span class="num">15</span>現行機能と今後の共通化</h2>
+ <p class="section-intro">ドキュメントに理想仕様が書かれていることと、APIが現在使えることを混同しないための一覧です。</p>
+ <div class="table-wrap"><table><thead><tr><th>機能</th><th>現行状況</th><th>新作ゲームでの扱い</th></tr></thead><tbody>
+ <tr><td>KuroGames SDK初期化・認証</td><td><span class="tag ok">実装済み</span></td><td>共通SDKを使う</td></tr>
+ <tr><td>ランキング submit / get</td><td><span class="tag ok">実装済み</span></td><td>正確性が必要ならサーバー検証を追加</td></tr>
+ <tr><td>クラウドセーブ</td><td><span class="tag ok">実装済み</span></td><td>共通save APIを利用</td></tr>
+ <tr><td>ルーム作成・参加・公開状態・イベント</td><td><span class="tag ok">実装済み</span></td><td>公開データのみ使用</td></tr>
+ <tr><td>Cloudflare Durable Objectsルーム通信</td><td><span class="tag partial">実装・一部確認</span></td><td>SDKに接続を任せる</td></tr>
+ <tr><td>大富豪・UNO等の専用マッチング</td><td><span class="tag ok">専用実装あり</span></td><td>対応ゲームに限り専用APIを利用</td></tr>
+ <tr><td>七並べマッチング</td><td><span class="tag partial">専用経路あり</span></td><td>汎用APIとして使わない</td></tr>
+ <tr><td>任意の新作ゲーム向け汎用マッチング</td><td><span class="tag future">未実装</span></td><td>共通API・RPC・キュー制約を整備してから利用</td></tr>
+ <tr><td>個人専用状態・サーバー専用状態の共通API</td><td><span class="tag future">今後実装</span></td><td>秘密データを共有stateへ入れない</td></tr>
+ <tr><td>全ゲーム共通のサーバー側ゲーム判定</td><td><span class="tag future">今後実装</span></td><td>ゲーム固有ルールモジュールが必要</td></tr>
+ <tr><td>正式ランキングへの検証済み結果連携</td><td><span class="tag partial">一部実装・要検証</span></td><td>クライアント申告だけを正式結果にしない</td></tr>
+ </tbody></table></div>
+</section>
+
+<section class="section" id="refs">
+ <h2><span class="num">↗</span>仕様書・参考資料</h2>
+ <div class="grid2">
+  <div class="card"><h3>KUROGAMES 共通オンライン・データ通信仕様</h3><p>SDK、ルーム、ランキング、エラー形式、実装状態の詳細。</p><a href="https://github.com/kurogamesmaker/kuro_lab/blob/main/game-studio/ONLINE-DATA-API.md" target="_blank" rel="noopener">GitHubで開く ↗</a></div>
+  <div class="card"><h3>オンラインルーム実装・運用仕様</h3><p>Durable Objects、WebSocket、切断復帰、ルーム期限、クリーンアップの詳細。</p><a href="https://github.com/kurogamesmaker/kuro_lab/blob/main/DURABLE-ONLINE-ROOM.md" target="_blank" rel="noopener">GitHubで開く ↗</a></div>
+  <div class="card"><h3>オンライン認証規格</h3><p>KUROアカウント認証、オンライン機能の利用条件、禁止事項。</p><a href="https://github.com/kurogamesmaker/kuro_lab/blob/main/ONLINE-AUTH-STANDARD.md" target="_blank" rel="noopener">GitHubで開く ↗</a></div>
+  <div class="card"><h3>Supabase公式ドキュメント</h3><p>RLS、Realtime、Postgresの最新仕様を確認する。</p><a href="https://supabase.com/docs/guides/database/postgres/row-level-security" target="_blank" rel="noopener">Row Level Security ↗</a><br><a href="https://supabase.com/docs/guides/realtime" target="_blank" rel="noopener">Realtime ↗</a></div>
+ </div>
+ <div class="foot">KURO GAME STUDIO / Game Development Standard v1.0<br>このマニュアルは共通基準です。既存APIの実装状態は関連仕様書・SDK・本番デプロイを確認し、未実装の仕様を利用可能と誤認しないでください。</div>
+</section>
+</main>
+</div>
+</body>
+</html>
