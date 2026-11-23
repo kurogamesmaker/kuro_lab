@@ -3721,7 +3721,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 const bytes = new Uint8Array(key);
                 let binary = '';
                 for (const byte of bytes) binary += String.fromCharCode(byte);
-                const encoded = btoa(binary).replace(/=/g, '').replace(/\\+/g, '-').replace(/\\//g, '_');
+                const encoded = btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replace(/=/g, '');
                 return encoded === KURO_VAPID_PUBLIC_KEY;
             } catch (_) {
                 return false;
