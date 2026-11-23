@@ -70,6 +70,7 @@
   }
 
   db.auth.onAuthStateChange((_event, session) => {
+    refreshSequence++;
     if (!session || !session.user || session.user.is_anonymous) paint(0);
     else refresh();
   });
