@@ -609,14 +609,7 @@ if(tickerBtn&&requestedPublishedGameId){
     const {data,error}=await publishDb.functions.invoke("kurogames-online",{body:{action:"ranking_showcase_config_update",gameId,config:modeConfig}});
     if(error)throw error;
     if(!data||data.ok!==true)throw new Error("サーバーから保存完了の応答がありません。");
-    const value=edit.value.trim(),nextMap=readMap("kuroGamesRankingTickerByGame"),nextHistory=readMap("kuroGamesRankingTickerHistoryByGame"),nextStyleMap=readMap("kuroGamesRankingTickerStyleByGame"),previous=nextMap[gameId]||"";
-    if(previous&&previous!==value){const list=Array.isArray(nextHistory[gameId])?nextHistory[gameId]:[];nextHistory[gameId]=[previous,...list.filter(v=>v!==previous)].slice(0,20);}
-    if(value)nextMap[gameId]=value;else delete nextMap[gameId];
-    nextStyleMap[gameId]={enabled:enabled.checked,speed:safeSpeed(speed.value),direction:direction.value==="right"?"right":"left",textColor:safeColor(textColor.value,defaults.textColor),backgroundColor:safeColor(backgroundColor.value,defaults.backgroundColor)};
-    localStorage.setItem("kuroGamesRankingTickerByGame",JSON.stringify(nextMap));
-    localStorage.setItem("kuroGamesRankingTickerHistoryByGame",JSON.stringify(nextHistory));
-    localStorage.setItem("kuroGamesRankingTickerStyleByGame",JSON.stringify(nextStyleMap));
-    close();toast("ランキング表示設定を保存しました");
+    close();toast("モード別ランキング掲載設定を保存しました");
    }catch(error){
     modeStatus.textContent="保存できませんでした："+(error&&error.message||"権限・通信を確認してください。");
     modeStatus.style.color="#ffaaaa";toast("ランキング設定の保存に失敗しました");
