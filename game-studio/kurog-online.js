@@ -296,43 +296,52 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
   async function openDurableSocket(candidateUrl) {
     await new Promise((resolve, reject) => {
       let settled = false;
+      let attemptActive = true;
+      let attemptSocket = null;
+
+      function failInitial(message) {
+        if (settled) return;
+        settled = true;
+        attemptActive = false;
+        clearTimeout(timeout);
+        try { if (attemptSocket) attemptSocket.close(); } catch (_) {}
+        reject(new Error(message));
+      }
+
       const timeout = setTimeout(() => {
-        if (!settled) {
-          settled = true;
-          try { if (socket) socket.close(); } catch (_) {}
-          reject(new Error("Durable Objects接続がタイムアウトしました。"));
-        }
+        failInitial("Durable Objects接続がタイムアウトしました。");
       }, 15000);
 
       try {
-        socket = new WebSocket(candidateUrl);
+        attemptSocket = new WebSocket(candidateUrl);
+        socket = attemptSocket;
       } catch (error) {
+        attemptActive = false;
         clearTimeout(timeout);
         reject(error);
         return;
       }
 
-      function failInitial(message) {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timeout);
-        try { if (socket) socket.close(); } catch (_) {}
-        reject(new Error(message));
-      }
-
-      socket.onerror = () => {
-        if (!connected) failInitial("Durable Objectsへの接続に失敗しました。");
+      attemptSocket.onerror = () => {
+        if (attemptActive && !connected) {
+          failInitial("Durable Objectsへの接続に失敗しました。");
+        }
       };
-      socket.onclose = () => {
+      attemptSocket.onclose = () => {
+        if (!attemptActive) return;
         if (!connected) {
           failInitial("Durable Objects接続が閉じられました。");
           return;
         }
-        active = false;
-        if (heartbeat) clearInterval(heartbeat); if (statusWatch) clearInterval(statusWatch);
-        rejectPending(new Error("Durable Objects接続が閉じられました。"));
+        attemptActive = false;
+        if (socket === attemptSocket) {
+          active = false;
+          if (heartbeat) clearInterval(heartbeat); if (statusWatch) clearInterval(statusWatch);
+          rejectPending(new Error("Durable Objects接続が閉じられました。"));
+        }
       };
-      socket.onmessage = event => {
+      attemptSocket.onmessage = event => {
+        if (!attemptActive) return;
         let message;
         try { message = JSON.parse(event.data); } catch (_) { return; }
         if (message.type === "welcome") {
