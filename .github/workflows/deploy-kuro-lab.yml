@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main
+    # Static HTML/CSS/JS assets are served from the live main branch by Worker.
+    # Deploy the Worker only when its runtime entrypoint or Wrangler config changes.
+    paths:
+      - "worker.js"
+      - "wrangler.jsonc"
   workflow_dispatch:
 
 permissions:
