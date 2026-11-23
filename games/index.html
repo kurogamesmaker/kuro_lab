@@ -80,6 +80,9 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 #kuroRankingShowcase .rank-filters{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap}
 #kuroRankingShowcase .rank-filters label{display:flex;align-items:center;gap:6px;padding:5px 7px;border:1px solid #e0e9f7;border-radius:9px;background:#fff;color:#657791;font-size:9px;font-weight:900}
 #kuroRankingShowcase .rank-filters select{max-width:112px;border:0;outline:0;background:transparent;color:#2d5f9d;font:inherit;font-size:10px;font-weight:900;cursor:pointer}
+#kuroRankingShowcase .rank-filters label:first-child{border-color:#cfe0f8;background:linear-gradient(135deg,#fff,#f5f9ff);color:#3f6797}
+#kuroRankingShowcase .rank-filters select{max-width:150px}
+#kuroRankingShowcase .rank-filters label[hidden]{display:none!important}
 #kuroRankingShowcase .rank-filters [hidden]{display:none!important}
 @media(max-width:680px){#kuroRankingShowcase .rank-filters{margin-top:8px}}
 
@@ -1250,8 +1253,10 @@ body.kuro-account-open { overflow: hidden; }
 <div class="games-layout"><div class="grid" id="gameGrid">
 </div>
 <aside class="ranking-showcase" id="kuroRankingShowcase" aria-label="ゲームランキング"><span class="rank-corner-trophy" aria-hidden="true">🏆</span><div class="rank-head"><div><span class="rank-eyebrow">KURO GAMES RANKING</span><h2><span class="rank-heading-icon" aria-hidden="true">🏆</span><span>ランキング</span></h2></div><span class="rank-live"><i></i> LIVE</span></div><div class="rank-game" id="kuroRankGame">ランキング対応ゲーム</div><div class="rank-filters">
- <label id="kuroRankLevelWrap" hidden>レベル<select id="kuroRankLevel"><option value="">すべて</option></select></label>
+ <label id="kuroRankModeWrap" hidden>ランキング種別<select id="kuroRankMode" aria-label="ランキング種別"></select></label>
+ <label id="kuroRankDetailWrap" hidden>難易度・区分<select id="kuroRankDetail" aria-label="難易度・区分"></select></label>
  <label id="kuroRankCpuWrap" hidden>CPU難易度<select id="kuroRankCpu"><option value="">すべて</option></select></label>
+ <label id="kuroRankLevelWrap" hidden>レベル<select id="kuroRankLevel"><option value="">すべて</option></select></label>
 </div><div class="rank-list" id="kuroRankList"><div class="rank-message">ランキングを読み込み中…</div></div><div class="rank-foot"><a id="kuroRankGameLink" href="/games/">ゲームを遊ぶ ↗</a><div class="rank-controls"><button id="kuroRankPrev" type="button" aria-label="前のランキング">‹</button><span id="kuroRankDots"></span><button id="kuroRankNext" type="button" aria-label="次のランキング">›</button></div></div></aside></div>
 <div class="empty" id="empty"><strong>ゲームが見つかりませんでした</strong>検索ワードやジャンルを変えて、もう一度探してみてください。</div>
 <div class="more"><div class="more-icon">✦</div><div><h3>新しいゲームを準備中！</h3><p>KURO GAMESでは、これからもオリジナルゲームを追加していきます。次のゲームもお楽しみに。</p></div><small>MORE GAMES COMING SOON</small></div>
@@ -1425,258 +1430,175 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
 <script>
 function initKuroRankingShowcase(){
  const panel=document.getElementById("kuroRankingShowcase"),listEl=document.getElementById("kuroRankList"),titleEl=document.getElementById("kuroRankGame"),linkEl=document.getElementById("kuroRankGameLink"),dotsEl=document.getElementById("kuroRankDots"),prev=document.getElementById("kuroRankPrev"),next=document.getElementById("kuroRankNext");
- const levelSelect=document.getElementById("kuroRankLevel"),cpuSelect=document.getElementById("kuroRankCpu");
- const levelWrap=document.getElementById("kuroRankLevelWrap"),cpuWrap=document.getElementById("kuroRankCpuWrap");
+ const modeSelect=document.getElementById("kuroRankMode"),detailSelect=document.getElementById("kuroRankDetail"),modeWrap=document.getElementById("kuroRankModeWrap"),detailWrap=document.getElementById("kuroRankDetailWrap");
+ const levelSelect=document.getElementById("kuroRankLevel"),cpuSelect=document.getElementById("kuroRankCpu"),levelWrap=document.getElementById("kuroRankLevelWrap"),cpuWrap=document.getElementById("kuroRankCpuWrap");
  if(!panel||!listEl||!titleEl||!linkEl)return;
  let games=[],index=0,timer=null,pausedUntil=0,busy=false,cache=new Map(),pendingSteps=0,swipeStart=null;
- const medals=["🥇","🥈","🥉","4","5"];
+ const medals=["🥇","🥈","🥉","4","5"],TICTACTOE_GAME_ID="2dbd6773-2684-4f00-973e-c46acbc348e7",TICTACTOE_RULES=["normal","vanish","gobble","reverse"],RANK_CACHE_MS=30000;
  function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
  function renderDots(){if(dotsEl)dotsEl.innerHTML=games.map((_,i)=>'<i class="rank-dot '+(i===index?'active':'')+'"></i>').join("");}
  function showMessage(msg){listEl.innerHTML='<div class="rank-message">'+esc(msg)+'</div>';}
- const TICTACTOE_GAME_ID="2dbd6773-2684-4f00-973e-c46acbc348e7";
- const TICTACTOE_RULES=["normal","vanish","gobble","reverse"];
- const RANK_CACHE_MS=30000;
- function renderFilterOptions(game){
-  const levels=Array.isArray(game.levels)?game.levels:[];
-  const cpus=Array.isArray(game.cpuDifficulties)?game.cpuDifficulties:[];
-  if(levelWrap){
-   levelWrap.hidden=!levels.length;
-   const previous=levelSelect.value;
-   levelSelect.innerHTML='<option value="">すべて</option>'+levels.map(value=>'<option value="'+Number(value)+'">Lv.'+Number(value)+'</option>').join("");
-   levelSelect.value=levels.some(value=>String(value)===previous)?previous:"";
+ function modeName(mode){
+  const names={normal:"通常ルール・勝利数",vanish:"消えるルール・勝利数",gobble:"食べるルール・勝利数",reverse:"逆転ルール・勝利数","wins-bot":"CPU戦・勝利数","wins-online":"オンライン対戦・勝利数",werewolf_villager_wins:"村人陣営の勝利数",werewolf_wolf_wins:"人狼陣営の勝利数",normal_beginner:"ノーマル・初心者"};
+  return mode==="default"?"":(names[mode]||String(mode).replace(/[_-]+/g," "));
+ }
+ function cleanGroupLabel(mode){
+  if(/^(cpu|bot)$/i.test(mode))return "CPU戦";
+  return (modeName(mode)||mode).replace(/・(勝利数|点)$/,"");
+ }
+ function difficultyLabel(raw){
+  const v=String(raw||"").toLowerCase(),names={beginner:"初心者",novice:"初心者",easy:"初級",normal:"標準",medium:"中級",intermediate:"中級",hard:"上級",advanced:"上級",expert:"Expert",master:"マスター"};
+  if(names[v])return names[v];
+  const m=v.match(/^(?:lv|level)(\d+)$/);
+  if(m)return "Lv."+m[1];
+  if(/^\d+$/.test(v))return "Lv."+v;
+  return String(raw||"").replace(/[_-]+/g," ");
+ }
+ function splitDifficultyMode(mode){
+  const m=String(mode||"").match(/^(.+?)[_-](beginner|novice|easy|normal|medium|intermediate|hard|advanced|expert|master|lv\d+|level\d+|\d+|初心者|初級|中級|上級)$/i);
+  return m&&m[1]?{base:m[1],difficulty:difficultyLabel(m[2])}:null;
+ }
+ function buildModeGroups(modes){
+  const list=Array.from(new Set((modes||[]).filter(x=>typeof x==="string"&&x))).sort((a,b)=>modes.indexOf(a)-modes.indexOf(b));
+  const buckets=new Map(),loose=[];
+  list.forEach(mode=>{const part=splitDifficultyMode(mode);if(!part){loose.push(mode);return;}if(!buckets.has(part.base))buckets.set(part.base,[]);buckets.get(part.base).push({mode,difficulty:part.difficulty});});
+  const groups=[];
+  for(const [base,variants] of buckets){
+   const hasBase=list.includes(base);
+   if(variants.length>=2||hasBase){
+    const members=[];if(hasBase)members.push({mode:base,difficulty:"標準"});variants.forEach(v=>members.push(v));
+    groups.push({key:"family:"+base,label:cleanGroupLabel(base),modes:members,order:Math.min(...members.map(v=>list.indexOf(v.mode)))});
+   }else variants.forEach(v=>loose.push(v.mode));
   }
-  if(cpuWrap){
-   cpuWrap.hidden=!cpus.length;
-   const previous=cpuSelect.value;
-   const names={EASY:"よわい",NORMAL:"ふつう",HARD:"つよい",EXPERT:"Expert"};
-   cpuSelect.innerHTML='<option value="">すべて</option>'+cpus.map(value=>'<option value="'+esc(value)+'">'+esc(names[value]||value)+'</option>').join("");
-   cpuSelect.value=cpus.includes(previous)?previous:"";
+  loose.forEach(mode=>groups.push({key:"mode:"+mode,label:cleanGroupLabel(mode),modes:[{mode,difficulty:""}],order:list.indexOf(mode)}));
+  groups.sort((a,b)=>a.order-b.order);
+  return groups;
+ }
+ function selectedGroup(game){
+  const groups=game.modeGroups||[];
+  return groups.find(g=>g.key===game.selectedGroupKey)||groups[0]||null;
+ }
+ function selectedModeInfo(game){
+  const g=selectedGroup(game);
+  if(!g||!g.modes.length)return {mode:"default",difficulty:""};
+  return g.modes.find(v=>v.mode===game.selectedMode)||g.modes[0];
+ }
+ function renderFilterOptions(game){
+  const groups=game.modeGroups||[];
+  if(modeWrap&&modeSelect){
+   modeWrap.hidden=groups.length<=1;
+   modeSelect.innerHTML=groups.map(g=>'<option value="'+esc(g.key)+'">'+esc(g.label)+'</option>').join("");
+   if(!groups.some(g=>g.key===game.selectedGroupKey))game.selectedGroupKey=groups[0]?.key||"";
+   modeSelect.value=game.selectedGroupKey||"";
+  }
+  const group=selectedGroup(game),members=group?.modes||[];
+  if(detailWrap&&detailSelect){
+   detailWrap.hidden=members.length<=1;
+   detailSelect.innerHTML=members.map(v=>'<option value="'+esc(v.mode)+'">'+esc(v.difficulty||modeName(v.mode)||v.mode)+'</option>').join("");
+   if(!members.some(v=>v.mode===game.selectedMode))game.selectedMode=members[0]?.mode||"default";
+   detailSelect.value=game.selectedMode||"";
+  }
+  const active=selectedModeInfo(game),isCpu=/cpu|bot/i.test(String(group?.key||"")+" "+active.mode);
+  const levels=Array.isArray(game.levels)?game.levels:[],cpus=Array.isArray(game.cpuDifficulties)?game.cpuDifficulties:[];
+  if(levelWrap&&levelSelect){
+   levelWrap.hidden=!levels.length;
+   const prior=levelSelect.value;
+   levelSelect.innerHTML='<option value="">すべて</option>'+levels.map(v=>'<option value="'+Number(v)+'">Lv.'+Number(v)+'</option>').join("");
+   levelSelect.value=levels.some(v=>String(v)===prior)?prior:"";
+  }
+  if(cpuWrap&&cpuSelect){
+   cpuWrap.hidden=!isCpu||!cpus.length;
+   const prior=cpuSelect.value,names={EASY:"よわい",NORMAL:"ふつう",HARD:"つよい",EXPERT:"Expert"};
+   cpuSelect.innerHTML='<option value="">すべて</option>'+cpus.map(v=>'<option value="'+esc(v)+'">'+esc(names[v]||v)+'</option>').join("");
+   cpuSelect.value=cpus.includes(prior)?prior:"";
   }
  }
- async function fetchRanking(game,forceRefresh=false){
-  const selectedLevel=levelSelect?.value||"";
-  const selectedCpu=cpuSelect?.value||"";
-  const key=game.id+"::"+game.mode+"::"+selectedLevel+"::"+selectedCpu;
-  const cached=cache.get(key);
-  if(!forceRefresh&&cached&&Date.now()-cached.at<RANK_CACHE_MS)return cached.rows;
+ async function fetchRanking(game){
+  const lv=levelSelect?.value||"",cpu=cpuSelect?.value||"",key=game.id+"::"+game.mode+"::"+lv+"::"+cpu,cached=cache.get(key);
+  if(cached&&Date.now()-cached.at<RANK_CACHE_MS)return cached.rows;
   try{
    const body={action:"leaderboard",gameId:game.id,mode:game.mode,limit:5};
-   if(selectedLevel!=="")body.level=Number(selectedLevel);
-   if(selectedCpu!=="")body.cpuDifficulty=selectedCpu;
-   const {data,error}=await window.kuroGamesDB.functions.invoke("kurogames-online",{body});
-   if(error)throw error;
-   const sourceRows=Array.isArray(data?.scores)?data.scores:[];
-   const rows=sourceRows.slice(0,5).map((row,index)=>({
-    ...row,rank:Number(row.rank)||index+1,score:Number(row.score)||0,
-    user:row.user||{username:"プレイヤー",display_name:"プレイヤー"}
-   }));
-   cache.set(key,{rows,at:Date.now()});
-   return rows;
-  }catch(error){
-   if(cached?.rows?.length)return cached.rows;
-   throw error;
-  }
+   if(lv!=="")body.level=Number(lv);if(cpu!=="")body.cpuDifficulty=cpu;
+   const {data,error}=await window.kuroGamesDB.functions.invoke("kurogames-online",{body});if(error)throw error;
+   const rows=(Array.isArray(data?.scores)?data.scores:[]).slice(0,5).map((row,i)=>({...row,rank:Number(row.rank)||i+1,score:Number(row.score)||0,user:row.user||{username:"プレイヤー",display_name:"プレイヤー"}}));
+   cache.set(key,{rows,at:Date.now()});return rows;
+  }catch(error){if(cached?.rows?.length)return cached.rows;throw error;}
  }
- function modeName(mode){
-  const names={
-   normal:"通常ルール・勝利数",
-   vanish:"消えるルール・勝利数",
-   gobble:"食べるルール・勝利数",
-   reverse:"逆転ルール・勝利数",
-   "wins-bot":"CPU戦・勝利数",
-   "wins-online":"オンライン対戦・勝利数",
-   werewolf_villager_wins:"村人陣営の勝利数",
-   werewolf_wolf_wins:"人狼陣営の勝利数",
-   normal_beginner:"ノーマル・初心者"
-  };
-  return mode==="default"?"":(names[mode]||mode.replace(/[_-]+/g," "));
- }
- function scoreText(game,row){
-  const value=Number(row.score||0).toLocaleString("ja-JP");
-  const modeSetting=game.showcaseConfig?.modes?.[game.mode];
-  if(modeSetting&&typeof modeSetting.scoreSuffix==="string")return value+modeSetting.scoreSuffix;
-  if(game.id===TICTACTOE_GAME_ID||/wins|_wins/.test(game.mode))return value+"勝";
-  if(/score|normal_beginner/.test(game.mode))return value+"点";
+ function scoreText(game,row,mode){
+  const value=Number(row.score||0).toLocaleString("ja-JP"),setting=game.showcaseConfig?.modes?.[mode];
+  if(setting&&typeof setting.scoreSuffix==="string")return value+setting.scoreSuffix;
+  if(game.id===TICTACTOE_GAME_ID||/wins|_wins/.test(mode))return value+"勝";
+  if(/score|normal_beginner/.test(mode))return value+"点";
   return value;
  }
  async function display(i,direction=1,forceTransition=false){
   if(!games.length)return;
-  if(busy){
-   pendingSteps=Math.max(-4,Math.min(4,pendingSteps+(direction<0?-1:1)));
-   return;
-  }
+  if(busy){pendingSteps=Math.max(-4,Math.min(4,pendingSteps+(direction<0?-1:1)));return;}
   busy=true;
-  const nextIndex=(i+games.length)%games.length;
-  const game=games[nextIndex];
-  const isSwitch=panel.dataset.rankReady==="1"&&(nextIndex!==index||forceTransition);
-  const slideDirection=direction<0?"prev":"next";
+  const nextIndex=(i+games.length)%games.length,game=games[nextIndex],modeInfo=selectedModeInfo(game),queryGame=Object.assign({},game,{mode:modeInfo.mode});
+  const isSwitch=panel.dataset.rankReady==="1"&&(nextIndex!==index||forceTransition),slideDirection=direction<0?"prev":"next";
   try{
-   // 先に次のデータを取得しつつ、現在の一覧を退場させる。通信待ちで空白にならない。
    renderFilterOptions(game);
-   const rowsPromise=fetchRanking(game).then(rows=>({rows})).catch(error=>({error}));
-   if(isSwitch){
-    panel.dataset.rankDirection=slideDirection;
-    panel.classList.remove("rank-in");
-    panel.classList.add("rank-out");
-    await new Promise(resolve=>setTimeout(resolve,230));
-   }
-   const result=await rowsPromise;
-   index=nextIndex;
+   const rowsPromise=fetchRanking(queryGame).then(rows=>({rows})).catch(error=>({error}));
+   if(isSwitch){panel.dataset.rankDirection=slideDirection;panel.classList.remove("rank-in");panel.classList.add("rank-out");await new Promise(resolve=>setTimeout(resolve,230));}
+   const result=await rowsPromise;index=nextIndex;
    let customTicker="",tickerStyle={enabled:true,speed:30,direction:"left",textColor:"#164b8e",backgroundColor:"#eaf2ff"};
-   try{
-    const tickerMap=JSON.parse(localStorage.getItem("kuroGamesRankingTickerByGame")||"{}");
-    customTicker=String(tickerMap[game.id]||"").trim();
-   }catch(_){}
-   try{
-    const styleMap=JSON.parse(localStorage.getItem("kuroGamesRankingTickerStyleByGame")||"{}");
-    if(styleMap&&styleMap[game.id]&&typeof styleMap[game.id]==="object")tickerStyle=Object.assign(tickerStyle,styleMap[game.id]);
-   }catch(_){}
-   const modeSetting=game.showcaseConfig?.modes?.[game.mode]||null;
-   const originalModeLabel=modeName(game.mode);
-   const customModeLabel=modeSetting&&typeof modeSetting.label==="string"?modeSetting.label.trim():"";
-   const displayBase=customTicker||game.title;
-   const officialTitle=displayBase+(originalModeLabel?" · "+originalModeLabel:"");
-   const safeTickerColor=(value,fallback)=>/^#[0-9a-f]{6}$/i.test(String(value||""))?String(value):fallback;
-   const tickerEnabled=tickerStyle.enabled!==false;
-   const tickerSpeed=Math.max(10,Math.min(100,Math.round(Number(tickerStyle.speed)||30)));
-   const tickerDirection=tickerStyle.direction==="right"?"right":"left";
-   titleEl.classList.remove("rank-marquee");titleEl.replaceChildren();titleEl.classList.add("rank-marquee");
-   titleEl.style.setProperty("display",tickerEnabled?"flex":"none","important");
-   titleEl.style.color=safeTickerColor(tickerStyle.textColor,"#164b8e");
-   titleEl.style.backgroundColor=safeTickerColor(tickerStyle.backgroundColor,"#eaf2ff");
+   try{const map=JSON.parse(localStorage.getItem("kuroGamesRankingTickerByGame")||"{}");customTicker=String(map[game.id]||"").trim();}catch(_){}
+   try{const map=JSON.parse(localStorage.getItem("kuroGamesRankingTickerStyleByGame")||"{}");if(map?.[game.id]&&typeof map[game.id]==="object")tickerStyle=Object.assign(tickerStyle,map[game.id]);}catch(_){}
+   const setting=game.showcaseConfig?.modes?.[modeInfo.mode]||null,customLabel=setting&&typeof setting.label==="string"?setting.label.trim():"",displayBase=customTicker||game.title;
+   const safeColor=(v,f)=>/^#[0-9a-f]{6}$/i.test(String(v||""))?String(v):f,tickerEnabled=tickerStyle.enabled!==false,tickerSpeed=Math.max(10,Math.min(100,Math.round(Number(tickerStyle.speed)||30))),tickerDirection=tickerStyle.direction==="right"?"right":"left";
+   titleEl.classList.remove("rank-marquee");titleEl.replaceChildren();titleEl.classList.add("rank-marquee");titleEl.style.setProperty("display",tickerEnabled?"flex":"none","important");titleEl.style.color=safeColor(tickerStyle.textColor,"#164b8e");titleEl.style.backgroundColor=safeColor(tickerStyle.backgroundColor,"#eaf2ff");
    if(tickerEnabled){
-    const mainLine=document.createElement("div");mainLine.className="rank-mode-mainline";
-    const track=document.createElement("span");track.className="rank-marquee-track";
-    const first=document.createElement("span");first.textContent=officialTitle;track.append(first);mainLine.append(track);titleEl.append(mainLine);
-    if(customModeLabel){
-     const subtitle=document.createElement("div");subtitle.className="rank-mode-custom-label";subtitle.textContent=customModeLabel;titleEl.append(subtitle);
-    }
-    requestAnimationFrame(()=>{
-     if(!titleEl.isConnected||!tickerEnabled)return;
-     const gap=36;
-     const textWidth=Math.max(1,first.getBoundingClientRect().width);
-     const viewportWidth=Math.max(1,mainLine.clientWidth);
-     const cycleDistance=textWidth+gap;
-     const copies=Math.max(3,Math.ceil((viewportWidth+textWidth)/cycleDistance)+2);
-     for(let n=1;n<copies;n++){const copy=document.createElement("span");copy.textContent=officialTitle;track.append(copy);}
-     track.style.gap=gap+"px";
-     const frames=tickerDirection==="right"
-      ?[{transform:"translateX(-"+cycleDistance+"px)"},{transform:"translateX(0)"}]
-      :[{transform:"translateX(0)"},{transform:"translateX(-"+cycleDistance+"px)"}];
-     track.animate(frames,{duration:Math.max(500,cycleDistance/tickerSpeed*1000),iterations:Infinity,easing:"linear"});
-    });
+    const main=document.createElement("div");main.className="rank-mode-mainline";const track=document.createElement("span");track.className="rank-marquee-track";const first=document.createElement("span");first.textContent=displayBase;track.append(first);main.append(track);titleEl.append(main);
+    if(customLabel){const sub=document.createElement("div");sub.className="rank-mode-custom-label";sub.textContent=customLabel;titleEl.append(sub);}
+    requestAnimationFrame(()=>{if(!titleEl.isConnected||!tickerEnabled)return;const gap=36,width=Math.max(1,first.getBoundingClientRect().width),viewport=Math.max(1,main.clientWidth),distance=width+gap,copies=Math.max(3,Math.ceil((viewport+width)/distance)+2);for(let n=1;n<copies;n++){const copy=document.createElement("span");copy.textContent=displayBase;track.append(copy);}track.style.gap=gap+"px";const frames=tickerDirection==="right"?[{transform:"translateX(-"+distance+"px)"},{transform:"translateX(0)"}]:[{transform:"translateX(0)"},{transform:"translateX(-"+distance+"px)"}];track.animate(frames,{duration:Math.max(500,distance/tickerSpeed*1000),iterations:Infinity,easing:"linear"});});
    }
-   linkEl.href="/games/play/?id="+encodeURIComponent(game.id);
-   linkEl.textContent="このゲームを遊ぶ ↗";
-   renderDots();
-   if(result.error){
-    showMessage("ランキングを取得できませんでした。");
-    console.debug("KURO ranking carousel:",result.error);
-   }else if(!result.rows.length){
-    showMessage("このモードのランキングデータはまだありません。");
-   }else{
-    listEl.innerHTML=result.rows.slice(0,5).map((row,ri)=>'<div class="rank-row"><span class="rank-medal">'+medals[ri]+'</span><span class="rank-name">'+esc(row.user?.username||row.user?.display_name||"プレイヤー")+'</span><span class="rank-score">'+scoreText(game,row)+'</span></div>').join("");
-   }
-   panel.dataset.rankReady="1";
-   panel.dataset.rankDirection=slideDirection;
-   panel.classList.remove("rank-out","rank-in");
-   void listEl.offsetWidth;
-   panel.classList.add("rank-in");
-  }catch(e){
-   panel.classList.remove("rank-out","rank-in");
-   showMessage("ランキングを取得できませんでした。");
-   console.debug("KURO ranking transition:",e);
-   panel.dataset.rankReady="1";
-   panel.dataset.rankDirection=slideDirection;
-   void listEl.offsetWidth;
-   panel.classList.add("rank-in");
-  }finally{
-   busy=false;
-   if(pendingSteps){
-    const queued=pendingSteps;
-    pendingSteps=0;
-    display(index+queued,Math.sign(queued),true);
-   }
-  }
+   linkEl.href="/games/play/?id="+encodeURIComponent(game.id);linkEl.textContent="このゲームを遊ぶ ↗";renderDots();
+   if(result.error){showMessage("ランキングを取得できませんでした。");console.debug("KURO ranking showcase:",result.error);}
+   else if(!result.rows.length)showMessage("このランキングの記録はまだありません。");
+   else listEl.innerHTML=result.rows.map((row,ri)=>'<div class="rank-row"><span class="rank-medal">'+medals[ri]+'</span><span class="rank-name">'+esc(row.user?.username||row.user?.display_name||"プレイヤー")+'</span><span class="rank-score">'+scoreText(game,row,modeInfo.mode)+'</span></div>').join("");
+   panel.dataset.rankReady="1";panel.dataset.rankDirection=slideDirection;panel.classList.remove("rank-out","rank-in");void listEl.offsetWidth;panel.classList.add("rank-in");
+  }catch(e){panel.classList.remove("rank-out","rank-in");showMessage("ランキングを取得できませんでした。");console.debug("KURO ranking transition:",e);panel.dataset.rankReady="1";panel.dataset.rankDirection=slideDirection;void listEl.offsetWidth;panel.classList.add("rank-in");}
+  finally{busy=false;if(pendingSteps){const n=pendingSteps;pendingSteps=0;display(index+n,Math.sign(n),true);}}
  }
  function go(delta){pausedUntil=Date.now()+12000;display(index+delta,delta,true);}
- prev?.addEventListener("click",()=>go(-1));
- next?.addEventListener("click",()=>go(1));
- function applyRankingFilter(){
-  pausedUntil=Date.now()+12000;
-  cache.clear();
-  display(index,1,true);
- }
- levelSelect?.addEventListener("change",applyRankingFilter);
- cpuSelect?.addEventListener("change",applyRankingFilter);
- // ランキング一覧を左右にスワイプして切り替え（縦スクロールはそのまま）。
- listEl.addEventListener("touchstart",event=>{
-  if(event.touches.length!==1){swipeStart=null;return;}
-  const touch=event.touches[0];
-  swipeStart={x:touch.clientX,y:touch.clientY};
-  pausedUntil=Date.now()+12000;
- },{passive:true});
- listEl.addEventListener("touchend",event=>{
-  if(!swipeStart||!event.changedTouches.length){swipeStart=null;return;}
-  const touch=event.changedTouches[0],dx=touch.clientX-swipeStart.x,dy=touch.clientY-swipeStart.y;
-  swipeStart=null;
-  if(Math.abs(dx)>=48&&Math.abs(dx)>Math.abs(dy)*1.25)go(dx<0?1:-1);
- },{passive:true});
+ prev?.addEventListener("click",()=>go(-1));next?.addEventListener("click",()=>go(1));
+ function applyRankingFilter(){pausedUntil=Date.now()+12000;cache.clear();display(index,1,true);}
+ modeSelect?.addEventListener("change",()=>{const game=games[index];if(!game)return;game.selectedGroupKey=modeSelect.value;game.selectedMode=selectedGroup(game)?.modes?.[0]?.mode||"default";if(levelSelect)levelSelect.value="";if(cpuSelect)cpuSelect.value="";applyRankingFilter();});
+ detailSelect?.addEventListener("change",()=>{const game=games[index];if(!game)return;game.selectedMode=detailSelect.value;if(levelSelect)levelSelect.value="";if(cpuSelect)cpuSelect.value="";applyRankingFilter();});
+ levelSelect?.addEventListener("change",applyRankingFilter);cpuSelect?.addEventListener("change",applyRankingFilter);
+ listEl.addEventListener("touchstart",e=>{if(e.touches.length!==1){swipeStart=null;return;}const t=e.touches[0];swipeStart={x:t.clientX,y:t.clientY};pausedUntil=Date.now()+12000;},{passive:true});
+ listEl.addEventListener("touchend",e=>{if(!swipeStart||!e.changedTouches.length){swipeStart=null;return;}const t=e.changedTouches[0],dx=t.clientX-swipeStart.x,dy=t.clientY-swipeStart.y;swipeStart=null;if(Math.abs(dx)>=48&&Math.abs(dx)>Math.abs(dy)*1.25)go(dx<0?1:-1);},{passive:true});
  listEl.addEventListener("touchcancel",()=>{swipeStart=null;},{passive:true});
- panel.addEventListener("mouseenter",()=>pausedUntil=Date.now()+999999);
- panel.addEventListener("mouseleave",()=>pausedUntil=Date.now()+8000);
+ panel.addEventListener("mouseenter",()=>pausedUntil=Date.now()+999999);panel.addEventListener("mouseleave",()=>pausedUntil=Date.now()+8000);
  async function initialize(){
   if(!window.kuroGamesDB){showMessage("ランキング通信を準備できませんでした。");return;}
   async function loadRankings(){
-   const {data:published,error:gamesError}=await window.kuroGamesDB.from("game_studio_games").select("id,title,status").eq("status","published").order("published_at",{ascending:false}).limit(60);
-   if(gamesError)throw gamesError;
-   const candidates=(published||[]).filter(g=>g.id&&g.title);
-   const configs=await Promise.all(candidates.map(async g=>{
-    try{
-     const {data,error}=await window.kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"get_config",gameId:g.id}});
-     if(error)throw error;
-     // ランキング機能が有効な公開ゲームを自動対象にする。個別の掲載フラグは不要。
-     return data?.features?.ranking===true?g:null;
-    }catch(err){console.debug("Ranking config skipped:",g.id,err);return null;}
-   }));
+   const {data:published,error:gamesError}=await window.kuroGamesDB.from("game_studio_games").select("id,title,status").eq("status","published").order("published_at",{ascending:false}).limit(60);if(gamesError)throw gamesError;
+   const configs=await Promise.all((published||[]).filter(g=>g.id&&g.title).map(async game=>{try{const {data,error}=await window.kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"get_config",gameId:game.id}});if(error)throw error;return data?.features?.ranking===true?game:null;}catch(err){console.debug("Ranking config skipped:",game.id,err);return null;}}));
    const enabled=configs.filter(Boolean);
-   const expanded=await Promise.all(enabled.map(async game=>{
+   return (await Promise.all(enabled.map(async game=>{
     try{
-     const {data,error}=await window.kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"leaderboard_modes",gameId:game.id}});
-     if(error)throw error;
-     const levels=Array.isArray(data?.levels)?data.levels:[];
-     const cpuDifficulties=Array.isArray(data?.cpuDifficulties)?data.cpuDifficulties:[];
-     const showcaseConfig=data?.showcaseConfig&&typeof data.showcaseConfig==="object"?data.showcaseConfig:{modes:{}};
-     const modeSettings=showcaseConfig.modes&&typeof showcaseConfig.modes==="object"?showcaseConfig.modes:{};
-     const baseModes=game.id===TICTACTOE_GAME_ID?TICTACTOE_RULES:
-      (Array.isArray(data?.modes)&&data.modes.length?data.modes:["default"]);
-     const modes=baseModes.filter(mode=>modeSettings[mode]?.enabled!==false).sort((a,b)=>{
-      const ai=Number.isFinite(Number(modeSettings[a]?.order))?Number(modeSettings[a].order):1000+baseModes.indexOf(a);
-      const bi=Number.isFinite(Number(modeSettings[b]?.order))?Number(modeSettings[b].order):1000+baseModes.indexOf(b);
-      return ai-bi;
-     });
-     // 区分はデータ件数で間引かず、ランキング記録が0件でもすべて掲載対象にする。
-     return modes.map(mode=>({id:game.id,title:game.title,mode,levels,cpuDifficulties,showcaseConfig}));
-    }catch(err){console.debug("Ranking modes skipped:",game.id,err);return [];}
-   }));
-   return expanded.flat();
+     const {data,error}=await window.kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"leaderboard_modes",gameId:game.id}});if(error)throw error;
+     const levels=Array.isArray(data?.levels)?data.levels:[],cpuDifficulties=Array.isArray(data?.cpuDifficulties)?data.cpuDifficulties:[],showcaseConfig=data?.showcaseConfig&&typeof data.showcaseConfig==="object"?data.showcaseConfig:{modes:{}},settings=showcaseConfig.modes&&typeof showcaseConfig.modes==="object"?showcaseConfig.modes:{};
+     const baseModes=game.id===TICTACTOE_GAME_ID?TICTACTOE_RULES:(Array.isArray(data?.modes)&&data.modes.length?data.modes:["default"]);
+     const modes=baseModes.filter(m=>settings[m]?.enabled!==false).sort((a,b)=>{const ai=Number.isFinite(Number(settings[a]?.order))?Number(settings[a].order):1000+baseModes.indexOf(a),bi=Number.isFinite(Number(settings[b]?.order))?Number(settings[b].order):1000+baseModes.indexOf(b);return ai-bi;});
+     const modeGroups=buildModeGroups(modes);if(!modeGroups.length)return null;
+     return {id:game.id,title:game.title,modeGroups,selectedGroupKey:modeGroups[0].key,selectedMode:modeGroups[0].modes[0]?.mode||"default",levels,cpuDifficulties,showcaseConfig};
+    }catch(err){console.debug("Ranking modes skipped:",game.id,err);return null;}
+   }))).filter(Boolean);
   }
   try{
-   games=await loadRankings();
-   if(!games.length){showMessage("ランキングデータはまだありません。ゲームで記録が作られると自動で掲載されます。");return;}
-   await display(0,1);
-   if(games.length>1)timer=setInterval(()=>{if(Date.now()>=pausedUntil&&!busy)display(index+1,1);},3000);
+   games=await loadRankings();if(!games.length){showMessage("ランキング対応ゲームはまだありません。");return;}
+   await display(0,1);if(games.length>1)timer=setInterval(()=>{if(Date.now()>=pausedUntil&&!busy)display(index+1,1);},5000);
    setInterval(async()=>{
     if(busy)return;
     try{
-     const current=games[index];
-     const currentKey=current?current.id+"::"+current.mode:"";
-     const fresh=await loadRankings();
+     const current=games[index],id=current?.id||"",groupKey=current?.selectedGroupKey||"",mode=current?.selectedMode||"",fresh=await loadRankings();
      if(fresh.length){
-      games=fresh;
-      const sameIndex=games.findIndex(game=>game.id+"::"+game.mode===currentKey);
-      index=sameIndex>=0?sameIndex:Math.min(index,games.length-1);
-      if(Date.now()>=pausedUntil)display(index,1);
+      const found=fresh.findIndex(g=>g.id===id),nextAt=found>=0?found:Math.min(index,fresh.length-1),replacement=fresh[nextAt];
+      if(found>=0&&replacement.modeGroups.some(g=>g.key===groupKey)){replacement.selectedGroupKey=groupKey;const group=selectedGroup(replacement);if(group.modes.some(v=>v.mode===mode))replacement.selectedMode=mode;}
+      games=fresh;index=nextAt;if(Date.now()>=pausedUntil)display(index,1);
      }
     }catch(err){console.debug("KURO ranking refresh skipped:",err);}
    },30000);
