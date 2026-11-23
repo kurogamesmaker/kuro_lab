@@ -85,7 +85,7 @@ async function getUser(req: Request) {
 }
 async function getOptionalUser(req: Request) {
   const authHeader = req.headers.get("authorization") ?? "";
-  const token = authHeader.match(/^Bearer\\s+(.+)$/i)?.[1];
+  const token = authHeader.match(/^Bearer\s+(.+)$/i)?.[1];
   // Cloudflare relayはゲスト時にpublishable keyをBearerとして補うため、
   // JWT形式でない値は未ログインとして扱う。
   if (!token || token.length > 8192 || token.split(".").length !== 3) return null;
