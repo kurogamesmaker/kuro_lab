@@ -285,6 +285,19 @@ function exportHTML(){
  setTimeout(()=>URL.revokeObjectURL(url),1200);
  toast("単独HTMLを書き出しました");
 }
+function downloadBaseName(){return String(project.name||"kuro-game").replace(/[\\\\/:*?"<>|]+/g,"-").replace(/\\s+/g," ").trim().slice(0,80)||"kuro-game";}
+function downloadSourceFile(tab){
+ const config={html:{extension:"html",mime:"text/html"},css:{extension:"css",mime:"text/css"},js:{extension:"js",mime:"text/javascript"}}[tab];
+ if(!config)return;
+ const base=downloadBaseName(),content=String(project.code[tab]||"");
+ const blob=new Blob(["\\uFEFF",content],{type:config.mime+";charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");
+ a.href=url;a.download=base+"."+config.extension;a.style.display="none";document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),1500);toast(config.extension.toUpperCase()+"ファイルをダウンロードしました");
+}
+function syncEditorBeforeDownload(){project.name=$("projectName").value.trim()||project.name||"kuro-game";project.code[activeTab]=currentValue();}
+function openDownloadModal(){$("downloadModal").classList.add("open");}
+function closeDownloadModal(){$("downloadModal").classList.remove("open");}
+
 let publishUser=null,publishAllowed=false,publishIconData="";
 let publishedFallbackCode=null,publishedFallbackId="",activePublishedDraft=false,publishedFallbackRecovered=false;
 let cropImage=null,cropObjectUrl="",cropZoom=1,cropX=0,cropY=0,cropDrag=null;
@@ -609,6 +622,13 @@ $("sizeModal").addEventListener("click",e=>{if(e.target===$("sizeModal"))$("size
 $("sizeReset").addEventListener("click",()=>{$("previewWidth").value=960;$("previewHeight").value=540;$("previewScale").value=100;});
 $("autoFixLayoutBtn").addEventListener("click",()=>{project.code[activeTab]=currentValue();const viewport='<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">';if(!/name=["']viewport["']/i.test(project.code.html))project.code.html=project.code.html.replace(/<head([^>]*)>/i,'<head$1>'+viewport);const safeCSS="\n/* KURO Studio: responsive layout safety patch */\nhtml,body{max-width:100%;}body{overflow-x:auto;}svg,video,img,iframe{max-width:100%;}img,video{height:auto;}\n";if(!project.code.css.includes("KURO Studio: responsive layout safety patch"))project.code.css+=safeCSS;showTab("css");run();markDirty();toast("レスポンシブ補助CSSを追加しました。必要に応じて内容を確認・調整してください。");});$("sizeApply").addEventListener("click",()=>{project.settings=project.settings||{};project.settings.gameFrameWidth=Math.max(240,Math.min(3840,Number($("previewWidth").value)||960));project.settings.gameFrameHeight=Math.max(160,Math.min(2160,Number($("previewHeight").value)||540));project.settings.gameFrameScale=Math.max(25,Math.min(300,Number($("previewScale").value)||100));project.settings.autoFitOverflow=$("autoFitOverflow").checked;$("sizeModal").classList.remove("open");persist(true);run();toast("公開ゲーム画面サイズを保存しました");});
 if($("exportBtn"))$("exportBtn").addEventListener("click",()=>{project.code[activeTab]=currentValue();persist(true);exportHTML()});
+if($("downloadBtn"))$("downloadBtn").addEventListener("click",openDownloadModal);
+if($("closeDownloadModal"))$("closeDownloadModal").addEventListener("click",closeDownloadModal);
+if($("downloadModal"))$("downloadModal").addEventListener("click",e=>{if(e.target===$("downloadModal"))closeDownloadModal();});
+if($("downloadStandaloneBtn"))$("downloadStandaloneBtn").addEventListener("click",()=>{syncEditorBeforeDownload();closeDownloadModal();exportHTML();});
+if($("downloadHtmlSourceBtn"))$("downloadHtmlSourceBtn").addEventListener("click",()=>{syncEditorBeforeDownload();closeDownloadModal();downloadSourceFile("html");});
+if($("downloadCssSourceBtn"))$("downloadCssSourceBtn").addEventListener("click",()=>{syncEditorBeforeDownload();closeDownloadModal();downloadSourceFile("css");});
+if($("downloadJsSourceBtn"))$("downloadJsSourceBtn").addEventListener("click",()=>{syncEditorBeforeDownload();closeDownloadModal();downloadSourceFile("js");});
 
 function clearConsole(){ $("consoleOutput").textContent="";$("consoleCount").textContent="0"; }
 function writeConsole(level,values){const out=$("consoleOutput");const line=document.createElement("div");line.className=level==="error"?"error":level==="warn"?"warn":"";line.textContent="["+String(level).toUpperCase()+"] "+(values||[]).join(" ");out.appendChild(line);out.scrollTop=out.scrollHeight;$("consoleCount").textContent=String(out.children.length);}
