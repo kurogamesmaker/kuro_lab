@@ -23,7 +23,7 @@ self.addEventListener('push', event => {
     badge: '/assets/brand/logo/kurolab_icon_maru_160.png?v=20261122forcefavicon3',
     tag: payload.tag || 'kuro-message',
     renotify: true,
-    data: { url: payload.url || '/sns/' }
+    data: { url: payload.url || '/sns/v2/mobile/' }
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });
