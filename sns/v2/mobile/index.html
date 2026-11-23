@@ -3712,8 +3712,21 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 showToast(error?.message || '返信に失敗しました。');
             }
         }
-        const KURO_VAPID_PUBLIC_KEY = 'BHNd63kh42xUpu-wwvEcFHQcltoaji9YwK6gLxrccUkc-2nIs0XyvvavuiKXja1GM7xPAEwgXvw8QfL0mFTWd1c';
+        const KURO_VAPID_PUBLIC_KEY = 'BENPzDO3dvAx14t6C49CCNrsnTMDHXMPmQsyK69OnbxbxBeysiCwxaI18wX8eTQsIksxn2bdWgHhWGk3VkSYHMI';
         let kuroServiceWorkerRegistration = null;
+        function kuroSubscriptionUsesCurrentVapidKey(subscription) {
+            try {
+                const key = subscription?.options?.applicationServerKey;
+                if (!key) return false;
+                const bytes = new Uint8Array(key);
+                let binary = '';
+                for (const byte of bytes) binary += String.fromCharCode(byte);
+                const encoded = btoa(binary).replace(/=/g, '').replace(/\\+/g, '-').replace(/\\//g, '_');
+                return encoded === KURO_VAPID_PUBLIC_KEY;
+            } catch (_) {
+                return false;
+            }
+        }
         function urlBase64ToUint8Array(base64String) {
             const padding = '='.repeat((4 - base64String.length % 4) % 4);
             const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -3757,6 +3770,23 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 kuroServiceWorkerRegistration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
                 await navigator.serviceWorker.ready;
                 let subscription = await kuroServiceWorkerRegistration.pushManager.getSubscription();
+                // A PushSubscription is bound to the VAPID public key used when it was created.
+                // Rotate old subscriptions instead of reusing them after the server key changes.
+                if (subscription && !kuroSubscriptionUsesCurrentVapidKey(subscription)) {
+                    const previousEndpoint = subscription.endpoint;
+                    await subscription.unsubscribe();
+                    const remainingSubscription = await kuroServiceWorkerRegistration.pushManager.getSubscription();
+                    if (remainingSubscription) {
+                        throw new Error('古い通知登録を解除できなかったため、もう一度お試しください');
+                    }
+                    const {error: removeOldError} = await supabaseClient
+                        .from('push_subscriptions')
+                        .delete()
+                        .eq('user_id', currentUser.id)
+                        .eq('endpoint', previousEndpoint);
+                    if (removeOldError) throw removeOldError;
+                    subscription = null;
+                }
                 if (!subscription) {
                     subscription = await kuroServiceWorkerRegistration.pushManager.subscribe({
                         userVisibleOnly: true,
