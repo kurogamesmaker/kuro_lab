@@ -135,7 +135,7 @@ var catalog=[
 {key:"guide",type:"page",title:"使い方ガイド",desc:"各サービスの基本的な使い方",href:"/guide/",icon:"📘",tags:"ガイド ヘルプ"},
 {key:"faq",type:"page",title:"よくある質問",desc:"利用時の疑問や困ったときの案内",href:"/faq/",icon:"❔",tags:"質問 ヘルプ"}];
 var nav=[["home","ホーム","⌂","/"],["search","検索","⌕","/search/"],["games","ゲーム","▣","/games/"],["sns","SNS","◉","/sns/"],["chat","チャット","☷","/chat/"],["favorites","お気に入り","☆","/favorites/"],["history","履歴","◷","/history/"],["notifications","お知らせ","♧","/notifications/"],["mypage","マイページ","◎","/mypage/"],["settings","設定","⚙","/settings/"]];
-var st={user:null,kuroId:null,kuroProfile:null,kuroIdLoading:false,kuroIdUserId:null,ann:[],data:null,sync:false,requestNotifications:[],requestUnread:0,adminMessages:[],adminMessageReads:[],adminMessageUnread:0};var proState={active:true,plan:"all",status:"active",features:{workspace_plus:true,pro_tools:true,customization_plus:true,early_access:true,desktop:true,theme_studio:true,developer_mode:true,analytics:"advanced",ai:true,ad_free:true},expiresAt:null,source:"system",fetchedAt:Date.now()};var portalNotificationTopId=null,portalNotificationTimer=null,portalNotificationChannel=null,portalNotificationEventsBound=false,portalAdminMessageTopId=null;window.__kuroPortal={state:st,catalog:catalog,pro:proState,hasProFeature:function(){return true;},save:save,render:render,sync:sync,toast:toast,openQuick:openQuick,closeQuick:closeQuick,applyDisplayPrefs:applyDisplayPrefs};window.dispatchEvent(new Event("kuro:portal-api-ready"));
+var st={user:null,kuroId:null,kuroProfile:null,kuroIdLoading:false,kuroIdUserId:null,ann:[],data:null,sync:false,requestNotifications:[],requestUnread:0,adminMessages:[],adminMessageReads:[],adminMessageUnread:0,socialNotifications:[],socialNotificationUnread:0};var proState={active:true,plan:"all",status:"active",features:{workspace_plus:true,pro_tools:true,customization_plus:true,early_access:true,desktop:true,theme_studio:true,developer_mode:true,analytics:"advanced",ai:true,ad_free:true},expiresAt:null,source:"system",fetchedAt:Date.now()};var portalNotificationTopId=null,portalNotificationTimer=null,portalNotificationChannel=null,portalNotificationEventsBound=false,portalAdminMessageTopId=null,portalSocialNotificationTopId=null;window.__kuroPortal={state:st,catalog:catalog,pro:proState,hasProFeature:function(){return true;},save:save,render:render,sync:sync,toast:toast,openQuick:openQuick,closeQuick:closeQuick,applyDisplayPrefs:applyDisplayPrefs};window.dispatchEvent(new Event("kuro:portal-api-ready"));
 function $(s,r){return (r||document).querySelector(s);}
 function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
 function fmt(v){try{return new Intl.DateTimeFormat("ja-JP",{year:"numeric",month:"short",day:"numeric"}).format(new Date(v));}catch(e){return "";}}
@@ -167,7 +167,7 @@ function renderPortalAdminMessageList(){
 async function refreshPortalAdminMessages(showNew){
  if(!db||!st.user)return;
  try{
-  var result=await db.from("admin_messages").select("id,title,body,href,audience,recipient_id,created_at").eq("published",true).in("service_scope",["lab","both"]).or("audience.eq.all,recipient_id.eq."+st.user.id).order("created_at",{ascending:false}).limit(100);
+  var result=await db.from("admin_messages").select("id,title,body,href,audience,recipient_id,created_at,service_scope,portal_announcement_id").eq("published",true).or("audience.eq.all,recipient_id.eq."+st.user.id).order("created_at",{ascending:false}).limit(100);
   if(result.error)throw result.error;
   var items=result.data||[],ids=items.map(function(x){return x.id;}),reads=[];
   if(ids.length){
@@ -210,6 +210,62 @@ function renderPortalRequestNotificationList(){
  if(!items.length)return '<div class="portal-empty">新しい返信通知はありません。</div>';
  return '<div class="portal-request-notification-list">'+items.map(function(n){var r=n.request||{};return '<article class="portal-request-notification '+(n.read_at?'is-read':'is-unread')+'"><div class="portal-request-notification-mark">✉</div><div class="portal-request-notification-body"><div class="portal-request-notification-top"><strong>リクエストBOXに返信が届きました</strong><time>'+new Date(n.created_at).toLocaleString("ja-JP")+'</time></div><p>'+esc(r.admin_reply||"運営から返信がありました。")+'</p><small>リクエスト：'+esc(r.message||"")+'</small><button type="button" class="portal-btn small" data-portal-open-request-notification="'+esc(n.id)+'">リクエストBOXを開く →</button></div>'+(n.read_at?'':'<span class="portal-request-notification-dot" aria-label="未読"></span>')+'</article>';}).join("")+'</div>';
 }
+
+function renderPortalSocialNotificationList(){
+ if(!st.user)return '<div class="portal-empty">通知を確認するにはログインしてください。<a href="/mypage/">ログインする →</a></div>';
+ var items=st.socialNotifications||[];
+ if(!items.length)return '<div class="portal-empty">新しいサービス通知はありません。</div>';
+ var labels={follow:"フォローされました",follow_back:"フォローを返しました",like:"投稿にいいねしました",reply:"投稿に返信しました",message:"メッセージが届きました",mention:"グループチャットでメンションされました"};
+ return '<div class="portal-request-notification-list">'+items.map(function(n){
+  var actor=n.actor&& (n.actor.display_name||n.actor.username)||"ユーザー";
+  var isChat=n.type==="message"||n.type==="mention"||!!n.group_id;
+  var label=labels[n.type]||"新しい通知があります";
+  return '<article class="portal-request-notification '+(n.read_at?'is-read':'is-unread')+'"><div class="portal-request-notification-mark">'+(isChat?'🗨':'💬')+'</div><div class="portal-request-notification-body"><div class="portal-request-notification-top"><strong>'+esc(actor)+' さん</strong><time>'+new Date(n.created_at).toLocaleString("ja-JP")+'</time></div><p>'+esc(label)+'</p><a class="portal-btn small" href="'+(isChat?'/chat/':'/sns/')+'">'+(isChat?'チャットを開く →':'KURO SNSを開く →')+'</a>'+(n.read_at?'<small>既読</small>':'<button type="button" class="portal-btn small" data-portal-read-social-notification="'+esc(n.id)+'">既読にする</button>')+'</div>'+(n.read_at?'':'<span class="portal-request-notification-dot" aria-label="未読"></span>')+'</article>';
+ }).join("")+'</div>';
+}
+async function refreshPortalSocialNotifications(showNew){
+ if(!db||!st.user)return;
+ try{
+  var result=await db.from("notifications").select("id,type,actor_id,created_at,read_at,group_id,message_id").eq("recipient_id",st.user.id).order("created_at",{ascending:false}).limit(100);
+  if(result.error)throw result.error;
+  var items=result.data||[],actorIds=Array.from(new Set(items.map(function(x){return x.actor_id;}).filter(Boolean))),profiles=[];
+  if(actorIds.length){
+   var pr=await db.from("profiles").select("id,username,display_name").in("id",actorIds);
+   if(pr.error)throw pr.error;
+   profiles=pr.data||[];
+  }
+  var profileMap=new Map(profiles.map(function(x){return [x.id,x];}));
+  items=items.map(function(x){return Object.assign({},x,{actor:profileMap.get(x.actor_id)||null});});
+  var top=items.length?items[0].id:null;
+  if(showNew&&portalSocialNotificationTopId&&top&&top!==portalSocialNotificationTopId&&typeof toast==="function")toast("KURO SNSに新しい通知が届きました");
+  if(top)portalSocialNotificationTopId=top;
+  st.socialNotifications=items;
+  st.socialNotificationUnread=items.filter(function(x){return !x.read_at;}).length;
+  updatePortalNotificationBadge();
+  if(page==="notifications"&&$("#portal-main"))render();
+ }catch(e){console.warn("KURO shared SNS notification sync failed",e);}
+}
+async function markPortalSocialNotificationRead(id){
+ if(!st.user||!id)return;
+ var item=(st.socialNotifications||[]).find(function(x){return x.id===id;});
+ if(!item||item.read_at)return;
+ var now=new Date().toISOString();
+ var result=await db.from("notifications").update({read_at:now}).eq("id",id).eq("recipient_id",st.user.id);
+ if(result.error){if(typeof toast==="function")toast("通知を既読にできませんでした");return;}
+ item.read_at=now;st.socialNotificationUnread=Math.max(0,st.socialNotificationUnread-1);
+ updatePortalNotificationBadge();render();
+}
+async function markAllPortalSocialNotificationsRead(){
+ if(!st.user||!st.socialNotificationUnread)return;
+ var ids=(st.socialNotifications||[]).filter(function(x){return !x.read_at;}).map(function(x){return x.id;});
+ if(!ids.length)return;
+ var now=new Date().toISOString();
+ var result=await db.from("notifications").update({read_at:now}).in("id",ids).eq("recipient_id",st.user.id);
+ if(result.error){if(typeof toast==="function")toast("通知を既読にできませんでした");return;}
+ st.socialNotifications.forEach(function(x){if(!x.read_at)x.read_at=now;});
+ st.socialNotificationUnread=0;updatePortalNotificationBadge();render();
+}
+
 async function refreshPortalRequestNotifications(showNew){
  if(!db||!st.user)return;
  try{
@@ -226,7 +282,7 @@ async function refreshPortalRequestNotifications(showNew){
 }
 function updatePortalNotificationBadge(){
  var badge=$("#portal-notification-badge"),bell=$("#portal-notification-bell");
- var unread=st.requestUnread+st.adminMessageUnread;
+ var unread=st.requestUnread+st.adminMessageUnread+st.socialNotificationUnread;
  if(badge){badge.textContent=unread>99?"99+":String(unread);badge.hidden=!unread;}
  if(bell){bell.setAttribute("aria-label",unread?"未読通知 "+unread+" 件":"お知らせ");bell.classList.toggle("has-unread",!!unread);}
  document.querySelectorAll('a[href="/notifications/"]').forEach(function(a){a.classList.toggle("has-notification-unread",!!unread);});
@@ -236,19 +292,20 @@ function startPortalRequestNotificationSync(){
  if(portalNotificationChannel&&db){try{db.removeChannel(portalNotificationChannel);}catch(e){}portalNotificationChannel=null;}
  if(portalNotificationTimer)clearInterval(portalNotificationTimer);
  portalNotificationTopId=null;portalAdminMessageTopId=null;
- if(!st.user||!db){st.requestNotifications=[];st.requestUnread=0;st.adminMessages=[];st.adminMessageReads=[];st.adminMessageUnread=0;updatePortalNotificationBadge();return;}
- refreshPortalRequestNotifications(false);refreshPortalAdminMessages(false);
- portalNotificationTimer=setInterval(function(){if(document.visibilityState!=="hidden"){refreshPortalRequestNotifications(true);refreshPortalAdminMessages(true);}},25000);
+ if(!st.user||!db){st.requestNotifications=[];st.requestUnread=0;st.adminMessages=[];st.adminMessageReads=[];st.adminMessageUnread=0;st.socialNotifications=[];st.socialNotificationUnread=0;updatePortalNotificationBadge();return;}
+ refreshPortalRequestNotifications(false);refreshPortalAdminMessages(false);refreshPortalSocialNotifications(false);
+ portalNotificationTimer=setInterval(function(){if(document.visibilityState!=="hidden"){refreshPortalRequestNotifications(true);refreshPortalAdminMessages(true);refreshPortalSocialNotifications(true);}},25000);
  if(!useCloudflare&&db.channel){
   portalNotificationChannel=db.channel("portal-request-notifications-"+st.user.id)
    .on("postgres_changes",{event:"INSERT",schema:"public",table:"portal_request_notifications",filter:"user_id=eq."+st.user.id},function(){refreshPortalRequestNotifications(true);})
    .on("postgres_changes",{event:"INSERT",schema:"public",table:"admin_messages"},function(){refreshPortalAdminMessages(true);})
+   .on("postgres_changes",{event:"INSERT",schema:"public",table:"notifications",filter:"recipient_id=eq."+st.user.id},function(){refreshPortalSocialNotifications(true);})
    .subscribe();
  }
  if(!portalNotificationEventsBound){
   portalNotificationEventsBound=true;
-  document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"){refreshPortalRequestNotifications(true);refreshPortalAdminMessages(true);}});
-  window.addEventListener("focus",function(){refreshPortalRequestNotifications(true);refreshPortalAdminMessages(true);});
+  document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"){refreshPortalRequestNotifications(true);refreshPortalAdminMessages(true);refreshPortalSocialNotifications(true);}});
+  window.addEventListener("focus",function(){refreshPortalRequestNotifications(true);refreshPortalAdminMessages(true);refreshPortalSocialNotifications(true);});
  }
 }
 async function markPortalRequestNotificationRead(id){
@@ -262,6 +319,9 @@ function bindPortalNotificationActions(){
  document.querySelectorAll("[data-portal-read-admin-message]").forEach(function(b){b.onclick=function(){b.disabled=true;markPortalAdminMessageRead(b.dataset.portalReadAdminMessage);};});
  var markAdmin=document.querySelector("[data-portal-mark-all-admin]");
  if(markAdmin)markAdmin.onclick=markAllPortalAdminMessagesRead;
+ document.querySelectorAll("[data-portal-read-social-notification]").forEach(function(b){b.onclick=function(){b.disabled=true;markPortalSocialNotificationRead(b.dataset.portalReadSocialNotification);};});
+ var markSocial=document.querySelector("[data-portal-mark-all-social]");
+ if(markSocial)markSocial.onclick=markAllPortalSocialNotificationsRead;
  document.querySelectorAll("[data-portal-open-request-notification]").forEach(function(b){b.onclick=async function(){b.disabled=true;await markPortalRequestNotificationRead(b.dataset.portalOpenRequestNotification);location.href="/request/";};});
  var all=document.querySelector("[data-portal-mark-all]");
  if(all)all.onclick=async function(){if(!st.user||!st.requestUnread)return;all.disabled=true;var ids=(st.requestNotifications||[]).filter(function(x){return !x.read_at;}).map(function(x){return x.id;});if(!ids.length)return;var result=await db.from("portal_request_notifications").update({read_at:new Date().toISOString()}).in("id",ids).eq("user_id",st.user.id);if(result.error){all.disabled=false;if(typeof toast==="function")toast("既読にできませんでした");return;}st.requestNotifications.forEach(function(x){if(!x.read_at)x.read_at=new Date().toISOString();});st.requestUnread=0;updatePortalNotificationBadge();render();};
@@ -283,13 +343,11 @@ search:function(){
  '<div id="portal-search-results" class="kuro-engine-results"></div>'+kuroBrowserPanel()+'</section>'+
  '<style>.kuro-engine{max-width:980px;margin:0 auto}.kuro-engine-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 12px}.kuro-engine-top label{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted,#667085)}.kuro-engine-top select{border:1px solid var(--line,rgba(100,110,130,.25));background:var(--surface,white);color:var(--text,#1e293b);border-radius:9px;padding:7px 10px}.kuro-engine-form{display:flex;gap:10px;align-items:center}.kuro-engine-form input{flex:1;min-width:0}.kuro-engine-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:16px 0 8px;border-bottom:1px solid var(--line,rgba(100,110,130,.2));padding-bottom:10px}.kuro-engine-tabs button{border:0;background:transparent;color:var(--muted,#667085);padding:9px 14px;border-radius:10px;font-weight:700;cursor:pointer}.kuro-engine-tabs button[aria-selected="true"]{background:var(--surface-2,rgba(80,100,140,.12));color:var(--text,#1e293b)}.kuro-engine-note,.kuro-search-status{color:var(--muted,#667085);font-size:12px;margin:10px 2px}.kuro-engine-results{display:grid;gap:12px;margin-top:12px}.kuro-web-result{padding:16px 18px;border:1px solid var(--line,rgba(100,110,130,.2));border-radius:14px;background:var(--surface,white);min-width:0}.kuro-web-result a{color:var(--text,#1e293b);text-decoration:none}.kuro-web-result a:hover{text-decoration:underline}.kuro-web-result h2{font-size:17px;line-height:1.45;margin:5px 0 7px}.kuro-web-result p{font-size:13px;line-height:1.7;color:var(--muted,#667085);margin:0}.kuro-web-result .kuro-result-url{font-size:11px;color:#16805d;overflow-wrap:anywhere}.kuro-web-result time{font-size:11px;color:var(--muted,#667085);margin-left:8px}.kuro-image-results{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}.kuro-image-result{overflow:hidden;border:1px solid var(--line,rgba(100,110,130,.2));border-radius:13px;background:var(--surface,white)}.kuro-image-result img{width:100%;height:150px;object-fit:cover;display:block;background:var(--surface-2,rgba(100,110,130,.12))}.kuro-image-result p{font-size:12px;padding:9px 10px;margin:0;color:var(--muted,#667085);line-height:1.5}.kuro-engine-empty{padding:26px 16px;text-align:center;border:1px dashed var(--line,rgba(100,110,130,.25));border-radius:14px;color:var(--muted,#667085)}@media(max-width:600px){.kuro-engine-form{gap:7px}.kuro-engine-form button{white-space:nowrap}.kuro-web-result{padding:13px}.kuro-image-results{grid-template-columns:repeat(2,minmax(0,1fr))}}</style>';
 },
-notifications:function(){return head("KURO NOTIFICATIONS","共通メッセージ、リクエストBOXへの返信、KURO Lab専用のお知らせを確認できます。","NOTIFICATION CENTER")+
-'<section class="portal-section"><div class="portal-section-head"><div><h2>KURO SNS・KUROLAB 共通メッセージ</h2><p>管理者からの個別メッセージ・一斉お知らせ。両サービスで共通です。</p></div><button type="button" class="portal-btn small" data-portal-mark-all-admin '+(st.adminMessageUnread?'':'disabled')+'>すべて既読にする</button></div>'+renderPortalAdminMessageList()+'</section>'+
-'<section class="portal-section"><div class="portal-section-head"><div><h2>リクエストBOXへの返信</h2><p>運営から返信が届くと、ここに通知されます。</p></div><button type="button" class="portal-btn small" data-portal-mark-all '+(st.requestUnread?'':'disabled')+'>すべて既読にする</button></div>'+renderPortalRequestNotificationList()+'</section>'+announcements()+
-'<section class="portal-section portal-notification-channels"><div class="portal-section-head"><div><h2>サービス別の通知</h2><p>通知の種類に応じて、各サービスを確認できます。</p></div></div><div class="portal-notification-channel-grid">'+
-'<a class="portal-notification-channel" href="/sns/"><span>💬</span><div><b>KURO SNS</b><small>コメント・返信・フォローなどの通知</small></div><i>↗</i></a>'+
-'<a class="portal-notification-channel" href="/chat/"><span>🗨️</span><div><b>KURO CHAT</b><small>チャットの会話を確認</small></div><i>↗</i></a>'+
-'</div><p class="portal-notification-note">リクエストBOXへの返信通知はログイン中のアカウントに保存されます。</p></section>';},
+notifications:function(){return head("KURO NOTIFICATIONS","KURO Lab・KURO SNS・KURO GAMESの通知をひとつの画面で確認できます。","NOTIFICATION CENTER")+
+'<section class="portal-section"><div class="portal-section-head"><div><h2>サービス通知</h2><p>KURO SNSのフォロー・いいね・返信・メッセージなど</p></div><button type="button" class="portal-btn small" data-portal-mark-all-social '+(st.socialNotificationUnread?'':'disabled')+'>すべて既読にする</button></div>'+renderPortalSocialNotificationList()+'</section>'+
+'<section class="portal-section"><div class="portal-section-head"><div><h2>運営からのお知らせ</h2><p>全サービス共通の通知。どのサービスからでも同じ内容を確認できます。</p></div><button type="button" class="portal-btn small" data-portal-mark-all-admin '+(st.adminMessageUnread?'':'disabled')+'>すべて既読にする</button></div>'+renderPortalAdminMessageList()+'</section>'+
+'<section class="portal-section"><div class="portal-section-head"><div><h2>リクエストBOXへの返信</h2><p>運営から返信が届くと、ここに通知されます。</p></div><button type="button" class="portal-btn small" data-portal-mark-all '+(st.requestUnread?'':'disabled')+'>すべて既読にする</button></div>'+renderPortalRequestNotificationList()+'</section>'+
+'<p class="portal-notification-note">通知の既読状態はアカウントに保存され、KURO Lab・KURO SNS・KURO GAMESで共通です。</p>';},
 favorites:function(){return head("お気に入り","保存したサービスやゲームを確認できます。","YOUR COLLECTION")+(st.data.favorites.length?'<div class="portal-grid">'+st.data.favorites.map(function(x){var c=catalog.find(function(y){return y.key===x.item_key;})||x;return '<article class="portal-card"><div class="portal-card-top"><div class="portal-icon">'+(c.icon||"☆")+'</div><h3>'+esc(x.title)+'</h3></div><a class="portal-btn primary small" href="'+esc(x.href)+'">開く →</a> <button class="portal-fav" data-fav="'+esc(x.item_key)+'" aria-pressed="true">★ 保存済み</button></article>';}).join("")+'</div>':'<div class="portal-empty"><strong>お気に入りはまだありません</strong>サービスカードの「お気に入り」から保存できます。</div>');},
 history:function(){return head("閲覧履歴","最近開いたサービスやゲームを確認できます。","RECENTLY USED")+hist(st.data.history)+'<div class="portal-card-actions"><button id="portal-clear-history" class="portal-btn small">履歴を消去</button></div>';},
 achievements:function(){return head("実績機能の整理","実績機能はホーム画面をシンプルにするため終了しました。お気に入りや履歴は引き続き利用できます。","FEATURE UPDATE") + '<section class="portal-card"><p>保存したサービスはお気に入り、最近開いたページは閲覧履歴から確認できます。</p><div class="portal-card-actions"><a class="portal-btn primary small" href="/">ホームへ戻る</a><a class="portal-btn small" href="/favorites/">お気に入りを見る</a><a class="portal-btn small" href="/history/">閲覧履歴を見る</a></div></section>'},
