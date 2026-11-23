@@ -155,7 +155,7 @@ window.addEventListener("message", async event => {
   };
   const roomId = String(msg.roomId || "");
   if (typeof requestId !== "string" || !/^[A-Za-z0-9_-]{1,120}$/.test(requestId) ||
-      msg.gameId !== kuroGameFrameGameId || msg.gameId !== id ||
+      msg.gameId !== kuroGameFrameGameId ||
       !/^[A-Za-z0-9_-]{1,128}$/.test(roomId)) {
    reply({ error: "接続チケット要求が正しくありません。" });
    return;
