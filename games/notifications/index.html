@@ -190,7 +190,7 @@ async function markRead(item){
  if(result.error)throw result.error;
  item.read=true;render();
 }
-async function markAll(){
+async function markAllNotificationsRead(){
  if(!user)return;markAll.disabled=true;
  try{
   const now=new Date().toISOString();
@@ -227,7 +227,7 @@ list.addEventListener("click",event=>{
  if(open)openItem(open.dataset.open);
  if(read){const item=items.find(x=>x.key===read.dataset.read);markRead(item).catch(error=>alert("既読にできませんでした："+error.message));}
 });
-markAll.addEventListener("click",markAll);
+markAll.addEventListener("click",markAllNotificationsRead);
 if(db){
  db.auth.onAuthStateChange(()=>{user=null;load();});
  db.auth.getSession().then(load).catch(load);
