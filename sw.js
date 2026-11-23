@@ -30,15 +30,22 @@ self.addEventListener('push', event => {
 
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  const target = new URL(event.notification.data?.url || '/sns/', self.location.origin).href;
   event.waitUntil((async () => {
+    const fallback = new URL('/sns/v2/mobile/', self.location.origin);
+    let targetUrl = fallback;
+    try {
+      const requested = new URL(event.notification.data?.url || fallback.href, self.location.origin);
+      // Never let notification payloads navigate users to another origin.
+      if (requested.origin === self.location.origin) targetUrl = requested;
+    } catch (_) {}
+    const target = targetUrl.href;
+    const appPrefix = new URL('/sns/v2/', self.location.origin).href;
     const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    for (const client of windows) {
-      if (client.url.startsWith(self.location.origin + '/') && 'focus' in client) {
-        await client.focus();
-        if ('navigate' in client) await client.navigate(target);
-        return;
-      }
+    const appWindow = windows.find(client => client.url.startsWith(appPrefix) && 'focus' in client);
+    if (appWindow) {
+      await appWindow.focus();
+      if ('navigate' in appWindow) await appWindow.navigate(target);
+      return;
     }
     if (self.clients.openWindow) await self.clients.openWindow(target);
   })());
