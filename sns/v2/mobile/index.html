@@ -1590,6 +1590,7 @@ function kuroRouteCloudflareRealtime(client) {
             SUPABASE_PUBLISHABLE_KEY,
             { global: { fetch: kuroCloudflareFetch } }
         );
+        window.kuroSNSDB = supabaseClient;
         kuroRouteCloudflareRealtime(supabaseClient);
         checkKuroCloudflareBridge();
 
@@ -4976,6 +4977,8 @@ body.kuro-page #postFeed article[data-post-card] {
   box-shadow: none !important;
 }
 </style>
+
+<script defer src="/service-notification-box.js?v=20261124box1"></script>
 
 </body>
 </html>
