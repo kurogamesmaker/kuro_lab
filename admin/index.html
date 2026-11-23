@@ -1404,7 +1404,9 @@ async function sendPersonalMessage(event){
  const button=$("#opsPersonalSend");button.disabled=true;
  try{
   await opsInvoke({action:"send_admin_message",audience:"user",userId:target,title,content,href,serviceScope:scope});
-  $("#opsPersonalForm")?.reset();
+  $("#opsPersonalMessageForm").reset();
+  $("#opsPersonalSearch").value="";
+  renderPersonalMessageTargets();
   $("#opsPersonalStatus").textContent="選択したユーザーに個人配信しました。";
   $("#opsPersonalTarget").value="";
   await loadOpsMessages();await loadOpsAudit();
@@ -1433,6 +1435,7 @@ async function loadOpsMessages(){
    const targetExtra=m.recipient_id?" · "+m.recipient_id:"";
    return '<article class="ops-ann-item"><div class="ops-ann-copy"><div class="meta"><strong>'+esc(m.title)+'</strong><span class="ops-status '+(m.published?"":"banned")+'">'+(m.published?"配信中":"停止")+'</span><span>'+esc(date(m.created_at))+'</span></div><div class="sns-muted">配信先：'+esc(scopeLabel)+' · 送信先：'+esc(target)+esc(targetExtra)+' · 既読 '+Number(m.read_count||0)+' 件</div><p>'+esc(m.body)+'</p>'+(m.href?'<a href="'+esc(m.href)+'" target="_blank" rel="noopener noreferrer">リンクを開く ↗</a>':'')+'</div><div class="ops-inline-actions">'+(m.published?'<button class="btn" data-message-unpublish="'+esc(m.id)+'">配信停止</button>':'')+'</div></article>';
   }).join(""):'<div class="empty">共通メッセージはまだありません。</div>';
+  renderPersonalMessageHistory();
  }catch(e){$("#opsMessagesList").innerHTML='<div class="error">読み込みに失敗しました：'+esc(e.message)+'</div>';}
 }
 async function sendOpsMessage(event){
@@ -1899,6 +1902,9 @@ $("#opsReportsList").addEventListener("click",e=>{const b=e.target.closest("[dat
 $("#opsAnnouncementsRefresh").addEventListener("click",loadOpsAnnouncements);
 $("#opsMessagesRefresh").addEventListener("click",loadOpsMessages);
 $("#opsMessageForm").addEventListener("submit",sendOpsMessage);
+$("#opsPersonalMessageForm").addEventListener("submit",sendPersonalMessage);
+$("#opsPersonalSearch").addEventListener("input",renderPersonalMessageTargets);
+$("#opsPersonalRefresh").addEventListener("click",loadOpsMessages);
 $("#labAnnForm").addEventListener("submit",saveLabAnnouncement);
 $("#labAnnRefresh").addEventListener("click",loadLabAnnouncements);
 $("#snsAnnForm").addEventListener("submit",sendSnsAnnouncement);
