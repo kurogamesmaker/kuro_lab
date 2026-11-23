@@ -143,6 +143,44 @@ async function getKuroGameAuthSession() {
  return session;
 }
 
+// KURO GAMES activity heartbeat. A browser-local random id is used for guests;
+// registered users are deduplicated by account id on the server.
+function kuroGameActivityClientId(){
+ const key="kuro_games_activity_client_v1";
+ const makeId=()=>window.crypto?.randomUUID?.()||("xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx").replace(/[xy]/g,ch=>{const n=Math.random()*16|0;return(ch==="x"?n:(n&3|8)).toString(16);});
+ try{let value=localStorage.getItem(key);if(!value){value=makeId();localStorage.setItem(key,value);}return value;}
+ catch(_){return makeId();}
+}
+const kuroGameActivityGuestId=kuroGameActivityClientId();
+let kuroGameActivityStatus="playing";
+let kuroGameActivityOpponent="unknown";
+let kuroGameActivityTimer=null;
+async function sendKuroGameActivityHeartbeat(){
+ const gameId=kuroGameFrameGameId;
+ if(!gameId||!kuroGameAuthClient)return;
+ try{
+  const {error}=await kuroGameAuthClient.functions.invoke("kurogames-activity",{body:{
+   action:"heartbeat",gameId,clientSessionId:kuroGameActivityGuestId,
+   status:kuroGameActivityStatus,opponentType:kuroGameActivityOpponent
+  }});
+  if(error)throw error;
+ }catch(error){console.debug("[KURO GAMES activity] heartbeat skipped:",error?.message||error);}
+}
+function setKuroGameActivity(status,opponentType){
+ const nextStatus=status==="waiting"?"waiting":"playing";
+ const validOpponents=["human","bot","solo","unknown"];
+ const nextOpponent=validOpponents.includes(opponentType)?opponentType:(nextStatus==="waiting"?"human":"unknown");
+ const changed=nextStatus!==kuroGameActivityStatus||nextOpponent!==kuroGameActivityOpponent;
+ kuroGameActivityStatus=nextStatus;kuroGameActivityOpponent=nextOpponent;
+ if(changed)void sendKuroGameActivityHeartbeat();
+}
+function startKuroGameActivity(gameId){
+ if(kuroGameActivityTimer)clearInterval(kuroGameActivityTimer);
+ kuroGameActivityStatus="playing";kuroGameActivityOpponent="unknown";
+ void sendKuroGameActivityHeartbeat();
+ kuroGameActivityTimer=setInterval(sendKuroGameActivityHeartbeat,20000);
+}
+
 // Durable Object接続チケット専用ブリッジ。通常のゲームメッセージ処理とは独立させる。
 window.addEventListener("message", async event => {
  const msg = event.data;
@@ -208,6 +246,12 @@ window.addEventListener("message", async event => {
  if (!kuroGameFrame || event.source !== kuroGameFrame.contentWindow || !event.data) return;
  const msg = event.data;
 
+ if (msg.type === "kuro-games-activity") {
+  if (msg.gameId !== kuroGameFrameGameId) return;
+  setKuroGameActivity(msg.status, msg.opponentType);
+  return;
+ }
+
  if (msg.type === "kuro-online-login-required") {
   const prompt = document.getElementById("onlineAuthPrompt");
   if (prompt) prompt.hidden = false;
@@ -242,6 +286,8 @@ window.addEventListener("message", async event => {
    const bytes = msg.bodyBase64 ? Uint8Array.from(atob(msg.bodyBase64), ch => ch.charCodeAt(0)) : new Uint8Array();
    let action = "";
    try { action = String(JSON.parse(new TextDecoder().decode(bytes)).action || ""); } catch (_) {}
+   const isMatchmakingAction=/^(?:unon_|sevens_)?matchmaking_(?:join|status|cancel|ack)$/.test(action);
+   if (isMatchmakingAction && /(?:join|status)$/.test(action)) setKuroGameActivity("waiting","human");
    // 公開ランキングの閲覧だけはゲストにも許可。記録・設定変更・セーブ等はログイン必須。
    const publicActions = new Set(["get_config", "leaderboard", "leaderboard_modes", "tictactoe_leaderboard"]);
    if (!activeSession?.access_token && !publicActions.has(action)) {
@@ -261,6 +307,14 @@ window.addEventListener("message", async event => {
    });
    const response = await kuroCloudflareFetch(request);
    const responseBytes = new Uint8Array(await response.arrayBuffer());
+   if (isMatchmakingAction) {
+    try {
+     const matchResult=JSON.parse(new TextDecoder().decode(responseBytes));
+     if (matchResult.status==="matched") setKuroGameActivity("playing","human");
+     else if (matchResult.status==="waiting") setKuroGameActivity("waiting","human");
+     else if (matchResult.status==="cancelled" || action.endsWith("_cancel")) setKuroGameActivity("playing","unknown");
+    } catch (_) {}
+   }
    let binary = "";
    for (let i = 0; i < responseBytes.length; i += 0x8000) binary += String.fromCharCode.apply(null, responseBytes.subarray(i, Math.min(i + 0x8000, responseBytes.length)));
    const responseHeaders = {}; response.headers.forEach((value, key) => { responseHeaders[key] = value; });
@@ -433,7 +487,8 @@ window.addEventListener("message", async event => {
    frame.style.maxHeight="none";
    frame.style.aspectRatio=frameWidth+" / "+frameHeight;
   };
-  kuroGameFrame=frame;kuroGameFrameGameId=id;$("frameWrap").replaceChildren(frame);kuroGameFrameLayout();frame.srcdoc='<script>window.KURO_GUEST_MODE='+guest+';window.KURO_GAMES_RECORDS_ENABLED=!window.KURO_GUEST_MODE;window.addEventListener("message",event=>{if(event.source===window.parent&&event.data?.type==="kuro-account-auth-state"){window.KURO_GUEST_MODE=!event.data.authenticated;window.KURO_GAMES_RECORDS_ENABLED=!!event.data.authenticated;}});const isKuroAuthCreation=u=>/\\/auth\\/v1\\/signup(?:[/?#]|$)/i.test(String(u))||/\\/auth\\/v1\\/token\\?[^\\s#]*\\bgrant_type=anonymous\\b/i.test(String(u));const needsKuroAccount=u=>window.KURO_GUEST_MODE&&/(?:\\/rest\\/v1\\/(?:game_scores|game_saves|game_online_[a-z_]+|werewolf_(?:rooms|chat_messages)|kuro_game_win_events)|\\/rest\\/v1\\/rpc\\/(?:werewolf_(?:join_room|update_room)|kuro_join_online_room)|\\/functions\\/v1\\/kurogames-online)(?:[/?]|$)/i.test(String(u));const nativeFetch=window.fetch.bind(window);window.fetch=function(input,init){const u=typeof input==="string"?input:(input&&input.url)||"";if(isKuroAuthCreation(u)){try{window.parent.postMessage({type:"kuro-online-login-required",action:"signup"},"*");}catch(_){}return Promise.resolve(new Response(JSON.stringify({error:"ゲーム内で匿名KUROアカウントは作成できません。共通アカウント画面からログインしてください。"}),{status:403,headers:{"Content-Type":"application/json"}}));}if(needsKuroAccount(u)){try{window.parent.postMessage({type:"kuro-online-login-required",action:"online"},"*");}catch(_){}return Promise.resolve(new Response(JSON.stringify({error:"オンライン機能にはKUROアカウントへのログインが必要です。"}),{status:401,headers:{"Content-Type":"application/json"}}));}return nativeFetch(input,init);};const NativeWebSocket=window.WebSocket;window.WebSocket=new Proxy(NativeWebSocket,{construct(target,args,newTarget){if(window.KURO_GUEST_MODE&&/\\.supabase\\.co\\/realtime\\/v1/i.test(String(args[0]||""))){try{window.parent.postMessage({type:"kuro-online-login-required",action:"realtime"},"*");}catch(_){}throw new Error("KUROアカウントへのログインが必要です。");}return Reflect.construct(target,args,newTarget);}});<\/script>'+data.html_content;};
+  frame.addEventListener("load",()=>startKuroGameActivity(id),{once:true});
+  kuroGameFrame=frame;kuroGameFrameGameId=id;$("frameWrap").replaceChildren(frame);kuroGameFrameLayout();frame.srcdoc='<script>window.KURO_GUEST_MODE='+guest+';window.KURO_GAMES_ACTIVITY_GAME_ID='+JSON.stringify(id)+';window.KURO_GAMES_SET_ACTIVITY=function(status,opponentType){window.parent.postMessage({type:"kuro-games-activity",gameId:window.KURO_GAMES_ACTIVITY_GAME_ID,status:status,opponentType:opponentType||"unknown"},"*");};document.addEventListener("click",function(event){var control=event.target&&event.target.closest?event.target.closest("button,[role=button],a"):null;if(!control)return;var label=String(control.innerText||control.textContent||"").trim().toLowerCase();if(label.includes("cpu")||label.includes("bot")||label.includes("ボット")||label.includes("コンピューター")||label.includes("コンピュータ")||label.includes("ai対戦")){window.KURO_GAMES_SET_ACTIVITY("playing","bot");return;}if(label.includes("相手を探す")||label.includes("ランダムマッチ")||label.includes("マッチング")||label.includes("オンライン対戦"))window.KURO_GAMES_SET_ACTIVITY("waiting","human");},true);window.KURO_GAMES_RECORDS_ENABLED=!window.KURO_GUEST_MODE;window.addEventListener("message",event=>{if(event.source===window.parent&&event.data?.type==="kuro-account-auth-state"){window.KURO_GUEST_MODE=!event.data.authenticated;window.KURO_GAMES_RECORDS_ENABLED=!!event.data.authenticated;}});const isKuroAuthCreation=u=>/\\/auth\\/v1\\/signup(?:[/?#]|$)/i.test(String(u))||/\\/auth\\/v1\\/token\\?[^\\s#]*\\bgrant_type=anonymous\\b/i.test(String(u));const needsKuroAccount=u=>window.KURO_GUEST_MODE&&/(?:\\/rest\\/v1\\/(?:game_scores|game_saves|game_online_[a-z_]+|werewolf_(?:rooms|chat_messages)|kuro_game_win_events)|\\/rest\\/v1\\/rpc\\/(?:werewolf_(?:join_room|update_room)|kuro_join_online_room)|\\/functions\\/v1\\/kurogames-online)(?:[/?]|$)/i.test(String(u));const nativeFetch=window.fetch.bind(window);window.fetch=function(input,init){const u=typeof input==="string"?input:(input&&input.url)||"";if(isKuroAuthCreation(u)){try{window.parent.postMessage({type:"kuro-online-login-required",action:"signup"},"*");}catch(_){}return Promise.resolve(new Response(JSON.stringify({error:"ゲーム内で匿名KUROアカウントは作成できません。共通アカウント画面からログインしてください。"}),{status:403,headers:{"Content-Type":"application/json"}}));}if(needsKuroAccount(u)){try{window.parent.postMessage({type:"kuro-online-login-required",action:"online"},"*");}catch(_){}return Promise.resolve(new Response(JSON.stringify({error:"オンライン機能にはKUROアカウントへのログインが必要です。"}),{status:401,headers:{"Content-Type":"application/json"}}));}return nativeFetch(input,init);};const NativeWebSocket=window.WebSocket;window.WebSocket=new Proxy(NativeWebSocket,{construct(target,args,newTarget){if(window.KURO_GUEST_MODE&&/\\.supabase\\.co\\/realtime\\/v1/i.test(String(args[0]||""))){try{window.parent.postMessage({type:"kuro-online-login-required",action:"realtime"},"*");}catch(_){}throw new Error("KUROアカウントへのログインが必要です。");}return Reflect.construct(target,args,newTarget);}});<\/script>'+data.html_content;};
   const session=await getKuroGameAuthSession();launchGame(!session||!!session.user?.is_anonymous);
  }catch(error){fail(error.message||"通信エラーが発生しました。");}
 })();
