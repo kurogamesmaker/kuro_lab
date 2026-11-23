@@ -1,0 +1,94 @@
+/* KURO shared notification badge for KURO GAMES */
+(function () {
+  "use strict";
+
+  const db = window.kuroGamesDB;
+  const badge = document.getElementById("kuroNotificationBadge");
+  const button = document.getElementById("kuroNotificationLink");
+  if (!db || !badge || !button) return;
+
+  let refreshSequence = 0;
+  let timer = null;
+
+  function paint(count) {
+    const unread = Math.max(0, Number(count) || 0);
+    badge.textContent = unread > 99 ? "99+" : String(unread);
+    badge.hidden = unread === 0;
+    button.classList.toggle("has-unread", unread > 0);
+    button.setAttribute("aria-label", unread ? "未読通知 " + unread + " 件" : "通知");
+  }
+
+  async function refresh() {
+    const sequence = ++refreshSequence;
+    try {
+      const auth = await db.auth.getUser();
+      const user = auth.data && auth.data.user;
+      if (auth.error || !user || user.is_anonymous) {
+        paint(0);
+        return;
+      }
+
+      const [messagesResult, socialResult, repliesResult] = await Promise.all([
+        db.from("admin_messages")
+          .select("id")
+          .eq("published", true)
+          .or("audience.eq.all,recipient_id.eq." + user.id)
+          .order("created_at", { ascending: false })
+          .limit(200),
+        db.from("notifications")
+          .select("id", { count: "exact", head: true })
+          .eq("recipient_id", user.id)
+          .is("read_at", null),
+        db.from("portal_request_notifications")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .is("read_at", null)
+      ]);
+
+      if (messagesResult.error) throw messagesResult.error;
+      if (socialResult.error) throw socialResult.error;
+      if (repliesResult.error) throw repliesResult.error;
+
+      const messages = messagesResult.data || [];
+      const ids = messages.map((row) => row.id).filter(Boolean);
+      let unreadAdmin = ids.length;
+      if (ids.length) {
+        const readsResult = await db.from("admin_message_reads")
+          .select("message_id")
+          .eq("user_id", user.id)
+          .in("message_id", ids);
+        if (readsResult.error) throw readsResult.error;
+        const readIds = new Set((readsResult.data || []).map((row) => row.message_id));
+        unreadAdmin = ids.filter((id) => !readIds.has(id)).length;
+      }
+
+      if (sequence !== refreshSequence) return;
+      paint(unreadAdmin + Number(socialResult.count || 0) + Number(repliesResult.count || 0));
+    } catch (error) {
+      console.warn("[KURO notifications] unread count could not be refreshed:", error);
+    }
+  }
+
+  db.auth.onAuthStateChange((_event, session) => {
+    if (!session || !session.user || session.user.is_anonymous) paint(0);
+    else refresh();
+  });
+
+  db.auth.getSession().then(({ data, error }) => {
+    if (error) throw error;
+    if (!data.session || !data.session.user || data.session.user.is_anonymous) paint(0);
+    else refresh();
+  }).catch((error) => {
+    console.warn("[KURO notifications] session restore failed:", error);
+    paint(0);
+  });
+
+  timer = window.setInterval(() => {
+    if (document.visibilityState !== "hidden") refresh();
+  }, 30000);
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") refresh();
+  });
+  window.addEventListener("focus", refresh);
+})();
