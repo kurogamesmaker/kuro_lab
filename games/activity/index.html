@@ -114,7 +114,7 @@ function render(){
   const head=document.createElement("div");head.className="card-head";
   const icon=document.createElement("div");icon.className="game-icon";
   const iconValue=String(gameIcons.get(String(game.id))||"").trim();
-  if(/^data:image\\//i.test(iconValue)||/^https?:\\/\\//i.test(iconValue)){
+  if(/^data:image\//i.test(iconValue)||/^https?:\/\//i.test(iconValue)){
    const image=document.createElement("img");image.src=iconValue;image.alt="";image.loading="lazy";image.decoding="async";image.referrerPolicy="no-referrer";
    image.addEventListener("error",()=>{image.remove();icon.textContent=categoryIcons[game.category]||"🎮";},{once:true});
    icon.append(image);
