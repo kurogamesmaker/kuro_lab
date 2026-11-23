@@ -295,6 +295,26 @@ function downloadSourceFile(tab){
  setTimeout(()=>URL.revokeObjectURL(url),1500);toast(config.extension.toUpperCase()+"ファイルをダウンロードしました");
 }
 function syncEditorBeforeDownload(){project.name=$("projectName").value.trim()||project.name||"kuro-game";project.code[activeTab]=currentValue();}
+function downloadAllSourceFiles(){
+ syncEditorBeforeDownload();
+ const files=[{name:downloadBaseName()+".html",data:String(project.code.html||"")},{name:downloadBaseName()+".css",data:String(project.code.css||"")},{name:downloadBaseName()+".js",data:String(project.code.js||"")}];
+ const enc=new TextEncoder(),parts=[],central=[];let offset=0;
+ function crc32(bytes){let c=0xffffffff;for(const b of bytes){c^=b;for(let k=0;k<8;k++)c=(c>>>1)^((c&1)?0xedb88320:0);}return(c^0xffffffff)>>>0;}
+ function u16(v){return new Uint8Array([v&255,(v>>>8)&255]);}
+ function u32(v){return new Uint8Array([v&255,(v>>>8)&255,(v>>>16)&255,(v>>>24)&255]);}
+ function join(arr){let size=arr.reduce((n,x)=>n+x.length,0),out=new Uint8Array(size),p=0;for(const x of arr){out.set(x,p);p+=x.length;}return out;}
+ for(const file of files){const name=enc.encode(file.name),data=enc.encode(file.data),crc=crc32(data);
+  const local=join([u32(0x04034b50),u16(20),u16(0x0800),u16(0),u16(0),u16(0),u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0),name,data]);
+  parts.push(local);
+  central.push(join([u32(0x02014b50),u16(20),u16(20),u16(0x0800),u16(0),u16(0),u16(0),u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(offset),name]));
+  offset+=local.length;
+ }
+ const centralBytes=join(central),end=join([u32(0x06054b50),u16(0),u16(0),u16(files.length),u16(files.length),u32(centralBytes.length),u32(offset),u16(0)]);
+ const blob=new Blob([...parts,centralBytes,end],{type:"application/zip"}),url=URL.createObjectURL(blob),a=document.createElement("a");
+ a.href=url;a.download=downloadBaseName()+"-sources.zip";a.style.display="none";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
+ closeDownloadModal();toast("HTML・CSS・JavaScriptの3ファイルをZIPで保存しました");
+}
+
 function openDownloadModal(){$("downloadModal").classList.add("open");}
 function closeDownloadModal(){$("downloadModal").classList.remove("open");}
 
@@ -629,6 +649,7 @@ if($("downloadStandaloneBtn"))$("downloadStandaloneBtn").addEventListener("click
 if($("downloadHtmlSourceBtn"))$("downloadHtmlSourceBtn").addEventListener("click",()=>{syncEditorBeforeDownload();closeDownloadModal();downloadSourceFile("html");});
 if($("downloadCssSourceBtn"))$("downloadCssSourceBtn").addEventListener("click",()=>{syncEditorBeforeDownload();closeDownloadModal();downloadSourceFile("css");});
 if($("downloadJsSourceBtn"))$("downloadJsSourceBtn").addEventListener("click",()=>{syncEditorBeforeDownload();closeDownloadModal();downloadSourceFile("js");});
+if($("downloadAllSourceBtn"))$("downloadAllSourceBtn").addEventListener("click",downloadAllSourceFiles);
 
 function clearConsole(){ $("consoleOutput").textContent="";$("consoleCount").textContent="0"; }
 function writeConsole(level,values){const out=$("consoleOutput");const line=document.createElement("div");line.className=level==="error"?"error":level==="warn"?"warn":"";line.textContent="["+String(level).toUpperCase()+"] "+(values||[]).join(" ");out.appendChild(line);out.scrollTop=out.scrollHeight;$("consoleCount").textContent=String(out.children.length);}
