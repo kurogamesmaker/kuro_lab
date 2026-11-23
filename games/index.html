@@ -1382,7 +1382,7 @@ body.kuro-account-open { overflow: hidden; }
   <div><span class="rank-eyebrow">KURO GAMES RANKING WALL</span><h2><span class="rank-heading-icon" aria-hidden="true">🏆</span><span>ランキング</span></h2></div>
   <span class="rank-live"><i></i> LIVE</span>
  </div>
- <div class="rank-wall-intro"><span>ゲーム別ランキング</span><span>5秒ごとに自動更新</span></div>
+ <div class="rank-wall-intro"><span>ゲーム別ランキング</span><span>5秒ごとに表示切替</span></div>
  <div class="rank-wall" id="kuroRankWall" aria-live="polite"><div class="rank-message">ランキングを読み込み中…</div></div>
 </aside></div>
 <div class="empty" id="empty"><strong>ゲームが見つかりませんでした</strong>検索ワードやジャンルを変えて、もう一度探してみてください。</div>
@@ -1706,6 +1706,8 @@ function initKuroRankingShowcase(){
   slot.ticker.replaceChildren();
   slot.ticker.style.display=enabled?"block":"none";
   slot.ticker.style.color=color;
+  const background=/^#[0-9a-f]{6}$/i.test(String(style.backgroundColor||""))?style.backgroundColor:"#eaf2ff";
+  slot.ticker.style.backgroundColor=background;slot.ticker.style.borderRadius="8px";slot.ticker.style.margin="7px 10px 0";slot.ticker.style.padding="7px 10px";
   if(!enabled)return;
   const track=document.createElement("span");track.className="rank-column-ticker-track";
   const first=document.createElement("span");first.textContent=base;track.appendChild(first);slot.ticker.appendChild(track);
