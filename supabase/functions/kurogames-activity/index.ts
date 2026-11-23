@@ -180,8 +180,12 @@ async function summary() {
     const userId = String(row.user_id);
     if (!publishedIds.has(gameId) || !userId) continue;
     const identity = "u:" + userId;
-    ensure(gameId).waiting.add(identity);
-    allWaiting.add(identity);
+    const gameCounts = ensure(gameId);
+    // A user already counted as playing in this game is not also counted as waiting.
+    if (!gameCounts.playing.has(identity)) {
+      gameCounts.waiting.add(identity);
+      allWaiting.add(identity);
+    }
   }
 
   const games = (gameRows ?? []).map((game) => {
