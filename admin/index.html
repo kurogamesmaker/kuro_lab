@@ -1365,7 +1365,9 @@ function updateOpsMessageAudience(){
  const picker=$("#opsPersonalPicker");
  const target=$("#opsPersonalTarget");
  if(picker)picker.hidden=audience!=="user";
- if(target)target.required=audience==="user";
+ // The select is visually hidden; validate its value in sendOpsMessage instead of
+ // enabling native required validation on a non-focusable control.
+ if(target)target.required=false;
 }
 function renderPersonalMessageTargets(){
  const list=$("#opsPersonalUserList"),select=$("#opsPersonalTarget"),search=$("#opsPersonalSearch"),selectedBox=$("#opsPersonalSelected");
