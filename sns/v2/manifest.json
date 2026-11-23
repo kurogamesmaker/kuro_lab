@@ -1,0 +1,30 @@
+{
+  "id": "/sns/v2/mobile/",
+  "name": "KURO SNS",
+  "short_name": "KURO SNS",
+  "description": "KURO SNS social app",
+  "lang": "ja",
+  "dir": "ltr",
+  "start_url": "/sns/v2/mobile/",
+  "scope": "/sns/v2/",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "portrait",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "categories": [
+    "social",
+    "communication"
+  ],
+  "icons": [
+    {
+      "src": "/assets/brand/logo/kurolab_icon_maru_160.png?v=20261122forcefavicon3",
+      "sizes": "160x160",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
