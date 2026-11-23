@@ -35,8 +35,10 @@ self.addEventListener('notificationclick', event => {
     let targetUrl = fallback;
     try {
       const requested = new URL(event.notification.data?.url || fallback.href, self.location.origin);
-      // Never let notification payloads navigate users to another origin.
-      if (requested.origin === self.location.origin) targetUrl = requested;
+      // Notifications may navigate only within KURO SNS, never another site or an unrelated KURO page.
+      if (requested.origin === self.location.origin && requested.pathname.startsWith('/sns/v2/')) {
+        targetUrl = requested;
+      }
     } catch (_) {}
     const target = targetUrl.href;
     const appPrefix = new URL('/sns/v2/', self.location.origin).href;
