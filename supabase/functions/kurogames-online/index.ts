@@ -18,6 +18,11 @@ const CORS_HEADERS = {
 };
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const DEFAULT_FEATURES = { ranking: false, cloudSave: false, multiplayer: false, rankingShowcase: false };
+const KNOWN_RANKING_MODES: Record<string, string[]> = {
+  "2dbd6773-2684-4f00-973e-c46acbc348e7": ["normal", "vanish", "gobble", "reverse"],
+  "2eb37847-1b7e-43e4-ad98-901d5b830ac4": ["wins-bot", "wins-online"],
+  "903a4c45-37bb-4a4b-a259-a5a8245de998": ["werewolf_villager_wins", "werewolf_wolf_wins"],
+};
 class HttpError extends Error {
   status: number;
   constructor(status: number, message: string) {
@@ -285,7 +290,7 @@ async function handle(req: Request) {
       .eq("game_id", game.id)
       .limit(1000);
     if (error) throw new HttpError(500, "ランキングモードを取得できませんでした。");
-    const modes = Array.from(new Set((rows ?? []).map((row) => row.mode).filter((mode) => typeof mode === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(mode)))).sort();
+    const modes = Array.from(new Set([...(KNOWN_RANKING_MODES[game.id] ?? []), ...(rows ?? []).map((row) => row.mode).filter((mode) => typeof mode === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(mode))])).sort();
     return reply(200, {
       modes: modes.length ? modes : ["default"],
       showcaseConfig: sanitizeRankingShowcaseConfig(settings.features.rankingShowcaseConfig),
