@@ -3603,38 +3603,20 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             // Clear all notification cards currently being viewed. Chat messages themselves are untouched.
             const panelIsOpen = !document.getElementById('notificationsModal')?.classList.contains('hidden');
             if (panelIsOpen) {
-                const viewedIds = rows.filter(n => n.type !== 'mention').map(n => n.id);
+                const viewedIds = rows.filter(n => n.type !== 'mention' && !n.read_at).map(n => n.id);
                 if (viewedIds.length) {
-                    const {data: deletedRows, error: deleteError} = await supabaseClient.from('notifications')
-                        .delete()
+                    const readAt = new Date().toISOString();
+                    const {data: viewedRows, error: readError} = await supabaseClient.from('notifications')
+                        .update({read_at:readAt})
                         .eq('recipient_id', currentUser.id)
                         .in('id', viewedIds)
                         .select('id');
-                    if (deleteError) {
-                        console.error('KURO delete viewed notifications:', deleteError);
-                        showToast('確認済み通知を削除できなかった: ' + (deleteError.message || '設定を確認してね'));
+                    if (readError) {
+                        console.warn('KURO mark viewed notifications read:', readError);
+                        showToast('通知を既読にできなかったよ');
                     } else {
-                        const deleted = new Set((deletedRows || []).map(n => String(n.id)));
-                        rows = rows.filter(n => !deleted.has(String(n.id)));
-                        const unresolvedIds = viewedIds.filter(id => !deleted.has(String(id)));
-                        if (unresolvedIds.length) {
-                            const {data: stillThere, error: verifyError} = await supabaseClient.from('notifications')
-                                .select('id')
-                                .eq('recipient_id', currentUser.id)
-                                .in('id', unresolvedIds);
-                            if (verifyError) {
-                                console.warn('KURO verify notification deletion:', verifyError);
-                                showToast('削除結果の確認に失敗したよ。通知を再読み込みしてね');
-                            } else {
-                                const stillIds = new Set((stillThere || []).map(n => String(n.id)));
-                                const unresolved = new Set(unresolvedIds.map(id => String(id)));
-                                rows = rows.filter(n => !unresolved.has(String(n.id)) || stillIds.has(String(n.id)));
-                                if (stillIds.size) {
-                                    console.error('KURO viewed notifications still exist after DELETE', {remainingCount: stillIds.size});
-                                    showToast('通知がまだ残っているよ。削除設定を確認中');
-                                }
-                            }
-                        }
+                        const viewedSet = new Set((viewedRows || []).map(n => String(n.id)));
+                        rows = rows.map(n => viewedSet.has(String(n.id)) ? {...n, read_at:readAt} : n);
                     }
                 }
 
