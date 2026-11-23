@@ -285,12 +285,12 @@ function exportHTML(){
  setTimeout(()=>URL.revokeObjectURL(url),1200);
  toast("単独HTMLを書き出しました");
 }
-function downloadBaseName(){return String(project.name||"kuro-game").replace(/[\\\\/:*?"<>|]+/g,"-").replace(/\\s+/g," ").trim().slice(0,80)||"kuro-game";}
+function downloadBaseName(){const invalid='/\\:*?"<>|';return Array.from(String(project.name||"kuro-game").trim().slice(0,80),ch=>invalid.includes(ch)?"-":ch).join("").replaceAll(" ","-")||"kuro-game";}
 function downloadSourceFile(tab){
  const config={html:{extension:"html",mime:"text/html"},css:{extension:"css",mime:"text/css"},js:{extension:"js",mime:"text/javascript"}}[tab];
  if(!config)return;
  const base=downloadBaseName(),content=String(project.code[tab]||"");
- const blob=new Blob(["\\uFEFF",content],{type:config.mime+";charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");
+ const blob=new Blob([content],{type:config.mime+";charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");
  a.href=url;a.download=base+"."+config.extension;a.style.display="none";document.body.appendChild(a);a.click();a.remove();
  setTimeout(()=>URL.revokeObjectURL(url),1500);toast(config.extension.toUpperCase()+"ファイルをダウンロードしました");
 }
