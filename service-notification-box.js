@@ -266,6 +266,7 @@
       trigger.classList.toggle("has-unread", unread > 0);
       trigger.setAttribute("aria-label", unread ? "未読通知 " + unread + " 件" : "通知BOX");
     });
+    window.dispatchEvent(new Event("kuro:portal-notifications-updated"));
   }
 
   function activeDb() {
