@@ -741,6 +741,7 @@ export default {
       return json({
         ok: true,
         claims: {
+          typ: claims.typ,
           sub: claims.sub,
           room: claims.room,
           game: claims.game,
