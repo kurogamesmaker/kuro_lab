@@ -284,7 +284,7 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
 
   const roomPath = "/room/" + encodeURIComponent(String(roomData.id)) + "?ticket=" + encodeURIComponent(ticketData.ticket);
   const parentWsBase = parentEndpoint
-    ? parentEndpoint.replace(/^https:/i, "wss:").replace(/^http:/i, "ws:").replace(/\\/$/, "")
+    ? parentEndpoint.replace(/^https:/i, "wss:").replace(/^http:/i, "ws:").replace(/\/$/, "")
     : "";
   const parentWsUrl = parentWsBase ? parentWsBase + roomPath : "";
   const wsCandidates = [];
