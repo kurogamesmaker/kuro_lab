@@ -101,6 +101,8 @@ async function heartbeat(req: Request, body: Record<string, unknown>) {
 
 async function summary() {
   const cutoff = new Date(Date.now() - PRESENCE_TTL_SECONDS * 1000).toISOString();
+  // Existing matchmaking RPCs expire a waiting ticket after 45 seconds.
+  const queueCutoff = new Date(Date.now() - 45 * 1000).toISOString();
 
   // Old heartbeats are removed during summary refresh; every active page sees only
   // records refreshed within the TTL, even if a browser closes without a leave call.
@@ -124,7 +126,7 @@ async function summary() {
       admin.from("game_online_matchmaking")
         .select("game_id,user_id,status,last_seen_at")
         .eq("status", "waiting")
-        .gte("last_seen_at", cutoff)
+        .gte("last_seen_at", queueCutoff)
         .limit(10000),
     ]);
 
@@ -181,6 +183,8 @@ async function summary() {
     if (!publishedIds.has(gameId) || !userId) continue;
     const identity = "u:" + userId;
     const gameCounts = ensure(gameId);
+    gameCounts.humans.add(identity);
+    allHumans.add(identity);
     // A user already counted as playing in this game is not also counted as waiting.
     if (!gameCounts.playing.has(identity)) {
       gameCounts.waiting.add(identity);
