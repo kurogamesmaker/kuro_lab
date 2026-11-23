@@ -83,7 +83,7 @@ async function getUser(req: Request) {
   }
   return data.user;
 }
-async async function getOptionalUser(req: Request) {
+async function getOptionalUser(req: Request) {
   const authHeader = req.headers.get("authorization") ?? "";
   const token = authHeader.match(/^Bearer\\s+(.+)$/i)?.[1];
   // Cloudflare relayはゲスト時にpublishable keyをBearerとして補うため、
@@ -94,7 +94,7 @@ async async function getOptionalUser(req: Request) {
   return data.user;
 }
 
-function getGame(gameId: unknown) {
+async function getGame(gameId: unknown) {
   if (typeof gameId !== "string" || !UUID_RE.test(gameId)) {
     throw new HttpError(400, "有効なgameIdを指定してください。");
   }
