@@ -1464,7 +1464,7 @@ function initKuroRankingShowcase(){
  const browserEl=document.getElementById("kuroRankModeBrowser"),searchEl=document.getElementById("kuroRankModeSearch"),autoResume=document.getElementById("kuroRankAutoResume"),autoStatus=document.getElementById("kuroRankAutoStatus");
  const levelSelect=document.getElementById("kuroRankLevel"),cpuSelect=document.getElementById("kuroRankCpu"),levelWrap=document.getElementById("kuroRankLevelWrap"),cpuWrap=document.getElementById("kuroRankCpuWrap");
  if(!panel||!listEl||!titleEl||!linkEl)return;
- let games=[],index=0,rotationItems=[],rotationIndex=0,timer=null,pausedUntil=0,manualSelection=false,busy=false,cache=new Map(),pendingSteps=0,pendingRefresh=false,swipeStart=null;
+ let games=[],index=0,rotationItems=[],rotationIndex=0,timer=null,pausedUntil=0,manualSelection=false,busy=false,cache=new Map(),pendingSteps=0,pendingTarget=null,pendingRefresh=false,swipeStart=null;
  const medals=["🥇","🥈","🥉","4","5"],TICTACTOE_GAME_ID="2dbd6773-2684-4f00-973e-c46acbc348e7",TICTACTOE_RULES=["normal","vanish","gobble","reverse"],RANK_CACHE_MS=30000;
  function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
  function renderDots(){if(dotsEl)dotsEl.innerHTML=games.map((_,i)=>'<i class="rank-dot '+(i===index?'active':'')+'"></i>').join("");}
@@ -1576,7 +1576,7 @@ function initKuroRankingShowcase(){
  }
  async function display(i,direction=1,forceTransition=false){
   if(!games.length)return;
-  if(busy){if(i===index&&forceTransition){pendingRefresh=true;return;}pendingSteps=Math.max(-4,Math.min(4,pendingSteps+(direction<0?-1:1)));return;}
+  if(busy){if(forceTransition){pendingTarget=i;return;}pendingSteps=Math.max(-4,Math.min(4,pendingSteps+(direction<0?-1:1)));return;}
   busy=true;
   if(!rotationItems.length)buildRotationItems();
   const nextRotationIndex=(i+rotationItems.length)%rotationItems.length,item=rotationItems[nextRotationIndex],nextIndex=item.gameIndex,game=games[nextIndex];
@@ -1606,7 +1606,7 @@ function initKuroRankingShowcase(){
    else listEl.innerHTML=result.rows.map((row,ri)=>'<div class="rank-row"><span class="rank-medal">'+medals[ri]+'</span><span class="rank-name">'+esc(row.user?.username||row.user?.display_name||"プレイヤー")+'</span><span class="rank-score">'+scoreText(game,row,modeInfo.mode)+'</span></div>').join("");
    panel.dataset.rankReady="1";panel.dataset.rankDirection=slideDirection;panel.classList.remove("rank-out","rank-in");void listEl.offsetWidth;panel.classList.add("rank-in");
   }catch(e){panel.classList.remove("rank-out","rank-in");showMessage("ランキングを取得できませんでした。");console.debug("KURO ranking transition:",e);panel.dataset.rankReady="1";panel.dataset.rankDirection=slideDirection;void listEl.offsetWidth;panel.classList.add("rank-in");}
-  finally{busy=false;if(pendingSteps){const n=pendingSteps;pendingSteps=0;display(rotationIndex+n,Math.sign(n),true);}else if(pendingRefresh){pendingRefresh=false;display(rotationIndex,1,true);}}
+  finally{busy=false;if(pendingTarget!==null){const target=pendingTarget;pendingTarget=null;display(target,target<rotationIndex?-1:1,true);}else if(pendingSteps){const n=pendingSteps;pendingSteps=0;display(rotationIndex+n,Math.sign(n),true);}else if(pendingRefresh){pendingRefresh=false;display(rotationIndex,1,true);}}
  }
  function go(delta){manualSelection=false;updateAutoUi();pausedUntil=Date.now()+12000;display(rotationIndex+delta,delta,true);}
  prev?.addEventListener("click",()=>go(-1));next?.addEventListener("click",()=>go(1));
