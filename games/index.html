@@ -454,10 +454,6 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 #kuroRankingShowcase .rank-mode-browser-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}
 #kuroRankingShowcase .rank-mode-browser-head strong{font-size:10px;font-weight:1000;color:#315d91}
 #kuroRankingShowcase .rank-mode-browser-head span{font-size:9px;color:#7b8da8;white-space:nowrap}
-#kuroRankingShowcase .rank-mode-search{display:flex;align-items:center;gap:7px;height:29px;padding:0 8px;margin-bottom:7px;border:1px solid #dfe8f5;border-radius:8px;background:#fff;color:#7890ae}
-#kuroRankingShowcase .rank-mode-search span{font-size:17px;line-height:1}
-#kuroRankingShowcase .rank-mode-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#344d6d;font:inherit;font-size:10px}
-#kuroRankingShowcase .rank-mode-search input::placeholder{color:#9aa9bd}
 #kuroRankingShowcase .rank-mode-browser{max-height:176px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#c5d7ee transparent}
 #kuroRankingShowcase .rank-mode-game{padding:6px 2px;border-bottom:1px solid #e8eef7}
 #kuroRankingShowcase .rank-mode-game:first-child{padding-top:1px}
@@ -1281,7 +1277,6 @@ body.kuro-account-open { overflow: hidden; }
 <aside class="ranking-showcase" id="kuroRankingShowcase" aria-label="ゲームランキング"><span class="rank-corner-trophy" aria-hidden="true">🏆</span><div class="rank-head"><div><span class="rank-eyebrow">KURO GAMES RANKING</span><h2><span class="rank-heading-icon" aria-hidden="true">🏆</span><span>ランキング</span></h2></div><span class="rank-live"><i></i> LIVE</span></div><div class="rank-game" id="kuroRankGame">ランキング対応ゲーム</div>
 <div class="rank-mode-browser-wrap">
  <div class="rank-mode-browser-head"><strong>全モード一覧</strong><span id="kuroRankAutoStatus">5秒ごとに自動切り替え</span></div>
- <label class="rank-mode-search"><span aria-hidden="true">⌕</span><input id="kuroRankModeSearch" type="search" placeholder="ゲーム名・モード名で検索" aria-label="ゲーム名・モード名で検索"></label>
  <div class="rank-mode-browser" id="kuroRankModeBrowser" aria-label="全ゲーム・全モード"></div>
  <div class="rank-auto-row"><span>見たいランキングを選ぶと自動切り替えを停止します</span><button id="kuroRankAutoResume" type="button" hidden>自動再生に戻す</button></div>
 </div>
@@ -1461,7 +1456,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
 <script>
 function initKuroRankingShowcase(){
  const panel=document.getElementById("kuroRankingShowcase"),listEl=document.getElementById("kuroRankList"),titleEl=document.getElementById("kuroRankGame"),linkEl=document.getElementById("kuroRankGameLink"),dotsEl=document.getElementById("kuroRankDots"),prev=document.getElementById("kuroRankPrev"),next=document.getElementById("kuroRankNext");
- const browserEl=document.getElementById("kuroRankModeBrowser"),searchEl=document.getElementById("kuroRankModeSearch"),autoResume=document.getElementById("kuroRankAutoResume"),autoStatus=document.getElementById("kuroRankAutoStatus");
+ const browserEl=document.getElementById("kuroRankModeBrowser"),autoResume=document.getElementById("kuroRankAutoResume"),autoStatus=document.getElementById("kuroRankAutoStatus");
  const levelSelect=document.getElementById("kuroRankLevel"),cpuSelect=document.getElementById("kuroRankCpu"),levelWrap=document.getElementById("kuroRankLevelWrap"),cpuWrap=document.getElementById("kuroRankCpuWrap");
  if(!panel||!listEl||!titleEl||!linkEl)return;
  let games=[],index=0,rotationItems=[],rotationIndex=0,timer=null,pausedUntil=0,manualSelection=false,busy=false,cache=new Map(),pendingSteps=0,pendingTarget=null,pendingRefresh=false,swipeStart=null;
@@ -1523,22 +1518,20 @@ function initKuroRankingShowcase(){
   if(autoStatus)autoStatus.textContent=manualSelection?"手動表示中":"5秒ごとに自動切り替え";
   if(autoResume)autoResume.hidden=!manualSelection;
  }
- function renderModeBrowser(query){
+ function renderModeBrowser(){
   if(!browserEl)return;
-  const term=String(query??searchEl?.value??"").trim().toLocaleLowerCase("ja");
   const chunks=[];
   games.forEach((game,gameIndex)=>{
-   const all=game.modeGroups||[],gameMatch=!term||String(game.title||"").toLocaleLowerCase("ja").includes(term);
-   const matches=all.filter(group=>gameMatch||String(group.label||"").toLocaleLowerCase("ja").includes(term)||String(group.modes?.[0]?.mode||"").toLocaleLowerCase("ja").includes(term));
-   if(!matches.length)return;
+   const groups=game.modeGroups||[];
+   if(!groups.length)return;
    chunks.push('<section class="rank-mode-game"><div class="rank-mode-game-title">'+esc(game.title)+'</div><div class="rank-mode-options">');
-   matches.forEach(group=>{
+   groups.forEach(group=>{
     const mode=group.modes?.[0]?.mode||"default",active=gameIndex===index&&mode===selectedModeInfo(game).mode;
     chunks.push('<button type="button" class="rank-mode-chip'+(active?' active':'')+'" data-game-index="'+gameIndex+'" data-mode="'+esc(mode)+'" aria-pressed="'+(active?'true':'false')+'">'+esc(group.label||modeName(mode)||mode)+'</button>');
    });
    chunks.push('</div></section>');
   });
-  browserEl.innerHTML=chunks.join("")||'<div class="rank-mode-empty">該当するゲーム・モードがありません</div>';
+  browserEl.innerHTML=chunks.join("")||'<div class="rank-mode-empty">ランキング対応モードはありません</div>';
  }
  function renderFilterOptions(game){
   const group=selectedGroup(game),active=selectedModeInfo(game),isCpu=/cpu|bot/i.test(String(group?.key||"")+" "+active.mode);
@@ -1624,7 +1617,6 @@ function initKuroRankingShowcase(){
   if(target<0)return;
   manualSelection=true;pausedUntil=0;updateAutoUi();display(target,target<rotationIndex?-1:1,true);
  });
- searchEl?.addEventListener("input",()=>renderModeBrowser(searchEl.value));
  autoResume?.addEventListener("click",()=>{
   manualSelection=false;pausedUntil=0;updateAutoUi();
   if(rotationItems.length>1)display(rotationIndex+1,1,true);
