@@ -377,8 +377,33 @@ const rows = await KuroGames.ranking.get({
  <tr><td>任意の新作ゲーム向け汎用マッチング</td><td><span class="tag future">未実装</span></td><td>共通API・RPC・キュー制約を整備してから利用</td></tr>
  <tr><td>個人専用状態・サーバー専用状態の共通API</td><td><span class="tag future">今後実装</span></td><td>秘密データを共有stateへ入れない</td></tr>
  <tr><td>全ゲーム共通のサーバー側ゲーム判定</td><td><span class="tag future">今後実装</span></td><td>ゲーム固有ルールモジュールが必要</td></tr>
+ <tr><td>人狼ゲーム専用の秘密状態・サーバー判定</td><td><span class="tag ok">実装済み（人狼のみ）</span></td><td>werewolf_action / サーバー専用セッション / 検証済み勝利数</td></tr>
  <tr><td>正式ランキングへの検証済み結果連携</td><td><span class="tag partial">一部実装・要検証</span></td><td>クライアント申告だけを正式結果にしない</td></tr>
  </tbody></table></div>
+</section>
+
+<section class="section" id="werewolf-implementation">
+ <h2><span class="num">16</span>人狼ゲームへの適用結果（専用実装）</h2>
+ <p class="section-intro">共通基準を人狼ゲームへ適用した実装例です。これは人狼ゲーム専用の処理であり、すべての新作ゲームに使える汎用サーバールール実行環境が完成したという意味ではありません。</p>
+ <div class="card">
+  <h3>公開情報と秘密情報を分離</h3>
+  <ul>
+   <li>共有ルーム状態にはプレイヤー一覧・生存状態・フェーズ・公開結果だけを保存。</li>
+   <li>役職・投票先・夜行動・占い結果・霊媒結果はRLSで保護されたサーバー専用テーブルに保存。</li>
+   <li>状態取得APIは本人の役職・本人向け結果だけを返し、人狼には人狼仲間の情報だけを追加で返す。全役職の公開はゲーム終了後のみ。</li>
+  </ul>
+ </div>
+ <div class="card">
+  <h3>サーバー確定の操作・勝敗</h3>
+  <ul>
+   <li>役職配布、役職確認、投票、集計、夜行動、襲撃・護衛、勝利判定をサーバー側で実施。</li>
+   <li>ホスト権限・参加者・フェーズ・生存状態・対象の合法性を操作ごとに検証。</li>
+   <li>勝利が確定したときだけ勝者へ1勝を加算し、試合IDで二重登録を防止。</li>
+   <li>クライアントは共通ルームイベントで変更を通知し、各プレイヤーの専用状態を再取得する。再取得はイベントを主経路、30秒間隔を補完経路とする。</li>
+  </ul>
+ </div>
+ <div class="callout">確認済み：3人対局の役職秘匿・投票・村人勝利・ランキング2件の登録、4人対局の占い結果秘匿・護衛成功・次フェーズ進行。いずれも一時DBデータをロールバックして検証。</div>
+ <p class="section-intro">実装ファイル：<code>supabase/functions/kurogames-online/index.ts</code>、<code>supabase/migrations/20261123110000_werewolf_server_authority.sql</code>、Studioに保存された人狼ゲームHTML。</p>
 </section>
 
 <section class="section" id="refs">
