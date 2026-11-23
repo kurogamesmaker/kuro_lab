@@ -1243,7 +1243,8 @@ body.kuro-account-open { overflow: hidden; }
 
 <style>
 @media(max-width:1300px){.nav{gap:14px}.search{width:min(270px,24vw)}}
-@media(max-width:680px){.activity-link{width:40px;height:40px;flex:0 0 40px;padding:0;border-radius:11px}.activity-link .activity-text{display:none}.activity-link .activity-live{width:9px;height:9px}}
+.activity-link .activity-glyph{flex:none}
+@media(max-width:680px){.activity-link{position:relative;width:40px;height:40px;flex:0 0 40px;padding:0;border-radius:11px}.activity-link .activity-text{display:none}.activity-link .activity-glyph{width:19px;height:19px}.activity-link .activity-live{position:absolute;right:7px;top:7px;width:7px;height:7px;border:1px solid #f0fbf4}}
 </style>
 </head>
 <body>
@@ -1251,7 +1252,7 @@ body.kuro-account-open { overflow: hidden; }
 <a class="brand" href="/games/"><img class="mark" src="/assets/brand/logo/kurolab_icon_toumei_160.png?v=20261121logosfix" width="38" height="38" alt=""><span>KURO <em>GAMES</em></span></a><span class="kuro-account-state" id="kuroAccountState" aria-live="polite">ゲスト</span>
 <div class="spacer"></div>
 <label class="search"><span>⌕</span><input id="gameSearch" type="search" placeholder="ゲームを検索..." autocomplete="off"></label>
-<a class="activity-link" href="/games/activity/" aria-label="プレイ状況"><i class="activity-live" aria-hidden="true"></i><span class="activity-text">プレイ状況</span></a>
+<a class="activity-link" href="/games/activity/" aria-label="プレイ状況"><svg class="activity-glyph" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h3l2-6 4 12 2-6h7"/></svg><i class="activity-live" aria-hidden="true"></i><span class="activity-text">プレイ状況</span></a>
 <a class="lab" href="/game-studio/">GAME STUDIO ↗</a><span class="lab" aria-label="Cloudflare経由で通信">Cloudflare接続中</span><a class="lab" href="https://kurolab.cc.cd/">KURO Lab ↗</a><button class="lab kuro-account-trigger" id="kuroAccountOpen" type="button" aria-haspopup="dialog" aria-controls="kuroAccountModal">ログイン</button>
 </div></header>
 <main class="wrap">
