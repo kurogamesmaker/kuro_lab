@@ -178,16 +178,65 @@ async function connectRoomPolling(roomData, members, session) {
   };
 }
 
+let parentDurableTicketSequence = 0;
+function requestParentDurableTicket(roomData) {
+  if (window.parent === window) {
+    return Promise.reject(new Error("親ページの接続中継を利用できません。"));
+  }
+  const requestId = "kuro-ticket-" + Date.now().toString(36) + "-" + (++parentDurableTicketSequence);
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      window.removeEventListener("message", onMessage);
+      reject(new Error("親ページから接続チケットを取得できませんでした。"));
+    }, 15000);
+    function onMessage(event) {
+      if (event.source !== window.parent || !event.data ||
+          event.data.type !== "kuro-online-ticket-response" ||
+          event.data.requestId !== requestId) return;
+      clearTimeout(timer);
+      window.removeEventListener("message", onMessage);
+      if (event.data.error) {
+        reject(new Error(String(event.data.error)));
+        return;
+      }
+      resolve({
+        ok: event.data.ok === true,
+        status: Number(event.data.status) || 0,
+        data: event.data.data && typeof event.data.data === "object" ? event.data.data : {},
+      });
+    }
+    window.addEventListener("message", onMessage);
+    window.parent.postMessage({
+      type: "kuro-online-ticket-request",
+      requestId,
+      gameId: gameId,
+      roomId: String(roomData && roomData.id || ""),
+    }, "*");
+  });
+}
+
 async function connectRoomDurable(roomData, members, session, endpoint) {
   const base = String(endpoint).replace(/\/$/, "");
-  const ticketResponse = await fetch(base + "/ticket", {
-    method: "POST",
-    headers: { "content-type": "application/json", "authorization": "Bearer " + session.accessToken },
-    body: JSON.stringify({ roomId: roomData.id, gameId: gameId }),
-  });
-  let ticketData = {};
-  try { ticketData = await ticketResponse.json(); } catch (_) {}
-  if (!ticketResponse.ok || !ticketData.ticket) {
+  let ticketOk = false, ticketStatus = 0, ticketData = {};
+  try {
+    const ticketResponse = await fetch(base + "/ticket", {
+      method: "POST",
+      headers: { "content-type": "application/json", "authorization": "Bearer " + session.accessToken },
+      body: JSON.stringify({ roomId: roomData.id, gameId: gameId }),
+    });
+    ticketStatus = ticketResponse.status;
+    try { ticketData = await ticketResponse.json(); } catch (_) {}
+    ticketOk = ticketResponse.ok;
+  } catch (directError) {
+    // Sandboxed srcdoc frames have an opaque "null" origin. Retry through the
+    // trusted game-player page so the request uses the KURO GAMES site origin.
+    console.warn("KURO Durable ticket direct fetch failed; retrying through parent:", directError);
+    const bridged = await requestParentDurableTicket(roomData);
+    ticketOk = bridged.ok;
+    ticketStatus = bridged.status;
+    ticketData = bridged.data;
+  }
+  if (!ticketOk || !ticketData.ticket) {
     const reasons = {
       unauthorized: "KUROアカウントの認証に失敗しました。",
       room_membership_required: "このルームへの参加権限がありません。",
