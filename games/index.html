@@ -80,7 +80,7 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 #kuroRankingShowcase .rank-filters{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap}
 #kuroRankingShowcase .rank-filters label{display:flex;align-items:center;gap:6px;padding:5px 7px;border:1px solid #e0e9f7;border-radius:9px;background:#fff;color:#657791;font-size:9px;font-weight:900}
 #kuroRankingShowcase .rank-filters select{max-width:112px;border:0;outline:0;background:transparent;color:#2d5f9d;font:inherit;font-size:10px;font-weight:900;cursor:pointer}
-#kuroRankingShowcase .rank-filters label:first-child{border-color:#cfe0f8;background:linear-gradient(135deg,#fff,#f5f9ff);color:#3f6797}
+#kuroRankingShowcase #kuroRankModeWrap{border-color:#cfe0f8;background:linear-gradient(135deg,#fff,#f5f9ff);color:#3f6797}
 #kuroRankingShowcase .rank-filters select{max-width:150px}
 #kuroRankingShowcase .rank-filters label[hidden]{display:none!important}
 #kuroRankingShowcase .rank-filters [hidden]{display:none!important}
@@ -1433,7 +1433,7 @@ function initKuroRankingShowcase(){
  const modeSelect=document.getElementById("kuroRankMode"),detailSelect=document.getElementById("kuroRankDetail"),modeWrap=document.getElementById("kuroRankModeWrap"),detailWrap=document.getElementById("kuroRankDetailWrap");
  const levelSelect=document.getElementById("kuroRankLevel"),cpuSelect=document.getElementById("kuroRankCpu"),levelWrap=document.getElementById("kuroRankLevelWrap"),cpuWrap=document.getElementById("kuroRankCpuWrap");
  if(!panel||!listEl||!titleEl||!linkEl)return;
- let games=[],index=0,timer=null,pausedUntil=0,busy=false,cache=new Map(),pendingSteps=0,swipeStart=null;
+ let games=[],index=0,timer=null,pausedUntil=0,busy=false,cache=new Map(),pendingSteps=0,pendingRefresh=false,swipeStart=null;
  const medals=["🥇","🥈","🥉","4","5"],TICTACTOE_GAME_ID="2dbd6773-2684-4f00-973e-c46acbc348e7",TICTACTOE_RULES=["normal","vanish","gobble","reverse"],RANK_CACHE_MS=30000;
  function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
  function renderDots(){if(dotsEl)dotsEl.innerHTML=games.map((_,i)=>'<i class="rank-dot '+(i===index?'active':'')+'"></i>').join("");}
@@ -1533,7 +1533,7 @@ function initKuroRankingShowcase(){
  }
  async function display(i,direction=1,forceTransition=false){
   if(!games.length)return;
-  if(busy){pendingSteps=Math.max(-4,Math.min(4,pendingSteps+(direction<0?-1:1)));return;}
+  if(busy){if(i===index&&forceTransition){pendingRefresh=true;return;}pendingSteps=Math.max(-4,Math.min(4,pendingSteps+(direction<0?-1:1)));return;}
   busy=true;
   const nextIndex=(i+games.length)%games.length,game=games[nextIndex],modeInfo=selectedModeInfo(game),queryGame=Object.assign({},game,{mode:modeInfo.mode});
   const isSwitch=panel.dataset.rankReady==="1"&&(nextIndex!==index||forceTransition),slideDirection=direction<0?"prev":"next";
@@ -1559,7 +1559,7 @@ function initKuroRankingShowcase(){
    else listEl.innerHTML=result.rows.map((row,ri)=>'<div class="rank-row"><span class="rank-medal">'+medals[ri]+'</span><span class="rank-name">'+esc(row.user?.username||row.user?.display_name||"プレイヤー")+'</span><span class="rank-score">'+scoreText(game,row,modeInfo.mode)+'</span></div>').join("");
    panel.dataset.rankReady="1";panel.dataset.rankDirection=slideDirection;panel.classList.remove("rank-out","rank-in");void listEl.offsetWidth;panel.classList.add("rank-in");
   }catch(e){panel.classList.remove("rank-out","rank-in");showMessage("ランキングを取得できませんでした。");console.debug("KURO ranking transition:",e);panel.dataset.rankReady="1";panel.dataset.rankDirection=slideDirection;void listEl.offsetWidth;panel.classList.add("rank-in");}
-  finally{busy=false;if(pendingSteps){const n=pendingSteps;pendingSteps=0;display(index+n,Math.sign(n),true);}}
+  finally{busy=false;if(pendingSteps){const n=pendingSteps;pendingSteps=0;display(index+n,Math.sign(n),true);}else if(pendingRefresh){pendingRefresh=false;display(index,1,true);}}
  }
  function go(delta){pausedUntil=Date.now()+12000;display(index+delta,delta,true);}
  prev?.addEventListener("click",()=>go(-1));next?.addEventListener("click",()=>go(1));
