@@ -1476,14 +1476,13 @@ function initKuroRankingShowcase(){
   return g.modes.find(v=>v.mode===game.selectedMode)||g.modes[0];
  }
  function buildRotationItems(){
-  const items=[],maxModes=games.reduce((max,g)=>Math.max(max,(g.modeGroups||[]).length),0);
-  // Round-robin by mode position so one game does not monopolize the showcase.
-  for(let modeAt=0;modeAt<maxModes;modeAt++){
-   for(let gameIndex=0;gameIndex<games.length;gameIndex++){
-    const group=(games[gameIndex].modeGroups||[])[modeAt];
+  const items=[];
+  // Keep each game's ranking modes together before moving to the next game.
+  games.forEach((game,gameIndex)=>{
+   (game.modeGroups||[]).forEach(group=>{
     if(group?.modes?.length)items.push({gameIndex,groupKey:group.key,mode:group.modes[0].mode});
-   }
-  }
+   });
+  });
   rotationItems=items;
   return items;
  }
