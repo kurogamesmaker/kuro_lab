@@ -143,45 +143,71 @@ async function getKuroGameAuthSession() {
  return session;
 }
 
+// Durable Object接続チケット専用ブリッジ。通常のゲームメッセージ処理とは独立させる。
+window.addEventListener("message", async event => {
+ const msg = event.data;
+ if (!msg || msg.type !== "kuro-online-ticket-request") return;
+ const requestId = msg.requestId;
+ const reply = payload => {
+  try {
+   if (event.source) event.source.postMessage(Object.assign({
+    type: "kuro-online-ticket-response",
+    requestId: requestId
+   }, payload), "*");
+  } catch (error) {
+   console.error("[UNON ticket relay] response postMessage failed", error);
+  }
+ };
+ const roomId = String(msg.roomId || "");
+ if (typeof requestId !== "string" || !/^[A-Za-z0-9_-]{1,120}$/.test(requestId)) {
+  reply({ error: "ticket_request_id_invalid" });
+  return;
+ }
+ if (!event.source || !kuroGameFrame || event.source !== kuroGameFrame.contentWindow) {
+  console.error("[UNON ticket relay] source frame mismatch");
+  reply({ error: "ticket_source_frame_mismatch" });
+  return;
+ }
+ if (msg.gameId !== kuroGameFrameGameId) {
+  reply({ error: "ticket_game_id_mismatch" });
+  return;
+ }
+ if (!/^[A-Za-z0-9_-]{1,128}$/.test(roomId)) {
+  reply({ error: "ticket_room_id_invalid" });
+  return;
+ }
+ try {
+  const activeSession = await getKuroGameAuthSession();
+  if (!activeSession?.access_token) {
+   reply({ error: "KUROアカウントへのログインが必要です。" });
+   return;
+  }
+  const response = await fetch("https://kuro-online-room.kurogamesmaker.workers.dev/ticket", {
+   method: "POST",
+   mode: "cors",
+   credentials: "omit",
+   cache: "no-store",
+   headers: {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + activeSession.access_token
+   },
+   body: JSON.stringify({ roomId: roomId, gameId: msg.gameId })
+  });
+  let data = {};
+  try { data = await response.json(); } catch (_) {}
+  console.info("[UNON ticket relay] response", response.status, data.error || "ticket_response");
+  reply({ ok: response.ok, status: response.status, data: data });
+ } catch (error) {
+  console.error("[UNON ticket relay] fetch failed", error);
+  reply({ error: "ticket_fetch_failed: " + String(error && error.message || error).slice(0, 180) });
+ }
+});
+// ---- end UNON ticket bridge ----
+
 window.addEventListener("message", async event => {
  if (!kuroGameFrame || event.source !== kuroGameFrame.contentWindow || !event.data) return;
  const msg = event.data;
- if (msg.type === "kuro-online-ticket-request") {
-  const requestId = msg.requestId;
-  const reply = payload => {
-   try { event.source.postMessage(Object.assign({
-    type: "kuro-online-ticket-response", requestId: requestId
-   }, payload), "*"); } catch (_) {}
-  };
-  const roomId = String(msg.roomId || "");
-  if (typeof requestId !== "string" || !/^[A-Za-z0-9_-]{1,120}$/.test(requestId) ||
-      msg.gameId !== kuroGameFrameGameId ||
-      !/^[A-Za-z0-9_-]{1,128}$/.test(roomId)) {
-   reply({ error: "接続チケット要求が正しくありません。" });
-   return;
-  }
-  try {
-   const activeSession = await getKuroGameAuthSession();
-   if (!activeSession?.access_token) {
-    reply({ error: "オンライン対戦にはKUROアカウントへのログインが必要です。" });
-    return;
-   }
-   const response = await fetch("https://kuro-online-room.kurogamesmaker.workers.dev/ticket", {
-    method: "POST",
-    headers: {
-     "Content-Type": "application/json",
-     "Authorization": "Bearer " + activeSession.access_token
-    },
-    body: JSON.stringify({ roomId: roomId, gameId: msg.gameId })
-   });
-   let data = {};
-   try { data = await response.json(); } catch (_) {}
-   reply({ ok: response.ok, status: response.status, data: data });
-  } catch (error) {
-   reply({ error: error?.message || "リアルタイム接続チケットの取得に失敗しました。" });
-  }
-  return;
- }
+
  if (msg.type === "kuro-online-login-required") {
   const prompt = document.getElementById("onlineAuthPrompt");
   if (prompt) prompt.hidden = false;
