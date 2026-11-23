@@ -211,6 +211,14 @@ function renderPortalRequestNotificationList(){
  return '<div class="portal-request-notification-list">'+items.map(function(n){var r=n.request||{};return '<article class="portal-request-notification '+(n.read_at?'is-read':'is-unread')+'"><div class="portal-request-notification-mark">✉</div><div class="portal-request-notification-body"><div class="portal-request-notification-top"><strong>リクエストBOXに返信が届きました</strong><time>'+new Date(n.created_at).toLocaleString("ja-JP")+'</time></div><p>'+esc(r.admin_reply||"運営から返信がありました。")+'</p><small>リクエスト：'+esc(r.message||"")+'</small><button type="button" class="portal-btn small" data-portal-open-request-notification="'+esc(n.id)+'">リクエストBOXを開く →</button></div>'+(n.read_at?'':'<span class="portal-request-notification-dot" aria-label="未読"></span>')+'</article>';}).join("")+'</div>';
 }
 
+function renderPortalStandaloneAnnouncements(){
+ var linked=new Set((st.adminMessages||[]).map(function(m){return m.portal_announcement_id;}).filter(Boolean));
+ var items=(st.ann||[]).filter(function(a){return a&&a.id&&!linked.has(a.id);});
+ if(!items.length)return "";
+ return '<section class="portal-section"><div class="portal-section-head"><div><h2>サービスのお知らせ</h2><p>既存のお知らせ・メンテナンス情報</p></div></div><div class="portal-list">'+items.map(function(a){
+  return '<article class="portal-card portal-announcement"><time>'+fmt(a.created_at)+'</time><h3>'+esc(a.title)+'</h3><p>'+esc(a.body)+'</p>'+(a.href?'<a class="portal-btn small" href="'+esc(a.href)+'">詳しく見る →</a>':"")+'</article>';
+ }).join("")+'</div></section>';
+}
 function renderPortalSocialNotificationList(){
  if(!st.user)return '<div class="portal-empty">通知を確認するにはログインしてください。<a href="/mypage/">ログインする →</a></div>';
  var items=st.socialNotifications||[];
@@ -291,7 +299,7 @@ function updatePortalNotificationBadge(){
 function startPortalRequestNotificationSync(){
  if(portalNotificationChannel&&db){try{db.removeChannel(portalNotificationChannel);}catch(e){}portalNotificationChannel=null;}
  if(portalNotificationTimer)clearInterval(portalNotificationTimer);
- portalNotificationTopId=null;portalAdminMessageTopId=null;
+ portalNotificationTopId=null;portalAdminMessageTopId=null;portalSocialNotificationTopId=null;
  if(!st.user||!db){st.requestNotifications=[];st.requestUnread=0;st.adminMessages=[];st.adminMessageReads=[];st.adminMessageUnread=0;st.socialNotifications=[];st.socialNotificationUnread=0;updatePortalNotificationBadge();return;}
  refreshPortalRequestNotifications(false);refreshPortalAdminMessages(false);refreshPortalSocialNotifications(false);
  portalNotificationTimer=setInterval(function(){if(document.visibilityState!=="hidden"){refreshPortalRequestNotifications(true);refreshPortalAdminMessages(true);refreshPortalSocialNotifications(true);}},25000);
@@ -346,7 +354,7 @@ search:function(){
 notifications:function(){return head("KURO NOTIFICATIONS","KURO Lab・KURO SNS・KURO GAMESの通知をひとつの画面で確認できます。","NOTIFICATION CENTER")+
 '<section class="portal-section"><div class="portal-section-head"><div><h2>サービス通知</h2><p>KURO SNSのフォロー・いいね・返信・メッセージなど</p></div><button type="button" class="portal-btn small" data-portal-mark-all-social '+(st.socialNotificationUnread?'':'disabled')+'>すべて既読にする</button></div>'+renderPortalSocialNotificationList()+'</section>'+
 '<section class="portal-section"><div class="portal-section-head"><div><h2>運営からのお知らせ</h2><p>全サービス共通の通知。どのサービスからでも同じ内容を確認できます。</p></div><button type="button" class="portal-btn small" data-portal-mark-all-admin '+(st.adminMessageUnread?'':'disabled')+'>すべて既読にする</button></div>'+renderPortalAdminMessageList()+'</section>'+
-'<section class="portal-section"><div class="portal-section-head"><div><h2>リクエストBOXへの返信</h2><p>運営から返信が届くと、ここに通知されます。</p></div><button type="button" class="portal-btn small" data-portal-mark-all '+(st.requestUnread?'':'disabled')+'>すべて既読にする</button></div>'+renderPortalRequestNotificationList()+'</section>'+
+'<section class="portal-section"><div class="portal-section-head"><div><h2>リクエストBOXへの返信</h2><p>運営から返信が届くと、ここに通知されます。</p></div><button type="button" class="portal-btn small" data-portal-mark-all '+(st.requestUnread?'':'disabled')+'>すべて既読にする</button></div>'+renderPortalRequestNotificationList()+'</section>'+renderPortalStandaloneAnnouncements()+
 '<p class="portal-notification-note">通知の既読状態はアカウントに保存され、KURO Lab・KURO SNS・KURO GAMESで共通です。</p>';},
 favorites:function(){return head("お気に入り","保存したサービスやゲームを確認できます。","YOUR COLLECTION")+(st.data.favorites.length?'<div class="portal-grid">'+st.data.favorites.map(function(x){var c=catalog.find(function(y){return y.key===x.item_key;})||x;return '<article class="portal-card"><div class="portal-card-top"><div class="portal-icon">'+(c.icon||"☆")+'</div><h3>'+esc(x.title)+'</h3></div><a class="portal-btn primary small" href="'+esc(x.href)+'">開く →</a> <button class="portal-fav" data-fav="'+esc(x.item_key)+'" aria-pressed="true">★ 保存済み</button></article>';}).join("")+'</div>':'<div class="portal-empty"><strong>お気に入りはまだありません</strong>サービスカードの「お気に入り」から保存できます。</div>');},
 history:function(){return head("閲覧履歴","最近開いたサービスやゲームを確認できます。","RECENTLY USED")+hist(st.data.history)+'<div class="portal-card-actions"><button id="portal-clear-history" class="portal-btn small">履歴を消去</button></div>';},
