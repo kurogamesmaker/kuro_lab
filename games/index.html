@@ -1459,21 +1459,13 @@ function initKuroRankingShowcase(){
   return m&&m[1]?{base:m[1],difficulty:difficultyLabel(m[2])}:null;
  }
  function buildModeGroups(modes){
+  // Keep every ranking mode separate: never bundle difficulties or variants.
   const list=Array.from(new Set((modes||[]).filter(x=>typeof x==="string"&&x))).sort((a,b)=>modes.indexOf(a)-modes.indexOf(b));
-  const buckets=new Map(),loose=[];
-  list.forEach(mode=>{const part=splitDifficultyMode(mode);if(!part){loose.push(mode);return;}if(!buckets.has(part.base))buckets.set(part.base,[]);buckets.get(part.base).push({mode,difficulty:part.difficulty});});
-  const groups=[];
-  for(const [base,variants] of buckets){
-   const hasBase=list.includes(base);
-   if(variants.length>=2||hasBase){
-    if(hasBase){const baseIndex=loose.indexOf(base);if(baseIndex>=0)loose.splice(baseIndex,1);}
-    const members=[];if(hasBase)members.push({mode:base,difficulty:"標準"});variants.forEach(v=>members.push(v));
-    groups.push({key:"family:"+base,label:cleanGroupLabel(base),modes:members,order:Math.min(...members.map(v=>list.indexOf(v.mode)))});
-   }else variants.forEach(v=>loose.push(v.mode));
-  }
-  loose.forEach(mode=>groups.push({key:"mode:"+mode,label:cleanGroupLabel(mode),modes:[{mode,difficulty:""}],order:list.indexOf(mode)}));
-  groups.sort((a,b)=>a.order-b.order);
-  return groups;
+  return list.map((mode,order)=>{
+   const part=splitDifficultyMode(mode);
+   const label=part?cleanGroupLabel(part.base)+"・"+part.difficulty:cleanGroupLabel(mode);
+   return {key:"mode:"+mode,label,modes:[{mode,difficulty:part?.difficulty||""}],order};
+  });
  }
  function selectedGroup(game){
   const groups=game.modeGroups||[];
@@ -1546,7 +1538,7 @@ function initKuroRankingShowcase(){
    let customTicker="",tickerStyle={enabled:true,speed:30,direction:"left",textColor:"#164b8e",backgroundColor:"#eaf2ff"};
    try{const map=JSON.parse(localStorage.getItem("kuroGamesRankingTickerByGame")||"{}");customTicker=String(map[game.id]||"").trim();}catch(_){}
    try{const map=JSON.parse(localStorage.getItem("kuroGamesRankingTickerStyleByGame")||"{}");if(map?.[game.id]&&typeof map[game.id]==="object")tickerStyle=Object.assign(tickerStyle,map[game.id]);}catch(_){}
-   const setting=game.showcaseConfig?.modes?.[modeInfo.mode]||null,customLabel=setting&&typeof setting.label==="string"?setting.label.trim():"",displayBase=customTicker||game.title;
+   const setting=game.showcaseConfig?.modes?.[modeInfo.mode]||null,customLabel=setting&&typeof setting.label==="string"?setting.label.trim():"",modeDisplay=customLabel||modeInfo.difficulty||modeName(modeInfo.mode)||String(modeInfo.mode).replace(/[_-]+/g," "),displayBase=(customTicker||game.title)+" — "+modeDisplay;
    const safeColor=(v,f)=>/^#[0-9a-f]{6}$/i.test(String(v||""))?String(v):f,tickerEnabled=tickerStyle.enabled!==false,tickerSpeed=Math.max(10,Math.min(100,Math.round(Number(tickerStyle.speed)||30))),tickerDirection=tickerStyle.direction==="right"?"right":"left";
    titleEl.classList.remove("rank-marquee");titleEl.replaceChildren();titleEl.classList.add("rank-marquee");titleEl.style.setProperty("display",tickerEnabled?"flex":"none","important");titleEl.style.color=safeColor(tickerStyle.textColor,"#164b8e");titleEl.style.backgroundColor=safeColor(tickerStyle.backgroundColor,"#eaf2ff");
    if(tickerEnabled){
