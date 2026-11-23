@@ -5,6 +5,7 @@ const DEFAULT_URL = "https://cprvpphlfpmiegjiutjn.supabase.co";
 const DEFAULT_KEY = "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
 const FUNCTION_NAME = "kurogames-online";
 const DEFAULT_DURABLE_ENDPOINT = "https://kuro-online-room.kurogamesmaker.workers.dev";
+const UNON_DURABLE_ENDPOINT = "https://kurolab.cc.cd/api/online-room";
 
 let gameId = null;
 let gameConfig = null;
@@ -218,23 +219,29 @@ function requestParentDurableTicket(roomData) {
 async function connectRoomDurable(roomData, members, session, endpoint) {
   const base = String(endpoint).replace(/\/$/, "");
   let ticketOk = false, ticketStatus = 0, ticketData = {};
-  try {
-    const ticketResponse = await fetch(base + "/ticket", {
-      method: "POST",
-      headers: { "content-type": "application/json", "authorization": "Bearer " + session.accessToken },
-      body: JSON.stringify({ roomId: roomData.id, gameId: gameId }),
-    });
-    ticketStatus = ticketResponse.status;
-    try { ticketData = await ticketResponse.json(); } catch (_) {}
-    ticketOk = ticketResponse.ok;
-  } catch (directError) {
-    // Sandboxed srcdoc frames have an opaque "null" origin. Retry through the
-    // trusted game-player page so the request uses the KURO GAMES site origin.
-    console.warn("KURO Durable ticket direct fetch failed; retrying through parent:", directError);
+  if (gameId === "faa155cb-2143-4361-9a96-dc759d334e46") {
+    // UNON uses the same-origin KURO site proxy for both ticket issuance and WebSocket transport.
     const bridged = await requestParentDurableTicket(roomData);
     ticketOk = bridged.ok;
     ticketStatus = bridged.status;
     ticketData = bridged.data;
+  } else {
+    try {
+      const ticketResponse = await fetch(base + "/ticket", {
+        method: "POST",
+        headers: { "content-type": "application/json", "authorization": "Bearer " + session.accessToken },
+        body: JSON.stringify({ roomId: roomData.id, gameId: gameId }),
+      });
+      ticketStatus = ticketResponse.status;
+      try { ticketData = await ticketResponse.json(); } catch (_) {}
+      ticketOk = ticketResponse.ok;
+    } catch (directError) {
+      console.warn("KURO Durable ticket direct fetch failed; retrying through parent:", directError);
+      const bridged = await requestParentDurableTicket(roomData);
+      ticketOk = bridged.ok;
+      ticketStatus = bridged.status;
+      ticketData = bridged.data;
+    }
   }
   if (!ticketOk || !ticketData.ticket) {
     const reasons = {
@@ -513,7 +520,7 @@ async function connectRoom(roomData, members) {
   const requiresUnonDurable = gameId === "faa155cb-2143-4361-9a96-dc759d334e46";
   const configuredEndpoint = typeof window.KuroGamesDurableEndpoint === "string"
     ? window.KuroGamesDurableEndpoint.trim()
-    : DEFAULT_DURABLE_ENDPOINT;
+    : requiresUnonDurable ? UNON_DURABLE_ENDPOINT : DEFAULT_DURABLE_ENDPOINT;
   if (!configuredEndpoint && requiresUnonDurable) {
     throw new Error("UNONリアルタイムサーバーの接続先が設定されていません。");
   }
