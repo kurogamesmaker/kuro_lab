@@ -120,7 +120,7 @@ function render(){
   const pill=document.createElement("span");pill.className="live-pill";pill.innerHTML="<i></i> LIVE";
   head.append(icon,title,pill);
   const stats=document.createElement("div");stats.className="stats";
-  stats.append(makeStat("人間プレイヤー",game.humanPlayers),makeStat("CPU・ボット対戦",game.botMatches),makeStat("現在プレイ中",game.playing),makeStat("マッチング待ち",game.waiting));
+  stats.append(makeStat("人間プレイヤー",game.humanPlayers),makeStat("CPU・ボット対戦中",game.botMatches),makeStat("現在プレイ中",game.playing),makeStat("マッチング待ち",game.waiting));
   const foot=document.createElement("div");foot.className="card-foot";
   const note=document.createElement("small");note.textContent="人間プレイヤーはゲームごとに重複を除いています";
   const link=document.createElement("a");link.className="play-link";link.href="/games/play/?id="+encodeURIComponent(game.id);link.textContent="ゲームを開く";
