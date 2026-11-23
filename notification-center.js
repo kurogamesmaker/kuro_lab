@@ -28,9 +28,9 @@
         return;
       }
 
-      const [messagesResult, socialResult, repliesResult] = await Promise.all([
+      const [messagesResult, socialResult, repliesResult, announcementsResult, preferencesResult] = await Promise.all([
         db.from("admin_messages")
-          .select("id")
+          .select("id,portal_announcement_id")
           .eq("published", true)
           .or("audience.eq.all,recipient_id.eq." + user.id)
           .order("created_at", { ascending: false })
@@ -42,12 +42,23 @@
         db.from("portal_request_notifications")
           .select("id", { count: "exact", head: true })
           .eq("user_id", user.id)
-          .is("read_at", null)
+          .is("read_at", null),
+        db.from("portal_announcements")
+          .select("id")
+          .eq("published", true)
+          .order("created_at", { ascending: false })
+          .limit(100),
+        db.from("portal_preferences")
+          .select("preferences")
+          .eq("user_id", user.id)
+          .maybeSingle()
       ]);
 
       if (messagesResult.error) throw messagesResult.error;
       if (socialResult.error) throw socialResult.error;
       if (repliesResult.error) throw repliesResult.error;
+      if (announcementsResult.error) throw announcementsResult.error;
+      if (preferencesResult.error) throw preferencesResult.error;
 
       const messages = messagesResult.data || [];
       const ids = messages.map((row) => row.id).filter(Boolean);
@@ -62,8 +73,15 @@
         unreadAdmin = ids.filter((id) => !readIds.has(id)).length;
       }
 
+      const mirroredAnnouncementIds = new Set(messages.map((row) => row.portal_announcement_id).filter(Boolean));
+      const preferences = preferencesResult.data && preferencesResult.data.preferences || {};
+      const readAnnouncements = new Set(Array.isArray(preferences.readAnnouncements) ? preferences.readAnnouncements : []);
+      const unreadAnnouncements = (announcementsResult.data || []).filter((row) =>
+        !mirroredAnnouncementIds.has(row.id) && !readAnnouncements.has(row.id)
+      ).length;
+
       if (sequence !== refreshSequence) return;
-      paint(unreadAdmin + Number(socialResult.count || 0) + Number(repliesResult.count || 0));
+      paint(unreadAdmin + unreadAnnouncements + Number(socialResult.count || 0) + Number(repliesResult.count || 0));
     } catch (error) {
       console.warn("[KURO notifications] unread count could not be refreshed:", error);
     }
