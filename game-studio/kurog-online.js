@@ -460,16 +460,27 @@ async function connectRoom(roomData, members) {
   if (!session.accessToken || !session.user || !session.user.id) {
     throw new Error("KUROアカウントの認証情報を取得できませんでした。");
   }
-  // Durable Objects is the primary real-time transport. Keep polling as a compatibility fallback for transient transport failures.
+  // Durable Objects is the primary real-time transport. Legacy polling remains available to older games.
+  const requiresUnonDurable = gameId === "faa155cb-2143-4361-9a96-dc759d334e46";
   const configuredEndpoint = typeof window.KuroGamesDurableEndpoint === "string"
     ? window.KuroGamesDurableEndpoint.trim()
     : DEFAULT_DURABLE_ENDPOINT;
+  if (!configuredEndpoint && requiresUnonDurable) {
+    throw new Error("UNONリアルタイムサーバーの接続先が設定されていません。");
+  }
   if (configuredEndpoint) {
     try {
       return await connectRoomDurable(roomData, members, session, configuredEndpoint);
     } catch (error) {
       if (["unauthorized", "room_membership_required", "room_full"].includes(error && error.code)) throw error;
-      console.warn("KUROGAMES Durable Objects接続失敗。互換ポーリングへ切り替えます。", error);
+      console.warn("KUROGAMES Durable Objects connection failed:", error);
+      if (requiresUnonDurable) {
+        const detail = error && (error.code || error.message) || "unknown_error";
+        const visible = new Error("UNONリアルタイムサーバーへの接続に失敗しました: " + detail);
+        visible.code = error && error.code || "durable_connection_failed";
+        visible.cause = error;
+        throw visible;
+      }
     }
   }
   return connectRoomPolling(roomData, members, session);
