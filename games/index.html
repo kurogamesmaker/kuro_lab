@@ -30,7 +30,7 @@
 header{height:74px;position:sticky;top:0;z-index:20;background:#ffffffed;backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}.nav{height:100%;display:flex;align-items:center;gap:28px}.brand{display:flex;align-items:center;gap:10px;font-size:22px;font-weight:1000;letter-spacing:-.8px;white-space:nowrap}.mark{width:38px;height:38px;object-fit:contain;display:block;flex:0 0 38px;border-radius:12px}.brand em{font-style:normal;color:var(--blue)}.navlinks{display:flex;gap:22px;color:#68758c;font-size:13px;font-weight:850}.navlinks a:hover{color:var(--blue)}.spacer{flex:1}.search{height:43px;width:min(330px,31vw);display:flex;align-items:center;gap:10px;padding:0 13px;border:1px solid #e7edf5;border-radius:12px;background:#f4f6fa}.search:focus-within{background:white;border-color:#a9caff;box-shadow:0 0 0 4px #ddebff}.search input{width:100%;border:0;outline:0;background:transparent;font-size:13px;color:var(--ink)}.search span{font-size:20px;color:#8793a6}.lab{padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-size:12px;font-weight:900;color:#5a6880;white-space:nowrap}
 .activity-link{height:43px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 13px;border:1px solid #ccebd9;border-radius:11px;background:linear-gradient(135deg,#f0fbf4,#e7f8ed);color:#197a4b;font-size:12px;font-weight:950;white-space:nowrap;box-shadow:0 3px 10px #1e9b5910;transition:.16s}
 .activity-link:hover{border-color:#8fd6ad;background:#e2f7e9;transform:translateY(-1px)}
-.kuro-notification-link{width:42px;height:42px;display:inline-flex;align-items:center;justify-content:center;position:relative;flex:0 0 auto;border:1px solid #dfe5ef;border-radius:12px;background:#fff;color:#41506a;box-shadow:0 3px 10px #1e31500b;transition:.16s}
+.kuro-notification-link{width:42px;height:42px;padding:0;cursor:pointer;font:inherit;display:inline-flex;align-items:center;justify-content:center;position:relative;flex:0 0 auto;border:1px solid #dfe5ef;border-radius:12px;background:#fff;color:#41506a;box-shadow:0 3px 10px #1e31500b;transition:.16s}
 .kuro-notification-link:hover{border-color:#b9c6dc;background:#f7f9fc;transform:translateY(-1px)}
 .kuro-notification-link svg{width:19px;height:19px}
 .kuro-notification-badge{position:absolute;top:-6px;right:-7px;min-width:18px;height:18px;padding:0 5px;display:inline-flex;align-items:center;justify-content:center;border:2px solid #fff;border-radius:99px;background:#e5484d;color:#fff;font-size:10px;font-weight:900;line-height:1}
@@ -1259,7 +1259,7 @@ body.kuro-account-open { overflow: hidden; }
 <div class="spacer"></div>
 <label class="search"><span>⌕</span><input id="gameSearch" type="search" placeholder="ゲームを検索..." autocomplete="off"></label>
 <a class="activity-link" href="/games/activity/" aria-label="プレイ状況"><svg class="activity-glyph" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h3l2-6 4 12 2-6h7"/></svg><i class="activity-live" aria-hidden="true"></i><span class="activity-text">プレイ状況</span></a>
-<a class="lab" href="/game-studio/">GAME STUDIO ↗</a><span class="lab" aria-label="Cloudflare経由で通信">Cloudflare接続中</span><a class="lab" href="https://kurolab.cc.cd/">KURO Lab ↗</a><a class="kuro-notification-link" id="kuroNotificationLink" href="/games/notifications/" aria-label="通知" title="全サービス共通の通知"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg><span class="kuro-notification-badge" id="kuroNotificationBadge" hidden>0</span></a>
+<a class="lab" href="/game-studio/">GAME STUDIO ↗</a><span class="lab" aria-label="Cloudflare経由で通信">Cloudflare接続中</span><a class="lab" href="https://kurolab.cc.cd/">KURO Lab ↗</a><button class="kuro-notification-link" id="kuroNotificationLink" type="button" aria-label="通知BOX" title="このページ内で共通通知を確認"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></button>
 <button class="lab kuro-account-trigger" id="kuroAccountOpen" type="button" aria-haspopup="dialog" aria-controls="kuroAccountModal">ログイン</button>
 </div></header>
 <main class="wrap">
@@ -1618,7 +1618,7 @@ function initKuroRankingShowcase(){
 initKuroRankingShowcase();
 </script>
 
-<script src="/notification-center.js?v=20261124service-local-2"></script>
+<script src="/service-notification-box.js?v=20261124box1"></script>
 <script src="/usage-tracker.js"></script>
 
 </body></html>
