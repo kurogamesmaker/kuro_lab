@@ -1237,6 +1237,131 @@ body.kuro-account-open { overflow: hidden; }
 }
 </style>
 
+
+<style id="kuro-ranking-wall-v3">
+/* KURO RANKING WALL v3 — three fixed vertical columns */
+.games-layout{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  gap:22px!important;
+}
+#kuroRankingShowcase.rank-wall-shell{
+  display:block!important;
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:20px 20px 18px!important;
+  overflow:hidden!important;
+  border:1px solid #dce8f8!important;
+  border-radius:23px!important;
+  background:
+    radial-gradient(360px 180px at 100% 0%,rgba(217,235,255,.56),transparent 72%),
+    linear-gradient(145deg,#fff 0%,#f7faff 68%,#fffdf6 100%)!important;
+  box-shadow:0 15px 38px rgba(42,79,133,.085),0 2px 8px rgba(42,79,133,.03)!important;
+}
+#kuroRankingShowcase.rank-wall-shell::before{
+  width:100%!important;height:4px!important;opacity:1!important;
+  background:linear-gradient(90deg,#367fe0 0%,#75b8ff 57%,#f0c85a 100%)!important;
+}
+#kuroRankingShowcase.rank-wall-shell::after{display:none!important}
+#kuroRankingShowcase .rank-head{
+  display:flex!important;align-items:center!important;justify-content:space-between!important;
+  gap:12px!important;padding:3px 2px 13px!important;margin:0!important;
+  border-bottom:1px solid #e8eef7!important;
+}
+#kuroRankingShowcase .rank-eyebrow{display:block!important;margin:0 0 4px!important;color:#5482bc!important;font-size:9px!important;letter-spacing:1.8px!important}
+#kuroRankingShowcase .rank-head h2{display:flex!important;align-items:center!important;gap:9px!important;margin:0!important;color:#233c61!important;font-size:21px!important;line-height:1.2!important}
+#kuroRankingShowcase .rank-heading-icon{display:grid!important;place-items:center!important;width:34px!important;height:34px!important;flex:0 0 34px!important;border:1px solid #d8e8fb!important;border-radius:11px!important;background:linear-gradient(145deg,#f0f7ff,#fff9e9)!important;font-size:18px!important}
+#kuroRankingShowcase .rank-live{gap:7px!important;padding:6px 10px!important;border:1px solid #d9e9fb!important;background:#f0f7ff!important;color:#3476bd!important;font-size:9px!important;letter-spacing:.5px!important}
+#kuroRankingShowcase .rank-live i{width:6px!important;height:6px!important;background:#3e93e8!important}
+#kuroRankingShowcase .rank-wall-intro{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 1px 0;color:#617792;font-size:10px;font-weight:900}
+#kuroRankingShowcase .rank-wall-intro span:last-child{color:#8c9bb0;font-size:9px;font-weight:800}
+#kuroRankingShowcase .rank-wall{
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  align-items:stretch!important;gap:13px!important;width:100%!important;min-width:0!important;margin:11px 0 0!important;
+}
+#kuroRankingShowcase .rank-column{
+  display:flex;flex-direction:column;min-width:0;overflow:hidden;
+  border:1px solid #e0e9f6;border-radius:16px;
+  background:linear-gradient(165deg,#fff 0%,#fbfdff 100%);
+  box-shadow:0 4px 13px rgba(39,75,124,.045);
+  transition:opacity .18s ease,transform .18s ease,border-color .18s ease;
+}
+#kuroRankingShowcase .rank-column.is-leaving{opacity:.25;transform:translateY(-8px)}
+#kuroRankingShowcase .rank-column.is-entering{animation:kuroRankWallEnter .38s cubic-bezier(.2,.75,.25,1) both}
+@keyframes kuroRankWallEnter{from{opacity:.25;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+#kuroRankingShowcase .rank-column-top{
+  display:grid;grid-template-columns:30px minmax(0,1fr);align-items:center;gap:9px;
+  min-height:62px;padding:11px 12px 9px;border-bottom:1px solid #eaf0f8;
+  background:linear-gradient(110deg,#f0f6ff,#fbfdff 75%);
+}
+#kuroRankingShowcase .rank-column-number{
+  display:grid;place-items:center;width:29px;height:29px;border:1px solid #dbe9fa;border-radius:9px;
+  background:#fff;color:#3d7bc5;font-size:10px;font-weight:1000;letter-spacing:.04em;
+}
+#kuroRankingShowcase .rank-column-heading{min-width:0}
+#kuroRankingShowcase .rank-column-game{
+  display:block;min-width:0;overflow:hidden;color:#29476f;font-size:12px;line-height:1.4;font-weight:1000;
+  text-overflow:ellipsis;white-space:nowrap;
+}
+#kuroRankingShowcase .rank-column-mode{
+  display:block;min-width:0;margin-top:3px;overflow:hidden;color:#8292a8;font-size:9px;line-height:1.35;font-weight:850;
+  text-overflow:ellipsis;white-space:nowrap;
+}
+#kuroRankingShowcase .rank-column-ticker{
+  min-width:0;overflow:hidden;padding:8px 12px 0;color:#3979c8;font-size:10px;font-weight:900;
+}
+#kuroRankingShowcase .rank-column-ticker-track{display:inline-flex;align-items:center;gap:28px;width:max-content;white-space:nowrap;will-change:transform}
+#kuroRankingShowcase .rank-column-ticker-track>span{display:block;flex:0 0 auto;white-space:nowrap}
+#kuroRankingShowcase .rank-column-custom-label{
+  padding:4px 12px 0;color:#74859c;font-size:9px;line-height:1.5;font-weight:800;overflow-wrap:anywhere;
+}
+#kuroRankingShowcase .rank-column-list{
+  display:grid;grid-template-columns:minmax(0,1fr);gap:7px;align-content:start;
+  min-height:285px;padding:10px 10px 12px;
+}
+#kuroRankingShowcase .rank-column-row{
+  display:grid;grid-template-columns:29px minmax(0,1fr) auto;align-items:center;gap:7px;
+  min-width:0;min-height:43px;padding:6px 7px;border:1px solid #e8eef7;border-radius:10px;background:#fff;
+}
+#kuroRankingShowcase .rank-column-row.rank-1{
+  grid-template-columns:34px minmax(0,1fr) auto;min-height:55px;
+  border-color:#f0d99b;background:linear-gradient(105deg,#fff8e5,#fff 88%);
+  box-shadow:0 3px 9px rgba(190,147,47,.07);
+}
+#kuroRankingShowcase .rank-column-medal{display:grid;place-items:center;width:27px;height:27px;border-radius:8px;background:#f1f5fa;color:#718198;font-size:13px;font-weight:1000}
+#kuroRankingShowcase .rank-1 .rank-column-medal{width:32px;height:32px;background:linear-gradient(145deg,#ffe7a0,#fff5d5);border:1px solid #efd58e;font-size:18px}
+#kuroRankingShowcase .rank-column-name{min-width:0;overflow:hidden;color:#455a78;font-size:10px;font-weight:850;text-overflow:ellipsis;white-space:nowrap}
+#kuroRankingShowcase .rank-1 .rank-column-name{color:#55431d;font-size:11px;font-weight:1000}
+#kuroRankingShowcase .rank-column-score{max-width:95px;overflow:hidden;padding:5px 6px;border:1px solid #e2edfb;border-radius:7px;background:#f2f7ff;color:#2e75ca;font-size:9px;font-weight:1000;text-align:right;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums}
+#kuroRankingShowcase .rank-1 .rank-column-score{border-color:#f0dfb1;background:#fff;color:#9b741d;font-size:10px}
+#kuroRankingShowcase .rank-column-empty{display:grid;place-items:center;min-height:200px;padding:18px;border:1px dashed #dce7f5;border-radius:11px;background:#fbfdff;color:#7c8ba1;font-size:10px;line-height:1.8;text-align:center}
+#kuroRankingShowcase .rank-column-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:auto 10px 10px;padding-top:9px;border-top:1px solid #edf1f7}
+#kuroRankingShowcase .rank-column-link{display:inline-flex;align-items:center;min-width:0;max-width:75%;min-height:29px;padding:0 9px;overflow:hidden;border:1px solid #dce9fa;border-radius:8px;background:#f4f8ff;color:#3477c7;font-size:9px;font-weight:950;text-overflow:ellipsis;white-space:nowrap}
+#kuroRankingShowcase .rank-column-position{flex:none;color:#98a6b8;font-size:8px;font-weight:900;font-variant-numeric:tabular-nums}
+#kuroRankingShowcase .rank-wall-message{grid-column:1/-1;display:grid;place-items:center;min-height:190px;padding:25px;border:1px dashed #dce7f5;border-radius:14px;background:#fbfdff;color:#74859b;font-size:12px;line-height:1.8;text-align:center}
+@media(max-width:980px){
+  #kuroRankingShowcase .rank-wall{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #kuroRankingShowcase .rank-column-list{min-height:265px}
+}
+@media(max-width:680px){
+  #kuroRankingShowcase.rank-wall-shell{padding:16px 12px 13px!important;border-radius:18px!important}
+  #kuroRankingShowcase .rank-head h2{font-size:19px!important}
+  #kuroRankingShowcase .rank-wall{grid-template-columns:minmax(0,1fr)!important;gap:10px!important}
+  #kuroRankingShowcase .rank-column-list{min-height:0;padding:9px}
+  #kuroRankingShowcase .rank-column-row{min-height:42px}
+  #kuroRankingShowcase .rank-column-row.rank-1{min-height:52px}
+  #kuroRankingShowcase .rank-wall-intro{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+  #kuroRankingShowcase .rank-column,
+  #kuroRankingShowcase .rank-column.is-entering{animation:none!important;transition:none!important;transform:none!important}
+}
+</style>
+
 </head>
 <body>
 <header><div class="wrap nav">
@@ -1252,12 +1377,14 @@ body.kuro-account-open { overflow: hidden; }
 <div class="filters genre-collapsed" id="categories"><button class="filter active" data-filter="all">すべて</button><button class="filter" data-filter="typing">タイピング</button><button class="filter" data-filter="rpg">RPG</button><button class="filter" data-filter="action">アクション</button><button class="filter" data-filter="shooting">シューティング</button><button class="filter" data-filter="adventure">アドベンチャー</button><button class="filter" data-filter="simulation">シミュレーション</button><button class="filter" data-filter="strategy">ストラテジー</button><button class="filter" data-filter="puzzle">パズル</button><button class="filter" data-filter="sports">スポーツ</button><button class="filter" data-filter="racing">レース</button><button class="filter" data-filter="table">テーブル</button><button class="filter" data-filter="rhythm">リズム・音楽</button><button class="filter" data-filter="horror">ホラー</button><button class="filter" data-filter="sandbox">サンドボックス</button><button class="filter" data-filter="survival">サバイバル</button><button class="filter" data-filter="fighting">格闘</button><button class="filter" data-filter="party">パーティー</button><button class="filter" data-filter="casual">カジュアル</button><button class="filter" data-filter="education">教育・学習</button><button class="filter" data-filter="other">その他</button><button class="filter fav" id="favoriteFilter">♡ お気に入り</button></div>
 <div class="games-layout"><div class="grid" id="gameGrid">
 </div>
-<aside class="ranking-showcase" id="kuroRankingShowcase" aria-label="ゲームランキング"><span class="rank-corner-trophy" aria-hidden="true">🏆</span><div class="rank-head"><div><span class="rank-eyebrow">KURO GAMES RANKING</span><h2><span class="rank-heading-icon" aria-hidden="true">🏆</span><span>ランキング</span></h2></div><span class="rank-live"><i></i> LIVE</span></div><div class="rank-game" id="kuroRankGame">ランキング対応ゲーム</div><div class="rank-filters">
- <label id="kuroRankModeWrap" hidden>ランキング種別<select id="kuroRankMode" aria-label="ランキング種別"></select></label>
- <label id="kuroRankDetailWrap" hidden>難易度・区分<select id="kuroRankDetail" aria-label="難易度・区分"></select></label>
- <label id="kuroRankCpuWrap" hidden>CPU難易度<select id="kuroRankCpu"><option value="">すべて</option></select></label>
- <label id="kuroRankLevelWrap" hidden>レベル<select id="kuroRankLevel"><option value="">すべて</option></select></label>
-</div><div class="rank-list" id="kuroRankList"><div class="rank-message">ランキングを読み込み中…</div></div><div class="rank-foot"><a id="kuroRankGameLink" href="/games/">ゲームを遊ぶ ↗</a><div class="rank-controls"><button id="kuroRankPrev" type="button" aria-label="前のランキング">‹</button><span id="kuroRankDots"></span><button id="kuroRankNext" type="button" aria-label="次のランキング">›</button></div></div></aside></div>
+<aside class="ranking-showcase rank-wall-shell" id="kuroRankingShowcase" aria-label="ゲームランキング">
+ <div class="rank-head">
+  <div><span class="rank-eyebrow">KURO GAMES RANKING WALL</span><h2><span class="rank-heading-icon" aria-hidden="true">🏆</span><span>ランキング</span></h2></div>
+  <span class="rank-live"><i></i> LIVE</span>
+ </div>
+ <div class="rank-wall-intro"><span>ゲーム別ランキング</span><span>5秒ごとに自動更新</span></div>
+ <div class="rank-wall" id="kuroRankWall" aria-live="polite"><div class="rank-message">ランキングを読み込み中…</div></div>
+</aside></div>
 <div class="empty" id="empty"><strong>ゲームが見つかりませんでした</strong>検索ワードやジャンルを変えて、もう一度探してみてください。</div>
 <div class="more"><div class="more-icon">✦</div><div><h3>新しいゲームを準備中！</h3><p>KURO GAMESでは、これからもオリジナルゲームを追加していきます。次のゲームもお楽しみに。</p></div><small>MORE GAMES COMING SOON</small></div>
 </section>
@@ -1429,15 +1556,16 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
 </script>
 <script>
 function initKuroRankingShowcase(){
- const panel=document.getElementById("kuroRankingShowcase"),listEl=document.getElementById("kuroRankList"),titleEl=document.getElementById("kuroRankGame"),linkEl=document.getElementById("kuroRankGameLink"),dotsEl=document.getElementById("kuroRankDots"),prev=document.getElementById("kuroRankPrev"),next=document.getElementById("kuroRankNext");
- const modeSelect=document.getElementById("kuroRankMode"),detailSelect=document.getElementById("kuroRankDetail"),modeWrap=document.getElementById("kuroRankModeWrap"),detailWrap=document.getElementById("kuroRankDetailWrap");
- const levelSelect=document.getElementById("kuroRankLevel"),cpuSelect=document.getElementById("kuroRankCpu"),levelWrap=document.getElementById("kuroRankLevelWrap"),cpuWrap=document.getElementById("kuroRankCpuWrap");
- if(!panel||!listEl||!titleEl||!linkEl)return;
- let games=[],index=0,timer=null,pausedUntil=0,busy=false,cache=new Map(),pendingSteps=0,pendingRefresh=false,swipeStart=null;
- const medals=["🥇","🥈","🥉","4","5"],TICTACTOE_GAME_ID="2dbd6773-2684-4f00-973e-c46acbc348e7",TICTACTOE_RULES=["normal","vanish","gobble","reverse"],RANK_CACHE_MS=30000;
- function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
- function renderDots(){if(dotsEl)dotsEl.innerHTML=games.map((_,i)=>'<i class="rank-dot '+(i===index?'active':'')+'"></i>').join("");}
- function showMessage(msg){listEl.innerHTML='<div class="rank-message">'+esc(msg)+'</div>';}
+ const panel=document.getElementById("kuroRankingShowcase");
+ const wall=document.getElementById("kuroRankWall");
+ if(!panel||!wall)return;
+ const medals=["🥇","🥈","🥉","4","5"];
+ const TICTACTOE_GAME_ID="2dbd6773-2684-4f00-973e-c46acbc348e7";
+ const TICTACTOE_RULES=["normal","vanish","gobble","reverse"];
+ const RANK_CACHE_MS=30000;
+ let entries=[],columns=[],cycleTimer=null,refreshTimer=null,cache=new Map(),refreshBusy=false;
+ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+ const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
  function modeName(mode){
   const names={normal:"通常ルール・勝利数",vanish:"消えるルール・勝利数",gobble:"食べるルール・勝利数",reverse:"逆転ルール・勝利数","wins-bot":"CPU戦・勝利数","wins-online":"オンライン対戦・勝利数",werewolf_villager_wins:"村人陣営の勝利数",werewolf_wolf_wins:"人狼陣営の勝利数",normal_beginner:"ノーマル・初心者"};
   return mode==="default"?"":(names[mode]||String(mode).replace(/[_-]+/g," "));
@@ -1475,135 +1603,206 @@ function initKuroRankingShowcase(){
   groups.sort((a,b)=>a.order-b.order);
   return groups;
  }
- function selectedGroup(game){
-  const groups=game.modeGroups||[];
-  return groups.find(g=>g.key===game.selectedGroupKey)||groups[0]||null;
+ function makeEntries(games){
+  const result=[];
+  games.forEach(game=>{
+   (game.modeGroups||[]).forEach(group=>{
+    group.modes.forEach(info=>{
+     const mode=info.mode,modeSplit=splitDifficultyMode(mode);
+     const baseLabel=modeSplit?(cleanGroupLabel(modeSplit.base)+" · "+modeSplit.difficulty):(modeName(mode)||group.label||"総合ランキング");
+     const isCpu=/cpu|bot/i.test(String(group.key||"")+" "+mode);
+     const cpuOptions=isCpu&&game.cpuDifficulties.length
+      ?[{value:"",label:"全難易度"},...game.cpuDifficulties.map(v=>({value:v,label:({EASY:"よわい",NORMAL:"ふつう",HARD:"つよい",EXPERT:"Expert"}[v]||v)}))]
+      :[{value:"",label:""}];
+     const levelOptions=game.levels.length<=8&&game.levels.length
+      ?[{value:"",label:"全レベル"},...game.levels.map(v=>({value:String(v),label:"Lv."+Number(v)}))]
+      :[{value:"",label:""}];
+     cpuOptions.forEach(cpu=>levelOptions.forEach(level=>{
+      const detail=[cpu.label,level.label].filter(Boolean).join(" / ");
+      const setting=game.showcaseConfig?.modes?.[mode]||{};
+      result.push({
+       key:[game.id,mode,cpu.value,level.value].join("::"),
+       game,mode,cpu:cpu.value,level:level.value,
+       modeLabel:baseLabel+(detail?" · "+detail:""),
+       customLabel:typeof setting.label==="string"?setting.label.trim():"",
+       scoreSuffix:typeof setting.scoreSuffix==="string"?setting.scoreSuffix:""
+      });
+     }));
+    });
+   });
+  });
+  return result;
  }
- function selectedModeInfo(game){
-  const g=selectedGroup(game);
-  if(!g||!g.modes.length)return {mode:"default",difficulty:""};
-  return g.modes.find(v=>v.mode===game.selectedMode)||g.modes[0];
+ async function loadEntries(){
+  const {data:published,error:gamesError}=await window.kuroGamesDB.from("game_studio_games").select("id,title,status").eq("status","published").order("published_at",{ascending:false}).limit(60);
+  if(gamesError)throw gamesError;
+  const configured=await Promise.all((published||[]).filter(g=>g.id&&g.title).map(async game=>{
+   try{
+    const {data,error}=await window.kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"get_config",gameId:game.id}});
+    if(error)throw error;
+    return data?.features?.ranking===true?{...game,showcaseConfig:data?.showcaseConfig||{modes:{}}}:null;
+   }catch(err){console.debug("Ranking config skipped:",game.id,err);return null;}
+  }));
+  const enabled=configured.filter(Boolean);
+  const games=await Promise.all(enabled.map(async game=>{
+   try{
+    const {data,error}=await window.kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"leaderboard_modes",gameId:game.id}});
+    if(error)throw error;
+    const levels=Array.isArray(data?.levels)?data.levels:[],cpuDifficulties=Array.isArray(data?.cpuDifficulties)?data.cpuDifficulties:[];
+    const showcaseConfig=data?.showcaseConfig&&typeof data.showcaseConfig==="object"?data.showcaseConfig:game.showcaseConfig;
+    const settings=showcaseConfig?.modes&&typeof showcaseConfig.modes==="object"?showcaseConfig.modes:{};
+    const baseModes=game.id===TICTACTOE_GAME_ID?TICTACTOE_RULES:(Array.isArray(data?.modes)&&data.modes.length?data.modes:["default"]);
+    const modes=baseModes.filter(m=>settings[m]?.enabled!==false).sort((a,b)=>{
+     const ai=Number.isFinite(Number(settings[a]?.order))?Number(settings[a].order):1000+baseModes.indexOf(a);
+     const bi=Number.isFinite(Number(settings[b]?.order))?Number(settings[b].order):1000+baseModes.indexOf(b);
+     return ai-bi;
+    });
+    const modeGroups=buildModeGroups(modes);
+    return modeGroups.length?{...game,levels,cpuDifficulties,showcaseConfig,modeGroups}:null;
+   }catch(err){console.debug("Ranking modes skipped:",game.id,err);return null;}
+  }));
+  return makeEntries(games.filter(Boolean));
  }
- function renderFilterOptions(game){
-  const groups=game.modeGroups||[];
-  if(modeWrap&&modeSelect){
-   modeWrap.hidden=groups.length<=1;
-   modeSelect.innerHTML=groups.map(g=>'<option value="'+esc(g.key)+'">'+esc(g.label)+'</option>').join("");
-   if(!groups.some(g=>g.key===game.selectedGroupKey))game.selectedGroupKey=groups[0]?.key||"";
-   modeSelect.value=game.selectedGroupKey||"";
-  }
-  const group=selectedGroup(game),members=group?.modes||[];
-  if(detailWrap&&detailSelect){
-   detailWrap.hidden=members.length<=1;
-   detailSelect.innerHTML=members.map(v=>'<option value="'+esc(v.mode)+'">'+esc(v.difficulty||modeName(v.mode)||v.mode)+'</option>').join("");
-   if(!members.some(v=>v.mode===game.selectedMode))game.selectedMode=members[0]?.mode||"default";
-   detailSelect.value=game.selectedMode||"";
-  }
-  const active=selectedModeInfo(game),isCpu=/cpu|bot/i.test(String(group?.key||"")+" "+active.mode);
-  const levels=Array.isArray(game.levels)?game.levels:[],cpus=Array.isArray(game.cpuDifficulties)?game.cpuDifficulties:[];
-  if(levelWrap&&levelSelect){
-   levelWrap.hidden=!levels.length;
-   const prior=levelSelect.value;
-   levelSelect.innerHTML='<option value="">すべて</option>'+levels.map(v=>'<option value="'+Number(v)+'">Lv.'+Number(v)+'</option>').join("");
-   levelSelect.value=levels.some(v=>String(v)===prior)?prior:"";
-  }
-  if(cpuWrap&&cpuSelect){
-   cpuWrap.hidden=!isCpu||!cpus.length;
-   const prior=cpuSelect.value,names={EASY:"よわい",NORMAL:"ふつう",HARD:"つよい",EXPERT:"Expert"};
-   cpuSelect.innerHTML='<option value="">すべて</option>'+cpus.map(v=>'<option value="'+esc(v)+'">'+esc(names[v]||v)+'</option>').join("");
-   cpuSelect.value=cpus.includes(prior)?prior:"";
-  }
- }
- async function fetchRanking(game){
-  const lv=levelSelect?.value||"",cpu=cpuSelect?.value||"",key=game.id+"::"+game.mode+"::"+lv+"::"+cpu,cached=cache.get(key);
-  if(cached&&Date.now()-cached.at<RANK_CACHE_MS)return cached.rows;
-  try{
-   const body={action:"leaderboard",gameId:game.id,mode:game.mode,limit:5};
-   if(lv!=="")body.level=Number(lv);if(cpu!=="")body.cpuDifficulty=cpu;
-   const {data,error}=await window.kuroGamesDB.functions.invoke("kurogames-online",{body});if(error)throw error;
-   const rows=(Array.isArray(data?.scores)?data.scores:[]).slice(0,5).map((row,i)=>({...row,rank:Number(row.rank)||i+1,score:Number(row.score)||0,user:row.user||{username:"プレイヤー",display_name:"プレイヤー"}}));
-   cache.set(key,{rows,at:Date.now()});return rows;
-  }catch(error){if(cached?.rows?.length)return cached.rows;throw error;}
- }
- function scoreText(game,row,mode){
-  const value=Number(row.score||0).toLocaleString("ja-JP"),setting=game.showcaseConfig?.modes?.[mode];
-  if(setting&&typeof setting.scoreSuffix==="string")return value+setting.scoreSuffix;
-  if(game.id===TICTACTOE_GAME_ID||/wins|_wins/.test(mode))return value+"勝";
-  if(/score|normal_beginner/.test(mode))return value+"点";
+ function scoreText(entry,row){
+  const value=Number(row.score||0).toLocaleString("ja-JP");
+  if(entry.scoreSuffix)return value+entry.scoreSuffix;
+  if(entry.game.id===TICTACTOE_GAME_ID||/wins|_wins/.test(entry.mode))return value+"勝";
+  if(/score|normal_beginner/.test(entry.mode))return value+"点";
   return value;
  }
- async function display(i,direction=1,forceTransition=false){
-  if(!games.length)return;
-  if(busy){if(i===index&&forceTransition){pendingRefresh=true;return;}pendingSteps=Math.max(-4,Math.min(4,pendingSteps+(direction<0?-1:1)));return;}
-  busy=true;
-  const nextIndex=(i+games.length)%games.length,game=games[nextIndex],modeInfo=selectedModeInfo(game),queryGame=Object.assign({},game,{mode:modeInfo.mode});
-  const isSwitch=panel.dataset.rankReady==="1"&&(nextIndex!==index||forceTransition),slideDirection=direction<0?"prev":"next";
+ async function fetchRanking(entry){
+  const key=entry.key,cached=cache.get(key);
+  if(cached&&Date.now()-cached.at<RANK_CACHE_MS)return cached.rows;
   try{
-   renderFilterOptions(game);
-   const rowsPromise=fetchRanking(queryGame).then(rows=>({rows})).catch(error=>({error}));
-   if(isSwitch){panel.dataset.rankDirection=slideDirection;panel.classList.remove("rank-in");panel.classList.add("rank-out");await new Promise(resolve=>setTimeout(resolve,230));}
-   const result=await rowsPromise;index=nextIndex;
-   let customTicker="",tickerStyle={enabled:true,speed:30,direction:"left",textColor:"#164b8e",backgroundColor:"#eaf2ff"};
-   try{const map=JSON.parse(localStorage.getItem("kuroGamesRankingTickerByGame")||"{}");customTicker=String(map[game.id]||"").trim();}catch(_){}
-   try{const map=JSON.parse(localStorage.getItem("kuroGamesRankingTickerStyleByGame")||"{}");if(map?.[game.id]&&typeof map[game.id]==="object")tickerStyle=Object.assign(tickerStyle,map[game.id]);}catch(_){}
-   const setting=game.showcaseConfig?.modes?.[modeInfo.mode]||null,customLabel=setting&&typeof setting.label==="string"?setting.label.trim():"",displayBase=customTicker||game.title;
-   const safeColor=(v,f)=>/^#[0-9a-f]{6}$/i.test(String(v||""))?String(v):f,tickerEnabled=tickerStyle.enabled!==false,tickerSpeed=Math.max(10,Math.min(100,Math.round(Number(tickerStyle.speed)||30))),tickerDirection=tickerStyle.direction==="right"?"right":"left";
-   titleEl.classList.remove("rank-marquee");titleEl.replaceChildren();titleEl.classList.add("rank-marquee");titleEl.style.setProperty("display",tickerEnabled?"flex":"none","important");titleEl.style.color=safeColor(tickerStyle.textColor,"#164b8e");titleEl.style.backgroundColor=safeColor(tickerStyle.backgroundColor,"#eaf2ff");
-   if(tickerEnabled){
-    const main=document.createElement("div");main.className="rank-mode-mainline";const track=document.createElement("span");track.className="rank-marquee-track";const first=document.createElement("span");first.textContent=displayBase;track.append(first);main.append(track);titleEl.append(main);
-    if(customLabel){const sub=document.createElement("div");sub.className="rank-mode-custom-label";sub.textContent=customLabel;titleEl.append(sub);}
-    requestAnimationFrame(()=>{if(!titleEl.isConnected||!tickerEnabled)return;const gap=36,width=Math.max(1,first.getBoundingClientRect().width),viewport=Math.max(1,main.clientWidth),distance=width+gap,copies=Math.max(3,Math.ceil((viewport+width)/distance)+2);for(let n=1;n<copies;n++){const copy=document.createElement("span");copy.textContent=displayBase;track.append(copy);}track.style.gap=gap+"px";const frames=tickerDirection==="right"?[{transform:"translateX(-"+distance+"px)"},{transform:"translateX(0)"}]:[{transform:"translateX(0)"},{transform:"translateX(-"+distance+"px)"}];track.animate(frames,{duration:Math.max(500,distance/tickerSpeed*1000),iterations:Infinity,easing:"linear"});});
-   }
-   linkEl.href="/games/play/?id="+encodeURIComponent(game.id);linkEl.textContent="このゲームを遊ぶ ↗";renderDots();
-   if(result.error){showMessage("ランキングを取得できませんでした。");console.debug("KURO ranking showcase:",result.error);}
-   else if(!result.rows.length)showMessage("このランキングの記録はまだありません。");
-   else listEl.innerHTML=result.rows.map((row,ri)=>'<div class="rank-row"><span class="rank-medal">'+medals[ri]+'</span><span class="rank-name">'+esc(row.user?.username||row.user?.display_name||"プレイヤー")+'</span><span class="rank-score">'+scoreText(game,row,modeInfo.mode)+'</span></div>').join("");
-   panel.dataset.rankReady="1";panel.dataset.rankDirection=slideDirection;panel.classList.remove("rank-out","rank-in");void listEl.offsetWidth;panel.classList.add("rank-in");
-  }catch(e){panel.classList.remove("rank-out","rank-in");showMessage("ランキングを取得できませんでした。");console.debug("KURO ranking transition:",e);panel.dataset.rankReady="1";panel.dataset.rankDirection=slideDirection;void listEl.offsetWidth;panel.classList.add("rank-in");}
-  finally{busy=false;if(pendingSteps){const n=pendingSteps;pendingSteps=0;display(index+n,Math.sign(n),true);}else if(pendingRefresh){pendingRefresh=false;display(index,1,true);}}
+   const body={action:"leaderboard",gameId:entry.game.id,mode:entry.mode,limit:5};
+   if(entry.level!=="")body.level=Number(entry.level);
+   if(entry.cpu!=="")body.cpuDifficulty=entry.cpu;
+   const {data,error}=await window.kuroGamesDB.functions.invoke("kurogames-online",{body});
+   if(error)throw error;
+   const rows=(Array.isArray(data?.scores)?data.scores:[]).slice(0,5).map((row,i)=>({...row,rank:Number(row.rank)||i+1,score:Number(row.score)||0,user:row.user||{username:"プレイヤー",display_name:"プレイヤー"}}));
+   cache.set(key,{rows,at:Date.now()});
+   if(cache.size>180){const first=cache.keys().next().value;cache.delete(first);}
+   return rows;
+  }catch(error){if(cached?.rows)return cached.rows;throw error;}
  }
- function go(delta){pausedUntil=Date.now()+12000;display(index+delta,delta,true);}
- prev?.addEventListener("click",()=>go(-1));next?.addEventListener("click",()=>go(1));
- function applyRankingFilter(){pausedUntil=Date.now()+12000;cache.clear();display(index,1,true);}
- modeSelect?.addEventListener("change",()=>{const game=games[index];if(!game)return;game.selectedGroupKey=modeSelect.value;game.selectedMode=selectedGroup(game)?.modes?.[0]?.mode||"default";if(levelSelect)levelSelect.value="";if(cpuSelect)cpuSelect.value="";applyRankingFilter();});
- detailSelect?.addEventListener("change",()=>{const game=games[index];if(!game)return;game.selectedMode=detailSelect.value;if(levelSelect)levelSelect.value="";if(cpuSelect)cpuSelect.value="";applyRankingFilter();});
- levelSelect?.addEventListener("change",applyRankingFilter);cpuSelect?.addEventListener("change",applyRankingFilter);
- listEl.addEventListener("touchstart",e=>{if(e.touches.length!==1){swipeStart=null;return;}const t=e.touches[0];swipeStart={x:t.clientX,y:t.clientY};pausedUntil=Date.now()+12000;},{passive:true});
- listEl.addEventListener("touchend",e=>{if(!swipeStart||!e.changedTouches.length){swipeStart=null;return;}const t=e.changedTouches[0],dx=t.clientX-swipeStart.x,dy=t.clientY-swipeStart.y;swipeStart=null;if(Math.abs(dx)>=48&&Math.abs(dx)>Math.abs(dy)*1.25)go(dx<0?1:-1);},{passive:true});
- listEl.addEventListener("touchcancel",()=>{swipeStart=null;},{passive:true});
- panel.addEventListener("mouseenter",()=>pausedUntil=Date.now()+999999);panel.addEventListener("mouseleave",()=>pausedUntil=Date.now()+8000);
- async function initialize(){
-  if(!window.kuroGamesDB){showMessage("ランキング通信を準備できませんでした。");return;}
-  async function loadRankings(){
-   const {data:published,error:gamesError}=await window.kuroGamesDB.from("game_studio_games").select("id,title,status").eq("status","published").order("published_at",{ascending:false}).limit(60);if(gamesError)throw gamesError;
-   const configs=await Promise.all((published||[]).filter(g=>g.id&&g.title).map(async game=>{try{const {data,error}=await window.kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"get_config",gameId:game.id}});if(error)throw error;return data?.features?.ranking===true?game:null;}catch(err){console.debug("Ranking config skipped:",game.id,err);return null;}}));
-   const enabled=configs.filter(Boolean);
-   return (await Promise.all(enabled.map(async game=>{
-    try{
-     const {data,error}=await window.kuroGamesDB.functions.invoke("kurogames-online",{body:{action:"leaderboard_modes",gameId:game.id}});if(error)throw error;
-     const levels=Array.isArray(data?.levels)?data.levels:[],cpuDifficulties=Array.isArray(data?.cpuDifficulties)?data.cpuDifficulties:[],showcaseConfig=data?.showcaseConfig&&typeof data.showcaseConfig==="object"?data.showcaseConfig:{modes:{}},settings=showcaseConfig.modes&&typeof showcaseConfig.modes==="object"?showcaseConfig.modes:{};
-     const baseModes=game.id===TICTACTOE_GAME_ID?TICTACTOE_RULES:(Array.isArray(data?.modes)&&data.modes.length?data.modes:["default"]);
-     const modes=baseModes.filter(m=>settings[m]?.enabled!==false).sort((a,b)=>{const ai=Number.isFinite(Number(settings[a]?.order))?Number(settings[a].order):1000+baseModes.indexOf(a),bi=Number.isFinite(Number(settings[b]?.order))?Number(settings[b].order):1000+baseModes.indexOf(b);return ai-bi;});
-     const modeGroups=buildModeGroups(modes);if(!modeGroups.length)return null;
-     return {id:game.id,title:game.title,modeGroups,selectedGroupKey:modeGroups[0].key,selectedMode:modeGroups[0].modes[0]?.mode||"default",levels,cpuDifficulties,showcaseConfig};
-    }catch(err){console.debug("Ranking modes skipped:",game.id,err);return null;}
-   }))).filter(Boolean);
-  }
+ function readTickerSettings(game){
+  let customTicker="",style={enabled:true,speed:30,direction:"left",textColor:"#164b8e",backgroundColor:"#eaf2ff"};
+  try{const map=JSON.parse(localStorage.getItem("kuroGamesRankingTickerByGame")||"{}");customTicker=String(map[game.id]||"").trim();}catch(_){}
+  try{const map=JSON.parse(localStorage.getItem("kuroGamesRankingTickerStyleByGame")||"{}");if(map?.[game.id]&&typeof map[game.id]==="object")style=Object.assign(style,map[game.id]);}catch(_){}
+  return {customTicker,style};
+ }
+ function makeColumn(index){
+  const el=document.createElement("article");
+  el.className="rank-column";
+  el.innerHTML='<div class="rank-column-top"><span class="rank-column-number">'+String(index+1).padStart(2,"0")+'</span><div class="rank-column-heading"><span class="rank-column-game"></span><span class="rank-column-mode"></span></div></div><div class="rank-column-ticker"></div><div class="rank-column-custom-label" hidden></div><div class="rank-column-list" role="list"><div class="rank-column-empty">ランキングを読み込み中…</div></div><div class="rank-column-foot"><a class="rank-column-link" href="/games/">このゲームを遊ぶ ↗</a><span class="rank-column-position"></span></div>';
+  wall.appendChild(el);
+  return {el,index:0,busy:false,game:el.querySelector(".rank-column-game"),mode:el.querySelector(".rank-column-mode"),ticker:el.querySelector(".rank-column-ticker"),custom:el.querySelector(".rank-column-custom-label"),list:el.querySelector(".rank-column-list"),link:el.querySelector(".rank-column-link"),position:el.querySelector(".rank-column-position")};
+ }
+ function renderTicker(slot,entry){
+  const {customTicker,style}=readTickerSettings(entry.game);
+  const base=customTicker||entry.game.title;
+  const enabled=style.enabled!==false;
+  const color=/^#[0-9a-f]{6}$/i.test(String(style.textColor||""))?style.textColor:"#3979c8";
+  slot.ticker.replaceChildren();
+  slot.ticker.style.display=enabled?"block":"none";
+  slot.ticker.style.color=color;
+  if(!enabled)return;
+  const track=document.createElement("span");track.className="rank-column-ticker-track";
+  const first=document.createElement("span");first.textContent=base;track.appendChild(first);slot.ticker.appendChild(track);
+  requestAnimationFrame(()=>{
+   if(!track.isConnected)return;
+   const width=Math.max(1,first.getBoundingClientRect().width),viewport=Math.max(1,slot.ticker.clientWidth),gap=28,distance=width+gap;
+   if(width<=viewport){track.style.width="100%";return;}
+   const copies=Math.max(3,Math.ceil((viewport+width)/distance)+2);
+   for(let i=1;i<copies;i++){const copy=document.createElement("span");copy.textContent=base;track.appendChild(copy);}
+   track.style.gap=gap+"px";
+   const speed=Math.max(10,Math.min(100,Math.round(Number(style.speed)||30)));
+   const frames=style.direction==="right"?[{transform:"translateX(-"+distance+"px)"},{transform:"translateX(0)"}]:[{transform:"translateX(0)"},{transform:"translateX(-"+distance+"px)"}];
+   track.animate(frames,{duration:Math.max(500,distance/speed*1000),iterations:Infinity,easing:"linear"});
+  });
+ }
+ async function renderColumn(slot,animate=true){
+  if(!entries.length||slot.busy)return;
+  slot.busy=true;
+  const entry=entries[((slot.index%entries.length)+entries.length)%entries.length];
+  if(animate){slot.el.classList.remove("is-entering");slot.el.classList.add("is-leaving");}
   try{
-   games=await loadRankings();if(!games.length){showMessage("ランキング対応ゲームはまだありません。");return;}
-   await display(0,1);if(games.length>1)timer=setInterval(()=>{if(Date.now()>=pausedUntil&&!busy)display(index+1,1);},5000);
-   setInterval(async()=>{
-    if(busy)return;
-    try{
-     const current=games[index],id=current?.id||"",groupKey=current?.selectedGroupKey||"",mode=current?.selectedMode||"",fresh=await loadRankings();
-     if(fresh.length){
-      const found=fresh.findIndex(g=>g.id===id),nextAt=found>=0?found:Math.min(index,fresh.length-1),replacement=fresh[nextAt];
-      if(found>=0&&replacement.modeGroups.some(g=>g.key===groupKey)){replacement.selectedGroupKey=groupKey;const group=selectedGroup(replacement);if(group.modes.some(v=>v.mode===mode))replacement.selectedMode=mode;}
-      games=fresh;index=nextAt;if(Date.now()>=pausedUntil)display(index,1);
-     }
-    }catch(err){console.debug("KURO ranking refresh skipped:",err);}
-   },30000);
-  }catch(e){showMessage("ランキングを読み込めませんでした。");console.warn("KURO ranking showcase init:",e);}
+   const rows=await fetchRanking(entry);
+   if(animate)await sleep(170);
+   slot.game.textContent=entry.game.title;
+   slot.mode.textContent=entry.modeLabel;
+   renderTicker(slot,entry);
+   slot.custom.textContent=entry.customLabel;
+   slot.custom.hidden=!entry.customLabel;
+   slot.link.href="/games/play/?id="+encodeURIComponent(entry.game.id);
+   slot.position.textContent=(slot.index%entries.length+1)+" / "+entries.length;
+   if(!rows.length){
+    slot.list.innerHTML='<div class="rank-column-empty">まだランキングの記録がありません</div>';
+   }else{
+    slot.list.innerHTML=rows.map((row,i)=>'<div class="rank-column-row rank-'+(i+1)+'" role="listitem"><span class="rank-column-medal">'+medals[i]+'</span><span class="rank-column-name" title="'+esc(row.user?.username||row.user?.display_name||"プレイヤー")+'">'+esc(row.user?.username||row.user?.display_name||"プレイヤー")+'</span><span class="rank-column-score">'+esc(scoreText(entry,row))+'</span></div>').join("");
+   }
+  }catch(error){
+   slot.game.textContent=entry.game.title;
+   slot.mode.textContent=entry.modeLabel;
+   slot.list.innerHTML='<div class="rank-column-empty">ランキングを読み込めませんでした<br>次の更新で再試行します</div>';
+   console.debug("KURO ranking column:",entry.key,error);
+  }finally{
+   slot.el.classList.remove("is-leaving");
+   if(animate){void slot.el.offsetWidth;slot.el.classList.add("is-entering");setTimeout(()=>slot.el.classList.remove("is-entering"),450);}
+   slot.busy=false;
+  }
+ }
+ function updateBoard(){
+  const count=Math.min(3,entries.length);
+  if(columns.length!==count){
+   wall.replaceChildren();columns=Array.from({length:count},(_,i)=>makeColumn(i));
+   columns.forEach((slot,i)=>{slot.index=i;});
+   Promise.all(columns.map(slot=>renderColumn(slot,false)));
+   return;
+  }
+  columns.forEach(slot=>{slot.index=((slot.index%entries.length)+entries.length)%entries.length;renderColumn(slot,false);});
+ }
+ async function refreshEntries(){
+  if(refreshBusy||document.hidden||!window.kuroGamesDB)return;
+  refreshBusy=true;
+  try{
+   const prior=columns.map(slot=>entries[slot.index]?.key||"");
+   const fresh=await loadEntries();
+   if(fresh.length){
+    entries=fresh;cache.clear();
+    columns.forEach((slot,i)=>{
+     const found=prior[i]?entries.findIndex(e=>e.key===prior[i]):-1;
+     slot.index=found>=0?found:i;
+    });
+    updateBoard();
+   }
+  }catch(error){console.debug("KURO ranking wall refresh skipped:",error);}
+  finally{refreshBusy=false;}
+ }
+ function startTimers(){
+  if(cycleTimer)clearInterval(cycleTimer);
+  if(refreshTimer)clearInterval(refreshTimer);
+  cycleTimer=setInterval(()=>{
+   if(document.hidden||!entries.length)return;
+   columns.forEach((slot,i)=>setTimeout(()=>{
+    if(!document.hidden&&entries.length&&!slot.busy){
+     slot.index=(slot.index+3)%entries.length;
+     renderColumn(slot,true);
+    }
+   },i*620));
+  },5000);
+  refreshTimer=setInterval(refreshEntries,30000);
+ }
+ async function initialize(){
+  if(!window.kuroGamesDB){wall.innerHTML='<div class="rank-wall-message">ランキング通信を準備できませんでした。</div>';return;}
+  try{
+   entries=await loadEntries();
+   if(!entries.length){wall.innerHTML='<div class="rank-wall-message">ランキング対応ゲームはまだありません。</div>';return;}
+   updateBoard();startTimers();
+  }catch(error){
+   wall.innerHTML='<div class="rank-wall-message">ランキングを読み込めませんでした。ページを再読み込みしてください。</div>';
+   console.warn("KURO ranking wall init:",error);
+  }
  }
  initialize();
 }
