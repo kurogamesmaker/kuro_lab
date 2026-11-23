@@ -2125,7 +2125,25 @@ async function authenticateKuroUsername(action, username, password) {
             const { data, error } = await supabaseClient.functions.invoke('username-auth', {
                 body: { action, username, password }
             });
-            if (error) throw new Error(data?.error || error.message || 'ユーザーネーム認証に失敗しました。');
+            if (error) {
+                const status = error.context?.status || error.status || 0;
+                let serverMessage = '';
+                try {
+                    const response = error.context;
+                    if (response && typeof response.clone === 'function') {
+                        const body = await response.clone().json();
+                        serverMessage = String(body?.error || body?.message || body?.msg || '');
+                    }
+                } catch (_) {}
+                const combined = (serverMessage + ' ' + (error.message || '')).toLowerCase();
+                if (status === 409 || /already|duplicate|exists|重複|既に|すでに/.test(combined)) {
+                    throw new Error('このユーザーネームは既に使われています。別の名前をお試しください。');
+                }
+                if (status === 400) {
+                    throw new Error(serverMessage || '入力内容に問題があります。ユーザーネームをご確認ください。');
+                }
+                throw new Error(serverMessage || error.message || 'ユーザーネーム認証に失敗しました。時間をおいて再度お試しください。');
+            }
             if (!data?.session?.access_token || !data?.session?.refresh_token) {
                 throw new Error(data?.error || 'ログインセッションを作成できませんでした。');
             }
