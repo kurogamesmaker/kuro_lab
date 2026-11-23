@@ -5107,5 +5107,25 @@ body.kuro-page #postFeed article[data-post-card] {
 }
 </style>
 
+
+<style id="kuro-desktop-nav-icon-visibility-fix">
+/* Fix invisible black navigation glyphs: keep rail unchanged, force visible icon color. */
+@media (min-width:768px) {
+  body.kuro-page #kuroBottomNav [data-tab] .kuro-tab-icon,
+  body.kuro-page #kuroBottomNav [data-tab] .kuro-tab-icon::before,
+  body.kuro-page #kuroBottomNav [data-tab] > i,
+  body.kuro-page #kuroBottomNav [data-tab] svg {
+    color:#f4f4f5 !important;
+    fill:#f4f4f5 !important;
+    stroke:#f4f4f5 !important;
+    opacity:1 !important;
+    filter:none !important;
+  }
+  body.kuro-page #kuroBottomNav [data-tab][aria-current=page] .kuro-tab-icon,
+  body.kuro-page #kuroBottomNav [data-tab][aria-current=page] .kuro-tab-icon::before,
+  body.kuro-page #kuroBottomNav [data-tab][aria-current=page] > i,
+  body.kuro-page #kuroBottomNav [data-tab][aria-current=page] svg { color:#a78bfa !important; fill:#a78bfa !important; stroke:#a78bfa !important; }
+}
+</style>
 </body>
 </html>
