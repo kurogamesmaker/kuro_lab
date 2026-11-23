@@ -950,7 +950,9 @@ img#profileAvatarPreview:not(.hidden) {
 </div>
 
     
-<main id="homeFeedView" class="flex-grow max-w-3xl mx-auto px-4 sm:px-6 py-7 sm:py-10 w-full">
+<button id="kuroTopNotifications" type="button" onclick="openNotifications()" aria-label="通知" title="通知" class="fixed top-3 right-3 z-[95] w-11 h-11 rounded-full border border-white/10 bg-zinc-900/90 backdrop-blur flex items-center justify-center text-gray-200 shadow-lg hover:bg-zinc-800"><i class="fa-regular fa-bell text-lg"></i></button>
+
+    <main id="homeFeedView" class="flex-grow max-w-3xl mx-auto px-4 sm:px-6 py-7 sm:py-10 w-full">
         <h1 class="sr-only">KURO｜短い投稿でつながるSNS</h1>
         <div id="postPullIndicator" class="kuro-pull-indicator" aria-live="polite"><i class="fa-solid fa-arrow-down"></i><span>下に引っ張って更新</span></div>
         <div class="mb-6">
@@ -1411,12 +1413,12 @@ img#profileAvatarPreview:not(.hidden) {
     </style>
 
     <nav id="kuroBottomNav" aria-label="メインナビゲーション" class="fixed bottom-0 inset-x-0 z-[90] bg-kuro-950/95 backdrop-blur-xl border-t border-kuro-800">
-      <div class="max-w-xl mx-auto grid grid-cols-5 px-1 pt-2">
+      <div class="max-w-xl mx-auto grid grid-cols-4 px-1 pt-2">
         <button type="button" data-tab="home" aria-label="ホーム" aria-current="page" onclick="switchTab('home')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900"><i class="kuro-tab-icon fa-solid fa-house text-xl"></i><span class="text-[10px] font-medium">ホーム</span></button>
         <button type="button" data-tab="profile" aria-label="マイページ" onclick="switchTab('profile')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900"><i class="kuro-tab-icon fa-regular fa-user text-xl"></i><span class="text-[10px] font-medium">マイページ</span></button>
         <button type="button" data-tab="chat" aria-label="個別チャット" onclick="switchTab('chat')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900"><i class="kuro-tab-icon fa-regular fa-comment text-xl"></i><span class="text-[10px] font-medium">チャット</span></button>
         <button type="button" data-tab="publicChat" aria-label="オープンチャット" onclick="switchTab('publicChat')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900"><i class="kuro-tab-icon fa-solid fa-comments text-xl"></i><span class="text-[10px] font-medium">オプチャ</span></button>
-        <button type="button" data-tab="notifications" aria-label="通知" onclick="openNotifications()" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900 relative"><i class="kuro-tab-icon fa-regular fa-bell text-xl"></i><span class="text-[10px] font-medium">通知</span></button>
+        
         
       </div>
     </nav>
