@@ -261,20 +261,33 @@ export class Room {
       privateEnvelope = await this.sealUnonPrivate(userId, nextPrivate);
     }
     let winProof = null;
+    const proofPeer = Array.from(this.sockets.values()).find(peer => peer.id === userId);
+    const proofGameId = (proofPeer && proofPeer.gameId) || this.gameId || "";
+    const proofRoomId = (proofPeer && proofPeer.roomId) || this.roomId || "";
     if (nextGame.phase === "finished" && nextGame.result &&
-        nextGame.result.reason === "win" && nextGame.result.winnerId === userId &&
-        this.gameId === UNON_GAME_ID &&
-        UUID_RE.test(String(nextGame.matchId || "")) && validId(this.roomId)) {
-      const now = Math.floor(Date.now() / 1000);
-      winProof = await issueTicket({
-        typ: "unon_win",
-        sub: userId,
-        room: this.roomId,
-        game: this.gameId,
-        match: nextGame.matchId,
-        iat: now,
-        exp: now + 600,
-      }, this.env.TICKET_SECRET);
+        nextGame.result.reason === "win" && nextGame.result.winnerId === userId) {
+      if (proofGameId === UNON_GAME_ID &&
+          UUID_RE.test(String(nextGame.matchId || "")) && validId(proofRoomId) &&
+          typeof this.env.TICKET_SECRET === "string" && this.env.TICKET_SECRET.length > 0) {
+        const now = Math.floor(Date.now() / 1000);
+        winProof = await issueTicket({
+          typ: "unon_win",
+          sub: userId,
+          room: proofRoomId,
+          game: proofGameId,
+          match: nextGame.matchId,
+          iat: now,
+          exp: now + 600,
+        }, this.env.TICKET_SECRET);
+        console.info("[kuro-online-room] UNON online win proof issued", {
+          matchId: nextGame.matchId, userId, roomId: proofRoomId,
+        });
+      } else {
+        console.error("[kuro-online-room] UNON online win proof context missing", {
+          matchId: nextGame.matchId, userId, gameId: proofGameId,
+          hasRoomId: !!proofRoomId, hasTicketSecret: !!this.env.TICKET_SECRET,
+        });
+      }
     }
     return {
       phase: nextGame.phase === "finished" ? "finished" : "playing",
@@ -470,7 +483,7 @@ export class Room {
       const pair = new WebSocketPair();
       const client = pair[0], server = pair[1];
       server.accept();
-      const player = { id: userId, name: userName, gameId, isHost, joinedAt: Date.now() };
+      const player = { id: userId, name: userName, gameId, roomId: this.roomId, isHost, joinedAt: Date.now() };
       this.sockets.set(server, player);
       server.addEventListener("close", () => this.removeSocket(server, userId));
       server.addEventListener("error", () => this.removeSocket(server, userId));
