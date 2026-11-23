@@ -1,5 +1,7 @@
 const encoder = new TextEncoder();
 const SUPABASE_FUNCTION = "kurogames-online";
+const UNON_GAME_ID = "faa155cb-2143-4361-9a96-dc759d334e46";
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_MESSAGE_BYTES = 32 * 1024;
 const MAX_PLAYERS = 35;
 const ROOM_IDLE_TTL_MS = 15 * 60 * 1000;
@@ -258,6 +260,21 @@ export class Room {
     if (nextPrivate && (!previousSplit || JSON.stringify(previousPrivate) !== JSON.stringify(nextPrivate))) {
       privateEnvelope = await this.sealUnonPrivate(userId, nextPrivate);
     }
+    let winProof = null;
+    if (nextGame.phase === "finished" && nextGame.result &&
+        nextGame.result.winnerId === userId && this.gameId === UNON_GAME_ID &&
+        UUID_RE.test(String(nextGame.matchId || "")) && validId(this.roomId)) {
+      const now = Math.floor(Date.now() / 1000);
+      winProof = await issueTicket({
+        typ: "unon_win",
+        sub: userId,
+        room: this.roomId,
+        game: this.gameId,
+        match: nextGame.matchId,
+        iat: now,
+        exp: now + 600,
+      }, this.env.TICKET_SECRET);
+    }
     return {
       phase: nextGame.phase === "finished" ? "finished" : "playing",
       matchId: nextGame.matchId,
@@ -266,6 +283,7 @@ export class Room {
       events: Array.isArray(events) ? events.slice(0, 24) : [],
       removeId: removeId || null,
       privateEnvelope,
+      winProof,
     };
   }
   async broadcastUnonPatch(previousGame, nextGame, events, removeId, sourceSocket) {
@@ -429,6 +447,8 @@ export class Room {
   async fetch(request) {
     const userId = request.headers.get("x-kuro-user-id") || "";
     const gameId = request.headers.get("x-kuro-game-id") || "";
+    this.gameId = gameId;
+    this.roomId = request.headers.get("x-kuro-room-id") || "";
     const userName = (request.headers.get("x-kuro-user-name") || "プレイヤー").slice(0, 40);
     const isHost = request.headers.get("x-kuro-user-host") === "1";
     if (!userId || !gameId) return json({ error: "trusted_identity_required" }, 401);
@@ -702,6 +722,33 @@ export default {
       return json({ error: "account_required", message: "オンライン対戦にはKUROアカウントへのログインが必要です。" }, 410, headers);
     }
     if (url.pathname === "/ticket") return createTicket(request, env);
+    if (url.pathname === "/verify-unon-win" && request.method === "POST") {
+      let body;
+      try {
+        const raw = await request.text();
+        if (raw.length > 8192) return json({ error: "proof_too_large" }, 413);
+        body = JSON.parse(raw);
+      } catch (_) {
+        return json({ error: "invalid_json" }, 400);
+      }
+      const claims = await verifyTicket(body && body.proof, env.TICKET_SECRET || "");
+      if (!claims || claims.typ !== "unon_win" || claims.game !== UNON_GAME_ID ||
+          !UUID_RE.test(String(claims.sub || "")) ||
+          !UUID_RE.test(String(claims.match || "")) ||
+          !validId(claims.room)) {
+        return json({ error: "invalid_or_expired_unon_win_proof" }, 403, { "cache-control": "no-store" });
+      }
+      return json({
+        ok: true,
+        claims: {
+          sub: claims.sub,
+          room: claims.room,
+          game: claims.game,
+          match: claims.match,
+          exp: claims.exp,
+        },
+      }, 200, { "cache-control": "no-store" });
+    }
     const match = url.pathname.match(/^\/room\/([A-Za-z0-9_-]{1,128})$/);
     if (match) {
       if (request.headers.get("Upgrade") !== "websocket") return json({ error: "websocket_required" }, 426);
@@ -715,6 +762,7 @@ export default {
       headers.set("x-kuro-user-name", claims.name || "プレイヤー");
       headers.set("x-kuro-user-host", claims.host === true ? "1" : "0");
       headers.set("x-kuro-game-id", claims.game);
+      headers.set("x-kuro-room-id", roomId);
       const forwarded = new Request(request, { headers });
       const roomKey = claims.game + ":" + roomId;
       return env.ROOMS.get(env.ROOMS.idFromName(roomKey)).fetch(forwarded);
