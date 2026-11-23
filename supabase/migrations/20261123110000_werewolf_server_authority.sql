@@ -244,7 +244,13 @@ begin
   v_players := coalesce(v_data->'players','[]'::jsonb);
   if not exists(select 1 from jsonb_array_elements(v_players) p where p->>'uid'=p_user_id::text) then raise exception 'PLAYER_NOT_IN_GAME'; end if;
 
-  if p_action='set_config' then
+  if p_action='disband' then
+    if v_room.host_user_id<>p_user_id then raise exception 'HOST_ONLY_ACTION'; end if;
+    v_data:=v_data||jsonb_build_object('status','disbanded','players','[]'::jsonb,'gameState',null);
+    delete from public.werewolf_private_sessions where room_id=p_room_id;
+    update public.game_online_rooms set game_data=v_data,status='closed',game_data_updated_at=now() where id=p_room_id;
+    return jsonb_build_object('ok',true,'state',public.kuro_werewolf_state(p_game_id,p_room_id,p_user_id));
+  elsif p_action='set_config' then
     if v_room.host_user_id<>p_user_id then raise exception 'HOST_ONLY_ACTION'; end if;
     if coalesce(v_data->>'status','lobby')<>'lobby' then raise exception 'GAME_ALREADY_STARTED'; end if;
     v_config := coalesce(p_payload->'config','{}'::jsonb);
@@ -531,12 +537,6 @@ begin
         'uid',p->>'uid','kuroId',p->'kuroId','name',p->>'name','isAlive',true
       ) order by ord),'[]'::jsonb) from jsonb_array_elements(v_players) with ordinality x(p,ord));
       v_gs:=null; v_data:=v_data||jsonb_build_object('status','lobby','players',v_players,'gameState',null);
-
-    elsif p_action='disband' then
-      if v_room.host_user_id<>p_user_id then raise exception 'HOST_ONLY_ACTION'; end if;
-      v_gs:=null; v_data:=v_data||jsonb_build_object('status','disbanded','players','[]'::jsonb,'gameState',null);
-      update public.game_online_rooms set status='closed' where id=p_room_id;
-      delete from public.werewolf_private_sessions where room_id=p_room_id;
 
     else
       raise exception 'UNKNOWN_WEREWOLF_ACTION';
