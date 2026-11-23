@@ -453,7 +453,7 @@
   #opsAdminSection .ops-overview-shortcuts{grid-template-columns:1fr}
 }
 
-</style>
+.ops-personal-user-list{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:11px;background:#0b1524;padding:6px;display:grid;gap:5px}.ops-personal-user-row{width:100%;text-align:left;border:1px solid transparent;background:transparent;color:var(--text);padding:10px 12px;border-radius:8px;cursor:pointer}.ops-personal-user-row:hover{background:#17283d;border-color:#304b68}.ops-personal-user-row.selected{background:#183753;border-color:#3984b6}.ops-personal-user-row strong,.ops-personal-user-row small{display:block;overflow-wrap:anywhere}.ops-personal-user-row small{color:var(--muted);font-size:11px}.ops-personal-selected{padding:9px 12px;border-radius:9px;background:#14263a;border:1px solid #29435f;color:#a9d9ff;font-size:12px}@media(max-width:680px){.ops-personal-user-list{max-height:240px}}</style>
 \n</head>
 <body>
 <section id="loginView" class="login">
@@ -634,8 +634,10 @@
    <div class="toolbar"><div><strong>個人配信</strong><div class="sns-muted">指定したアカウントだけに通知を送信します。対象者を確認してから配信してください。</div></div></div>
    <form id="opsPersonalMessageForm" class="ops-form">
     <label>配信先サービス<select id="opsPersonalScope"><option value="all">全サービス</option><option value="lab">KURO Lab</option><option value="sns">KURO SNS</option><option value="games">KURO GAMES</option><option value="both">KURO Lab ＋ KURO SNS</option></select></label>
-    <label>ユーザー検索<input id="opsPersonalSearch" type="search" placeholder="ユーザー名・表示名・メールで絞り込み"></label>
-    <label>配信するユーザー<select id="opsPersonalTarget" required><option value="">ユーザーを読み込み中…</option></select></label>
+    <label>ユーザー検索<input id="opsPersonalSearch" type="search" placeholder="ユーザー名・表示名・メール・IDで検索"></label>
+    <div id="opsPersonalUserList" class="ops-personal-user-list" role="listbox" aria-label="配信先ユーザー一覧"><div class="empty">ユーザーを読み込み中…</div></div>
+    <div id="opsPersonalSelected" class="ops-personal-selected">配信先：未選択</div>
+    <select id="opsPersonalTarget" required hidden><option value="">配信先を選択</option></select>
     <input id="opsPersonalTitle" maxlength="120" required placeholder="通知タイトル">
     <textarea id="opsPersonalBody" maxlength="8000" rows="4" required placeholder="個人宛てメッセージ本文"></textarea>
     <input id="opsPersonalHref" type="url" placeholder="リンク（任意・HTTPSのみ）">
@@ -1373,19 +1375,22 @@ async function ensureOpsMessageTargets(){
  select.value=Array.from(select.options).some(o=>o.value===current)?current:"all";
 }
 function renderPersonalMessageTargets(){
- const select=$("#opsPersonalTarget"),search=$("#opsPersonalSearch");
- if(!select)return;
+ const list=$("#opsPersonalUserList"),select=$("#opsPersonalTarget"),search=$("#opsPersonalSearch"),selectedBox=$("#opsPersonalSelected");
+ if(!list||!select)return;
  const term=(search?.value||"").trim().toLowerCase();
  const rows=(opsUsers||[]).filter(u=>{
   const text=[u.display_name,u.username,u.email,u.id].filter(Boolean).join(" ").toLowerCase();
   return !term||text.includes(term);
  });
  const selected=select.value;
- select.innerHTML='<option value="">配信先ユーザーを選択</option>'+rows.map(u=>{
-  const label=(u.display_name||u.username||u.email||u.id);
-  return '<option value="'+esc(u.id)+'">'+esc(label)+' · '+esc(u.email||u.username||u.id)+'</option>';
- }).join("");
- if(rows.some(u=>u.id===selected))select.value=selected;
+ select.innerHTML='<option value="">配信先を選択</option>'+ (opsUsers||[]).map(u=>'<option value="'+esc(u.id)+'">'+esc(u.display_name||u.username||u.email||u.id)+'</option>').join("");
+ if(selected&&(opsUsers||[]).some(u=>u.id===selected))select.value=selected;
+ const chosen=(opsUsers||[]).find(u=>u.id===select.value);
+ if(selectedBox)selectedBox.textContent=chosen?'配信先：'+(chosen.display_name||chosen.username||chosen.email||chosen.id)+' · '+(chosen.email||chosen.username||chosen.id):'配信先：未選択';
+ list.innerHTML=rows.length?rows.map(u=>{
+  const label=u.display_name||u.username||u.email||u.id,detail=[u.username,u.email].filter(Boolean).join(" · ");
+  return '<button type="button" role="option" aria-selected="'+(u.id===select.value)+'" class="ops-personal-user-row '+(u.id===select.value?'selected':'')+'" data-personal-user="'+esc(u.id)+'"><strong>'+esc(label)+'</strong><small>'+esc(detail||u.id)+'</small></button>';
+ }).join(""):'<div class="empty">該当するユーザーはいません。</div>';
 }
 async function ensurePersonalMessageTargets(){
  await ensureOpsMessageTargets();
@@ -1904,6 +1909,8 @@ $("#opsMessagesRefresh").addEventListener("click",loadOpsMessages);
 $("#opsMessageForm").addEventListener("submit",sendOpsMessage);
 $("#opsPersonalMessageForm").addEventListener("submit",sendPersonalMessage);
 $("#opsPersonalSearch").addEventListener("input",renderPersonalMessageTargets);
+$("#opsPersonalUserList").addEventListener("click",e=>{const b=e.target.closest("[data-personal-user]");if(!b)return;$("#opsPersonalTarget").value=b.dataset.personalUser;renderPersonalMessageTargets();});
+
 $("#opsPersonalRefresh").addEventListener("click",loadOpsMessages);
 $("#labAnnForm").addEventListener("submit",saveLabAnnouncement);
 $("#labAnnRefresh").addEventListener("click",loadLabAnnouncements);
