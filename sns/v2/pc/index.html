@@ -1607,12 +1607,12 @@ img#profileAvatarPreview:not(.hidden) {
 
     <nav id="kuroBottomNav" aria-label="メインナビゲーション" class="fixed bottom-0 inset-x-0 z-[90] bg-kuro-950/95 backdrop-blur-xl border-t border-kuro-800">
       <div class="max-w-xl mx-auto grid grid-cols-6 px-1 pt-2">
-        <button type="button" data-tab="home" aria-label="ホーム" aria-current="page" onclick="switchTab('home')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900"><i class="kuro-tab-icon fa-solid fa-house text-xl"></i><span class="text-[10px] font-medium">ホーム</span></button>
-        <button type="button" data-tab="search" aria-label="検索" onclick="switchTab('search')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900"><i class="kuro-tab-icon fa-solid fa-magnifying-glass text-xl"></i><span class="text-[10px] font-medium">検索</span></button>
-        <button type="button" data-tab="chat" aria-label="個別チャット" onclick="switchTab('chat')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900"><i class="kuro-tab-icon fa-regular fa-comment text-xl"></i><span class="text-[10px] font-medium">チャット</span></button>
-        <button type="button" data-tab="publicChat" aria-label="オープンチャット" onclick="switchTab('publicChat')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900"><i class="kuro-tab-icon fa-solid fa-comments text-xl"></i><span class="text-[10px] font-medium">オプチャ</span></button>
-        <button type="button" data-tab="notifications" aria-label="通知" onclick="openNotifications()" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900 relative"><i class="kuro-tab-icon fa-regular fa-bell text-xl"></i><span class="text-[10px] font-medium">通知</span></button>
-        <button type="button" data-tab="profile" aria-label="マイページ" onclick="switchTab('profile')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900"><i class="kuro-tab-icon fa-regular fa-user text-xl"></i><span class="text-[10px] font-medium">マイページ</span></button>
+        <button type="button" data-tab="home" aria-label="ホーム" aria-current="page" onclick="switchTab('home')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900"><svg class="kuro-tab-icon kuro-inline-nav-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 10.8 12 3l9 7.8"/><path d="M5.5 9.5V21h13V9.5"/><path d="M9.5 21v-7h5v7"/></svg><span class="text-[10px] font-medium">ホーム</span></button>
+        <button type="button" data-tab="search" aria-label="検索" onclick="switchTab('search')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900"><svg class="kuro-tab-icon kuro-inline-nav-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><span class="text-[10px] font-medium">検索</span></button>
+        <button type="button" data-tab="chat" aria-label="個別チャット" onclick="switchTab('chat')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900"><svg class="kuro-tab-icon kuro-inline-nav-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.5 11.3a7.8 7.8 0 0 1-8.2 7.5 9.3 9.3 0 0 1-3.8-.8L3.5 20l1.3-4a7.1 7.1 0 0 1-1.2-4.7 7.8 7.8 0 0 1 8.2-7.5 7.8 7.8 0 0 1 8.7 7.5Z"/></svg><span class="text-[10px] font-medium">チャット</span></button>
+        <button type="button" data-tab="publicChat" aria-label="オープンチャット" onclick="switchTab('publicChat')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900"><svg class="kuro-tab-icon kuro-inline-nav-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 5.5h13a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3h-5l-4 3v-3H7a3 3 0 0 1-3-3Z"/><path d="M4 12.5H3a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h12"/></svg><span class="text-[10px] font-medium">オプチャ</span></button>
+        <button type="button" data-tab="notifications" aria-label="通知" onclick="openNotifications()" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900 relative"><svg class="kuro-tab-icon kuro-inline-nav-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z"/><path d="M10 21h4"/></svg><span class="text-[10px] font-medium">通知</span></button>
+        <button type="button" data-tab="profile" aria-label="マイページ" onclick="switchTab('profile')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900"><svg class="kuro-tab-icon kuro-inline-nav-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg><span class="text-[10px] font-medium">マイページ</span></button>
       </div>
     </nav>
 
@@ -5127,5 +5127,44 @@ body.kuro-page #postFeed article[data-post-card] {
   body.kuro-page #kuroBottomNav [data-tab][aria-current=page] svg { color:#a78bfa !important; fill:#a78bfa !important; stroke:#a78bfa !important; }
 }
 </style>
+
+<style id="kuro-desktop-inline-nav-icons-fix">
+/* Use inline SVGs so the desktop navigation does not depend on an external icon font. */
+@media (min-width:768px) {
+  body.kuro-page #kuroBottomNav [data-tab] .kuro-inline-nav-svg {
+    display:block !important;
+    width:22px !important;
+    height:22px !important;
+    min-width:22px !important;
+    min-height:22px !important;
+    max-width:none !important;
+    max-height:none !important;
+    overflow:visible !important;
+    color:#f4f4f5 !important;
+    fill:none !important;
+    stroke:currentColor !important;
+    opacity:1 !important;
+    visibility:visible !important;
+    filter:none !important;
+    transform:none !important;
+    flex:0 0 22px !important;
+  }
+  body.kuro-page #kuroBottomNav [data-tab] .kuro-inline-nav-svg path,
+  body.kuro-page #kuroBottomNav [data-tab] .kuro-inline-nav-svg circle,
+  body.kuro-page #kuroBottomNav [data-tab] .kuro-inline-nav-svg line,
+  body.kuro-page #kuroBottomNav [data-tab] .kuro-inline-nav-svg polyline {
+    fill:none !important;
+    stroke:currentColor !important;
+    stroke-width:1.8 !important;
+    stroke-linecap:round !important;
+    stroke-linejoin:round !important;
+    vector-effect:non-scaling-stroke;
+  }
+  body.kuro-page #kuroBottomNav [data-tab][aria-current=page] .kuro-inline-nav-svg {
+    color:#a78bfa !important;
+  }
+}
+</style>
+
 </body>
 </html>
