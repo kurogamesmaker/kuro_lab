@@ -27,7 +27,7 @@ h1{margin:10px 0 7px;font-size:clamp(28px,4vw,40px);letter-spacing:-1px}.intro{m
 .game-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .game-card{padding:17px;border:1px solid var(--line);border-radius:17px;background:#fff;box-shadow:0 6px 18px #203a5a08;min-width:0;transition:.16s}
 .game-card:hover{border-color:#bfd4f2;transform:translateY(-2px)}
-.card-head{display:flex;align-items:center;gap:11px;min-width:0}.game-icon{width:44px;height:44px;flex:0 0 44px;display:grid;place-items:center;border-radius:13px;background:#edf3ff;font-size:23px}
+.card-head{display:flex;align-items:center;gap:11px;min-width:0}.game-icon{width:44px;height:44px;flex:0 0 44px;display:grid;place-items:center;border-radius:13px;background:#edf3ff;font-size:23px}.game-icon img{display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit}
 .game-title{min-width:0;flex:1}.game-title b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:950}.game-title span{display:block;margin-top:4px;color:#8491a5;font-size:10px}
 .live-pill{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:99px;background:#eaf8f0;color:#298153;font-size:9px;font-weight:950;white-space:nowrap}.live-pill i{width:6px;height:6px;border-radius:50%;background:#33b56e}
 .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:15px}
@@ -93,7 +93,7 @@ async function cloudflareFetch(input,init){
 const db=window.supabase?.createClient?.(SUPABASE_URL,SUPABASE_KEY,{global:{fetch:cloudflareFetch},auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}});
 const $=id=>document.getElementById(id);
 const categoryIcons={table:"🃏",puzzle:"🧩",action:"🎯",typing:"⌨️",rpg:"⚔️",strategy:"♟️",casual:"🎮",sports:"🏅",racing:"🏎️",simulation:"🏙️",other:"🎮"};
-let snapshot=null,refreshTimer=null;
+let snapshot=null,refreshTimer=null,gameIcons=new Map(),iconsRequested=false;
 function setTotal(id,value){$(id).textContent=Number(value||0).toLocaleString("ja-JP");}
 function makeStat(label,value){
  const node=document.createElement("div");node.className="stat";
@@ -112,7 +112,13 @@ function render(){
  for(const game of rows){
   const card=document.createElement("article");card.className="game-card";
   const head=document.createElement("div");head.className="card-head";
-  const icon=document.createElement("div");icon.className="game-icon";icon.textContent=categoryIcons[game.category]||"🎮";
+  const icon=document.createElement("div");icon.className="game-icon";
+  const iconValue=String(gameIcons.get(String(game.id))||"").trim();
+  if(/^data:image\\//i.test(iconValue)||/^https?:\\/\\//i.test(iconValue)){
+   const image=document.createElement("img");image.src=iconValue;image.alt="";image.loading="lazy";image.decoding="async";image.referrerPolicy="no-referrer";
+   image.addEventListener("error",()=>{image.remove();icon.textContent=categoryIcons[game.category]||"🎮";},{once:true});
+   icon.append(image);
+  }else icon.textContent=iconValue||categoryIcons[game.category]||"🎮";
   const title=document.createElement("div");title.className="game-title";
   const name=document.createElement("b");name.textContent=game.title||"ゲーム";
   const sub=document.createElement("span");sub.textContent=Number(game.waiting||0)>0?"対戦相手を探している人がいます":"リアルタイム集計";
@@ -129,13 +135,23 @@ function render(){
  $("loading").hidden=true;$("error").hidden=true;
  $("lastUpdated").textContent="最終更新："+new Date(snapshot.generatedAt||Date.now()).toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
 }
+async function loadGameIcons(gameIds){
+ const ids=[...new Set((gameIds||[]).map(id=>String(id)).filter(Boolean))];
+ if(!db||!ids.length)return;
+ try{
+  const {data,error}=await db.from("game_studio_games").select("id,icon").in("id",ids);
+  if(error)throw error;
+  gameIcons=new Map((data||[]).map(row=>[String(row.id),String(row.icon||"")]));
+  render();
+ }catch(error){console.warn("[KURO GAMES activity] game icons could not be loaded:",error);}
+}
 async function refresh(){
  if(!db){$("loading").hidden=true;$("error").hidden=false;return;}
  try{
   const {data,error}=await db.functions.invoke("kurogames-activity",{body:{action:"summary"}});
   if(error)throw error;
   if(!data||!Array.isArray(data.games)||!data.totals)throw new Error("プレイ状況のデータ形式が正しくありません。");
-  snapshot=data;render();
+  snapshot=data;render();if(!iconsRequested){iconsRequested=true;loadGameIcons(data.games.map(game=>game.id));}
  }catch(error){
   console.warn("[KURO GAMES activity] refresh failed:",error);
   if(!snapshot){$("loading").hidden=true;$("error").hidden=false;}
