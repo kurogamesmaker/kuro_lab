@@ -1212,6 +1212,6 @@ window.KURO_GAMES_SET_ACTIVITY("playing", "solo");
 `kurogames-activity` は次の2つのactionを公開する。
 
 - `heartbeat`： `gameId`、`clientSessionId`、`status`、`opponentType` を受け取り、活動状態を更新する。ログインユーザーはサーバー側で認証し、ゲストIDはUUID形式を検証する。
-- `summary`：公開中のゲームごとの集計人数と全体合計だけを返す。生のPresence行やユーザーIDは返さない。
+- `summary`：公開中のゲームごとの集計人数と全体合計だけを返す。生のPresence行やユーザーIDは返さない。Presenceの有効期限は75秒、既存マッチング待機データの有効期限は既存RPCの仕様に合わせて45秒。
 
 データテーブル `game_activity_presence` はRLS有効、`public` / `anon` / `authenticated` の直接アクセスを禁止し、Edge Functionの `service_role` のみが読み書きする。
