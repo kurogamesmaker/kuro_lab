@@ -618,14 +618,15 @@
  </div>
  <div id="opsMessagesView" hidden>
   <section class="panel">
-   <div class="toolbar"><div><strong>共通通知センター</strong><div class="sns-muted">全利用者への一斉配信と、指定ユーザーへの個人配信を管理します。配信履歴と既読状況を確認できます。</div></div><button class="btn" id="opsMessagesRefresh">更新</button></div>
+   <div class="toolbar"><div><strong>共通通知センター</strong><div class="sns-muted">配信先サービスは全サービス共通に集約しています。全体配信と、検索・一覧から選ぶ個人配信を管理できます。</div></div><button class="btn" id="opsMessagesRefresh">更新</button></div>
+   <label>配信先サービス<select id="opsMessageScope"><option value="all">全サービス共通（KURO Lab・KURO SNS・KURO GAMES）</option></select></label>
    <form id="opsMessageForm" class="ops-form">
-    <label>送信先<select id="opsMessageTarget"><option value="all">全利用者（一斉配信）</option></select></label>
+    <label>配信対象<select id="opsMessageTarget"><option value="all">全利用者（全体配信）</option></select></label>
     <input id="opsMessageTitle" maxlength="120" required placeholder="メッセージのタイトル">
     <textarea id="opsMessageBody" maxlength="8000" rows="4" required placeholder="メッセージ本文"></textarea>
     <input id="opsMessageHref" type="url" placeholder="リンク（任意・HTTPSのみ）">
     <div class="ops-form-actions"><button type="submit" class="btn primary" id="opsMessageSend">メッセージを送信</button></div>
-    <div class="sns-muted" id="opsMessageStatus">通知は全サービス共通で配信され、各サービス内の通知一覧に表示されます。</div>
+    <div class="sns-muted" id="opsMessageStatus">通知は「全サービス共通」を選択すると、KURO Lab・KURO SNS・KURO GAMESの通知一覧に配信されます。</div>
    </form>
    <div class="list" id="opsMessagesList"><div class="empty">読み込み中…</div></div>
   </section>
@@ -1355,8 +1356,6 @@ async function sendSnsAnnouncement(event){
  finally{button.disabled=false;}
 }
 async function ensureOpsMessageTargets(){
- const select=$("#opsMessageTarget");
- if(!select)return;
  if(!opsUsers.length){
   const users=[];
   for(let page=1;page<=200;page++){
@@ -1366,12 +1365,8 @@ async function ensureOpsMessageTargets(){
   }
   opsUsers=users;
  }
- const current=select.value||"all";
- select.innerHTML='<option value="all">全利用者（一斉配信）</option>'+opsUsers.map(u=>{
-  const label=u.display_name||u.username||u.email||u.id;
-  return '<option value="user|'+esc(u.id)+'">'+esc(label)+' · '+esc(u.email||u.id)+'</option>';
- }).join("");
- select.value=Array.from(select.options).some(o=>o.value===current)?current:"all";
+ const select=$("#opsMessageTarget");
+ if(select)select.value="all";
 }
 function renderPersonalMessageTargets(){
  const list=$("#opsPersonalUserList"),select=$("#opsPersonalTarget"),search=$("#opsPersonalSearch"),selectedBox=$("#opsPersonalSelected");
@@ -1405,7 +1400,7 @@ async function sendPersonalMessage(event){
  if(!confirm("【個人配信】\n対象："+selected+"\n\nこのユーザーだけに共通通知を送信しますか？"))return;
  const button=$("#opsPersonalSend");button.disabled=true;
  try{
-  await opsInvoke({action:"send_admin_message",audience:"user",userId:target,title,content,href,serviceScope:"all"});
+  await opsInvoke({action:"send_admin_message",audience:"user",userId:target,title,content,href,serviceScope:$("#opsMessageScope").value});
   $("#opsPersonalMessageForm").reset();
   $("#opsPersonalSearch").value="";
   renderPersonalMessageTargets();
@@ -1442,15 +1437,14 @@ async function loadOpsMessages(){
 }
 async function sendOpsMessage(event){
  event.preventDefault();
- const target=$("#opsMessageTarget").value;
  const title=$("#opsMessageTitle").value.trim();
  const content=$("#opsMessageBody").value.trim();
  const href=$("#opsMessageHref").value.trim();
  if(!title||!content){alert("タイトルと本文を入力してください。");return;}
- const audience=target==="all"?"all":"user";
- const userId=audience==="user"?target.slice(5):"";
- const serviceScope="all";
- const targetLabel=audience==="all"?"全利用者":($("#opsMessageTarget").selectedOptions[0]?.textContent||"指定ユーザー");
+ const audience="all";
+ const userId="";
+ const serviceScope=$("#opsMessageScope").value;
+ const targetLabel="全利用者";
  if(!confirm(targetLabel+" に全サービス共通の通知を配信しますか？"))return;
  const button=$("#opsMessageSend");button.disabled=true;
  try{
