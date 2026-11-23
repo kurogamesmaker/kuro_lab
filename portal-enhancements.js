@@ -164,6 +164,23 @@
   function setupHeaderActions() {
     var header = document.querySelector(".portal-header-inner");
     if (!header) return;
+    if (!document.getElementById("portalNotificationBoxTrigger")) {
+      var notificationButton = document.createElement("button");
+      notificationButton.id = "portalNotificationBoxTrigger";
+      notificationButton.type = "button";
+      notificationButton.className = "portal-quick-button portal-notification-button";
+      notificationButton.setAttribute("aria-label", "通知BOX");
+      notificationButton.title = "このサービス内で通知を確認";
+      notificationButton.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg>';
+      var accountButton = document.getElementById("portal-account-button");
+      header.insertBefore(notificationButton, accountButton || null);
+    }
+    if (!document.getElementById("kuro-service-notification-box-script")) {
+      var notificationScript = document.createElement("script");
+      notificationScript.id = "kuro-service-notification-box-script";
+      notificationScript.src = "/service-notification-box.js?v=20261124box1";
+      document.body.appendChild(notificationScript);
+    }
     if (!document.getElementById("portal-toolbox-menu-wrap")) {
       var toolbox = document.createElement("div");
       toolbox.id = "portal-toolbox-menu-wrap";
