@@ -1466,6 +1466,7 @@ function initKuroRankingShowcase(){
   for(const [base,variants] of buckets){
    const hasBase=list.includes(base);
    if(variants.length>=2||hasBase){
+    if(hasBase){const baseIndex=loose.indexOf(base);if(baseIndex>=0)loose.splice(baseIndex,1);}
     const members=[];if(hasBase)members.push({mode:base,difficulty:"標準"});variants.forEach(v=>members.push(v));
     groups.push({key:"family:"+base,label:cleanGroupLabel(base),modes:members,order:Math.min(...members.map(v=>list.indexOf(v.mode)))});
    }else variants.forEach(v=>loose.push(v.mode));
