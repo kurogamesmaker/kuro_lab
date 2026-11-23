@@ -1471,6 +1471,8 @@ function initKuroRankingShowcase(){
  }
  function scoreText(game,row){
   const value=Number(row.score||0).toLocaleString("ja-JP");
+  const modeSetting=game.showcaseConfig?.modes?.[game.mode];
+  if(modeSetting&&typeof modeSetting.scoreSuffix==="string")return value+modeSetting.scoreSuffix;
   if(game.id===TICTACTOE_GAME_ID||/wins|_wins/.test(game.mode))return value+"勝";
   if(/score|normal_beginner/.test(game.mode))return value+"点";
   return value;
@@ -1498,7 +1500,10 @@ function initKuroRankingShowcase(){
    }
    const result=await rowsPromise;
    index=nextIndex;
-   const defaultTitle=game.title+(modeName(game.mode)?" · "+modeName(game.mode):"");
+   const modeSetting=game.showcaseConfig?.modes?.[game.mode]||{};
+   const customModeLabel=typeof modeSetting.label==="string"?modeSetting.label.trim():"";
+   const effectiveModeLabel=customModeLabel||modeName(game.mode);
+   const defaultTitle=game.title+(effectiveModeLabel?" · "+effectiveModeLabel:"");
    let customTicker="",tickerStyle={enabled:true,speed:30,direction:"left",textColor:"#164b8e",backgroundColor:"#eaf2ff"};
    try{
     const tickerMap=JSON.parse(localStorage.getItem("kuroGamesRankingTickerByGame")||"{}");
@@ -1615,10 +1620,17 @@ function initKuroRankingShowcase(){
      if(error)throw error;
      const levels=Array.isArray(data?.levels)?data.levels:[];
      const cpuDifficulties=Array.isArray(data?.cpuDifficulties)?data.cpuDifficulties:[];
-     const modes=game.id===TICTACTOE_GAME_ID?TICTACTOE_RULES:
+     const showcaseConfig=data?.showcaseConfig&&typeof data.showcaseConfig==="object"?data.showcaseConfig:{modes:{}};
+     const modeSettings=showcaseConfig.modes&&typeof showcaseConfig.modes==="object"?showcaseConfig.modes:{};
+     const baseModes=game.id===TICTACTOE_GAME_ID?TICTACTOE_RULES:
       (Array.isArray(data?.modes)&&data.modes.length?data.modes:["default"]);
+     const modes=baseModes.filter(mode=>modeSettings[mode]?.enabled!==false).sort((a,b)=>{
+      const ai=Number.isFinite(Number(modeSettings[a]?.order))?Number(modeSettings[a].order):1000+baseModes.indexOf(a);
+      const bi=Number.isFinite(Number(modeSettings[b]?.order))?Number(modeSettings[b].order):1000+baseModes.indexOf(b);
+      return ai-bi;
+     });
      const available=await Promise.all(modes.map(async mode=>{
-      const item={id:game.id,title:game.title,mode,levels,cpuDifficulties};
+      const item={id:game.id,title:game.title,mode,levels,cpuDifficulties,showcaseConfig};
       try{return (await fetchRanking(item,true)).length?item:null;}
       catch(err){console.debug("Ranking data skipped:",game.id,mode,err);return null;}
      }));
