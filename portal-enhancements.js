@@ -88,15 +88,29 @@
   function getUnreadCount() {
     var s = getState();
     if (!s || !s.data) return 0;
-    var read = s.data.preferences.readAnnouncements;
-    read = Array.isArray(read) ? read : [];
-    var readSet = new Set(read);
+    var preferences = s.data.preferences || {};
+    var read = Array.isArray(preferences.readAnnouncements) ? preferences.readAnnouncements : [];
+    var dismissed = new Set(Array.isArray(preferences.dismissedNotifications) ? preferences.dismissedNotifications : []);
+    var readAnnouncements = new Set(read);
     var mirrored = new Set((s.adminMessages || []).map(function (item) {
       return item && item.portal_announcement_id;
     }).filter(Boolean));
-    return (s.ann || []).filter(function (item) {
-      return item && item.id && !readSet.has(item.id) && !mirrored.has(item.id);
-    }).length + Number(s.requestUnread || 0) + Number(s.adminMessageUnread || 0) + Number(s.socialNotificationUnread || 0);
+    var adminReads = new Set((s.adminMessageReads || []).map(function (item) {
+      return item && item.message_id;
+    }).filter(Boolean));
+    var announcements = (s.ann || []).filter(function (item) {
+      return item && item.id && !readAnnouncements.has(item.id) && !mirrored.has(item.id) && !dismissed.has("announcement:" + item.id);
+    }).length;
+    var admin = (s.adminMessages || []).filter(function (item) {
+      return item && item.id && !adminReads.has(item.id) && !dismissed.has("admin:" + item.id);
+    }).length;
+    var social = (s.socialNotifications || []).filter(function (item) {
+      return item && item.id && !item.read_at && !dismissed.has("social:" + item.id);
+    }).length;
+    var replies = (s.requestNotifications || []).filter(function (item) {
+      return item && item.id && !item.read_at && !dismissed.has("reply:" + item.id);
+    }).length;
+    return announcements + admin + social + replies;
   }
 
   function badgeHtml() {
