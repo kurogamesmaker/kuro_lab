@@ -83,7 +83,18 @@ async function getUser(req: Request) {
   }
   return data.user;
 }
-async function getGame(gameId: unknown) {
+async async function getOptionalUser(req: Request) {
+  const authHeader = req.headers.get("authorization") ?? "";
+  const token = authHeader.match(/^Bearer\\s+(.+)$/i)?.[1];
+  // Cloudflare relayはゲスト時にpublishable keyをBearerとして補うため、
+  // JWT形式でない値は未ログインとして扱う。
+  if (!token || token.length > 8192 || token.split(".").length !== 3) return null;
+  const { data, error } = await admin.auth.getUser(token);
+  if (error || !data.user || data.user.is_anonymous) return null;
+  return data.user;
+}
+
+function getGame(gameId: unknown) {
   if (typeof gameId !== "string" || !UUID_RE.test(gameId)) {
     throw new HttpError(400, "有効なgameIdを指定してください。");
   }
@@ -144,15 +155,16 @@ async function getRoomMembers(roomId: string) {
     .order("joined_at", { ascending: true });
   if (error) throw new HttpError(500, "参加者一覧を取得できませんでした。");
   const ids = (members ?? []).map((m) => m.user_id);
-  let profiles = new Map<string, { kuro_id: string; username: string; avatar_url: string | null }>();
+  let profiles = new Map<string, { kuro_id: string; username: string; display_name: string; avatar_url: string | null }>();
   if (ids.length) {
     const { data, error: profileError } = await admin.from("profiles")
-      .select("id, kuro_id, username, avatar_url")
+      .select("id, kuro_id, username, display_name, avatar_url")
       .in("id", ids);
     if (profileError) throw new HttpError(500, "参加者プロフィールを取得できませんでした。");
     profiles = new Map((data ?? []).map((p) => [p.id, {
       kuro_id: p.kuro_id ?? "",
       username: p.username ?? "",
+      display_name: p.display_name ?? "",
       avatar_url: p.avatar_url ?? null,
     }]));
   }
@@ -160,14 +172,14 @@ async function getRoomMembers(roomId: string) {
     const hasProfile = profiles.has(m.user_id);
     const guestSuffix = String(m.user_id).replace(/-/g, "").slice(0, 4).toUpperCase();
     // Legacy guest room rows are retained until their rooms expire; they cannot authenticate or rejoin.
-    const profile = profiles.get(m.user_id) ?? { kuro_id: "", username: "旧ゲスト-" + guestSuffix, avatar_url: null };
+    const profile = profiles.get(m.user_id) ?? { kuro_id: "", username: "旧ゲスト-" + guestSuffix, display_name: "旧ゲスト-" + guestSuffix, avatar_url: null };
     return {
       userId: m.user_id,
       joinedAt: m.joined_at,
       user: {
         kuroId: profile.kuro_id || null,
         username: profile.username,
-        display_name: profile.username,
+        display_name: profile.display_name || profile.username,
         avatar_url: profile.avatar_url,
         isGuest: !hasProfile,
       },
@@ -348,6 +360,180 @@ async function handle(req: Request) {
     });
   }
 
+  if (action === "tictactoe_leaderboard") {
+    requirePublished(game);
+    requireFeature(settings.features, "ranking");
+    if (game.id !== "2dbd6773-2684-4f00-973e-c46acbc348e7") {
+      throw new HttpError(404, "〇✕ゲームのランキングではありません。");
+    }
+
+    const rule = typeof body.rule === "string" ? body.rule.trim() : "normal";
+    if (!["normal", "vanish", "gobble", "reverse"].includes(rule)) {
+      throw new HttpError(400, "ランキングルールが正しくありません。");
+    }
+    const metric = typeof body.metric === "string" ? body.metric : "wins";
+    if (!["wins", "win_rate", "current_streak", "best_streak"].includes(metric)) {
+      throw new HttpError(400, "ランキング項目が正しくありません。");
+    }
+
+    const PAGE_SIZE = 1000;
+    const statsRows: Array<{
+      user_id: string;
+      played: number | string;
+      wins: number | string;
+      losses: number | string;
+      draws: number | string;
+      current_streak: number | string;
+      best_streak: number | string;
+      updated_at: string;
+    }> = [];
+    for (let offset = 0; offset < 50000; offset += PAGE_SIZE) {
+      const { data, error } = await admin.from("game_tictactoe_stats")
+        .select("user_id, played, wins, losses, draws, current_streak, best_streak, updated_at")
+        .eq("game_id", game.id)
+        .eq("rule", rule)
+        .range(offset, offset + PAGE_SIZE - 1);
+      if (error) throw new HttpError(500, "〇✕ゲームのランキングを取得できませんでした。");
+      const page = (data ?? []) as typeof statsRows;
+      statsRows.push(...page);
+      if (page.length < PAGE_SIZE) break;
+    }
+
+    const entries = statsRows.map(row => {
+      const played = Number(row.played) || 0;
+      const wins = Number(row.wins) || 0;
+      const losses = Number(row.losses) || 0;
+      const draws = Number(row.draws) || 0;
+      const currentStreak = Number(row.current_streak) || 0;
+      const bestStreak = Number(row.best_streak) || 0;
+      const score = metric === "win_rate"
+        ? (played ? Math.round((wins / played) * 1000) / 10 : 0)
+        : metric === "current_streak" ? currentStreak
+        : metric === "best_streak" ? bestStreak
+        : wins;
+      return {
+        userId: row.user_id, played, wins, losses, draws,
+        currentStreak, bestStreak, updatedAt: row.updated_at, score
+      };
+    });
+
+    // 勝率ランキングは10試合以上のプレイヤーだけを対象にする。
+    const ranked = entries
+      .filter(entry => metric !== "win_rate" || entry.played >= 10)
+      .sort((a, b) =>
+        b.score - a.score ||
+        b.wins - a.wins ||
+        b.played - a.played ||
+        String(a.updatedAt).localeCompare(String(b.updatedAt))
+      );
+
+    const viewer = await getOptionalUser(req);
+    const mine = viewer ? entries.find(entry => entry.userId === viewer.id) : null;
+    const visible = ranked.slice(0, 100);
+    const profileIds = Array.from(new Set([
+      ...visible.map(entry => entry.userId),
+      ...(viewer ? [viewer.id] : [])
+    ]));
+    const profileMap = new Map<string, { username: string; display_name: string }>();
+    if (profileIds.length) {
+      const { data: profiles, error } = await admin.from("profiles")
+        .select("id, username, display_name")
+        .in("id", profileIds);
+      if (error) throw new HttpError(500, "ランキングのプレイヤー名を取得できませんでした。");
+      for (const profile of profiles ?? []) {
+        profileMap.set(profile.id, {
+          username: profile.username || "プレイヤー",
+          display_name: profile.display_name || profile.username || "プレイヤー"
+        });
+      }
+    }
+
+    const rows = visible.map((entry, index) => {
+      const profile = profileMap.get(entry.userId);
+      const name = profile?.display_name || profile?.username || "プレイヤー";
+      return {
+        rank: index + 1,
+        score: entry.score,
+        user: { username: profile?.username || name, display_name: name, name }
+      };
+    });
+
+    let me: Record<string, unknown> | null = null;
+    if (viewer) {
+      const qualified = metric !== "win_rate" || (mine?.played ?? 0) >= 10;
+      const rankIndex = qualified ? ranked.findIndex(entry => entry.userId === viewer.id) : -1;
+      me = {
+        rank: rankIndex >= 0 ? rankIndex + 1 : null,
+        qualified,
+        played: mine?.played ?? 0,
+        wins: mine?.wins ?? 0,
+        losses: mine?.losses ?? 0,
+        draws: mine?.draws ?? 0,
+        currentStreak: mine?.currentStreak ?? 0,
+        bestStreak: mine?.bestStreak ?? 0
+      };
+    }
+
+    return reply(200, { rule, metric, rows, me });
+  }
+
+  if (action === "tictactoe_submit") {
+    const user = await getUser(req);
+    requirePublished(game);
+    requireFeature(settings.features, "ranking");
+    if (game.id !== "2dbd6773-2684-4f00-973e-c46acbc348e7") {
+      throw new HttpError(404, "〇✕ゲームの記録先ではありません。");
+    }
+
+    const rule = typeof body.rule === "string" ? body.rule.trim() : "";
+    if (!["normal", "vanish", "gobble", "reverse"].includes(rule)) {
+      throw new HttpError(400, "対戦ルールが正しくありません。");
+    }
+    const result = typeof body.result === "string" ? body.result : "";
+    if (!["win", "loss", "draw"].includes(result)) {
+      throw new HttpError(400, "対戦結果が正しくありません。");
+    }
+    if (typeof body.submissionId !== "string" || !UUID_RE.test(body.submissionId)) {
+      throw new HttpError(400, "対戦記録IDが正しくありません。");
+    }
+
+    let cpuDifficulty: string | null = null;
+    if (body.cpuDifficulty !== undefined && body.cpuDifficulty !== null && body.cpuDifficulty !== "") {
+      if (typeof body.cpuDifficulty !== "string") {
+        throw new HttpError(400, "CPU難易度が正しくありません。");
+      }
+      cpuDifficulty = body.cpuDifficulty.trim().toUpperCase();
+      if (!["EASY", "NORMAL", "HARD", "EXPERT"].includes(cpuDifficulty)) {
+        throw new HttpError(400, "CPU難易度が正しくありません。");
+      }
+    }
+
+    const { data, error } = await admin.rpc("kuro_record_tictactoe_result", {
+      p_game_id: game.id,
+      p_user_id: user.id,
+      p_rule: rule,
+      p_result: result,
+      p_submission_id: body.submissionId,
+      p_cpu_difficulty: cpuDifficulty
+    });
+    if (error) {
+      console.error("[kurogames-online] TicTacToe result RPC failed", error);
+      throw new HttpError(500, "〇✕ゲームの対戦結果を保存できませんでした。");
+    }
+    const saved = Array.isArray(data) ? data[0] : data;
+    if (!saved) throw new HttpError(500, "対戦結果の保存状態を取得できませんでした。");
+    return reply(200, {
+      ok: true,
+      recorded: saved.recorded === true,
+      played: Number(saved.played) || 0,
+      wins: Number(saved.wins) || 0,
+      losses: Number(saved.losses) || 0,
+      draws: Number(saved.draws) || 0,
+      currentStreak: Number(saved.current_streak) || 0,
+      bestStreak: Number(saved.best_streak) || 0
+    });
+  }
+
   if (action === "score_submit") {
     const user = await getUser(req);
     requirePublished(game);
@@ -452,6 +638,201 @@ async function handle(req: Request) {
 
 
 
+
+
+  if (
+    action === "sevens_matchmaking_join" || action === "sevens_matchmaking_status" ||
+    action === "sevens_matchmaking_cancel" || action === "sevens_matchmaking_ack"
+  ) {
+    const user = await getUser(req);
+    requirePublished(game);
+    requireMultiplayer(settings.features);
+
+    if (action === "sevens_matchmaking_join" || action === "sevens_matchmaking_status") {
+      const rpcName = action === "sevens_matchmaking_join"
+        ? "kuro_sevens_matchmaking_join" : "kuro_sevens_matchmaking_status";
+      const { data, error } = await admin.rpc(rpcName, {
+        p_game_id: game.id,
+        p_user_id: user.id,
+      });
+      if (error || !data) {
+        const message = error?.message || "";
+        if (message.includes("SEVENS_USER_ALREADY_IN_ROOM")) {
+          throw new HttpError(409, "すでに別のオンラインルームに参加しています。先に退出してください。");
+        }
+        console.error("[kurogames-online] Sevens matchmaking RPC failed", error);
+        throw new HttpError(500, "七並べのマッチング状態を取得できませんでした。");
+      }
+      if (data.status !== "matched" || typeof data.room_id !== "string") {
+        return reply(200, { status: data.status === "cancelled" ? "cancelled" : "waiting" });
+      }
+      const { data: room, error: roomError } = await admin.from("game_online_rooms")
+        .select("id, game_id, room_code, host_user_id, max_players, player_count, status, created_at, game_data")
+        .eq("id", data.room_id).eq("game_id", game.id).maybeSingle();
+      if (roomError || !room || room.status !== "waiting") {
+        await admin.rpc("kuro_sevens_matchmaking_cancel", { p_game_id: game.id, p_user_id: user.id });
+        return reply(200, { status: "cancelled" });
+      }
+      const { data: touchedMember, error: touchError } = await admin.from("game_online_room_members")
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq("room_id", room.id).eq("user_id", user.id)
+        .select("user_id").maybeSingle();
+      if (touchError) throw new HttpError(500, "七並べのルーム接続を更新できませんでした。");
+      if (!touchedMember) return reply(200, { status: "cancelled" });
+      const members = await getRoomMembers(String(room.id));
+      if (members.length < 2 || members.length > 4 || members.length !== Number(room.player_count)) {
+        return reply(200, { status: "waiting" });
+      }
+      return reply(200, { status: "matched", room, members });
+    }
+
+    if (action === "sevens_matchmaking_cancel") {
+      const { data, error } = await admin.rpc("kuro_sevens_matchmaking_cancel", {
+        p_game_id: game.id, p_user_id: user.id,
+      });
+      if (error) throw new HttpError(500, "七並べのマッチングをキャンセルできませんでした。");
+      return reply(200, { ok: true, cancelled: data === true });
+    }
+
+    const roomId = typeof body.roomId === "string" && UUID_RE.test(body.roomId) ? body.roomId : "";
+    if (!roomId) throw new HttpError(400, "roomIdが正しくありません。");
+    const { data, error } = await admin.rpc("kuro_sevens_matchmaking_ack", {
+      p_game_id: game.id, p_user_id: user.id, p_room_id: roomId,
+    });
+    if (error) throw new HttpError(500, "七並べのマッチング完了を確定できませんでした。");
+    return reply(200, { ok: true, acknowledged: data === true });
+  }
+
+  if (action === "sevens_room_vote") {
+    if (game.slug !== "kuro-game-mwslp23x") throw new HttpError(404, "このゲームでは使用できない操作です。");
+    const user = await getUser(req);
+    requirePublished(game);
+    requireMultiplayer(settings.features);
+    const roomId = typeof body.roomId === "string" && UUID_RE.test(body.roomId) ? body.roomId : "";
+    const vote = body.vote === "ready" || body.vote === "start" ? body.vote : "";
+    if (!roomId) throw new HttpError(400, "roomIdが正しくありません。");
+    if (!vote) throw new HttpError(400, "投票内容が正しくありません。");
+    const { data, error } = await admin.rpc("kuro_sevens_room_vote", {
+      p_game_id: game.id, p_room_id: roomId, p_user_id: user.id, p_vote: vote,
+    });
+    if (error || !data) {
+      const message = error?.message || "";
+      if (message.includes("SEVENS_READY_REQUIRED")) throw new HttpError(409, "先に「準備OK」を押してください。");
+      if (message.includes("SEVENS_REQUIRES_TWO_TO_FOUR_PLAYERS")) throw new HttpError(409, "2〜4人で参加してから開始してください。");
+      if (message.includes("ROOM_MEMBERSHIP_REQUIRED")) throw new HttpError(403, "このルームの参加者ではありません。");
+      if (message.includes("ROOM_NOT_FOUND")) throw new HttpError(404, "ルームが見つかりません。");
+      if (message.includes("SEVENS_INVALID_VOTE")) throw new HttpError(400, "投票内容が正しくありません。");
+      console.error("[kurogames-online] Sevens room vote failed", error);
+      throw new HttpError(500, "準備・開始状態を保存できませんでした。");
+    }
+    return reply(200, data);
+  }
+
+  if (
+    action === "sevens_game_start" || action === "sevens_game_state" ||
+    action === "sevens_game_action"
+  ) {
+    const user = await getUser(req);
+    requirePublished(game);
+    requireMultiplayer(settings.features);
+    const roomId = typeof body.roomId === "string" && UUID_RE.test(body.roomId) ? body.roomId : "";
+    if (!roomId) throw new HttpError(400, "roomIdが正しくありません。");
+
+    const errorText = (error: { message?: string } | null) => {
+      const message = error?.message || "";
+      const rules: Array<[string, number, string]> = [
+        ["ROOM_NOT_FOUND",404,"対戦ルームが見つかりません。"],
+        ["ROOM_MEMBERSHIP_REQUIRED",403,"このルームの参加者ではありません。"],
+        ["SEVENS_HOST_REQUIRED",403,"対戦を開始できるのはルームホストだけです。"],
+        ["SEVENS_REQUIRES_FOUR_PLAYERS",409,"4人がそろってから対戦を開始してください。"],
+        ["SEVENS_REQUIRES_TWO_TO_FOUR_PLAYERS",409,"2〜4人で参加してから開始してください。"],
+        ["SEVENS_NOT_ALL_READY",409,"全員の準備OKと開始がそろっていません。"],
+        ["SEVENS_GAME_NOT_STARTED",409,"対戦はまだ開始されていません。"],
+        ["SEVENS_GAME_FINISHED",409,"この対戦は終了しています。"],
+        ["SEVENS_NOT_YOUR_TURN",409,"今はあなたの手番ではありません。"],
+        ["SEVENS_INVALID_ACTION",400,"操作内容が正しくありません。"],
+        ["SEVENS_INVALID_CARD",400,"カードの指定が正しくありません。"],
+        ["SEVENS_CARD_NOT_IN_HAND",409,"そのカードはあなたの手札にありません。"],
+        ["SEVENS_CARD_ALREADY_PLAYED",409,"そのカードはすでに場に出ています。"],
+        ["SEVENS_CARD_NOT_PLAYABLE",409,"そのカードは今は出せません。"],
+        ["SEVENS_PASS_WHEN_PLAYABLE",409,"出せるカードがあるためパスできません。"],
+      ];
+      const match = rules.find(([code]) => message.includes(code));
+      if (match) throw new HttpError(match[1],match[2]);
+      console.error("[kurogames-online] Sevens RPC failed",error);
+      throw new HttpError(500,"七並べの対局処理に失敗しました。");
+    };
+
+    if (action === "sevens_game_start" || action === "sevens_game_state") {
+      const sinceVersion = Number(body.sinceVersion);
+      const useDeltaSync = action === "sevens_game_state" &&
+        Number.isSafeInteger(sinceVersion) && sinceVersion >= 0;
+      const rpcName = action === "sevens_game_start"
+        ? "kuro_sevens_game_start"
+        : useDeltaSync ? "kuro_sevens_game_sync" : "kuro_sevens_game_state";
+      const rpcArgs: Record<string, unknown> = {
+        p_game_id: game.id, p_room_id: roomId, p_user_id: user.id,
+      };
+      if (useDeltaSync) rpcArgs.p_since_version = sinceVersion;
+      const { data, error } = await admin.rpc(rpcName, rpcArgs);
+      if (error || !data) errorText(error);
+      return reply(200,data);
+    }
+
+    const gameAction = body.gameAction === "play" || body.gameAction === "pass" ? body.gameAction : "";
+    if (!gameAction) throw new HttpError(400,"カード操作の指定が正しくありません。");
+    const suit = gameAction === "play" ? Number(body.suit) : null;
+    const rank = gameAction === "play" ? Number(body.rank) : null;
+    const { data, error } = await admin.rpc("kuro_sevens_game_action", {
+      p_game_id: game.id, p_room_id: roomId, p_user_id: user.id,
+      p_action: gameAction, p_suit: suit, p_rank: rank,
+    });
+    if (error || !data) errorText(error);
+    return reply(200,data);
+  }
+
+  if (action === "sevens_leaderboard") {
+    const user = await getUser(req);
+    requirePublished(game);
+
+    // Count every completed online match. Paging by the unique result id
+    // avoids the previous 10,000-row ceiling and keeps the ranking cumulative.
+    const PAGE_SIZE = 1000;
+    const aggregate = new Map<string, { userId: string; wins: number }>();
+    for (let offset = 0; ; offset += PAGE_SIZE) {
+      const { data: results, error } = await admin.from("game_sevens_results")
+        .select("id, user_id, placement")
+        .eq("game_id", game.id)
+        .order("id", { ascending: true })
+        .range(offset, offset + PAGE_SIZE - 1);
+      if (error) throw new HttpError(500, "七並べランキングを取得できませんでした。");
+
+      for (const row of results ?? []) {
+        const current = aggregate.get(row.user_id) || { userId: row.user_id, wins: 0 };
+        if (row.placement === 1) current.wins += 1;
+        aggregate.set(row.user_id, current);
+      }
+      if (!results || results.length < PAGE_SIZE) break;
+    }
+
+    const entries = Array.from(aggregate.values());
+    const ids = entries.map((entry) => entry.userId);
+    let profiles = new Map<string, string>();
+    if (ids.length) {
+      const { data: profileRows, error: profileError } = await admin.from("profiles")
+        .select("id, username, display_name").in("id", ids);
+      if (profileError) throw new HttpError(500, "ランキングのプレイヤー名を取得できませんでした。");
+      profiles = new Map((profileRows ?? []).map((p) => [p.id, p.display_name || p.username || "プレイヤー"]));
+    }
+
+    const rows = entries.map((entry) => ({
+      name: profiles.get(entry.userId) || "プレイヤー",
+      userId: entry.userId,
+      wins: entry.wins,
+    })).sort((a, b) => b.wins - a.wins || a.name.localeCompare(b.name));
+
+    return reply(200, { rows, myUserId: user.id, period: "all" });
+  }
 
   if (action === "daifugo_start" || action === "daifugo_state" || action === "daifugo_action") {
     const user = await getUser(req);
@@ -761,6 +1142,22 @@ async function handle(req: Request) {
         .select("user_id").maybeSingle();
       if (memberError) throw new HttpError(500, "ルーム接続を更新できませんでした。");
       if (!member) throw new HttpError(403, "このルームの参加者ではありません。");
+
+      // Prune room members whose heartbeat stopped after a refresh or tab close.
+      const staleBefore = new Date(Date.now() - 30000).toISOString();
+      const { data: staleMembers, error: staleMembersError } = await admin.from("game_online_room_members")
+        .select("user_id")
+        .eq("room_id", roomId)
+        .lt("last_seen_at", staleBefore);
+      if (staleMembersError) throw new HttpError(500, "退出済みプレイヤーを整理できませんでした。");
+      for (const staleMember of staleMembers ?? []) {
+        const { error: staleLeaveError } = await admin.rpc("kuro_leave_online_room", {
+          p_room_id: roomId,
+          p_user_id: staleMember.user_id,
+        });
+        if (staleLeaveError) console.error("[kurogames-online] stale room member cleanup failed", staleLeaveError);
+      }
+
       const { data: room, error: roomError } = await admin.from("game_online_rooms")
         .select("id, game_id, host_user_id, status").eq("id", roomId).eq("game_id", game.id).maybeSingle();
       if (roomError || !room) throw new HttpError(404, "ルームが見つかりません。");
@@ -770,12 +1167,20 @@ async function handle(req: Request) {
         .order("id", { ascending: true }).limit(100);
       if (error) throw new HttpError(500, "マルチプレイ通信を受信できませんでした。");
       const members = await getRoomMembers(roomId);
+      const { data: voteRows, error: voteError } = await admin.from("game_sevens_room_votes")
+        .select("user_id, ready, start_vote")
+        .eq("room_id", roomId);
+      if (voteError) throw new HttpError(500, "準備状態を取得できませんでした。");
+      const votes = (voteRows ?? []).map((v) => ({
+        userId: v.user_id, ready: v.ready === true, start: v.start_vote === true,
+      }));
       return reply(200, {
         messages: (messages ?? []).map((m) => ({
           id: m.id, from: m.sender_user_id, type: m.event_type,
           data: m.payload, sentAt: m.created_at,
         })),
         members,
+        votes,
         roomStatus: room.status,
         hostUserId: room.host_user_id,
         cursor: afterId,
