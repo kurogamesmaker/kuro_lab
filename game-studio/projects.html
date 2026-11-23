@@ -102,13 +102,7 @@ async function loadPublishedGames(){
    const u=new URL("/game-studio/code-v5.html",location.origin);u.searchParams.set("publishedId",game.id);u.searchParams.set("v","20261123ranking-mode-all-display-v2");edit.href=u.pathname+u.search;
    const play=document.createElement("a");play.className="btn";play.textContent="ゲームを見る";play.href="/games/play/?id="+encodeURIComponent(game.id);play.target="_blank";play.rel="noopener";
    const del=document.createElement("button");del.className="btn danger";del.textContent="削除";del.dataset.publishedDelete=game.id;actions.append(edit,play,del);
-   const tickerBox=document.createElement("div");tickerBox.style.cssText="padding:10px 12px 12px;border-top:1px solid #e8edf5;background:#f8fbff";
-   tickerBox.innerHTML='<label style="display:block;font-size:11px;font-weight:900;color:#50637f;margin-bottom:6px">📣 ランキングバーの表示文字</label><input maxlength="160" placeholder="空欄ならゲーム名" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #dbe5f2;border-radius:8px;background:#fff;font-size:12px"><button type="button" style="margin-top:7px;padding:7px 10px;border:0;border-radius:7px;background:#347fe2;color:#fff;font-weight:900;font-size:11px">保存</button><small style="display:block;margin-top:5px;color:#7a8ba4;font-size:10px">空欄で保存するとゲーム名に戻ります。</small>';
-   const tickerInput=tickerBox.querySelector("input"),tickerSave=tickerBox.querySelector("button");
-   let tickerMap={};try{tickerMap=JSON.parse(localStorage.getItem("kuroGamesRankingTickerByGame")||"{}");}catch(_){tickerMap={};}
-   tickerInput.value=tickerMap[game.id]||"";
-   tickerSave.onclick=()=>{try{const map=JSON.parse(localStorage.getItem("kuroGamesRankingTickerByGame")||"{}");const value=tickerInput.value.trim();if(value)map[game.id]=value;else delete map[game.id];localStorage.setItem("kuroGamesRankingTickerByGame",JSON.stringify(map));tickerSave.textContent="保存しました";setTimeout(()=>tickerSave.textContent="保存",1400);}catch(_){tickerSave.textContent="保存失敗";}};
-   card.append(preview,body,actions,tickerBox);grid.insertBefore(card,empty);
+   card.append(preview,body,actions);grid.insertBefore(card,empty);
   });
  }catch(e){status.textContent="取得できませんでした: "+(e.message||"通信エラー");}
 }
