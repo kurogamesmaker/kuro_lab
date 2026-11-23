@@ -86,9 +86,31 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 /* Ranking title marquee is driven by Web Animations API so global reduced-motion CSS cannot accidentally freeze it. */
 #kuroRankingShowcase .rank-game.rank-marquee{
   display:flex!important;
-  align-items:center!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  gap:4px!important;
+  overflow:hidden!important;
+  white-space:normal!important;
+}
+#kuroRankingShowcase .rank-mode-mainline{
+  display:block!important;
+  width:100%!important;
+  min-width:0!important;
   overflow:hidden!important;
   white-space:nowrap!important;
+}
+#kuroRankingShowcase .rank-mode-custom-label{
+  display:block!important;
+  width:100%!important;
+  box-sizing:border-box;
+  padding:2px 1px 0;
+  color:inherit;
+  font-size:10px;
+  line-height:1.35;
+  font-weight:850;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  opacity:.92;
 }
 #kuroRankingShowcase .rank-game.rank-marquee::before{flex:0 0 auto!important;}
 #kuroRankingShowcase .rank-marquee-track{
@@ -1500,11 +1522,6 @@ function initKuroRankingShowcase(){
    }
    const result=await rowsPromise;
    index=nextIndex;
-   const modeSetting=game.showcaseConfig?.modes?.[game.mode]||null;
-   const hasCustomModeLabel=!!modeSetting&&typeof modeSetting.label==="string";
-   const effectiveModeLabel=hasCustomModeLabel?modeSetting.label.trim():modeName(game.mode);
-   const displayBase=customTicker||game.title;
-   const defaultTitle=displayBase+(effectiveModeLabel?" · "+effectiveModeLabel:"");
    let customTicker="",tickerStyle={enabled:true,speed:30,direction:"left",textColor:"#164b8e",backgroundColor:"#eaf2ff"};
    try{
     const tickerMap=JSON.parse(localStorage.getItem("kuroGamesRankingTickerByGame")||"{}");
@@ -1514,26 +1531,34 @@ function initKuroRankingShowcase(){
     const styleMap=JSON.parse(localStorage.getItem("kuroGamesRankingTickerStyleByGame")||"{}");
     if(styleMap&&styleMap[game.id]&&typeof styleMap[game.id]==="object")tickerStyle=Object.assign(tickerStyle,styleMap[game.id]);
    }catch(_){}
+   const modeSetting=game.showcaseConfig?.modes?.[game.mode]||null;
+   const originalModeLabel=modeName(game.mode);
+   const customModeLabel=modeSetting&&typeof modeSetting.label==="string"?modeSetting.label.trim():"";
+   const displayBase=customTicker||game.title;
+   const officialTitle=displayBase+(originalModeLabel?" · "+originalModeLabel:"");
    const safeTickerColor=(value,fallback)=>/^#[0-9a-f]{6}$/i.test(String(value||""))?String(value):fallback;
    const tickerEnabled=tickerStyle.enabled!==false;
    const tickerSpeed=Math.max(10,Math.min(100,Math.round(Number(tickerStyle.speed)||30)));
    const tickerDirection=tickerStyle.direction==="right"?"right":"left";
-   const displayTitle=customTicker||defaultTitle;
    titleEl.classList.remove("rank-marquee");titleEl.replaceChildren();titleEl.classList.add("rank-marquee");
    titleEl.style.setProperty("display",tickerEnabled?"flex":"none","important");
    titleEl.style.color=safeTickerColor(tickerStyle.textColor,"#164b8e");
    titleEl.style.backgroundColor=safeTickerColor(tickerStyle.backgroundColor,"#eaf2ff");
    if(tickerEnabled){
+    const mainLine=document.createElement("div");mainLine.className="rank-mode-mainline";
     const track=document.createElement("span");track.className="rank-marquee-track";
-    const first=document.createElement("span");first.textContent=displayTitle;track.append(first);titleEl.append(track);
+    const first=document.createElement("span");first.textContent=officialTitle;track.append(first);mainLine.append(track);titleEl.append(mainLine);
+    if(customModeLabel){
+     const subtitle=document.createElement("div");subtitle.className="rank-mode-custom-label";subtitle.textContent=customModeLabel;titleEl.append(subtitle);
+    }
     requestAnimationFrame(()=>{
      if(!titleEl.isConnected||!tickerEnabled)return;
      const gap=36;
      const textWidth=Math.max(1,first.getBoundingClientRect().width);
-     const viewportWidth=Math.max(1,titleEl.clientWidth-70);
+     const viewportWidth=Math.max(1,mainLine.clientWidth);
      const cycleDistance=textWidth+gap;
      const copies=Math.max(3,Math.ceil((viewportWidth+textWidth)/cycleDistance)+2);
-     for(let n=1;n<copies;n++){const copy=document.createElement("span");copy.textContent=displayTitle;track.append(copy);}
+     for(let n=1;n<copies;n++){const copy=document.createElement("span");copy.textContent=officialTitle;track.append(copy);}
      track.style.gap=gap+"px";
      const frames=tickerDirection==="right"
       ?[{transform:"translateX(-"+cycleDistance+"px)"},{transform:"translateX(0)"}]
@@ -1630,12 +1655,8 @@ function initKuroRankingShowcase(){
       const bi=Number.isFinite(Number(modeSettings[b]?.order))?Number(modeSettings[b].order):1000+baseModes.indexOf(b);
       return ai-bi;
      });
-     const available=await Promise.all(modes.map(async mode=>{
-      const item={id:game.id,title:game.title,mode,levels,cpuDifficulties,showcaseConfig};
-      try{return (await fetchRanking(item,true)).length?item:null;}
-      catch(err){console.debug("Ranking data skipped:",game.id,mode,err);return null;}
-     }));
-     return available.filter(Boolean);
+     // 区分はデータ件数で間引かず、ランキング記録が0件でもすべて掲載対象にする。
+     return modes.map(mode=>({id:game.id,title:game.title,mode,levels,cpuDifficulties,showcaseConfig}));
     }catch(err){console.debug("Ranking modes skipped:",game.id,err);return [];}
    }));
    return expanded.flat();
