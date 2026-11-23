@@ -404,7 +404,7 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
       try { socket.send(JSON.stringify({ type: "ping" })); } catch (_) {}
     }
   }, 25000);
-  statusWatch = setInterval(async () => { if (!active) return; try { const status = await invoke("room_poll", { roomId: roomData.id, afterId: null }); emitPlayers(status.members || []); if (status.roomStatus === "closed") { active = false; clearInterval(heartbeat); clearInterval(statusWatch); closeCallbacks.forEach(cb => { try { cb({ reason: "disbanded" }); } catch (e) { console.error(e); } }); try { if (socket) socket.close(1000, "room closed"); } catch (_) {} } } catch (e) { console.warn("room status check failed", e); } }, 30000);
+  statusWatch = setInterval(async () => { if (!active) return; try { const status = await invoke("room_poll", { roomId: roomData.id, afterId: null }); if (status.roomStatus === "closed") { active = false; clearInterval(heartbeat); clearInterval(statusWatch); closeCallbacks.forEach(cb => { try { cb({ reason: "disbanded" }); } catch (e) { console.error(e); } }); try { if (socket) socket.close(1000, "room closed"); } catch (_) {} } } catch (e) { console.warn("room status check failed", e); } }, 30000);
 
   return {
     room: roomData,
