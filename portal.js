@@ -42,6 +42,7 @@ function cloudflareFetch(input,init){
  });
 }
 var db=supabaseReady?window.supabase.createClient(SUPABASE_URL,PUBLISHABLE_KEY,{global:{fetch:useCloudflare?cloudflareFetch:window.fetch},auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}}):null;
+window.kuroPortalDB=db;
 function classifyApiRequest(input){
  try{
   var raw=typeof input==="string"?input:input&&input.url?input.url:String(input||"");
