@@ -104,7 +104,7 @@
     if (!trigger || trigger.dataset.kuroNbBound === "1") return;
     trigger.dataset.kuroNbBound = "1";
     trigger.classList.add("kuro-notification-box-trigger");
-    let badge = trigger.querySelector(".kuro-notification-box-badge");
+    let badge = trigger.querySelector(".kuro-notification-box-badge") || trigger.querySelector("#kuroNotificationBadge");
     if (!badge) {
       badge = document.createElement("span");
       badge.className = "kuro-notification-box-badge";
@@ -113,14 +113,16 @@
       badge.setAttribute("aria-hidden", "true");
       trigger.appendChild(badge);
     }
+    badge.classList.add("kuro-notification-box-badge");
     trigger.setAttribute("aria-haspopup", "dialog");
     trigger.setAttribute("aria-controls", PANEL_ID);
     trigger.setAttribute("aria-expanded", "false");
     trigger.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
+      event.stopImmediatePropagation();
       open();
-    });
+    }, true);
   }
 
   function ensurePanel() {
