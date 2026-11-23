@@ -38,6 +38,26 @@ function safeMode(value: unknown) {
   return mode;
 }
 
+function sanitizeRankingShowcaseConfig(value: unknown) {
+  const source = value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+  const rawModes = source.modes && typeof source.modes === "object" && !Array.isArray(source.modes)
+    ? source.modes as Record<string, unknown>
+    : {};
+  const modes: Record<string, { enabled: boolean; label: string; scoreSuffix: string | null; order: number }> = {};
+  for (const [mode, rawSetting] of Object.entries(rawModes).slice(0, 80)) {
+    if (!/^[A-Za-z0-9_-]{1,40}$/.test(mode) || !rawSetting || typeof rawSetting !== "object" || Array.isArray(rawSetting)) continue;
+    const setting = rawSetting as Record<string, unknown>;
+    const label = typeof setting.label === "string" ? setting.label.trim().slice(0, 64) : "";
+    const scoreSuffix = typeof setting.scoreSuffix === "string" ? setting.scoreSuffix.trim().slice(0, 10) : null;
+    const orderValue = Number(setting.order);
+    const order = Number.isFinite(orderValue) ? Math.max(0, Math.min(79, Math.floor(orderValue))) : 79;
+    modes[mode] = { enabled: setting.enabled !== false, label, scoreSuffix, order };
+  }
+  return { modes };
+}
+
 function safeSaveKey(value: unknown) {
   const key = typeof value === "string" ? value.trim() : "";
   if (!key || key.length > 64) {
@@ -240,6 +260,22 @@ async function handle(req: Request) {
     return reply(200, { ok: true, features: next, updatedAt });
   }
 
+  if (action === "ranking_showcase_config_update") {
+    await requireOwner(req, game);
+    requirePublished(game);
+    requireFeature(settings.features, "ranking");
+    const showcaseConfig = sanitizeRankingShowcaseConfig(body.config);
+    const nextFeatures = { ...settings.features, rankingShowcaseConfig: showcaseConfig };
+    const updatedAt = new Date().toISOString();
+    const { error } = await admin.from("game_online_settings").upsert({
+      game_id: game.id,
+      features: nextFeatures,
+      updated_at: updatedAt,
+    }, { onConflict: "game_id" });
+    if (error) throw new HttpError(500, "ランキング表示設定を保存できませんでした。");
+    return reply(200, { ok: true, showcaseConfig, updatedAt });
+  }
+
   if (action === "leaderboard_modes") {
     requirePublished(game);
     requireFeature(settings.features, "ranking");
@@ -250,7 +286,10 @@ async function handle(req: Request) {
       .limit(1000);
     if (error) throw new HttpError(500, "ランキングモードを取得できませんでした。");
     const modes = Array.from(new Set((rows ?? []).map((row) => row.mode).filter((mode) => typeof mode === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(mode)))).sort();
-    return reply(200, { modes: modes.length ? modes : ["default"] });
+    return reply(200, {
+      modes: modes.length ? modes : ["default"],
+      showcaseConfig: sanitizeRankingShowcaseConfig(settings.features.rankingShowcaseConfig),
+    });
   }
 
   if (action === "leaderboard") {
