@@ -1500,10 +1500,11 @@ function initKuroRankingShowcase(){
    }
    const result=await rowsPromise;
    index=nextIndex;
-   const modeSetting=game.showcaseConfig?.modes?.[game.mode]||{};
-   const customModeLabel=typeof modeSetting.label==="string"?modeSetting.label.trim():"";
-   const effectiveModeLabel=customModeLabel||modeName(game.mode);
-   const defaultTitle=game.title+(effectiveModeLabel?" · "+effectiveModeLabel:"");
+   const modeSetting=game.showcaseConfig?.modes?.[game.mode]||null;
+   const hasCustomModeLabel=!!modeSetting&&typeof modeSetting.label==="string";
+   const effectiveModeLabel=hasCustomModeLabel?modeSetting.label.trim():modeName(game.mode);
+   const displayBase=customTicker||game.title;
+   const defaultTitle=displayBase+(effectiveModeLabel?" · "+effectiveModeLabel:"");
    let customTicker="",tickerStyle={enabled:true,speed:30,direction:"left",textColor:"#164b8e",backgroundColor:"#eaf2ff"};
    try{
     const tickerMap=JSON.parse(localStorage.getItem("kuroGamesRankingTickerByGame")||"{}");
