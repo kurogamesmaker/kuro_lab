@@ -17,11 +17,15 @@ const CORS_HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
 };
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UNON_GAME_ID = "faa155cb-2143-4361-9a96-dc759d334e46";
+const ONLINE_ROOM_WORKER_URL = "https://kuro-online-room.kurogamesmaker.workers.dev";
 const DEFAULT_FEATURES = { ranking: false, cloudSave: false, multiplayer: false, rankingShowcase: false };
 const KNOWN_RANKING_MODES: Record<string, string[]> = {
+  "faa155cb-2143-4361-9a96-dc759d334e46": ["wins-online"],
   "2dbd6773-2684-4f00-973e-c46acbc348e7": ["normal", "vanish", "gobble", "reverse"],
   "2eb37847-1b7e-43e4-ad98-901d5b830ac4": ["wins-bot", "wins-online"],
   "903a4c45-37bb-4a4b-a259-a5a8245de998": ["werewolf_villager_wins", "werewolf_wolf_wins"],
+  "79c9921a-d57a-45b1-8271-1ee7042801dc": ["easy", "normal", "hard"],
 };
 class HttpError extends Error {
   status: number;
@@ -41,6 +45,25 @@ function safeMode(value: unknown) {
     throw new HttpError(400, "modeは英数字・_・-の40文字以内で指定してください。");
   }
   return mode;
+}
+
+async function verifyUnonWinProof(proof: string) {
+  if (!proof || proof.length > 4096) return null;
+  try {
+    const response = await fetch(ONLINE_ROOM_WORKER_URL + "/verify-unon-win", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ proof }),
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data && data.ok === true && data.claims && typeof data.claims === "object"
+      ? data.claims as Record<string, unknown>
+      : null;
+  } catch (error) {
+    console.error("[kurogames-online] UNON win proof verification failed", error);
+    return null;
+  }
 }
 
 function sanitizeRankingShowcaseConfig(value: unknown) {
@@ -346,6 +369,7 @@ async function handle(req: Request) {
         const profile = profileMap.get(row.user_id) ?? { kuro_id: "", username: "プレイヤー", avatar_url: null };
         return {
           rank: index + 1,
+          userId: row.user_id,
           score: row.score,
           mode: row.mode,
           createdAt: row.created_at,
@@ -564,6 +588,21 @@ async function handle(req: Request) {
     const submissionId = typeof body.submissionId === "string" && UUID_RE.test(body.submissionId)
       ? body.submissionId
       : crypto.randomUUID();
+
+    if (game.id === UNON_GAME_ID && mode === "wins-online") {
+      if (score !== 1 || metadata.metric !== "wins" || metadata.source !== "unon-online" ||
+          metadata.matchId !== submissionId || typeof metadata.roomId !== "string") {
+        throw new HttpError(400, "UNONオンライン勝利の記録データが正しくありません。");
+      }
+      const claims = typeof metadata.winProof === "string"
+        ? await verifyUnonWinProof(metadata.winProof)
+        : null;
+      if (!claims || claims.typ !== "unon_win" || claims.sub !== user.id ||
+          claims.game !== game.id || claims.match !== submissionId || claims.room !== metadata.roomId) {
+        throw new HttpError(403, "サーバーが確認した勝利記録ではありません。");
+      }
+    }
+
     // Use the database's atomic accumulator. game_scores is unique per
     // (game_id, user_id, mode), so a plain INSERT rejects every later win.
     // The RPC deduplicates submission IDs and increments the cumulative win count.
