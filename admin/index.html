@@ -618,15 +618,14 @@
  </div>
  <div id="opsMessagesView" hidden>
   <section class="panel">
-   <div class="toolbar"><div><strong>共通通知センター</strong><div class="sns-muted">全利用者への一斉配信と、指定ユーザーへの個人配信を管理します。配信先サービスと既読状況を確認できます。</div></div><button class="btn" id="opsMessagesRefresh">更新</button></div>
+   <div class="toolbar"><div><strong>共通通知センター</strong><div class="sns-muted">全利用者への一斉配信と、指定ユーザーへの個人配信を管理します。配信履歴と既読状況を確認できます。</div></div><button class="btn" id="opsMessagesRefresh">更新</button></div>
    <form id="opsMessageForm" class="ops-form">
-    <label>配信先サービス<select id="opsMessageScope"><option value="all">全サービス（KURO Lab・KURO SNS・KURO GAMES）</option><option value="both">KURO Lab ＋ KURO SNS</option><option value="lab">KURO Labのみ</option><option value="sns">KURO SNSのみ</option><option value="games">KURO GAMESのみ</option></select></label>
     <label>送信先<select id="opsMessageTarget"><option value="all">全利用者（一斉配信）</option></select></label>
     <input id="opsMessageTitle" maxlength="120" required placeholder="メッセージのタイトル">
     <textarea id="opsMessageBody" maxlength="8000" rows="4" required placeholder="メッセージ本文"></textarea>
     <input id="opsMessageHref" type="url" placeholder="リンク（任意・HTTPSのみ）">
     <div class="ops-form-actions"><button type="submit" class="btn primary" id="opsMessageSend">メッセージを送信</button></div>
-    <div class="sns-muted" id="opsMessageStatus">初期設定は全サービスへの一斉配信です。送信した通知は全サービス共通の通知センターに表示されます。</div>
+    <div class="sns-muted" id="opsMessageStatus">通知は全サービス共通で配信され、各サービス内の通知一覧に表示されます。</div>
    </form>
    <div class="list" id="opsMessagesList"><div class="empty">読み込み中…</div></div>
   </section>
@@ -1434,9 +1433,9 @@ async function loadOpsMessages(){
   opsMessages=data.messages||[];
   $("#opsMessagesList").innerHTML=opsMessages.length?opsMessages.map(m=>{
    const target=m.audience==="all"?"全利用者":(m.recipient?.display_name||m.recipient?.username||"個別利用者");
-   const scopeLabel=m.service_scope==="all"?"全サービス":m.service_scope==="both"?"KURO Lab ＋ KURO SNS":m.service_scope==="lab"?"KURO Lab":m.service_scope==="games"?"KURO GAMES":"KURO SNS";
+   const scopeLabel=m.service_scope==="all"?"全サービス共通":m.service_scope==="both"?"KURO Lab ＋ KURO SNS":m.service_scope==="lab"?"KURO Lab":m.service_scope==="games"?"KURO GAMES":"KURO SNS";
    const targetExtra=m.recipient_id?" · "+m.recipient_id:"";
-   return '<article class="ops-ann-item"><div class="ops-ann-copy"><div class="meta"><strong>'+esc(m.title)+'</strong><span class="ops-status '+(m.published?"":"banned")+'">'+(m.published?"配信中":"停止")+'</span><span>'+esc(date(m.created_at))+'</span></div><div class="sns-muted">配信先：'+esc(scopeLabel)+' · 送信先：'+esc(target)+esc(targetExtra)+' · 既読 '+Number(m.read_count||0)+' 件</div><p>'+esc(m.body)+'</p>'+(m.href?'<a href="'+esc(m.href)+'" target="_blank" rel="noopener noreferrer">リンクを開く ↗</a>':'')+'</div><div class="ops-inline-actions">'+(m.published?'<button class="btn" data-message-unpublish="'+esc(m.id)+'">配信停止</button>':'')+'</div></article>';
+   return '<article class="ops-ann-item"><div class="ops-ann-copy"><div class="meta"><strong>'+esc(m.title)+'</strong><span class="ops-status '+(m.published?"":"banned")+'">'+(m.published?"配信中":"停止")+'</span><span>'+esc(date(m.created_at))+'</span></div><div class="sns-muted">通知範囲：'+esc(scopeLabel)+' · 送信先：'+esc(target)+esc(targetExtra)+' · 既読 '+Number(m.read_count||0)+' 件</div><p>'+esc(m.body)+'</p>'+(m.href?'<a href="'+esc(m.href)+'" target="_blank" rel="noopener noreferrer">リンクを開く ↗</a>':'')+'</div><div class="ops-inline-actions">'+(m.published?'<button class="btn" data-message-unpublish="'+esc(m.id)+'">配信停止</button>':'')+'</div></article>';
   }).join(""):'<div class="empty">共通メッセージはまだありません。</div>';
   renderPersonalMessageHistory();
  }catch(e){$("#opsMessagesList").innerHTML='<div class="error">読み込みに失敗しました：'+esc(e.message)+'</div>';}
@@ -1450,16 +1449,14 @@ async function sendOpsMessage(event){
  if(!title||!content){alert("タイトルと本文を入力してください。");return;}
  const audience=target==="all"?"all":"user";
  const userId=audience==="user"?target.slice(5):"";
- const serviceScope=$("#opsMessageScope").value;
- 
- const scopeLabel=serviceScope==="all"?"全サービス（KURO Lab・KURO SNS・KURO GAMES）":serviceScope==="both"?"KURO Lab ＋ KURO SNS":serviceScope==="lab"?"KURO Labのみ":serviceScope==="games"?"KURO GAMESのみ":"KURO SNSのみ";
+ const serviceScope="all";
  const targetLabel=audience==="all"?"全利用者":($("#opsMessageTarget").selectedOptions[0]?.textContent||"指定ユーザー");
- if(!confirm(scopeLabel+" の "+targetLabel+" にお知らせを配信しますか？"))return;
+ if(!confirm(targetLabel+" に全サービス共通の通知を配信しますか？"))return;
  const button=$("#opsMessageSend");button.disabled=true;
  try{
   await opsInvoke({action:"send_admin_message",audience,userId,title,content,href,serviceScope});
   $("#opsMessageForm").reset();$("#opsMessageTarget").value="all";
-  $("#opsMessageStatus").textContent=scopeLabel+" に配信しました。全サービス共通の通知一覧にも反映されます。";
+  $("#opsMessageStatus").textContent="全サービス共通の通知として配信しました。各サービス内の通知一覧に反映されます。";
   await loadOpsMessages();await loadOpsAudit();
  }catch(e){alert("送信できませんでした："+e.message);}
  finally{button.disabled=false;}
