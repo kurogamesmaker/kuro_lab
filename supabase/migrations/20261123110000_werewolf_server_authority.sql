@@ -599,3 +599,7 @@ grant execute on function public.kuro_werewolf_join(uuid,uuid,uuid) to service_r
 grant execute on function public.kuro_werewolf_state(uuid,uuid,uuid) to service_role;
 grant execute on function public.kuro_werewolf_action(uuid,uuid,uuid,text,jsonb,uuid) to service_role;
 grant execute on function public.kuro_werewolf_sync_room(uuid) to service_role;
+
+-- Disable legacy RPC endpoints that used the old shared 4-digit room table.
+revoke all on function public.werewolf_join_room(text,text) from public, anon, authenticated;
+revoke all on function public.werewolf_update_room(text,jsonb,timestamptz,boolean) from public, anon, authenticated;
