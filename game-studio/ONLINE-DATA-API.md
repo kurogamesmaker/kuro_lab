@@ -1172,3 +1172,46 @@ KUROGAMESは、ゲーム固有モジュールが共通基盤から呼び出さ�
 - 上記DBテストは一時ルームを作成し、最後にロールバックして実データを残さず検証した。
 
 なお、全ゲーム共通のサーバールールモジュール登録・実行環境、Studioエディター、汎用マッチメーカーは別途未実装の設計項目であり、この人狼専用実装をもって汎用機能まで完成したとは扱わない。
+
+
+## リアルタイムプレイ状況（Activity Presence）
+
+KURO GAMESのプレイ状況ページは、`/games/activity/` と `kurogames-activity` Edge Functionを使用する。
+
+### 共通ラッパーからの自動送信
+
+- `games/play/index.html` がゲームiframeの読み込み後に活動Heartbeatを送信する。
+- Heartbeatは20秒ごとに送信し、75秒以上更新のない情報は集計から除外・削除する。
+- ログインユーザーは「ユーザーID × ゲームID」で重複を除く。ゲストはブラウザー内で生成したランダムIDを使う。
+- ゲーム画面を開いた直後は `playing / unknown` として記録する。
+- 既存の `game_online_matchmaking` の `waiting` 行も読み取り専用で集計する。マッチング成立済みの `matched` は待機人数に含めない。
+- 個人ID・ユーザー名・ルームコードは公開APIの応答に含めない。
+
+### ゲームHTMLから状態を明示する方法
+
+ゲームHTMLのiframe内から、共通ラッパーが提供する関数を呼び出す。
+
+```js
+// 人間同士の対戦相手を探している
+window.KURO_GAMES_SET_ACTIVITY("waiting", "human");
+
+// 人間同士のオンライン対戦が成立した
+window.KURO_GAMES_SET_ACTIVITY("playing", "human");
+
+// CPU・ボットと対戦中
+window.KURO_GAMES_SET_ACTIVITY("playing", "bot");
+
+// ソロプレイ中
+window.KURO_GAMES_SET_ACTIVITY("playing", "solo");
+```
+
+状態値は `playing` / `waiting`、対戦相手種別は `human` / `bot` / `solo` / `unknown` を使う。UIテキストからもCPU・BOTやマッチング操作を簡易検知するが、ゲーム固有の分岐がある場合は上記関数を明示的に呼び出し、誤判定を防ぐ。
+
+### API
+
+`kurogames-activity` は次の2つのactionを公開する。
+
+- `heartbeat`： `gameId`、`clientSessionId`、`status`、`opponentType` を受け取り、活動状態を更新する。ログインユーザーはサーバー側で認証し、ゲストIDはUUID形式を検証する。
+- `summary`：公開中のゲームごとの集計人数と全体合計だけを返す。生のPresence行やユーザーIDは返さない。
+
+データテーブル `game_activity_presence` はRLS有効、`public` / `anon` / `authenticated` の直接アクセスを禁止し、Edge Functionの `service_role` のみが読み書きする。
