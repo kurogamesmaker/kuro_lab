@@ -995,6 +995,59 @@ async function handle(req: Request) {
     return reply(200, { ok: true, acknowledged: data === true });
   }
 
+  if (action === "werewolf_action") {
+    const user = await getUser(req);
+    requirePublished(game);
+    requireMultiplayer(settings.features);
+    if (game.id !== "903a4c45-37bb-4a4b-a259-a5a8245de998") {
+      throw new HttpError(404, "このゲームでは使用できない操作です。");
+    }
+    const roomId = typeof body.roomId === "string" && UUID_RE.test(body.roomId) ? body.roomId : "";
+    const gameAction = typeof body.gameAction === "string" ? body.gameAction : "";
+    const allowed = new Set([
+      "set_config","reaction","start","confirm_role","force_start_day1",
+      "adjust_discuss_time","advance_vote","submit_vote","force_tally",
+      "night_action","force_finish_night","return_to_lobby","disband"
+    ]);
+    const payload = body.payload && typeof body.payload === "object" && !Array.isArray(body.payload)
+      ? body.payload as Record<string, unknown> : {};
+    const actionId = typeof body.actionId === "string" && UUID_RE.test(body.actionId) ? body.actionId : "";
+    if (!roomId || !allowed.has(gameAction) || !actionId) {
+      throw new HttpError(400, "人狼の操作内容が正しくありません。");
+    }
+    const { data, error } = await admin.rpc("kuro_werewolf_action", {
+      p_game_id: game.id, p_room_id: roomId, p_user_id: user.id,
+      p_action: gameAction, p_payload: payload, p_action_id: actionId
+    });
+    if (error) {
+      const message = error.message || "";
+      const rules: Array<[string, number, string]> = [
+        ["ROOM_MEMBERSHIP_REQUIRED",403,"このルームの参加者ではありません。"],
+        ["ROOM_NOT_FOUND",404,"ルームが見つかりません。"],
+        ["HOST_ONLY_ACTION",403,"この操作はルームホストだけが実行できます。"],
+        ["PLAYER_NOT_IN_GAME",403,"ゲーム参加者として登録されていません。"],
+        ["GAME_ALREADY_STARTED",409,"ゲームは既に始まっています。"],
+        ["GAME_NOT_STARTED",409,"ゲームはまだ始まっていません。"],
+        ["GAME_NOT_PLAYING",409,"ゲームは進行中ではありません。"],
+        ["GAME_NOT_FINISHED",409,"ゲーム終了後に実行できます。"],
+        ["WEREWOLF_REQUIRES_THREE_PLAYERS",409,"3人以上で開始してください。"],
+        ["ROLE_COUNT_EXCEEDS_PLAYERS",409,"役職数が参加人数を超えています。"],
+        ["INVALID_PHASE",409,"現在のフェーズでは実行できない操作です。"],
+        ["PLAYER_DEAD",409,"死亡したプレイヤーはこの操作を実行できません。"],
+        ["INVALID_VOTE_TARGET",400,"投票先を選び直してください。"],
+        ["ROLE_CANNOT_ACT",403,"この役職では夜行動できません。"],
+        ["INVALID_NIGHT_TARGET",400,"夜の対象を選び直してください。"],
+        ["ALREADY_ACTED",409,"この夜の行動は完了しています。"],
+        ["UNKNOWN_WEREWOLF_ACTION",400,"未対応の操作です。"]
+      ];
+      const match = rules.find(([code]) => message.includes(code));
+      if (match) throw new HttpError(match[1],match[2]);
+      console.error("[kurogames-online] Werewolf action failed", error);
+      throw new HttpError(500,"人狼の操作をサーバーで処理できませんでした。");
+    }
+    return reply(200, data || { ok: true });
+  }
+
   if (action === "room_list" || action === "room_create" || action === "room_join" || action === "room_leave" || action === "room_heartbeat" || action === "room_send" || action === "room_poll" || action === "room_state_get" || action === "room_state_update") {
     const user = await getUser(req);
     requirePublished(game);
@@ -1038,7 +1091,18 @@ async function handle(req: Request) {
         await admin.from("game_online_rooms").delete().eq("id", room.id);
         throw new HttpError(500, "ルーム参加者を登録できませんでした。");
       }
-      return reply(200, { room, members: await getRoomMembers(String(room.id)) });
+      if (game.id === "903a4c45-37bb-4a4b-a259-a5a8245de998") {
+        const { error: initError } = await admin.rpc("kuro_werewolf_join", {
+          p_game_id: game.id, p_room_id: String(room.id), p_user_id: user.id
+        });
+        if (initError) {
+          await admin.rpc("kuro_leave_online_room", { p_room_id: String(room.id), p_user_id: user.id });
+          await admin.from("game_online_rooms").delete().eq("id", room.id);
+          console.error("[kurogames-online] Werewolf room init failed", initError);
+          throw new HttpError(500, "人狼ルームを初期化できませんでした。");
+        }
+      }
+      return reply(200, { room: { ...room, game_data: game.id === "903a4c45-37bb-4a4b-a259-a5a8245de998" ? (await admin.from("game_online_rooms").select("game_data").eq("id",room.id).single()).data?.game_data : null }, members: await getRoomMembers(String(room.id)) });
     }
 
     if (action === "room_join") {
@@ -1054,6 +1118,18 @@ async function handle(req: Request) {
         throw new HttpError(500, "ルームに参加できませんでした。");
       }
       const room = Array.isArray(data) ? data[0] : data;
+      if (game.id === "903a4c45-37bb-4a4b-a259-a5a8245de998") {
+        const { error: joinError } = await admin.rpc("kuro_werewolf_join", {
+          p_game_id: game.id, p_room_id: String(room.id), p_user_id: user.id
+        });
+        if (joinError) {
+          await admin.rpc("kuro_leave_online_room", { p_room_id: String(room.id), p_user_id: user.id });
+          if ((joinError.message || "").includes("GAME_ALREADY_STARTED")) throw new HttpError(409,"このルームは既にゲームが始まっています。");
+          if ((joinError.message || "").includes("ROOM_FULL")) throw new HttpError(409,"ルームが満員です。");
+          console.error("[kurogames-online] Werewolf join state failed",joinError);
+          throw new HttpError(500,"人狼ルームへ参加者を追加できませんでした。");
+        }
+      }
       return reply(200, { room, members: await getRoomMembers(String(room.id)) });
     }
 
@@ -1071,6 +1147,20 @@ async function handle(req: Request) {
           .select("id, game_data, game_data_updated_at, status")
           .eq("id", roomId).eq("game_id", game.id).maybeSingle();
         if (error || !room) throw new HttpError(404, "ルームが見つかりません。");
+        if (game.id === "903a4c45-37bb-4a4b-a259-a5a8245de998") {
+          const { data: personalized, error: stateError } = await admin.rpc("kuro_werewolf_state", {
+            p_game_id: game.id, p_room_id: roomId, p_user_id: user.id
+          });
+          if (stateError) {
+            console.error("[kurogames-online] Werewolf state load failed",stateError);
+            throw new HttpError(500,"人狼の個人状態を取得できませんでした。");
+          }
+          return reply(200, {
+            state: personalized ?? room.game_data ?? null,
+            updatedAt: room.game_data_updated_at ?? null,
+            roomStatus: room.status,
+          });
+        }
         return reply(200, {
           state: room.game_data ?? null,
           updatedAt: room.game_data_updated_at ?? null,
@@ -1078,6 +1168,9 @@ async function handle(req: Request) {
         });
       }
 
+      if (game.id === "903a4c45-37bb-4a4b-a259-a5a8245de998") {
+        throw new HttpError(403,"人狼のゲーム状態はサーバー処理でのみ更新できます。");
+      }
       if (!Object.prototype.hasOwnProperty.call(body, "state") ||
           !body.state || typeof body.state !== "object" || Array.isArray(body.state)) {
         throw new HttpError(400, "保存するゲーム状態が正しくありません。");
@@ -1156,6 +1249,10 @@ async function handle(req: Request) {
           p_user_id: staleMember.user_id,
         });
         if (staleLeaveError) console.error("[kurogames-online] stale room member cleanup failed", staleLeaveError);
+        if (game.id === "903a4c45-37bb-4a4b-a259-a5a8245de998") {
+          const { error: syncError } = await admin.rpc("kuro_werewolf_sync_room", { p_room_id: roomId });
+          if (syncError) console.error("[kurogames-online] Werewolf stale-room sync failed",syncError);
+        }
       }
 
       const { data: room, error: roomError } = await admin.from("game_online_rooms")
@@ -1204,6 +1301,16 @@ async function handle(req: Request) {
       p_user_id: user.id,
     });
     if (leaveError) throw new HttpError(500, "ルームから退出できませんでした。");
+    if (game.id === "903a4c45-37bb-4a4b-a259-a5a8245de998") {
+      const { error: syncError } = await admin.rpc("kuro_werewolf_sync_room", { p_room_id: roomId });
+      if (syncError) {
+        console.error("[kurogames-online] Werewolf leave sync failed",syncError);
+        throw new HttpError(500,"退出者のゲーム状態を同期できませんでした。");
+      }
+      await admin.from("game_online_room_messages").insert({
+        room_id:roomId,sender_user_id:user.id,event_type:"room-state-updated",payload:{type:"player-left"}
+      });
+    }
     return reply(200, { ok: true, left: leaveResult === true });
   }
 
