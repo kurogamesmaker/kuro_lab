@@ -1117,3 +1117,57 @@ KUROGAMESは、ゲーム固有モジュールが共通基盤から呼び出さ�
 - ゲーム制作者向けの導入手順、API契約、テスト方法が公開される。
 
 この節の方針に従い、今後のサーバー判定機能は「KUROGAMESが共通実行基盤を提供し、ゲーム制作者がゲーム固有ルールを定義する」方式で開発する。
+
+---
+
+## 人狼ゲーム：サーバー権威型オンライン実装
+
+対象ゲームID：`903a4c45-37bb-4a4b-a259-a5a8245de998`
+
+**状態：人狼ゲーム専用実装済み（汎用ゲーム向けサーバールール実行環境とは別機能）**
+
+### 状態の分離
+
+- `game_online_rooms.game_data` は参加者一覧・ホスト・フェーズ・公開結果などの共有情報だけを保持する。
+- 役職、投票先、夜行動、占い結果、霊媒結果は `werewolf_private_sessions` に保存する。
+- `werewolf_private_sessions` と `werewolf_action_receipts` はRLS有効、`anon` / `authenticated` の権限を剥奪し、Edge Functionの `service_role` のみがアクセスする。
+- `room_state_get` は `kuro_werewolf_state` を呼び、本人の役職・本人向け結果だけを組み立てて返す。人狼には他の人狼の役職と人狼側の襲撃候補を返し、一般プレイヤーには他人の役職を返さない。ゲーム終了時のみ全役職を公開する。
+- 共有状態に役職や秘密の投票先を含めない。
+
+### 操作と勝敗
+
+人狼画面は `kurogames-online` の `werewolf_action` アクションを使用する。操作は `actionId` 付きでサーバーへ送信し、DB側の `kuro_werewolf_action` が参加者・ホスト・フェーズ・対象者・役職・合法条件を検証してから更新する。
+
+サポートするゲーム操作：
+
+- `set_config` / `start`
+- `confirm_role` / `force_start_day1`
+- `adjust_discuss_time` / `advance_vote`
+- `submit_vote` / `force_tally`
+- `night_action` / `force_finish_night`
+- `reaction` / `return_to_lobby` / `disband`
+
+勝敗判定とランキング加算はサーバー側で実施する。村人陣営・人狼陣営の勝者だけに各1勝を加え、`roundId` をsubmission IDとして重複を防止する。クライアントからのランキング勝利数申告は使用しない。
+
+### ルーム・通信
+
+- 新規ルームと参加者名は共通SDK / Edge Functionで管理する。ユーザー名はクライアント申告ではなくログイン中の `profiles` から取得する。
+- 6文字ルームコードのSDKルームを使用する。旧4桁ルームの直接テーブルアクセスは停止した。
+- ゲーム状態の再取得は初回スナップショット、共通ルームイベント、参加者Presence変更を主経路とし、30秒間隔の再取得はイベント取りこぼし時の補完とする。
+- アニメーションや演出は削除せず、不要な通信・全状態のクライアント書き戻しを減らす。
+
+### 実装ファイル
+
+- `supabase/functions/kurogames-online/index.ts`
+- `supabase/migrations/20261123110000_werewolf_server_authority.sql`
+- 人狼ゲームの公開HTML（`game_studio_games.html_content`）
+
+### 確認済みテスト
+
+- 3人対局で共有状態に役職が含まれないこと。
+- 一般プレイヤーに他人の役職が返らず、自分の役職だけが返ること。
+- サーバー役職配布、役職確認、投票、勝敗確定、勝者2人分のランキング登録。
+- 占い結果が占い師本人だけに返り、護衛対象への襲撃が無効になる夜フェーズ。
+- 上記DBテストは一時ルームを作成し、最後にロールバックして実データを残さず検証した。
+
+なお、全ゲーム共通のサーバールールモジュール登録・実行環境、Studioエディター、汎用マッチメーカーは別途未実装の設計項目であり、この人狼専用実装をもって汎用機能まで完成したとは扱わない。
