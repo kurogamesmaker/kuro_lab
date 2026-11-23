@@ -633,7 +633,7 @@
   <section class="panel" style="margin-top:16px">
    <div class="toolbar"><div><strong>個人配信</strong><div class="sns-muted">指定したアカウントだけに通知を送信します。対象者を確認してから配信してください。</div></div></div>
    <form id="opsPersonalMessageForm" class="ops-form">
-    <label>配信先サービス<select id="opsPersonalScope"><option value="all">全サービス</option><option value="lab">KURO Lab</option><option value="sns">KURO SNS</option><option value="games">KURO GAMES</option><option value="both">KURO Lab ＋ KURO SNS</option></select></label>
+    
     <label>ユーザー検索<input id="opsPersonalSearch" type="search" placeholder="ユーザー名・表示名・メール・IDで検索"></label>
     <div id="opsPersonalUserList" class="ops-personal-user-list" role="listbox" aria-label="配信先ユーザー一覧"><div class="empty">ユーザーを読み込み中…</div></div>
     <div id="opsPersonalSelected" class="ops-personal-selected">配信先：未選択</div>
@@ -1403,16 +1403,14 @@ async function sendPersonalMessage(event){
  if(!target){alert("配信するユーザーを選択してください。");return;}
  if(!title||!content){alert("タイトルと本文を入力してください。");return;}
  const selected=$("#opsPersonalTarget").selectedOptions[0]?.textContent||target;
- const scope=$("#opsPersonalScope").value;
- const scopeLabel=scope==="all"?"全サービス":scope==="lab"?"KURO Lab":scope==="sns"?"KURO SNS":scope==="games"?"KURO GAMES":"KURO Lab＋SNS";
- if(!confirm("【個人配信】\n対象："+selected+"\nサービス："+scopeLabel+"\n\nこのユーザーだけに通知を送信しますか？"))return;
+ if(!confirm("【個人配信】\n対象："+selected+"\n\nこのユーザーだけに共通通知を送信しますか？"))return;
  const button=$("#opsPersonalSend");button.disabled=true;
  try{
-  await opsInvoke({action:"send_admin_message",audience:"user",userId:target,title,content,href,serviceScope:scope});
+  await opsInvoke({action:"send_admin_message",audience:"user",userId:target,title,content,href,serviceScope:"all"});
   $("#opsPersonalMessageForm").reset();
   $("#opsPersonalSearch").value="";
   renderPersonalMessageTargets();
-  $("#opsPersonalStatus").textContent="選択したユーザーに個人配信しました。";
+  $("#opsPersonalStatus").textContent="選択したユーザーに共通通知を配信しました。";
   $("#opsPersonalTarget").value="";
   await loadOpsMessages();await loadOpsAudit();
  }catch(error){alert("個人配信に失敗しました："+error.message);}
@@ -1423,8 +1421,8 @@ function renderPersonalMessageHistory(){
  const rows=(opsMessages||[]).filter(m=>m.audience==="user"&&m.recipient_id);
  box.innerHTML=rows.length?rows.map(m=>{
   const recipient=m.recipient?.display_name||m.recipient?.username||m.recipient_id;
-  const scope=m.service_scope==="all"?"全サービス":m.service_scope==="both"?"KURO Lab＋SNS":m.service_scope==="lab"?"KURO Lab":m.service_scope==="games"?"KURO GAMES":"KURO SNS";
-  return '<article class="ops-ann-item"><div class="ops-ann-copy"><div class="meta"><strong>'+esc(m.title)+'</strong><span class="ops-status '+(m.published?"":"banned")+'">'+(m.published?"配信中":"停止")+'</span><span>'+esc(date(m.created_at))+'</span></div><div class="sns-muted">宛先：'+esc(recipient)+' · サービス：'+esc(scope)+' · 既読 '+Number(m.read_count||0)+' 件</div><p>'+esc(m.body)+'</p>'+(m.href?'<a href="'+esc(m.href)+'" target="_blank" rel="noopener noreferrer">リンクを開く ↗</a>':'')+'</div><div class="ops-inline-actions">'+(m.published?'<button class="btn" data-message-unpublish="'+esc(m.id)+'">配信停止</button>':'')+'</div></article>';
+  const scope="共通通知";
+  return '<article class="ops-ann-item"><div class="ops-ann-copy"><div class="meta"><strong>'+esc(m.title)+'</strong><span class="ops-status '+(m.published?"":"banned")+'">'+(m.published?"配信中":"停止")+'</span><span>'+esc(date(m.created_at))+'</span></div><div class="sns-muted">宛先：'+esc(recipient)+' · 通知：'+esc(scope)+' · 既読 '+Number(m.read_count||0)+' 件</div><p>'+esc(m.body)+'</p>'+(m.href?'<a href="'+esc(m.href)+'" target="_blank" rel="noopener noreferrer">リンクを開く ↗</a>':'')+'</div><div class="ops-inline-actions">'+(m.published?'<button class="btn" data-message-unpublish="'+esc(m.id)+'">配信停止</button>':'')+'</div></article>';
  }).join(""):'<div class="empty">個人配信履歴はまだありません。</div>';
 }
 async function loadOpsMessages(){
