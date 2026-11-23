@@ -153,7 +153,7 @@ async function summary() {
   const allHumans = new Set<string>();
   const allPlaying = new Set<string>();
   const allWaiting = new Set<string>();
-  let totalBotSessions = 0;
+  const allBots = new Set<string>();
 
   for (const row of presenceRows ?? []) {
     const identity = row.user_id ? "u:" + row.user_id : row.guest_id ? "g:" + row.guest_id : "";
@@ -169,7 +169,7 @@ async function summary() {
       allPlaying.add(identity);
       if (row.opponent_type === "bot") {
         gameCounts.bots.add(identity);
-        totalBotSessions++;
+        allBots.add(identity);
       }
     }
   }
@@ -208,7 +208,7 @@ async function summary() {
       humanPlayers: allHumans.size,
       playing: allPlaying.size,
       waiting: allWaiting.size,
-      botMatches: totalBotSessions,
+      botMatches: allBots.size,
     },
     games,
   });
