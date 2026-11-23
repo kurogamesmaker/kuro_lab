@@ -361,6 +361,96 @@ async function handleRealtime(request) {
   });
 }
 
+const ONLINE_ROOM_WORKER = "https://kuro-online-room.kurogamesmaker.workers.dev";
+
+async function handleOnlineRoom(request) {
+  const url = new URL(request.url);
+  const prefix = "/api/online-room";
+  const suffix = url.pathname.slice(prefix.length);
+
+  if (suffix === "/health" && request.method === "GET") {
+    const upstream = await fetch(ONLINE_ROOM_WORKER + "/health", {
+      headers: { "accept": "application/json" },
+    });
+    return new Response(upstream.body, {
+      status: upstream.status,
+      statusText: upstream.statusText,
+      headers: {
+        "content-type": upstream.headers.get("content-type") || "application/json",
+        "cache-control": "no-store",
+      },
+    });
+  }
+
+  if (suffix === "/ticket") {
+    if (request.method === "OPTIONS") {
+      const origin = request.headers.get("Origin") || "";
+      const allowed = origin === "null" ||
+        origin === "https://kurolab.cc.cd" ||
+        origin === "https://www.kurolab.cc.cd";
+      return new Response(null, {
+        status: allowed ? 204 : 403,
+        headers: {
+          "access-control-allow-origin": allowed ? origin : "null",
+          "access-control-allow-methods": "POST, OPTIONS",
+          "access-control-allow-headers": "authorization, content-type",
+          "access-control-max-age": "600",
+          "vary": "Origin",
+        },
+      });
+    }
+    if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
+    const authorization = request.headers.get("Authorization") || "";
+    if (!authorization.startsWith("Bearer ")) return json({ error: "unauthorized" }, 401);
+
+    const headers = new Headers({
+      "content-type": "application/json",
+      "authorization": authorization,
+    });
+    const origin = request.headers.get("Origin");
+    if (origin) headers.set("Origin", origin);
+
+    const upstream = await fetch(ONLINE_ROOM_WORKER + "/ticket", {
+      method: "POST",
+      headers,
+      body: await request.arrayBuffer(),
+      redirect: "manual",
+    });
+    const responseHeaders = new Headers(upstream.headers);
+    responseHeaders.set("cache-control", "no-store");
+    return new Response(upstream.body, {
+      status: upstream.status,
+      statusText: upstream.statusText,
+      headers: responseHeaders,
+    });
+  }
+
+  const match = suffix.match(/^\/room\/([A-Za-z0-9_-]{1,128})$/);
+  if (match) {
+    if ((request.headers.get("Upgrade") || "").toLowerCase() !== "websocket") {
+      return json({ error: "websocket_required" }, 426);
+    }
+    const target = new URL("/room/" + match[1] + url.search, ONLINE_ROOM_WORKER);
+    const headers = new Headers({ Upgrade: "websocket" });
+    const origin = request.headers.get("Origin");
+    const protocol = request.headers.get("Sec-WebSocket-Protocol");
+    if (origin) headers.set("Origin", origin);
+    if (protocol) headers.set("Sec-WebSocket-Protocol", protocol);
+
+    const upstream = await fetch(target.href, { headers });
+    if (!upstream.webSocket) {
+      return new Response(upstream.body, {
+        status: upstream.status,
+        statusText: upstream.statusText,
+        headers: upstream.headers,
+      });
+    }
+    return new Response(null, { status: 101, webSocket: upstream.webSocket });
+  }
+
+  return json({ error: "not_found" }, 404);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -371,6 +461,17 @@ export default {
       } catch (error) {
         console.error("KURO web search handler failed", error);
         return json({ code: "SEARCH_INTERNAL_ERROR", message: "検索処理に失敗しました。" }, 500);
+      }
+    }
+
+    if (url.pathname === "/api/online-room" || url.pathname.startsWith("/api/online-room/")) {
+      try {
+        return await handleOnlineRoom(request);
+      } catch (error) {
+        console.error("KURO online room proxy failed", error);
+        return json({
+          error: error?.message || "KURO online room proxy failed"
+        }, Number(error?.status) || 502);
       }
     }
 
