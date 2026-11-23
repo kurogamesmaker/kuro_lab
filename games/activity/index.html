@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f6f8fc">
+<meta name="description" content="KURO GAMESのリアルタイムプレイ状況。ゲームごとのプレイヤー数、CPU対戦、プレイ中、マッチング待ちを確認できます。">
+<meta name="robots" content="noindex,nofollow">
+<title>プレイ状況 | KURO GAMES</title>
+<style>
+:root{--ink:#17243c;--muted:#718098;--line:#e6ebf3;--blue:#2878ee;--green:#15975a;--bg:#f6f8fc}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans JP",system-ui,sans-serif}a{color:inherit;text-decoration:none}button,select{font:inherit}
+header{height:70px;position:sticky;top:0;z-index:10;background:#ffffffed;backdrop-filter:blur(15px);border-bottom:1px solid var(--line)}
+.nav{width:min(1180px,calc(100% - 36px));height:100%;margin:auto;display:flex;align-items:center;gap:14px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:1000;font-size:20px;letter-spacing:-.6px}.brand em{font-style:normal;color:var(--blue)}.mark{width:36px;height:36px;border-radius:11px}
+.back{margin-left:auto;padding:10px 13px;border:1px solid var(--line);border-radius:10px;color:#53647d;font-size:12px;font-weight:850}
+.wrap{width:min(1180px,calc(100% - 36px));margin:30px auto 64px}
+.hero{padding:26px 28px;border:1px solid #dce7f7;border-radius:23px;background:linear-gradient(115deg,#edf5ff 0%,#fff 54%,#eefaf3 100%);box-shadow:0 10px 26px #294e800c}
+.eyebrow{display:flex;align-items:center;gap:8px;color:#3776c7;font-size:10px;font-weight:1000;letter-spacing:1.7px}.pulse{width:8px;height:8px;border-radius:50%;background:#20b46c;box-shadow:0 0 0 4px #20b46c20;animation:pulse 1.8s infinite}@keyframes pulse{50%{box-shadow:0 0 0 7px #20b46c10}}
+h1{margin:10px 0 7px;font-size:clamp(28px,4vw,40px);letter-spacing:-1px}.intro{margin:0;color:#718098;font-size:13px;line-height:1.8}
+.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0 32px}
+.metric{padding:16px 17px;border:1px solid var(--line);border-radius:17px;background:#fff;box-shadow:0 6px 18px #203a5a08;min-width:0}
+.metric-top{display:flex;align-items:center;gap:8px;color:#718098;font-size:11px;font-weight:850}.metric-icon{width:30px;height:30px;display:grid;place-items:center;border-radius:9px;background:#eef4ff;font-size:16px}
+.metric strong{display:block;margin-top:9px;font-size:30px;line-height:1;font-weight:1000;letter-spacing:-.7px;font-variant-numeric:tabular-nums}.metric small{display:block;margin-top:7px;color:#8a96a8;font-size:10px}
+.section-head{display:flex;align-items:end;justify-content:space-between;gap:12px;margin-bottom:14px}.section-head h2{margin:0;font-size:21px;letter-spacing:-.5px}.section-head p{margin:5px 0 0;color:var(--muted);font-size:11px}
+.controls{display:flex;align-items:center;gap:8px}.controls label{font-size:11px;color:#718098;font-weight:800}.controls select{padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:#fff;color:#4c5c75;font-size:11px;font-weight:850;outline:none}
+.game-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.game-card{padding:17px;border:1px solid var(--line);border-radius:17px;background:#fff;box-shadow:0 6px 18px #203a5a08;min-width:0;transition:.16s}
+.game-card:hover{border-color:#bfd4f2;transform:translateY(-2px)}
+.card-head{display:flex;align-items:center;gap:11px;min-width:0}.game-icon{width:44px;height:44px;flex:0 0 44px;display:grid;place-items:center;border-radius:13px;background:#edf3ff;font-size:23px}
+.game-title{min-width:0;flex:1}.game-title b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:950}.game-title span{display:block;margin-top:4px;color:#8491a5;font-size:10px}
+.live-pill{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:99px;background:#eaf8f0;color:#298153;font-size:9px;font-weight:950;white-space:nowrap}.live-pill i{width:6px;height:6px;border-radius:50%;background:#33b56e}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:15px}
+.stat{min-width:0;padding:10px 9px;border-radius:11px;background:#f7f9fc}.stat span{display:block;color:#8591a4;font-size:9px;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.stat b{display:block;margin-top:5px;color:#283955;font-size:19px;line-height:1.1;font-weight:1000;font-variant-numeric:tabular-nums}
+.card-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:13px}.card-foot small{min-width:0;color:#94a0b1;font-size:9px;line-height:1.5}.play-link{flex:0 0 auto;padding:8px 12px;border-radius:9px;background:#2878ee;color:white;font-size:10px;font-weight:900}.play-link:hover{background:#1e65d0}
+.state{padding:34px 20px;border:1px dashed #d7e1ef;border-radius:16px;background:#fff;color:#7f8ba0;text-align:center;font-size:12px;line-height:1.8}.state[hidden]{display:none}
+.note{margin-top:15px;padding:13px 15px;border:1px solid #e2e9f2;border-radius:12px;background:#fff;color:#7c899c;font-size:10px;line-height:1.8}
+.refresh{color:#8491a5;font-size:10px;font-weight:750;text-align:right;margin-top:12px}
+footer{border-top:1px solid #e6eaf1;background:#fff;padding:22px 0;color:#8792a4;font-size:10px}.foot{width:min(1180px,calc(100% - 36px));margin:auto;display:flex;justify-content:space-between;gap:12px}
+@media(max-width:850px){.summary{grid-template-columns:repeat(2,minmax(0,1fr))}.game-list{grid-template-columns:1fr}}
+@media(max-width:540px){header{height:60px}.nav{width:calc(100% - 24px)}.brand{font-size:17px}.mark{width:32px;height:32px}.back{padding:8px 10px;font-size:10px}.wrap{width:calc(100% - 24px);margin:16px auto 42px}.hero{padding:21px 18px;border-radius:18px}.intro{font-size:12px}.summary{gap:8px;margin:12px 0 27px}.metric{padding:13px}.metric strong{font-size:27px}.section-head{align-items:flex-start;flex-direction:column}.controls{width:100%;justify-content:flex-end}.game-card{padding:14px}.stats{gap:5px}.stat{padding:9px 7px}.stat b{font-size:17px}.foot{width:calc(100% - 24px);font-size:9px}}
+@media(prefers-reduced-motion:reduce){.pulse{animation:none}.game-card{transition:none}}
+</style>
+</head>
+<body>
+<header><nav class="nav">
+<a class="brand" href="/games/"><img class="mark" src="/assets/brand/logo/kurolab_icon_toumei_160.png?v=20261121logosfix" alt=""><span>KURO <em>GAMES</em></span></a>
+<a class="back" href="/games/">← ゲーム一覧へ</a>
+</nav></header>
+<main class="wrap">
+<section class="hero">
+<div class="eyebrow"><i class="pulse"></i> LIVE PLAYER ACTIVITY</div>
+<h1>プレイ状況</h1>
+<p class="intro">KuroGamesで今どのゲームに人が集まっているかを確認できます。<br>対戦相手を探している人がいるゲームも、ここからすぐに開けます。</p>
+</section>
+<section class="summary" aria-label="全体のプレイ状況">
+<div class="metric"><div class="metric-top"><span class="metric-icon">👤</span>人間プレイヤー</div><strong id="totalHumans">—</strong><small>ゲームを開いている人</small></div>
+<div class="metric"><div class="metric-top"><span class="metric-icon">🎮</span>現在プレイ中</div><strong id="totalPlaying">—</strong><small>プレイ中の人</small></div>
+<div class="metric"><div class="metric-top"><span class="metric-icon">⏳</span>マッチング待ち</div><strong id="totalWaiting">—</strong><small>対戦相手を探している人</small></div>
+<div class="metric"><div class="metric-top"><span class="metric-icon">🤖</span>CPU・ボット対戦</div><strong id="totalBots">—</strong><small>CPU・ボットと対戦中の人</small></div>
+</section>
+<section>
+<div class="section-head">
+<div><h2>ゲーム別プレイ状況</h2><p>人数の多いゲームや、待機中の人がいるゲームを探せます。</p></div>
+<div class="controls"><label for="sortBy">並び替え</label><select id="sortBy"><option value="players">人間プレイヤーが多い順</option><option value="waiting">マッチング待ちが多い順</option><option value="playing">プレイ中が多い順</option><option value="bots">CPU・ボット対戦が多い順</option><option value="name">ゲーム名順</option></select></div>
+</div>
+<div id="gameList" class="game-list"></div>
+<div id="loading" class="state">プレイ状況を読み込んでいます…</div>
+<div id="error" class="state" hidden>プレイ状況を取得できませんでした。通信状態を確認して再読み込みしてください。</div>
+<div class="note">表示人数は、ゲーム画面から定期的に届く活動情報をもとに集計しています。ゲームを閉じたり通信が切れたりした場合は、最終更新から約75秒で自動的に集計対象から外れます。人間プレイヤー数と各項目は、同じ人が複数の項目にまたがる場合があります。</div>
+<div class="refresh" id="lastUpdated">更新待ち</div>
+</section>
+</main>
+<footer><div class="foot"><span>© 2026 <b>KURO GAMES</b></span><a href="https://kurolab.cc.cd/">KURO Lab ↗</a></div></footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+"use strict";
+const SUPABASE_URL="https://cprvpphlfpmiegjiutjn.supabase.co";
+const SUPABASE_KEY="sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
+const CLOUDFLARE_PROXY_URL="https://kurolab.cc.cd/api/cloudflare-relay";
+async function cloudflareFetch(input,init){
+ const req=new Request(input,init),url=new URL(req.url);
+ if(url.origin!==SUPABASE_URL)return fetch(req);
+ const bytes=new Uint8Array(await req.arrayBuffer());let binary="";
+ for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
+ const headers={};req.headers.forEach((v,k)=>{headers[k]=v;});
+ const proxy=await fetch(CLOUDFLARE_PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:"game-studio"})});
+ let result;try{result=await proxy.json();}catch(_){throw new Error("Cloudflare中継サーバーの応答を読み取れませんでした。");}
+ if(!proxy.ok||!result||typeof result.status!=="number")throw new Error(result?.error||"Cloudflare中継通信に失敗しました。");
+ let body=null;if(result.isBinary&&result.bodyBase64){const raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);body=out;}else if(result.bodyText!==undefined&&![204,205,304].includes(result.status))body=result.bodyText;
+ return new Response(body,{status:result.status,headers:result.headers||{"Content-Type":"application/json"}});
+}
+const db=window.supabase?.createClient?.(SUPABASE_URL,SUPABASE_KEY,{global:{fetch:cloudflareFetch},auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}});
+const $=id=>document.getElementById(id);
+const categoryIcons={table:"🃏",puzzle:"🧩",action:"🎯",typing:"⌨️",rpg:"⚔️",strategy:"♟️",casual:"🎮",sports:"🏅",racing:"🏎️",simulation:"🏙️",other:"🎮"};
+let snapshot=null,refreshTimer=null;
+function setTotal(id,value){$(id).textContent=Number(value||0).toLocaleString("ja-JP");}
+function makeStat(label,value){
+ const node=document.createElement("div");node.className="stat";
+ const name=document.createElement("span");name.textContent=label;
+ const amount=document.createElement("b");amount.textContent=Number(value||0).toLocaleString("ja-JP");
+ node.append(name,amount);return node;
+}
+function render(){
+ if(!snapshot)return;
+ const totals=snapshot.totals||{};
+ setTotal("totalHumans",totals.humanPlayers);setTotal("totalPlaying",totals.playing);setTotal("totalWaiting",totals.waiting);setTotal("totalBots",totals.botMatches);
+ const sort=$("sortBy").value,rows=[...(Array.isArray(snapshot.games)?snapshot.games:[])];
+ rows.sort((a,b)=>sort==="name"?String(a.title).localeCompare(String(b.title),"ja"):Number(b[sort==="players"?"humanPlayers":sort==="waiting"?"waiting":sort==="playing"?"playing":"botMatches"]||0)-Number(a[sort==="players"?"humanPlayers":sort==="waiting"?"waiting":sort==="playing"?"playing":"botMatches"]||0));
+ const list=$("gameList");list.replaceChildren();
+ if(!rows.length){const empty=document.createElement("div");empty.className="state";empty.textContent="現在、公開中のゲームはありません。";list.append(empty);}
+ for(const game of rows){
+  const card=document.createElement("article");card.className="game-card";
+  const head=document.createElement("div");head.className="card-head";
+  const icon=document.createElement("div");icon.className="game-icon";icon.textContent=categoryIcons[game.category]||"🎮";
+  const title=document.createElement("div");title.className="game-title";
+  const name=document.createElement("b");name.textContent=game.title||"ゲーム";
+  const sub=document.createElement("span");sub.textContent=Number(game.waiting||0)>0?"対戦相手を探している人がいます":"リアルタイム集計";
+  title.append(name,sub);
+  const pill=document.createElement("span");pill.className="live-pill";pill.innerHTML="<i></i> LIVE";
+  head.append(icon,title,pill);
+  const stats=document.createElement("div");stats.className="stats";
+  stats.append(makeStat("人間プレイヤー",game.humanPlayers),makeStat("CPU・ボット対戦",game.botMatches),makeStat("現在プレイ中",game.playing),makeStat("マッチング待ち",game.waiting));
+  const foot=document.createElement("div");foot.className="card-foot";
+  const note=document.createElement("small");note.textContent="人間プレイヤーはゲームごとに重複を除いています";
+  const link=document.createElement("a");link.className="play-link";link.href="/games/play/?id="+encodeURIComponent(game.id);link.textContent="ゲームを開く";
+  foot.append(note,link);card.append(head,stats,foot);list.append(card);
+ }
+ $("loading").hidden=true;$("error").hidden=true;
+ $("lastUpdated").textContent="最終更新："+new Date(snapshot.generatedAt||Date.now()).toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+}
+async function refresh(){
+ if(!db){$("loading").hidden=true;$("error").hidden=false;return;}
+ try{
+  const {data,error}=await db.functions.invoke("kurogames-activity",{body:{action:"summary"}});
+  if(error)throw error;
+  if(!data||!Array.isArray(data.games)||!data.totals)throw new Error("プレイ状況のデータ形式が正しくありません。");
+  snapshot=data;render();
+ }catch(error){
+  console.warn("[KURO GAMES activity] refresh failed:",error);
+  if(!snapshot){$("loading").hidden=true;$("error").hidden=false;}
+ }
+}
+$("sortBy").addEventListener("change",render);
+refresh();
+refreshTimer=window.setInterval(refresh,10000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh();});
+</script>
+</body>
+</html>
