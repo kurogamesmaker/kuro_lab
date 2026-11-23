@@ -562,7 +562,7 @@
    <article class="ops-overview-kpi"><small>全体 DAU</small><strong id="ovDau">—</strong><span>今日の全訪問者</span></article><article class="ops-overview-kpi"><small>全体 MAU</small><strong id="ovMau">—</strong><span>過去30日の全訪問者</span></article><article class="ops-overview-kpi"><small>ログイン DAU</small><strong id="ovDauLogged">—</strong><span>今日のログイン利用者</span></article><article class="ops-overview-kpi"><small>ゲスト DAU</small><strong id="ovDauGuests">—</strong><span>今日の未ログイン利用者</span></article><article class="ops-overview-kpi"><small>KURO SNS 利用者</small><strong id="ovSnsUsers">—</strong><span>登録プロフィール</span></article><article class="ops-overview-kpi"><small>SNS 投稿</small><strong id="ovSnsPosts">—</strong><span>累計投稿数</span></article><article class="ops-overview-kpi"><small>直近24時間のAPIエラー</small><strong id="ovApiErrors">—</strong><span>KUROLAB計測分</span></article><article class="ops-overview-kpi"><small>直近30日のページ閲覧</small><strong id="ovPageViews">—</strong><span>KUROLAB計測分</span></article><article class="ops-overview-kpi"><small>直近5分の全訪問者</small><strong id="ovLiveUsers">—</strong><span id="ovLiveSplit">ログイン — · ゲスト —</span></article><article class="ops-overview-kpi"><small>API成功率（過去7日）</small><strong id="ovApiSuccessRate">—</strong><span>成功・失敗イベントの記録分</span></article>
   </div>
   <div class="ops-overview-grid">
-   <section class="panel ops-overview-panel ops-overview-wide"><div class="toolbar"><div><strong>日別アクティビティ推移</strong><div class="sns-muted">過去30日 · アクティブ利用者・SNS投稿・返信・公開チャット</div></div><span class="sns-muted">日別</span></div><div class="ops-overview-legend"><span><i class="ov-dot ov-blue"></i>KUROLAB DAU</span><span><i class="ov-dot ov-purple"></i>SNS投稿</span><span><i class="ov-dot ov-green"></i>SNS返信</span><span><i class="ov-dot ov-amber"></i>公開チャット</span></div><svg id="opsOverviewTrend" class="ops-overview-chart" viewBox="0 0 900 270" role="img" aria-label="サービス全体の日別アクティビティ折れ線グラフ"></svg><div id="opsOverviewTrendNote" class="ops-overview-foot">データを取得しています。</div></section>
+   <section class="panel ops-overview-panel ops-overview-wide"><div class="toolbar"><div><strong>日別アクティビティ推移</strong><div class="sns-muted">過去30日 · アクティブ利用者・SNS投稿・返信・公開チャット</div></div><span class="sns-muted">日別</span></div><div class="ops-overview-legend"><span><i class="ov-dot ov-blue"></i>KUROLAB DAU</span><span><i class="ov-dot ov-purple"></i>SNS投稿</span><span><i class="ov-dot ov-green"></i>SNS返信</span><span><i class="ov-dot ov-amber"></i>公開チャット</span><span><i class="ov-dot ov-pink"></i>個人チャット</span><span><i class="ov-dot ov-cyan"></i>グループチャット</span></div><svg id="opsOverviewTrend" class="ops-overview-chart" viewBox="0 0 900 270" role="img" aria-label="サービス全体の日別アクティビティ折れ線グラフ"></svg><div id="opsOverviewTrendNote" class="ops-overview-foot">データを取得しています。</div></section>
    <section class="panel ops-overview-panel"><div class="toolbar"><div><strong>サービス別利用ボリューム</strong><div class="sns-muted">過去30日の主要イベント</div></div></div><div class="ops-overview-donut-wrap"><div id="opsOverviewDonut" class="ops-overview-donut"><span id="opsOverviewDonutTotal">—</span></div><div id="opsOverviewDonutLegend" class="ops-overview-donut-legend"></div></div></section>
    <section class="panel ops-overview-panel"><div class="toolbar"><div><strong>ウィジェット利用 TOP 8</strong><div class="sns-muted">閲覧・追加・削除の合計</div></div></div><div id="opsOverviewWidgets" class="ops-overview-bars"><div class="empty">集計中…</div></div></section>
    <section class="panel ops-overview-panel"><div class="toolbar"><div><strong>APIエラーの発生状況</strong><div class="sns-muted">過去7日・サービス別</div></div></div><div id="opsOverviewApi" class="ops-overview-bars"><div class="empty">集計中…</div></div></section>
@@ -1582,7 +1582,7 @@ async function deleteFeatureFlag(key){
 
 function overviewDateKey(value){return new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Tokyo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(value));}
 function drawOverviewTrend(points){
- const series=[{key:"dau",color:"#55b5f2"},{key:"posts",color:"#a78bfa"},{key:"replies",color:"#55cda5"},{key:"chat",color:"#e7b65c"}],w=900,h=270,l=48,r=18,t=18,b=38,pw=w-l-r,ph=h-t-b,max=Math.max(1,...points.flatMap(p=>series.map(q=>Number(p[q.key]||0))));
+ const series=[{key:"dau",color:"#55b5f2"},{key:"posts",color:"#a78bfa"},{key:"replies",color:"#55cda5"},{key:"public_chat",color:"#e7b65c"},{key:"dm",color:"#ec7aa8"},{key:"group_chat",color:"#42c7d9"}],w=900,h=270,l=48,r=18,t=18,b=38,pw=w-l-r,ph=h-t-b,max=Math.max(1,...points.flatMap(p=>series.map(q=>Number(p[q.key]||0))));
  const x=i=>l+(points.length<=1?0:i*pw/(points.length-1)),y=v=>t+ph-Number(v||0)/max*ph;let svg="";
  for(let i=0;i<=4;i++){const v=Math.round(max*i/4),yy=y(v);svg+='<line class="ov-grid" x1="'+l+'" y1="'+yy+'" x2="'+(w-r)+'" y2="'+yy+'"></line><text x="'+(l-9)+'" y="'+(yy+4)+'" text-anchor="end">'+v+'</text>';}
  for(const q of series){const path=points.map((p,i)=>(i?"L":"M")+x(i).toFixed(1)+","+y(p[q.key]).toFixed(1)).join(" ");svg+='<path class="ov-series" stroke="'+q.color+'" d="'+path+'"></path>';points.forEach((p,i)=>{svg+='<circle class="ov-point" cx="'+x(i).toFixed(1)+'" cy="'+y(p[q.key]).toFixed(1)+'" r="3" fill="'+q.color+'"><title>'+esc(p.label)+' / '+Number(p[q.key]||0)+'</title></circle>';});}
@@ -1615,14 +1615,16 @@ async function loadOpsOverview(){
   const points=(data.daily||[]).map(p=>({
    key:p.date,
    label:new Date(p.date+"T00:00:00+09:00").toLocaleDateString("ja-JP",{month:"numeric",day:"numeric",timeZone:"Asia/Tokyo"}),
-   dau:Number(p.active_visitors||0),posts:Number(p.posts||0),replies:Number(p.replies||0),chat:Number(p.chat||0)
+   dau:Number(p.active_visitors||0),posts:Number(p.posts||0),replies:Number(p.replies||0),public_chat:Number(p.public_chat||0),dm:Number(p.dm||0),group_chat:Number(p.group_chat||0)
   }));
   drawOverviewTrend(points);
   const parts=[
    {label:"KUROLAB閲覧",value:Number(data.page_views_30d||0),color:"#55b5f2"},
    {label:"SNS投稿",value:(data.daily||[]).reduce((s,p)=>s+Number(p.posts||0),0),color:"#a78bfa"},
    {label:"SNS返信",value:(data.daily||[]).reduce((s,p)=>s+Number(p.replies||0),0),color:"#55cda5"},
-   {label:"公開チャット",value:(data.daily||[]).reduce((s,p)=>s+Number(p.chat||0),0),color:"#e7b65c"}
+   {label:"公開チャット",value:(data.daily||[]).reduce((s,p)=>s+Number(p.public_chat||0),0),color:"#e7b65c"},
+   {label:"個人チャット",value:(data.daily||[]).reduce((s,p)=>s+Number(p.dm||0),0),color:"#ec7aa8"},
+   {label:"グループチャット",value:(data.daily||[]).reduce((s,p)=>s+Number(p.group_chat||0),0),color:"#42c7d9"}
   ];
   const total=parts.reduce((s,p)=>s+p.value,0);
   let cursor=0;
@@ -1633,7 +1635,7 @@ async function loadOpsOverview(){
   renderOverviewBars("#opsOverviewWidgets",(data.widgets||[]).map(x=>({label:x.widget_key,value:Number(x.views||0)+Number(x.adds||0)+Number(x.removes||0)})).sort((a,b)=>b.value-a.value).slice(0,8),"linear-gradient(90deg,#3973d6,#55b5f2)","ウィジェット利用データはまだありません。");
   renderOverviewBars("#opsOverviewApi",(data.apis||[]).map(x=>({label:x.service_key,value:Number(x.errors||0)})).sort((a,b)=>b.value-a.value).slice(0,8),"linear-gradient(90deg,#a34d62,#ef7777)","APIエラーはまだ記録されていません。");
   const sums=key=>(data.daily||[]).reduce((s,p)=>s+Number(p[key]||0),0);
-  $("#opsOverviewTrendNote").textContent="過去30日：SNS投稿 "+n(sums("posts"))+" 件・返信 "+n(sums("replies"))+" 件・公開チャット "+n(sums("chat"))+" 件"+(data.truncated?" · 一部データは表示上限に達しています。":"");
+  $("#opsOverviewTrendNote").textContent="過去30日：SNS投稿 "+n(sums("posts"))+" 件・返信 "+n(sums("replies"))+" 件・公開チャット "+n(sums("public_chat"))+" 件・個人チャット "+n(sums("dm"))+" 件・グループチャット "+n(sums("group_chat"))+" 件"+(data.truncated?" · 一部データは表示上限に達しています。":"");
   $("#opsOverviewUpdated").textContent="最終更新："+new Date(data.generated_at||Date.now()).toLocaleTimeString("ja-JP");
  }catch(e){
   $("#opsOverviewTrend").innerHTML='<text x="30" y="120">全体集計に失敗しました。</text>';
