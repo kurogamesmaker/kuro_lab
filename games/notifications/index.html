@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f6f8fc">
+<meta name="description" content="KURO GAMES内で、KUROの全サービス共通通知を確認できます。">
+<meta name="robots" content="noindex,nofollow">
+<title>通知 | KURO GAMES</title>
+<style>
+:root{--ink:#17243c;--muted:#728097;--line:#e5ebf3;--blue:#2878ee;--bg:#f6f8fc;--red:#df4651}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Noto Sans JP",system-ui,sans-serif}a{color:inherit;text-decoration:none}button{font:inherit;cursor:pointer}
+header{height:68px;position:sticky;top:0;z-index:10;background:#ffffffed;backdrop-filter:blur(15px);border-bottom:1px solid var(--line)}
+.nav{width:min(980px,calc(100% - 36px));height:100%;margin:auto;display:flex;align-items:center;gap:13px}
+.brand{display:flex;align-items:center;gap:9px;font-size:19px;font-weight:1000;letter-spacing:-.6px;white-space:nowrap}.brand em{color:var(--blue);font-style:normal}.mark{width:35px;height:35px;border-radius:11px;object-fit:contain}
+.back{margin-left:auto;padding:9px 12px;border:1px solid var(--line);border-radius:10px;color:#53647d;font-size:11px;font-weight:850;background:#fff}
+.wrap{width:min(980px,calc(100% - 36px));margin:28px auto 58px}
+.hero{padding:25px 27px;border:1px solid #dce7f7;border-radius:21px;background:linear-gradient(115deg,#edf5ff 0%,#fff 55%,#f4f7ff 100%);box-shadow:0 10px 26px #294e800c}
+.eyebrow{display:flex;align-items:center;gap:8px;color:#3776c7;font-size:10px;font-weight:1000;letter-spacing:1.6px}.eyebrow i{width:7px;height:7px;border-radius:50%;background:#2878ee;box-shadow:0 0 0 4px #2878ee18}
+h1{margin:10px 0 6px;font-size:clamp(27px,4vw,37px);letter-spacing:-.9px}.intro{margin:0;color:var(--muted);font-size:12px;line-height:1.8}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:20px 0 13px}
+.filters{display:flex;gap:7px;overflow:auto;padding:2px 1px;scrollbar-width:none}.filters::-webkit-scrollbar{display:none}
+.filter{flex:0 0 auto;padding:8px 13px;border:1px solid var(--line);border-radius:99px;background:#fff;color:#697990;font-size:11px;font-weight:850}.filter.active{border-color:#b9d1f5;background:#edf5ff;color:#2368c2}
+.read-all{flex:0 0 auto;padding:9px 12px;border:1px solid #dce5f1;border-radius:10px;background:#fff;color:#586a83;font-size:10px;font-weight:850}.read-all:disabled{opacity:.42;cursor:default}
+.countline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 2px 11px;color:#8290a4;font-size:10px}.countline strong{color:#354760;font-variant-numeric:tabular-nums}
+.list{display:grid;gap:10px}
+.item{display:grid;grid-template-columns:42px minmax(0,1fr);gap:12px;padding:16px;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:0 5px 16px #203a5a06;min-width:0}
+.item.unread{border-color:#cbdcf4;background:linear-gradient(110deg,#fff 0%,#f8fbff 100%)}
+.icon{width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:#eef4ff;font-size:19px}
+.item-main{min-width:0}.meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:#8b97a9;font-size:9px}.source{padding:4px 7px;border-radius:99px;background:#f0f3f8;color:#5f7089;font-weight:900}.source.admin{background:#eef4ff;color:#286dc7}.source.sns{background:#f4efff;color:#7754b7}.source.reply{background:#eaf8f0;color:#278052}
+.meta time{margin-left:auto;white-space:nowrap}.item h2{margin:7px 0 5px;font-size:14px;line-height:1.55;overflow-wrap:anywhere}.item p{margin:0;color:#68778e;font-size:11px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+.actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}.action{padding:7px 10px;border:1px solid #dce5f1;border-radius:9px;background:#fff;color:#52647e;font-size:10px;font-weight:850}.action.primary{border-color:#2878ee;background:#2878ee;color:white}.action:disabled{opacity:.45;cursor:default}
+.unread-dot{display:inline-block;width:6px;height:6px;margin-left:5px;border-radius:50%;background:var(--red);vertical-align:middle}
+.state{padding:36px 18px;border:1px dashed #d5dfec;border-radius:16px;background:#fff;color:#8290a4;text-align:center;font-size:12px;line-height:1.9}.state strong{display:block;margin-bottom:5px;color:#33445d;font-size:14px}
+.state[hidden]{display:none}
+.error{padding:14px;border:1px solid #f2caca;border-radius:12px;background:#fff5f5;color:#a63c43;font-size:11px;line-height:1.8}
+.note{margin-top:14px;padding:12px 14px;border:1px solid #e3eaf3;border-radius:12px;background:#fff;color:#8290a4;font-size:10px;line-height:1.8}
+footer{border-top:1px solid #e6eaf1;background:#fff;padding:20px 0;color:#8792a4;font-size:10px}.foot{width:min(980px,calc(100% - 36px));margin:auto;display:flex;justify-content:space-between;gap:12px}
+@media(max-width:560px){header{height:60px}.nav{width:calc(100% - 24px);gap:8px}.brand{font-size:17px}.mark{width:32px;height:32px}.back{padding:8px 10px;font-size:10px}.wrap{width:calc(100% - 24px);margin:15px auto 40px}.hero{padding:20px 18px;border-radius:17px}.toolbar{align-items:flex-start;flex-direction:column}.read-all{align-self:flex-end;margin-top:-2px}.filter{padding:8px 11px}.item{padding:13px;grid-template-columns:36px minmax(0,1fr);gap:10px}.icon{width:36px;height:36px;border-radius:11px;font-size:17px}.item h2{font-size:13px}.item p{font-size:10px}.foot{width:calc(100% - 24px);font-size:9px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header><nav class="nav">
+<a class="brand" href="/games/"><img class="mark" src="/assets/brand/logo/kurolab_icon_toumei_160.png?v=20261121logosfix" alt=""><span>KURO <em>GAMES</em></span></a>
+<a class="back" href="/games/">← ゲーム一覧に戻る</a>
+</nav></header>
+<main class="wrap">
+<section class="hero">
+<div class="eyebrow"><i></i> KURO GAMES / NOTIFICATIONS</div>
+<h1>通知</h1>
+<p class="intro">KURO GAMES内で、KURO Lab・KURO SNSなど全サービス共通の通知を確認できます。既読状態もアカウント間で共通です。</p>
+</section>
+<div class="toolbar">
+<div class="filters" id="filters" aria-label="通知の絞り込み">
+<button class="filter active" data-filter="all" type="button">すべて</button>
+<button class="filter" data-filter="admin" type="button">運営</button>
+<button class="filter" data-filter="sns" type="button">SNS・チャット</button>
+<button class="filter" data-filter="reply" type="button">返信</button>
+<button class="filter" data-filter="announcement" type="button">お知らせ</button>
+</div>
+<button class="read-all" id="markAll" type="button" disabled>すべて既読にする</button>
+</div>
+<div class="countline"><span id="status">通知を読み込んでいます…</span><strong id="unreadCount">未読 0 件</strong></div>
+<div class="list" id="notificationList" aria-live="polite"><div class="state">通知を読み込んでいます…</div></div>
+<div class="note">通知内容と既読状態はKUROの共通アカウントに保存されます。通知を選ぶと、関連するサービスやページを開きます。</div>
+</main>
+<footer><div class="foot"><span>© 2026 <b>KURO GAMES</b></span><span>Operated by KURO Lab</span></div></footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+"use strict";
+const SUPABASE_URL="https://cprvpphlfpmiegjiutjn.supabase.co";
+const PUBLISHABLE_KEY="sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
+const PROXY_URL="https://kurolab.cc.cd/api/cloudflare-relay";
+async function cloudflareFetch(input,init){
+ const req=new Request(input,init),url=new URL(req.url);
+ if(url.origin!==SUPABASE_URL)return fetch(req);
+ const bytes=new Uint8Array(await req.arrayBuffer());let binary="";
+ for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
+ const headers={};req.headers.forEach((v,k)=>{headers[k]=v;});
+ const proxy=await fetch(PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:"game-studio"})});
+ let result;try{result=await proxy.json();}catch(e){throw new Error("Cloudflare中継サーバーの応答を読み取れませんでした");}
+ if(!proxy.ok||!result||typeof result.status!=="number")throw new Error(result&&result.error||"Cloudflare中継通信に失敗しました");
+ let body=null;
+ if(result.isBinary&&result.bodyBase64){const raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);body=out;}
+ else if(result.bodyText!==undefined&&![204,205,304].includes(result.status))body=result.bodyText;
+ return new Response(body,{status:result.status,headers:result.headers||{"Content-Type":"application/json"}});
+}
+const db=window.supabase&&window.supabase.createClient?window.supabase.createClient(SUPABASE_URL,PUBLISHABLE_KEY,{global:{fetch:cloudflareFetch},auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}}):null;
+const $=s=>document.querySelector(s),list=$("#notificationList"),status=$("#status"),unreadCount=$("#unreadCount"),markAll=$("#markAll");
+const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const typeText={follow:"フォローされました",follow_back:"フォローバックされました",like:"投稿にいいねされました",reply:"投稿に返信がありました",message:"メッセージが届きました",mention:"グループチャットでメンションされました"};
+let user=null,items=[],filter="all",prefs={},refreshing=false;
+
+function serviceLabel(scope){
+ return ({all:"全サービス",both:"KURO Lab・SNS",lab:"KURO Lab",sns:"KURO SNS",games:"KURO GAMES"})[scope]||"運営";
+}
+function destination(item){
+ if(item.kind==="social")return item.type==="message"||item.type==="mention"?"/chat/":"/sns/";
+ if(item.kind==="reply")return "/request/";
+ return item.href||"";
+}
+function iconFor(item){
+ return ({admin:"📢",social:item.type==="message"||item.type==="mention"?"💬":"👤",reply:"✉️",announcement:"🔔"})[item.kind]||"🔔";
+}
+function visibleItems(){
+ return filter==="all"?items:items.filter(x=>x.kind===filter||(filter==="announcement"&&x.kind==="admin"&&x.portal_announcement_id));
+}
+function fmt(date){
+ try{return new Date(date).toLocaleString("ja-JP",{year:"numeric",month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"});}catch(e){return "";}
+}
+function render(){
+ const shown=visibleItems(),unread=items.filter(x=>!x.read).length;
+ unreadCount.textContent="未読 "+unread+" 件";
+ markAll.disabled=!unread||!user;
+ status.textContent=user?items.length+" 件の通知":"ログインすると通知が表示されます";
+ if(!user){list.innerHTML='<div class="state"><strong>ログインが必要です</strong>KURO GAMESでログインすると、全サービス共通の通知を確認できます。<br><a class="action primary" href="/games/">ゲーム一覧へ戻る</a></div>';return;}
+ if(!shown.length){list.innerHTML='<div class="state"><strong>'+(filter==="all"?"通知はまだありません":"この種類の通知はありません")+'</strong>新しい通知が届くと、ここに表示されます。</div>';return;}
+ list.innerHTML=shown.map(item=>{
+  const unread=!item.read;
+  const source=item.kind==="admin"?"運営のお知らせ":item.kind==="social"?"KURO SNS・チャット":item.kind==="reply"?"リクエストBOXへの返信":"サービスのお知らせ";
+  const sourceClass=item.kind==="admin"||item.kind==="announcement"?"admin":item.kind==="social"?"sns":"reply";
+  const action=destination(item);
+  return '<article class="item '+(unread?"unread":"")+'"><div class="icon">'+iconFor(item)+'</div><div class="item-main"><div class="meta"><span class="source '+sourceClass+'">'+source+'</span><span>'+esc(item.serviceLabel||"")+'</span><time>'+esc(fmt(item.created_at))+'</time></div><h2>'+esc(item.title)+(unread?'<i class="unread-dot" aria-label="未読"></i>':"")+'</h2><p>'+esc(item.body||"")+'</p><div class="actions">'+(action?'<button class="action primary" type="button" data-open="'+esc(item.key)+'">開く</button>':'<button class="action" type="button" data-read="'+esc(item.key)+'">'+(unread?"既読にする":"確認済み")+'</button>')+(unread&&action?'<button class="action" type="button" data-read="'+esc(item.key)+'">既読にする</button>':"")+'</div></div></article>';
+ }).join("");
+}
+async function load(){
+ if(!db){list.innerHTML='<div class="error">認証システムを読み込めませんでした。ページを再読み込みしてください。</div>';status.textContent="接続エラー";return;}
+ if(refreshing)return;refreshing=true;status.textContent="通知を更新中…";
+ try{
+  const auth=await db.auth.getUser();user=auth.data&&auth.data.user&&!auth.data.user.is_anonymous?auth.data.user:null;
+  if(auth.error)throw auth.error;
+  if(!user){items=[];render();return;}
+  const [messagesResult,socialResult,repliesResult,annResult,prefsResult]=await Promise.all([
+   db.from("admin_messages").select("id,title,body,href,audience,recipient_id,created_at,service_scope,portal_announcement_id").eq("published",true).or("audience.eq.all,recipient_id.eq."+user.id).order("created_at",{ascending:false}).limit(200),
+   db.from("notifications").select("id,type,actor_id,created_at,read_at,group_id,message_id").eq("recipient_id",user.id).order("created_at",{ascending:false}).limit(100),
+   db.from("portal_request_notifications").select("id,request_id,created_at,read_at,request:portal_requests(message,admin_reply,replied_at)").eq("user_id",user.id).order("created_at",{ascending:false}).limit(50),
+   db.from("portal_announcements").select("id,title,body,href,created_at").eq("published",true).order("created_at",{ascending:false}).limit(100),
+   db.from("portal_preferences").select("preferences").eq("user_id",user.id).maybeSingle()
+  ]);
+  for(const r of [messagesResult,socialResult,repliesResult,annResult,prefsResult])if(r.error)throw r.error;
+  prefs=prefsResult.data&&prefsResult.data.preferences&&typeof prefsResult.data.preferences==="object"?prefsResult.data.preferences:{};
+  const messages=messagesResult.data||[],messageIds=messages.map(x=>x.id),readsResult=messageIds.length?await db.from("admin_message_reads").select("message_id,read_at").eq("user_id",user.id).in("message_id",messageIds):{data:[],error:null};
+  if(readsResult.error)throw readsResult.error;
+  const readMessageIds=new Set((readsResult.data||[]).map(x=>x.message_id));
+  const social=socialResult.data||[],actorIds=Array.from(new Set(social.map(x=>x.actor_id).filter(Boolean)));
+  const actorResult=actorIds.length?await db.from("profiles").select("id,username,display_name").in("id",actorIds):{data:[],error:null};
+  if(actorResult.error)throw actorResult.error;
+  const actors=new Map((actorResult.data||[]).map(x=>[x.id,x]));
+  const mirrored=new Set(messages.map(x=>x.portal_announcement_id).filter(Boolean));
+  const next=[];
+  messages.forEach(x=>next.push({key:"admin:"+x.id,kind:"admin",id:x.id,title:x.title,body:x.body,href:x.href,created_at:x.created_at,read:readMessageIds.has(x.id),serviceLabel:serviceLabel(x.service_scope),portal_announcement_id:x.portal_announcement_id}));
+  social.forEach(x=>{
+   const actor=actors.get(x.actor_id)||{},name=actor.display_name||actor.username||"ユーザー";
+   next.push({key:"social:"+x.id,kind:"social",id:x.id,type:x.type,title:name+" さんからの通知",body:typeText[x.type]||"新しい通知があります。",created_at:x.created_at,read:!!x.read_at,serviceLabel:"KURO SNS"});
+  });
+  (repliesResult.data||[]).forEach(x=>{
+   const req=x.request||{};
+   next.push({key:"reply:"+x.id,kind:"reply",id:x.id,title:"リクエストBOXに返信が届きました",body:req.admin_reply||"運営から返信がありました。",created_at:x.created_at,read:!!x.read_at,serviceLabel:"KURO Lab",extra:req.message||""});
+  });
+  const readAnnouncements=new Set(Array.isArray(prefs.readAnnouncements)?prefs.readAnnouncements:[]);
+  (annResult.data||[]).filter(x=>!mirrored.has(x.id)).forEach(x=>{
+   next.push({key:"announcement:"+x.id,kind:"announcement",id:x.id,title:x.title,body:x.body,href:x.href,created_at:x.created_at,read:readAnnouncements.has(x.id),serviceLabel:"KURO Lab"});
+  });
+  items=next.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  render();
+ }catch(error){
+  console.error("[KURO GAMES notifications]",error);
+  list.innerHTML='<div class="error">通知を読み込めませんでした。通信状態を確認して、更新してください。<br>'+esc(error.message||"不明なエラー")+'</div>';
+  status.textContent="読み込みエラー";
+ }finally{refreshing=false;}
+}
+async function markRead(item){
+ if(!user||!item||item.read)return;
+ const now=new Date().toISOString();
+ let result={error:null};
+ if(item.kind==="admin"){
+  result=await db.from("admin_message_reads").upsert({message_id:item.id,user_id:user.id,read_at:now},{onConflict:"message_id,user_id"});
+ }else if(item.kind==="social"){
+  result=await db.from("notifications").update({read_at:now}).eq("id",item.id).eq("recipient_id",user.id);
+ }else if(item.kind==="reply"){
+  result=await db.from("portal_request_notifications").update({read_at:now}).eq("id",item.id).eq("user_id",user.id);
+ }else if(item.kind==="announcement"){
+  const list=Array.isArray(prefs.readAnnouncements)?prefs.readAnnouncements.slice():[];
+  if(!list.includes(item.id))list.push(item.id);
+  prefs=Object.assign({},prefs,{readAnnouncements:list.slice(-300)});
+  result=await db.from("portal_preferences").upsert({user_id:user.id,preferences:prefs,updated_at:now},{onConflict:"user_id"});
+ }
+ if(result.error)throw result.error;
+ item.read=true;render();
+}
+async function markAll(){
+ if(!user)return;markAll.disabled=true;
+ try{
+  const now=new Date().toISOString();
+  const admin=items.filter(x=>x.kind==="admin"&&!x.read),social=items.filter(x=>x.kind==="social"&&!x.read),replies=items.filter(x=>x.kind==="reply"&&!x.read),anns=items.filter(x=>x.kind==="announcement"&&!x.read);
+  const operations=[];
+  if(admin.length)operations.push(db.from("admin_message_reads").upsert(admin.map(x=>({message_id:x.id,user_id:user.id,read_at:now})),{onConflict:"message_id,user_id"}));
+  if(social.length)operations.push(db.from("notifications").update({read_at:now}).eq("recipient_id",user.id).in("id",social.map(x=>x.id)));
+  if(replies.length)operations.push(db.from("portal_request_notifications").update({read_at:now}).eq("user_id",user.id).in("id",replies.map(x=>x.id)));
+  if(anns.length){
+   const ids=Array.isArray(prefs.readAnnouncements)?prefs.readAnnouncements.slice():[];
+   anns.forEach(x=>{if(!ids.includes(x.id))ids.push(x.id);});
+   prefs=Object.assign({},prefs,{readAnnouncements:ids.slice(-300)});
+   operations.push(db.from("portal_preferences").upsert({user_id:user.id,preferences:prefs,updated_at:now},{onConflict:"user_id"}));
+  }
+  const results=await Promise.all(operations);for(const r of results)if(r.error)throw r.error;
+  items.forEach(x=>x.read=true);render();
+ }catch(error){console.error(error);alert("通知をすべて既読にできませんでした："+(error.message||"不明なエラー"));markAll.disabled=false;}
+}
+function openItem(key){
+ const item=items.find(x=>x.key===key);if(!item)return;
+ const go=destination(item);
+ Promise.resolve(markRead(item)).catch(error=>console.warn("Notification read state could not be updated:",error)).finally(()=>{
+  if(go){if(/^https:\/\//i.test(go))window.location.assign(go);else if(go.startsWith("/")&&!go.startsWith("//"))window.location.assign(go);}
+ });
+}
+$("#filters").addEventListener("click",event=>{
+ const button=event.target.closest("[data-filter]");if(!button)return;
+ filter=button.dataset.filter;
+ document.querySelectorAll(".filter").forEach(x=>x.classList.toggle("active",x===button));
+ render();
+});
+list.addEventListener("click",event=>{
+ const open=event.target.closest("[data-open]"),read=event.target.closest("[data-read]");
+ if(open)openItem(open.dataset.open);
+ if(read){const item=items.find(x=>x.key===read.dataset.read);markRead(item).catch(error=>alert("既読にできませんでした："+error.message));}
+});
+markAll.addEventListener("click",markAll);
+if(db){
+ db.auth.onAuthStateChange(()=>{user=null;load();});
+ db.auth.getSession().then(load).catch(load);
+ setInterval(()=>{if(document.visibilityState!=="hidden")load();},30000);
+ document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")load();});
+ window.addEventListener("focus",load);
+}else load();
+})();
+</script>
+</body>
+</html>
