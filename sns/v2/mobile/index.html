@@ -509,11 +509,11 @@
         #kuroBottomNav { background:rgba(0,0,0,.96) !important; border-top:1px solid #2f3336 !important; box-shadow:none !important; padding-bottom:env(safe-area-inset-bottom) !important; }
         #kuroBottomNav > div { max-width:680px !important; padding:.25rem .4rem .35rem !important; gap:.1rem; }
         #kuroBottomNav [data-tab] { min-height:52px !important; color:#e7e9ea !important; border-radius:999px !important; }
-        #kuroBottomNav [data-tab] span { display:none !important; }
+        #kuroBottomNav [data-tab]:not([data-tab="profile"]) span { display:none !important; }
         #kuroBottomNav [data-tab] .kuro-tab-icon { font-size:1.35rem !important; color:#e7e9ea !important; }
         #kuroBottomNav [data-tab][aria-current="page"] { background:transparent !important; }
         #kuroBottomNav [data-tab][aria-current="page"] .kuro-tab-icon { color:#fff !important; }
-        #kuroBottomNav [data-tab="profile"] { display:none !important; }
+        /* profile tab is intentionally visible on mobile */
         #submitModal, #authModal, #profileModal, #notificationsModal, #followListModal, #publicProfileModal, #chatModal { background:rgba(0,0,0,.78) !important; }
         #submitModal > div, #authModal > div, #profileModal > div, #notificationsModal > section, #followListModal > section, #publicProfileModal > section, #chatModal > section { background:#000 !important; border:1px solid #2f3336 !important; border-radius:18px !important; }
         #chatModal #chatListPanel, #chatModal #chatConversationPanel { background:#000 !important; }
@@ -537,7 +537,7 @@
         #kuroHeaderAvatarButton { display:inline-flex !important; }
         #kuroBottomNav [data-tab="profile"] { display:flex !important; }
         #kuroBottomNav [data-tab] span { display:none !important; }
-        #kuroBottomNav > div { grid-template-columns:repeat(5,minmax(0,1fr)) !important; }
+        #kuroBottomNav > div { grid-template-columns:repeat(4,minmax(0,1fr)) !important; }
         #kuroBottomNav [data-tab] { min-height:56px !important; }
         #kuroBottomNav [data-tab] .kuro-tab-icon { font-size:1.45rem !important; }
         #kuroBottomNav [data-tab][aria-current="page"] { background:transparent !important; }
@@ -858,9 +858,9 @@ body.kuro-page{margin:0!important;padding:0 0 calc(66px + env(safe-area-inset-bo
 body.kuro-page>.kuro-global-header{display:block!important}
 #kuroDesktopVersionSwitch{display:none!important}
 #kuroBottomNav{position:fixed!important;top:auto!important;right:0!important;bottom:0!important;left:0!important;display:flex!important;flex-direction:row!important;width:100%!important;min-width:0!important;height:calc(62px + env(safe-area-inset-bottom))!important;max-height:none!important;margin:0!important;padding:0 8px env(safe-area-inset-bottom)!important;transform:none!important;border:0!important;border-top:1px solid #2f3336!important;border-radius:0!important;background:#000!important;box-shadow:none!important;z-index:300!important}
-#kuroBottomNav>div{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;width:100%!important;max-width:none!important;margin:0!important;padding:3px 0 0!important;gap:0!important}
+#kuroBottomNav>div{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;width:100%!important;max-width:none!important;margin:0!important;padding:3px 0 0!important;gap:0!important}
 #kuroBottomNav [data-tab]{display:flex!important;width:100%!important;min-width:0!important;height:52px!important;min-height:52px!important;margin:0!important;padding:0!important;align-items:center!important;justify-content:center!important}
-#kuroBottomNav [data-tab] span{display:none!important}
+#kuroBottomNav [data-tab]:not([data-tab="profile"]) span{display:none!important}
 #kuroBottomNav .kuro-tab-icon,#kuroBottomNav [data-tab] i{font-size:19px!important}
 #homeFeedView,#myProfileView{position:relative!important;inset:auto!important;display:block!important;width:100%!important;min-width:0!important;max-width:none!important;height:auto!important;min-height:0!important;max-height:none!important;margin:0!important;padding:14px 0 28px!important;overflow:visible!important;box-sizing:border-box!important}
 #homeFeedView>.mb-6{width:100%!important;max-width:none!important;margin:0!important;padding:0 14px 10px!important;box-sizing:border-box!important}
@@ -938,6 +938,40 @@ img#profileAvatarPreview:not(.hidden) {
  right: 0 !important;
  margin-inline: auto !important;
  transform: translateX(2px) !important;
+}
+</style>
+
+<style id="kuro-mobile-profile-visibility-fix">
+/* Keep the My Page control visible and legible even when icon-font CSS is blocked. */
+@media (max-width: 767px) {
+  body.kuro-page { padding-bottom:calc(72px + env(safe-area-inset-bottom)) !important; }
+  #kuroBottomNav {
+    position:fixed !important; top:auto !important; right:0 !important; bottom:0 !important; left:0 !important;
+    display:flex !important; width:100% !important; height:calc(64px + env(safe-area-inset-bottom)) !important;
+    margin:0 !important; padding:0 8px env(safe-area-inset-bottom) !important; transform:none !important;
+    z-index:999 !important; box-sizing:border-box !important;
+  }
+  #kuroBottomNav > div {
+    display:grid !important; grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+    width:100% !important; max-width:none !important; margin:0 !important; padding:3px 0 0 !important; gap:0 !important;
+  }
+  #kuroBottomNav [data-tab="profile"] {
+    display:flex !important; visibility:visible !important; opacity:1 !important; pointer-events:auto !important;
+    position:relative !important; grid-column:4 !important; order:4 !important;
+    flex-direction:column !important; align-items:center !important; justify-content:center !important;
+    gap:3px !important; width:100% !important; min-width:0 !important; height:54px !important; min-height:54px !important;
+    margin:0 !important; padding:0 !important; color:#e7e9ea !important; background:transparent !important;
+  }
+  #kuroBottomNav [data-tab="profile"] .kuro-profile-tab-icon {
+    display:block !important; width:20px !important; height:20px !important; flex:none !important;
+    fill:none !important; stroke:currentColor !important; stroke-width:1.8 !important;
+    stroke-linecap:round !important; stroke-linejoin:round !important;
+  }
+  #kuroBottomNav [data-tab="profile"] .kuro-tab-label {
+    display:block !important; visibility:visible !important; opacity:1 !important;
+    color:inherit !important; font-family:system-ui,sans-serif !important; font-size:10px !important;
+    font-weight:600 !important; line-height:1.2 !important; white-space:nowrap !important;
+  }
 }
 </style>
 </head>
@@ -1420,7 +1454,10 @@ img#profileAvatarPreview:not(.hidden) {
         <button type="button" data-tab="publicChat" aria-label="オープンチャット" onclick="switchTab('publicChat')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900"><i class="kuro-tab-icon fa-solid fa-comments text-xl"></i><span class="text-[10px] font-medium">オプチャ</span></button>
         
         
-      <button type="button" data-tab="profile" aria-label="マイページ" onclick="switchTab('profile')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900"><i class="kuro-tab-icon fa-regular fa-user text-xl"></i><span class="text-[10px] font-medium">マイページ</span></button>
+      <button type="button" data-tab="profile" aria-label="マイページ" title="マイページ" onclick="switchTab('profile')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900">
+          <svg class="kuro-profile-tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="3.25"></circle><path d="M5 20c.9-3.4 3.1-5 7-5s6.1 1.6 7 5"></path></svg>
+          <span class="kuro-tab-label">マイページ</span>
+        </button>
       </div>
     </nav>
 
@@ -4883,14 +4920,3 @@ body.kuro-page #postFeed article[data-post-card] {
 </body>
 </html>
 
-<style id="kuro-mobile-profile-bottom-right-fix">
-@media (max-width: 899px) {
-  #kuroBottomNav { position:fixed!important; top:auto!important; bottom:0!important; left:0!important; right:0!important; width:100%!important; transform:none!important; display:flex!important; flex-direction:row!important; z-index:300!important; }
-  #kuroBottomNav>div { display:grid!important; grid-template-columns:repeat(4,minmax(0,1fr))!important; width:100%!important; max-width:none!important; margin:0!important; padding:3px 0 max(3px,env(safe-area-inset-bottom))!important; gap:0!important; }
-  #kuroBottomNav [data-tab] { display:flex!important; position:static!important; width:100%!important; min-width:0!important; height:54px!important; min-height:54px!important; flex-direction:column!important; align-items:center!important; justify-content:center!important; }
-  #kuroBottomNav [data-tab="profile"] { display:flex!important; visibility:visible!important; opacity:1!important; grid-column:4!important; order:4!important; }
-  #kuroBottomNav [data-tab="home"] { order:1!important; }
-  #kuroBottomNav [data-tab="chat"] { order:2!important; }
-  #kuroBottomNav [data-tab="publicChat"] { order:3!important; }
-}
-</style>
