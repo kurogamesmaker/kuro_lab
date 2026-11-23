@@ -4620,6 +4620,13 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     }
                     const {data: sentGroupMessage,error: groupSendError} = await supabaseClient.from('group_chat_messages').insert({group_id:groupId,sender_id:senderId,content}).select('id').single();
                     if (groupSendError) throw groupSendError;
+                    // Send group chat push asynchronously; never block the message UI on notification delivery.
+                    supabaseClient.functions.invoke('send-chat-push', {body:{groupMessageId:sentGroupMessage.id}})
+                        .then(({error:pushError,data}) => {
+                            if (pushError) console.warn('KURO group push failed:', pushError);
+                            else if (data?.sent === 0) console.warn('KURO group push not delivered:', data);
+                        })
+                        .catch(pushError => console.warn('KURO group push invoke failed:', pushError));
                     if (mentionTargets.length) {
                         const mentionRows = mentionTargets.map(mentioned_user_id => ({message_id:sentGroupMessage.id,group_id:groupId,mentioned_user_id}));
                         const {error: mentionInsertError} = await supabaseClient.from('group_chat_mentions').insert(mentionRows);
