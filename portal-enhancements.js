@@ -91,9 +91,12 @@
     var read = s.data.preferences.readAnnouncements;
     read = Array.isArray(read) ? read : [];
     var readSet = new Set(read);
+    var mirrored = new Set((s.adminMessages || []).map(function (item) {
+      return item && item.portal_announcement_id;
+    }).filter(Boolean));
     return (s.ann || []).filter(function (item) {
-      return item && item.id && !readSet.has(item.id);
-    }).length + Number(s.requestUnread || 0) + Number(s.adminMessageUnread || 0);
+      return item && item.id && !readSet.has(item.id) && !mirrored.has(item.id);
+    }).length + Number(s.requestUnread || 0) + Number(s.adminMessageUnread || 0) + Number(s.socialNotificationUnread || 0);
   }
 
   function badgeHtml() {
