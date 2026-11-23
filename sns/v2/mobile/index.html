@@ -3806,9 +3806,29 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 });
                 if (pushTestError) {
                     console.error('KURO push test failed:', pushTestError);
-                    showToast('通知登録はできたけど送信テストに失敗。設定を確認中だよ');
+                    let pushErrorMessage = pushTestError?.message || '送信設定を確認してね';
+                    try {
+                        const response = pushTestError?.context;
+                        const errorBody = response?.clone ? await response.clone().json() : null;
+                        if (Array.isArray(errorBody?.missing) && errorBody.missing.length) {
+                            pushErrorMessage = '未設定: ' + errorBody.missing.join(', ');
+                        } else if (Array.isArray(errorBody?.failures) && errorBody.failures.length) {
+                            pushErrorMessage = errorBody.failures
+                                .map(failure => [failure.statusCode || '送信失敗', failure.message].filter(Boolean).join(' '))
+                                .join(' / ');
+                        } else if (errorBody?.detail || errorBody?.error || errorBody?.message) {
+                            pushErrorMessage = errorBody.detail || errorBody.error || errorBody.message;
+                        }
+                        if (response?.status) pushErrorMessage += ' (HTTP ' + response.status + ')';
+                    } catch (detailError) {
+                        console.warn('KURO push error detail unavailable:', detailError);
+                    }
+                    showToast('通知登録済み・送信失敗: ' + String(pushErrorMessage).slice(0, 90));
                 } else if (pushTest?.sent > 0) {
-                    showToast('通知登録OK！テスト通知を送ったよ');
+                    const partial = Array.isArray(pushTest.failures) ? pushTest.failures.length : 0;
+                    showToast(partial
+                        ? '通知テスト一部成功 ' + pushTest.sent + '/' + pushTest.registered + '件（失敗 ' + partial + '件）'
+                        : '通知登録OK！テスト通知を送ったよ');
                 } else {
                     console.error('KURO push test result:', pushTest);
                     showToast('通知テスト失敗: ' + (pushTest?.error || (pushTest?.missing?.join(', ')) || '送信設定を確認してね'));
