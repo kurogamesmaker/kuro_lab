@@ -203,6 +203,7 @@ function requestParentDurableTicket(roomData) {
         ok: event.data.ok === true,
         status: Number(event.data.status) || 0,
         data: event.data.data && typeof event.data.data === "object" ? event.data.data : {},
+        endpoint: typeof event.data.endpoint === "string" ? event.data.endpoint : "",
       });
     }
     window.addEventListener("message", onMessage);
@@ -218,6 +219,7 @@ function requestParentDurableTicket(roomData) {
 async function connectRoomDurable(roomData, members, session, endpoint) {
   const base = String(endpoint).replace(/\/$/, "");
   let ticketOk = false, ticketStatus = 0, ticketData = {};
+  let ticketViaParent = false, parentEndpoint = "";
   try {
     const ticketResponse = await fetch(base + "/ticket", {
       method: "POST",
@@ -233,6 +235,8 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
     ticketOk = bridged.ok;
     ticketStatus = bridged.status;
     ticketData = bridged.data;
+    ticketViaParent = true;
+    parentEndpoint = bridged.endpoint;
   }
   if (!ticketOk || !ticketData.ticket) {
     const reasons = {
@@ -278,71 +282,113 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
     });
   }
 
-  await new Promise((resolve, reject) => {
-    let settled = false;
-    const timeout = setTimeout(() => {
-      if (!settled) {
-        settled = true;
-        try { socket.close(); } catch (_) {}
-        reject(new Error("Durable Objects接続がタイムアウトしました。"));
-      }
-    }, 15000);
-    socket = new WebSocket(wsUrl);
-    socket.onerror = () => {
-      if (!settled) {
-        settled = true;
-        clearTimeout(timeout);
-        reject(new Error("Durable Objectsへの接続に失敗しました。"));
-      }
-    };
-    socket.onclose = () => {
-      active = false;
-      if (heartbeat) clearInterval(heartbeat); if (statusWatch) clearInterval(statusWatch);
-      rejectPending(new Error("Durable Objects接続が閉じられました。"));
-      if (!settled) {
-        settled = true;
-        clearTimeout(timeout);
-        reject(new Error("Durable Objects接続が閉じられました。"));
-      }
-    };
-    socket.onmessage = event => {
-      let message;
-      try { message = JSON.parse(event.data); } catch (_) { return; }
-      if (message.type === "welcome") {
-        emitPlayers(message.players || []);
+  const roomPath = "/room/" + encodeURIComponent(String(roomData.id)) + "?ticket=" + encodeURIComponent(ticketData.ticket);
+  const parentWsBase = parentEndpoint
+    ? parentEndpoint.replace(/^https:/i, "wss:").replace(/^http:/i, "ws:").replace(/\\/$/, "")
+    : "";
+  const parentWsUrl = parentWsBase ? parentWsBase + roomPath : "";
+  const wsCandidates = [];
+  if (ticketViaParent && parentWsUrl) wsCandidates.push(parentWsUrl);
+  wsCandidates.push(wsUrl);
+  if (parentWsUrl && !wsCandidates.includes(parentWsUrl)) wsCandidates.push(parentWsUrl);
+  let connected = false;
+
+  async function openDurableSocket(candidateUrl) {
+    await new Promise((resolve, reject) => {
+      let settled = false;
+      const timeout = setTimeout(() => {
         if (!settled) {
           settled = true;
-          clearTimeout(timeout);
-          resolve();
+          try { if (socket) socket.close(); } catch (_) {}
+          reject(new Error("Durable Objects接続がタイムアウトしました。"));
         }
-      } else if (message.type === "players") {
-        emitPlayers(message.players || []);
-      } else if (message.type === "state-result" || message.type === "game-patch-result" || message.type === "unon-result") {
-        const item = pending.get(message.requestId);
-        if (item) {
-          pending.delete(message.requestId);
-          clearTimeout(item.timer);
-          item.resolve(message.result || {});
-        }
-      } else if (message.type === "state") {
-        if (message.from !== session.user.id) {
-          emitMessage({
-            type: "room-state-updated",
-            data: { state: message.state, updatedAt: message.updatedAt },
-            from: message.from || "",
-            sentAt: Date.now(),
-          });
-        }
-      } else if (message.type === "message" && message.message) {
-        const item = message.message;
-        if (item.from !== session.user.id) {
-          emitMessage({ type: item.type, data: item.data, from: item.from, sentAt: item.at });
-        }
-      } else if (message.type === "error") {
-        console.warn("KURO Durable Objects:", message.error);
+      }, 15000);
+
+      try {
+        socket = new WebSocket(candidateUrl);
+      } catch (error) {
+        clearTimeout(timeout);
+        reject(error);
+        return;
       }
-    };
-  });
+
+      function failInitial(message) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        try { if (socket) socket.close(); } catch (_) {}
+        reject(new Error(message));
+      }
+
+      socket.onerror = () => {
+        if (!connected) failInitial("Durable Objectsへの接続に失敗しました。");
+      };
+      socket.onclose = () => {
+        if (!connected) {
+          failInitial("Durable Objects接続が閉じられました。");
+          return;
+        }
+        active = false;
+        if (heartbeat) clearInterval(heartbeat); if (statusWatch) clearInterval(statusWatch);
+        rejectPending(new Error("Durable Objects接続が閉じられました。"));
+      };
+      socket.onmessage = event => {
+        let message;
+        try { message = JSON.parse(event.data); } catch (_) { return; }
+        if (message.type === "welcome") {
+          emitPlayers(message.players || []);
+          if (!connected) {
+            connected = true;
+            if (!settled) {
+              settled = true;
+              clearTimeout(timeout);
+              resolve();
+            }
+          }
+        } else if (message.type === "players") {
+          emitPlayers(message.players || []);
+        } else if (message.type === "state-result" || message.type === "game-patch-result" || message.type === "unon-result") {
+          const item = pending.get(message.requestId);
+          if (item) {
+            pending.delete(message.requestId);
+            clearTimeout(item.timer);
+            item.resolve(message.result || {});
+          }
+        } else if (message.type === "state") {
+          if (message.from !== session.user.id) {
+            emitMessage({
+              type: "room-state-updated",
+              data: { state: message.state, updatedAt: message.updatedAt },
+              from: message.from || "",
+              sentAt: Date.now(),
+            });
+          }
+        } else if (message.type === "message" && message.message) {
+          const item = message.message;
+          if (item.from !== session.user.id) {
+            emitMessage({ type: item.type, data: item.data, from: item.from, sentAt: item.at });
+          }
+        } else if (message.type === "error") {
+          console.warn("KURO Durable Objects:", message.error);
+        }
+      };
+    });
+  }
+
+  let connectionError = null;
+  for (const candidateUrl of wsCandidates) {
+    try {
+      await openDurableSocket(candidateUrl);
+      connectionError = null;
+      break;
+    } catch (error) {
+      connectionError = error;
+      console.warn("KURO Durable WebSocket route failed; trying the alternate route:", candidateUrl, error);
+    }
+  }
+  if (!connected) {
+    throw connectionError || new Error("Durable Objectsへの接続に失敗しました。");
+  }
 
   heartbeat = setInterval(() => {
     if (active && socket && socket.readyState === WebSocket.OPEN) {
