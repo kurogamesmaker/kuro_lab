@@ -480,7 +480,7 @@ window.__KURO_STUDIO_BOOT_STAGE__="binding-editor-controls";
 const tickerBtn=$("rankingTickerBtn");
 if(tickerBtn&&requestedPublishedGameId){
  tickerBtn.style.display="inline-flex";
- tickerBtn.onclick=()=>{
+ tickerBtn.onclick=async()=>{
   const gameId=project.publishedGameId||requestedPublishedGameId,original=String(project.name||"ゲーム");
   const readMap=key=>{try{const value=JSON.parse(localStorage.getItem(key)||"{}");return value&&typeof value==="object"&&!Array.isArray(value)?value:{};}catch(_){return {};}};
   const textMap=readMap("kuroGamesRankingTickerByGame"),historyMap=readMap("kuroGamesRankingTickerHistoryByGame"),styleMap=readMap("kuroGamesRankingTickerStyleByGame");
@@ -493,7 +493,7 @@ if(tickerBtn&&requestedPublishedGameId){
   overlay.style.cssText="position:fixed;inset:0;z-index:99999;background:#080d18d9;display:grid;place-items:center;padding:16px;font-family:system-ui";
   const panel=document.createElement("section");
   panel.style.cssText="width:min(640px,96vw);max-height:92vh;overflow:auto;background:#111b2c;color:#edf3ff;border:1px solid #34445e;border-radius:18px;padding:20px;box-shadow:0 24px 70px #0008";
-  panel.innerHTML='<h2 style="margin:0 0 4px;font-size:19px">ランキングバー表示設定</h2><p style="margin:0 0 16px;color:#9eacc4;font-size:12px">文字・動き・色をゲームごとに設定できます。このブラウザに保存されます。</p><div style="background:#0a1220;border:1px solid #28364e;border-radius:10px;padding:11px;margin-bottom:12px"><small style="color:#8e9db6">変更前のゲーム名</small><div id="tickerOriginal" style="font-weight:700;margin-top:3px"></div></div><label style="display:block;font-size:12px;font-weight:700;margin-bottom:6px">表示する文字</label><textarea id="tickerEdit" maxlength="160" rows="3" style="width:100%;box-sizing:border-box;resize:vertical;background:#0a1220;color:#fff;border:1px solid #384966;border-radius:9px;padding:10px;font:14px system-ui"></textarea><div style="display:flex;justify-content:space-between;gap:8px;font-size:11px;color:#94a4bc;margin:5px 0 12px"><span>空欄なら元のゲーム名を表示</span><span id="tickerCount">0 / 160</span></div><div style="font-size:12px;font-weight:700;margin-bottom:6px">リアルタイムプレビュー</div><div id="tickerPreview" style="border-radius:9px;padding:12px;overflow:hidden;white-space:nowrap;font-weight:800;text-align:center;margin-bottom:14px;min-height:20px"></div><div style="font-size:12px;font-weight:700;margin-bottom:7px">表示・アニメーション</div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;background:#0a1220;border:1px solid #28364e;border-radius:10px;padding:12px;margin-bottom:12px"><label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700"><input id="tickerEnabled" type="checkbox" style="accent-color:#58a5ff;width:16px;height:16px"> ランキングバーに表示</label><label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700">流れる方向<select id="tickerDirection" style="margin-left:auto;max-width:120px;background:#17243a;color:#fff;border:1px solid #384966;border-radius:7px;padding:7px"><option value="left">左へ流す</option><option value="right">右へ流す</option></select></label><label style="grid-column:1/-1;display:block;font-size:12px;font-weight:700">流れる速度：<strong id="tickerSpeedValue">30 px/秒</strong><input id="tickerSpeed" type="range" min="10" max="100" step="5" style="display:block;width:100%;margin-top:9px;accent-color:#58a5ff"></label></div><div style="font-size:12px;font-weight:700;margin-bottom:7px">カラー設定</div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;background:#0a1220;border:1px solid #28364e;border-radius:10px;padding:12px;margin-bottom:14px"><label style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px">文字色<input id="tickerTextColor" type="color" style="width:48px;height:34px;border:0;background:transparent;padding:0"></label><label style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px">背景色<input id="tickerBackgroundColor" type="color" style="width:48px;height:34px;border:0;background:transparent;padding:0"></label><button id="tickerStyleReset" type="button" style="grid-column:1/-1;justify-self:start">色・速度・方向を初期設定に戻す</button></div><div style="font-size:12px;font-weight:700;margin-bottom:6px">テンプレート</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px"><button data-ticker-preset="rank" type="button">🏆 ランキング</button><button data-ticker-preset="hype" type="button">🔥 盛り上げ</button><button data-ticker-preset="simple" type="button">✨ シンプル</button></div><label style="font-size:12px;font-weight:700">以前の表示文字（履歴）</label><select id="tickerHistory" style="display:block;width:100%;box-sizing:border-box;margin:6px 0 14px;padding:9px;background:#0a1220;color:#fff;border:1px solid #384966;border-radius:8px"><option value="">履歴から選択…</option></select><div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap"><button id="tickerCancel" type="button">キャンセル</button><button id="tickerReset" type="button">元のゲーム名に戻す</button><button id="tickerSave" type="button">保存</button></div>';
+  panel.innerHTML='<h2 style="margin:0 0 4px;font-size:19px">ランキングバー表示設定</h2><p style="margin:0 0 16px;color:#9eacc4;font-size:12px">文字・動き・色をゲームごとに設定できます。このブラウザに保存されます。</p><div style="background:#0a1220;border:1px solid #28364e;border-radius:10px;padding:11px;margin-bottom:12px"><small style="color:#8e9db6">変更前のゲーム名</small><div id="tickerOriginal" style="font-weight:700;margin-top:3px"></div></div><label style="display:block;font-size:12px;font-weight:700;margin-bottom:6px">表示する文字</label><textarea id="tickerEdit" maxlength="160" rows="3" style="width:100%;box-sizing:border-box;resize:vertical;background:#0a1220;color:#fff;border:1px solid #384966;border-radius:9px;padding:10px;font:14px system-ui"></textarea><div style="display:flex;justify-content:space-between;gap:8px;font-size:11px;color:#94a4bc;margin:5px 0 12px"><span>空欄なら元のゲーム名を表示</span><span id="tickerCount">0 / 160</span></div><div style="font-size:12px;font-weight:700;margin-bottom:6px">リアルタイムプレビュー</div><div id="tickerPreview" style="border-radius:9px;padding:12px;overflow:hidden;white-space:nowrap;font-weight:800;text-align:center;margin-bottom:14px;min-height:20px"></div><section style="background:#0a1220;border:1px solid #28364e;border-radius:11px;padding:12px;margin-bottom:14px"><div style="font-size:12px;font-weight:800;margin-bottom:4px">ランキング区分ごとの編集</div><p style="margin:0 0 8px;color:#94a4bc;font-size:11px;line-height:1.6">通常・CPU戦・オンライン対戦など、実際に登録されている区分を個別に設定します。OFFにすると自動切替から外れます。</p><div id="tickerModeStatus" style="font-size:11px;color:#9eacc4;margin-bottom:8px">ランキング区分を読み込み中…</div><div id="tickerModeList" style="display:grid;gap:7px"></div><div style="font-size:10px;color:#8192ad;margin-top:8px">見出しはゲーム名の後ろに表示されます。スコア単位は空欄なら自動（勝・点）です。↑↓で表示順を変更できます。</div></section><div style="font-size:12px;font-weight:700;margin-bottom:7px">表示・アニメーション</div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;background:#0a1220;border:1px solid #28364e;border-radius:10px;padding:12px;margin-bottom:12px"><label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700"><input id="tickerEnabled" type="checkbox" style="accent-color:#58a5ff;width:16px;height:16px"> ランキングバーに表示</label><label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700">流れる方向<select id="tickerDirection" style="margin-left:auto;max-width:120px;background:#17243a;color:#fff;border:1px solid #384966;border-radius:7px;padding:7px"><option value="left">左へ流す</option><option value="right">右へ流す</option></select></label><label style="grid-column:1/-1;display:block;font-size:12px;font-weight:700">流れる速度：<strong id="tickerSpeedValue">30 px/秒</strong><input id="tickerSpeed" type="range" min="10" max="100" step="5" style="display:block;width:100%;margin-top:9px;accent-color:#58a5ff"></label></div><div style="font-size:12px;font-weight:700;margin-bottom:7px">カラー設定</div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;background:#0a1220;border:1px solid #28364e;border-radius:10px;padding:12px;margin-bottom:14px"><label style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px">文字色<input id="tickerTextColor" type="color" style="width:48px;height:34px;border:0;background:transparent;padding:0"></label><label style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px">背景色<input id="tickerBackgroundColor" type="color" style="width:48px;height:34px;border:0;background:transparent;padding:0"></label><button id="tickerStyleReset" type="button" style="grid-column:1/-1;justify-self:start">色・速度・方向を初期設定に戻す</button></div><div style="font-size:12px;font-weight:700;margin-bottom:6px">テンプレート</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px"><button data-ticker-preset="rank" type="button">🏆 ランキング</button><button data-ticker-preset="hype" type="button">🔥 盛り上げ</button><button data-ticker-preset="simple" type="button">✨ シンプル</button></div><label style="font-size:12px;font-weight:700">以前の表示文字（履歴）</label><select id="tickerHistory" style="display:block;width:100%;box-sizing:border-box;margin:6px 0 14px;padding:9px;background:#0a1220;color:#fff;border:1px solid #384966;border-radius:8px"><option value="">履歴から選択…</option></select><div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap"><button id="tickerCancel" type="button">キャンセル</button><button id="tickerReset" type="button">元のゲーム名に戻す</button><button id="tickerSave" type="button">保存</button></div>';
   overlay.id="kuroTickerModal";panel.id="kuroTickerPanel";overlay.appendChild(panel);document.body.appendChild(overlay);
   panel.querySelectorAll("button").forEach(b=>{b.style.cssText="cursor:pointer;border:1px solid #3a4b67;background:#1b2940;color:#eaf1ff;border-radius:8px;padding:8px 11px";});
   const originalNode=panel.querySelector("#tickerOriginal"),edit=panel.querySelector("#tickerEdit"),preview=panel.querySelector("#tickerPreview"),count=panel.querySelector("#tickerCount"),history=panel.querySelector("#tickerHistory"),enabled=panel.querySelector("#tickerEnabled"),speed=panel.querySelector("#tickerSpeed"),speedValue=panel.querySelector("#tickerSpeedValue"),direction=panel.querySelector("#tickerDirection"),textColor=panel.querySelector("#tickerTextColor"),backgroundColor=panel.querySelector("#tickerBackgroundColor");
@@ -514,13 +514,79 @@ if(tickerBtn&&requestedPublishedGameId){
   const close=()=>overlay.remove();panel.querySelector("#tickerCancel").onclick=close;overlay.addEventListener("click",e=>{if(e.target===overlay)close();});
   panel.querySelector("#tickerReset").onclick=()=>{edit.value="";update();};
   panel.querySelector("#tickerStyleReset").onclick=()=>{enabled.checked=true;speed.value=String(defaults.speed);direction.value=defaults.direction;textColor.value=defaults.textColor;backgroundColor.value=defaults.backgroundColor;update();};
-  panel.querySelector("#tickerSave").onclick=()=>{
-   const value=edit.value.trim(),nextMap=readMap("kuroGamesRankingTickerByGame"),nextHistory=readMap("kuroGamesRankingTickerHistoryByGame"),nextStyleMap=readMap("kuroGamesRankingTickerStyleByGame"),previous=nextMap[gameId]||"";
-   if(previous&&previous!==value){const list=Array.isArray(nextHistory[gameId])?nextHistory[gameId]:[];nextHistory[gameId]=[previous,...list.filter(v=>v!==previous)].slice(0,20);}
-   if(value)nextMap[gameId]=value;else delete nextMap[gameId];
-   nextStyleMap[gameId]={enabled:enabled.checked,speed:safeSpeed(speed.value),direction:direction.value==="right"?"right":"left",textColor:safeColor(textColor.value,defaults.textColor),backgroundColor:safeColor(backgroundColor.value,defaults.backgroundColor)};
-   try{localStorage.setItem("kuroGamesRankingTickerByGame",JSON.stringify(nextMap));localStorage.setItem("kuroGamesRankingTickerHistoryByGame",JSON.stringify(nextHistory));localStorage.setItem("kuroGamesRankingTickerStyleByGame",JSON.stringify(nextStyleMap));close();toast("ランキングバー設定を保存しました");}catch(e){toast("保存できませんでした");}
+  const modeStatus=panel.querySelector("#tickerModeStatus"),modeContainer=panel.querySelector("#tickerModeList"),saveButton=panel.querySelector("#tickerSave");
+  const defaultModeLabels={normal:"通常ルール・勝利数",vanish:"消えるルール・勝利数",gobble:"食べるルール・勝利数",reverse:"逆転ルール・勝利数","wins-bot":"CPU戦・勝利数","wins-online":"オンライン対戦・勝利数",werewolf_villager_wins:"村人陣営の勝利数",werewolf_wolf_wins:"人狼陣営の勝利数",normal_beginner:"ノーマル・初心者"};
+  let modeRows=[],modeConfigLoaded=false;
+  const renderModeRows=()=>{
+   modeContainer.replaceChildren();
+   if(!modeRows.length){modeContainer.textContent="現在、編集できるランキング区分はありません。";return;}
+   modeRows.forEach((item,index)=>{
+    const row=document.createElement("div");row.dataset.mode=item.mode;
+    row.style.cssText="display:grid;grid-template-columns:74px minmax(0,1fr) 88px 58px;align-items:center;gap:6px;padding:8px;border:1px solid #273750;border-radius:8px;background:#111d30";
+    const toggle=document.createElement("label");toggle.style.cssText="display:flex;align-items:center;gap:5px;font-size:11px;white-space:nowrap";
+    const checkbox=document.createElement("input");checkbox.type="checkbox";checkbox.checked=item.enabled;checkbox.style.cssText="width:15px;height:15px;accent-color:#58a5ff";
+    const toggleText=document.createElement("span");toggleText.textContent="表示";toggle.append(checkbox,toggleText);
+    const labelInput=document.createElement("input");labelInput.type="text";labelInput.maxLength=64;labelInput.value=item.label;labelInput.placeholder=defaultModeLabels[item.mode]||item.mode;labelInput.dataset.field="label";labelInput.title="区分の表示名";
+    labelInput.style.cssText="min-width:0;width:100%;box-sizing:border-box;padding:7px;border:1px solid #384966;border-radius:7px;background:#091321;color:#fff;font:11px system-ui";
+    const suffixInput=document.createElement("input");suffixInput.type="text";suffixInput.maxLength=10;suffixInput.value=item.scoreSuffix||"";suffixInput.placeholder="自動";suffixInput.dataset.field="suffix";suffixInput.title="スコア単位（例：勝、点）";
+    suffixInput.style.cssText="min-width:0;width:100%;box-sizing:border-box;padding:7px;border:1px solid #384966;border-radius:7px;background:#091321;color:#fff;font:11px system-ui";
+    const order=document.createElement("div");order.style.cssText="display:flex;gap:3px;justify-content:flex-end";
+    const up=document.createElement("button");up.type="button";up.textContent="↑";up.title="上へ";up.disabled=index===0;
+    const down=document.createElement("button");down.type="button";down.textContent="↓";down.title="下へ";down.disabled=index===modeRows.length-1;
+    [up,down].forEach(button=>button.style.cssText="padding:6px 8px;border:1px solid #3a4b67;border-radius:6px;background:#1b2940;color:#eaf1ff;cursor:pointer");
+    up.onclick=()=>{if(index>0){[modeRows[index-1],modeRows[index]]=[modeRows[index],modeRows[index-1]];renderModeRows();}};
+    down.onclick=()=>{if(index<modeRows.length-1){[modeRows[index+1],modeRows[index]]=[modeRows[index],modeRows[index+1]];renderModeRows();}};
+    order.append(up,down);row.append(toggle,labelInput,suffixInput,order);modeContainer.appendChild(row);
+   });
   };
+  const loadModeSettings=async()=>{
+   saveButton.disabled=true;
+   try{
+    if(!publishDb||!publishDb.functions)throw new Error("ランキング設定への接続を確認できません。");
+    const {data,error}=await publishDb.functions.invoke("kurogames-online",{body:{action:"leaderboard_modes",gameId}});
+    if(error)throw error;
+    const modes=Array.isArray(data?.modes)?data.modes.filter(mode=>typeof mode==="string"&&/^[A-Za-z0-9_-]{1,40}$/.test(mode)):[];
+    const config=data?.showcaseConfig?.modes&&typeof data.showcaseConfig.modes==="object"?data.showcaseConfig.modes:{};
+    modeRows=modes.map((mode,index)=>{
+     const saved=config[mode]&&typeof config[mode]==="object"?config[mode]:{};
+     return {mode,enabled:saved.enabled!==false,label:typeof saved.label==="string"?saved.label:(defaultModeLabels[mode]||(mode==="default"?"":mode.replace(/[_-]+/g," "))),scoreSuffix:typeof saved.scoreSuffix==="string"?saved.scoreSuffix:"",order:Number.isFinite(Number(saved.order))?Number(saved.order):index};
+    }).sort((a,b)=>a.order-b.order);
+    modeConfigLoaded=true;modeStatus.textContent=modes.length?modes.length+"種類のランキング区分を読み込みました。":"現在、登録済みのランキング区分はありません。";
+    modeStatus.style.color="#8fc5ff";renderModeRows();saveButton.disabled=false;
+   }catch(error){
+    modeStatus.textContent="区分設定を読み込めませんでした："+(error&&error.message||"ログイン状態を確認してください。");
+    modeStatus.style.color="#ffaaaa";modeContainer.textContent="KURO GAME STUDIOにログインした状態で再度開いてください。";
+   }
+  };
+  panel.querySelector("#tickerSave").onclick=async()=>{
+   if(!modeConfigLoaded){toast("ランキング区分を読み込めていません。再読み込みしてください");return;}
+   const modeConfig={modes:{}};
+   Array.from(modeContainer.children).forEach((row,index)=>{
+    const mode=row.dataset.mode;if(!mode)return;
+    const inputs=row.querySelectorAll("input");
+    const label=String(row.querySelector('[data-field="label"]')?.value||"").trim().slice(0,64);
+    const rawSuffix=String(row.querySelector('[data-field="suffix"]')?.value||"").trim().slice(0,10);
+    modeConfig.modes[mode]={enabled:!!inputs[0]?.checked,label,scoreSuffix:rawSuffix||null,order:index};
+   });
+   saveButton.disabled=true;modeStatus.textContent="ランキング区分を保存しています…";
+   try{
+    const {data,error}=await publishDb.functions.invoke("kurogames-online",{body:{action:"ranking_showcase_config_update",gameId,config:modeConfig}});
+    if(error)throw error;
+    if(!data||data.ok!==true)throw new Error("サーバーから保存完了の応答がありません。");
+    const value=edit.value.trim(),nextMap=readMap("kuroGamesRankingTickerByGame"),nextHistory=readMap("kuroGamesRankingTickerHistoryByGame"),nextStyleMap=readMap("kuroGamesRankingTickerStyleByGame"),previous=nextMap[gameId]||"";
+    if(previous&&previous!==value){const list=Array.isArray(nextHistory[gameId])?nextHistory[gameId]:[];nextHistory[gameId]=[previous,...list.filter(v=>v!==previous)].slice(0,20);}
+    if(value)nextMap[gameId]=value;else delete nextMap[gameId];
+    nextStyleMap[gameId]={enabled:enabled.checked,speed:safeSpeed(speed.value),direction:direction.value==="right"?"right":"left",textColor:safeColor(textColor.value,defaults.textColor),backgroundColor:safeColor(backgroundColor.value,defaults.backgroundColor)};
+    localStorage.setItem("kuroGamesRankingTickerByGame",JSON.stringify(nextMap));
+    localStorage.setItem("kuroGamesRankingTickerHistoryByGame",JSON.stringify(nextHistory));
+    localStorage.setItem("kuroGamesRankingTickerStyleByGame",JSON.stringify(nextStyleMap));
+    close();toast("ランキング表示設定を保存しました");
+   }catch(error){
+    modeStatus.textContent="保存できませんでした："+(error&&error.message||"権限・通信を確認してください。");
+    modeStatus.style.color="#ffaaaa";toast("ランキング設定の保存に失敗しました");
+   }finally{saveButton.disabled=false;}
+  };
+  loadModeSettings();
   edit.focus();
  };
 }
