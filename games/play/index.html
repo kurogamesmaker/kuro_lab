@@ -196,7 +196,7 @@ window.addEventListener("message", async event => {
   let data = {};
   try { data = await response.json(); } catch (_) {}
   console.info("[UNON ticket relay] response", response.status, data.error || "ticket_response");
-  reply({ ok: response.ok, status: response.status, data: data });
+  reply({ ok: response.ok, status: response.status, data: data, endpoint: new URL("/api/online-room", window.location.origin).href });
  } catch (error) {
   console.error("[UNON ticket relay] fetch failed", error);
   reply({ error: "ticket_fetch_failed: " + String(error && error.message || error).slice(0, 180) });
