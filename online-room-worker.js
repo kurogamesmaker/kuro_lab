@@ -262,7 +262,8 @@ export class Room {
     }
     let winProof = null;
     if (nextGame.phase === "finished" && nextGame.result &&
-        nextGame.result.winnerId === userId && this.gameId === UNON_GAME_ID &&
+        nextGame.result.reason === "win" && nextGame.result.winnerId === userId &&
+        this.gameId === UNON_GAME_ID &&
         UUID_RE.test(String(nextGame.matchId || "")) && validId(this.roomId)) {
       const now = Math.floor(Date.now() / 1000);
       winProof = await issueTicket({
