@@ -182,7 +182,7 @@ window.addEventListener("message", async event => {
    reply({ error: "KUROアカウントへのログインが必要です。" });
    return;
   }
-  const response = await fetch("https://kuro-online-room.kurogamesmaker.workers.dev/ticket", {
+  const response = await fetch(new URL("/api/online-room/ticket", window.location.origin).href, {
    method: "POST",
    mode: "cors",
    credentials: "omit",
