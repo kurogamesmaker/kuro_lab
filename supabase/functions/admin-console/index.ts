@@ -196,9 +196,26 @@ Deno.serve(async (req: Request) => {
         ["normal","vanish","gobble","reverse"].includes(mode) && difficulty === "HARD";
       const verifiedUnonOnline = gameId === "faa155cb-2143-4361-9a96-dc759d334e46" &&
         mode === "wins-online" && difficulty === null;
-      if (!verifiedTictactoe && !verifiedUnonOnline) {
+      const verifiedPrime = gameId === "79c9921a-d57a-45b1-8271-1ee7042801dc" &&
+        ["easy","normal","hard"].includes(mode) && difficulty === null;
+      const numberModes = new Set([
+        "number-classic-easy","number-classic-normal","number-classic-hard",
+        "number-classic-expert","number-classic-master","number-classic-legend",
+        "number-time-easy","number-time-normal","number-time-hard",
+        "number-time-expert","number-time-master","number-time-legend"
+      ]);
+      const verifiedNumber = gameId === "bb466662-5423-48e6-bbcc-d19da50ba818" &&
+        numberModes.has(mode) && difficulty === null;
+      const sushiModes = new Set([
+        "normal_beginner","normal_intermediate","normal_advanced",
+        "sudden_beginner","sudden_intermediate","sudden_advanced",
+        "endless_beginner","endless_intermediate","endless_advanced"
+      ]);
+      const verifiedSushi = gameId === "5c1e658b-f6d3-412a-8b97-61d2c0457e95" &&
+        sushiModes.has(mode) && difficulty === null;
+      if (!verifiedTictactoe && !verifiedUnonOnline && !verifiedPrime && !verifiedNumber && !verifiedSushi) {
         return reply({
-          error: "現在、報酬を設定できるのは〇✕ゲームのCPU最強勝利とUNONオンライン勝利のみです。ほかのゲームはサーバー検証経路が確認されるまで対象外です。"
+          error: "報酬設定できるのはサーバー検証済みのゲーム・モードのみです。対応するゲームとモードを選択してください。"
         }, 400, origin);
       }
       const { data: game, error: gameError } = await admin.from("game_studio_games")
