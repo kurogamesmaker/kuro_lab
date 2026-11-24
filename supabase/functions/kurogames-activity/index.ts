@@ -41,6 +41,12 @@ async function getOptionalUser(req: Request) {
   if (!token || token.length > 8192 || token.split(".").length !== 3) return null;
   const { data, error } = await admin.auth.getUser(token);
   if (error || !data.user || data.user.is_anonymous) return null;
+  const now = new Date().toISOString();
+  const { data: suspension, error: suspensionError } = await admin.from("account_suspensions")
+    .select("id").eq("user_id", data.user.id).is("revoked_at", null)
+    .lte("starts_at", now).gt("ends_at", now).limit(1).maybeSingle();
+  if (suspensionError) throw new HttpError(503, "アカウントの利用状態を確認できません。時間をおいて再度お試しください。");
+  if (suspension) throw new HttpError(403, "このアカウントは一時停止中のため、ゲームへの参加はできません。");
   return data.user;
 }
 
