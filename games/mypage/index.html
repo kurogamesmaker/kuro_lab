@@ -268,7 +268,7 @@ async function loadForUser(user){
  if(token!==loadToken)return;
  if(results[0].error)console.warn("profile read failed:",results[0].error);
  if(results[1].error)throw results[1].error;
- var profile=results[0].data||null,stats=results[1].data||[];
+ var profile=results[0].data||null,stats=(results[1].data||[]).filter(function(row){return !(row.metadata&&row.metadata.internalRankingMode===true);});
  var ids=Array.from(new Set(stats.map(function(row){return String(row.game_id||"");}).filter(Boolean)));
  var games=[];
  if(ids.length){
