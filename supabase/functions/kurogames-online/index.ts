@@ -677,6 +677,9 @@ async function reconcilePendingVerifiedSessions(userId:string,gameId:string) {
       } else if(gameId===PRIME_GAME_ID && session.game_type==="prime_factor") {
         if(session.result!=="completed" || !["easy","normal","hard"].includes(String(session.state?.difficulty))) continue;
         await primeRecordCompletedRun(userId,session);
+      } else if(gameId===SUSHI_GAME_ID && session.game_type==="sushi_typing") {
+        if(session.result!=="completed" || !SUSHI_CFG[String(session.state?.mode)] || !SUSHI_WORD_BANK[String(session.state?.level)]) continue;
+        await sushiRecordCompletedRun(userId,session);
       } else if(gameId===TICTACTOE_GAME_ID && session.game_type==="tictactoe") {
         if(!["win","loss","draw"].includes(String(session.result)) ||
           !["normal","vanish","gobble","reverse"].includes(String(session.mode)) ||
@@ -1035,7 +1038,7 @@ async function handle(req: Request) {
   if (action === "leaderboard_modes") {
     requirePublished(game);
     requireFeature(settings.features, "ranking");
-    if (game.id === TICTACTOE_GAME_ID || game.id === NUMBER_GAME_ID || game.id === UNON_GAME_ID || game.id === PRIME_GAME_ID) {
+    if (game.id === TICTACTOE_GAME_ID || game.id === NUMBER_GAME_ID || game.id === UNON_GAME_ID || game.id === PRIME_GAME_ID || game.id === SUSHI_GAME_ID) {
       return reply(200, {
         modes: [...(KNOWN_RANKING_MODES[game.id] ?? [])],
         showcaseConfig: sanitizeRankingShowcaseConfig(settings.features.rankingShowcaseConfig),
@@ -1197,6 +1200,35 @@ async function handle(req: Request) {
             user:{kuroId:profile.kuro_id||null,username:profile.username,display_name:profile.username,avatar_url:profile.avatar_url}};
         }),
       });
+    }
+
+
+    if(game.id===SUSHI_GAME_ID) {
+      if(!(KNOWN_RANKING_MODES[game.id]??[]).includes(mode)) throw new HttpError(400,"寿司タイピングのランキングモードが正しくありません。");
+      const {data:events,error}=await admin.from("kuro_game_play_events")
+        .select("user_id,score,mode,created_at")
+        .eq("game_id",game.id).eq("mode",mode)
+        .contains("metadata",{source:"sushi-typing-server",serverVerified:"sushi-typing-v1"})
+        .gt("score",0).order("created_at",{ascending:true}).limit(50000);
+      if(error) throw new HttpError(500,"寿司タイピングの検証済みランキングを取得できませんでした。");
+      const bestByUser=new Map<string,{user_id:string;score:number;mode:string;created_at:string}>();
+      for(const row of events??[]) {
+        const old=bestByUser.get(row.user_id);
+        if(!old||Number(row.score)>old.score) bestByUser.set(row.user_id,{user_id:row.user_id,score:Number(row.score)||0,mode:row.mode,created_at:row.created_at});
+      }
+      const ranked=Array.from(bestByUser.values()).sort((a,b)=>b.score-a.score||String(a.created_at).localeCompare(String(b.created_at))).slice(0,limit);
+      const ids=Array.from(new Set(ranked.map(row=>row.user_id)));
+      const profiles=new Map<string,{kuro_id:string;username:string;avatar_url:string|null}>();
+      if(ids.length) {
+        const {data,error:profileError}=await admin.from("profiles").select("id,kuro_id,username,avatar_url").in("id",ids);
+        if(profileError) throw new HttpError(500,"ランキング参加者のプロフィールを取得できませんでした。");
+        for(const profile of data??[]) profiles.set(profile.id,{kuro_id:profile.kuro_id??"",username:profile.username??"プレイヤー",avatar_url:profile.avatar_url??null});
+      }
+      return reply(200,{mode,serverVerified:true,scores:ranked.map((row,index)=>{
+        const p=profiles.get(row.user_id)??{kuro_id:"",username:"プレイヤー",avatar_url:null};
+        return {rank:index+1,userId:row.user_id,score:row.score,mode,createdAt:row.created_at,recordType:"verified-sushi-typing",
+          user:{kuroId:p.kuro_id||null,username:p.username,display_name:p.username,avatar_url:p.avatar_url}};
+      })});
     }
 
     let scores:any[] = [];
@@ -1407,6 +1439,110 @@ async function handle(req: Request) {
   }
 
 
+
+
+  if (action === "sushi_start") {
+    const user=await getUser(req);
+    requirePublished(game);
+    requireFeature(settings.features,"ranking");
+    if(game.id!==SUSHI_GAME_ID) throw new HttpError(404,"回転ずしタイピングの認証先ではありません。");
+    const mode=typeof body.mode==="string"?body.mode.trim():"normal";
+    const level=typeof body.level==="string"?body.level.trim():"beginner";
+    if(!SUSHI_CFG[mode]||!SUSHI_WORD_BANK[level]) throw new HttpError(400,"ゲームモードまたはコースが正しくありません。");
+    const {error:expireError}=await admin.from("game_verification_sessions").update({status:"expired"})
+      .eq("game_id",game.id).eq("user_id",user.id).eq("game_type","sushi_typing").eq("status","active");
+    if(expireError) throw new HttpError(500,"前の寿司タイピングセッションを終了できませんでした。");
+    const state={
+      mode,level,score:0,miss:0,combo:0,maxCombo:0,completed:0,
+      gauge:0,gaugeLevel:0,diffValue:0,timeAdjustment:0,suddenEnded:false,
+      wordQueue:sushiShuffle(SUSHI_WORD_BANK[level].map((_:unknown,index:number)=>index)),
+      wordCursor:0,wordStartedAt:Date.now(),currentWord:null,
+    };
+    const currentWord=sushiNextWord(state);
+    const {data,error}=await admin.from("game_verification_sessions").insert({
+      game_id:game.id,user_id:user.id,game_type:"sushi_typing",mode:mode+"_"+level,state,status:"active",
+    }).select("id,nonce,started_at").single();
+    if(error?.code==="23505") throw new HttpError(409,"別の寿司タイピングが同時に開始されました。");
+    if(error||!data) throw new HttpError(500,"回転ずしタイピングを開始できませんでした。");
+    const session={...data,started_at:data.started_at};
+    return reply(200,{ok:true,sessionId:data.id,currentWord,...sushiSnapshot(state,session,data.nonce),serverVerified:true});
+  }
+
+  if (action === "sushi_word") {
+    const user=await getUser(req);
+    requirePublished(game);
+    requireFeature(settings.features,"ranking");
+    if(game.id!==SUSHI_GAME_ID) throw new HttpError(404,"回転ずしタイピングの認証先ではありません。");
+    const session=await loadVerifiedSession(user.id,body.sessionId,body.nonce,game.id,"sushi_typing");
+    const state=cloneGameState(session.state as Record<string,any>);
+    if(state.suddenEnded===true) throw new HttpError(409,"一発勝負は終了しています。");
+    if(sushiTimeLeft(session,state)<=0) throw new HttpError(410,"制限時間が終了しました。");
+    const answer=typeof body.answer==="string"?body.answer.trim().toLowerCase():"";
+    if(!answer||!sushiVariants(String(state.currentWord?.kana||"")).includes(answer)) {
+      throw new HttpError(400,"入力内容が現在の単語と一致しません。");
+    }
+    const elapsed=Math.max(0,Date.now()-Number(state.wordStartedAt||Date.now()));
+    const minElapsed=Math.max(300,Math.min(1800,String(state.currentWord?.romaji||"").length*45));
+    if(elapsed<minElapsed) throw new HttpError(429,"入力速度の確認中です。少しだけ待ってから次の単語を確定してください。");
+    const config=SUSHI_CFG[String(state.mode)];
+    const fever=Number(state.combo||0)>=10;
+    const gold=sushiRandomChance(10);
+    let gain=10+Math.min(Number(state.combo)||0,20);
+    if(fever) gain*=2;
+    if(gold) gain+=50;
+    state.score=(Number(state.score)||0)+gain;
+    state.combo=(Number(state.combo)||0)+1;
+    state.maxCombo=Math.max(Number(state.maxCombo)||0,state.combo);
+    state.completed=(Number(state.completed)||0)+1;
+    const rate=state.mode==="endless"
+      ? Math.max(.1,1-.9*(Number(state.diffValue)||0)/100)
+      : Math.max(.5,1-.1*(Number(state.gaugeLevel)||0));
+    state.gauge=(Number(state.gauge)||0)+((fever?config.fever:config.gain)+(gold?config.gold:0))*rate;
+    let extended=false;
+    if(state.gauge>=100) {
+      state.gauge-=100;
+      state.gaugeLevel=(Number(state.gaugeLevel)||0)+1;
+      state.timeAdjustment=(Number(state.timeAdjustment)||0)+config.bonus;
+      extended=true;
+      if(state.mode==="endless") state.diffValue=Math.min(100,(Number(state.diffValue)||0)+8);
+    }
+    const currentWord=sushiNextWord(state);
+    const nonce=await saveVerifiedSession(session,{state,attempts:Number(session.attempts||0)+1});
+    const nextSession={...session,last_action_at:new Date().toISOString()};
+    return reply(200,{ok:true,correct:true,gain,fever,gold,extended,currentWord,...sushiSnapshot(state,nextSession,nonce)});
+  }
+
+  if (action === "sushi_miss") {
+    const user=await getUser(req);
+    requirePublished(game);
+    requireFeature(settings.features,"ranking");
+    if(game.id!==SUSHI_GAME_ID) throw new HttpError(404,"回転ずしタイピングの認証先ではありません。");
+    const session=await loadVerifiedSession(user.id,body.sessionId,body.nonce,game.id,"sushi_typing");
+    const state=cloneGameState(session.state as Record<string,any>);
+    if(state.suddenEnded===true) return reply(200,{ok:true,suddenEnded:true,nonce:session.nonce,...sushiSnapshot(state,session,session.nonce)});
+    const lastActionMs=Date.now()-Date.parse(session.last_action_at);
+    if(Number.isFinite(lastActionMs)&&lastActionMs<40) throw new HttpError(429,"操作が速すぎます。");
+    state.miss=(Number(state.miss)||0)+1;
+    state.combo=0;
+    const config=SUSHI_CFG[String(state.mode)];
+    state.gauge=Math.max(0,(Number(state.gauge)||0)-config.miss);
+    if(state.mode==="sudden") state.suddenEnded=true;
+    const nonce=await saveVerifiedSession(session,{state,attempts:Number(session.attempts||0)+1});
+    return reply(200,{ok:true,suddenEnded:state.suddenEnded===true,nonce,...sushiSnapshot(state,{...session,last_action_at:new Date().toISOString()},nonce)});
+  }
+
+  if (action === "sushi_finish") {
+    const user=await getUser(req);
+    requirePublished(game);
+    requireFeature(settings.features,"ranking");
+    if(game.id!==SUSHI_GAME_ID) throw new HttpError(404,"回転ずしタイピングの認証先ではありません。");
+    const session=await loadVerifiedSession(user.id,body.sessionId,body.nonce,game.id,"sushi_typing");
+    const state=cloneGameState(session.state as Record<string,any>);
+    const patch={state:{...state,timeLeftAtFinish:sushiTimeLeft(session,state)},status:"completed",result:"completed",completed_at:new Date().toISOString()};
+    await saveVerifiedSession(session,patch);
+    const saved=await sushiRecordCompletedRun(user.id,{...session,...patch});
+    return reply(200,{ok:true,completed:true,recorded:saved.scoreRecorded,score:saved.score});
+  }
 
   if (action === "prime_start") {
     const user = await getUser(req);
