@@ -1682,6 +1682,11 @@ async function handle(req: Request) {
     const session = await loadVerifiedSession(user.id,body.sessionId,body.nonce,game.id,"prime_factor");
     const state = cloneGameState(session.state as Record<string,any>);
     const timeLeft = primeGetTimeLeft(session,state);
+    // The client only calls finishPrimeSession after the 90-second game timer ends.
+    // Enforce that on the server too, so a caller cannot end a live run early for a payout.
+    if (timeLeft > 1.0) {
+      throw new HttpError(409,"素因数分解は制限時間が終了してから結果を確定できます。");
+    }
     // The prime-factor verifier owns the target, accepted factors and score.
     // Pay only for a completed run with at least one server-verified solution.
     if ((Number(state.solvedCount) || 0) > 0 && (Number(state.score) || 0) > 0) {
@@ -1751,7 +1756,8 @@ async function handle(req: Request) {
     const completed = correct || lost;
     // The answer and difficulty are read from the server-owned session.
     // The session UUID is the idempotency key for this exact successful run.
-    if (correct) {
+    // Keep the same 500ms floor used by the time-attack ranking verifier.
+    if (correct && elapsedMs !== null && elapsedMs >= 500) {
       const rewardMode = "number-" + playMode + "-" + level;
       const {error:coinEventError} = await admin.from("kuro_coin_verified_game_events").insert({
         game_id: NUMBER_GAME_ID,
