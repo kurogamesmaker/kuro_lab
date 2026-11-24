@@ -795,6 +795,32 @@ async function handle(req: Request) {
   if (typeof action !== "string" || action.length > 64) {
     throw new HttpError(400, "操作名が正しくありません。");
   }
+  // KURO COIN is account-wide and does not depend on a particular game ID or ranking flag.
+  if (action === "coin_summary") {
+    const user = await getUser(req);
+    const [balanceResult, ledgerResult] = await Promise.all([
+      admin.from("kuro_coin_balances")
+        .select("balance,updated_at")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      admin.from("kuro_coin_ledger")
+        .select("id,amount,balance_after,transaction_type,source_game_id,source_mode,description,created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20),
+    ]);
+    if (balanceResult.error || ledgerResult.error) {
+      console.error("[kurogames-online] KURO COIN summary read failed", balanceResult.error || ledgerResult.error);
+      throw new HttpError(500, "KURO COINの残高を取得できませんでした。");
+    }
+    return reply(200, {
+      currency: "KC",
+      balance: Number(balanceResult.data?.balance) || 0,
+      updatedAt: balanceResult.data?.updated_at || null,
+      transactions: ledgerResult.data || [],
+    });
+  }
+
   const game = await getGame(body.gameId);
   const settings = await getFeatures(game.id);
 
