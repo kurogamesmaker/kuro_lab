@@ -6,6 +6,12 @@
   var content = null;
   var requestId = 0;
   var snsMoreAction = null;
+  var currentProfile = null;
+  var viewerUser = null;
+  var viewerFollowsProfile = false;
+  var chatConversationId = null;
+  var chatRefreshTimer = null;
+  var chatSending = false;
 
   function getDb() {
     return window.kuroSNSDB || window.kuroGamesDB || window.kuroPortalDB || null;
@@ -52,6 +58,18 @@
     return minutes + ":" + String(seconds).padStart(2, "0") + "." + String(millis).padStart(3, "0");
   }
 
+  function formatMessageTime(value) {
+    var date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
+  }
+
+  function stopChatRefresh() {
+    if (chatRefreshTimer) window.clearInterval(chatRefreshTimer);
+    chatRefreshTimer = null;
+    chatConversationId = null;
+  }
+
   function getModal() {
     if (modal) return modal;
     modal = document.createElement("div");
@@ -68,7 +86,10 @@
     document.body.appendChild(modal);
     content = modal.querySelector("#kuroProfileContent");
     modal.addEventListener("click", function (event) {
-      if (event.target === modal || event.target.closest(".kuro-profile-close")) close();
+      if (event.target === modal || event.target.closest(".kuro-profile-close")) {
+        close();
+        return;
+      }
       var more = event.target.closest(".kuro-profile-sns-more");
       if (more && !more.hidden) {
         var action = snsMoreAction;
@@ -78,6 +99,43 @@
             console.warn("KURO SNS profile detail open failed:", error);
           });
         }
+        return;
+      }
+      if (event.target.closest(".kuro-profile-follow-toggle")) {
+        toggleFollow().catch(showSocialError);
+        return;
+      }
+      var listButton = event.target.closest("[data-kuro-profile-list]");
+      if (listButton) {
+        showFollowList(listButton.getAttribute("data-kuro-profile-list")).catch(showSocialError);
+        return;
+      }
+      var listUser = event.target.closest("[data-kuro-profile-list-user]");
+      if (listUser) {
+        event.preventDefault();
+        event.stopPropagation();
+        var nextId = listUser.getAttribute("data-kuro-profile-list-user");
+        open(nextId).catch(showSocialError);
+        return;
+      }
+      if (event.target.closest(".kuro-profile-chat-open")) {
+        openDirectChat().catch(showSocialError);
+        return;
+      }
+      if (event.target.closest(".kuro-profile-chat-close")) {
+        stopChatRefresh();
+        var chatPanel = content.querySelector(".kuro-profile-chat-panel");
+        if (chatPanel) chatPanel.remove();
+        return;
+      }
+      if (event.target.closest(".kuro-profile-chat-refresh")) {
+        loadChatMessages().catch(showSocialError);
+      }
+    });
+    modal.addEventListener("submit", function (event) {
+      if (event.target && event.target.id === "kuroProfileChatForm") {
+        event.preventDefault();
+        sendChatMessage().catch(showSocialError);
       }
     });
     document.addEventListener("keydown", function (event) {
@@ -86,10 +144,17 @@
     return modal;
   }
 
+  function showSocialError(error) {
+    console.error("KURO profile social action failed:", error);
+    var status = content && content.querySelector("#kuroProfileSocialStatus");
+    if (status) status.textContent = error && error.message ? error.message : "操作に失敗しました。時間をおいて再度お試しください。";
+  }
+
   function close() {
     if (!modal) return;
     modal.hidden = true;
     snsMoreAction = null;
+    stopChatRefresh();
   }
 
   function renderStats(rows) {
@@ -148,9 +213,52 @@
     return summary + '<div class="kuro-profile-games">' + cards + '</div>';
   }
 
+  async function getSignedInUser(db) {
+    if (!db || !db.auth || typeof db.auth.getUser !== "function") return null;
+    try {
+      var result = await db.auth.getUser();
+      var user = result && result.data && result.data.user;
+      return user && !user.is_anonymous ? user : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function getFollowCounts(db, userId) {
+    var results = await Promise.all([
+      db.from("follows").select("follower_id", { count: "exact", head: true }).eq("following_id", userId),
+      db.from("follows").select("following_id", { count: "exact", head: true }).eq("follower_id", userId)
+    ]);
+    return {
+      followers: results[0].error ? null : Number(results[0].count || 0),
+      following: results[1].error ? null : Number(results[1].count || 0)
+    };
+  }
+
+  function renderSocial(profile, counts, isSelf, signedIn) {
+    var followers = counts.followers == null ? "—" : counts.followers.toLocaleString("ja-JP");
+    var following = counts.following == null ? "—" : counts.following.toLocaleString("ja-JP");
+    var actions = isSelf
+      ? '<div class="kuro-profile-own-label">あなたのプロフィール</div>'
+      : '<div class="kuro-profile-social-actions">' +
+          '<button type="button" class="kuro-profile-follow-toggle">' + (signedIn ? (viewerFollowsProfile ? "フォロー中 · 解除" : "＋ フォロー") : "ログインしてフォロー") + '</button>' +
+          '<button type="button" class="kuro-profile-chat-open">チャット</button>' +
+        '</div>';
+    return '<section class="kuro-profile-social">' +
+      '<div class="kuro-profile-follow-stats">' +
+        '<button type="button" data-kuro-profile-list="following"><strong>' + following + '</strong><span>フォロー中</span></button>' +
+        '<button type="button" data-kuro-profile-list="followers"><strong>' + followers + '</strong><span>フォロワー</span></button>' +
+      '</div>' +
+      actions +
+      '<p class="kuro-profile-social-status" id="kuroProfileSocialStatus" role="status" aria-live="polite"></p>' +
+      '<div class="kuro-profile-social-panel" id="kuroProfileSocialPanel" hidden></div>' +
+    '</section>';
+  }
+
   async function open(userId, options) {
     var id = String(userId || "");
     if (!UUID_RE.test(id)) throw new Error("プロフィールIDが正しくありません。");
+    stopChatRefresh();
     var db = getDb();
     var host = getModal();
     var thisRequest = ++requestId;
@@ -160,6 +268,9 @@
     content.innerHTML = '<div class="kuro-profile-loading">プロフィールを読み込み中…</div>';
     host.hidden = false;
     host.querySelector(".kuro-profile-dialog").focus();
+    currentProfile = null;
+    viewerUser = null;
+    viewerFollowsProfile = false;
     if (!db) {
       content.innerHTML = '<div class="kuro-profile-error">プロフィール通信を開始できません。ページを再読み込みしてください。</div>';
       return;
@@ -167,7 +278,9 @@
     try {
       var results = await Promise.all([
         db.from("profiles").select("id,username,display_name,kuro_id,avatar_url,bio,created_at").eq("id", id).maybeSingle(),
-        db.rpc("kuro_get_public_profile_game_stats", { p_user_id: id })
+        db.rpc("kuro_get_public_profile_game_stats", { p_user_id: id }),
+        getFollowCounts(db, id),
+        getSignedInUser(db)
       ]);
       if (thisRequest !== requestId) return;
       var profileResult = results[0], statsResult = results[1];
@@ -177,6 +290,14 @@
         return;
       }
       var profile = profileResult.data;
+      currentProfile = profile;
+      viewerUser = results[3];
+      if (viewerUser && viewerUser.id !== id) {
+        var followResult = await db.from("follows").select("follower_id").eq("follower_id", viewerUser.id).eq("following_id", id).maybeSingle();
+        if (!followResult.error) viewerFollowsProfile = !!followResult.data;
+      }
+      if (thisRequest !== requestId) return;
+      var isSelf = !!viewerUser && viewerUser.id === id;
       var name = profile.display_name || profile.username || "KUROユーザー";
       var handle = profile.username ? "@" + profile.username : "KUROユーザー";
       var avatarUrl = safeImageUrl(profile.avatar_url);
@@ -194,6 +315,7 @@
       content.innerHTML =
         '<section class="kuro-profile-identity"><div class="kuro-profile-avatar">' + avatar + '</div><div class="kuro-profile-names"><h3>' + escapeHtml(name) + '</h3><p>' + escapeHtml(handle) + '</p><small>KURO ID：' + escapeHtml(profile.kuro_id || "未設定") + '</small>' + joinedLabel + '</div></section>' +
         '<section class="kuro-profile-bio"><h3>自己紹介</h3><p>' + bioHtml + '</p></section>' +
+        renderSocial(profile, results[2], isSelf, !!viewerUser) +
         '<section class="kuro-profile-records"><div class="kuro-profile-section-head"><h3>ゲーム記録</h3><span>ゲーム別・モード別</span></div>' +
           (statsResult.error
             ? '<div class="kuro-profile-error">ゲーム記録を読み込めませんでした。少し時間をおいて再度お試しください。</div>'
@@ -203,6 +325,226 @@
       if (thisRequest !== requestId) return;
       console.error("KURO common profile load failed:", error);
       content.innerHTML = '<div class="kuro-profile-error">プロフィールを読み込めませんでした。通信状態を確認して、もう一度お試しください。</div>';
+    }
+  }
+
+  async function refreshProfile() {
+    if (!currentProfile) return;
+    var id = currentProfile.id;
+    var options = snsMoreAction ? { onSnsMore: snsMoreAction } : null;
+    await open(id, options);
+  }
+
+  async function toggleFollow() {
+    var db = getDb();
+    if (!db || !currentProfile) return;
+    var user = await getSignedInUser(db);
+    if (!user) {
+      setSocialStatus("フォローするにはKUROアカウントでログインしてください。");
+      openSignIn();
+      return;
+    }
+    if (user.id === currentProfile.id) {
+      setSocialStatus("自分自身はフォローできません。");
+      return;
+    }
+    var targetId = currentProfile.id;
+    var button = content.querySelector(".kuro-profile-follow-toggle");
+    if (button) button.disabled = true;
+    try {
+      var existing = await db.from("follows").select("follower_id").eq("follower_id", user.id).eq("following_id", targetId).maybeSingle();
+      if (existing.error) throw existing.error;
+      if (existing.data) {
+        var removed = await db.from("follows").delete().eq("follower_id", user.id).eq("following_id", targetId);
+        if (removed.error) throw removed.error;
+      } else {
+        var inserted = await db.from("follows").insert({ follower_id: user.id, following_id: targetId });
+        if (inserted.error) throw inserted.error;
+        try {
+          var reverse = await db.from("follows").select("follower_id").eq("follower_id", targetId).eq("following_id", user.id).maybeSingle();
+          var noticeType = reverse.data ? "follow_back" : "follow";
+          await db.from("notifications").insert({ recipient_id: targetId, actor_id: user.id, type: noticeType });
+        } catch (noticeError) {
+          console.warn("KURO follow notification skipped:", noticeError);
+        }
+        if (db.functions && typeof db.functions.invoke === "function") {
+          db.functions.invoke("send-chat-push", { body: { type: "follow", targetUserId: targetId } })
+            .catch(function (pushError) { console.warn("KURO follow push skipped:", pushError); });
+        }
+      }
+      await refreshProfile();
+    } catch (error) {
+      if (button) button.disabled = false;
+      setSocialStatus("フォローを更新できませんでした。通信状態を確認してください。");
+      throw error;
+    }
+  }
+
+  function setSocialStatus(message) {
+    var status = content && content.querySelector("#kuroProfileSocialStatus");
+    if (status) status.textContent = message || "";
+  }
+
+  function openSignIn() {
+    if (typeof window.openAuthModal === "function") {
+      window.openAuthModal("signin");
+      return;
+    }
+    var button = document.getElementById("kuroAccountOpen") || document.getElementById("portal-account-button");
+    if (button && typeof button.click === "function") button.click();
+  }
+
+  async function showFollowList(kind) {
+    if (kind !== "followers" && kind !== "following") return;
+    if (!currentProfile) return;
+    var db = getDb();
+    var targetId = currentProfile.id;
+    var panel = content.querySelector("#kuroProfileSocialPanel");
+    if (!panel) return;
+    panel.hidden = false;
+    panel.innerHTML = '<div class="kuro-profile-loading">一覧を読み込み中…</div>';
+    var isFollowers = kind === "followers";
+    var key = isFollowers ? "follower_id" : "following_id";
+    var filterKey = isFollowers ? "following_id" : "follower_id";
+    var result = await db.from("follows").select("follower_id,following_id,created_at").eq(filterKey, targetId).order("created_at", { ascending: false }).limit(100);
+    if (result.error) throw result.error;
+    var ids = (result.data || []).map(function (row) { return row[key]; });
+    if (!ids.length) {
+      panel.innerHTML = '<div class="kuro-profile-list-head"><strong>' + (isFollowers ? "フォロワー" : "フォロー中") + '</strong><button type="button" class="kuro-profile-list-close" aria-label="閉じる">×</button></div><p class="kuro-profile-empty">' + (isFollowers ? "まだフォロワーはいません。" : "まだフォローしているユーザーはいません。") + '</p>';
+      panel.querySelector(".kuro-profile-list-close").addEventListener("click", function () { panel.hidden = true; });
+      return;
+    }
+    var profileResult = await db.from("profiles").select("id,username,display_name,avatar_url").in("id", ids);
+    if (profileResult.error) throw profileResult.error;
+    var byId = Object.create(null);
+    (profileResult.data || []).forEach(function (profile) { byId[profile.id] = profile; });
+    var rows = ids.map(function (id) { return byId[id]; }).filter(Boolean);
+    panel.innerHTML =
+      '<div class="kuro-profile-list-head"><strong>' + (isFollowers ? "フォロワー" : "フォロー中") + '</strong><button type="button" class="kuro-profile-list-close" aria-label="閉じる">×</button></div>' +
+      '<div class="kuro-profile-list-items">' + rows.map(function (profile) {
+        var avatarUrl = safeImageUrl(profile.avatar_url);
+        var avatar = avatarUrl
+          ? '<img src="' + escapeHtml(avatarUrl) + '" alt="" class="kuro-profile-list-avatar">'
+          : '<span class="kuro-profile-list-avatar kuro-profile-list-fallback">' + escapeHtml(Array.from(profile.display_name || profile.username || "👤")[0] || "👤") + '</span>';
+        return '<button type="button" class="kuro-profile-list-user" data-kuro-profile-list-user="' + escapeHtml(profile.id) + '">' + avatar +
+          '<span><strong>' + escapeHtml(profile.display_name || profile.username || "KUROユーザー") + '</strong><small>@' + escapeHtml(profile.username || "user") + '</small></span><span class="kuro-profile-list-arrow">›</span></button>';
+      }).join("") + '</div>';
+    panel.querySelector(".kuro-profile-list-close").addEventListener("click", function () { panel.hidden = true; });
+  }
+
+  async function openDirectChat() {
+    var db = getDb();
+    if (!db || !currentProfile) return;
+    var user = await getSignedInUser(db);
+    if (!user) {
+      setSocialStatus("チャットを使うにはKUROアカウントでログインしてください。");
+      openSignIn();
+      return;
+    }
+    if (user.id === currentProfile.id) {
+      setSocialStatus("自分自身とのチャットは開始できません。");
+      return;
+    }
+    stopChatRefresh();
+    var targetId = currentProfile.id;
+    var panel = content.querySelector("#kuroProfileSocialPanel");
+    if (!panel) return;
+    panel.hidden = false;
+    panel.innerHTML =
+      '<section class="kuro-profile-chat-panel">' +
+        '<div class="kuro-profile-chat-head"><div><strong>チャット</strong><small>' + escapeHtml(currentProfile.display_name || currentProfile.username || "KUROユーザー") + '</small></div><div class="kuro-profile-chat-head-actions"><button type="button" class="kuro-profile-chat-refresh" aria-label="更新">↻</button><button type="button" class="kuro-profile-chat-close" aria-label="閉じる">×</button></div></div>' +
+        '<div class="kuro-profile-chat-messages" id="kuroProfileChatMessages"><p class="kuro-profile-loading">会話を準備しています…</p></div>' +
+        '<form id="kuroProfileChatForm" class="kuro-profile-chat-form"><input id="kuroProfileChatInput" type="text" maxlength="1000" autocomplete="off" placeholder="メッセージを入力…" required><button type="submit">送信</button></form>' +
+        '<p class="kuro-profile-chat-note" id="kuroProfileChatStatus" role="status" aria-live="polite">1対1のKURO SNSチャットを共通で使用します。</p>' +
+      '</section>';
+    try {
+      var pair = [user.id, targetId].sort();
+      var lookup = await db.from("chat_conversations").select("id,user_a,user_b").eq("user_a", pair[0]).eq("user_b", pair[1]).maybeSingle();
+      if (lookup.error) throw lookup.error;
+      var conversation = lookup.data;
+      if (!conversation) {
+        var created = await db.from("chat_conversations").insert({ user_a: pair[0], user_b: pair[1], created_by: user.id }).select("id,user_a,user_b").single();
+        if (created.error) {
+          var retry = await db.from("chat_conversations").select("id,user_a,user_b").eq("user_a", pair[0]).eq("user_b", pair[1]).maybeSingle();
+          if (retry.error || !retry.data) throw created.error;
+          conversation = retry.data;
+        } else {
+          conversation = created.data;
+        }
+      }
+      if (!conversation || !conversation.id) throw new Error("チャットの会話を作成できませんでした。");
+      chatConversationId = conversation.id;
+      await loadChatMessages();
+      chatRefreshTimer = window.setInterval(function () {
+        if (!modal || modal.hidden || !chatConversationId) return;
+        loadChatMessages().catch(function (error) { console.warn("KURO profile chat refresh failed:", error); });
+      }, 5000);
+      var input = content.querySelector("#kuroProfileChatInput");
+      if (input) input.focus();
+    } catch (error) {
+      var messages = content.querySelector("#kuroProfileChatMessages");
+      if (messages) messages.innerHTML = '<p class="kuro-profile-error">チャットを開始できませんでした。ログイン状態とチャット権限を確認してください。</p>';
+      throw error;
+    }
+  }
+
+  async function loadChatMessages() {
+    var db = getDb();
+    var conversationId = chatConversationId;
+    var box = content && content.querySelector("#kuroProfileChatMessages");
+    if (!db || !conversationId || !box) return;
+    var result = await db.from("chat_messages").select("id,sender_id,content,created_at").eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(60);
+    if (result.error) throw result.error;
+    var rows = (result.data || []).slice().reverse();
+    if (!rows.length) {
+      box.innerHTML = '<p class="kuro-profile-chat-empty">まだメッセージはありません。最初のメッセージを送ってみましょう。</p>';
+      return;
+    }
+    var wasNearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+    box.innerHTML = rows.map(function (row) {
+      var mine = !!viewerUser && row.sender_id === viewerUser.id;
+      return '<div class="kuro-profile-chat-line ' + (mine ? "is-mine" : "is-peer") + '"><div class="kuro-profile-chat-bubble">' +
+        '<p>' + escapeHtml(row.content).replace(/\r\n|\r|\n/g, "<br>") + '</p><time>' + escapeHtml(formatMessageTime(row.created_at)) + '</time></div></div>';
+    }).join("");
+    if (wasNearBottom || rows.length) box.scrollTop = box.scrollHeight;
+  }
+
+  async function sendChatMessage() {
+    if (chatSending) return;
+    var db = getDb();
+    var input = content && content.querySelector("#kuroProfileChatInput");
+    var status = content && content.querySelector("#kuroProfileChatStatus");
+    var message = String(input && input.value || "").trim();
+    if (!db || !chatConversationId || !viewerUser || !message) return;
+    if (Array.from(message).length > 1000) {
+      if (status) status.textContent = "メッセージは1000文字以内で入力してください。";
+      return;
+    }
+    chatSending = true;
+    var button = content.querySelector("#kuroProfileChatForm button");
+    if (button) button.disabled = true;
+    try {
+      var result = await db.from("chat_messages").insert({
+        conversation_id: chatConversationId,
+        sender_id: viewerUser.id,
+        content: message
+      }).select("id").single();
+      if (result.error) throw result.error;
+      var conversationId = chatConversationId;
+      await db.from("chat_conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
+      input.value = "";
+      if (status) status.textContent = "送信しました。";
+      await loadChatMessages();
+      if (db.functions && typeof db.functions.invoke === "function" && currentProfile) {
+        db.functions.invoke("send-chat-push", { body: { type: "message", targetUserId: currentProfile.id } })
+          .catch(function (pushError) { console.warn("KURO chat push skipped:", pushError); });
+      }
+    } catch (error) {
+      if (status) status.textContent = "送信できませんでした。内容を確認して再度お試しください。";
+      throw error;
+    } finally {
+      chatSending = false;
+      if (button) button.disabled = false;
     }
   }
 
@@ -232,9 +574,7 @@
     if (!userId) return;
     event.preventDefault();
     event.stopPropagation();
-    open(userId).catch(function (error) {
-      console.warn("KURO profile trigger failed:", error);
-    });
+    open(userId).catch(showSocialError);
   }, true);
 
   document.addEventListener("keydown", function (event) {
