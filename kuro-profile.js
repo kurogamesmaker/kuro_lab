@@ -291,10 +291,13 @@
         db.rpc("kuro_get_public_profile_game_stats", { p_user_id: id }),
         getFollowCounts(db, id),
         getSignedInUser(db),
-        db.functions.invoke("kuro-public-coin-balance", { body: { userId: id } }).catch(function (error) { return { data: null, error: error }; })
+        db.functions.invoke("kuro-public-coin-balance", { body: { userId: id } }).catch(function (error) { return { data: null, error: error }; }),
+        db.rpc("kuro_get_public_store_cosmetics", { p_user_id: id }).catch(function (error) { return { data: {}, error: error }; })
       ]);
       if (thisRequest !== requestId) return;
       var profileResult = results[0], statsResult = results[1], coinBalanceResult = results[4];
+      var cosmeticsResult = results[5];
+      var cosmetics = cosmeticsResult && !cosmeticsResult.error && cosmeticsResult.data && typeof cosmeticsResult.data === "object" ? cosmeticsResult.data : {};
       if (profileResult.error) throw profileResult.error;
       if (!profileResult.data) {
         content.innerHTML = '<div class="kuro-profile-error">プロフィールが見つかりませんでした。</div>';
@@ -311,10 +314,37 @@
       var isSelf = !!viewerUser && viewerUser.id === id;
       var name = profile.display_name || profile.username || "KUROユーザー";
       var handle = profile.username ? "@" + profile.username : "KUROユーザー";
-      var avatarUrl = safeImageUrl(profile.avatar_url);
+      var equippedAvatar = cosmetics.avatar && typeof cosmetics.avatar === "object" ? cosmetics.avatar : null;
+      var equippedFrame = cosmetics.frame && typeof cosmetics.frame === "object" ? cosmetics.frame : null;
+      var equippedBackground = cosmetics.background && typeof cosmetics.background === "object" ? cosmetics.background : null;
+      var equippedTheme = cosmetics.theme && typeof cosmetics.theme === "object" ? cosmetics.theme : null;
+      var avatarUrl = safeImageUrl(equippedAvatar && equippedAvatar.imageUrl) || safeImageUrl(profile.avatar_url);
       var avatar = avatarUrl
         ? '<img src="' + escapeHtml(avatarUrl) + '" alt="" class="kuro-profile-avatar-image">'
-        : '<span class="kuro-profile-avatar-fallback">' + escapeHtml(Array.from(name)[0] || "👤") + '</span>';
+        : equippedAvatar && equippedAvatar.icon
+          ? '<span class="kuro-profile-avatar-fallback kuro-profile-avatar-item">' + escapeHtml(equippedAvatar.icon) + '</span>'
+          : '<span class="kuro-profile-avatar-fallback">' + escapeHtml(Array.from(name)[0] || "👤") + '</span>';
+      var frameRarity = equippedFrame && ["common","rare","epic","legendary"].includes(String(equippedFrame.rarity)) ? String(equippedFrame.rarity) : "";
+      var frameClass = frameRarity ? " kuro-profile-frame-" + frameRarity : "";
+      var backgroundImage = safeImageUrl(equippedBackground && equippedBackground.imageUrl);
+      var backgroundIcon = equippedBackground && !backgroundImage ? String(equippedBackground.icon || "✦") : "";
+      var backgroundStyle = backgroundImage
+        ? ' style="background-image:linear-gradient(90deg,rgba(10,15,29,.9),rgba(10,15,29,.52)),url(\'' + escapeHtml(backgroundImage) + '\')"'
+        : "";
+      var themeClass = equippedTheme && equippedTheme.itemKey === "neon-theme"
+        ? " kuro-profile-theme-neon"
+        : equippedTheme && equippedTheme.itemKey === "kuro-classic-theme"
+          ? " kuro-profile-theme-classic"
+          : "";
+      var cosmeticChips = ["avatar","frame","background","theme"].map(function (slot) {
+        var item = cosmetics[slot];
+        return item && item.name
+          ? '<span class="kuro-profile-cosmetic-chip"><span>' + escapeHtml(item.icon || "✦") + '</span>' + escapeHtml(item.name) + '</span>'
+          : "";
+      }).join("");
+      var cosmeticBanner = equippedBackground
+        ? '<div class="kuro-profile-cosmetic-banner"' + backgroundStyle + '><span class="kuro-profile-cosmetic-banner-icon">' + escapeHtml(backgroundIcon || (backgroundImage ? "" : "✦")) + '</span><span><small>PROFILE BACKGROUND</small><strong>' + escapeHtml(equippedBackground.name || "背景") + '</strong></span></div>'
+        : "";
       var bio = String(profile.bio || "").trim();
       var bioHtml = bio
         ? escapeHtml(bio).replace(/\r\n|\r|\n/g, "<br>")
@@ -328,8 +358,11 @@
         ? '<span class="kuro-profile-joined">KUROメンバー · ' + joined.toLocaleDateString("ja-JP") + ' 登録</span>'
         : "";
       content.innerHTML =
+        '<div class="kuro-profile-custom-theme' + themeClass + '">' +
+        cosmeticBanner +
+        (cosmeticChips ? '<section class="kuro-profile-cosmetic-strip" aria-label="装備中アイテム">' + cosmeticChips + '</section>' : '') +
         '<section class="kuro-profile-identity">' +
-          '<div class="kuro-profile-identity-main"><div class="kuro-profile-avatar">' + avatar + '</div>' +
+          '<div class="kuro-profile-identity-main"><div class="kuro-profile-avatar' + frameClass + '">' + avatar + '</div>' +
           '<div class="kuro-profile-names"><h3>' + escapeHtml(name) + '</h3><p>' + escapeHtml(handle) + '</p>' +
           '<small>KURO ID：' + escapeHtml(profile.kuro_id || "未設定") + '</small>' + joinedLabel + '</div></div>' +
           renderSocial(profile, results[2], isSelf, !!viewerUser) +
@@ -344,7 +377,8 @@
           (statsResult.error
             ? '<div class="kuro-profile-error">ゲーム記録を読み込めませんでした。少し時間をおいて再度お試しください。</div>'
             : renderStats(statsResult.data || [])) +
-        '</section>';
+        '</section>' +
+        '</div>';
     } catch (error) {
       if (thisRequest !== requestId) return;
       console.error("KURO common profile load failed:", error);
