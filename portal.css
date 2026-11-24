@@ -3546,3 +3546,25 @@ html body.kuro-portal .portal-header-inner .portal-dashboard-toolbar-in-header .
 .portal-bio-actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
 #portal-common-bio-status{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
 .portal-social-profile [hidden]{display:none!important}
+
+
+/* KURO header Notification BOX remains black across light/dark/pro themes.
+   Keep this rule after theme overrides so palette selectors cannot turn it white. */
+body.kuro-portal[data-theme] .portal-header-inner .portal-notification-button,
+body.kuro-portal[data-pro-theme="on"] .portal-header-inner .portal-notification-button,
+body.kuro-portal[data-theme] .portal-header-inner .portal-notification-button:hover,
+body.kuro-portal[data-pro-theme="on"] .portal-header-inner .portal-notification-button:hover,
+body.kuro-portal[data-theme] .portal-header-inner .portal-notification-button:focus-visible,
+body.kuro-portal[data-pro-theme="on"] .portal-header-inner .portal-notification-button:focus-visible,
+body.kuro-portal[data-theme] .portal-header-inner .portal-notification-button:active,
+body.kuro-portal[data-pro-theme="on"] .portal-header-inner .portal-notification-button:active {
+  background:#111111!important;
+  background-color:#111111!important;
+  color:#ffffff!important;
+  border-color:#111111!important;
+  box-shadow:0 2px 8px rgba(0,0,0,.2)!important;
+}
+body.kuro-portal[data-theme] .portal-header-inner .portal-notification-button svg,
+body.kuro-portal[data-pro-theme="on"] .portal-header-inner .portal-notification-button svg {
+  stroke:#ffffff!important;
+}
