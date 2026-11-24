@@ -257,24 +257,7 @@
     }
   }
 
-  function markAnnouncementsRead() {
-    var a = getApi(), s = getState(), p = getPrefs();
-    if (!a || !s || !p || !Array.isArray(s.ann) || !s.ann.length) return;
-    var ids = s.ann.map(function (x) { return x && x.id; }).filter(Boolean);
-    if (!ids.length) return;
-    var old = Array.isArray(p.readAnnouncements) ? p.readAnnouncements : [];
-    var next = Array.from(new Set(old.concat(ids))).slice(-300);
-    if (next.length === old.length && next.every(function (x, i) { return x === old[i]; })) return;
-    p.readAnnouncements = next;
-    a.save();
-    if (s.user && typeof a.sync === "function") {
-      clearTimeout(syncTimer);
-      syncTimer = setTimeout(function () { a.sync(false); }, 250);
-    }
-    updateBadges();
-  }
-
-  function snapshotCurrent() {
+    function snapshotCurrent() {
     var p = getPrefs();
     if (!p) return null;
     return {
@@ -865,7 +848,6 @@
   });
   window.addEventListener("kuro:announcements-updated", function () {
     updateBadges();
-    if (pathNow() === "/notifications/") markAnnouncementsRead();
   });
 
   setupShell();
