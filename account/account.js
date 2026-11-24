@@ -422,6 +422,7 @@
     if (event === "SIGNED_OUT" && currentUser) {
       currentUser = null;
       $("accountUser").hidden = true;
+      $("accountProfileCard").hidden = true;
       $("accountPasswordCard").hidden = true;
       $("accountDeleteCard").hidden = true;
       $("accountLoggedOut").hidden = false;
