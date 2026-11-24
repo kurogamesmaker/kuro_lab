@@ -92,7 +92,7 @@ button,.button{display:inline-flex;align-items:center;justify-content:center;bor
   });
  }
  const db=window.supabase?.createClient?.(SUPABASE_URL,PUBLISHABLE_KEY,{global:{fetch:cloudflareFetch},auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}});
- let currentUser=null,currentSuspension=null,currentAppeal=null,refreshBusy=false;
+ let currentUser=null,currentSuspension=null,currentAppeal=null,currentSuspensionActive=false,refreshBusy=false;
  const fmt=value=>value?new Intl.DateTimeFormat("ja-JP",{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Tokyo"}).format(new Date(value)):"—";
  function showError(message){$("formError").textContent=message||"";}
  function showOnlyLogin(){ $("loading").hidden=true;$("loginPanel").hidden=false; }
@@ -108,8 +108,7 @@ button,.button{display:inline-flex;align-items:center;justify-content:center;bor
    const now=new Date().toISOString();
    const {data:suspensions,error:suspensionError}=await db.from("account_suspensions")
     .select("id,user_id,starts_at,ends_at,reason,revoked_at")
-    .eq("user_id",currentUser.id).is("revoked_at",null)
-    .lte("starts_at",now).gt("ends_at",now)
+    .eq("user_id",currentUser.id)
     .order("starts_at",{ascending:false}).limit(1);
    if(suspensionError)throw suspensionError;
    currentSuspension=(suspensions||[])[0]||null;
@@ -118,7 +117,13 @@ button,.button{display:inline-flex;align-items:center;justify-content:center;bor
     $("suspensionPanel").hidden=true;$("appealPanel").hidden=true;$("endedPanel").hidden=false;
     return;
    }
-   $("endedPanel").hidden=true;$("suspensionPanel").hidden=false;$("appealPanel").hidden=false;
+   currentSuspensionActive=!currentSuspension.revoked_at&&new Date(currentSuspension.starts_at).getTime()<=Date.now()&&new Date(currentSuspension.ends_at).getTime()>Date.now();
+   $("suspensionPanel").hidden=!currentSuspensionActive;
+   $("endedPanel").hidden=currentSuspensionActive;
+   $("appealPanel").hidden=!currentSuspensionActive;
+   $("pageTitle").textContent=currentSuspensionActive?"アカウントは一時停止中です":"一時停止は終了しています";
+   $("pageDescription").textContent=currentSuspensionActive?"ログインはできますが、一部サービスの利用が制限されています。":"現在、この一時停止は有効ではありません。以前の問い合わせは引き続き確認できます。";
+   $("stateText").textContent=currentSuspensionActive?"一時停止中":"終了";
    $("startsAt").textContent=fmt(currentSuspension.starts_at);
    $("endsAt").textContent=fmt(currentSuspension.ends_at);
    $("reasonBox").hidden=!String(currentSuspension.reason||"").trim();
@@ -139,9 +144,11 @@ button,.button{display:inline-flex;align-items:center;justify-content:center;bor
   if(error)throw error;
   currentAppeal=appeal||null;
   if(!currentAppeal){
+   $("appealPanel").hidden=!currentSuspensionActive;
    $("newAppealBox").hidden=false;$("ticketBox").hidden=true;$("appealStatus").hidden=true;
    return;
   }
+  $("appealPanel").hidden=false;
   $("newAppealBox").hidden=true;$("ticketBox").hidden=false;$("appealStatus").hidden=false;
   const labels={open:"未対応",answered:"管理者から返信あり",closed:"対応完了"};
   $("appealStatus").textContent=labels[currentAppeal.status]||currentAppeal.status;
