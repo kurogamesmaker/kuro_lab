@@ -3673,7 +3673,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             if (!publicProfileUser || !await requireSocialLogin()) return;
             const userId = publicProfileUser.id;
             await toggleFollow(userId);
-            await openPublicProfile(userId);
+            await openPublicProfileLegacy(userId);
         }
         async function messagePublicProfile() {
             if (!publicProfileUser || !await requireSocialLogin()) return;
@@ -3689,7 +3689,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             if (!currentUser && !await requireSocialLogin()) return;
             const userId = publicProfileUser?.id;
             await togglePostLike(postId);
-            if (userId) await openPublicProfile(userId);
+            if (userId) await openPublicProfileLegacy(userId);
         }
         function togglePublicProfileReply(postId) {
             if (!currentUser) { showToast('返信するにはログインしてください'); openAuthModal('signin'); return; }
@@ -3712,7 +3712,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 if (error) throw error;
                 const userId = publicProfileUser?.id;
                 await refreshSocialFeed();
-                if (userId) await openPublicProfile(userId);
+                if (userId) await openPublicProfileLegacy(userId);
                 showToast('返信を投稿したよ！');
             } catch (error) {
                 console.error('KURO public profile reply error:', error);
