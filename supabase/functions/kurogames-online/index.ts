@@ -1325,6 +1325,8 @@ async function handle(req: Request) {
       const orderColumn = canonicalMetric === "wins" ? "wins"
         : canonicalMetric === "time" ? "best_time_ms"
         : "best_score";
+      if (canonicalMetric === "wins") rankingQuery = rankingQuery.gt("wins", 0);
+      else rankingQuery = rankingQuery.not(orderColumn, "is", null);
       const { data, error } = await rankingQuery
         .order(orderColumn, { ascending: canonicalMetric === "time" })
         .order("updated_at", { ascending: true })
