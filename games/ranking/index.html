@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#f6f8fc">
 <meta name="description" content="KURO GAMESのゲーム別ランキング。ゲームを選んで最新のランキングを確認できます。">
 <link rel="canonical" href="https://kurolab.cc.cd/games/ranking/">
-<link rel="icon" type="image/png" sizes="48x48" href="/assets/brand/logo/kurolab_icon_maru_48.png?v=20261122marufavicon2">
+<link rel="icon" type="image/png" sizes="48x48" href="/assets/brand/logo/kurolab_icon_maru_48.png?v=20261122marufavicon2"><link rel="stylesheet" href="/kuro-profile.css?v=20261124profilemodal1">
 <title>ランキング｜KURO GAMES</title>
 <style>
 :root{--ink:#17243c;--muted:#718098;--line:#e4eaf3;--blue:#347fe2;--bg:#f5f7fb}
@@ -60,7 +60,7 @@ button,select{font:inherit}
 .rank-table tbody tr:last-child td{border-bottom:0}
 .rank-table .rank-cell{display:flex;align-items:center;gap:8px;min-width:0}
 .rank-table .rank-medal{display:grid;place-items:center;width:29px;height:29px;flex:0 0 29px;border-radius:10px;background:linear-gradient(145deg,#f1f5fa,#e3eaf3);font-size:16px;box-shadow:inset 0 1px 0 #fff,0 2px 5px #1d3a5a0d}.rank-table tbody tr:nth-child(1) .rank-medal{background:linear-gradient(145deg,#fff1bd,#ffd96d);box-shadow:0 3px 9px #d89d2533}.rank-table tbody tr:nth-child(2) .rank-medal{background:linear-gradient(145deg,#f4f7fb,#cad5e4);box-shadow:0 3px 9px #7288a122}.rank-table tbody tr:nth-child(3) .rank-medal{background:linear-gradient(145deg,#ffe0c5,#e8a875);box-shadow:0 3px 9px #bb7b4630}
-.rank-table .rank-profile{gap:7px;flex:1;min-width:0}
+.rank-table .rank-profile{gap:7px;flex:1;min-width:0;border:0;padding:0;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer}.rank-profile:focus-visible{outline:2px solid #347fe2;outline-offset:3px;border-radius:8px}
 .rank-table .rank-avatar{width:34px;height:34px;flex:0 0 34px;font-size:12px;border:2px solid #fff;box-shadow:0 0 0 1px #d4e1f1,0 3px 7px #244c7a16}
 .rank-table .rank-name{font-size:11px;white-space:normal;overflow-wrap:anywhere;line-height:1.45;color:#294361;font-weight:950}
 .rank-table .rank-score{margin-left:auto;padding:5px 8px;border:1px solid #d6e6fb;border-radius:8px;background:linear-gradient(120deg,#edf6ff,#f0efff);color:#286fc7;font-size:11px;font-weight:1000;box-shadow:inset 0 1px 0 #fff;white-space:nowrap}
@@ -309,9 +309,9 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
  function makeProfile(row){
   const userName=String(row.user&& (row.user.username||row.user.display_name)||"プレイヤー");
   const userId=String(row.userId||"");
-  const profile=document.createElement(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)?"a":"div");
+  const hasUserId=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);\n  const profile=document.createElement(hasUserId?"button":"div");\n  if(hasUserId){profile.type="button";profile.setAttribute("data-kuro-profile-user",userId);profile.setAttribute("aria-label",userName+"の共通プロフィールを開く");}
   profile.className="rank-profile";
-  if(profile.tagName==="A"){profile.href="/sns/?profile="+encodeURIComponent(userId);profile.setAttribute("aria-label",userName+"のKURO SNSプロフィールを開く");}
+  
   const avatar=document.createElement("span");avatar.className="rank-avatar";
   const initial=document.createElement("span");initial.textContent=userName.slice(0,1)||"K";avatar.append(initial);
   const rawAvatar=String(row.user&&row.user.avatar_url||"");
@@ -447,5 +447,5 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
  initialize();
 })();
 </script>
-</body>
+<script defer src="/kuro-profile.js?v=20261124profilemodal1"></script>\n</body>
 </html>
