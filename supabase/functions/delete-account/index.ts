@@ -27,6 +27,33 @@ function reply(body: unknown, status: number, origin: string | null) {
   });
 }
 
+async function kuroRemoveOwnedStorageObjects(admin: any, userId: string) {
+  const { data, error } = await admin.rpc("kuro_list_storage_objects_for_owner", {
+    p_user_id: userId
+  });
+  if (error) throw new Error("Storage ownership lookup failed: " + String((error as { message?: string })?.message || error));
+
+  const byBucket = new Map<string, string[]>();
+  for (const row of Array.isArray(data) ? data : []) {
+    const bucket = typeof row?.bucket_id === "string" ? row.bucket_id : "";
+    const objectName = typeof row?.object_name === "string" ? row.object_name : "";
+    if (!bucket || !objectName) continue;
+    if (!byBucket.has(bucket)) byBucket.set(bucket, []);
+    byBucket.get(bucket)!.push(objectName);
+  }
+
+  for (const [bucket, objectNames] of byBucket) {
+    for (let offset = 0; offset < objectNames.length; offset += 100) {
+      const batch = objectNames.slice(offset, offset + 100);
+      const { error: removeError } = await admin.storage.from(bucket).remove(batch);
+      if (removeError) {
+        throw new Error("Storage cleanup failed: " + bucket + ": " + String((removeError as { message?: string })?.message || removeError));
+      }
+    }
+  }
+  return { buckets: byBucket.size, objects: Array.from(byBucket.values()).reduce((n, items) => n + items.length, 0) };
+}
+
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
     const part = token.split(".")[1];
@@ -110,19 +137,9 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Avatar files are stored under avatars/{userId}/. Remove every
-    // previous avatar before deleting Auth; Storage can block user deletion
-    // while an object is still owned by that user.
-    const { data: avatarFiles, error: avatarListError } = await admin
-      .storage.from("avatars").list(user.id, { limit: 1000 });
-    if (avatarListError) throw avatarListError;
-    const avatarPaths = (avatarFiles || [])
-      .filter((file: { name?: string }) => Boolean(file.name))
-      .map((file: { name: string }) => user.id + "/" + file.name);
-    if (avatarPaths.length) {
-      const { error: avatarRemoveError } = await admin.storage.from("avatars").remove(avatarPaths);
-      if (avatarRemoveError) throw avatarRemoveError;
-    }
+    // Remove every Storage object owned by this account, not only avatars.
+    // Stop before Auth deletion if cleanup fails so the operation can be retried.
+    await kuroRemoveOwnedStorageObjects(admin, user.id);
 
     // This is the only RESTRICT foreign key from public tables to auth.users.
     // Remove only invitations created by the deleting account before Auth deletion.
