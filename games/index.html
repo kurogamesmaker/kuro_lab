@@ -1274,6 +1274,18 @@ body.kuro-account-open { overflow: hidden; }
 .activity-link .activity-glyph{flex:none}
 @media(max-width:680px){.activity-link{position:relative;width:40px;height:40px;flex:0 0 40px;padding:0;border-radius:11px}.activity-link .activity-text{display:none}.activity-link .activity-glyph{width:19px;height:19px}.activity-link .activity-live{position:absolute;right:7px;top:7px;width:7px;height:7px;border:1px solid #f0fbf4}}
 </style>
+<style id="kuro-games-profile-link-style">
+.kuro-sns-nav{display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none!important;background:linear-gradient(135deg,#f5f0ff,#eee8ff);border-color:#d9ccff;color:#6546a5!important}
+.kuro-sns-nav:hover{background:#e9e0ff;border-color:#bba5f4;color:#50358e!important}
+.kuro-sns-nav svg{width:15px;height:15px;flex:0 0 15px}
+#kuroRankingShowcase .rank-profile-link{display:flex;align-items:center;gap:10px;min-width:0;width:100%;overflow:hidden;text-decoration:none;color:inherit;border-radius:10px}
+#kuroRankingShowcase .rank-profile-avatar{position:relative;display:grid;place-items:center;width:36px;height:36px;flex:0 0 36px;overflow:hidden;border:1px solid #e1e8f2;border-radius:50%;background:linear-gradient(145deg,#edf3fc,#e4ebf7);color:#6f84a3}
+#kuroRankingShowcase .rank-profile-avatar:before{content:"👤";font-size:16px;line-height:1}
+#kuroRankingShowcase .rank-profile-avatar img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit}
+#kuroRankingShowcase .rank-profile-link .rank-name{display:block;min-width:0;flex:1}
+#kuroRankingShowcase a.rank-profile-link:hover .rank-name{color:#236fc5;text-decoration:underline;text-underline-offset:2px}
+@media(max-width:680px){#kuroRankingShowcase .rank-profile-avatar{width:33px;height:33px;flex-basis:33px}}
+</style>
 </head>
 <body>
 <header><div class="wrap nav">
@@ -1281,7 +1293,7 @@ body.kuro-account-open { overflow: hidden; }
 <div class="spacer"></div>
 <label class="search"><span>⌕</span><input id="gameSearch" type="search" placeholder="ゲームを検索..." autocomplete="off"></label>
 <a class="activity-link" href="/games/activity/" aria-label="プレイ状況"><svg class="activity-glyph" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h3l2-6 4 12 2-6h7"/></svg><i class="activity-live" aria-hidden="true"></i><span class="activity-text">プレイ状況</span></a>
-<span class="lab" aria-label="Cloudflare経由で通信">Cloudflare接続中</span><a class="lab" href="https://kurolab.cc.cd/">KURO Lab ↗</a><button class="kuro-notification-link" id="kuroNotificationLink" type="button" aria-label="通知BOX" title="このページ内で共通通知を確認"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></button>
+<a class="lab kuro-sns-nav" href="/sns/" aria-label="KURO SNSを開く"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M20 8v6m3-3h-6"/></svg><span>KURO SNS</span></a><a class="lab" href="https://kurolab.cc.cd/">KURO Lab ↗</a><button class="kuro-notification-link" id="kuroNotificationLink" type="button" aria-label="通知BOX" title="このページ内で共通通知を確認"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></button>
 <button class="lab kuro-account-trigger" id="kuroAccountOpen" type="button" aria-haspopup="dialog" aria-controls="kuroAccountModal">ログイン</button>
 </div></header>
 <div class="wrap kuro-home-ticker-host" id="kuroHomeTickerHost" hidden>
@@ -1636,6 +1648,25 @@ function initKuroRankingShowcase(){
    cache.set(key,{rows,at:Date.now()});return rows;
   }catch(error){if(cached?.rows?.length)return cached.rows;throw error;}
  }
+ function rankingProfileCell(row){
+  const userName=String(row.user?.username||row.user?.display_name||"プレイヤー");
+  const userId=String(row.userId||"");
+  let image="";
+  const rawAvatar=String(row.user?.avatar_url||"");
+  if(rawAvatar){
+   try{
+    const avatarUrl=new URL(rawAvatar,location.origin);
+    if(avatarUrl.protocol==="https:"||avatarUrl.protocol==="http:"){
+     image='<img src="'+esc(avatarUrl.href)+'" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">';
+    }
+   }catch(_){}
+  }
+  const content='<span class="rank-profile-avatar">'+image+'</span><span class="rank-name">'+esc(userName)+'</span>';
+  if(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)){
+   return '<a class="rank-profile-link" href="/sns/?profile='+encodeURIComponent(userId)+'" aria-label="'+esc(userName)+'のKURO SNSプロフィールを開く">'+content+'</a>';
+  }
+  return '<span class="rank-profile-link">'+content+'</span>';
+ }
  function scoreText(game,row,mode){
   const value=Number(row.score||0).toLocaleString("ja-JP"),setting=game.showcaseConfig?.modes?.[mode];
   if(setting&&typeof setting.scoreSuffix==="string")return value+setting.scoreSuffix;
@@ -1671,7 +1702,7 @@ function initKuroRankingShowcase(){
    linkEl.href="/games/play/?id="+encodeURIComponent(game.id);linkEl.textContent="このゲームを遊ぶ ↗";renderDots();
    if(result.error){showMessage("ランキングを取得できませんでした。");console.debug("KURO ranking showcase:",result.error);}
    else if(!result.rows.length)showMessage("このランキングの記録はまだありません。");
-   else listEl.innerHTML=result.rows.map((row,ri)=>'<div class="rank-row"><span class="rank-medal">'+medals[ri]+'</span><span class="rank-name">'+esc(row.user?.username||row.user?.display_name||"プレイヤー")+'</span><span class="rank-score">'+scoreText(game,row,modeInfo.mode)+'</span></div>').join("");
+   else listEl.innerHTML=result.rows.map((row,ri)=>'<div class="rank-row"><span class="rank-medal">'+medals[ri]+'</span>'+rankingProfileCell(row)+'<span class="rank-score">'+scoreText(game,row,modeInfo.mode)+'</span></div>').join("");
    panel.dataset.rankReady="1";panel.dataset.rankDirection=slideDirection;panel.classList.remove("rank-out","rank-in");void listEl.offsetWidth;panel.classList.add("rank-in");
   }catch(e){panel.classList.remove("rank-out","rank-in");showMessage("ランキングを取得できませんでした。");console.debug("KURO ranking transition:",e);panel.dataset.rankReady="1";panel.dataset.rankDirection=slideDirection;void listEl.offsetWidth;panel.classList.add("rank-in");}
   finally{busy=false;if(pendingTarget!==null){const target=pendingTarget;pendingTarget=null;display(target,target<rotationIndex?-1:1,true);}else if(pendingSteps){const n=pendingSteps;pendingSteps=0;display(rotationIndex+n,Math.sign(n),true);}else if(pendingRefresh){pendingRefresh=false;display(rotationIndex,1,true);}}
