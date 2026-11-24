@@ -270,7 +270,7 @@ Deno.serve(async (req: Request) => {
       const amount = Number(body.rewardAmount);
       const enabled = body.enabled === true;
       const difficulty = body.requiredCpuDifficulty == null || body.requiredCpuDifficulty === ""
-        ? null : String(body.requiredCpuDifficulty).toUpperCase();
+        ? "NONE" : String(body.requiredCpuDifficulty).toUpperCase();
       const label = typeof body.rewardLabel === "string" ? body.rewardLabel.trim() : "";
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(gameId)) {
         return reply({ error: "ゲームIDが正しくありません。" }, 400, origin);
@@ -281,7 +281,7 @@ Deno.serve(async (req: Request) => {
       if (!Number.isSafeInteger(amount) || amount < 0 || amount > 1000) {
         return reply({ error: "固定報酬は0〜1000 Pで設定してください。" }, 400, origin);
       }
-      if (difficulty !== null && !["EASY","NORMAL","HARD","EXPERT"].includes(difficulty)) {
+      if (!["NONE","EASY","NORMAL","HARD","EXPERT"].includes(difficulty)) {
         return reply({ error: "CPU難易度の指定が正しくありません。" }, 400, origin);
       }
       if (!label || label.length > 80) {
@@ -289,11 +289,12 @@ Deno.serve(async (req: Request) => {
       }
 
       const verifiedTictactoe = gameId === "2dbd6773-2684-4f00-973e-c46acbc348e7" &&
-        ["normal","vanish","gobble","reverse"].includes(mode) && difficulty === "HARD";
+        ["normal","vanish","gobble","reverse"].includes(mode) &&
+        ["EASY","NORMAL","HARD"].includes(difficulty);
       const verifiedUnonOnline = gameId === "faa155cb-2143-4361-9a96-dc759d334e46" &&
-        mode === "wins-online" && difficulty === null;
+        mode === "wins-online" && difficulty === "NONE";
       const verifiedPrime = gameId === "79c9921a-d57a-45b1-8271-1ee7042801dc" &&
-        ["easy","normal","hard"].includes(mode) && difficulty === null;
+        ["easy","normal","hard"].includes(mode) && difficulty === "NONE";
       const numberModes = new Set([
         "number-classic-easy","number-classic-normal","number-classic-hard",
         "number-classic-expert","number-classic-master","number-classic-legend",
@@ -301,14 +302,14 @@ Deno.serve(async (req: Request) => {
         "number-time-expert","number-time-master","number-time-legend"
       ]);
       const verifiedNumber = gameId === "bb466662-5423-48e6-bbcc-d19da50ba818" &&
-        numberModes.has(mode) && difficulty === null;
+        numberModes.has(mode) && difficulty === "NONE";
       const sushiModes = new Set([
         "normal_beginner","normal_intermediate","normal_advanced",
         "sudden_beginner","sudden_intermediate","sudden_advanced",
         "endless_beginner","endless_intermediate","endless_advanced"
       ]);
       const verifiedSushi = gameId === "5c1e658b-f6d3-412a-8b97-61d2c0457e95" &&
-        sushiModes.has(mode) && difficulty === null;
+        sushiModes.has(mode) && difficulty === "NONE";
       if (!verifiedTictactoe && !verifiedUnonOnline && !verifiedPrime && !verifiedNumber && !verifiedSushi) {
         return reply({
           error: "報酬を設定できるのはサーバー検証済みのゲーム・モードのみです。"
@@ -321,7 +322,7 @@ Deno.serve(async (req: Request) => {
         if (!(verifiedPrime || verifiedSushi)) {
           return reply({ error: "スコア別報酬は素因数分解・回転ずしタイピングのみ対応しています。" }, 400, origin);
         }
-        if (difficulty !== null || !Array.isArray(body.scoreTiers) ||
+        if (difficulty !== "NONE" || !Array.isArray(body.scoreTiers) ||
             body.scoreTiers.length < 1 || body.scoreTiers.length > 20) {
           return reply({ error: "スコア条件を1〜20段階で設定してください。" }, 400, origin);
         }
@@ -368,7 +369,7 @@ Deno.serve(async (req: Request) => {
         score_tiers: rewardType === "score_tier" ? scoreTiers : [],
         updated_by_user_id: caller.id,
         updated_at: new Date().toISOString()
-      }, { onConflict: "game_id,mode" });
+      }, { onConflict: "game_id,mode,required_cpu_difficulty" });
       if (error) throw error;
       const { error: auditError } = await admin.from("admin_audit_logs").insert({
         actor_user_id: caller.id,
