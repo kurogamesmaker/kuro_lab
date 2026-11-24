@@ -26,6 +26,7 @@ const KNOWN_RANKING_MODES: Record<string, string[]> = {
   "2eb37847-1b7e-43e4-ad98-901d5b830ac4": ["wins-bot", "wins-online"],
   "903a4c45-37bb-4a4b-a259-a5a8245de998": ["werewolf_villager_wins", "werewolf_wolf_wins"],
   "79c9921a-d57a-45b1-8271-1ee7042801dc": ["easy", "normal", "hard"],
+  "bb466662-5423-48e6-bbcc-d19da50ba818": ["number-time-easy", "number-time-normal", "number-time-hard", "number-time-expert", "number-time-master", "number-time-legend"],
 };
 class HttpError extends Error {
   status: number;
@@ -55,7 +56,13 @@ async function verifyUnonWinProof(proof: string) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ proof }),
     });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      const detail = (await response.text()).slice(0, 240);
+      console.warn("[kurogames-online] UNON win proof verifier rejected request", {
+        status: response.status, detail,
+      });
+      return null;
+    }
     const data = await response.json();
     return data && data.ok === true && data.claims && typeof data.claims === "object"
       ? data.claims as Record<string, unknown>
@@ -94,6 +101,19 @@ function safeSaveKey(value: unknown) {
   return key;
 }
 
+async function isUserTemporarilySuspended(userId: string) {
+  const now = new Date().toISOString();
+  const { data, error } = await admin.from("account_suspensions")
+    .select("id,ends_at")
+    .eq("user_id", userId)
+    .is("revoked_at", null)
+    .lte("starts_at", now)
+    .gt("ends_at", now)
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new HttpError(503, "アカウントの利用状態を確認できません。時間をおいて再度お試しください。");
+  return !!data;
+}
 async function getUser(req: Request) {
   const authHeader = req.headers.get("authorization") ?? "";
   const token = authHeader.match(/^Bearer\s+(.+)$/i)?.[1];
@@ -104,16 +124,20 @@ async function getUser(req: Request) {
   if (error || !data.user || data.user.is_anonymous) {
     throw new HttpError(401, "ログイン状態を確認できません。KUROアカウントで再ログインしてください。");
   }
+  if (await isUserTemporarilySuspended(data.user.id)) {
+    throw new HttpError(403, "このアカウントは一時停止中です。解除予定時刻までゲーム機能は利用できません。");
+  }
   return data.user;
 }
 async function getOptionalUser(req: Request) {
   const authHeader = req.headers.get("authorization") ?? "";
-  const token = authHeader.match(/^Bearer\s+(.+)$/i)?.[1];
+  const token = authHeader.match(/^Bearer\s+(.+)$/i)?.[1] ?? "";
   // Cloudflare relayはゲスト時にpublishable keyをBearerとして補うため、
   // JWT形式でない値は未ログインとして扱う。
   if (!token || token.length > 8192 || token.split(".").length !== 3) return null;
   const { data, error } = await admin.auth.getUser(token);
   if (error || !data.user || data.user.is_anonymous) return null;
+  if (await isUserTemporarilySuspended(data.user.id)) return null;
   return data.user;
 }
 
@@ -210,18 +234,278 @@ async function getRoomMembers(roomId: string) {
   });
 }
 
+
+const NUMBER_GAME_ID = "bb466662-5423-48e6-bbcc-d19da50ba818";
+const TICTACTOE_GAME_ID = "2dbd6773-2684-4f00-973e-c46acbc348e7";
+const NUMBER_LEVELS: Record<string, number> = {
+  easy: 10, normal: 30, hard: 100, expert: 300, master: 1000, legend: 10000,
+};
+const TTT_PATTERNS = [
+  [0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6],
+];
+
+function randomIntInclusive(max: number) {
+  const limit = Math.floor(0x100000000 / max) * max;
+  const buf = new Uint32Array(1);
+  let value = 0;
+  do { crypto.getRandomValues(buf); value = buf[0]; } while (value >= limit);
+  return (value % max) + 1;
+}
+
+function cloneGameState<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value));
+}
+
+async function loadVerifiedSession(userId: string, sessionId: unknown, nonce: unknown, gameId: string, gameType: string) {
+  if (typeof sessionId !== "string" || !UUID_RE.test(sessionId) ||
+      typeof nonce !== "string" || !UUID_RE.test(nonce)) {
+    throw new HttpError(400, "ゲーム認証情報が正しくありません。");
+  }
+  const { data, error } = await admin.from("game_verification_sessions")
+    .select("*")
+    .eq("id", sessionId)
+    .eq("game_id", gameId)
+    .eq("user_id", userId)
+    .eq("game_type", gameType)
+    .maybeSingle();
+  if (error) throw new HttpError(500, "ゲーム認証状態を取得できませんでした。");
+  if (!data) throw new HttpError(404, "ゲームセッションが見つかりません。");
+  if (data.status !== "active") throw new HttpError(409, "このゲームセッションは終了しています。");
+  if (data.nonce !== nonce) throw new HttpError(409, "認証情報が更新されています。画面を再読み込みしてください。");
+  const ageMs = Date.now() - Date.parse(data.started_at);
+  if (!Number.isFinite(ageMs) || ageMs < 0 || ageMs > 60 * 60 * 1000) {
+    await admin.from("game_verification_sessions").update({status:"expired"}).eq("id",data.id).eq("nonce",data.nonce);
+    throw new HttpError(410, "ゲームセッションの有効期限が切れました。");
+  }
+  return data;
+}
+
+async function saveVerifiedSession(session: Record<string, any>, patch: Record<string, unknown>) {
+  const nextNonce = crypto.randomUUID();
+  const { data, error } = await admin.from("game_verification_sessions")
+    .update({...patch, nonce:nextNonce, last_action_at:new Date().toISOString()})
+    .eq("id",session.id)
+    .eq("nonce",session.nonce)
+    .eq("status","active")
+    .select("id")
+    .maybeSingle();
+  if (error) throw new HttpError(500, "ゲーム状態を更新できませんでした。");
+  if (!data) throw new HttpError(409, "この操作は既に処理済みです。もう一度画面を確認してください。");
+  return nextNonce;
+}
+
+type TttCell = null | "O" | "X" | {player:"O"|"X";size:number};
+type TttState = {
+  rule:string;
+  difficulty:string;
+  board:TttCell[];
+  moveHistory:{O:number[];X:number[]};
+  pieceStock:{O:Record<string,number>;X:Record<string,number>};
+  currentPlayer:"O"|"X";
+};
+
+function tttPlayer(cell: TttCell): string | null {
+  if (cell === null) return null;
+  return typeof cell === "string" ? cell : cell.player;
+}
+
+function tttLinePlayer(state: TttState): string | null {
+  for (const pattern of TTT_PATTERNS) {
+    const first = tttPlayer(state.board[pattern[0]]);
+    if (first && pattern.every(i => tttPlayer(state.board[i]) === first)) return first;
+  }
+  return null;
+}
+
+function tttCanPlace(state:TttState,index:number,player:"O"|"X",size:number) {
+  if (!Number.isInteger(index) || index < 0 || index > 8) return false;
+  const cell = state.board[index];
+  if (state.rule === "gobble") {
+    if (![1,2,3].includes(size) || Number(state.pieceStock[player][String(size)] || 0) <= 0) return false;
+    if (cell === null) return true;
+    return typeof cell === "object" && cell.player !== player && cell.size < size;
+  }
+  return cell === null;
+}
+
+function tttMoves(state:TttState,player:"O"|"X") {
+  const moves:Array<{index:number;size:number}> = [];
+  if (state.rule === "gobble") {
+    for (const size of [1,2,3]) for (let index=0;index<9;index++) {
+      if (tttCanPlace(state,index,player,size)) moves.push({index,size});
+    }
+  } else {
+    for (let index=0;index<9;index++) if (tttCanPlace(state,index,player,2)) moves.push({index,size:2});
+  }
+  return moves;
+}
+
+function tttApplyMove(state:TttState,index:number,player:"O"|"X",size:number) {
+  if (!tttCanPlace(state,index,player,size)) throw new HttpError(400, "そのマスには置けません。");
+  if (state.rule === "vanish" && state.moveHistory[player].length >= 3) {
+    const oldest = state.moveHistory[player].shift();
+    if (oldest !== undefined) state.board[oldest] = null;
+  }
+  if (state.rule === "gobble") {
+    state.pieceStock[player][String(size)] -= 1;
+    state.board[index] = {player,size};
+  } else {
+    state.board[index] = player;
+  }
+  state.moveHistory[player].push(index);
+  state.currentPlayer = player === "O" ? "X" : "O";
+}
+
+function tttTerminal(state:TttState, movedPlayer:"O"|"X") {
+  const linePlayer = tttLinePlayer(state);
+  if (linePlayer) {
+    return {done:true,winner:state.rule === "reverse" ? (linePlayer === "O" ? "X" : "O") : linePlayer};
+  }
+  const next = movedPlayer === "O" ? "X" : "O";
+  if (tttMoves(state,next).length === 0) return {done:true,winner:"draw"};
+  if (state.rule !== "vanish" && state.rule !== "gobble" && state.board.every(cell => cell !== null)) {
+    return {done:true,winner:"draw"};
+  }
+  return {done:false,winner:null};
+}
+
+function tttHeuristic(state:TttState) {
+  let value = 0;
+  const reverse = state.rule === "reverse";
+  for (const pattern of TTT_PATTERNS) {
+    const owners = pattern.map(i => tttPlayer(state.board[i]));
+    const x = owners.filter(v=>v==="X").length;
+    const o = owners.filter(v=>v==="O").length;
+    if (x && o) continue;
+    if (x) value += (reverse ? -1 : 1) * (x===2?8:x===1?2:0);
+    if (o) value += (reverse ? 1 : -1) * (o===2?8:o===1?2:0);
+  }
+  const center = tttPlayer(state.board[4]);
+  if (center === "X") value += reverse ? -2 : 2;
+  if (center === "O") value += reverse ? 2 : -2;
+  return value;
+}
+
+function tttChooseCpuMove(state:TttState) {
+  const moves = tttMoves(state,"X");
+  if (!moves.length) return null;
+  const difficulty = state.difficulty;
+  if (difficulty === "easy") return moves[Math.floor(Math.random()*moves.length)];
+
+  const evaluated = moves.map(move => {
+    const afterX = cloneGameState(state);
+    tttApplyMove(afterX,move.index,"X",move.size);
+    const first = tttTerminal(afterX,"X");
+    if (first.done) {
+      const terminalScore = first.winner === "X" ? 10000 : first.winner === "O" ? -10000 : 0;
+      return {move,score:terminalScore};
+    }
+    const responses = tttMoves(afterX,"O");
+    let worst = 10000;
+    for (const response of responses) {
+      const afterO = cloneGameState(afterX);
+      tttApplyMove(afterO,response.index,"O",response.size);
+      const outcome = tttTerminal(afterO,"O");
+      let score = outcome.done
+        ? (outcome.winner === "X" ? 9000 : outcome.winner === "O" ? -9000 : 0)
+        : tttHeuristic(afterO);
+      if (score < worst) worst = score;
+    }
+    const position = move.index === 4 ? 2 : [0,2,6,8].includes(move.index) ? 1 : 0;
+    const sizeCost = state.rule === "gobble" ? move.size * 0.3 : 0;
+    return {move,score:worst + position - sizeCost};
+  });
+
+  if (difficulty === "normal" && Math.random() < 0.4) {
+    return moves[Math.floor(Math.random()*moves.length)];
+  }
+  evaluated.sort((a,b)=>b.score-a.score);
+  const bestScore = evaluated[0].score;
+  const best = evaluated.filter(item=>item.score===bestScore).map(item=>item.move);
+  return best[Math.floor(Math.random()*best.length)];
+}
+
+async function reconcilePendingVerifiedSessions(userId:string,gameId:string) {
+  const {data:pending,error} = await admin.from("game_verification_sessions")
+    .select("*")
+    .eq("game_id",gameId)
+    .eq("user_id",userId)
+    .eq("status","completed")
+    .eq("score_recorded",false)
+    .order("completed_at",{ascending:true})
+    .limit(10);
+  if(error) {
+    console.warn("[kurogames-online] pending verified session lookup failed",error);
+    return;
+  }
+  for(const session of pending ?? []) {
+    try {
+      if(gameId===NUMBER_GAME_ID && session.game_type==="number_guess") {
+        const level=String(session.state?.level ?? "").toLowerCase();
+        if(session.state?.playMode!=="time" || session.result!=="correct" ||
+          !Object.prototype.hasOwnProperty.call(NUMBER_LEVELS,level)) continue;
+        const mode="number-time-"+level;
+        const metadata={
+          metric:"clear_time_ms",
+          difficulty:level,
+          rangeMax:Number(session.range_max),
+          attempts:Number(session.attempts),
+          source:"number-guess-server",
+          serverVerified:"number-guess-v1",
+          sessionId:session.id,
+        };
+        const {error:recordError}=await admin.rpc("kuro_submit_verified_number_score",{
+          p_game_id:gameId,
+          p_user_id:userId,
+          p_mode:mode,
+          p_submission_id:session.id,
+          p_metadata:metadata,
+        });
+        if(recordError) {
+          console.warn("[kurogames-online] pending number score recovery failed",recordError);
+          continue;
+        }
+      } else if(gameId===TICTACTOE_GAME_ID && session.game_type==="tictactoe") {
+        if(!["win","loss","draw"].includes(String(session.result)) ||
+          !["normal","vanish","gobble","reverse"].includes(String(session.mode)) ||
+          !["easy","normal","hard"].includes(String(session.state?.difficulty))) continue;
+        const {error:recordError}=await admin.rpc("kuro_record_verified_tictactoe_result",{
+          p_game_id:gameId,
+          p_user_id:userId,
+          p_rule:session.mode,
+          p_result:session.result,
+          p_submission_id:session.id,
+          p_cpu_difficulty:String(session.state.difficulty).toUpperCase(),
+        });
+        if(recordError) {
+          console.warn("[kurogames-online] pending tic-tac-toe result recovery failed",recordError);
+          continue;
+        }
+      }
+    } catch(error) {
+      console.warn("[kurogames-online] pending verified session recovery failed",error);
+    }
+  }
+}
+
 async function handle(req: Request) {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
   if (req.method !== "POST") throw new HttpError(405, "POSTで呼び出してください。");
 
-  let body: Record<string, unknown>;
+  let parsedBody: unknown;
   try {
-    body = await req.json();
+    parsedBody = await req.json();
   } catch {
     throw new HttpError(400, "JSON形式のリクエストを送信してください。");
   }
-
+  if (!parsedBody || typeof parsedBody !== "object" || Array.isArray(parsedBody)) {
+    throw new HttpError(400, "リクエスト本文はJSONオブジェクトで指定してください。");
+  }
+  const body = parsedBody as Record<string, unknown>;
   const action = body.action;
+  if (typeof action !== "string" || action.length > 64) {
+    throw new HttpError(400, "操作名が正しくありません。");
+  }
   const game = await getGame(body.gameId);
   const settings = await getFeatures(game.id);
 
@@ -319,6 +603,12 @@ async function handle(req: Request) {
   if (action === "leaderboard_modes") {
     requirePublished(game);
     requireFeature(settings.features, "ranking");
+    if (game.id === TICTACTOE_GAME_ID || game.id === NUMBER_GAME_ID) {
+      return reply(200, {
+        modes: [...(KNOWN_RANKING_MODES[game.id] ?? [])],
+        showcaseConfig: sanitizeRankingShowcaseConfig(settings.features.rankingShowcaseConfig),
+      });
+    }
     const { data: rows, error } = await admin
       .from("game_scores")
       .select("mode")
@@ -338,15 +628,92 @@ async function handle(req: Request) {
     requireFeature(settings.features, "ranking");
     const mode = safeMode(body.mode);
     const limit = Math.max(1, Math.min(100, Number.isFinite(Number(body.limit)) ? Math.floor(Number(body.limit)) : 20));
-    const { data: scores, error } = await admin
-      .from("game_scores")
-      .select("id, user_id, score, mode, created_at")
-      .eq("game_id", game.id)
-      .eq("mode", mode)
-      .order("score", { ascending: false })
-      .order("created_at", { ascending: true })
-      .limit(limit);
-    if (error) throw new HttpError(500, "ランキングを取得できませんでした。");
+    // Time rankings use lower scores (milliseconds) as better results.
+    const isTimeRanking = /(^|[_-])(time|duration|elapsed|seconds?|milliseconds?|ms|fastest|clear_time)([_-]|$)/i.test(mode);
+    if (game.id === NUMBER_GAME_ID) {
+      if (!(KNOWN_RANKING_MODES[game.id] ?? []).includes(mode)) {
+        throw new HttpError(400, "数字当てのランキングモードが正しくありません。");
+      }
+      const rankingViewer = await getOptionalUser(req);
+      if (rankingViewer) await reconcilePendingVerifiedSessions(rankingViewer.id, game.id);
+    }
+    if (game.id === TICTACTOE_GAME_ID) {
+      const rankingViewer = await getOptionalUser(req);
+      if (rankingViewer) await reconcilePendingVerifiedSessions(rankingViewer.id, game.id);
+    }
+
+    // 〇✕ゲームの公開ランキングも、旧クライアント投稿スコアではなく
+    // サーバー検証済み統計だけを返す。専用ランキングAPIと同じ信頼境界に統一する。
+    if (game.id === TICTACTOE_GAME_ID) {
+      if (!["normal", "vanish", "gobble", "reverse"].includes(mode)) {
+        throw new HttpError(400, "ランキングルールが正しくありません。");
+      }
+      const { data: verifiedRows, error: verifiedError } = await admin
+        .from("game_tictactoe_verified_stats")
+        .select("user_id, wins, updated_at")
+        .eq("game_id", game.id).eq("rule", mode).gt("wins", 0);
+      if (verifiedError) throw new HttpError(500, "〇✕ゲームの検証済みランキングを取得できませんでした。");
+      const merged = new Map<string, {user_id:string; wins:number; updated_at:string; recordType:string}>();
+      for (const row of verifiedRows ?? []) merged.set(row.user_id,{user_id:row.user_id,wins:Number(row.wins)||0,updated_at:row.updated_at,recordType:"migrated"});
+      const combinedRows=Array.from(merged.values()).sort((a,b)=>b.wins-a.wins||String(a.updated_at).localeCompare(String(b.updated_at))).slice(0,limit);
+      const verifiedUserIds = Array.from(new Set(combinedRows.map((row) => row.user_id)));
+      const verifiedProfiles = new Map<string, { kuro_id: string; username: string; avatar_url: string | null }>();
+      if (verifiedUserIds.length) {
+        const { data: profiles, error: profileError } = await admin
+          .from("profiles")
+          .select("id, kuro_id, username, avatar_url")
+          .in("id", verifiedUserIds);
+        if (profileError) throw new HttpError(500, "ランキング参加者のプロフィールを取得できませんでした。");
+        for (const profile of profiles ?? []) {
+          verifiedProfiles.set(profile.id, {
+            kuro_id: profile.kuro_id ?? "",
+            username: profile.username ?? "プレイヤー",
+            avatar_url: profile.avatar_url ?? null,
+          });
+        }
+      }
+      return reply(200, {
+        mode,
+        scores: combinedRows.map((row, index) => {
+          const profile = verifiedProfiles.get(row.user_id) ?? { kuro_id: "", username: "プレイヤー", avatar_url: null };
+          return {
+            rank: index + 1,
+            userId: row.user_id,
+            score: row.wins,
+            mode,
+            createdAt: row.updated_at,
+            recordType: row.recordType,
+            user: {
+              kuroId: profile.kuro_id || null,
+              username: profile.username,
+              display_name: profile.username,
+              avatar_url: profile.avatar_url,
+            },
+          };
+        }),
+      });
+    }
+
+    let scores:any[] = [];
+    if (game.id === NUMBER_GAME_ID) {
+      const { data: verifiedScores, error: verifiedError } = await admin.from("game_scores")
+        .select("id, user_id, score, mode, created_at, metadata").eq("game_id",game.id).eq("mode",mode)
+        .contains("metadata",{serverVerified:"number-guess-v1"}).gt("score",0);
+      if (verifiedError) throw new HttpError(500, "検証済みランキングを取得できませんでした。");
+      const { data: legacyScores, error: legacyError } = await admin.from("game_scores")
+        .select("id, user_id, score, mode, created_at, metadata").eq("game_id",game.id).eq("mode",mode)
+        .not("metadata->>serverVerified","eq","number-guess-v1").gt("score",0);
+      if (legacyError) throw new HttpError(500, "過去ランキングを取得できませんでした。");
+      const bestByUser=new Map<string,any>();
+      for (const row of legacyScores ?? []) { const p=bestByUser.get(row.user_id); if(!p||Number(row.score)<Number(p.score)) bestByUser.set(row.user_id,{...row,recordType:"legacy"}); }
+      for (const row of verifiedScores ?? []) { const p=bestByUser.get(row.user_id); if(!p||Number(row.score)<Number(p.score)) bestByUser.set(row.user_id,{...row,recordType:p?"mixed":"verified"}); else p.recordType="mixed"; }
+      scores=Array.from(bestByUser.values()).sort((a,b)=>Number(a.score)-Number(b.score)||String(a.created_at).localeCompare(String(b.created_at))).slice(0,limit);
+    } else {
+      const { data, error } = await admin.from("game_scores").select("id, user_id, score, mode, created_at")
+        .eq("game_id",game.id).eq("mode",mode).order("score",{ascending:isTimeRanking}).order("created_at",{ascending:true}).limit(limit);
+      if(error) throw new HttpError(500,"ランキングを取得できませんでした。");
+      scores=data??[];
+    }
 
     const userIds = Array.from(new Set((scores ?? []).map((row) => row.user_id)));
     let profileMap = new Map<string, { kuro_id: string; username: string; avatar_url: string | null }>();
@@ -373,6 +740,7 @@ async function handle(req: Request) {
           score: row.score,
           mode: row.mode,
           createdAt: row.created_at,
+          ...(game.id === NUMBER_GAME_ID ? { recordType: row.recordType } : {}),
           user: {
             kuroId: profile.kuro_id || null,
             username: profile.username,
@@ -400,6 +768,9 @@ async function handle(req: Request) {
       throw new HttpError(400, "ランキング項目が正しくありません。");
     }
 
+    const viewer = await getOptionalUser(req);
+    if (viewer) await reconcilePendingVerifiedSessions(viewer.id, game.id);
+
     const PAGE_SIZE = 1000;
     const statsRows: Array<{
       user_id: string;
@@ -412,7 +783,7 @@ async function handle(req: Request) {
       updated_at: string;
     }> = [];
     for (let offset = 0; offset < 50000; offset += PAGE_SIZE) {
-      const { data, error } = await admin.from("game_tictactoe_stats")
+      const { data, error } = await admin.from("game_tictactoe_verified_stats")
         .select("user_id, played, wins, losses, draws, current_streak, best_streak, updated_at")
         .eq("game_id", game.id)
         .eq("rule", rule)
@@ -423,7 +794,12 @@ async function handle(req: Request) {
       if (page.length < PAGE_SIZE) break;
     }
 
-    const entries = statsRows.map(row => {
+    const mergedStats = new Map<string, any>();
+    for (const row of statsRows) mergedStats.set(row.user_id,{
+      user_id:row.user_id,played:Number(row.played)||0,wins:Number(row.wins)||0,losses:Number(row.losses)||0,draws:Number(row.draws)||0,
+      current_streak:Number(row.current_streak)||0,best_streak:Number(row.best_streak)||0,updated_at:row.updated_at,recordType:"migrated"
+    });
+    const entries = Array.from(mergedStats.values()).map(row => {
       const played = Number(row.played) || 0;
       const wins = Number(row.wins) || 0;
       const losses = Number(row.losses) || 0;
@@ -435,10 +811,7 @@ async function handle(req: Request) {
         : metric === "current_streak" ? currentStreak
         : metric === "best_streak" ? bestStreak
         : wins;
-      return {
-        userId: row.user_id, played, wins, losses, draws,
-        currentStreak, bestStreak, updatedAt: row.updated_at, score
-      };
+      return {userId:row.user_id,played,wins,losses,draws,currentStreak,bestStreak,updatedAt:row.updated_at,score,recordType:row.recordType};
     });
 
     // 勝率ランキングは10試合以上のプレイヤーだけを対象にする。
@@ -451,7 +824,6 @@ async function handle(req: Request) {
         String(a.updatedAt).localeCompare(String(b.updatedAt))
       );
 
-    const viewer = await getOptionalUser(req);
     const mine = viewer ? entries.find(entry => entry.userId === viewer.id) : null;
     const visible = ranked.slice(0, 100);
     const profileIds = Array.from(new Set([
@@ -501,67 +873,201 @@ async function handle(req: Request) {
     return reply(200, { rule, metric, rows, me });
   }
 
-  if (action === "tictactoe_submit") {
+
+  if (action === "number_start") {
     const user = await getUser(req);
     requirePublished(game);
     requireFeature(settings.features, "ranking");
-    if (game.id !== "2dbd6773-2684-4f00-973e-c46acbc348e7") {
-      throw new HttpError(404, "〇✕ゲームの記録先ではありません。");
+    if (game.id !== NUMBER_GAME_ID) throw new HttpError(404, "数字当ての認証先ではありません。");
+    const playMode = body.playMode === "classic" ? "classic" : body.playMode === "time" ? "time" : "";
+    const level = typeof body.level === "string" ? body.level.trim().toLowerCase() : "";
+    if (!playMode || !Object.prototype.hasOwnProperty.call(NUMBER_LEVELS,level)) {
+      throw new HttpError(400, "ゲームモードまたは難易度が正しくありません。");
     }
+    const {error:expireError} = await admin.from("game_verification_sessions").update({status:"expired"})
+      .eq("game_id",game.id).eq("user_id",user.id).eq("game_type","number_guess").eq("status","active");
+    if (expireError) throw new HttpError(500,"前の数字当てセッションを終了できませんでした。");
+    const max = NUMBER_LEVELS[level];
+    const answer = randomIntInclusive(max);
+    const {data,error} = await admin.from("game_verification_sessions").insert({
+      game_id:game.id,user_id:user.id,game_type:"number_guess",mode:playMode+":"+level,
+      secret_number:answer,range_max:max,attempts:0,state:{playMode,level},status:"active",
+    }).select("id,nonce,started_at").single();
+    if (error?.code === "23505") throw new HttpError(409,"別のゲームが同時に開始されました。画面を再読み込みしてからお試しください。");
+    if (error || !data) throw new HttpError(500,"ゲームを開始できませんでした。");
+    return reply(200,{ok:true,sessionId:data.id,nonce:data.nonce,rangeMax:max,startedAt:data.started_at});
+  }
 
+  if (action === "number_guess") {
+    const user = await getUser(req);
+    requirePublished(game);
+    requireFeature(settings.features, "ranking");
+    if (game.id !== NUMBER_GAME_ID) throw new HttpError(404,"数字当ての認証先ではありません。");
+    const session = await loadVerifiedSession(user.id,body.sessionId,body.nonce,game.id,"number_guess");
+    const guess = Number(body.guess);
+    if (!Number.isSafeInteger(guess) || guess < 1 || guess > Number(session.range_max)) {
+      throw new HttpError(400,"範囲内の整数を入力してください。");
+    }
+    const lastActionMs = Date.now() - Date.parse(session.last_action_at);
+    if (Number.isFinite(lastActionMs) && lastActionMs < 80) {
+      throw new HttpError(429,"入力が速すぎます。少し待ってからもう一度お試しください。");
+    }
+    const attempts = Number(session.attempts || 0) + 1;
+    const playMode = String(session.state?.playMode || "");
+    const level = String(session.state?.level || "");
+    const correct = guess === Number(session.secret_number);
+    const remaining = playMode === "classic" ? Math.max(0,5-attempts) : null;
+    const lost = !correct && playMode === "classic" && attempts >= 5;
+    const elapsedMs = correct ? Math.max(0,Date.now()-Date.parse(session.started_at)) : null;
+    const completed = correct || lost;
+    const nextNonce = await saveVerifiedSession(session,{
+      attempts,
+      status:completed ? "completed" : "active",
+      result:correct ? "correct" : lost ? "failed" : null,
+      completed_at:completed ? new Date().toISOString() : null,
+    });
+
+    let recordResult:Record<string,unknown> = {scoreRecorded:false,improved:false};
+    if (correct && playMode === "time" && elapsedMs !== null) {
+      if (elapsedMs >= 500) {
+        const mode = "number-time-" + level;
+        const metadata = {
+          metric:"clear_time_ms",
+          difficulty:level,
+          rangeMax:Number(session.range_max),
+          attempts,
+          source:"number-guess-server",
+          serverVerified:"number-guess-v1",
+          sessionId:session.id,
+        };
+        const {data,error} = await admin.rpc("kuro_submit_verified_number_score",{
+          p_game_id:game.id,p_user_id:user.id,p_mode:mode,
+          p_submission_id:session.id,p_metadata:metadata,
+        });
+        if (!error) {
+          const saved = Array.isArray(data) ? data[0] : data;
+          recordResult = {
+            scoreRecorded:!!saved,
+            improved:saved?.improved !== false,
+            score:Number(saved?.score)||elapsedMs,
+          };
+
+        } else {
+          console.error("[kurogames-online] verified number score save failed",error);
+        }
+      } else {
+        recordResult = {scoreRecorded:false,improved:false,rejectedReason:"time-too-short"};
+      }
+    }
+    return reply(200,{
+      ok:true,correct,attempts,remainingChances:remaining,lost,
+      direction:correct ? "correct" : guess < Number(session.secret_number) ? "higher" : "lower",
+      answer:lost ? Number(session.secret_number) : undefined,
+      completed,elapsedMs,nonce:completed ? null : nextNonce,
+      ...recordResult,
+    });
+  }
+
+  if (action === "tictactoe_start") {
+    const user = await getUser(req);
+    requirePublished(game);
+    requireFeature(settings.features,"ranking");
+    if (game.id !== TICTACTOE_GAME_ID) throw new HttpError(404,"〇✕ゲームの認証先ではありません。");
     const rule = typeof body.rule === "string" ? body.rule.trim() : "";
-    if (!["normal", "vanish", "gobble", "reverse"].includes(rule)) {
-      throw new HttpError(400, "対戦ルールが正しくありません。");
-    }
-    const result = typeof body.result === "string" ? body.result : "";
-    if (!["win", "loss", "draw"].includes(result)) {
-      throw new HttpError(400, "対戦結果が正しくありません。");
-    }
-    if (typeof body.submissionId !== "string" || !UUID_RE.test(body.submissionId)) {
-      throw new HttpError(400, "対戦記録IDが正しくありません。");
-    }
+    const difficulty = typeof body.difficulty === "string" ? body.difficulty.trim().toLowerCase() : "";
+    if (!["normal","vanish","gobble","reverse"].includes(rule)) throw new HttpError(400,"対戦ルールが正しくありません。");
+    if (!["easy","normal","hard"].includes(difficulty)) throw new HttpError(400,"CPU難易度が正しくありません。");
+    const {error:expireError} = await admin.from("game_verification_sessions").update({status:"expired"})
+      .eq("game_id",game.id).eq("user_id",user.id).eq("game_type","tictactoe").eq("status","active");
+    if (expireError) throw new HttpError(500,"前の〇✕ゲームセッションを終了できませんでした。");
+    const state:TttState = {
+      rule,difficulty,board:Array(9).fill(null),
+      moveHistory:{O:[],X:[]},
+      pieceStock:{O:{"1":2,"2":2,"3":2},X:{"1":2,"2":2,"3":2}},
+      currentPlayer:"O",
+    };
+    const {data,error} = await admin.from("game_verification_sessions").insert({
+      game_id:game.id,user_id:user.id,game_type:"tictactoe",mode:rule,state,status:"active",
+    }).select("id,nonce").single();
+    if (error?.code === "23505") throw new HttpError(409,"別の対局が同時に開始されました。画面を再読み込みしてからお試しください。");
+    if (error || !data) throw new HttpError(500,"対戦認証を開始できませんでした。");
+    return reply(200,{ok:true,sessionId:data.id,nonce:data.nonce});
+  }
 
-    let cpuDifficulty: string | null = null;
-    if (body.cpuDifficulty !== undefined && body.cpuDifficulty !== null && body.cpuDifficulty !== "") {
-      if (typeof body.cpuDifficulty !== "string") {
-        throw new HttpError(400, "CPU難易度が正しくありません。");
-      }
-      cpuDifficulty = body.cpuDifficulty.trim().toUpperCase();
-      if (!["EASY", "NORMAL", "HARD", "EXPERT"].includes(cpuDifficulty)) {
-        throw new HttpError(400, "CPU難易度が正しくありません。");
+  if (action === "tictactoe_move") {
+    const user = await getUser(req);
+    requirePublished(game);
+    requireFeature(settings.features,"ranking");
+    if (game.id !== TICTACTOE_GAME_ID) throw new HttpError(404,"〇✕ゲームの認証先ではありません。");
+    const session = await loadVerifiedSession(user.id,body.sessionId,body.nonce,game.id,"tictactoe");
+    const state = cloneGameState(session.state as TttState);
+    if (!state || state.currentPlayer !== "O") throw new HttpError(409,"現在はあなたの手番ではありません。");
+    const index = Number(body.index);
+    const size = state.rule === "gobble" ? Number(body.size) : 2;
+    if (!Number.isInteger(index) || index < 0 || index > 8 || !tttCanPlace(state,index,"O",size)) {
+      throw new HttpError(400,"そのマスには置けません。");
+    }
+    const moves:Array<{index:number;player:"O"|"X";size:number}> = [];
+    tttApplyMove(state,index,"O",size);
+    moves.push({index,player:"O",size});
+    let outcome = tttTerminal(state,"O");
+    if (!outcome.done) {
+      const cpu = tttChooseCpuMove(state);
+      if (!cpu) {
+        outcome = {done:true,winner:"draw"};
+      } else {
+        tttApplyMove(state,cpu.index,"X",cpu.size);
+        moves.push({index:cpu.index,player:"X",size:cpu.size});
+        outcome = tttTerminal(state,"X");
       }
     }
+    const completed = outcome.done;
+    const result = completed
+      ? outcome.winner === "O" ? "win" : outcome.winner === "X" ? "loss" : "draw"
+      : null;
+    const nextNonce = await saveVerifiedSession(session,{
+      state,
+      status:completed ? "completed" : "active",
+      result,
+      completed_at:completed ? new Date().toISOString() : null,
+    });
+    let recorded = false;
+    let stats:Record<string,unknown>|null = null;
+    if (completed && result) {
+      const {data,error} = await admin.rpc("kuro_record_verified_tictactoe_result",{
+        p_game_id:game.id,p_user_id:user.id,p_rule:state.rule,p_result:result,
+        p_submission_id:session.id,p_cpu_difficulty:state.difficulty.toUpperCase(),
+      });
+      if (error) {
+        console.error("[kurogames-online] verified tic-tac-toe result save failed",error);
+      } else {
+        const saved = Array.isArray(data) ? data[0] : data;
+        recorded = !!saved;
+        stats = saved ? {
+          played:Number(saved.played)||0,wins:Number(saved.wins)||0,
+          losses:Number(saved.losses)||0,draws:Number(saved.draws)||0,
+          currentStreak:Number(saved.current_streak)||0,bestStreak:Number(saved.best_streak)||0,
+        } : null;
 
-    const { data, error } = await admin.rpc("kuro_record_tictactoe_result", {
-      p_game_id: game.id,
-      p_user_id: user.id,
-      p_rule: rule,
-      p_result: result,
-      p_submission_id: body.submissionId,
-      p_cpu_difficulty: cpuDifficulty
-    });
-    if (error) {
-      console.error("[kurogames-online] TicTacToe result RPC failed", error);
-      throw new HttpError(500, "〇✕ゲームの対戦結果を保存できませんでした。");
+      }
     }
-    const saved = Array.isArray(data) ? data[0] : data;
-    if (!saved) throw new HttpError(500, "対戦結果の保存状態を取得できませんでした。");
-    return reply(200, {
-      ok: true,
-      recorded: saved.recorded === true,
-      played: Number(saved.played) || 0,
-      wins: Number(saved.wins) || 0,
-      losses: Number(saved.losses) || 0,
-      draws: Number(saved.draws) || 0,
-      currentStreak: Number(saved.current_streak) || 0,
-      bestStreak: Number(saved.best_streak) || 0
+    return reply(200,{
+      ok:true,moves,completed,result,recorded,stats,
+      nonce:completed ? null : nextNonce,
     });
+  }
+
+  if (action === "tictactoe_submit") {
+    throw new HttpError(403,"〇✕ゲームの結果はサーバー検証済みの対戦からのみ記録できます。");
   }
 
   if (action === "score_submit") {
     const user = await getUser(req);
     requirePublished(game);
     requireFeature(settings.features, "ranking");
+    if (game.id === TICTACTOE_GAME_ID || game.id === NUMBER_GAME_ID) {
+      throw new HttpError(403, "このゲームの記録はサーバー検証済みのプレイからのみ登録できます。");
+    }
     const score = Number(body.score);
     if (!Number.isSafeInteger(score) || score < 0 || score > 1000000000) {
       throw new HttpError(400, "スコアは0〜1,000,000,000の整数で指定してください。");
@@ -590,6 +1096,9 @@ async function handle(req: Request) {
       : crypto.randomUUID();
 
     if (game.id === UNON_GAME_ID && mode === "wins-online") {
+      console.info("[kurogames-online] UNON online win submission received", {
+        userId: user.id, submissionId, score, source: metadata.source,
+      });
       if (score !== 1 || metadata.metric !== "wins" || metadata.source !== "unon-online" ||
           metadata.matchId !== submissionId || typeof metadata.roomId !== "string") {
         throw new HttpError(400, "UNONオンライン勝利の記録データが正しくありません。");
@@ -599,8 +1108,14 @@ async function handle(req: Request) {
         : null;
       if (!claims || claims.typ !== "unon_win" || claims.sub !== user.id ||
           claims.game !== game.id || claims.match !== submissionId || claims.room !== metadata.roomId) {
+        console.warn("[kurogames-online] UNON online win proof claims mismatch", {
+          hasClaims: !!claims, correctType: claims?.typ === "unon_win",
+          correctUser: claims?.sub === user.id, correctGame: claims?.game === game.id,
+          correctMatch: claims?.match === submissionId, correctRoom: claims?.room === metadata.roomId,
+        });
         throw new HttpError(403, "サーバーが確認した勝利記録ではありません。");
       }
+      console.info("[kurogames-online] UNON online win proof validated", { submissionId });
     }
 
     // Use the database's atomic accumulator. game_scores is unique per
@@ -620,6 +1135,11 @@ async function handle(req: Request) {
     }
     const submitted = Array.isArray(submittedRows) ? submittedRows[0] : submittedRows;
     if (!submitted) throw new HttpError(500, "スコア登録結果を取得できませんでした。");
+    if (game.id === UNON_GAME_ID && mode === "wins-online") {
+      console.info("[kurogames-online] UNON online win recorded", {
+        userId: user.id, submissionId, totalWins: Number(submitted.score) || 0,
+      });
+    }
     return reply(200, {
       ok: true,
       score: Number(submitted.score) || 0,
