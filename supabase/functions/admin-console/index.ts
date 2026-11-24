@@ -153,7 +153,10 @@ Deno.serve(async (req: Request) => {
         summary: (Array.isArray(summaryResult.data) ? summaryResult.data[0] : summaryResult.data) || {
           total_balance: 0, total_issued: 0, total_spent: 0, funded_users: 0, transaction_count: 0
         },
-        games: gamesResult.data || [],
+        games: (gamesResult.data || []).filter((game) => [
+          "2dbd6773-2684-4f00-973e-c46acbc348e7",
+          "faa155cb-2143-4361-9a96-dc759d334e46"
+        ].includes(game.id)),
         rewards: (rewardsResult.data || []).map((reward) => ({
           ...reward,
           game: gameMap.get(reward.game_id) || null
@@ -188,6 +191,15 @@ Deno.serve(async (req: Request) => {
       }
       if (!label || label.length > 80) {
         return reply({ error: "報酬表示名は1〜80文字で入力してください。" }, 400, origin);
+      }
+      const verifiedTictactoe = gameId === "2dbd6773-2684-4f00-973e-c46acbc348e7" &&
+        ["normal","vanish","gobble","reverse"].includes(mode) && difficulty === "HARD";
+      const verifiedUnonOnline = gameId === "faa155cb-2143-4361-9a96-dc759d334e46" &&
+        mode === "wins-online" && difficulty === null;
+      if (!verifiedTictactoe && !verifiedUnonOnline) {
+        return reply({
+          error: "現在、報酬を設定できるのは〇✕ゲームのCPU最強勝利とUNONオンライン勝利のみです。ほかのゲームはサーバー検証経路が確認されるまで対象外です。"
+        }, 400, origin);
       }
       const { data: game, error: gameError } = await admin.from("game_studio_games")
         .select("id,title,status").eq("id", gameId).maybeSingle();
