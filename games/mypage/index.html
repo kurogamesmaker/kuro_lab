@@ -292,6 +292,7 @@ function showLogin(){
 async function boot(){
  if(!window.supabase||typeof window.supabase.createClient!=="function")throw new Error("認証システムを読み込めませんでした。");
  db=window.supabase.createClient(SUPABASE_URL,PUBLISHABLE_KEY,{global:{fetch:kuroRelayFetch},auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}});
+ window.kuroGamesDB=db;
  var sessionResult=await db.auth.getSession();
  if(sessionResult.error)throw sessionResult.error;
  var user=sessionResult.data&&sessionResult.data.session&&sessionResult.data.session.user;
