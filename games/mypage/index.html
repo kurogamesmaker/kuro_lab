@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#f6f8fc">
-<meta name="description" content="KURO GAMESの自分のゲーム記録とプレイ履歴を確認できます。">
+<meta name="description" content="KURO GAMESで保存された自分のゲーム最高記録を確認できます。">
 <link rel="icon" type="image/png" sizes="48x48" href="/assets/brand/logo/kurolab_icon_maru_48.png?v=20261122marufavicon2">
 <title>マイページ・ゲーム記録｜KURO GAMES</title>
 <style>
@@ -36,23 +36,22 @@ h1{margin:6px 0 0;font-size:clamp(25px,4vw,35px);letter-spacing:-1px}
 .profile-bio{margin:8px 0 0;color:#687891;font-size:12px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
 .profile-actions{display:flex;gap:8px;flex-wrap:wrap}
 .action{display:inline-flex;align-items:center;justify-content:center;min-height:39px;padding:0 12px;border:1px solid #dce7f7;border-radius:10px;background:#f5f9ff;color:#326eBA;font-size:11px;font-weight:900}
-.summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:23px}
-.metric{padding:16px 18px}
-.metric-label{color:#7c899e;font-size:10px;font-weight:900}
-.metric-value{margin-top:7px;color:#243d60;font-size:27px;font-weight:1000;letter-spacing:-.8px;font-variant-numeric:tabular-nums}
+
 .section{margin-top:23px}
 .section-title{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:0 0 12px}
 .section-title h2{margin:0;font-size:18px;letter-spacing:-.3px}
 .section-title p{margin:0;color:#8290a5;font-size:10px}
-.game-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.game-card{min-width:0;padding:16px}
-.game-title{margin:0 0 12px;font-size:15px;font-weight:950;overflow-wrap:anywhere}
-.mode-list{display:grid;gap:9px}
-.mode-row{padding:10px 11px;border:1px solid #edf0f5;border-radius:11px;background:#fbfcfe}
-.mode-name{font-size:11px;font-weight:900;color:#536781}
-.mode-main{display:flex;flex-wrap:wrap;gap:8px 13px;margin-top:7px;color:#62748d;font-size:10px}
-.mode-main b{color:#2a456a;font-size:11px;font-variant-numeric:tabular-nums}
-.mode-best{margin-top:6px;color:#3478cc;font-size:10px;font-weight:850}
+.game-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.game-card{display:flex;align-items:flex-start;gap:15px;min-width:0;padding:17px}
+.game-icon{width:64px;height:64px;flex:0 0 64px;display:grid;place-items:center;overflow:hidden;border:1px solid #e7edf5;border-radius:15px;background:#f4f7fb;color:#536b89;font-size:30px;font-weight:900}
+.game-icon img{display:block;width:100%;height:100%;object-fit:cover}
+.game-card-body{min-width:0;flex:1}
+.game-title{margin:1px 0 10px;font-size:15px;font-weight:950;overflow-wrap:anywhere}
+.mode-list{display:grid;gap:8px}
+.mode-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 11px;border:1px solid #edf0f5;border-radius:11px;background:#fbfcfe}
+.mode-name{min-width:0;color:#667891;font-size:11px;font-weight:850;overflow-wrap:anywhere}
+.mode-best{flex:0 0 auto;color:#2c70c7;font-size:13px;font-weight:1000;text-align:right;font-variant-numeric:tabular-nums}
+.mode-best small{display:block;margin-bottom:3px;color:#8996a8;font-size:9px;font-weight:800}
 .history{display:grid;gap:8px}
 .history-row{display:flex;align-items:center;gap:12px;padding:11px 13px}
 .history-mark{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;border-radius:10px;background:#eef5ff;color:#3379d0;font-size:15px;font-weight:950}
@@ -70,8 +69,7 @@ footer{border-top:1px solid var(--line);background:white;padding:20px 0;color:#8
 @media(max-width:680px){
  .wrap{width:calc(100% - 24px)}header{height:60px}.brand{font-size:17px}.brand img{width:32px;height:32px}.nav-link{padding:8px 9px;font-size:10px}
  main{padding:22px 0 42px}.profile{align-items:flex-start;flex-wrap:wrap;padding:16px;gap:12px}.avatar{width:56px;height:56px;flex-basis:56px}.profile-copy{width:calc(100% - 70px)}.profile-name{font-size:16px}.profile-actions{width:100%}.action{flex:1}
- .summary{gap:8px}.metric{padding:12px 10px}.metric-value{font-size:23px}.metric-label{font-size:9px}
- .game-list{grid-template-columns:1fr}.history-row{gap:9px;padding:10px}.history-mark{width:30px;height:30px;flex-basis:30px}
+ .game-list{grid-template-columns:1fr}.game-card{gap:12px;padding:14px}.game-icon{width:56px;height:56px;flex-basis:56px;border-radius:13px}.mode-best{font-size:12px}.history-row{gap:9px;padding:10px}.history-mark{width:30px;height:30px;flex-basis:30px}
 }
 </style>
 </head>
@@ -83,7 +81,7 @@ footer{border-top:1px solid var(--line);background:white;padding:20px 0;color:#8
 <a class="nav-link" href="/games/ranking/">ランキング</a>
 </div></header>
 <main class="wrap">
-<div class="page-head"><div><div class="eyebrow">KURO GAMES / MY PAGE</div><h1>マイページ</h1><p class="sub">KURO共通プロフィールと、これまでに保存されたゲーム記録をまとめて確認できます。</p></div></div>
+<div class="page-head"><div><div class="eyebrow">KURO GAMES / MY PAGE</div><h1>マイページ</h1><p class="sub">KURO共通プロフィールと、各ゲームの最高記録を確認できます。</p></div></div>
 <section id="myPageLoading" class="panel state"><strong>読み込み中</strong>アカウントとゲーム記録を確認しています。</section>
 <section id="myPageLogin" class="panel state" hidden><strong>ログインが必要です</strong>自分のゲーム記録を表示するには、KURO共通アカウントでログインしてください。<br><a class="action" href="/games/?account=1">KuroGamesでログインする</a></section>
 <section id="myPageError" class="panel state" hidden><strong>データを読み込めませんでした</strong><span id="myPageErrorText">通信状態を確認して再度お試しください。</span><br><button type="button" id="myPageRetry">再読み込み</button></section>
@@ -93,22 +91,12 @@ footer{border-top:1px solid var(--line);background:white;padding:20px 0;color:#8
 <div class="profile-copy"><div class="profile-name" id="myProfileName">KUROユーザー</div><div class="profile-meta" id="myProfileMeta">KURO共通アカウント</div><p class="profile-bio" id="myProfileBio">プロフィール紹介はまだ設定されていません。</p></div>
 <div class="profile-actions"><a class="action" href="/sns/?profile-edit=1">プロフィールを編集</a><a class="action" href="/account/">アカウント設定</a></div>
 </section>
-<section class="summary" aria-label="ゲーム記録の概要">
-<div class="panel metric"><div class="metric-label">記録があるゲーム</div><div class="metric-value" id="summaryGames">0</div></div>
-<div class="panel metric"><div class="metric-label">保存された結果数</div><div class="metric-value" id="summaryPlays">0</div></div>
-<div class="panel metric"><div class="metric-label">記録された勝利数</div><div class="metric-value" id="summaryWins">0</div></div>
-</section>
 <section class="section">
-<div class="section-title"><h2>ゲーム別・モード別の記録</h2><p id="recordsCount">0件</p></div>
+<div class="section-title"><h2>最高記録</h2><p id="recordsCount">0件</p></div>
 <div id="myGameStats" class="game-list"></div>
 <div id="myGameStatsEmpty" class="panel state" hidden><strong>まだゲーム記録がありません</strong>ゲームを遊んで結果が保存されると、ここに追加されます。</div>
 </section>
-<section class="section">
-<div class="section-title"><h2>最近のプレイ履歴</h2><p>最新30件まで表示</p></div>
-<div id="myGameHistory" class="history"></div>
-<div id="myGameHistoryEmpty" class="panel state" hidden>保存されたプレイ履歴はありません。</div>
-</section>
-<div class="note">表示されるのは、ゲーム側で保存された結果記録です。古いゲームの一部は勝利記録やベスト記録だけが保存されており、過去の全プレイ回数・敗北回数を復元できないため、保存された結果数が実際のプレイ総数と一致しない場合があります。記録の取得はログイン中の本人のデータに限定されています。</div>
+
 </div>
 </main>
 <footer><div class="wrap foot"><span>© 2026 <b>KURO GAMES</b></span><a href="/games/">KURO GAMES トップへ</a></div></footer>
@@ -169,71 +157,75 @@ function addProfile(profile,user){
   }catch(_){}
  }
 }
+function createGameIcon(iconValue){
+ var wrap=node("div","game-icon");
+ var value=typeof iconValue==="string"?iconValue.trim():"";
+ if(/^data:image\\//i.test(value)||/^https?:\\/\\//i.test(value)){
+  try{
+   var parsed=new URL(value,location.origin);
+   if(parsed.protocol==="https:"||parsed.origin===location.origin){
+    var img=document.createElement("img");img.src=parsed.href;img.alt="";img.loading="lazy";
+    img.onerror=function(){img.remove();wrap.textContent="🎮";};
+    wrap.appendChild(img);
+    return wrap;
+   }
+  }catch(_){}
+ }
+ wrap.textContent=value||"🎮";
+ return wrap;
+}
+function bestRecord(stat){
+ var metadata=stat&&stat.metadata&&typeof stat.metadata==="object"?stat.metadata:{};
+ var metric=String(metadata.metric||"").toLowerCase();
+ if(metric==="wins"||((stat.best_score===null||stat.best_score===undefined)&&number(stat.wins)>0)){
+  return {label:"最高勝利数",value:fmtCount(stat.wins)+"勝"};
+ }
+ if(stat.best_time_ms!==null&&stat.best_time_ms!==undefined){
+  return {label:"ベストタイム",value:fmtTime(stat.best_time_ms)};
+ }
+ if(stat.best_score!==null&&stat.best_score!==undefined){
+  return {label:"最高スコア",value:fmtCount(stat.best_score)};
+ }
+ return null;
+}
 function addGameStats(stats,gameMap){
  var host=$("myGameStats");host.replaceChildren();
- $("recordsCount").textContent=stats.length+"件";
  var grouped=new Map();
  stats.forEach(function(stat){
+  var record=bestRecord(stat);
+  if(!record)return;
   var id=String(stat.game_id||"");
+  if(!id)return;
   if(!grouped.has(id))grouped.set(id,[]);
-  grouped.get(id).push(stat);
+  grouped.get(id).push({stat:stat,record:record});
  });
  var entries=Array.from(grouped.entries()).sort(function(a,b){
-  var ta=Math.max.apply(null,a[1].map(function(s){return Date.parse(s.updated_at||s.last_played_at||"")||0;}));
-  var tb=Math.max.apply(null,b[1].map(function(s){return Date.parse(s.updated_at||s.last_played_at||"")||0;}));
+  var ta=Math.max.apply(null,a[1].map(function(item){return Date.parse(item.stat.updated_at||item.stat.last_played_at||"")||0;}));
+  var tb=Math.max.apply(null,b[1].map(function(item){return Date.parse(item.stat.updated_at||item.stat.last_played_at||"")||0;}));
   return tb-ta;
  });
+ var recordCount=0;
  entries.forEach(function(entry){
-  var gameId=entry[0],rows=entry[1],title=gameMap.get(gameId)||"公開終了・名称未取得のゲーム";
+  var gameId=entry[0],items=entry[1],game=gameMap.get(gameId)||{};
   var card=node("article","panel game-card");
-  card.appendChild(node("h3","game-title",title));
+  card.appendChild(createGameIcon(game.icon));
+  var body=node("div","game-card-body");
+  body.appendChild(node("h3","game-title",game.title||"公開終了・名称未取得のゲーム"));
   var modes=node("div","mode-list");
-  rows.forEach(function(stat){
+  items.forEach(function(item){
    var row=node("div","mode-row");
-   row.appendChild(node("div","mode-name",modeLabel(stat.mode)));
-   var metrics=node("div","mode-main");
-   metrics.appendChild(node("span","", "記録件数 "));
-   metrics.lastChild.appendChild(node("b","",fmtCount(stat.plays)));
-   var outcome=node("span","");
-   outcome.appendChild(document.createTextNode("勝 "));
-   outcome.appendChild(node("b","",fmtCount(stat.wins)));
-   outcome.appendChild(document.createTextNode(" / 敗 "));
-   outcome.appendChild(node("b","",fmtCount(stat.losses)));
-   outcome.appendChild(document.createTextNode(" / 分 "));
-   outcome.appendChild(node("b","",fmtCount(stat.draws)));
-   metrics.appendChild(outcome);
-   row.appendChild(metrics);
-   if(number(stat.plays)===0&&stat.best_score!==null&&stat.best_score!==undefined){
-    row.appendChild(node("div","mode-best","過去のベスト記録のみ（件数不明）"));
-   }else if(stat.best_time_ms!==null&&stat.best_time_ms!==undefined){
-    row.appendChild(node("div","mode-best","自己ベスト時間："+fmtTime(stat.best_time_ms)));
-   }else if(stat.best_score!==null&&stat.best_score!==undefined&&!(stat.metadata&&stat.metadata.metric==="wins")){
-    row.appendChild(node("div","mode-best","自己ベスト："+fmtCount(stat.best_score)));
-   }
+   row.appendChild(node("div","mode-name",modeLabel(item.stat.mode)));
+   var best=node("div","mode-best");
+   best.appendChild(node("small","",item.record.label));
+   best.appendChild(document.createTextNode(item.record.value));
+   row.appendChild(best);
    modes.appendChild(row);
+   recordCount++;
   });
-  card.appendChild(modes);host.appendChild(card);
+  body.appendChild(modes);card.appendChild(body);host.appendChild(card);
  });
- $("myGameStatsEmpty").hidden=stats.length!==0;
-}
-function addHistory(events,gameMap){
- var host=$("myGameHistory");host.replaceChildren();
- var labels={win:"勝利",loss:"敗北",draw:"引き分け",played:"記録",abandoned:"中断",invalid:"無効"};
- var marks={win:"✓",loss:"−",draw:"＝",played:"•",abandoned:"…",invalid:"!"};
- events.forEach(function(event){
-  var result=labels[event.result]||"記録";
-  var row=node("article","panel history-row");
-  row.appendChild(node("div","history-mark",marks[event.result]||"•"));
-  var main=node("div","history-main");
-  var title=gameMap.get(String(event.game_id||""))||"公開終了・名称未取得のゲーム";
-  main.appendChild(node("div","history-title",title+" ・ "+modeLabel(event.mode)));
-  var meta=fmtDate(event.created_at);
-  if(event.score!==null&&event.score!==undefined)meta+="　スコア "+fmtCount(event.score);
-  if(event.duration_ms!==null&&event.duration_ms!==undefined)meta+="　"+fmtTime(event.duration_ms);
-  main.appendChild(node("div","history-sub",meta));
-  row.appendChild(main);row.appendChild(node("div","history-result",result));host.appendChild(row);
- });
- $("myGameHistoryEmpty").hidden=events.length!==0;
+ $("recordsCount").textContent=recordCount+"件";
+ $("myGameStatsEmpty").hidden=recordCount!==0;
 }
 function showError(error){
  console.error("KURO GAMES my page load failed:",error);
@@ -248,31 +240,23 @@ async function loadForUser(user){
  var uid=fresh.data.user.id;
  var results=await Promise.all([
   db.from("profiles").select("username,kuro_id,avatar_url,bio").eq("id",uid).maybeSingle(),
-  db.from("kuro_game_user_stats").select("game_id,mode,plays,wins,losses,draws,best_score,best_time_ms,total_time_ms,last_played_at,metadata,updated_at").eq("user_id",uid).order("updated_at",{ascending:false}).limit(250),
-  db.from("kuro_game_play_events").select("game_id,mode,result,score,duration_ms,metadata,created_at").eq("user_id",uid).order("created_at",{ascending:false}).limit(30)
+  db.from("kuro_game_user_stats").select("game_id,mode,wins,best_score,best_time_ms,last_played_at,metadata,updated_at").eq("user_id",uid).order("updated_at",{ascending:false}).limit(250)
  ]);
  if(token!==loadToken)return;
  if(results[0].error)console.warn("profile read failed:",results[0].error);
  if(results[1].error)throw results[1].error;
- if(results[2].error)throw results[2].error;
- var profile=results[0].data||null,stats=results[1].data||[],events=results[2].data||[];
- var ids=Array.from(new Set(stats.concat(events).map(function(row){return String(row.game_id||"");}).filter(Boolean)));
+ var profile=results[0].data||null,stats=results[1].data||[];
+ var ids=Array.from(new Set(stats.map(function(row){return String(row.game_id||"");}).filter(Boolean)));
  var games=[];
  if(ids.length){
-  var gameResult=await db.from("game_studio_games").select("id,title").in("id",ids);
-  if(gameResult.error)console.warn("published game title lookup failed:",gameResult.error);
+  var gameResult=await db.from("game_studio_games").select("id,title,icon").in("id",ids);
+  if(gameResult.error)console.warn("published game icon lookup failed:",gameResult.error);
   else games=gameResult.data||[];
  }
  if(token!==loadToken)return;
- var gameMap=new Map(games.map(function(game){return [String(game.id),String(game.title||"KURO GAMES")];}));
+ var gameMap=new Map(games.map(function(game){return [String(game.id),{title:String(game.title||"KURO GAMES"),icon:game.icon||""}];}));
  addProfile(profile,fresh.data.user);
  addGameStats(stats,gameMap);
- addHistory(events,gameMap);
- var totalPlays=stats.reduce(function(sum,s){return sum+Math.max(0,number(s.plays));},0);
- var totalWins=stats.reduce(function(sum,s){return sum+Math.max(0,number(s.wins));},0);
- $("summaryGames").textContent=String(new Set(stats.map(function(s){return s.game_id;})).size);
- $("summaryPlays").textContent=fmtCount(totalPlays);
- $("summaryWins").textContent=fmtCount(totalWins);
  hide("myPageLoading");show("myPageContent");
 }
 function showLogin(){
