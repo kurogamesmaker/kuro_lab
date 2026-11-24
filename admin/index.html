@@ -458,7 +458,7 @@
 #opsGame-bannersView .ops-form-grid{align-items:end}
 #opsGame-bannersView .ops-game-banner-preview{display:inline-flex;align-items:center;max-width:100%;overflow-wrap:anywhere}
 
-.ops-coin-controls{display:grid;grid-template-columns:minmax(180px,1fr) 170px 190px;gap:9px;padding:14px;border-bottom:1px solid var(--line)}
+.ops-coin-controls{display:grid;grid-template-columns:minmax(180px,1.4fr) repeat(4,minmax(120px,1fr));gap:9px;padding:14px;border-bottom:1px solid var(--line)}
 .ops-coin-controls input,.ops-coin-controls select{min-width:0;width:100%;background:#0b1524;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 .ops-coin-help{padding:11px 16px;color:var(--muted);font-size:12px;border-bottom:1px solid var(--line)}
 .ops-coin-game-list{gap:12px}.ops-coin-game{border:1px solid var(--line);border-radius:14px;background:rgba(7,15,27,.32);overflow:hidden}.ops-coin-game[hidden]{display:none}
@@ -483,6 +483,7 @@
 .ops-coin-tier-remove{padding:6px 9px;font-size:11px}.ops-coin-tier-add{margin-top:8px;padding:6px 9px;font-size:11px}
 .ops-coin-label{margin-top:11px}.ops-coin-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding-top:10px;border-top:1px solid #26364d}
 .ops-coin-footer .btn{padding:7px 11px;font-size:12px}
+@media(max-width:1000px){.ops-coin-controls{grid-template-columns:repeat(3,minmax(0,1fr))}.ops-coin-controls input{grid-column:1/-1}}
 @media(max-width:760px){.ops-coin-controls{grid-template-columns:1fr 1fr}.ops-coin-controls input{grid-column:1/-1}.ops-coin-mode-fields{grid-template-columns:1fr}.ops-coin-tier{grid-template-columns:1fr 1fr 1fr auto}.ops-coin-tier-remove{grid-column:4}.ops-coin-footer{align-items:flex-start;flex-direction:column}.ops-coin-footer button{width:100%}}
 @media(max-width:460px){.ops-coin-tier{grid-template-columns:1fr 1fr}.ops-coin-tier-enabled{justify-content:flex-start;padding:0}.ops-coin-tier-remove{grid-column:auto}.ops-coin-game-summary{padding:12px}.ops-coin-game-status{font-size:10px}}
 
@@ -590,8 +591,18 @@
      <select id="opsCoinTypeFilter" aria-label="報酬方式">
       <option value="all">すべての方式</option><option value="fixed">固定ポイント</option><option value="score_tier">スコア別ポイント</option>
      </select>
+     <select id="opsCoinPlayTypeFilter" aria-label="対戦・ゲーム形式">
+      <option value="all">すべての形式</option><option value="cpu">CPU戦</option><option value="online">オンライン</option><option value="normal">通常モード</option><option value="time">タイムアタック</option><option value="typing">タイピング</option>
+     </select>
+     <select id="opsCoinLevelFilter" aria-label="レベル・CPUの強さ">
+      <option value="all">すべてのレベル</option>
+      <option value="easy">初級・かんたん</option><option value="normal">中級・ふつう</option><option value="hard">上級・むずかしい</option>
+      <option value="expert">エキスパート</option><option value="master">マスター</option><option value="legend">レジェンド</option>
+      <option value="beginner">初心者</option><option value="intermediate">中級者</option><option value="advanced">上級者</option>
+      <option value="cpu-easy">CPU・弱い</option><option value="cpu-normal">CPU・ふつう</option><option value="cpu-hard">CPU・強い</option>
+     </select>
     </div>
-    <div class="ops-coin-help">報酬はサーバーで確定したゲーム結果だけを対象にします。スコア別は現在、素因数分解・回転ずしタイピングで利用できます。</div>
+    <div class="ops-coin-help">〇✕ゲームはCPU「弱い・ふつう・強い」を別々に設定できます。数字当て・素因数分解・回転ずしタイピングは全レベルを選択可能。UNON・大富豪のCPU戦はサーバー検証未対応のため、報酬対象にはしていません。</div>
     <div class="list ops-coin-game-list" id="opsCoinRewardsList"><div class="empty">報酬設定を読み込み中…</div></div>
    </section>
   <section class="panel" style="margin:0 0 16px">
@@ -1441,21 +1452,39 @@ const COIN_GAME_NAMES={
  "5c1e658b-f6d3-412a-8b97-61d2c0457e95":"回転ずしタイピング"
 };
 const COIN_DIFFICULTY_NAMES={easy:"初級",normal:"中級",hard:"上級",expert:"エキスパート",master:"マスター",legend:"レジェンド",beginner:"初級",intermediate:"中級",advanced:"上級"};
-function coinModeLabel(gameId,mode){
+const COIN_CPU_LEVEL_NAMES={NONE:"条件なし",EASY:"弱い",NORMAL:"ふつう",HARD:"強い",EXPERT:"エキスパート"};
+function coinModeLabel(gameId,mode,cpu="NONE"){
  if(gameId==="2dbd6773-2684-4f00-973e-c46acbc348e7"){
-  return ({normal:"通常ルール",vanish:"消える〇✕",gobble:"ゴブレット",reverse:"逆〇✕"})[mode]||"対戦ルール";
+  const rule=({normal:"通常ルール",vanish:"消える〇✕",gobble:"ゴブレット",reverse:"逆〇✕"})[mode]||"対戦ルール";
+  return rule+"・CPU（"+(COIN_CPU_LEVEL_NAMES[cpu]||cpu)+"）";
  }
  if(gameId==="faa155cb-2143-4361-9a96-dc759d334e46") return mode==="wins-online"?"オンライン対戦・勝利":"オンライン対戦";
  if(gameId===COIN_PRIME_GAME_ID) return "難易度："+(COIN_DIFFICULTY_NAMES[mode]||mode);
  if(gameId==="bb466662-5423-48e6-bbcc-d19da50ba818"){
   const m=mode.match(/^number-(classic|time)-([a-z]+)$/);
-  if(m)return (m[1]==="time"?"タイムアタック":"通常")+"・"+(COIN_DIFFICULTY_NAMES[m[2]]||m[2]);
+  if(m)return (m[1]==="time"?"タイムアタック":"通常モード")+"・"+(COIN_DIFFICULTY_NAMES[m[2]]||m[2]);
  }
  if(gameId===COIN_SUSHI_GAME_ID){
   const m=mode.match(/^(normal|sudden|endless)_([a-z]+)$/);
   if(m)return ({normal:"通常",sudden:"突発",endless:"エンドレス"})[m[1]]+"・"+(COIN_DIFFICULTY_NAMES[m[2]]||m[2]);
  }
  return "その他のモード";
+}
+function coinModePlayType(gameId,mode){
+ if(gameId==="2dbd6773-2684-4f00-973e-c46acbc348e7")return "cpu";
+ if(gameId==="faa155cb-2143-4361-9a96-dc759d334e46")return "online";
+ if(gameId==="bb466662-5423-48e6-bbcc-d19da50ba818")return mode.indexOf("number-time-")===0?"time":"normal";
+ if(gameId===COIN_SUSHI_GAME_ID)return "typing";
+ return "normal";
+}
+function coinModeLevel(gameId,mode,cpu="NONE"){
+ if(gameId==="2dbd6773-2684-4f00-973e-c46acbc348e7")return "cpu-"+String(cpu||"NONE").toLowerCase();
+ if(gameId===COIN_PRIME_GAME_ID)return mode;
+ const number=mode.match(/^number-(?:classic|time)-([a-z]+)$/);
+ if(number)return number[1];
+ const sushi=mode.match(/^(?:normal|sudden|endless)_([a-z]+)$/);
+ if(sushi)return sushi[1];
+ return "all";
 }
 function coinScoreSupported(gameId){return gameId===COIN_PRIME_GAME_ID||gameId===COIN_SUSHI_GAME_ID;}
 function renderCoinTierRows(tiers){
@@ -1473,10 +1502,11 @@ function renderCoinTierRows(tiers){
  '</div>').join("");
 }
 function renderCoinRewardMode(reward){
- const gameId=reward.game_id,mode=reward.mode,name=coinModeLabel(gameId,mode);
+ const gameId=reward.game_id,mode=reward.mode,cpu=reward.required_cpu_difficulty||"NONE";
+ const name=coinModeLabel(gameId,mode,cpu),level=coinModeLevel(gameId,mode,cpu),playType=coinModePlayType(gameId,mode);
  const type=reward.reward_type==="score_tier"?"score_tier":"fixed",scoreAllowed=coinScoreSupported(gameId);
- return '<article class="ops-coin-mode" data-coin-row data-game-id="'+esc(gameId)+'" data-mode="'+esc(mode)+'" data-cpu-difficulty="'+esc(reward.required_cpu_difficulty||"")+'" data-search="'+esc(((COIN_GAME_NAMES[gameId]||"")+" "+name).toLowerCase())+'">'+
-  '<div class="ops-coin-mode-head"><div><strong>'+esc(name)+'</strong><div class="ops-coin-mode-meta">'+(reward.required_cpu_difficulty?("CPU条件："+esc(reward.required_cpu_difficulty)):"サーバー検証済み結果を使用")+'</div></div>'+
+ return '<article class="ops-coin-mode" data-coin-row data-game-id="'+esc(gameId)+'" data-mode="'+esc(mode)+'" data-cpu-difficulty="'+esc(cpu)+'" data-level="'+esc(level)+'" data-play-type="'+esc(playType)+'" data-search="'+esc(((COIN_GAME_NAMES[gameId]||"")+" "+name).toLowerCase())+'">'+
+  '<div class="ops-coin-mode-head"><div><strong>'+esc(name)+'</strong><div class="ops-coin-mode-meta">'+(cpu!=="NONE"?("CPU戦・"+esc(COIN_CPU_LEVEL_NAMES[cpu]||cpu)):"サーバー検証済み結果を使用")+'</div></div>'+
   '<label class="ops-coin-switch"><input data-coin-enabled type="checkbox" '+(reward.enabled?"checked":"")+'><span>付与ON</span></label></div>'+
   '<div class="ops-coin-mode-fields">'+
    '<label>報酬方式<select data-coin-type><option value="fixed" '+(type==="fixed"?"selected":"")+'>固定ポイント</option><option value="score_tier" '+(type==="score_tier"?"selected":"")+(scoreAllowed?"":" disabled")+'>スコア別ポイント'+(scoreAllowed?"":"（未対応）")+'</option></select></label>'+
@@ -1489,9 +1519,10 @@ function renderCoinRewardMode(reward){
 }
 function filterOpsCoinRewards(){
  const q=($("#opsCoinSearch")?.value||"").trim().toLowerCase(),status=$("#opsCoinStatusFilter")?.value||"all",type=$("#opsCoinTypeFilter")?.value||"all";
+ const playType=$("#opsCoinPlayTypeFilter")?.value||"all",level=$("#opsCoinLevelFilter")?.value||"all";
  document.querySelectorAll("[data-coin-row]").forEach(row=>{
   const matchText=!q||(row.dataset.search||"").includes(q),enabled=!!row.querySelector("[data-coin-enabled]")?.checked,currentType=row.querySelector("[data-coin-type]")?.value||"fixed";
-  row.hidden=!(matchText&&(status==="all"||(status==="enabled"&&enabled)||(status==="disabled"&&!enabled))&&(type==="all"||type===currentType));
+  row.hidden=!(matchText&&(status==="all"||(status==="enabled"&&enabled)||(status==="disabled"&&!enabled))&&(type==="all"||type===currentType)&&(playType==="all"||playType===row.dataset.playType)&&(level==="all"||level===row.dataset.level));
  });
  document.querySelectorAll("[data-coin-game-card]").forEach(card=>{card.hidden=card.querySelectorAll("[data-coin-row]:not([hidden])").length===0;});
 }
@@ -1512,7 +1543,7 @@ async function loadOpsCoins(){
   let modeCount=0;
   const groupHtml=Array.from(groups.entries()).map(([gameId,items])=>{
    modeCount+=items.length;const title=COIN_GAME_NAMES[gameId]||items[0]?.game?.title||"ゲーム",active=items.filter(r=>r.enabled).length;
-   const rows=items.slice().sort((a,b)=>coinModeLabel(gameId,a.mode).localeCompare(coinModeLabel(gameId,b.mode),"ja"));
+   const rows=items.slice().sort((a,b)=>coinModeLabel(gameId,a.mode,a.required_cpu_difficulty||"NONE").localeCompare(coinModeLabel(gameId,b.mode,b.required_cpu_difficulty||"NONE"),"ja"));
    return '<details class="ops-coin-game" data-coin-game-card><summary class="ops-coin-game-summary"><span class="ops-coin-game-icon">🎮</span><span class="ops-coin-game-title"><strong>'+esc(title)+'</strong><small>'+items.length+'モード · '+active+'モード付与ON</small></span><span class="ops-coin-game-status">'+active+'/'+items.length+' ON</span><span class="ops-coin-game-chevron">⌄</span></summary><div class="ops-coin-mode-list">'+rows.map(renderCoinRewardMode).join("")+'</div></details>';
   }).join("");
   if(rewardsHost)rewardsHost.innerHTML=groupHtml||'<div class="empty">報酬設定はありません。</div>';
@@ -2527,6 +2558,8 @@ $("#opsCoinRewardsList").addEventListener("change",e=>{
 $("#opsCoinSearch").addEventListener("input",filterOpsCoinRewards);
 $("#opsCoinStatusFilter").addEventListener("change",filterOpsCoinRewards);
 $("#opsCoinTypeFilter").addEventListener("change",filterOpsCoinRewards);
+$("#opsCoinPlayTypeFilter").addEventListener("change",filterOpsCoinRewards);
+$("#opsCoinLevelFilter").addEventListener("change",filterOpsCoinRewards);
 $("#opsCoinAdjustForm").addEventListener("submit",adjustOpsCoinBalance);
 $("#opsSecretCodeForm").addEventListener("submit",saveSecretCode);
 $("#opsSecretCodeForm").addEventListener("reset",()=>setTimeout(resetSecretCodeForm,0));
