@@ -237,6 +237,7 @@ async function getRoomMembers(roomId: string) {
 
 const NUMBER_GAME_ID = "bb466662-5423-48e6-bbcc-d19da50ba818";
 const TICTACTOE_GAME_ID = "2dbd6773-2684-4f00-973e-c46acbc348e7";
+const PRIME_GAME_ID = "79c9921a-d57a-45b1-8271-1ee7042801dc";
 const NUMBER_LEVELS: Record<string, number> = {
   easy: 10, normal: 30, hard: 100, expert: 300, master: 1000, legend: 10000,
 };
@@ -425,6 +426,90 @@ function tttChooseCpuMove(state:TttState) {
   return best[Math.floor(Math.random()*best.length)];
 }
 
+
+const PRIME_DIFFICULTY: Record<string, { primes: number[]; minFactors: number; maxFactors: number; maxValue: number; baseScore: number }> = {
+  easy: { primes: [2,3,5,7], minFactors: 2, maxFactors: 4, maxValue: 180, baseScore: 200 },
+  normal: { primes: [2,3,5,7,11,13], minFactors: 3, maxFactors: 5, maxValue: 600, baseScore: 350 },
+  hard: { primes: [2,3,5,7,11,13,17,19,23], minFactors: 3, maxFactors: 6, maxValue: 2500, baseScore: 500 },
+};
+function primeIsPrime(value: number) {
+  if (!Number.isSafeInteger(value) || value < 2) return false;
+  if (value === 2) return true;
+  if (value % 2 === 0) return false;
+  for (let divisor = 3; divisor * divisor <= value; divisor += 2) if (value % divisor === 0) return false;
+  return true;
+}
+function primeRandomIndex(length: number) {
+  if (!Number.isSafeInteger(length) || length < 1) throw new Error("INVALID_RANDOM_RANGE");
+  const buffer = new Uint32Array(1);
+  const limit = Math.floor(0x100000000 / length) * length;
+  let value = 0;
+  do { crypto.getRandomValues(buffer); value = buffer[0]; } while (value >= limit);
+  return value % length;
+}
+function primeCreateTarget(difficulty: string, previous: number | null = null) {
+  const config = PRIME_DIFFICULTY[difficulty];
+  if (!config) throw new HttpError(400, "素因数分解の難易度が正しくありません。");
+  for (let attempt = 0; attempt < 80; attempt++) {
+    const factorCount = config.minFactors + primeRandomIndex(config.maxFactors - config.minFactors + 1);
+    let number = 1;
+    for (let i = 0; i < factorCount; i++) {
+      const weighted = Math.floor(Math.pow((primeRandomIndex(1000000) + 1) / 1000000, 1.2) * config.primes.length);
+      const prime = config.primes[Math.min(config.primes.length - 1, weighted)];
+      if (number * prime <= config.maxValue) number *= prime;
+      else if (i < 2) number *= 2;
+    }
+    if (primeIsPrime(number) || number <= 3) number *= config.primes[primeRandomIndex(Math.min(2, config.primes.length))];
+    if (number !== previous && number > 3 && !primeIsPrime(number)) return number;
+  }
+  throw new HttpError(503, "問題を生成できませんでした。もう一度開始してください。");
+}
+function primeGetTimeLeft(session: Record<string, any>, state: Record<string, any>) {
+  const elapsed = Math.max(0, (Date.now() - Date.parse(session.started_at)) / 1000);
+  return Math.max(0, Math.min(90, 90 - elapsed + (Number(state.timeAdjustment) || 0)));
+}
+async function primeRecordCompletedRun(userId: string, session: Record<string, any>) {
+  const state = session.state && typeof session.state === "object" ? session.state as Record<string, any> : {};
+  const score = Math.max(0, Math.floor(Number(state.score) || 0));
+  const difficulty = String(state.difficulty || session.mode || "");
+  if (!Object.prototype.hasOwnProperty.call(PRIME_DIFFICULTY, difficulty)) {
+    throw new HttpError(400, "保存する素因数分解の難易度が正しくありません。");
+  }
+  const elapsedMs = Math.max(0, Math.min(90 * 1000, Date.now() - Date.parse(session.started_at)));
+  const metadata = {
+    metric: "score", source: "prime-factor-server", serverVerified: "prime-breaker-v1",
+    difficulty, solvedCount: Math.max(0, Math.floor(Number(state.solvedCount) || 0)),
+    maxCombo: Math.max(0, Math.floor(Number(state.maxCombo) || 0)),
+    durationMs: elapsedMs, sessionId: session.id,
+  };
+  if (score > 0) {
+    const { error: scoreError } = await admin.rpc("kuro_submit_game_score", {
+      p_game_id: PRIME_GAME_ID, p_user_id: userId, p_mode: difficulty,
+      p_score: score, p_submission_id: session.id, p_metadata: metadata,
+      p_level: null, p_cpu_difficulty: null,
+    });
+    if (scoreError) {
+      console.error("[kurogames-online] verified prime score save failed", scoreError);
+      throw new HttpError(500, "素因数分解のランキングを保存できませんでした。");
+    }
+    const { error: eventError } = await admin.rpc("kuro_record_user_game_event", {
+      p_submission_id: session.id, p_user_id: userId, p_game_id: PRIME_GAME_ID,
+      p_mode: difficulty, p_result: "played", p_score: score,
+      p_duration_ms: elapsedMs, p_metadata: metadata,
+    });
+    if (eventError) {
+      console.error("[kurogames-online] verified prime unified event save failed", eventError);
+      throw new HttpError(500, "素因数分解の統合ゲーム記録を保存できませんでした。");
+    }
+  }
+  const { error: markError } = await admin.from("game_verification_sessions")
+    .update({ score_recorded: true })
+    .eq("id", session.id).eq("game_id", PRIME_GAME_ID)
+    .eq("user_id", userId).eq("status", "completed");
+  if (markError) throw new HttpError(500, "素因数分解の記録状態を更新できませんでした。");
+  return { scoreRecorded: score > 0, score };
+}
+
 async function reconcilePendingVerifiedSessions(userId:string,gameId:string) {
   const {data:pending,error} = await admin.from("game_verification_sessions")
     .select("*")
@@ -465,6 +550,9 @@ async function reconcilePendingVerifiedSessions(userId:string,gameId:string) {
           console.warn("[kurogames-online] pending number score recovery failed",recordError);
           continue;
         }
+      } else if(gameId===PRIME_GAME_ID && session.game_type==="prime_factor") {
+        if(session.result!=="completed" || !["easy","normal","hard"].includes(String(session.state?.difficulty))) continue;
+        await primeRecordCompletedRun(userId,session);
       } else if(gameId===TICTACTOE_GAME_ID && session.game_type==="tictactoe") {
         if(!["win","loss","draw"].includes(String(session.result)) ||
           !["normal","vanish","gobble","reverse"].includes(String(session.mode)) ||
@@ -719,7 +807,7 @@ async function handle(req: Request) {
   if (action === "leaderboard_modes") {
     requirePublished(game);
     requireFeature(settings.features, "ranking");
-    if (game.id === TICTACTOE_GAME_ID || game.id === NUMBER_GAME_ID || game.id === UNON_GAME_ID) {
+    if (game.id === TICTACTOE_GAME_ID || game.id === NUMBER_GAME_ID || game.id === UNON_GAME_ID || game.id === PRIME_GAME_ID) {
       return reply(200, {
         modes: [...(KNOWN_RANKING_MODES[game.id] ?? [])],
         showcaseConfig: sanitizeRankingShowcaseConfig(settings.features.rankingShowcaseConfig),
@@ -847,6 +935,38 @@ async function handle(req: Request) {
               avatar_url: profile.avatar_url,
             },
           };
+        }),
+      });
+    }
+
+
+    if (game.id === PRIME_GAME_ID) {
+      if (!(KNOWN_RANKING_MODES[game.id] ?? []).includes(mode)) throw new HttpError(400,"素因数分解のランキング難易度が正しくありません。");
+      const { data: events, error } = await admin.from("kuro_game_play_events")
+        .select("user_id,score,mode,created_at")
+        .eq("game_id",game.id).eq("mode",mode)
+        .contains("metadata",{source:"prime-factor-server",serverVerified:"prime-breaker-v1"})
+        .gt("score",0).order("created_at",{ascending:true}).limit(50000);
+      if (error) throw new HttpError(500,"素因数分解の検証済みランキングを取得できませんでした。");
+      const bestByUser = new Map<string,{user_id:string;score:number;mode:string;created_at:string}>();
+      for (const row of events ?? []) {
+        const current=bestByUser.get(row.user_id);
+        if (!current || Number(row.score)>current.score) bestByUser.set(row.user_id,{user_id:row.user_id,score:Number(row.score)||0,mode:row.mode,created_at:row.created_at});
+      }
+      const ranked=Array.from(bestByUser.values()).sort((a,b)=>b.score-a.score||String(a.created_at).localeCompare(String(b.created_at))).slice(0,limit);
+      const ids=Array.from(new Set(ranked.map(row=>row.user_id)));
+      const profileMap=new Map<string,{kuro_id:string;username:string;avatar_url:string|null}>();
+      if(ids.length){
+        const {data:profiles,error:profileError}=await admin.from("profiles").select("id,kuro_id,username,avatar_url").in("id",ids);
+        if(profileError) throw new HttpError(500,"ランキング参加者のプロフィールを取得できませんでした。");
+        for(const profile of profiles??[]) profileMap.set(profile.id,{kuro_id:profile.kuro_id??"",username:profile.username??"プレイヤー",avatar_url:profile.avatar_url??null});
+      }
+      return reply(200,{
+        mode,serverVerified:true,
+        scores:ranked.map((row,index)=>{
+          const profile=profileMap.get(row.user_id)??{kuro_id:"",username:"プレイヤー",avatar_url:null};
+          return {rank:index+1,userId:row.user_id,score:row.score,mode,createdAt:row.created_at,recordType:"verified-prime-factor",
+            user:{kuroId:profile.kuro_id||null,username:profile.username,display_name:profile.username,avatar_url:profile.avatar_url}};
         }),
       });
     }
@@ -1059,6 +1179,114 @@ async function handle(req: Request) {
   }
 
 
+
+  if (action === "prime_start") {
+    const user = await getUser(req);
+    requirePublished(game);
+    requireFeature(settings.features, "ranking");
+    if (game.id !== PRIME_GAME_ID) throw new HttpError(404, "素因数分解の認証先ではありません。");
+    const difficulty = typeof body.difficulty === "string" ? body.difficulty.trim().toLowerCase() : "";
+    if (!Object.prototype.hasOwnProperty.call(PRIME_DIFFICULTY,difficulty)) {
+      throw new HttpError(400, "素因数分解の難易度が正しくありません。");
+    }
+    const { error:expireError } = await admin.from("game_verification_sessions").update({status:"expired"})
+      .eq("game_id",game.id).eq("user_id",user.id).eq("game_type","prime_factor").eq("status","active");
+    if (expireError) throw new HttpError(500, "前の素因数分解セッションを終了できませんでした。");
+    const targetNumber = primeCreateTarget(difficulty);
+    const state = { difficulty, score:0, combo:0, maxCombo:0, solvedCount:0, targetNumber, timeAdjustment:0, maxTime:90 };
+    const { data, error } = await admin.from("game_verification_sessions").insert({
+      game_id:game.id,user_id:user.id,game_type:"prime_factor",mode:difficulty,
+      secret_number:targetNumber,attempts:0,state,status:"active",
+    }).select("id,nonce,started_at").single();
+    if (error?.code === "23505") throw new HttpError(409,"別の素因数分解ゲームが同時に開始されました。画面を再読み込みしてください。");
+    if (error || !data) throw new HttpError(500,"素因数分解ゲームを開始できませんでした。");
+    return reply(200,{ok:true,sessionId:data.id,nonce:data.nonce,targetNumber,score:0,combo:0,maxCombo:0,solvedCount:0,timeLeft:90,startedAt:data.started_at,serverVerified:true});
+  }
+
+  if (action === "prime_answer") {
+    const user = await getUser(req);
+    requirePublished(game);
+    requireFeature(settings.features,"ranking");
+    if (game.id !== PRIME_GAME_ID) throw new HttpError(404,"素因数分解の認証先ではありません。");
+    const session = await loadVerifiedSession(user.id,body.sessionId,body.nonce,game.id,"prime_factor");
+    const state = cloneGameState(session.state as Record<string,any>);
+    const difficulty = String(state.difficulty || "");
+    const config = PRIME_DIFFICULTY[difficulty];
+    if (!config || Number(session.secret_number)!==Number(state.targetNumber)) throw new HttpError(409,"問題の認証状態が一致しません。ゲームを再読み込みしてください。");
+    const lastActionMs = Date.now() - Date.parse(session.last_action_at);
+    if (Number.isFinite(lastActionMs) && lastActionMs < 70) throw new HttpError(429,"入力が速すぎます。少し待ってから確定してください。");
+    const timeBefore = primeGetTimeLeft(session,state);
+    if (timeBefore <= 0) throw new HttpError(410,"制限時間が終了しました。結果を保存してください。");
+    const raw = Array.isArray(body.factors) ? body.factors : [];
+    if (raw.length > config.maxFactors || raw.some((v) => !Number.isSafeInteger(Number(v)) || Number(v)<2 || Number(v)>2500)) {
+      throw new HttpError(400,"入力された因数の形式が正しくありません。");
+    }
+    const factors = raw.map(Number);
+    const product = factors.reduce((acc,value)=>acc*value,1);
+    const nonPrime = factors.find(value=>!primeIsPrime(value));
+    const correct = factors.length >= config.minFactors && factors.length <= config.maxFactors &&
+      factors.length > 0 && product === Number(session.secret_number) && nonPrime === undefined;
+    let reason = "";
+    if (factors.length===0) reason = "式を入力してから確定しよう！";
+    else if (product !== Number(session.secret_number)) reason = "積が " + product + " になってしまう！ (" + Number(session.secret_number) + " ではない)";
+    else if (nonPrime !== undefined) reason = "「" + nonPrime + "」はまだ分解できるぞ！（素数ではない）";
+    else if (factors.length < config.minFactors || factors.length > config.maxFactors) reason = "素数の個数がこの難易度の範囲外です。";
+    if (!correct) {
+      state.combo = 0;
+      if (factors.length > 0) state.timeAdjustment = (Number(state.timeAdjustment)||0) - 3;
+      const nonce = await saveVerifiedSession(session,{state,attempts:Number(session.attempts||0)+1});
+      const timeLeft = primeGetTimeLeft({...session,last_action_at:new Date().toISOString()},state);
+      return reply(200,{ok:true,correct:false,reason,nonce,targetNumber:Number(session.secret_number),score:Number(state.score)||0,combo:0,maxCombo:Number(state.maxCombo)||0,solvedCount:Number(state.solvedCount)||0,timeLeft:Math.round(timeLeft*100)/100});
+    }
+    const nextCombo = Number(state.combo||0)+1;
+    const earned = config.baseScore + factors.length*50 + nextCombo*40;
+    const timeBonus = Math.min(4.5,1.5+factors.length*0.5);
+    const elapsed = Math.max(0,(Date.now()-Date.parse(session.started_at))/1000);
+    const before = Math.max(0,Math.min(90,90-elapsed+(Number(state.timeAdjustment)||0)));
+    const after = Math.min(90,before+timeBonus);
+    state.combo = nextCombo;
+    state.maxCombo = Math.max(Number(state.maxCombo)||0,nextCombo);
+    state.solvedCount = (Number(state.solvedCount)||0)+1;
+    state.score = (Number(state.score)||0)+earned;
+    state.timeAdjustment = after-(90-elapsed);
+    const targetNumber = primeCreateTarget(difficulty,Number(session.secret_number));
+    state.targetNumber = targetNumber;
+    const nonce = await saveVerifiedSession(session,{state,secret_number:targetNumber,attempts:Number(session.attempts||0)+1});
+    const timeLeft = primeGetTimeLeft({...session,last_action_at:new Date().toISOString()},state);
+    return reply(200,{ok:true,correct:true,earnedPoints:earned,timeBonus,nonce,targetNumber,score:state.score,combo:state.combo,maxCombo:state.maxCombo,solvedCount:state.solvedCount,timeLeft:Math.round(timeLeft*100)/100});
+  }
+
+  if (action === "prime_skip") {
+    const user = await getUser(req);
+    requirePublished(game);
+    requireFeature(settings.features,"ranking");
+    if (game.id !== PRIME_GAME_ID) throw new HttpError(404,"素因数分解の認証先ではありません。");
+    const session = await loadVerifiedSession(user.id,body.sessionId,body.nonce,game.id,"prime_factor");
+    const state = cloneGameState(session.state as Record<string,any>);
+    if (primeGetTimeLeft(session,state) <= 0) throw new HttpError(410,"制限時間が終了しました。結果を保存してください。");
+    state.combo = 0;
+    state.timeAdjustment = (Number(state.timeAdjustment)||0)-5;
+    const targetNumber = primeCreateTarget(String(state.difficulty),Number(session.secret_number));
+    state.targetNumber = targetNumber;
+    const nonce = await saveVerifiedSession(session,{state,secret_number:targetNumber,attempts:Number(session.attempts||0)+1});
+    const timeLeft = primeGetTimeLeft({...session,last_action_at:new Date().toISOString()},state);
+    return reply(200,{ok:true,skipped:true,nonce,targetNumber,score:Number(state.score)||0,combo:0,maxCombo:Number(state.maxCombo)||0,solvedCount:Number(state.solvedCount)||0,timeLeft:Math.round(timeLeft*100)/100});
+  }
+
+  if (action === "prime_finish") {
+    const user = await getUser(req);
+    requirePublished(game);
+    requireFeature(settings.features,"ranking");
+    if (game.id !== PRIME_GAME_ID) throw new HttpError(404,"素因数分解の認証先ではありません。");
+    const session = await loadVerifiedSession(user.id,body.sessionId,body.nonce,game.id,"prime_factor");
+    const state = cloneGameState(session.state as Record<string,any>);
+    const timeLeft = primeGetTimeLeft(session,state);
+    const patch = {state:{...state,timeLeftAtFinish:timeLeft},status:"completed",result:"completed",completed_at:new Date().toISOString(),score_recorded:false};
+    await saveVerifiedSession(session,patch);
+    const saved = await primeRecordCompletedRun(user.id,{...session,...patch});
+    return reply(200,{ok:true,completed:true,recorded:saved.scoreRecorded,score:saved.score,solvedCount:Number(state.solvedCount)||0,maxCombo:Number(state.maxCombo)||0});
+  }
+
   if (action === "number_start") {
     const user = await getUser(req);
     requirePublished(game);
@@ -1250,7 +1478,7 @@ async function handle(req: Request) {
     const user = await getUser(req);
     requirePublished(game);
     requireFeature(settings.features, "ranking");
-    if (game.id === TICTACTOE_GAME_ID || game.id === NUMBER_GAME_ID) {
+    if (game.id === TICTACTOE_GAME_ID || game.id === NUMBER_GAME_ID || game.id === PRIME_GAME_ID) {
       throw new HttpError(403, "このゲームの記録はサーバー検証済みのプレイからのみ登録できます。");
     }
     const score = Number(body.score);
