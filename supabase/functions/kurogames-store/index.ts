@@ -44,8 +44,7 @@ async function resolveUser(req: Request, required: boolean) {
     return null;
   }
   if (await isSuspended(data.user.id)) {
-    if (required) throw new HttpError(403, "このアカウントは一時停止中です。ストア機能は利用できません。");
-    return null;
+    throw new HttpError(403, "このアカウントは一時停止中です。ストア機能は利用できません。");
   }
   return data.user;
 }
