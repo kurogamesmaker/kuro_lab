@@ -633,6 +633,7 @@ async function loadKuroId(user){
   if(result.error)throw result.error;
   if(!st.user||st.user.id!==userId)return null;
   st.kuroProfile=result.data||null;
+  updateAccountUI();
   st.kuroId=result.data&&result.data.kuro_id?String(result.data.kuro_id):null;
   st.kuroIdLoading=false;
   if(page==="mypage"||page==="settings")render();
