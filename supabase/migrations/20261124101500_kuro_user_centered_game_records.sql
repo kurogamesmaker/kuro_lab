@@ -290,6 +290,12 @@ when (
 )
 execute function public.kuro_sync_number_session_to_user_records();
 
+-- Trigger functions should only be executable through their installed triggers.
+revoke all on function public.kuro_sync_win_event_to_user_records() from public, anon, authenticated;
+revoke all on function public.kuro_sync_tictactoe_event_to_user_records() from public, anon, authenticated;
+revoke all on function public.kuro_sync_sevens_result_to_user_records() from public, anon, authenticated;
+revoke all on function public.kuro_sync_number_session_to_user_records() from public, anon, authenticated;
+
 -- Reconstruct all historical event-based records. This remains idempotent.
 do $block$
 declare
