@@ -309,7 +309,9 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
  function makeProfile(row){
   const userName=String(row.user&& (row.user.username||row.user.display_name)||"プレイヤー");
   const userId=String(row.userId||"");
-  const hasUserId=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);\n  const profile=document.createElement(hasUserId?"button":"div");\n  if(hasUserId){profile.type="button";profile.setAttribute("data-kuro-profile-user",userId);profile.setAttribute("aria-label",userName+"の共通プロフィールを開く");}
+  const hasUserId=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+  const profile=document.createElement(hasUserId?"button":"div");
+  if(hasUserId){profile.type="button";profile.setAttribute("data-kuro-profile-user",userId);profile.setAttribute("aria-label",userName+"の共通プロフィールを開く");}
   profile.className="rank-profile";
   
   const avatar=document.createElement("span");avatar.className="rank-avatar";
