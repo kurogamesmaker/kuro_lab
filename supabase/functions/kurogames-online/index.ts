@@ -542,9 +542,9 @@ async function handle(req: Request) {
     const user = await getUser(req);
     requirePublished(game);
     const allGames = body.allGames === true;
-    const targetGameId = typeof body.targetGameId === "string" && UUID_RE.test(body.targetGameId)
-      ? body.targetGameId
-      : game.id;
+    // When not explicitly requesting all of the caller's games, scope the
+    // result to the game authenticated by this request, never a body-supplied id.
+    const targetGameId = game.id;
     const limit = Math.max(1, Math.min(250, Number.isFinite(Number(body.limit)) ? Math.floor(Number(body.limit)) : 100));
     let query = admin.from("kuro_game_user_stats")
       .select("user_id,game_id,mode,plays,wins,losses,draws,best_score,best_time_ms,total_time_ms,last_played_at,metadata,updated_at")
@@ -563,9 +563,9 @@ async function handle(req: Request) {
     const user = await getUser(req);
     requirePublished(game);
     const allGames = body.allGames === true;
-    const targetGameId = typeof body.targetGameId === "string" && UUID_RE.test(body.targetGameId)
-      ? body.targetGameId
-      : game.id;
+    // When not explicitly requesting all of the caller's games, scope the
+    // result to the game authenticated by this request, never a body-supplied id.
+    const targetGameId = game.id;
     const limit = Math.max(1, Math.min(100, Number.isFinite(Number(body.limit)) ? Math.floor(Number(body.limit)) : 50));
     let query = admin.from("kuro_game_play_events")
       .select("id,submission_id,user_id,game_id,mode,result,score,duration_ms,metadata,created_at")
