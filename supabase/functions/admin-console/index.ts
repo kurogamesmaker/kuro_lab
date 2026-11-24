@@ -360,7 +360,7 @@ Deno.serve(async (req: Request) => {
       const { error } = await admin.from("kuro_coin_game_rewards").upsert({
         game_id: gameId,
         mode,
-        reward_amount: rewardType === "fixed" ? amount : 0,
+        reward_amount: amount,
         enabled,
         required_cpu_difficulty: difficulty,
         reward_label: label,
