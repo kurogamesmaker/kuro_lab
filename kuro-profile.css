@@ -164,3 +164,26 @@
  .kuro-profile-mode-compact{gap:8px}
  .kuro-profile-mode-compact b,.kuro-profile-mode-compact span{font-size:9px}
 }
+
+
+/* Always-visible game records table */
+.kuro-profile-table-wrap{width:100%;max-width:100%;overflow-x:auto;border:1px solid rgba(148,163,184,.17);border-radius:11px;background:rgba(2,8,20,.2);-webkit-overflow-scrolling:touch}
+.kuro-profile-record-table{width:100%;min-width:660px;border-collapse:separate;border-spacing:0;color:#dce6f4;font-size:11px}
+.kuro-profile-record-table th{padding:9px 10px;background:rgba(100,130,170,.13);color:#a9bed9;font-size:10px;font-weight:850;text-align:left;white-space:nowrap;border-bottom:1px solid rgba(148,163,184,.18)}
+.kuro-profile-record-table td{padding:8px 10px;border-bottom:1px solid rgba(148,163,184,.1);vertical-align:middle;white-space:nowrap}
+.kuro-profile-record-table tbody tr:last-child td{border-bottom:0}
+.kuro-profile-record-table tbody tr:hover{background:rgba(148,163,184,.055)}
+.kuro-profile-table-game{display:flex;align-items:center;gap:8px;min-width:130px}
+.kuro-profile-table-game strong{max-width:170px;overflow:hidden;color:#eef4fc;font-size:11px;font-weight:850;text-overflow:ellipsis}
+.kuro-profile-table-icon-image,.kuro-profile-table-icon-fallback{display:inline-flex;width:27px;height:27px;flex:0 0 27px;align-items:center;justify-content:center;overflow:hidden;border-radius:7px;background:rgba(148,163,184,.12);object-fit:cover;font-size:15px}
+.kuro-profile-table-mode{color:#b7c7dc}
+.kuro-profile-table-number{color:#cbd8e8;text-align:right;font-variant-numeric:tabular-nums}
+.kuro-profile-table-best{color:#a9d0ff;font-weight:850;text-align:right;font-variant-numeric:tabular-nums}
+@media(max-width:600px){
+ .kuro-profile-record-table{min-width:620px;font-size:10px}
+ .kuro-profile-record-table th{padding:8px 9px;font-size:9px}
+ .kuro-profile-record-table td{padding:7px 9px}
+ .kuro-profile-table-game{min-width:112px;gap:6px}
+ .kuro-profile-table-game strong{max-width:120px;font-size:10px}
+ .kuro-profile-table-icon-image,.kuro-profile-table-icon-fallback{width:24px;height:24px;flex-basis:24px}
+}
