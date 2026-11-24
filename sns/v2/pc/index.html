@@ -1111,7 +1111,11 @@ img#profileAvatarPreview:not(.hidden) {
  transform: translateX(2px) !important;
 }
 </style>
-<link rel="stylesheet" href="/kuro-profile.css?v=20261124socialprofile5"></head>
+<link rel="stylesheet" href="/kuro-profile.css?v=20261124socialprofile5"><style id="kuro-chat-peer-profile-button-style">
+.kuro-chat-peer-profile:not(.hidden){display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:40px}
+@media(max-width:640px){.kuro-chat-peer-profile:not(.hidden){width:42px;height:42px;padding:0;flex:0 0 42px}.kuro-chat-peer-profile:not(.hidden) span{display:none}}
+</style>
+</head>
 
 <body class="kuro-page kuro-theme-dark">
 
@@ -1561,6 +1565,7 @@ img#profileAvatarPreview:not(.hidden) {
             <div class="flex items-center gap-3 shrink-0 border-b border-kuro-800 px-4 py-3">
               <button type="button" onclick="showChatListOnMobile()" aria-label="チャット一覧に戻る" class="rounded-full border border-kuro-700 w-10 h-10 shrink-0"><i class="fa-solid fa-arrow-left"></i></button>
               <div id="chatWithLabel" class="min-w-0 flex-1 font-semibold text-sm truncate">相手を選択してください</div>
+              <button id="chatPeerProfileButton" type="button" onclick="openActiveChatProfile()" aria-label="チャット相手のプロフィールを開く" title="プロフィール" class="kuro-chat-peer-profile hidden shrink-0 h-10 rounded-full border border-kuro-700 px-3 text-gray-200 hover:bg-kuro-800 focus:outline-none focus:ring-2 focus:ring-violet-400"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.5 20c.5-3.3 2.8-5.2 6.5-5.2s6 1.9 6.5 5.2"></path></svg><span class="hidden md:inline text-xs font-semibold">プロフィール</span></button>
               <button id="groupChatSettingsButton" type="button" onclick="openGroupEditModal()" class="hidden rounded-lg border border-kuro-700 px-3 py-2 text-xs hover:bg-kuro-800">グループ設定</button>
             </div>
             <div id="chatMessages" class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-3">
@@ -4477,6 +4482,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             document.getElementById('chatLayout')?.classList.remove('hidden');
             document.getElementById('publicChatPane')?.classList.add('hidden');
             activeChatType='group'; activeChatId=groupId; activeChatPeer=null; activeChatHandle=groupName;
+            document.getElementById('chatPeerProfileButton')?.classList.add('hidden');
             if (!refreshOnly) document.getElementById('chatModal')?.classList.add('mobile-chat-open');
             document.getElementById('groupChatSettingsButton')?.classList.remove('hidden');
             const initialLabel=document.getElementById('chatWithLabel');initialLabel.innerHTML=renderGroupIcon(window.kuroActiveGroupIcon||'👥','w-7 h-7')+'<span>'+socialEscape(groupName)+'</span>';initialLabel.classList.add('flex','items-center','gap-2');
@@ -4683,6 +4689,16 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             }
         }
         window.startChatWithUser = startChatWithUser;
+        function openActiveChatProfile() {
+            if (activeChatType !== 'direct' || !activeChatPeer) {
+                showToast('個人チャットの相手を選択してください');
+                return;
+            }
+            Promise.resolve(openPublicProfile(activeChatPeer)).catch(error => {
+                console.error('KURO chat peer profile open failed:', error);
+                showToast('プロフィールを開けませんでした。再度お試しください。');
+            });
+        }
         async function selectChat(conversationId, peerId, handle) {
             stopGroupChatRealtime();
             document.getElementById('groupChatSettingsButton')?.classList.add('hidden');
@@ -4690,6 +4706,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             document.getElementById('chatLayout')?.classList.remove('hidden');
             document.getElementById('publicChatPane')?.classList.add('hidden');
             activeChatType = 'direct';
+            document.getElementById('chatPeerProfileButton')?.classList.remove('hidden');
             activeChatId = conversationId;
             activeChatPeer = peerId;
             activeChatHandle = handle || 'user';
