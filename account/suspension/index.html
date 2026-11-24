@@ -92,7 +92,7 @@ button,.button{display:inline-flex;align-items:center;justify-content:center;bor
   });
  }
  const db=window.supabase?.createClient?.(SUPABASE_URL,PUBLISHABLE_KEY,{global:{fetch:cloudflareFetch},auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}});
- let currentUser=null,currentSuspension=null,currentAppeal=null,currentSuspensionActive=false,refreshBusy=false;
+ let currentUser=null,currentSuspension=null,currentAppeal=null,currentSuspensionActive=false,currentSuspensionScheduled=false,refreshBusy=false;
  const fmt=value=>value?new Intl.DateTimeFormat("ja-JP",{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Tokyo"}).format(new Date(value)):"—";
  function showError(message){$("formError").textContent=message||"";}
  function showOnlyLogin(){ $("loading").hidden=true;$("loginPanel").hidden=false; }
@@ -117,13 +117,17 @@ button,.button{display:inline-flex;align-items:center;justify-content:center;bor
     $("suspensionPanel").hidden=true;$("appealPanel").hidden=true;$("endedPanel").hidden=false;
     return;
    }
-   currentSuspensionActive=!currentSuspension.revoked_at&&new Date(currentSuspension.starts_at).getTime()<=Date.now()&&new Date(currentSuspension.ends_at).getTime()>Date.now();
-   $("suspensionPanel").hidden=!currentSuspensionActive;
-   $("endedPanel").hidden=currentSuspensionActive;
+   const suspensionStartsAt=new Date(currentSuspension.starts_at).getTime();
+   const suspensionEndsAt=new Date(currentSuspension.ends_at).getTime();
+   currentSuspensionActive=!currentSuspension.revoked_at&&suspensionStartsAt<=Date.now()&&suspensionEndsAt>Date.now();
+   currentSuspensionScheduled=!currentSuspension.revoked_at&&suspensionStartsAt>Date.now()&&suspensionEndsAt>Date.now();
+   const suspensionVisible=currentSuspensionActive||currentSuspensionScheduled;
+   $("suspensionPanel").hidden=!suspensionVisible;
+   $("endedPanel").hidden=suspensionVisible;
    $("appealPanel").hidden=!currentSuspensionActive;
-   $("pageTitle").textContent=currentSuspensionActive?"アカウントは一時停止中です":"一時停止は終了しています";
-   $("pageDescription").textContent=currentSuspensionActive?"ログインはできますが、一部サービスの利用が制限されています。":"現在、この一時停止は有効ではありません。以前の問い合わせは引き続き確認できます。";
-   $("stateText").textContent=currentSuspensionActive?"一時停止中":"終了";
+   $("pageTitle").textContent=currentSuspensionActive?"アカウントは一時停止中です":currentSuspensionScheduled?"アカウントは一時停止予定です":"一時停止は終了しています";
+   $("pageDescription").textContent=currentSuspensionActive?"ログインはできますが、一部サービスの利用が制限されています。":currentSuspensionScheduled?"指定された開始日時までは、アカウントを通常どおり利用できます。":"現在、この一時停止は有効ではありません。以前の問い合わせは引き続き確認できます。";
+   $("stateText").textContent=currentSuspensionActive?"一時停止中":currentSuspensionScheduled?"一時停止予定":"終了";
    $("startsAt").textContent=fmt(currentSuspension.starts_at);
    $("endsAt").textContent=fmt(currentSuspension.ends_at);
    $("reasonBox").hidden=!String(currentSuspension.reason||"").trim();
