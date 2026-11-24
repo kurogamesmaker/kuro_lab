@@ -629,7 +629,7 @@ async function loadKuroId(user){
  if(!userId){st.kuroId=null;st.kuroProfile=null;st.kuroIdLoading=false;st.kuroIdUserId=null;return null;}
  st.kuroIdUserId=userId;st.kuroIdLoading=true;
  try{
-  var result=await db.from("profiles").select("kuro_id,username").eq("id",userId).maybeSingle();
+  var result=await db.from("profiles").select("kuro_id,username,avatar_url").eq("id",userId).maybeSingle();
   if(result.error)throw result.error;
   if(!st.user||st.user.id!==userId)return null;
   st.kuroProfile=result.data||null;
@@ -666,7 +666,7 @@ function setRecoveryMode(active){
  var title=$("#portal-login-title"),loginError=$("#portal-login-error"),recoveryError=$("#portal-recovery-error");
  if(active){if(title)title.textContent="新しいパスワードを設定";if(loginError)loginError.textContent="";if(recoveryError)recoveryError.textContent="メールのリンクを確認しました。新しいパスワードを入力してください。";}
 }
-function updateAccountUI(){var account=$("#portal-account-button");if(account){account.textContent=st.user?"マイページ":"ログイン";account.setAttribute("aria-label",st.user?"ログイン中。マイページを開く":"ログイン・新規登録");}}
+function updateAccountUI(){var account=$("#portal-account-button");if(account){var label=st.user?"マイページ":"ログイン",avatar=st.user&&st.kuroProfile&&st.kuroProfile.avatar_url;account.innerHTML=(avatar?'<img class="portal-account-avatar" src="'+esc(avatar)+'" alt="" onerror="this.remove()">':'<span class="portal-account-avatar-fallback" aria-hidden="true">👤</span>')+'<span>'+label+'</span>';account.setAttribute("aria-label",st.user?"ログイン中。マイページを開く":"ログイン・新規登録");}}
 function initLogin(){
  var intendedReturn=getAuthReturnPath();if(intendedReturn)safeStorageSet("localStorage","kuro_auth_return_path",intendedReturn);
  if(new URLSearchParams(location.search).get("auth")==="1")openLogin();
