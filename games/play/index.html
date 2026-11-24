@@ -91,8 +91,23 @@ button.back{font-family:inherit;cursor:pointer;background:transparent;border:0}
  .game-description-label{font-size:9px;margin:0 0 2px}
  .hint{display:none}
 }
-</style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
-<body><header class="top"><a class="brand" href="/games/">KURO GAMES</a><button class="back game-account-button" id="gameAccountButton" type="button">ログイン / 登録</button><a class="back" href="/games/">← ゲーム一覧へ</a></header>
+</style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style id="kuro-game-cosmetics-style">
+.game-cosmetic-avatar{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;overflow:hidden;border:2px solid #cbd5e1;border-radius:50%;background:linear-gradient(145deg,#e8eaff,#dbe7fa);color:#334155;font-size:20px;box-shadow:0 2px 9px #263d5b20}
+.game-cosmetic-avatar[hidden],.game-cosmetic-effects[hidden]{display:none!important}
+.game-cosmetic-avatar img{display:block;width:100%;height:100%;object-fit:cover}
+.game-cosmetic-avatar[data-frame="rare"]{border-color:#58a3ff;box-shadow:0 0 0 3px #58a3ff26,0 0 12px #58a3ff55}
+.game-cosmetic-avatar[data-frame="epic"]{border-color:#b67aff;box-shadow:0 0 0 3px #b67aff26,0 0 12px #b67aff66}
+.game-cosmetic-avatar[data-frame="legendary"]{border-color:#f2bc57;box-shadow:0 0 0 3px #f2bc5726,0 0 12px #f2bc5766}
+.game-cosmetic-effects{display:inline-flex;align-items:center;gap:5px;color:#75839a;font-size:12px}
+.game-cosmetic-effects span{padding:4px 6px;border:1px solid #e3e8f2;border-radius:8px;background:#fff}
+header.top.kuro-game-theme-neon{background:linear-gradient(100deg,#21153f,#132645);border-bottom-color:#57407a}
+header.top.kuro-game-theme-neon .brand,header.top.kuro-game-theme-neon .back{color:#dfc5ff}
+header.top.kuro-game-theme-classic{background:linear-gradient(100deg,#eff3f8,#e6ecf4)}
+@media(max-width:680px){.top{gap:7px;padding:0 9px}.brand{font-size:15px}.game-cosmetic-avatar{width:29px;height:29px;flex-basis:29px;font-size:17px}.game-cosmetic-effects{display:none}.top .back{font-size:10px}}
+</style>
+</head>
+<body><header class="top"><a class="brand" href="/games/">KURO GAMES</a><span class="game-cosmetic-avatar" id="gameCosmeticAvatar" hidden aria-label="装備中アバター"></span><span class="game-cosmetic-effects" id="gameCosmeticEffects" hidden></span><button class="back game-account-button" id="gameAccountButton" type="button">ログイン / 登録</button><a class="back" href="/games/">← ゲーム一覧へ</a></header>
 <div class="online-auth-backdrop" id="onlineAuthPrompt" hidden>
  <section class="online-auth-card" role="dialog" aria-modal="true" aria-labelledby="onlineAuthTitle">
   <h2 id="onlineAuthTitle">ログインが必要です</h2>
@@ -565,11 +580,66 @@ window.addEventListener("message", async event => {
  let mode="login";
  const modal=$("kuroAccountModal"),form=$("kuroAccountForm"),identity=$("kuroAccountIdentity"),password=$("kuroAccountPassword");
  function showError(message){$("kuroAccountError").textContent=String(message||"");}
+ let gameCosmeticUserId=null,gameCosmeticRequest=0;
+ function renderGameCosmetics(data){
+  const avatarHost=$("gameCosmeticAvatar"),effectsHost=$("gameCosmeticEffects"),header=document.querySelector("header.top");
+  if(!avatarHost||!effectsHost||!header)return;
+  const equipped=Array.isArray(data&&data.equipped)?data.equipped:[];
+  const itemFor=slot=>{const row=equipped.find(item=>item.slot===slot);return row&&row.item?row.item:null;};
+  const avatar=itemFor("avatar"),frame=itemFor("frame"),background=itemFor("background"),theme=itemFor("theme");
+  avatarHost.replaceChildren();
+  avatarHost.hidden=!avatar&&!frame;
+  avatarHost.dataset.frame=frame&&["common","rare","epic","legendary"].includes(frame.rarity)?frame.rarity:"";
+  if(avatar){
+   const image=typeof avatar.image_url==="string"?avatar.image_url:"";
+   let safeImage="";
+   try{const parsed=new URL(image,location.origin);if(parsed.protocol==="https:"||parsed.origin===location.origin)safeImage=parsed.href;}catch(_){}
+   if(safeImage){
+    const img=document.createElement("img");img.src=safeImage;img.alt="";img.loading="lazy";
+    img.onerror=()=>{img.remove();avatarHost.textContent=avatar.icon||"👤";};
+    avatarHost.appendChild(img);
+   }else avatarHost.textContent=avatar.icon||"👤";
+   avatarHost.title=[avatar.name,frame&&frame.name].filter(Boolean).join(" · ");
+  }else avatarHost.textContent="👤";
+  effectsHost.replaceChildren();
+  const labels=[background,theme].filter(Boolean);
+  labels.forEach(item=>{const chip=document.createElement("span");chip.textContent=(item.icon||"✦")+" "+(item.name||"");effectsHost.appendChild(chip);});
+  effectsHost.hidden=labels.length===0;
+  header.classList.toggle("kuro-game-theme-neon",!!(theme&&theme.item_key==="neon-theme"));
+  header.classList.toggle("kuro-game-theme-classic",!!(theme&&theme.item_key==="kuro-classic-theme"));
+  if(background&&typeof background.image_url==="string"){
+   let image="";
+   try{const parsed=new URL(background.image_url,location.origin);if(parsed.protocol==="https:"||parsed.origin===location.origin)image=parsed.href;}catch(_){}
+   header.style.backgroundImage=image?'linear-gradient(90deg,rgba(255,255,255,.94),rgba(255,255,255,.8)),url("'+image.replace(/["\\\\]/g,"")+'")':"";
+  }else header.style.backgroundImage="";
+ }
+ async function refreshGameCosmetics(session,force){
+  const active=session&&session.access_token&&!session.user?.is_anonymous?session:null;
+  if(!active){
+   gameCosmeticUserId=null;renderGameCosmetics({equipped:[]});return;
+  }
+  const userId=active.user&&active.user.id||"";
+  if(!userId||(!force&&gameCosmeticUserId===userId))return;
+  const request=++gameCosmeticRequest;gameCosmeticUserId=userId;
+  try{
+   const {data,error}=await kuroGameAuthClient.functions.invoke("kurogames-store",{body:{action:"catalog"}});
+   if(request!==gameCosmeticRequest)return;
+   if(error)throw error;
+   if(data&&data.error)throw new Error(data.error);
+   renderGameCosmetics(data||{});
+  }catch(error){
+   if(request===gameCosmeticRequest){
+    gameCosmeticUserId=null;
+    console.warn("KURO Store equipped cosmetics could not be loaded in game header:",error);
+   }
+  }
+ }
  function updateAccountButton(){
   const button=$("gameAccountButton");
   if(!button)return;
   const session=kuroGameAuthPromise;
   Promise.resolve(session).then(active=>{
+   refreshGameCosmetics(active).catch(()=>{});
    button.textContent=active?.user?.user_metadata?.username||active?.user?.email|| (active?"KUROアカウント":"ログイン / 登録");
    button.title=active?"KURO Lab共通アカウントでログイン中":"KURO Lab共通アカウントでログイン・新規登録";
   }).catch(()=>{button.textContent="ログイン / 登録";});
@@ -625,7 +695,9 @@ window.addEventListener("message", async event => {
   const active=session&&!session.user?.is_anonymous&&session.access_token?session:null;
   if(active){closeAccount();const prompt=$("onlineAuthPrompt");if(prompt)prompt.hidden=true;}
   updateAccountButton();
+  refreshGameCosmetics(active,true).catch(()=>{});
  });
+ document.addEventListener("visibilitychange",()=>{if(!document.hidden)Promise.resolve(kuroGameAuthPromise).then(active=>refreshGameCosmetics(active,true)).catch(()=>{});});
  form?.addEventListener("submit",async event=>{
   event.preventDefault();
   const submit=$("kuroAccountSubmit"),username=identity.value.trim(),pass=password.value;
