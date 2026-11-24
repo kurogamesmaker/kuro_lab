@@ -2,7 +2,8 @@
   "use strict";
 
   // The dedicated support page is intentionally exempt.
-  if (/^\\/account\\/suspension(?:\\/|$)/i.test(location.pathname)) return;
+  const SUPPORT_PATH = location.pathname === "/account/suspension" || location.pathname.indexOf("/account/suspension/") === 0;
+  if (SUPPORT_PATH) return;
 
   const PROJECT_REF = "cprvpphlfpmiegjiutjn";
   const PUBLISHABLE_KEY = "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
@@ -36,7 +37,7 @@
   }
 
   async function check() {
-    if (checking || redirected || /^\\/account\\/suspension(?:\\/|$)/i.test(location.pathname)) return;
+    if (checking || redirected || SUPPORT_PATH) return;
     const session = getSession();
     const userId = session && session.user && session.user.id;
     const accessToken = session && session.access_token;
@@ -93,7 +94,7 @@
       console.warn("KURO global suspension guard check failed:", error);
     } finally {
       checking = false;
-      showPage();
+      if (!redirected) showPage();
     }
   }
 
