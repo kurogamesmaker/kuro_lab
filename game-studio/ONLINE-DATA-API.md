@@ -798,12 +798,12 @@ SDK API:
     // ログイン中の自分の全ゲーム記録
     const allGameStats = await KuroGames.stats.getAll({ limit: 250 });
 
-    // 対応済みモードの敗北数を集計行へ加算（プレイ明細は作らない）
+    // UNONオンラインの敗者を署名証明付きで集計行へ加算（プレイ明細は作らない）
     await KuroGames.stats.recordResult({
-      mode: "wins-bot",
+      mode: "wins-online",
       result: "loss",
-      submissionId: roundId, // 同じ試合の再送には同じUUID
-      metadata: { source: "daifugo-bot", opponentMode: "bot" }
+      submissionId: matchId,
+      metadata: { source: "unon-online", matchId, roomId, lossProof }
     });
 
 保存項目:
@@ -816,7 +816,7 @@ SDK API:
 実装ルール:
 - 新しいプレイ結果は既存の集計行へ加算・更新し、新しい共通プレイ履歴行を作らない。
 - `ranking.submit()`、DBトリガー、サーバー検証済み結果、許可リスト制の `stats.recordResult()` は共通の集計更新関数を通して同じ行を更新する。
-- `stats.recordResult()` は敗北専用。ゲーム・mode・メタデータをEdge Functionで検査し、UNONオンラインは署名付き証明、CPU戦は対象モードを限定して受け付ける。任意のユーザー・ゲーム・結果を自由に書ける汎用APIではない。
+- `stats.recordResult()` は敗北専用で、現行の許可対象はUNONオンラインのみ。Cloudflare Workerの本人・試合・ルームに結び付いた署名証明をEdge Functionで検証する。未検証のCPU戦や任意のゲーム・mode・結果は拒否する。
 - submissionIdは集計行に保持する直近32件の内部重複防止キャッシュで照合し、短時間の再送や同時実行による二重加算を防ぐ。この配列はプレイ履歴ではなく、保持数に上限を設ける。
 - `stats.get()` / `stats.getAll()` は本人の集計行だけを返す。
 - 旧 `stats.history()` は互換性のため残すが、現在は集計行を返す非推奨エイリアスであり、プレイごとの履歴は返さない。
@@ -835,7 +835,7 @@ SDK API:
 - `kuro_game_user_stats`: 唯一の共通集計先。ユーザー×ゲーム×モードで1行。
 - `kuro_game_play_events`: 過去データの保管用。新規プレイ記録には使用しない。
 - `kuro_game_win_events`: 勝利イベントの重複判定に必要なゲームに限って使用し、一般の全プレイ履歴としては使用しない。
-- クライアントから集計テーブルへ直接書き込ませない。認証済みEdge Functionの許可リスト制結果API、信頼済みDBトリガー／ゲームサーバー経由で更新する。結果APIは対応ゲームの敗北だけを受け付け、オンライン勝敗はサーバー証明を必須とする。
+- クライアントから集計テーブルへ直接書き込ませない。認証済みEdge Functionの許可リスト制結果API、信頼済みDBトリガー／ゲームサーバー経由で更新する。Edge Functionの敗北APIは現在UNONオンラインのみを受け付け、署名証明を必須とする。ほかのオンラインゲームはゲームサーバー／DBトリガーが敗北を加算する。
 
 
 ## 9. エラー形式・復旧ルール
