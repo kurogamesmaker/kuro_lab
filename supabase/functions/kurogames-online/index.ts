@@ -1842,8 +1842,11 @@ async function handle(req: Request) {
     const user = await getUser(req);
     requirePublished(game);
     requireFeature(settings.features, "ranking");
-    if (game.id === TICTACTOE_GAME_ID || game.id === NUMBER_GAME_ID || game.id === PRIME_GAME_ID) {
+    if (game.id === TICTACTOE_GAME_ID || game.id === NUMBER_GAME_ID || game.id === PRIME_GAME_ID || game.id === SUSHI_GAME_ID) {
       throw new HttpError(403, "このゲームの記録はサーバー検証済みのプレイからのみ登録できます。");
+    }
+    if (game.id === DAIFUGO_GAME_ID && mode === "wins-bot") {
+      throw new HttpError(403, "大富豪のCPU戦ランキングはサーバー検証方式への移行中です。オンライン対戦の勝利数はこれまでどおり登録できます。");
     }
     const score = Number(body.score);
     if (!Number.isSafeInteger(score) || score < 0 || score > 1000000000) {
@@ -1876,17 +1879,7 @@ async function handle(req: Request) {
       : crypto.randomUUID();
 
     if (game.id === UNON_GAME_ID && mode === "wins-solo") {
-      const difficulty = String(metadata.cpuDifficulty ?? metadata.cpu_difficulty ?? metadata.difficulty ?? "").trim().toLowerCase();
-      const players = Number(metadata.players);
-      if (score !== 1 || metadata.metric !== "wins" || metadata.source !== "unon-solo" ||
-          !["easy", "normal", "hard"].includes(difficulty) ||
-          !Number.isSafeInteger(players) || players < 2 || players > 4) {
-        throw new HttpError(400, "UNONひとり用の勝利記録データが正しくありません。");
-      }
-      if (difficulty !== "hard") {
-        throw new HttpError(403, "ランキング対象はCPU最強設定のみです。CPUの強さを「つよい」にして再挑戦してください。");
-      }
-      metadata.cpuDifficulty = "hard";
+      throw new HttpError(403, "UNONのCPU戦ランキングはサーバー検証方式への移行中です。オンライン対戦の勝利数はこれまでどおり登録できます。");
     }
 
     if (game.id === UNON_GAME_ID && mode === "wins-online") {
