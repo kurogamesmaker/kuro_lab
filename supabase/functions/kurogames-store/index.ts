@@ -70,7 +70,7 @@ Deno.serve(async (req: Request) => {
       let profile: Record<string, unknown> | null = null;
       if (user) {
         const [inventoryResult, equippedResult, profileResult] = await Promise.all([
-          admin.from("kuro_store_user_inventory").select("id,item_id,source,acquired_at").eq("user_id", user.id).order("acquired_at", { ascending: false }),
+          admin.from("kuro_store_user_inventory").select("id,item_id,source,acquired_at,item:kuro_store_items(id,item_key,name,description,category,icon,image_url,rarity,price_kc,is_free,sort_order)").eq("user_id", user.id).order("acquired_at", { ascending: false }),
           admin.from("kuro_store_equipped_items").select("slot,item_id,updated_at").eq("user_id", user.id),
           admin.from("profiles").select("username,display_name,kuro_id").eq("id", user.id).maybeSingle(),
         ]);
