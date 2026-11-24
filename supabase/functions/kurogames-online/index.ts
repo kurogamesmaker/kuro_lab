@@ -2015,7 +2015,10 @@ async function handle(req: Request) {
     if (game.id === UNON_GAME_ID && !(KNOWN_RANKING_MODES[game.id] ?? []).includes(mode)) {
       throw new HttpError(403, "UNONのランキングは勝利回数のみ登録できます。");
     }
-    if (game.id === "2eb37847-1b7e-43e4-ad98-901d5b830ac4" && mode === "wins-online") {
+    if (game.id === DAIFUGO_GAME_ID && mode === "wins-bot") {
+      throw new HttpError(403, "大富豪のCPU戦はサーバー検証方式への移行中のため、ランキング記録を停止しています。");
+    }
+    if (game.id === DAIFUGO_GAME_ID && mode === "wins-online") {
       throw new HttpError(403, "オンライン勝利数は対局サーバーが登録します。");
     }
     const metadata = body.metadata && typeof body.metadata === "object" && !Array.isArray(body.metadata)
@@ -2085,7 +2088,10 @@ async function handle(req: Request) {
       p_score: score,
       p_submission_id: submissionId,
       p_metadata: metadata,
-      p_level: Number.isSafeInteger(Number(metadata.level)) && Number(metadata.level) >= 0 ? Number(metadata.level) : null,
+      p_level: metadata.level !== null && metadata.level !== undefined &&
+        Number.isSafeInteger(Number(metadata.level)) && Number(metadata.level) >= 0
+        ? Number(metadata.level)
+        : null,
       p_cpu_difficulty: ["EASY", "NORMAL", "HARD", "EXPERT"].includes(String(metadata.cpuDifficulty || metadata.cpu_difficulty || "").toUpperCase())
         ? String(metadata.cpuDifficulty || metadata.cpu_difficulty).toUpperCase()
         : null,
