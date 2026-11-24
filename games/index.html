@@ -1278,7 +1278,7 @@ body.kuro-account-open { overflow: hidden; }
 .kuro-sns-nav{display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none!important;background:linear-gradient(135deg,#f5f0ff,#eee8ff);border-color:#d9ccff;color:#6546a5!important}
 .kuro-sns-nav:hover{background:#e9e0ff;border-color:#bba5f4;color:#50358e!important}
 .kuro-sns-nav svg{width:15px;height:15px;flex:0 0 15px}
-#kuroRankingShowcase .rank-profile-link{display:flex;align-items:center;gap:10px;min-width:0;width:100%;overflow:hidden;text-decoration:none;color:inherit;border-radius:10px}
+#kuroRankingShowcase .rank-profile-link{display:flex;align-items:center;gap:10px;min-width:0;width:100%;overflow:hidden;text-decoration:none;color:inherit;border:0;padding:0;background:transparent;border-radius:10px;text-align:left;font:inherit;cursor:pointer}.rank-profile-link:focus-visible{outline:2px solid #4e8fe8;outline-offset:3px}
 #kuroRankingShowcase .rank-profile-avatar{position:relative;display:grid;place-items:center;width:36px;height:36px;flex:0 0 36px;overflow:hidden;border:1px solid #e1e8f2;border-radius:50%;background:linear-gradient(145deg,#edf3fc,#e4ebf7);color:#6f84a3}
 #kuroRankingShowcase .rank-profile-avatar:before{content:"👤";font-size:16px;line-height:1}
 #kuroRankingShowcase .rank-profile-avatar img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit}
@@ -1293,7 +1293,7 @@ body.kuro-account-open { overflow: hidden; }
 #kuroAccountModal .kuro-account-bio-editor textarea:focus{outline:2px solid #83b4f5;outline-offset:1px}
 #kuroAccountModal .kuro-account-bio-editor button{width:100%;min-height:40px}
 </style>
-</head>
+<link rel="stylesheet" href="/kuro-profile.css?v=20261124profilemodal1"></head>
 <body>
 <header><div class="wrap nav">
 <a class="brand" href="/games/"><img class="mark" src="/assets/brand/logo/kurolab_icon_toumei_160.png?v=20261121logosfix" width="38" height="38" alt=""><span>KURO <em>GAMES</em></span></a><span class="kuro-account-state" id="kuroAccountState" aria-live="polite">ゲスト</span>
@@ -1672,7 +1672,7 @@ function initKuroRankingShowcase(){
   }
   const content='<span class="rank-profile-avatar">'+image+'</span><span class="rank-name">'+esc(userName)+'</span>';
   if(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)){
-   return '<a class="rank-profile-link" href="/sns/?profile='+encodeURIComponent(userId)+'" aria-label="'+esc(userName)+'のKURO SNSプロフィールを開く">'+content+'</a>';
+   return '<button type="button" class="rank-profile-link" data-kuro-profile-user="'+esc(userId)+'" aria-label="'+esc(userName)+'の共通プロフィールを開く">'+content+'</button>';
   }
   return '<span class="rank-profile-link">'+content+'</span>';
  }
@@ -1768,4 +1768,4 @@ initKuroRankingShowcase();
 <script src="/service-notification-box.js?v=20261124box1"></script>
 <script src="/usage-tracker.js"></script>
 
-</body></html>
+<script defer src="/kuro-profile.js?v=20261124profilemodal1"></script></body></html>
