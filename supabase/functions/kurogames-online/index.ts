@@ -533,7 +533,7 @@ async function primeRecordCompletedRun(userId: string, session: Record<string, a
     }
   }
   const { error: markError } = await admin.from("game_verification_sessions")
-    .update({ score_recorded: true })
+    .update({ score_recorded: true, score_recovery_status: "recorded" })
     .eq("id", session.id).eq("game_id", PRIME_GAME_ID)
     .eq("user_id", userId).eq("status", "completed");
   if (markError) throw new HttpError(500, "素因数分解の記録状態を更新できませんでした。");
@@ -654,12 +654,36 @@ async function sushiRecordCompletedRun(userId:string,session:Record<string,any>)
     }
   }
   const {error:markError}=await admin.from("game_verification_sessions")
-    .update({score_recorded:true})
+    .update({score_recorded:true,score_recovery_status:"recorded"})
     .eq("id",session.id).eq("game_id",SUSHI_GAME_ID).eq("user_id",userId).eq("status","completed");
   if(markError) throw new HttpError(500,"回転ずしタイピングの記録状態を更新できません。");
   return {scoreRecorded:score>0,score};
 }
 
+
+async function setVerifiedSessionRecoveryStatus(
+  session: Record<string, any>,
+  userId: string,
+  gameId: string,
+  status: "recorded" | "not_rankable",
+) {
+  const { error } = await admin.from("game_verification_sessions")
+    .update({ score_recovery_status: status })
+    .eq("id", session.id)
+    .eq("game_id", gameId)
+    .eq("user_id", userId)
+    .eq("status", "completed");
+  if (error) {
+    console.warn("[kurogames-online] verified session recovery status update failed", {
+      sessionId: session.id, status, error,
+    });
+  }
+}
+
+function isPermanentVerifiedRecoveryError(error: { message?: string } | null) {
+  const message = String(error?.message || "");
+  return /INVALID_(?:ELAPSED_TIME|LEVEL|MODE|VERIFICATION_METADATA|CPU_DIFFICULTY|RESULT|RULE)|VERIFIED_(?:SESSION_NOT_FOUND|TICTACTOE_SESSION_NOT_FOUND)/.test(message);
+}
 
 async function reconcilePendingVerifiedSessions(userId:string,gameId:string) {
   const {data:pending,error} = await admin.from("game_verification_sessions")
@@ -668,6 +692,7 @@ async function reconcilePendingVerifiedSessions(userId:string,gameId:string) {
     .eq("user_id",userId)
     .eq("status","completed")
     .eq("score_recorded",false)
+    .eq("score_recovery_status","pending")
     .order("completed_at",{ascending:true})
     .limit(10);
   if(error) {
@@ -678,8 +703,22 @@ async function reconcilePendingVerifiedSessions(userId:string,gameId:string) {
     try {
       if(gameId===NUMBER_GAME_ID && session.game_type==="number_guess") {
         const level=String(session.state?.level ?? "").toLowerCase();
-        if(session.state?.playMode!=="time" || session.result!=="correct" ||
-          !Object.prototype.hasOwnProperty.call(NUMBER_LEVELS,level)) continue;
+        const playMode=String(session.state?.playMode ?? "");
+        if(playMode!=="time" || session.result!=="correct" ||
+          !Object.prototype.hasOwnProperty.call(NUMBER_LEVELS,level)) {
+          await setVerifiedSessionRecoveryStatus(session,userId,gameId,"not_rankable");
+          continue;
+        }
+
+        const startedAt=Date.parse(String(session.started_at || ""));
+        const completedAt=Date.parse(String(session.completed_at || ""));
+        const elapsedMs=completedAt-startedAt;
+        if(!Number.isFinite(startedAt) || !Number.isFinite(completedAt) ||
+          !Number.isSafeInteger(elapsedMs) || elapsedMs<500 || elapsedMs>3600000) {
+          await setVerifiedSessionRecoveryStatus(session,userId,gameId,"not_rankable");
+          continue;
+        }
+
         const mode="number-time-"+level;
         const metadata={
           metric:"clear_time_ms",
@@ -698,19 +737,33 @@ async function reconcilePendingVerifiedSessions(userId:string,gameId:string) {
           p_metadata:metadata,
         });
         if(recordError) {
-          console.warn("[kurogames-online] pending number score recovery failed",recordError);
+          if(isPermanentVerifiedRecoveryError(recordError)) {
+            await setVerifiedSessionRecoveryStatus(session,userId,gameId,"not_rankable");
+          } else {
+            console.warn("[kurogames-online] pending number score recovery failed",recordError);
+          }
           continue;
         }
+        await setVerifiedSessionRecoveryStatus(session,userId,gameId,"recorded");
       } else if(gameId===PRIME_GAME_ID && session.game_type==="prime_factor") {
-        if(session.result!=="completed" || !["easy","normal","hard"].includes(String(session.state?.difficulty))) continue;
+        if(session.result!=="completed" || !["easy","normal","hard"].includes(String(session.state?.difficulty))) {
+          await setVerifiedSessionRecoveryStatus(session,userId,gameId,"not_rankable");
+          continue;
+        }
         await primeRecordCompletedRun(userId,session);
       } else if(gameId===SUSHI_GAME_ID && session.game_type==="sushi_typing") {
-        if(session.result!=="completed" || !SUSHI_CFG[String(session.state?.mode)] || !SUSHI_WORD_BANK[String(session.state?.level)]) continue;
+        if(session.result!=="completed" || !SUSHI_CFG[String(session.state?.mode)] || !SUSHI_WORD_BANK[String(session.state?.level)]) {
+          await setVerifiedSessionRecoveryStatus(session,userId,gameId,"not_rankable");
+          continue;
+        }
         await sushiRecordCompletedRun(userId,session);
       } else if(gameId===TICTACTOE_GAME_ID && session.game_type==="tictactoe") {
         if(!["win","loss","draw"].includes(String(session.result)) ||
           !["normal","vanish","gobble","reverse"].includes(String(session.mode)) ||
-          !["easy","normal","hard"].includes(String(session.state?.difficulty))) continue;
+          !["easy","normal","hard"].includes(String(session.state?.difficulty))) {
+          await setVerifiedSessionRecoveryStatus(session,userId,gameId,"not_rankable");
+          continue;
+        }
         const {error:recordError}=await admin.rpc("kuro_record_verified_tictactoe_result",{
           p_game_id:gameId,
           p_user_id:userId,
@@ -720,9 +773,14 @@ async function reconcilePendingVerifiedSessions(userId:string,gameId:string) {
           p_cpu_difficulty:String(session.state.difficulty).toUpperCase(),
         });
         if(recordError) {
-          console.warn("[kurogames-online] pending tic-tac-toe result recovery failed",recordError);
+          if(isPermanentVerifiedRecoveryError(recordError)) {
+            await setVerifiedSessionRecoveryStatus(session,userId,gameId,"not_rankable");
+          } else {
+            console.warn("[kurogames-online] pending tic-tac-toe result recovery failed",recordError);
+          }
           continue;
         }
+        await setVerifiedSessionRecoveryStatus(session,userId,gameId,"recorded");
       }
     } catch(error) {
       console.warn("[kurogames-online] pending verified session recovery failed",error);
