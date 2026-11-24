@@ -7,6 +7,8 @@ on:
       - game-studio/kurog-online.js
       - game-studio/code.html
       - games/play/index.html
+      - games/index.html
+      - games/mypage/index.html
       - supabase/functions/kurogames-online/index.ts
       - supabase/migrations/**
       - tests/online-room-worker.test.mjs
@@ -17,6 +19,8 @@ on:
       - game-studio/kurog-online.js
       - game-studio/code.html
       - games/play/index.html
+      - games/index.html
+      - games/mypage/index.html
       - supabase/functions/kurogames-online/index.ts
       - supabase/migrations/**
       - tests/online-room-worker.test.mjs
@@ -36,7 +40,7 @@ jobs:
         run: |
           node <<'NODE'
           const fs = require('node:fs');
-          for (const file of ['games/play/index.html', 'game-studio/code.html']) {
+          for (const file of ['games/play/index.html', 'games/index.html', 'games/mypage/index.html', 'game-studio/code.html']) {
             const html = fs.readFileSync(file, 'utf8');
             const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)];
             let checked = 0;
