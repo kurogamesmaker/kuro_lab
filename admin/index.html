@@ -1424,6 +1424,7 @@ async function loadOpsGameBanners(){
  try{
   const data=await opsInvoke({action:"list_game_banners"});
   opsGameBanners=Array.isArray(data.banners)?data.banners:[];
+  const speeds=[...new Set(opsGameBanners.map(row=>row.speed||"normal"))];$("#opsGameBannerSpeed").value=speeds.length===1?speeds[0]:"normal";
   box.innerHTML=opsGameBanners.length?opsGameBanners.map(item=>{
    const active=!!item.enabled,start=item.starts_at?date(item.starts_at):"すぐに",end=item.ends_at?date(item.ends_at):"終了日時なし";
    const preview='<span class="ops-game-banner-preview" style="color:'+esc(item.text_color||"#ffffff")+';font-size:'+Math.max(11,Math.min(22,Number(item.font_size)||14))+'px;font-weight:'+(item.is_bold?"800":"500")+'">'+esc(item.message)+'</span>';
@@ -1469,6 +1470,19 @@ async function saveOpsGameBanner(event){
   resetOpsGameBannerForm();$("#opsGameBannerStatus").textContent="バナーを保存しました。";
   await loadOpsGameBanners();if(typeof loadOpsAudit==="function")await loadOpsAudit();
  }catch(e){$("#opsGameBannerStatus").textContent="保存に失敗しました："+e.message;alert("バナーを保存できませんでした："+e.message);}
+ finally{button.disabled=false;}
+}
+async function applyOpsGameBannerSpeed(){
+ const speed=$("#opsGameBannerSpeed").value||"normal";
+ if(!opsGameBanners.length){alert("適用するバナーがありません。");return;}
+ const button=$("#opsGameBannersApplySpeed");button.disabled=true;
+ try{
+  for(const item of opsGameBanners){
+   await opsInvoke({action:"save_game_banner",id:item.id,name:item.name,message:item.message,href:item.href||"",text_color:item.text_color,font_size:item.font_size,speed,sort_order:item.sort_order,starts_at:item.starts_at,ends_at:item.ends_at,enabled:!!item.enabled,is_bold:!!item.is_bold});
+  }
+  await loadOpsGameBanners();
+  $("#opsGameBannerStatus").textContent="全バナーの速度を一括変更しました。";
+ }catch(e){alert("速度の一括変更に失敗しました："+e.message);await loadOpsGameBanners();}
  finally{button.disabled=false;}
 }
 async function toggleOpsGameBanner(id){
@@ -2084,6 +2098,7 @@ $("#opsReportsStatus").addEventListener("change",loadOpsReports);
 $("#opsReportsList").addEventListener("click",e=>{const b=e.target.closest("[data-report-save]");if(b)saveOpsReport(b.dataset.reportSave,b);});
 $("#opsAnnouncementsRefresh").addEventListener("click",loadOpsAnnouncements);
 $("#opsGameBannersRefresh").addEventListener("click",loadOpsGameBanners);
+$("#opsGameBannersApplySpeed").addEventListener("click",applyOpsGameBannerSpeed);
 $("#opsGameBannerForm").addEventListener("submit",saveOpsGameBanner);
 $("#opsGameBannerCancel").addEventListener("click",resetOpsGameBannerForm);
 $("#opsGameBannersList").addEventListener("click",e=>{
