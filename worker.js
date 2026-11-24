@@ -269,7 +269,10 @@ async function checkActiveSuspension(headers) {
     authorization
   });
   const userResponse = await fetch(SUPABASE_URL + "/auth/v1/user", { headers: authHeaders });
-  if (userResponse.status >= 500) {\n    throw Object.assign(new Error("アカウントの利用状態を確認できません。時間をおいて再度お試しください。"), { status: 503 });\n  }\n  if (!userResponse.ok) return null;
+  if (userResponse.status >= 500) {
+    throw Object.assign(new Error("アカウントの利用状態を確認できません。時間をおいて再度お試しください。"), { status: 503 });
+  }
+  if (!userResponse.ok) return null;
 
   const user = await userResponse.json().catch(() => null);
   if (!user?.id || user.is_anonymous) return null;
