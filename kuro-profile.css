@@ -218,3 +218,12 @@
 .kuro-profile-cosmetic-chip{display:inline-flex;align-items:center;gap:5px;min-height:27px;padding:4px 8px;border:1px solid rgba(148,163,184,.2);border-radius:999px;background:var(--kuro-profile-accent-soft);color:#e7eaf2;font-size:9px;font-weight:850}
 .kuro-profile-cosmetic-chip>span{font-size:13px}
 .kuro-profile-custom-theme .kuro-profile-bio{border-color:var(--kuro-profile-accent-soft)}
+
+.kuro-profile-theme-rare{--kuro-profile-accent:#74b8ff;--kuro-profile-accent-soft:rgba(80,160,255,.2)}
+.kuro-profile-theme-epic{--kuro-profile-accent:#c08cff;--kuro-profile-accent-soft:rgba(185,110,255,.22)}
+.kuro-profile-theme-legendary{--kuro-profile-accent:#ffcb70;--kuro-profile-accent-soft:rgba(255,190,75,.22)}
+.kuro-profile-background-midnight{background-image:linear-gradient(105deg,#141d3a,#233d64 70%,#17233f)!important}
+.kuro-profile-background-cyber{background-image:linear-gradient(105deg,#341452,#241c52 54%,#153d61)!important}
+.kuro-profile-background-rare{background-image:linear-gradient(105deg,#152b51,#264e7d)!important}
+.kuro-profile-background-epic{background-image:linear-gradient(105deg,#33134e,#583279)!important}
+.kuro-profile-background-legendary{background-image:linear-gradient(105deg,#4b2c17,#73501c)!important}
