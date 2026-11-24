@@ -29,9 +29,7 @@
       { href: "/favorites/", label: "お気に入り", icon: "☆" },
       { href: "/history/", label: "閲覧履歴", icon: "◷" },
     ] },
-    { label: "お知らせ", items: [
-      { href: "/notifications/", label: "お知らせ一覧", icon: "♧", badge: true }
-    ] },
+
     { label: "アカウント", items: [
       { href: "/account/", label: "アカウント管理", icon: "◎" },
       { href: "/pro-tools/", label: "開発ツール", icon: "⚡" },
@@ -736,7 +734,7 @@
       ["terms", "利用規約", "KURO Labの利用ルール", "/terms/", "📄", "規約 ルール"],
       ["favorites", "お気に入り", "保存したページやゲーム", "/favorites/", "☆", "お気に入り 保存"],
       ["history", "閲覧履歴", "最近開いたページ", "/history/", "◷", "履歴 最近"],
-      ["notifications", "お知らせ", "KURO Labからの更新情報", "/notifications/", "♧", "お知らせ 更新 通知"],
+
       ["mypage", "マイページ", "アカウントと利用データ", "/mypage/", "◎", "アカウント ログイン"],
       ["settings", "表示設定", "テーマやホーム画面を変更", "/settings/", "⚙", "設定 テーマ"],
       ["theme-studio", "Theme Studio", "カラー・背景・UIを自由に編集", "/theme-studio/", "🎨", "テーマ デザイン"],
