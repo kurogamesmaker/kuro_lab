@@ -71,6 +71,7 @@ const ALLOWED_FUNCTIONS = new Set([
   "/functions/v1/kurogames-secret",
   "/functions/v1/username-auth",
   "/functions/v1/kurogames-activity",
+  "/functions/v1/kurogames-store",
   "/functions/v1/change-password",
   "/functions/v1/delete-account"
 ]);
