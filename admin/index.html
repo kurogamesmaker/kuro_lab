@@ -526,10 +526,59 @@
   <div class="ops-nav-group"><small>08 / KUROGAMES SECRET</small>
    <button data-ops-tab="secret"><b>12</b><span>秘密機能管理</span></button>
   </div>
+  <div class="ops-nav-group"><small>09 / ECONOMY</small>
+   <button data-ops-tab="coins"><b>13</b><span>KURO COIN経済管理</span></button>
+  </div>
  </div>
  <div class="ops-shell-bar" id="opsShellBar">
   <div><span class="ops-shell-prompt">KURO@OPS:~$</span> <strong id="opsShellName">overview</strong></div>
   <div><span id="opsShellState">SESSION: AUTHENTICATED</span><span class="ops-shell-separator">|</span><span id="opsShellClock">LOCAL CONSOLE</span></div>
+ </div>
+ <div id="opsCoinsView" hidden>
+  <div class="ops-overview-head">
+   <div><strong>KURO COIN 経済管理</strong><div class="sns-muted">共通残高・発行履歴・ゲーム別勝利報酬を管理します。報酬はサーバー検証済みイベントでのみ付与されます。</div></div>
+   <div class="ops-overview-tools"><span id="opsCoinsUpdated" class="sns-muted">準備中…</span><button class="btn" id="opsCoinsRefresh">更新</button></div>
+  </div>
+  <div class="ops-analytics-grid">
+   <article class="ops-metric"><small>流通残高</small><strong id="opsCoinTotalBalance">—</strong><span class="sns-muted">全ユーザー保有分</span></article>
+   <article class="ops-metric"><small>累計発行</small><strong id="opsCoinTotalIssued">—</strong><span class="sns-muted">付与・補正を含む正の取引</span></article>
+   <article class="ops-metric"><small>累計消費</small><strong id="opsCoinTotalSpent">—</strong><span class="sns-muted">ショップ等での消費</span></article>
+   <article class="ops-metric"><small>保有ユーザー</small><strong id="opsCoinFundedUsers">—</strong><span class="sns-muted">残高が1 KC以上</span></article>
+  </div>
+  <section class="panel" style="margin-bottom:16px">
+   <div class="toolbar"><div><strong>勝利報酬設定を追加・更新</strong><div class="sns-muted">報酬対象モードとCPU難易度条件を指定します。未検証モードは有効化しないでください。</div></div></div>
+   <form id="opsCoinRewardForm" class="ops-form">
+    <div class="ops-form-grid">
+     <label>ゲーム<select id="opsCoinNewGame" required><option value="">ゲームを選択</option></select></label>
+     <label>モード名<input id="opsCoinNewMode" maxlength="40" pattern="[A-Za-z0-9_-]{1,40}" required placeholder="wins-online"></label>
+    </div>
+    <div class="ops-form-grid">
+     <label>報酬（KC）<input id="opsCoinNewAmount" type="number" min="0" max="1000" step="1" value="10" required></label>
+     <label>CPU条件<select id="opsCoinNewDifficulty"><option value="">条件なし（オンライン等）</option><option value="EASY">EASY</option><option value="NORMAL">NORMAL</option><option value="HARD">HARD</option><option value="EXPERT">EXPERT</option></select></label>
+    </div>
+    <label>履歴に表示する名前<input id="opsCoinNewLabel" maxlength="80" required value="ゲーム勝利報酬" placeholder="ゲーム勝利報酬"></label>
+    <label class="ops-check"><input id="opsCoinNewEnabled" type="checkbox" checked> この報酬を有効にする</label>
+    <div class="ops-form-actions"><button class="btn primary" type="submit">報酬設定を保存</button></div>
+    <div id="opsCoinRewardStatus" class="sns-muted" role="status">同じゲーム・モードの設定は上書き更新されます。</div>
+   </form>
+   <div class="list" id="opsCoinRewardsList"><div class="empty">報酬設定を読み込み中…</div></div>
+  </section>
+  <section class="panel" style="margin-bottom:16px">
+   <div class="toolbar"><div><strong>ユーザー残高の管理者補正</strong><div class="sns-muted">増減理由は台帳と監査ログに保存されます。マイナス指定は残高不足の場合に拒否されます。</div></div></div>
+   <form id="opsCoinAdjustForm" class="ops-form">
+    <div class="ops-form-grid">
+     <label>KUROユーザーID<input id="opsCoinAdjustUser" required placeholder="UUID形式"></label>
+     <label>補正枚数（KC）<input id="opsCoinAdjustAmount" type="number" min="-100000" max="100000" step="1" required placeholder="例：50 / -20"></label>
+    </div>
+    <label>補正理由<input id="opsCoinAdjustReason" maxlength="200" minlength="3" required placeholder="問い合わせ対応による残高補正"></label>
+    <div class="ops-form-actions"><button class="btn primary" type="submit">残高を補正</button></div>
+    <div id="opsCoinAdjustStatus" class="sns-muted" role="status"></div>
+   </form>
+  </section>
+  <section class="panel">
+   <div class="toolbar"><div><strong>直近のコイン取引</strong><div class="sns-muted">勝利報酬・管理者補正・ショップ取引の記録</div></div><span id="opsCoinTransactionCount" class="sns-muted">—</span></div>
+   <div class="ops-tablewrap" id="opsCoinTransactions"><div class="empty">取引履歴を読み込み中…</div></div>
+  </section>
  </div>
  <div id="opsRealtimeView" hidden>
   <div class="ops-overview-head"><div><strong>リアルタイム通信・利用監視</strong><div class="sns-muted">15秒ごとに自動更新 · オンライン推定は直近5分の操作記録を基準に集計</div></div><div class="ops-overview-tools"><span id="opsRealtimeUpdated" class="sns-muted">準備中…</span><button class="btn" id="opsRealtimeRefresh">今すぐ更新</button></div></div>
@@ -1313,12 +1362,119 @@ async function runOpsUserAction(button){
 }
 
 
+function coinFormat(value){return Math.max(0,Number(value)||0).toLocaleString("ja-JP");}
+function coinTransactionLabel(type){
+ const labels={game_win_reward:"ゲーム勝利報酬",admin_adjustment:"管理者補正",shop_purchase:"ショップ購入",shop_refund:"ショップ返金"};
+ return labels[type]||String(type||"取引");
+}
+async function loadOpsCoins(){
+ const rewardsHost=$("#opsCoinRewardsList"),txHost=$("#opsCoinTransactions");
+ if(rewardsHost)rewardsHost.innerHTML='<div class="empty">KURO COINを読み込み中…</div>';
+ if(txHost)txHost.innerHTML='<div class="empty">取引履歴を読み込み中…</div>';
+ try{
+  const data=await opsInvoke({action:"get_coin_economy"});
+  const summary=data.summary||{};
+  $("#opsCoinTotalBalance").textContent=coinFormat(summary.total_balance)+" KC";
+  $("#opsCoinTotalIssued").textContent=coinFormat(summary.total_issued)+" KC";
+  $("#opsCoinTotalSpent").textContent=coinFormat(summary.total_spent)+" KC";
+  $("#opsCoinFundedUsers").textContent=coinFormat(summary.funded_users)+"人";
+  $("#opsCoinTransactionCount").textContent=coinFormat(summary.transaction_count)+"件";
+  $("#opsCoinsUpdated").textContent="更新 "+new Date().toLocaleTimeString("ja-JP");
+  const games=Array.isArray(data.games)?data.games.filter(game=>game.status==="published"):[];
+  const gameSelect=$("#opsCoinNewGame");
+  const currentGame=gameSelect.value;
+  gameSelect.replaceChildren(new Option("ゲームを選択",""));
+  games.forEach(game=>gameSelect.add(new Option((game.icon||"🎮")+" "+game.title,game.id)));
+  if(games.some(game=>game.id===currentGame))gameSelect.value=currentGame;
+  const rewards=Array.isArray(data.rewards)?data.rewards:[];
+  if(!rewards.length){
+   rewardsHost.innerHTML='<div class="empty">報酬設定はありません。</div>';
+  }else{
+   rewardsHost.innerHTML=rewards.map(reward=>{
+    const game=reward.game||{};
+    const difficulty=reward.required_cpu_difficulty||"";
+    return '<article class="ops-flag-item" data-coin-row data-game-id="'+esc(reward.game_id)+'" data-mode="'+esc(reward.mode)+'">'+
+     '<div class="ops-flag-copy"><div class="meta"><strong>'+esc(game.icon||"🎮")+' '+esc(game.title||"ゲーム")+' / '+esc(reward.mode)+'</strong><span class="ops-status '+(reward.enabled?"done":"")+'">'+(reward.enabled?"有効":"無効")+'</span></div>'+
+     '<div class="ops-audit-meta">CPU条件：'+esc(difficulty||"条件なし")+' · 更新：'+esc(reward.updated_at?date(reward.updated_at):"—")+'</div>'+
+     '<div class="ops-form-grid" style="margin-top:10px">'+
+      '<label>報酬 KC<input data-coin-amount type="number" min="0" max="1000" step="1" value="'+esc(reward.reward_amount)+'"></label>'+
+      '<label>CPU条件<select data-coin-difficulty><option value="" '+(!difficulty?"selected":"")+'>条件なし</option><option value="EASY" '+(difficulty==="EASY"?"selected":"")+'>EASY</option><option value="NORMAL" '+(difficulty==="NORMAL"?"selected":"")+'>NORMAL</option><option value="HARD" '+(difficulty==="HARD"?"selected":"")+'>HARD</option><option value="EXPERT" '+(difficulty==="EXPERT"?"selected":"")+'>EXPERT</option></select></label>'+
+     '</div>'+
+     '<label style="display:grid;gap:6px;margin-top:9px;color:var(--muted);font-size:12px">履歴表示名<input data-coin-label maxlength="80" value="'+esc(reward.reward_label||"ゲーム勝利報酬")+'"></label>'+
+     '<label class="ops-check" style="margin-top:9px"><input data-coin-enabled type="checkbox" '+(reward.enabled?"checked":"")+'> 報酬を有効にする</label>'+
+     '<div class="ops-inline-actions"><button class="btn primary" data-coin-save type="button">この設定を保存</button></div></div></article>';
+   }).join("");
+  }
+  const tx=Array.isArray(data.transactions)?data.transactions:[];
+  if(!tx.length){
+   txHost.innerHTML='<div class="empty">まだ取引履歴はありません。</div>';
+  }else{
+   txHost.innerHTML='<table class="ops-table"><thead><tr><th>日時</th><th>ユーザー</th><th>内容</th><th>増減</th><th>取引後残高</th></tr></thead><tbody>'+
+    tx.map(row=>{
+     const profile=row.profile||{},userName=profile.display_name||profile.username||"KUROユーザー";
+     const sign=Number(row.amount)>0?"+":"",amount=Number(row.amount)||0;
+     return '<tr><td>'+esc(row.created_at?date(row.created_at):"—")+'</td><td>'+esc(userName)+'<small>'+esc(profile.kuro_id||row.user_id)+'</small></td>'+
+      '<td>'+esc(row.description||coinTransactionLabel(row.transaction_type))+'<small>'+esc(row.game&&row.game.title?row.game.title+" · ":"")+esc(row.source_mode||coinTransactionLabel(row.transaction_type))+'</small></td>'+
+      '<td style="font-weight:900;color:'+(amount>=0?"#46c69a":"#ef7777")+'">'+sign+coinFormat(Math.abs(amount))+' KC</td><td>'+coinFormat(row.balance_after)+' KC</td></tr>';
+    }).join("")+'</tbody></table>';
+  }
+ }catch(error){
+  if(rewardsHost)rewardsHost.innerHTML='<div class="error">経済情報を取得できませんでした：'+esc(error.message||error)+'</div>';
+  if(txHost)txHost.innerHTML='<div class="error">取引履歴を取得できませんでした。</div>';
+ }
+}
+async function saveOpsCoinReward(row,button){
+ const gameId=row.dataset.gameId,mode=row.dataset.mode;
+ const amount=Number(row.querySelector("[data-coin-amount]").value);
+ const difficulty=row.querySelector("[data-coin-difficulty]").value||null;
+ const label=row.querySelector("[data-coin-label]").value.trim();
+ const enabled=row.querySelector("[data-coin-enabled]").checked;
+ if(!Number.isSafeInteger(amount)||amount<0||amount>1000){alert("報酬は0〜1000 KCで入力してください。");return;}
+ button.disabled=true;
+ try{
+  await opsInvoke({action:"update_coin_reward",gameId,mode,rewardAmount:amount,requiredCpuDifficulty:difficulty,rewardLabel:label,enabled});
+  await loadOpsCoins();
+ }catch(error){alert("報酬設定を保存できませんでした："+(error.message||error));}
+ finally{button.disabled=false;}
+}
+async function createOpsCoinReward(event){
+ event.preventDefault();
+ const payload={
+  action:"update_coin_reward",gameId:$("#opsCoinNewGame").value,
+  mode:$("#opsCoinNewMode").value.trim(),rewardAmount:Number($("#opsCoinNewAmount").value),
+  requiredCpuDifficulty:$("#opsCoinNewDifficulty").value||null,
+  rewardLabel:$("#opsCoinNewLabel").value.trim(),enabled:$("#opsCoinNewEnabled").checked
+ };
+ const status=$("#opsCoinRewardStatus"),button=$("#opsCoinRewardForm").querySelector('button[type="submit"]');
+ if(!payload.gameId||!payload.mode||!payload.rewardLabel){status.textContent="ゲーム・モード名・表示名を入力してください。";return;}
+ button.disabled=true;status.textContent="保存中…";
+ try{
+  await opsInvoke(payload);status.textContent="報酬設定を保存しました。";$("#opsCoinNewMode").value="";
+  await loadOpsCoins();
+ }catch(error){status.textContent="保存できませんでした："+(error.message||error);}
+ finally{button.disabled=false;}
+}
+async function adjustOpsCoinBalance(event){
+ event.preventDefault();
+ const payload={action:"adjust_coin_balance",userId:$("#opsCoinAdjustUser").value.trim(),amount:Number($("#opsCoinAdjustAmount").value),reason:$("#opsCoinAdjustReason").value.trim()};
+ const status=$("#opsCoinAdjustStatus"),button=$("#opsCoinAdjustForm").querySelector('button[type="submit"]');
+ if(!payload.userId||!Number.isSafeInteger(payload.amount)||payload.amount===0||!payload.reason){status.textContent="ユーザーID・補正枚数・理由を入力してください。";return;}
+ if(!window.confirm(payload.userId+" の残高を "+(payload.amount>0?"+":"")+payload.amount+" KC 補正します。理由："+payload.reason+"。続行しますか？"))return;
+ button.disabled=true;status.textContent="補正中…";
+ try{
+  const data=await opsInvoke(payload);status.textContent="補正しました。新しい残高："+coinFormat(data.balance)+" KC";
+  $("#opsCoinAdjustAmount").value="";$("#opsCoinAdjustReason").value="";
+  await loadOpsCoins();
+ }catch(error){status.textContent="補正できませんでした："+(error.message||error);}
+ finally{button.disabled=false;}
+}
+
 function setOpsView(view){
  opsView=view;
- const shellNames={overview:"overview",users:"accounts.users",audit:"moderation.audit",reports:"moderation.reports","suspension-appeals":"accounts.suspension_appeals",announcements:"content.announcements","game-banners":"content.kurogames_home_banners",messages:"content.broadcast",flags:"config.feature_flags",secret:"kurogames.secret",analytics:"analytics.usage",realtime:"system.realtime",logs:"system.logs"}
+ const shellNames={overview:"overview",users:"accounts.users",audit:"moderation.audit",reports:"moderation.reports","suspension-appeals":"accounts.suspension_appeals",announcements:"content.announcements","game-banners":"content.kurogames_home_banners",messages:"content.broadcast",flags:"config.feature_flags",secret:"kurogames.secret",coins:"economy.kuro_coin",analytics:"analytics.usage",realtime:"system.realtime",logs:"system.logs"}
  const shellName=$("#opsShellName");if(shellName)shellName.textContent=shellNames[view]||view;
  const shellClock=$("#opsShellClock");if(shellClock)shellClock.textContent="LOCAL "+new Date().toLocaleTimeString("ja-JP");
- ["overview","users","audit","reports","suspension-appeals","announcements","game-banners","messages","flags","secret","analytics","realtime","logs"].forEach(name=>{
+ ["overview","users","audit","reports","suspension-appeals","announcements","game-banners","messages","flags","secret","coins","analytics","realtime","logs"].forEach(name=>{
   const target=$("#ops"+name.charAt(0).toUpperCase()+name.slice(1)+"View");
   if(target)target.hidden=name!==view;
   const button=$("#opsTabs [data-ops-tab='"+name+"']");
@@ -1334,6 +1490,7 @@ function setOpsView(view){
  if(view==="messages")loadOpsMessages();
  if(view==="flags")loadOpsFlags();
  if(view==="secret")loadOpsSecretManager();
+ if(view==="coins")loadOpsCoins();
  if(view==="analytics")loadOpsAnalytics();
  if(view==="logs")loadOpsLogs(true);
 }
@@ -2164,6 +2321,10 @@ $("#opsFlagForm").addEventListener("submit",saveFeatureFlag);
 $("#opsFlagForm").addEventListener("reset",()=>{setTimeout(()=>{$("#opsFlagKey").readOnly=false;$("#opsFlagRollout").value=100;},0);});
 $("#opsFlagsList").addEventListener("click",e=>{const edit=e.target.closest("[data-flag-edit]"),del=e.target.closest("[data-flag-delete]");if(edit)editFeatureFlag(edit.dataset.flagEdit);if(del)deleteFeatureFlag(del.dataset.flagDelete);});
 $("#opsSecretRefresh").addEventListener("click",loadOpsSecretManager);
+$("#opsCoinsRefresh").addEventListener("click",loadOpsCoins);
+$("#opsCoinRewardForm").addEventListener("submit",createOpsCoinReward);
+$("#opsCoinRewardsList").addEventListener("click",e=>{const b=e.target.closest("[data-coin-save]");if(b){const row=b.closest("[data-coin-row]");if(row)saveOpsCoinReward(row,b);}});
+$("#opsCoinAdjustForm").addEventListener("submit",adjustOpsCoinBalance);
 $("#opsSecretCodeForm").addEventListener("submit",saveSecretCode);
 $("#opsSecretCodeForm").addEventListener("reset",()=>setTimeout(resetSecretCodeForm,0));
 $("#opsSecretCodeCancel").addEventListener("click",resetSecretCodeForm);
