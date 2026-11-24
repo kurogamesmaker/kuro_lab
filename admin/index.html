@@ -453,7 +453,11 @@
   #opsAdminSection .ops-overview-shortcuts{grid-template-columns:1fr}
 }
 
-.ops-personal-user-list{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:11px;background:#0b1524;padding:6px;display:grid;gap:5px}.ops-personal-user-row{width:100%;text-align:left;border:1px solid transparent;background:transparent;color:var(--text);padding:10px 12px;border-radius:8px;cursor:pointer}.ops-personal-user-row:hover{background:#17283d;border-color:#304b68}.ops-personal-user-row.selected{background:#183753;border-color:#3984b6}.ops-personal-user-row strong,.ops-personal-user-row small{display:block;overflow-wrap:anywhere}.ops-personal-user-row small{color:var(--muted);font-size:11px}.ops-personal-selected{padding:9px 12px;border-radius:9px;background:#14263a;border:1px solid #29435f;color:#a9d9ff;font-size:12px}@media(max-width:680px){.ops-personal-user-list{max-height:240px}}</style>
+.ops-personal-user-list{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:11px;background:#0b1524;padding:6px;display:grid;gap:5px}.ops-personal-user-row{width:100%;text-align:left;border:1px solid transparent;background:transparent;color:var(--text);padding:10px 12px;border-radius:8px;cursor:pointer}.ops-personal-user-row:hover{background:#17283d;border-color:#304b68}.ops-personal-user-row.selected{background:#183753;border-color:#3984b6}.ops-personal-user-row strong,.ops-personal-user-row small{display:block;overflow-wrap:anywhere}.ops-personal-user-row small{color:var(--muted);font-size:11px}.ops-personal-selected{padding:9px 12px;border-radius:9px;background:#14263a;border:1px solid #29435f;color:#a9d9ff;font-size:12px}@media(max-width:680px){.ops-personal-user-list{max-height:240px}}
+.ops-game-banner-color input[type="color"]{width:100%;height:42px;padding:4px;background:#0b1524;border:1px solid var(--line);border-radius:9px;cursor:pointer}
+#opsGame-bannersView .ops-form-grid{align-items:end}
+#opsGame-bannersView .ops-game-banner-preview{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:8px;max-width:100%;overflow-wrap:anywhere}
+</style>
 \n</head>
 <body>
 <section id="loginView" class="login">
@@ -514,6 +518,7 @@
   </div>
   <div class="ops-nav-group"><small>06 / CONTENT</small>
    <button data-ops-tab="messages"><b>09</b><span>共通通知センター</span></button>
+   <button data-ops-tab="game-banners"><b>10</b><span>KURO GAMES文字バナー</span></button>
   </div>
   <div class="ops-nav-group"><small>07 / SYSTEM</small>
    <button data-ops-tab="flags"><b>11</b><span>システム設定・機能フラグ</span></button>
@@ -623,6 +628,38 @@
     <div class="sns-muted" id="opsAnnStatus">公開中のお知らせはユーザー側の表示条件に従って配信されます。</div>
    </form>
    <div class="list" id="opsAnnouncementsList"><div class="empty">読み込み中…</div></div>
+  </section>
+ </div>
+ <div id="opsGame-bannersView" hidden>
+  <section class="panel">
+   <div class="toolbar"><div><strong>KURO GAMES ホーム文字バナー</strong><div class="sns-muted">ホーム上部バーの直下に流す文章を複数登録できます。有効なバナーは表示順に連結して流れます。</div></div><button class="btn" id="opsGameBannersRefresh" type="button">更新</button></div>
+   <form id="opsGameBannerForm" class="ops-form">
+    <input id="opsGameBannerId" type="hidden">
+    <div class="ops-form-grid">
+     <label>管理用の名前<input id="opsGameBannerName" maxlength="80" required placeholder="例：新作ゲームのお知らせ"></label>
+     <label>アイコン（任意）<input id="opsGameBannerIcon" maxlength="16" placeholder="📢"></label>
+    </div>
+    <label>流す文章<textarea id="opsGameBannerMessage" maxlength="500" rows="3" required placeholder="ホーム画面に流す文章を入力"></textarea></label>
+    <label>リンク先（任意・HTTPSまたはサイト内パス）<input id="opsGameBannerHref" type="text" maxlength="1000" placeholder="/games/ または https://..."></label>
+    <div class="ops-form-grid">
+     <label class="ops-game-banner-color">文字色<input id="opsGameBannerTextColor" type="color" value="#ffffff"></label>
+     <label class="ops-game-banner-color">背景色<input id="opsGameBannerBgColor" type="color" value="#2563eb"></label>
+     <label>文字サイズ<select id="opsGameBannerSize"><option value="12">小</option><option value="14" selected>標準</option><option value="16">やや大きい</option><option value="18">大</option><option value="20">特大</option></select></label>
+     <label>流れる速度<select id="opsGameBannerSpeed"><option value="slow">ゆっくり</option><option value="normal" selected>標準</option><option value="fast">速い</option></select></label>
+     <label>表示順（小さい数字が先）<input id="opsGameBannerSort" type="number" min="-10000" max="10000" step="1" value="100"></label>
+    </div>
+    <div class="ops-form-grid">
+     <label>表示開始日時<input id="opsGameBannerStarts" type="datetime-local"></label>
+     <label>表示終了日時（任意）<input id="opsGameBannerEnds" type="datetime-local"></label>
+    </div>
+    <div class="ops-form-grid">
+     <label class="ops-check"><input id="opsGameBannerEnabled" type="checkbox" checked> 有効にする</label>
+     <label class="ops-check"><input id="opsGameBannerBold" type="checkbox"> 太字で表示する</label>
+    </div>
+    <div class="ops-form-actions"><button type="submit" class="btn primary" id="opsGameBannerSave">バナーを追加</button><button class="btn" type="button" id="opsGameBannerCancel" hidden>編集をキャンセル</button></div>
+    <div class="sns-muted" id="opsGameBannerStatus">保存するとホーム画面に反映されます。無効にしたバナーはホームに表示されません。</div>
+   </form>
+   <div class="list" id="opsGameBannersList"><div class="empty">バナーを読み込み中…</div></div>
   </section>
  </div>
  <div id="opsMessagesView" hidden>
@@ -1275,10 +1312,10 @@ async function runOpsUserAction(button){
 
 function setOpsView(view){
  opsView=view;
- const shellNames={overview:"overview",users:"accounts.users",audit:"moderation.audit",reports:"moderation.reports","suspension-appeals":"accounts.suspension_appeals",announcements:"content.announcements",messages:"content.broadcast",flags:"config.feature_flags",secret:"kurogames.secret",analytics:"analytics.usage",realtime:"system.realtime",logs:"system.logs"}
+ const shellNames={overview:"overview",users:"accounts.users",audit:"moderation.audit",reports:"moderation.reports","suspension-appeals":"accounts.suspension_appeals",announcements:"content.announcements","game-banners":"content.kurogames_home_banners",messages:"content.broadcast",flags:"config.feature_flags",secret:"kurogames.secret",analytics:"analytics.usage",realtime:"system.realtime",logs:"system.logs"}
  const shellName=$("#opsShellName");if(shellName)shellName.textContent=shellNames[view]||view;
  const shellClock=$("#opsShellClock");if(shellClock)shellClock.textContent="LOCAL "+new Date().toLocaleTimeString("ja-JP");
- ["overview","users","audit","reports","suspension-appeals","announcements","messages","flags","secret","analytics","realtime","logs"].forEach(name=>{
+ ["overview","users","audit","reports","suspension-appeals","announcements","game-banners","messages","flags","secret","analytics","realtime","logs"].forEach(name=>{
   const target=$("#ops"+name.charAt(0).toUpperCase()+name.slice(1)+"View");
   if(target)target.hidden=name!==view;
   const button=$("#opsTabs [data-ops-tab='"+name+"']");
@@ -1290,6 +1327,7 @@ function setOpsView(view){
  if(view==="reports")loadOpsReports();
  if(view==="suspension-appeals")loadSuspensionAppeals();
  if(view==="announcements")loadOpsAnnouncements();
+ if(view==="game-banners")loadOpsGameBanners();
  if(view==="messages")loadOpsMessages();
  if(view==="flags")loadOpsFlags();
  if(view==="secret")loadOpsSecretManager();
@@ -1367,6 +1405,98 @@ async function loadOpsAudit(){
   ).join(""):'<div class="empty">監査ログはまだありません。</div>';
  }catch(e){$("#opsAuditList").innerHTML='<div class="error">読み込みに失敗しました：'+esc(e.message)+'</div>';}
 }
+let opsGameBanners = [];
+
+function resetOpsGameBannerForm(){
+ const form=$("#opsGameBannerForm");if(!form)return;
+ form.reset();
+ $("#opsGameBannerId").value="";
+ $("#opsGameBannerTextColor").value="#ffffff";
+ $("#opsGameBannerBgColor").value="#2563eb";
+ $("#opsGameBannerSize").value="14";
+ $("#opsGameBannerSpeed").value="normal";
+ $("#opsGameBannerSort").value="100";
+ $("#opsGameBannerEnabled").checked=true;
+ $("#opsGameBannerBold").checked=false;
+ $("#opsGameBannerCancel").hidden=true;
+ $("#opsGameBannerSave").textContent="バナーを追加";
+ $("#opsGameBannerStatus").textContent="保存するとホーム画面に反映されます。";
+}
+async function loadOpsGameBanners(){
+ const box=$("#opsGameBannersList");if(!box)return;
+ box.innerHTML='<div class="empty">読み込み中…</div>';
+ try{
+  const data=await opsInvoke({action:"list_game_banners"});
+  opsGameBanners=Array.isArray(data.banners)?data.banners:[];
+  box.innerHTML=opsGameBanners.length?opsGameBanners.map(item=>{
+   const active=!!item.enabled,start=item.starts_at?date(item.starts_at):"すぐに",end=item.ends_at?date(item.ends_at):"終了日時なし";
+   const preview='<span class="ops-game-banner-preview" style="color:'+esc(item.text_color||"#ffffff")+';background:'+esc(item.background_color||"#2563eb")+';font-size:'+Math.max(11,Math.min(22,Number(item.font_size)||14))+'px;font-weight:'+(item.is_bold?"800":"500")+'">'+(item.icon?esc(item.icon)+" ":"")+esc(item.message)+'</span>';
+   return '<article class="ops-ann-item"><div class="ops-ann-copy"><div class="meta"><strong>'+esc(item.name)+'</strong><span class="ops-status '+(active?"":"banned")+'">'+(active?"有効":"停止中")+'</span><span>表示順 '+esc(String(item.sort_order))+'</span></div><p>'+preview+'</p><div class="sns-muted">開始：'+esc(start)+' · 終了：'+esc(end)+' · 速度：'+esc(item.speed||"normal")+(item.href?' · '+esc(item.href):"")+'</div></div><div class="ops-inline-actions"><button class="btn" type="button" data-game-banner-edit="'+esc(item.id)+'">編集</button><button class="btn" type="button" data-game-banner-toggle="'+esc(item.id)+'">'+(active?"停止":"有効化")+'</button><button class="btn" type="button" data-game-banner-delete="'+esc(item.id)+'">削除</button></div></article>';
+  }).join(""):'<div class="empty">バナーはまだありません。「バナーを追加」から作成できます。</div>';
+ }catch(e){box.innerHTML='<div class="error">読み込みに失敗しました：'+esc(e.message)+'</div>';}
+}
+function editOpsGameBanner(id){
+ const item=opsGameBanners.find(row=>row.id===id);if(!item)return;
+ $("#opsGameBannerId").value=item.id;
+ $("#opsGameBannerName").value=item.name||"";
+ $("#opsGameBannerMessage").value=item.message||"";
+ $("#opsGameBannerHref").value=item.href||"";
+ $("#opsGameBannerIcon").value=item.icon||"";
+ $("#opsGameBannerTextColor").value=item.text_color||"#ffffff";
+ $("#opsGameBannerBgColor").value=item.background_color||"#2563eb";
+ $("#opsGameBannerSize").value=String(item.font_size||14);
+ $("#opsGameBannerSpeed").value=item.speed||"normal";
+ $("#opsGameBannerSort").value=String(item.sort_order??100);
+ const toLocal=value=>{if(!value)return "";const d=new Date(value);if(!Number.isFinite(d.getTime()))return "";return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);};
+ $("#opsGameBannerStarts").value=toLocal(item.starts_at);
+ $("#opsGameBannerEnds").value=toLocal(item.ends_at);
+ $("#opsGameBannerEnabled").checked=!!item.enabled;
+ $("#opsGameBannerBold").checked=!!item.is_bold;
+ $("#opsGameBannerCancel").hidden=false;
+ $("#opsGameBannerSave").textContent="変更を保存";
+ $("#opsGameBannerStatus").textContent="編集中："+item.name;
+ $("#opsGameBannerForm").scrollIntoView({behavior:"smooth",block:"start"});
+}
+async function saveOpsGameBanner(event){
+ event.preventDefault();
+ const id=$("#opsGameBannerId").value.trim(),name=$("#opsGameBannerName").value.trim(),message=$("#opsGameBannerMessage").value.trim();
+ const starts=$("#opsGameBannerStarts").value,ends=$("#opsGameBannerEnds").value;
+ if(!name||!message)return;
+ if(ends&&starts&&new Date(ends)<=new Date(starts)){alert("終了日時は開始日時より後にしてください。");return;}
+ const button=$("#opsGameBannerSave");button.disabled=true;$("#opsGameBannerStatus").textContent="保存しています…";
+ try{
+  await opsInvoke({
+   action:"save_game_banner",id:id||undefined,name,message,href:$("#opsGameBannerHref").value.trim(),
+   icon:$("#opsGameBannerIcon").value.trim(),text_color:$("#opsGameBannerTextColor").value,
+   background_color:$("#opsGameBannerBgColor").value,font_size:Number($("#opsGameBannerSize").value),
+   speed:$("#opsGameBannerSpeed").value,sort_order:Number($("#opsGameBannerSort").value),
+   starts_at:starts?new Date(starts).toISOString():null,ends_at:ends?new Date(ends).toISOString():null,
+   enabled:$("#opsGameBannerEnabled").checked,is_bold:$("#opsGameBannerBold").checked
+  });
+  resetOpsGameBannerForm();$("#opsGameBannerStatus").textContent="バナーを保存しました。";
+  await loadOpsGameBanners();if(typeof loadOpsAudit==="function")await loadOpsAudit();
+ }catch(e){$("#opsGameBannerStatus").textContent="保存に失敗しました："+e.message;alert("バナーを保存できませんでした："+e.message);}
+ finally{button.disabled=false;}
+}
+async function toggleOpsGameBanner(id){
+ const item=opsGameBanners.find(row=>row.id===id);if(!item)return;
+ try{
+  await opsInvoke({
+   action:"save_game_banner",id:item.id,name:item.name,message:item.message,href:item.href||"",
+   icon:item.icon||"",text_color:item.text_color,background_color:item.background_color,font_size:item.font_size,
+   speed:item.speed,sort_order:item.sort_order,starts_at:item.starts_at,ends_at:item.ends_at,
+   enabled:!item.enabled,is_bold:!!item.is_bold
+  });
+  await loadOpsGameBanners();
+ }catch(e){alert("表示状態を変更できませんでした："+e.message);}
+}
+async function deleteOpsGameBanner(id){
+ const item=opsGameBanners.find(row=>row.id===id);if(!item)return;
+ if(!confirm("「"+item.name+"」を削除しますか？この操作は取り消せません。"))return;
+ try{await opsInvoke({action:"delete_game_banner",id});await loadOpsGameBanners();if(typeof loadOpsAudit==="function")await loadOpsAudit();}
+ catch(e){alert("バナーを削除できませんでした："+e.message);}
+}
+
 async function loadOpsAnnouncements(){
  $("#opsAnnouncementsList").innerHTML='<div class="empty">読み込み中…</div>';
  try{
@@ -1960,6 +2090,15 @@ $("#opsReportsRefresh").addEventListener("click",loadOpsReports);
 $("#opsReportsStatus").addEventListener("change",loadOpsReports);
 $("#opsReportsList").addEventListener("click",e=>{const b=e.target.closest("[data-report-save]");if(b)saveOpsReport(b.dataset.reportSave,b);});
 $("#opsAnnouncementsRefresh").addEventListener("click",loadOpsAnnouncements);
+$("#opsGameBannersRefresh").addEventListener("click",loadOpsGameBanners);
+$("#opsGameBannerForm").addEventListener("submit",saveOpsGameBanner);
+$("#opsGameBannerCancel").addEventListener("click",resetOpsGameBannerForm);
+$("#opsGameBannersList").addEventListener("click",e=>{
+ const edit=e.target.closest("[data-game-banner-edit]"),toggle=e.target.closest("[data-game-banner-toggle]"),del=e.target.closest("[data-game-banner-delete]");
+ if(edit)editOpsGameBanner(edit.dataset.gameBannerEdit);
+ if(toggle)toggleOpsGameBanner(toggle.dataset.gameBannerToggle);
+ if(del)deleteOpsGameBanner(del.dataset.gameBannerDelete);
+});
 $("#opsMessagesRefresh").addEventListener("click",loadOpsMessages);
 $("#opsMessageForm").addEventListener("submit",sendOpsMessage);
 $("#opsMessageAudience").addEventListener("change",()=>{
