@@ -150,7 +150,7 @@ function addProfile(profile,user){
  if(url){
   try{
    var parsed=new URL(url,location.origin);
-   if(isDataImage||parsed.protocol==="https:"||parsed.origin===location.origin){
+   if(parsed.protocol==="https:"||parsed.origin===location.origin){
     var img=document.createElement("img");img.src=parsed.href;img.alt="";img.loading="lazy";
     img.onerror=function(){img.remove();};avatar.textContent="";avatar.appendChild(img);
    }
@@ -164,7 +164,7 @@ function createGameIcon(iconValue){
  if(isDataImage||value.slice(0,8).toLowerCase()==="https://"||value.slice(0,7).toLowerCase()==="http://"){
   try{
    var parsed=new URL(value,location.origin);
-   if(parsed.protocol==="https:"||parsed.origin===location.origin){
+   if(isDataImage||parsed.protocol==="https:"||parsed.origin===location.origin){
     var img=document.createElement("img");img.src=parsed.href;img.alt="";img.loading="lazy";
     img.onerror=function(){img.remove();wrap.textContent="🎮";};
     wrap.appendChild(img);
