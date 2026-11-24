@@ -700,6 +700,110 @@ async function handle(req: Request) {
     });
   }
 
+  if (action === "record_result") {
+    const user = await getUser(req);
+    requirePublished(game);
+    requireFeature(settings.features, "ranking");
+
+    const mode = safeMode(body.mode);
+    const result = body.result === "loss" ? "loss" : null;
+    const submissionId = typeof body.submissionId === "string" && UUID_RE.test(body.submissionId)
+      ? body.submissionId
+      : null;
+    const metadata = body.metadata && typeof body.metadata === "object" && !Array.isArray(body.metadata)
+      ? body.metadata as Record<string, unknown>
+      : {};
+    if (!result || !submissionId) {
+      throw new HttpError(400, "敗北結果には有効なsubmissionIdとresult=lossが必要です。");
+    }
+    if (new TextEncoder().encode(JSON.stringify(metadata)).length > 8192) {
+      throw new HttpError(400, "追加データは8KB以内にしてください。");
+    }
+
+    let trustedSource = "";
+    if (game.id === UNON_GAME_ID && mode === "wins-online") {
+      if (metadata.source !== "unon-online" || metadata.matchId !== submissionId ||
+          typeof metadata.roomId !== "string" || typeof metadata.lossProof !== "string") {
+        throw new HttpError(400, "UNONオンラインの敗北記録データが正しくありません。");
+      }
+      const claims = await verifyUnonWinProof(metadata.lossProof);
+      if (!claims || claims.typ !== "unon_loss" || claims.sub !== user.id ||
+          claims.game !== game.id || claims.match !== submissionId || claims.room !== metadata.roomId) {
+        throw new HttpError(403, "サーバーが確認した敗北記録ではありません。");
+      }
+      trustedSource = "unon-online-server-proof";
+    } else if (game.id === UNON_GAME_ID && mode === "wins-solo") {
+      const difficulty = String(metadata.cpuDifficulty ?? metadata.cpu_difficulty ?? metadata.difficulty ?? "").trim().toLowerCase();
+      const players = Number(metadata.players);
+      if (metadata.source !== "unon-solo" || difficulty !== "hard" ||
+          !Number.isSafeInteger(players) || players < 2 || players > 4) {
+        throw new HttpError(403, "記録できるUNONひとり用の敗北は、CPU最強設定の対戦のみです。");
+      }
+      trustedSource = "unon-solo-client-result";
+    } else if (game.id === "2eb37847-1b7e-43e4-ad98-901d5b830ac4" && mode === "wins-bot") {
+      if (metadata.source !== "daifugo-bot" || metadata.opponentMode !== "bot") {
+        throw new HttpError(403, "記録できる敗北は大富豪のCPU対戦のみです。");
+      }
+      trustedSource = "daifugo-bot-client-result";
+    } else {
+      throw new HttpError(403, "このモードの結果は対戦サーバー、または専用の記録処理からのみ登録できます。");
+    }
+
+    const safeMetadata = {
+      source: trustedSource,
+      metric: "wins",
+      clientResult: trustedSource.endsWith("client-result"),
+      serverVerified: trustedSource.endsWith("server-proof"),
+      matchId: submissionId,
+      ...(game.id === UNON_GAME_ID && mode === "wins-solo"
+        ? { cpuDifficulty: "hard", difficulty: "hard", players: Number(metadata.players) }
+        : {}),
+      ...(game.id === "2eb37847-1b7e-43e4-ad98-901d5b830ac4"
+        ? { opponentMode: "bot" }
+        : {}),
+    };
+    const { data: recorded, error } = await admin.rpc("kuro_record_user_game_event", {
+      p_submission_id: submissionId,
+      p_user_id: user.id,
+      p_game_id: game.id,
+      p_mode: mode,
+      p_result: "loss",
+      p_score: null,
+      p_duration_ms: null,
+      p_metadata: safeMetadata,
+    });
+    if (error) {
+      console.error("[kurogames-online] result aggregate write failed", error);
+      throw new HttpError(500, "敗北回数を保存できませんでした。");
+    }
+
+    // Mirror Hard-only UNON solo losses into the hidden mode used for its private aggregate.
+    if (game.id === UNON_GAME_ID && mode === "wins-solo") {
+      const { error: hardStatsError } = await admin.rpc("kuro_record_user_game_event", {
+        p_submission_id: submissionId,
+        p_user_id: user.id,
+        p_game_id: game.id,
+        p_mode: "wins-solo-hard",
+        p_result: "loss",
+        p_score: null,
+        p_duration_ms: null,
+        p_metadata: {
+          metric: "wins",
+          source: "unon-solo",
+          cpuDifficulty: "hard",
+          difficulty: "hard",
+          players: Number(metadata.players),
+          internalRankingMode: true,
+        },
+      });
+      if (hardStatsError) {
+        console.error("[kurogames-online] UNON hard CPU loss aggregate save failed", hardStatsError);
+        throw new HttpError(500, "UNON最強CPUの敗北記録を保存できませんでした。");
+      }
+    }
+    return reply(200, { ok: true, recorded: recorded === true, duplicate: recorded === false });
+  }
+
   if (action === "stats_get") {
     const user = await getUser(req);
     requirePublished(game);
