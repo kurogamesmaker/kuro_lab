@@ -161,10 +161,8 @@
     if (!Array.isArray(rows)) rows = [];
     var totalPlays = 0, totalWins = 0, gameMap = new Map();
     rows.forEach(function (row) {
-      var plays = Number(row.plays) || 0;
-      var wins = Number(row.wins) || 0;
-      totalPlays += plays;
-      totalWins += wins;
+      totalPlays += Number(row.plays) || 0;
+      totalWins += Number(row.wins) || 0;
       var key = String(row.game_id || row.game_title || "");
       if (!gameMap.has(key)) {
         gameMap.set(key, { title: row.game_title || "KUROゲーム", icon: row.game_icon || "", rows: [] });
@@ -173,7 +171,7 @@
     });
     var groups = Array.from(gameMap.values());
     var summary =
-      '<div class="kuro-profile-summary">' +
+      '<div class="kuro-profile-summary kuro-profile-summary-compact">' +
         '<div><strong>' + totalPlays.toLocaleString("ja-JP") + '</strong><span>総プレイ数</span></div>' +
         '<div><strong>' + totalWins.toLocaleString("ja-JP") + '</strong><span>総勝利数</span></div>' +
         '<div><strong>' + groups.length.toLocaleString("ja-JP") + '</strong><span>プレイしたゲーム</span></div>' +
@@ -204,13 +202,19 @@
         if (row.best_time_ms != null) detail.push("ベスト " + formatTime(row.best_time_ms));
         else if (row.best_score != null) detail.push("ベスト " + Number(row.best_score).toLocaleString("ja-JP"));
         if (!detail.length) detail.push("記録あり");
-        return '<div class="kuro-profile-mode"><span>' + escapeHtml(modeLabel(row.mode)) + '</span><small>' + escapeHtml(detail.join("  ·  ")) + '</small></div>';
+        return '<div class="kuro-profile-mode-compact"><b>' + escapeHtml(modeLabel(row.mode)) + '</b><span>' + escapeHtml(detail.join(" · ")) + '</span></div>';
       }).join("");
-      return '<article class="kuro-profile-game">' +
-        '<div class="kuro-profile-game-head"><span class="kuro-profile-game-icon">' + escapeHtml(iconText) + '</span><div class="kuro-profile-game-title"><strong>' + escapeHtml(game.title) + '</strong><small>プレイ ' + gamePlays.toLocaleString("ja-JP") + ' · 勝利 ' + gameWins.toLocaleString("ja-JP") + (gameLosses ? ' · 敗北 ' + gameLosses.toLocaleString("ja-JP") : "") + (gameDraws ? ' · 引分 ' + gameDraws.toLocaleString("ja-JP") : "") + '</small></div></div>' +
-        '<div class="kuro-profile-modes">' + modeRows + '</div></article>';
+      var total = 'プレイ ' + gamePlays.toLocaleString("ja-JP") + '　·　勝利 ' + gameWins.toLocaleString("ja-JP");
+      if (gameLosses) total += '　·　敗北 ' + gameLosses.toLocaleString("ja-JP");
+      if (gameDraws) total += '　·　引分 ' + gameDraws.toLocaleString("ja-JP");
+      return '<article class="kuro-profile-game kuro-profile-game-compact">' +
+        '<div class="kuro-profile-game-line"><span class="kuro-profile-game-icon">' + escapeHtml(iconText) + '</span>' +
+        '<strong class="kuro-profile-game-name">' + escapeHtml(game.title) + '</strong>' +
+        '<span class="kuro-profile-game-total">' + escapeHtml(total) + '</span>' +
+        '<details class="kuro-profile-game-details"><summary>内訳</summary><div class="kuro-profile-mode-list">' + modeRows + '</div></details></div>' +
+        '</article>';
     }).join("");
-    return summary + '<div class="kuro-profile-games">' + cards + '</div>';
+    return summary + '<div class="kuro-profile-games kuro-profile-games-compact">' + cards + '</div>';
   }
 
   async function getSignedInUser(db) {
@@ -244,16 +248,16 @@
           '<button type="button" class="kuro-profile-follow-toggle">' + (signedIn ? (viewerFollowsProfile ? "フォロー中 · 解除" : "＋ フォロー") : "ログインしてフォロー") + '</button>' +
           '<button type="button" class="kuro-profile-chat-open">チャット</button>' +
         '</div>';
-    return '<section class="kuro-profile-social">' +
+    return '<aside class="kuro-profile-social-side">' +
       '<div class="kuro-profile-follow-stats">' +
         '<button type="button" data-kuro-profile-list="following"><strong>' + following + '</strong><span>フォロー中</span></button>' +
         '<button type="button" data-kuro-profile-list="followers"><strong>' + followers + '</strong><span>フォロワー</span></button>' +
       '</div>' +
       actions +
       '<p class="kuro-profile-social-status" id="kuroProfileSocialStatus" role="status" aria-live="polite"></p>' +
-      '<div class="kuro-profile-social-panel" id="kuroProfileSocialPanel" hidden></div>' +
-    '</section>';
+    '</aside>';
   }
+
 
   async function open(userId, options) {
     var id = String(userId || "");
@@ -313,9 +317,14 @@
         ? '<span class="kuro-profile-joined">KUROメンバー · ' + joined.toLocaleDateString("ja-JP") + ' 登録</span>'
         : "";
       content.innerHTML =
-        '<section class="kuro-profile-identity"><div class="kuro-profile-avatar">' + avatar + '</div><div class="kuro-profile-names"><h3>' + escapeHtml(name) + '</h3><p>' + escapeHtml(handle) + '</p><small>KURO ID：' + escapeHtml(profile.kuro_id || "未設定") + '</small>' + joinedLabel + '</div></section>' +
+        '<section class="kuro-profile-identity">' +
+          '<div class="kuro-profile-identity-main"><div class="kuro-profile-avatar">' + avatar + '</div>' +
+          '<div class="kuro-profile-names"><h3>' + escapeHtml(name) + '</h3><p>' + escapeHtml(handle) + '</p>' +
+          '<small>KURO ID：' + escapeHtml(profile.kuro_id || "未設定") + '</small>' + joinedLabel + '</div></div>' +
+          renderSocial(profile, results[2], isSelf, !!viewerUser) +
+        '</section>' +
         '<section class="kuro-profile-bio"><h3>自己紹介</h3><p>' + bioHtml + '</p></section>' +
-        renderSocial(profile, results[2], isSelf, !!viewerUser) +
+        '<div class="kuro-profile-social-panel kuro-profile-social-panel-wide" id="kuroProfileSocialPanel" hidden></div>' +
         '<section class="kuro-profile-records"><div class="kuro-profile-section-head"><h3>ゲーム記録</h3><span>ゲーム別・モード別</span></div>' +
           (statsResult.error
             ? '<div class="kuro-profile-error">ゲーム記録を読み込めませんでした。少し時間をおいて再度お試しください。</div>'
