@@ -244,7 +244,7 @@
 
   function updateBadges() {
     var n = getUnreadCount();
-    document.querySelectorAll(".portal-sidebar-badge,.portal-notification-badge").forEach(function (el) {
+    document.querySelectorAll(".portal-sidebar-badge").forEach(function (el) {
       el.textContent = n > 99 ? "99+" : String(n);
       el.hidden = !n;
     });
