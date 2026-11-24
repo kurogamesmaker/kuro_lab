@@ -179,42 +179,40 @@
     if (!groups.length) {
       return summary + '<div class="kuro-profile-empty">まだ表示できるゲーム記録はありません。</div>';
     }
-    var cards = groups.map(function (game) {
-      var gamePlays = 0, gameWins = 0, gameLosses = 0, gameDraws = 0;
-      game.rows.forEach(function (row) {
-        gamePlays += Number(row.plays) || 0;
-        gameWins += Number(row.wins) || 0;
-        gameLosses += Number(row.losses) || 0;
-        gameDraws += Number(row.draws) || 0;
-      });
+    var tableRows = groups.map(function (game) {
+      var imageUrl = safeImageUrl(game.icon);
       var iconText = String(game.icon || "").trim();
-      if (!iconText || /^https?:\/\//i.test(iconText)) iconText = "🎮";
-      var modeRows = game.rows.map(function (row) {
-        var detail = [];
+      var icon = imageUrl
+        ? '<img src="' + escapeHtml(imageUrl) + '" alt="" class="kuro-profile-table-icon-image">'
+        : '<span class="kuro-profile-table-icon-fallback">' + escapeHtml(iconText || "🎮") + '</span>';
+      return game.rows.map(function (row) {
         var plays = Number(row.plays) || 0;
         var wins = Number(row.wins) || 0;
         var losses = Number(row.losses) || 0;
         var draws = Number(row.draws) || 0;
-        if (plays) detail.push("プレイ " + plays.toLocaleString("ja-JP"));
-        if (wins) detail.push("勝利 " + wins.toLocaleString("ja-JP"));
-        if (losses) detail.push("敗北 " + losses.toLocaleString("ja-JP"));
-        if (draws) detail.push("引分 " + draws.toLocaleString("ja-JP"));
-        if (row.best_time_ms != null) detail.push("ベスト " + formatTime(row.best_time_ms));
-        else if (row.best_score != null) detail.push("ベスト " + Number(row.best_score).toLocaleString("ja-JP"));
-        if (!detail.length) detail.push("記録あり");
-        return '<div class="kuro-profile-mode-compact"><b>' + escapeHtml(modeLabel(row.mode)) + '</b><span>' + escapeHtml(detail.join(" · ")) + '</span></div>';
+        var best = row.best_time_ms != null
+          ? formatTime(row.best_time_ms)
+          : row.best_score != null
+            ? Number(row.best_score).toLocaleString("ja-JP")
+            : "—";
+        return '<tr>' +
+          '<td><div class="kuro-profile-table-game">' + icon + '<strong>' + escapeHtml(game.title) + '</strong></div></td>' +
+          '<td class="kuro-profile-table-mode">' + escapeHtml(modeLabel(row.mode)) + '</td>' +
+          '<td class="kuro-profile-table-number">' + plays.toLocaleString("ja-JP") + '</td>' +
+          '<td class="kuro-profile-table-number">' + wins.toLocaleString("ja-JP") + '</td>' +
+          '<td class="kuro-profile-table-number">' + losses.toLocaleString("ja-JP") + '</td>' +
+          '<td class="kuro-profile-table-number">' + draws.toLocaleString("ja-JP") + '</td>' +
+          '<td class="kuro-profile-table-best">' + escapeHtml(best) + '</td>' +
+        '</tr>';
       }).join("");
-      var total = 'プレイ ' + gamePlays.toLocaleString("ja-JP") + '　·　勝利 ' + gameWins.toLocaleString("ja-JP");
-      if (gameLosses) total += '　·　敗北 ' + gameLosses.toLocaleString("ja-JP");
-      if (gameDraws) total += '　·　引分 ' + gameDraws.toLocaleString("ja-JP");
-      return '<article class="kuro-profile-game kuro-profile-game-compact">' +
-        '<div class="kuro-profile-game-line"><span class="kuro-profile-game-icon">' + escapeHtml(iconText) + '</span>' +
-        '<strong class="kuro-profile-game-name">' + escapeHtml(game.title) + '</strong>' +
-        '<span class="kuro-profile-game-total">' + escapeHtml(total) + '</span>' +
-        '<details class="kuro-profile-game-details"><summary>内訳</summary><div class="kuro-profile-mode-list">' + modeRows + '</div></details></div>' +
-        '</article>';
     }).join("");
-    return summary + '<div class="kuro-profile-games kuro-profile-games-compact">' + cards + '</div>';
+    return summary +
+      '<div class="kuro-profile-table-wrap">' +
+        '<table class="kuro-profile-record-table">' +
+          '<thead><tr><th>ゲーム</th><th>モード</th><th>プレイ</th><th>勝利</th><th>敗北</th><th>引分</th><th>最高記録</th></tr></thead>' +
+          '<tbody>' + tableRows + '</tbody>' +
+        '</table>' +
+      '</div>';
   }
 
   async function getSignedInUser(db) {
