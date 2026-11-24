@@ -603,7 +603,7 @@ async function handle(req: Request) {
   if (action === "leaderboard_modes") {
     requirePublished(game);
     requireFeature(settings.features, "ranking");
-    if (game.id === TICTACTOE_GAME_ID || game.id === NUMBER_GAME_ID) {
+    if (game.id === TICTACTOE_GAME_ID || game.id === NUMBER_GAME_ID || game.id === UNON_GAME_ID) {
       return reply(200, {
         modes: [...(KNOWN_RANKING_MODES[game.id] ?? [])],
         showcaseConfig: sanitizeRankingShowcaseConfig(settings.features.rankingShowcaseConfig),
@@ -627,6 +627,9 @@ async function handle(req: Request) {
     requirePublished(game);
     requireFeature(settings.features, "ranking");
     const mode = safeMode(body.mode);
+    if (game.id === UNON_GAME_ID && !(KNOWN_RANKING_MODES[game.id] ?? []).includes(mode)) {
+      throw new HttpError(400, "UNONのランキングは勝利回数のみです。");
+    }
     const limit = Math.max(1, Math.min(100, Number.isFinite(Number(body.limit)) ? Math.floor(Number(body.limit)) : 20));
     // Time rankings use lower scores (milliseconds) as better results.
     const isTimeRanking = /(^|[_-])(time|duration|elapsed|seconds?|milliseconds?|ms|fastest|clear_time)([_-]|$)/i.test(mode);
@@ -696,17 +699,17 @@ async function handle(req: Request) {
 
     let scores:any[] = [];
     if (game.id === NUMBER_GAME_ID) {
+      // 数字当てタイムランキングはサーバー検証済みの記録のみ対象。
+      // 旧クライアント投稿の記録や最低基準未満の値は混ぜない。
       const { data: verifiedScores, error: verifiedError } = await admin.from("game_scores")
         .select("id, user_id, score, mode, created_at, metadata").eq("game_id",game.id).eq("mode",mode)
-        .contains("metadata",{serverVerified:"number-guess-v1"}).gt("score",0);
+        .contains("metadata",{serverVerified:"number-guess-v1"}).gte("score",500);
       if (verifiedError) throw new HttpError(500, "検証済みランキングを取得できませんでした。");
-      const { data: legacyScores, error: legacyError } = await admin.from("game_scores")
-        .select("id, user_id, score, mode, created_at, metadata").eq("game_id",game.id).eq("mode",mode)
-        .not("metadata->>serverVerified","eq","number-guess-v1").gt("score",0);
-      if (legacyError) throw new HttpError(500, "過去ランキングを取得できませんでした。");
       const bestByUser=new Map<string,any>();
-      for (const row of legacyScores ?? []) { const p=bestByUser.get(row.user_id); if(!p||Number(row.score)<Number(p.score)) bestByUser.set(row.user_id,{...row,recordType:"legacy"}); }
-      for (const row of verifiedScores ?? []) { const p=bestByUser.get(row.user_id); if(!p||Number(row.score)<Number(p.score)) bestByUser.set(row.user_id,{...row,recordType:p?"mixed":"verified"}); else p.recordType="mixed"; }
+      for (const row of verifiedScores ?? []) {
+        const previous=bestByUser.get(row.user_id);
+        if (!previous || Number(row.score)<Number(previous.score)) bestByUser.set(row.user_id,{...row,recordType:"verified"});
+      }
       scores=Array.from(bestByUser.values()).sort((a,b)=>Number(a.score)-Number(b.score)||String(a.created_at).localeCompare(String(b.created_at))).slice(0,limit);
     } else {
       const { data, error } = await admin.from("game_scores").select("id, user_id, score, mode, created_at")
@@ -1073,6 +1076,9 @@ async function handle(req: Request) {
       throw new HttpError(400, "スコアは0〜1,000,000,000の整数で指定してください。");
     }
     const mode = safeMode(body.mode);
+    if (game.id === UNON_GAME_ID && !(KNOWN_RANKING_MODES[game.id] ?? []).includes(mode)) {
+      throw new HttpError(403, "UNONのランキングは勝利回数のみ登録できます。");
+    }
     if (game.id === "2eb37847-1b7e-43e4-ad98-901d5b830ac4" && mode === "wins-online") {
       throw new HttpError(403, "オンライン勝利数は対局サーバーが登録します。");
     }
