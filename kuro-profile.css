@@ -104,3 +104,63 @@
  .kuro-profile-follow-stats span{font-size:10px}
  .kuro-profile-chat-messages{max-height:220px}
 }
+
+
+/* Compact profile header: social controls stay to the right of the identity. */
+.kuro-profile-identity{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:4px 0 16px}
+.kuro-profile-identity-main{display:flex;align-items:center;gap:15px;min-width:0;flex:1}
+.kuro-profile-identity .kuro-profile-avatar{width:82px;height:82px;flex-basis:82px}
+.kuro-profile-identity .kuro-profile-avatar-fallback{font-size:32px}
+.kuro-profile-names h3{font-size:21px;line-height:1.35}
+.kuro-profile-names p{margin:3px 0;font-size:12px}
+.kuro-profile-names small{margin-top:5px;font-size:10px}
+.kuro-profile-joined{margin-top:3px;font-size:9px}
+.kuro-profile-social-side{width:246px;flex:0 0 246px;margin-left:auto}
+.kuro-profile-social-side .kuro-profile-follow-stats{gap:6px}
+.kuro-profile-social-side .kuro-profile-follow-stats button{min-height:40px;padding:6px 8px;gap:5px}
+.kuro-profile-social-side .kuro-profile-follow-stats strong{font-size:17px}
+.kuro-profile-social-side .kuro-profile-follow-stats span{font-size:10px}
+.kuro-profile-social-side .kuro-profile-social-actions{gap:6px;margin-top:7px}
+.kuro-profile-social-side .kuro-profile-social-actions button{min-height:38px;padding:7px 8px;font-size:11px}
+.kuro-profile-social-side .kuro-profile-own-label{margin-top:7px}
+.kuro-profile-social-side .kuro-profile-social-status{margin-top:4px}
+.kuro-profile-social-panel-wide{margin-top:10px}
+.kuro-profile-summary-compact{gap:7px;margin-bottom:9px}
+.kuro-profile-summary-compact>div{gap:2px;padding:8px 10px;border-radius:10px}
+.kuro-profile-summary-compact strong{font-size:17px}
+.kuro-profile-summary-compact span{font-size:9px}
+.kuro-profile-games-compact{gap:0;border-top:1px solid rgba(148,163,184,.15)}
+.kuro-profile-game-compact{padding:8px 2px;border:0;border-bottom:1px solid rgba(148,163,184,.15);border-radius:0;background:transparent}
+.kuro-profile-game-line{display:flex;align-items:center;gap:9px;min-height:34px}
+.kuro-profile-game-compact .kuro-profile-game-icon{width:28px;height:28px;flex-basis:28px;border-radius:8px;font-size:15px}
+.kuro-profile-game-name{min-width:95px;flex:0 1 145px;color:#edf3fc;font-size:11px;font-weight:850;overflow-wrap:anywhere}
+.kuro-profile-game-total{min-width:0;flex:1;color:#a9b8cc;font-size:10px;line-height:1.45;text-align:right}
+.kuro-profile-game-details{flex:0 0 auto;color:#b5d0f3;font-size:10px}
+.kuro-profile-game-details summary{padding:5px 7px;border:1px solid rgba(148,163,184,.2);border-radius:8px;cursor:pointer;white-space:nowrap;list-style:none}
+.kuro-profile-game-details summary::-webkit-details-marker{display:none}
+.kuro-profile-game-details summary::after{content:"＋";margin-left:5px;color:#8faed8}
+.kuro-profile-game-details[open] summary::after{content:"－"}
+.kuro-profile-mode-list{display:grid;gap:4px;min-width:min(390px,68vw);margin-top:6px;padding:7px;border-radius:9px;background:rgba(4,12,25,.38)}
+.kuro-profile-mode-compact{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:4px 2px;border-bottom:1px solid rgba(148,163,184,.1)}
+.kuro-profile-mode-compact:last-child{border-bottom:0}
+.kuro-profile-mode-compact b{flex:0 0 auto;color:#b9d5f7;font-size:9px;font-weight:850}
+.kuro-profile-mode-compact span{color:#a6b2c4;font-size:9px;line-height:1.5;text-align:right}
+@media(max-width:600px){
+ .kuro-profile-identity{align-items:stretch;flex-direction:column;gap:12px}
+ .kuro-profile-identity-main{gap:12px}
+ .kuro-profile-identity .kuro-profile-avatar{width:68px;height:68px;flex-basis:68px}
+ .kuro-profile-identity .kuro-profile-avatar-fallback{font-size:27px}
+ .kuro-profile-names h3{font-size:18px}
+ .kuro-profile-social-side{width:100%;flex:0 0 auto;margin:0}
+ .kuro-profile-social-side .kuro-profile-follow-stats{max-width:340px}
+ .kuro-profile-social-side .kuro-profile-social-actions{max-width:440px}
+ .kuro-profile-summary-compact>div{padding:7px 8px}
+ .kuro-profile-summary-compact strong{font-size:15px}
+ .kuro-profile-game-line{gap:6px;flex-wrap:wrap}
+ .kuro-profile-game-name{min-width:0;flex:1 1 90px;font-size:10px}
+ .kuro-profile-game-total{order:4;flex:1 0 calc(100% - 38px);margin-left:34px;text-align:left;font-size:9px}
+ .kuro-profile-game-details{margin-left:auto}
+ .kuro-profile-mode-list{min-width:0;width:min(88vw,420px)}
+ .kuro-profile-mode-compact{gap:8px}
+ .kuro-profile-mode-compact b,.kuro-profile-mode-compact span{font-size:9px}
+}
