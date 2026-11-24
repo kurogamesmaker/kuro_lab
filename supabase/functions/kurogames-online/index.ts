@@ -21,7 +21,7 @@ const UNON_GAME_ID = "faa155cb-2143-4361-9a96-dc759d334e46";
 const ONLINE_ROOM_WORKER_URL = "https://kuro-online-room.kurogamesmaker.workers.dev";
 const DEFAULT_FEATURES = { ranking: false, cloudSave: false, multiplayer: false, rankingShowcase: false };
 const KNOWN_RANKING_MODES: Record<string, string[]> = {
-  "faa155cb-2143-4361-9a96-dc759d334e46": ["wins-online"],
+  "faa155cb-2143-4361-9a96-dc759d334e46": ["wins-online", "wins-solo"],
   "2dbd6773-2684-4f00-973e-c46acbc348e7": ["normal", "vanish", "gobble", "reverse"],
   "2eb37847-1b7e-43e4-ad98-901d5b830ac4": ["wins-bot", "wins-online"],
   "903a4c45-37bb-4a4b-a259-a5a8245de998": ["werewolf_villager_wins", "werewolf_wolf_wins"],
@@ -1094,6 +1094,16 @@ async function handle(req: Request) {
     const submissionId = typeof body.submissionId === "string" && UUID_RE.test(body.submissionId)
       ? body.submissionId
       : crypto.randomUUID();
+
+    if (game.id === UNON_GAME_ID && mode === "wins-solo") {
+      const difficulty = typeof metadata.difficulty === "string" ? metadata.difficulty : "";
+      const players = Number(metadata.players);
+      if (score !== 1 || metadata.metric !== "wins" || metadata.source !== "unon-solo" ||
+          !["easy", "normal", "hard"].includes(difficulty) ||
+          !Number.isSafeInteger(players) || players < 2 || players > 4) {
+        throw new HttpError(400, "UNONひとり用の勝利記録データが正しくありません。");
+      }
+    }
 
     if (game.id === UNON_GAME_ID && mode === "wins-online") {
       console.info("[kurogames-online] UNON online win submission received", {
