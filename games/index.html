@@ -1657,7 +1657,7 @@ function initKuroRankingShowcase(){
    try{
     const avatarUrl=new URL(rawAvatar,location.origin);
     if(avatarUrl.protocol==="https:"||avatarUrl.protocol==="http:"){
-     image='<img src="'+esc(avatarUrl.href)+'" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">';
+     image='<img src="'+esc(avatarUrl.href)+'" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.hidden=true">';
     }
    }catch(_){}
   }
