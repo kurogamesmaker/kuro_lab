@@ -833,6 +833,9 @@ async function handle(req: Request) {
     requireFeature(settings.features, "ranking");
 
     const mode = safeMode(body.mode);
+    if (game.id === DAIFUGO_GAME_ID && mode === "wins-bot") {
+      throw new HttpError(403, "大富豪のCPU戦ランキングはサーバー検証方式への移行中です。オンライン対戦の勝利数はこれまでどおり登録できます。");
+    }
     const result = body.result === "loss" ? "loss" : null;
     const submissionId = typeof body.submissionId === "string" && UUID_RE.test(body.submissionId)
       ? body.submissionId
@@ -1842,9 +1845,6 @@ async function handle(req: Request) {
     requireFeature(settings.features, "ranking");
     if (game.id === TICTACTOE_GAME_ID || game.id === NUMBER_GAME_ID || game.id === PRIME_GAME_ID || game.id === SUSHI_GAME_ID) {
       throw new HttpError(403, "このゲームの記録はサーバー検証済みのプレイからのみ登録できます。");
-    }
-    if (game.id === DAIFUGO_GAME_ID && mode === "wins-bot") {
-      throw new HttpError(403, "大富豪のCPU戦ランキングはサーバー検証方式への移行中です。オンライン対戦の勝利数はこれまでどおり登録できます。");
     }
     const score = Number(body.score);
     if (!Number.isSafeInteger(score) || score < 0 || score > 1000000000) {
