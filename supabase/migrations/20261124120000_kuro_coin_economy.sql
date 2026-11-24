@@ -73,7 +73,25 @@ declare
   v_new_balance bigint;
   v_ledger_id uuid;
 begin
+  v_cpu := upper(coalesce(p_cpu_difficulty,''));
   if p_user_id is null or p_game_id is null or p_submission_id is null then
+    return false;
+  end if;
+
+  -- Defense in depth: only allow modes whose result is proven by a server-side
+  -- game verifier. Admin settings can tune amounts, but cannot widen this allowlist.
+  if not (
+    (
+      p_game_id = '2dbd6773-2684-4f00-973e-c46acbc348e7'::uuid
+      and p_mode in ('normal','vanish','gobble','reverse')
+      and v_cpu = 'HARD'
+    )
+    or (
+      p_game_id = 'faa155cb-2143-4361-9a96-dc759d334e46'::uuid
+      and p_mode = 'wins-online'
+      and v_cpu = ''
+    )
+  ) then
     return false;
   end if;
 
@@ -87,7 +105,7 @@ begin
   if not found then return false; end if;
 
   if v_rule.required_cpu_difficulty is not null
-     and upper(coalesce(p_cpu_difficulty,'')) <> v_rule.required_cpu_difficulty then
+     and v_cpu <> v_rule.required_cpu_difficulty then
     return false;
   end if;
 
@@ -110,7 +128,7 @@ begin
     p_user_id, v_rule.reward_amount, v_new_balance, 'game_win_reward',
     p_game_id, p_mode, p_submission_id,
     v_rule.reward_label,
-    jsonb_build_object('cpuDifficulty', upper(coalesce(p_cpu_difficulty,'')), 'source','verified-win-event')
+    jsonb_build_object('cpuDifficulty', v_cpu, 'source','verified-win-event')
   )
   on conflict do nothing
   returning id into v_ledger_id;
@@ -267,5 +285,4 @@ values
   ('2dbd6773-2684-4f00-973e-c46acbc348e7', 'gobble', 5, true, 'HARD', '〇✕ゲーム（CPU最強）勝利'),
   ('2dbd6773-2684-4f00-973e-c46acbc348e7', 'reverse', 5, true, 'HARD', '〇✕ゲーム（CPU最強）勝利'),
   ('faa155cb-2143-4361-9a96-dc759d334e46', 'wins-online', 10, true, null, 'UNONオンライン勝利'),
-  ('2eb37847-1b7e-43e4-ad98-901d5b830ac4', 'wins-online', 10, true, null, '大富豪オンライン勝利')
 on conflict (game_id, mode) do nothing;
