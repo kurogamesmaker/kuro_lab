@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#f6f8fc">
 <meta name="description" content="KURO GAMESで保存された自分のゲーム最高記録を確認できます。">
-<link rel="icon" type="image/png" sizes="48x48" href="/assets/brand/logo/kurolab_icon_maru_48.png?v=20261122marufavicon2">
+<link rel="icon" type="image/png" sizes="48x48" href="/assets/brand/logo/kurolab_icon_maru_48.png?v=20261122marufavicon2"><link rel="stylesheet" href="/kuro-profile.css?v=20261124profilemodal1">
 <title>マイページ・ゲーム記録｜KURO GAMES</title>
 <style>
 :root{--ink:#17243c;--muted:#718098;--line:#e5eaf2;--blue:#2878ee;--bg:#f6f8fc}
@@ -87,9 +87,9 @@ footer{border-top:1px solid var(--line);background:white;padding:20px 0;color:#8
 <section id="myPageError" class="panel state" hidden><strong>データを読み込めませんでした</strong><span id="myPageErrorText">通信状態を確認して再度お試しください。</span><br><button type="button" id="myPageRetry">再読み込み</button></section>
 <div id="myPageContent" hidden>
 <section class="panel profile">
-<div class="avatar" id="myProfileAvatar" aria-hidden="true">👤</div>
-<div class="profile-copy"><div class="profile-name" id="myProfileName">KUROユーザー</div><div class="profile-meta" id="myProfileMeta">KURO共通アカウント</div><p class="profile-bio" id="myProfileBio">プロフィール紹介はまだ設定されていません。</p></div>
-<div class="profile-actions"><a class="action" href="/sns/?profile-edit=1">プロフィールを編集</a><a class="action" href="/account/">アカウント設定</a></div>
+<div class="avatar" id="myProfileAvatar" aria-hidden="true" data-kuro-profile-self role="button" tabindex="0" aria-label="自分の共通プロフィールを見る">👤</div>
+<div class="profile-copy"><div class="profile-name" id="myProfileName" data-kuro-profile-self role="button" tabindex="0" aria-label="自分の共通プロフィールを見る">KUROユーザー</div><div class="profile-meta" id="myProfileMeta">KURO共通アカウント</div><p class="profile-bio" id="myProfileBio">プロフィール紹介はまだ設定されていません。</p></div>
+<div class="profile-actions"><button class="action" type="button" data-kuro-profile-self>共通プロフィールを見る</button><a class="action" href="/account/">アカウント設定</a></div>
 </section>
 <section class="section">
 <div class="section-title"><h2>最高記録</h2><p id="recordsCount">0件</p></div>
@@ -308,5 +308,6 @@ $("myPageRetry").addEventListener("click",function(){boot().catch(showError);});
 boot().catch(showError);
 })();
 </script>
+<script defer src="/kuro-profile.js?v=20261124profilemodal1"></script>
 </body>
 </html>
