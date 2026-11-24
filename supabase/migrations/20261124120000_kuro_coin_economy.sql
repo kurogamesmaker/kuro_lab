@@ -49,8 +49,10 @@ alter table public.kuro_coin_game_rewards enable row level security;
 
 revoke all on table public.kuro_coin_balances, public.kuro_coin_ledger, public.kuro_coin_game_rewards
   from public, anon, authenticated;
-grant select, insert, update, delete on table public.kuro_coin_balances, public.kuro_coin_ledger, public.kuro_coin_game_rewards
-  to service_role;
+-- Service role can read balances and ledger, but cannot mutate the append-only ledger directly.
+-- Balance changes are restricted to the SECURITY DEFINER reward/admin-adjustment routines.
+grant select on table public.kuro_coin_balances, public.kuro_coin_ledger to service_role;
+grant select, insert, update on table public.kuro_coin_game_rewards to service_role;
 
 comment on table public.kuro_coin_balances is 'KURO Lab共通KURO COIN残高。更新はサーバー専用処理のみ。';
 comment on table public.kuro_coin_ledger is 'KURO COINの不変取引台帳。勝利報酬・管理補正・ショップ決済を記録。';
