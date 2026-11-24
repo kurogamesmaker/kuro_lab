@@ -114,6 +114,7 @@
         $("accountLoggedOut").hidden = false;
         $("accountUser").hidden = true;
         $("accountPasswordCard").hidden = true;
+        $("accountProfileCard").hidden = true;
         $("accountDeleteCard").hidden = true;
         return;
       }
@@ -137,12 +138,14 @@
     let profile = null;
     const { data: profileData, error: profileError } = await client
       .from("profiles")
-      .select("username,display_name")
+      .select("username,display_name,bio")
       .eq("id", currentUser.id)
       .maybeSingle();
     if (!profileError) profile = profileData;
 
     $("accountDisplayName").textContent = getReadableName(profile, currentUser);
+    $("accountBioInput").value = profile && typeof profile.bio === "string" ? profile.bio : "";
+    $("accountProfileCard").hidden = false;
     $("accountUser").hidden = false;
     $("accountLoggedOut").hidden = true;
     $("accountPasswordCard").hidden = false;
@@ -163,6 +166,40 @@
       setStatus("accountPasswordStatus", "初回パスワードを設定すると、共通アカウントの準備が完了します。", "success");
     }
   }
+
+  $("accountBioForm").addEventListener("submit", async function (event) {
+    event.preventDefault();
+    if (busy || !currentUser) return;
+    const bio = String($("accountBioInput").value || "").trim();
+    if (bio.length > 160) {
+      setStatus("accountBioStatus", "自己紹介は160文字以内にしてください。", "error");
+      return;
+    }
+    busy = true;
+    const button = $("accountBioSubmit");
+    setBusy(button, true, "保存中…");
+    setStatus("accountBioStatus", "", "");
+    try {
+      const auth = await client.auth.getUser();
+      if (auth.error || !auth.data || !auth.data.user || auth.data.user.id !== currentUser.id) {
+        throw new Error("ログイン状態を確認できません。再ログインしてください。");
+      }
+      const { data, error } = await client.from("profiles")
+        .update({ bio, updated_at: new Date().toISOString() })
+        .eq("id", auth.data.user.id)
+        .select("bio")
+        .single();
+      if (error) throw error;
+      $("accountBioInput").value = data.bio || "";
+      setStatus("accountBioStatus", "保存しました。KURO Lab・KURO SNS・KURO GAMESに共通で反映されます。", "success");
+    } catch (error) {
+      console.error("KURO common profile bio save failed", error);
+      setStatus("accountBioStatus", error && error.message || "自己紹介を保存できませんでした。", "error");
+    } finally {
+      busy = false;
+      setBusy(button, false, "自己紹介を保存");
+    }
+  });
 
   async function signInWithUsername(username, password) {
     const response = await kuroRelayFetch(SUPABASE_URL + "/functions/v1/username-auth", {
