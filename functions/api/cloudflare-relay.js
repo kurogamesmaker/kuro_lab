@@ -57,6 +57,7 @@ function isSuspensionAllowedWrite(pathname,method) {
   if(pathname==="/rest/v1/account_suspension_appeal_messages"&&method==="POST")return true;
   if(pathname==="/rest/v1/admin_message_reads"&&["POST","PATCH","DELETE"].includes(method))return true;
   if(pathname==="/functions/v1/change-password")return true;
+  if(pathname==="/rest/v1/usage_events"&&method==="POST")return true;
   return false;
 }
 async function proxy(payload) {
