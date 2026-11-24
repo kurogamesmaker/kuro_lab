@@ -78,10 +78,10 @@ async function proxy(payload) {
   }
   const body=!["GET","HEAD"].includes(method)&&payload.bodyBase64?decodeBase64(payload.bodyBase64):undefined;
   const upstream=await fetch(target.href,{method,headers,body,redirect:"manual"});
-  const headers={};for(const k of ["content-type","cache-control","etag","content-range","accept-ranges","last-modified","location","x-request-id","preference-applied"]){const v=upstream.headers.get(k);if(v)headers[k]=v;}
+  const responseHeaders={};for(const k of ["content-type","cache-control","etag","content-range","accept-ranges","last-modified","location","x-request-id","preference-applied"]){const v=upstream.headers.get(k);if(v)responseHeaders[k]=v;}
   const bytes=new Uint8Array(await upstream.arrayBuffer()),type=String(upstream.headers.get("content-type")||"application/octet-stream");
   const isBinary=!/(json|text|xml|javascript|form|csv)/i.test(type);
-  return {status:upstream.status,headers,isBinary,bodyBase64:isBinary?encodeBase64(bytes):"",bodyText:isBinary?"":new TextDecoder().decode(bytes),service:"KURO Cloudflare Supabase Proxy"};
+  return {status:upstream.status,headers:responseHeaders,isBinary,bodyBase64:isBinary?encodeBase64(bytes):"",bodyText:isBinary?"":new TextDecoder().decode(bytes),service:"KURO Cloudflare Supabase Proxy"};
 }
 export async function onRequest(context) {
   const {request}=context;try {
