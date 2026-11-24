@@ -77,6 +77,14 @@ footer{border-top:1px solid var(--line);background:white;padding:20px 0;color:#8
  main{padding:22px 0 42px}.profile{align-items:flex-start;flex-wrap:wrap;padding:16px;gap:12px}.avatar{width:56px;height:56px;flex-basis:56px}.profile-copy{width:calc(100% - 70px)}.profile-name{font-size:16px}.profile-actions{width:100%}.action{flex:1}
  .game-list{grid-template-columns:1fr}.game-card{gap:12px;padding:14px}.game-icon{width:56px;height:56px;flex-basis:56px;border-radius:13px}.mode-best{font-size:12px}.history-row{gap:9px;padding:10px}.history-mark{width:30px;height:30px;flex-basis:30px}
 }
+
+.my-profile-cosmetics{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.my-profile-cosmetics[hidden],.my-profile-background[hidden]{display:none!important}
+.my-profile-cosmetics span{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border:1px solid #d9d4ec;border-radius:99px;background:#f5f1ff;color:#65518c;font-size:9px;font-weight:850}
+.profile .avatar[data-frame="rare"]{border:3px solid #58a3ff;box-shadow:0 0 0 4px #58a3ff25}
+.profile .avatar[data-frame="epic"]{border:3px solid #b67aff;box-shadow:0 0 0 4px #b67aff25}
+.profile .avatar[data-frame="legendary"]{border:3px solid #f2bc57;box-shadow:0 0 0 4px #f2bc5725}
+.my-profile-background{margin-top:8px;padding:7px 10px;border-radius:8px;background:linear-gradient(100deg,#e7e2f5,#e5edf8);color:#66518f;font-size:10px;font-weight:850}
 </style>
 </head>
 <body>
@@ -94,6 +102,8 @@ footer{border-top:1px solid var(--line);background:white;padding:20px 0;color:#8
 <div id="myPageContent" hidden>
 <section class="panel profile">
 <div class="avatar" id="myProfileAvatar" aria-hidden="true" data-kuro-profile-self role="button" tabindex="0" aria-label="自分の共通プロフィールを見る">👤</div>
+<div class="my-profile-cosmetics" id="myProfileCosmetics" hidden aria-label="装備中アイテム"></div>
+<div class="my-profile-background" id="myProfileCosmeticBackground" hidden></div>
 <div class="profile-copy"><div class="profile-name" id="myProfileName" data-kuro-profile-self role="button" tabindex="0" aria-label="自分の共通プロフィールを見る">KUROユーザー</div><div class="profile-meta" id="myProfileMeta">KURO共通アカウント</div><p class="profile-bio" id="myProfileBio">プロフィール紹介はまだ設定されていません。</p></div>
 <div class="profile-actions"><button class="action" type="button" data-kuro-profile-self>共通プロフィールを見る</button><a class="action" href="/account/">アカウント設定</a></div>
 </section>
@@ -155,23 +165,36 @@ function modeLabel(mode){
  if(numberMode){var levels={easy:"かんたん",normal:"ふつう",hard:"むずかしい",expert:"エキスパート",master:"マスター",legend:"レジェンド"};return (numberMode[1]==="time"?"タイムアタック":"通常")+(levels[numberMode[2]]?"・"+levels[numberMode[2]]:"・"+numberMode[2]);}
  return labels[mode]||String(mode||"通常").replace(/[_-]+/g,"・");
 }
-function addProfile(profile,user){
+function addProfile(profile,user,cosmetics){
  var meta=user.user_metadata||{};
  var username=profile&&profile.username||meta.username||meta.handle||"KUROユーザー";
  $("myProfileName").textContent=username;
  $("myProfileMeta").textContent=(profile&&profile.kuro_id)||"KURO共通アカウント";
  $("myProfileBio").textContent=profile&&profile.bio||"プロフィール紹介はまだ設定されていません。";
- var avatar=$("myProfileAvatar");avatar.textContent="👤";
- var url=profile&&profile.avatar_url?String(profile.avatar_url):"";
+ cosmetics=cosmetics&&typeof cosmetics==="object"?cosmetics:{};
+ var avatarItem=cosmetics.avatar||null,frame=cosmetics.frame||null,background=cosmetics.background||null,theme=cosmetics.theme||null;
+ var avatar=$("myProfileAvatar");avatar.replaceChildren();avatar.dataset.frame=frame&&["common","rare","epic","legendary"].includes(frame.rarity)?frame.rarity:"";
+ var url=avatarItem&&avatarItem.imageUrl?String(avatarItem.imageUrl):profile&&profile.avatar_url?String(profile.avatar_url):"";
  if(url){
   try{
    var parsed=new URL(url,location.origin);
    if(parsed.protocol==="https:"||parsed.origin===location.origin){
     var img=document.createElement("img");img.src=parsed.href;img.alt="";img.loading="lazy";
-    img.onerror=function(){img.remove();};avatar.textContent="";avatar.appendChild(img);
+    img.onerror=function(){img.remove();if(!avatar.childNodes.length)avatar.textContent=avatarItem&&avatarItem.icon||"👤";};
+    avatar.appendChild(img);
    }
   }catch(_){}
  }
+ if(!avatar.childNodes.length)avatar.textContent=avatarItem&&avatarItem.icon||"👤";
+ var slots=[["avatar",avatarItem],["frame",frame],["background",background],["theme",theme]];
+ var chips=$("myProfileCosmetics");chips.replaceChildren();
+ slots.forEach(function(pair){var slot=pair[0],item=pair[1];if(!item||!item.name)return;var chip=document.createElement("span");chip.textContent=(item.icon||"✦")+" "+item.name;chips.appendChild(chip);});
+ chips.hidden=!chips.childNodes.length;
+ var bg=$("myProfileCosmeticBackground");
+ bg.hidden=!background;
+ bg.textContent=background?(background.icon||"✦")+" "+(background.name||"プロフィール背景"):"";
+ if(theme&&theme.itemKey==="neon-theme")$("myPageContent").classList.add("my-profile-theme-neon");
+ else $("myPageContent").classList.remove("my-profile-theme-neon");
 }
 function createGameIcon(iconValue){
  var wrap=node("div","game-icon");
@@ -291,7 +314,8 @@ async function loadForUser(user){
  var uid=fresh.data.user.id;
  var results=await Promise.all([
   db.from("profiles").select("username,kuro_id,avatar_url,bio").eq("id",uid).maybeSingle(),
-  db.from("kuro_game_user_stats").select("game_id,mode,plays,wins,losses,draws,best_score,best_time_ms,last_played_at,metadata,updated_at").eq("user_id",uid).order("updated_at",{ascending:false}).limit(250)
+  db.from("kuro_game_user_stats").select("game_id,mode,plays,wins,losses,draws,best_score,best_time_ms,last_played_at,metadata,updated_at").eq("user_id",uid).order("updated_at",{ascending:false}).limit(250),
+  db.rpc("kuro_get_public_store_cosmetics",{p_user_id:uid})
  ]);
  if(token!==loadToken)return;
  if(results[0].error)console.warn("profile read failed:",results[0].error);
@@ -307,7 +331,7 @@ async function loadForUser(user){
  if(token!==loadToken)return;
  var gameMap=new Map(games.map(function(game){return [String(game.id),{title:String(game.title||"KURO GAMES"),icon:game.icon||""}];}));
  if(token!==loadToken)return;
- addProfile(profile,fresh.data.user);
+ addProfile(profile,fresh.data.user,results[2]&&!results[2].error?results[2].data:{});
  addGameStats(stats,gameMap);
  hide("myPageLoading");show("myPageContent");
  loadCoinSummary(token,uid);
