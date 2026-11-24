@@ -262,14 +262,14 @@ async function handleWebSearch(request, env) {
 
 async function checkActiveSuspension(headers) {
   const authorization = headers.get("authorization") || "";
-  if (!/^Bearer\\s+.+/i.test(authorization)) return null;
+  if (!/^Bearer\s+.+/i.test(authorization)) return null;
 
   const authHeaders = new Headers({
     apikey: headers.get("apikey") || SUPABASE_KEY,
     authorization
   });
   const userResponse = await fetch(SUPABASE_URL + "/auth/v1/user", { headers: authHeaders });
-  if (!userResponse.ok) return null;
+  if (userResponse.status >= 500) {\n    throw Object.assign(new Error("アカウントの利用状態を確認できません。時間をおいて再度お試しください。"), { status: 503 });\n  }\n  if (!userResponse.ok) return null;
 
   const user = await userResponse.json().catch(() => null);
   if (!user?.id || user.is_anonymous) return null;
