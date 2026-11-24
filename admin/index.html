@@ -580,7 +580,7 @@
    <div class="toolbar"><strong>ユーザー・アカウント管理</strong><button class="btn" id="opsUsersRefresh">更新</button></div>
    <div class="ops-filters">
     <input id="opsUsersSearch" type="search" placeholder="メール・ユーザー名・表示名・IDで検索">
-    <select id="opsStatusFilter" aria-label="アカウント状態"><option value="all">状態：すべて</option><option value="active">利用可能</option><option value="suspended">一時停止中</option><option value="banned">アカウント停止中</option></select>
+    <select id="opsStatusFilter" aria-label="アカウント状態"><option value="all">状態：すべて</option><option value="active">利用可能</option><option value="suspended">一時停止中</option><option value="scheduled">一時停止予定</option><option value="banned">アカウント停止中</option></select>
     <select id="opsCreatedFilter" aria-label="登録日時"><option value="all">登録日：すべて</option><option value="7">過去7日</option><option value="30">過去30日</option><option value="90">過去90日</option></select>
     <select id="opsActivityFilter" aria-label="最終ログイン"><option value="all">最終ログイン：すべて</option><option value="7">7日以内</option><option value="30">30日以内</option><option value="90">90日以内</option><option value="never">ログイン記録なし</option></select>
     <select id="opsBoardsFilter" aria-label="ボード数"><option value="all">ボード数：すべて</option><option value="0">0</option><option value="1">1</option><option value="2-5">2〜5</option><option value="6">6以上</option></select>
@@ -1151,20 +1151,22 @@ async function deleteSnsItem(type,id,button){
 }
 
 function opsIsBanned(user){return !!user.banned_until&&new Date(user.banned_until).getTime()>Date.now();}
-function opsIsTemporarilySuspended(user){return !!user.temporary_suspension&&new Date(user.temporary_suspension.ends_at).getTime()>Date.now()&&!user.temporary_suspension.revoked_at;}
+function opsIsTemporarilySuspended(user){return !!user.temporary_suspension&&new Date(user.temporary_suspension.starts_at).getTime()<=Date.now()&&new Date(user.temporary_suspension.ends_at).getTime()>Date.now()&&!user.temporary_suspension.revoked_at;}
+function opsHasScheduledSuspension(user){return !!user.temporary_suspension&&new Date(user.temporary_suspension.starts_at).getTime()>Date.now()&&new Date(user.temporary_suspension.ends_at).getTime()>Date.now()&&!user.temporary_suspension.revoked_at;}
 function renderOpsUsers(){
  const query=($("#opsUsersSearch").value||"").trim().toLowerCase();
  const status=$("#opsStatusFilter").value,created=$("#opsCreatedFilter").value;
  const activity=$("#opsActivityFilter").value,boards=$("#opsBoardsFilter").value;
  const now=Date.now();
  const shown=opsUsers.filter(u=>{
-  const banned=opsIsBanned(u),suspended=opsIsTemporarilySuspended(u),last=u.last_sign_in_at?new Date(u.last_sign_in_at).getTime():0;
+  const banned=opsIsBanned(u),suspended=opsIsTemporarilySuspended(u),scheduled=opsHasScheduledSuspension(u),last=u.last_sign_in_at?new Date(u.last_sign_in_at).getTime():0;
   const registered=u.created_at?new Date(u.created_at).getTime():0;
   const q=[u.email,u.username,u.display_name,u.id].join(" ").toLowerCase();
   if(query&&!q.includes(query))return false;
   if(status==="active"&&(banned||suspended))return false;
   if(status==="banned"&&!banned)return false;
   if(status==="suspended"&&!suspended)return false;
+  if(status==="scheduled"&&!scheduled)return false;
   if(created!=="all"&&(!registered||now-registered>Number(created)*86400000))return false;
   if(activity==="never"&&last)return false;
   if(["7","30","90"].includes(activity)&&(!last||now-last>Number(activity)*86400000))return false;
@@ -1186,9 +1188,9 @@ function renderOpsUsers(){
  if(!shown.length){$("#opsUsersList").innerHTML='<div class="empty">条件に一致するユーザーはいません。</div>';return;}
  $("#opsUsersList").innerHTML='<table class="ops-table"><thead><tr><th>ユーザー</th><th>登録日時</th><th>最終ログイン</th><th>ボード</th><th>ウィジェット</th><th>状態</th><th>操作</th></tr></thead><tbody>'+
  shown.map(u=>{
-  const banned=opsIsBanned(u),suspended=opsIsTemporarilySuspended(u);
-  const state=banned?"アカウント停止中":suspended?"一時停止中":"利用可能";
-  const expiry=suspended?"<small>解除予定："+esc(date(u.temporary_suspension.ends_at))+"</small>":"";
+  const banned=opsIsBanned(u),suspended=opsIsTemporarilySuspended(u),scheduled=opsHasScheduledSuspension(u);
+  const state=banned?"アカウント停止中":suspended?"一時停止中":scheduled?"一時停止予定":"利用可能";
+  const expiry=(suspended||scheduled)?"<small>"+(scheduled?"開始予定：":"解除予定：")+esc(date(scheduled?u.temporary_suspension.starts_at:u.temporary_suspension.ends_at))+"</small>":"";
   return '<tr><td><strong>'+esc(u.display_name||u.username||"名称未設定")+'</strong><small>'+esc(u.email||"メール未登録")+'</small><small>'+esc(u.id)+'</small></td>'+
    '<td>'+esc(u.created_at?date(u.created_at):"—")+'</td>'+
    '<td>'+esc(u.last_sign_in_at?date(u.last_sign_in_at):"記録なし")+'</td>'+
@@ -1196,7 +1198,7 @@ function renderOpsUsers(){
    '<td><span class="ops-status '+((banned||suspended)?"banned":"")+'">'+state+'</span>'+expiry+'</td>'+
    '<td><div class="ops-user-actions">'+
     (banned?'<button class="btn" data-ops-action="unban" data-user-id="'+esc(u.id)+'">停止解除</button>':'<button class="btn" data-ops-action="ban" data-user-id="'+esc(u.id)+'">アカウント停止</button>')+
-    (suspended?'<button class="btn" data-ops-action="resume_temp" data-user-id="'+esc(u.id)+'" data-suspension-id="'+esc(u.temporary_suspension.id)+'">一時停止解除</button>':'<button class="btn" data-ops-action="suspend_temp" data-user-id="'+esc(u.id)+'">一時停止</button>')+
+    ((suspended||scheduled)?'<button class="btn" data-ops-action="resume_temp" data-user-id="'+esc(u.id)+'" data-suspension-id="'+esc(u.temporary_suspension.id)+'">'+(scheduled?"予定取消":"一時停止解除")+'</button>':'<button class="btn" data-ops-action="suspend_temp" data-user-id="'+esc(u.id)+'">一時停止</button>')+
     '<button class="btn" data-ops-action="email" data-user-id="'+esc(u.id)+'">メール変更</button>'+
     '<button class="btn" data-ops-action="reset" data-user-id="'+esc(u.id)+'">再設定メール</button>'+
     '<button class="btn danger" data-ops-action="delete" data-user-id="'+esc(u.id)+'">削除</button>'+
