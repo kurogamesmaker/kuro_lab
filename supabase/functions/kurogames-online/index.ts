@@ -833,6 +833,9 @@ async function handle(req: Request) {
     requireFeature(settings.features, "ranking");
 
     const mode = safeMode(body.mode);
+    if (game.id === DAIFUGO_GAME_ID && mode === "wins-bot") {
+      throw new HttpError(403, "大富豪のCPU戦ランキングはサーバー検証方式への移行中です。オンライン対戦の勝利数はこれまでどおり登録できます。");
+    }
     if (game.id === UNON_GAME_ID && mode === "wins-solo") {
       throw new HttpError(403, "UNONのCPU戦ランキングはサーバー検証方式への移行中です。オンライン対戦の勝利数はこれまでどおり登録できます。");
     }
@@ -863,11 +866,6 @@ async function handle(req: Request) {
       }
       trustedSource = "unon-online-server-proof";
 
-    } else if (game.id === "2eb37847-1b7e-43e4-ad98-901d5b830ac4" && mode === "wins-bot") {
-      if (metadata.source !== "daifugo-bot" || metadata.opponentMode !== "bot") {
-        throw new HttpError(403, "記録できる敗北は大富豪のCPU対戦のみです。");
-      }
-      trustedSource = "daifugo-bot-client-result";
     } else {
       throw new HttpError(403, "このモードの結果は対戦サーバー、または専用の記録処理からのみ登録できます。");
     }
