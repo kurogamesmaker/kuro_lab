@@ -836,9 +836,6 @@ async function handle(req: Request) {
     if (game.id === UNON_GAME_ID && mode === "wins-solo") {
       throw new HttpError(403, "UNONのCPU戦ランキングはサーバー検証方式への移行中です。オンライン対戦の勝利数はこれまでどおり登録できます。");
     }
-    if (game.id === DAIFUGO_GAME_ID && mode === "wins-bot") {
-      throw new HttpError(403, "大富豪のCPU戦ランキングはサーバー検証方式への移行中です。オンライン対戦の勝利数はこれまでどおり登録できます。");
-    }
     const result = body.result === "loss" ? "loss" : null;
     const submissionId = typeof body.submissionId === "string" && UUID_RE.test(body.submissionId)
       ? body.submissionId
