@@ -691,6 +691,34 @@ const KuroGames = {
     },
   },
 
+  // User-centred aggregate records and the authenticated user's play history.
+  // Writes are made by the trusted Edge Function / database triggers, never by this read API.
+  stats: {
+    async get(options) {
+      options = options || {};
+      const result = await invoke("stats_get", {
+        allGames: options.allGames === true,
+        targetGameId: typeof options.gameId === "string" ? options.gameId : null,
+        mode: typeof options.mode === "string" ? options.mode : null,
+        limit: options.limit || 100,
+      });
+      return result.stats || [];
+    },
+    async getAll(options) {
+      return KuroGames.stats.get(Object.assign({}, options || {}, { allGames: true }));
+    },
+    async history(options) {
+      options = options || {};
+      const result = await invoke("stats_history", {
+        allGames: options.allGames === true,
+        targetGameId: typeof options.gameId === "string" ? options.gameId : null,
+        mode: typeof options.mode === "string" ? options.mode : null,
+        limit: options.limit || 50,
+      });
+      return result.events || [];
+    },
+  },
+
   save: {
     async get(key) {
       const result = await invoke("save_get", { key: key || "default" });
