@@ -5247,5 +5247,22 @@ body.kuro-page #postFeed article[data-post-card] {
 
 <script defer src="/service-notification-box.js?v=20261124box1"></script>
 
+<script id="kuro-sns-profile-deeplink">
+(function(){
+  const params=new URLSearchParams(location.search);
+  const profileId=String(params.get("profile")||"");
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profileId)) return;
+  let opened=false;
+  function launch(){
+    if(opened||typeof window.openPublicProfile!=="function") return;
+    opened=true;
+    Promise.resolve(window.openPublicProfile(profileId)).catch(function(error){
+      console.warn("KURO SNS profile deep link failed:",error);
+    });
+  }
+  if(document.readyState==="complete") window.setTimeout(launch,0);
+  else window.addEventListener("load",function(){window.setTimeout(launch,0);},{once:true});
+})();
+</script>
 </body>
 </html>
