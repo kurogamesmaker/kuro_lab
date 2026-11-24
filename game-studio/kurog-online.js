@@ -691,8 +691,7 @@ const KuroGames = {
     },
   },
 
-  // User-centred aggregate records and the authenticated user's play history.
-  // Writes are made by the trusted Edge Function / database triggers, never by this read API.
+  // One aggregate row per user/game/mode. Writes are made only by trusted server code.
   stats: {
     async get(options) {
       options = options || {};
@@ -707,15 +706,10 @@ const KuroGames = {
     async getAll(options) {
       return KuroGames.stats.get(Object.assign({}, options || {}, { allGames: true }));
     },
+    // Backwards-compatible alias. This now returns aggregate rows, not play-by-play events.
     async history(options) {
-      options = options || {};
-      const result = await invoke("stats_history", {
-        allGames: options.allGames === true,
-        targetGameId: typeof options.gameId === "string" ? options.gameId : null,
-        mode: typeof options.mode === "string" ? options.mode : null,
-        limit: options.limit || 50,
-      });
-      return result.events || [];
+      console.warn("KuroGames.stats.history() is deprecated; use stats.get() or stats.getAll().");
+      return KuroGames.stats.get(options || {});
     },
   },
 
