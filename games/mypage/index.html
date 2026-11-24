@@ -37,6 +37,11 @@ h1{margin:6px 0 0;font-size:clamp(25px,4vw,35px);letter-spacing:-1px}
 .profile-actions{display:flex;gap:8px;flex-wrap:wrap}
 .action{display:inline-flex;align-items:center;justify-content:center;min-height:39px;padding:0 12px;border:1px solid #dce7f7;border-radius:10px;background:#f5f9ff;color:#326eBA;font-size:11px;font-weight:900}
 
+.coin-summary{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 22px;padding:18px 20px;border:1px solid #eadfb9;background:linear-gradient(120deg,#fff9e8,#fff 76%)}
+.coin-summary-copy{min-width:0}.coin-summary-label{color:#8b6a25;font-size:10px;font-weight:950;letter-spacing:1.3px}
+.coin-summary-value{margin-top:4px;color:#6f5011;font-size:clamp(24px,4vw,30px);font-weight:1000;font-variant-numeric:tabular-nums}
+.coin-summary-status{margin-top:4px;color:#8c7a55;font-size:10px}
+.coin-summary-action{min-height:39px;display:inline-flex;align-items:center;justify-content:center;padding:0 13px;border:1px solid #e8d69f;border-radius:10px;background:#fff;color:#806020;font-size:11px;font-weight:950;white-space:nowrap}
 .section{margin-top:23px}
 .section-title{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:0 0 12px}
 .section-title h2{margin:0;font-size:18px;letter-spacing:-.3px}
@@ -91,6 +96,14 @@ footer{border-top:1px solid var(--line);background:white;padding:20px 0;color:#8
 <div class="avatar" id="myProfileAvatar" aria-hidden="true" data-kuro-profile-self role="button" tabindex="0" aria-label="自分の共通プロフィールを見る">👤</div>
 <div class="profile-copy"><div class="profile-name" id="myProfileName" data-kuro-profile-self role="button" tabindex="0" aria-label="自分の共通プロフィールを見る">KUROユーザー</div><div class="profile-meta" id="myProfileMeta">KURO共通アカウント</div><p class="profile-bio" id="myProfileBio">プロフィール紹介はまだ設定されていません。</p></div>
 <div class="profile-actions"><button class="action" type="button" data-kuro-profile-self>共通プロフィールを見る</button><a class="action" href="/account/">アカウント設定</a></div>
+</section>
+<section class="panel coin-summary" aria-label="KURO COIN残高">
+ <div class="coin-summary-copy">
+  <div class="coin-summary-label">KURO LAB COMMON CURRENCY</div>
+  <div class="coin-summary-value" id="myCoinBalance">— KC</div>
+  <div class="coin-summary-status" id="myCoinStatus">共通コイン残高を確認しています。</div>
+ </div>
+ <a class="coin-summary-action" href="/account/#accountCoinCard">残高・履歴を見る</a>
 </section>
 <section class="section">
 <div class="section-title"><h2>ゲーム記録</h2><p id="recordsCount">0件</p></div>
@@ -250,6 +263,21 @@ function addGameStats(stats,gameMap){
  $("recordsCount").textContent=recordCount+"件";
  $("myGameStatsEmpty").hidden=recordCount!==0;
 }
+async function loadCoinSummary(loadId,userId){
+ try{
+  var auth=await db.auth.getUser();
+  if(auth.error||!auth.data||!auth.data.user||auth.data.user.id!==userId)return;
+  var result=await db.functions.invoke("kurogames-online",{body:{action:"coin_summary"}});
+  if(result.error)throw result.error;
+  if(!result.data||result.data.error)throw new Error(result.data&&result.data.error||"KURO COINを取得できませんでした。");
+  if(loadId!==loadToken)return;
+  $("myCoinBalance").textContent=Math.max(0,number(result.data.balance)).toLocaleString("ja-JP")+" KC";
+  $("myCoinStatus").textContent="KURO Lab全体で共通して使える残高です。";
+ }catch(error){
+  console.warn("KURO COIN summary unavailable:",error);
+  if(loadId===loadToken)$("myCoinStatus").textContent="コイン情報を取得できませんでした。";
+ }
+}
 function showError(error){
  console.error("KURO GAMES my page load failed:",error);
  $("myPageErrorText").textContent=error&&error.message?error.message:"通信状態を確認して再度お試しください。";
@@ -282,6 +310,7 @@ async function loadForUser(user){
  addProfile(profile,fresh.data.user);
  addGameStats(stats,gameMap);
  hide("myPageLoading");show("myPageContent");
+ loadCoinSummary(token,uid);
 }
 function showLogin(){
  loadToken++;
