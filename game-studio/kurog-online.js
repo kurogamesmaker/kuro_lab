@@ -659,7 +659,14 @@ const KuroGames = {
       } else {
         element.textContent = avatar && avatar.icon ? String(avatar.icon) : String(options.fallback || "👤");
       }
-      element.dataset.kuroStoreFrame = frame && ["common","rare","epic","legendary"].includes(frame.rarity) ? frame.rarity : "";
+      const frameRarity = frame && ["common","rare","epic","legendary"].includes(frame.rarity) ? frame.rarity : "";
+      const frameColors = { common: "#cbd5e1", rare: "#58a3ff", epic: "#b67aff", legendary: "#f2bc57" };
+      element.dataset.kuroStoreFrame = frameRarity;
+      element.style.borderRadius = "50%";
+      element.style.overflow = "hidden";
+      element.style.boxSizing = "border-box";
+      element.style.border = frameRarity ? "3px solid " + frameColors[frameRarity] : "";
+      element.style.boxShadow = frameRarity ? "0 0 0 3px " + frameColors[frameRarity] + "33" : "";
       element.classList.add("kuro-store-avatar");
       return true;
     },
