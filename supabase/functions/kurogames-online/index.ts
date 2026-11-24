@@ -754,10 +754,46 @@ async function handle(req: Request) {
       }
       scores=Array.from(bestByUser.values()).sort((a,b)=>Number(a.score)-Number(b.score)||String(a.created_at).localeCompare(String(b.created_at))).slice(0,limit);
     } else {
-      const { data, error } = await admin.from("game_scores").select("id, user_id, score, mode, created_at")
-        .eq("game_id",game.id).eq("mode",mode).order("score",{ascending:isTimeRanking}).order("created_at",{ascending:true}).limit(limit);
-      if(error) throw new HttpError(500,"ランキングを取得できませんでした。");
-      scores=data??[];
+      // Normal rankings are read from the single aggregate row per user/game/mode.
+      // The verified TicTacToe and Number Guess branches above intentionally retain
+      // their specialized trusted sources and validation rules.
+      const { data, error } = await admin.from("kuro_game_user_stats")
+        .select("user_id,mode,wins,best_score,best_time_ms,last_played_at,created_at,updated_at,metadata")
+        .eq("game_id", game.id)
+        .eq("mode", mode);
+      if (error) throw new HttpError(500, "集計ランキングを取得できませんでした。");
+
+      const aggregateRows = data ?? [];
+      const metricFor = (row: any) => String(
+        row?.metadata && typeof row.metadata === "object" ? row.metadata.metric ?? "" : ""
+      ).toLowerCase();
+      const isAggregateTimeRanking = isTimeRanking || aggregateRows.some((row: any) =>
+        ["clear_time_ms", "time_ms", "duration_ms"].includes(metricFor(row))
+      );
+
+      scores = aggregateRows.map((row: any) => {
+        const hasScore = row.best_score !== null && row.best_score !== undefined;
+        const hasTime = row.best_time_ms !== null && row.best_time_ms !== undefined;
+        const wins = Number(row.wins) || 0;
+        const isWinsMetric = metricFor(row) === "wins" || (!hasScore && !hasTime && wins > 0);
+        const rawValue = isWinsMetric
+          ? row.wins
+          : (isAggregateTimeRanking ? row.best_time_ms : row.best_score);
+        if (rawValue === null || rawValue === undefined) return null;
+        const score = Number(rawValue);
+        if (!Number.isFinite(score)) return null;
+        return {
+          user_id: row.user_id,
+          score,
+          mode: row.mode,
+          created_at: row.last_played_at || row.updated_at || row.created_at,
+        };
+      }).filter((row: any) => row !== null)
+        .sort((a: any, b: any) =>
+          (isAggregateTimeRanking ? a.score - b.score : b.score - a.score) ||
+          String(a.created_at || "").localeCompare(String(b.created_at || ""))
+        )
+        .slice(0, limit);
     }
 
     const userIds = Array.from(new Set((scores ?? []).map((row) => row.user_id)));
