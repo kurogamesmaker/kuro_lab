@@ -1226,6 +1226,10 @@ function renderOpsUsers(){
   const banned=opsIsBanned(u),suspended=opsIsTemporarilySuspended(u),scheduled=opsHasScheduledSuspension(u);
   const state=banned?"アカウント停止中":suspended?"一時停止中":scheduled?"一時停止予定":"利用可能";
   const expiry=(suspended||scheduled)?"<small>"+(scheduled?"開始予定：":"解除予定：")+esc(date(scheduled?u.temporary_suspension.starts_at:u.temporary_suspension.ends_at))+"</small>":"";
+  const hasRealEmail=!!u.email&&!/@username[.]kurolab[.]invalid$/i.test(u.email);
+  const resetAction=hasRealEmail
+    ?'<button class="btn" data-ops-action="reset" data-user-id="'+esc(u.id)+'">再設定メール</button>'
+    :'<button class="btn" type="button" disabled title="メール未登録のため送信できません">再設定不可</button>';
   return '<tr><td><strong>'+esc(u.display_name||u.username||"名称未設定")+'</strong><small>'+esc(u.email||"メール未登録")+'</small><small>'+esc(u.id)+'</small></td>'+
    '<td>'+esc(u.created_at?date(u.created_at):"—")+'</td>'+
    '<td>'+esc(u.last_sign_in_at?date(u.last_sign_in_at):"記録なし")+'</td>'+
@@ -1235,7 +1239,7 @@ function renderOpsUsers(){
     (banned?'<button class="btn" data-ops-action="unban" data-user-id="'+esc(u.id)+'">停止解除</button>':'<button class="btn" data-ops-action="ban" data-user-id="'+esc(u.id)+'">アカウント停止</button>')+
     ((suspended||scheduled)?'<button class="btn" data-ops-action="resume_temp" data-user-id="'+esc(u.id)+'" data-suspension-id="'+esc(u.temporary_suspension.id)+'">'+(scheduled?"予定取消":"一時停止解除")+'</button>':'<button class="btn" data-ops-action="suspend_temp" data-user-id="'+esc(u.id)+'">一時停止</button>')+
     '<button class="btn" data-ops-action="email" data-user-id="'+esc(u.id)+'">メール変更</button>'+
-    '<button class="btn" data-ops-action="reset" data-user-id="'+esc(u.id)+'">再設定メール</button>'+
+    resetAction+
     '<button class="btn danger" data-ops-action="delete" data-user-id="'+esc(u.id)+'">削除</button>'+
    '</div></td></tr>';
  }).join("")+'</tbody></table>';
@@ -1293,11 +1297,12 @@ async function runOpsUserAction(button){
   if(!window.confirm((user.email||user.id)+" にパスワード再設定メールを送信しますか？"))return;
   payload={action:"send_password_reset",userId};
  }else if(action==="delete"){
-  const typed=window.prompt("アカウントを完全削除します。取り消せません。確認のため、対象のメールアドレスをそのまま入力してください。", "");
+  const confirmationValue=user.username||user.id;
+  const typed=window.prompt("アカウントを完全削除します。取り消せません。確認のため「"+confirmationValue+"」を入力してください。", "");
   if(typed===null)return;
-  if(typed.trim().toLowerCase()!==(user.email||"").trim().toLowerCase()){alert("メールアドレスが一致しません。削除を中止しました。");return;}
-  if(!window.confirm("投稿・返信・フォロー・チャット・プロフィールなど、関連データも削除されます。本当に削除しますか？"))return;
-  payload={action:"delete_user",userId,confirmEmail:typed.trim(),username:user.username||user.display_name||""};
+  if(typed.trim()!==confirmationValue){alert("ユーザー名またはIDが一致しません。削除を中止しました。");return;}
+  if(!window.confirm("投稿・返信・フォロー・チャット・プロフィール・ゲーム記録など、関連データも削除されます。本当に削除しますか？"))return;
+  payload={action:"delete_user",userId,confirmUsername:typed.trim(),username:user.username||""};
  }else return;
  button.disabled=true;
  const {data,error}=await db.functions.invoke("admin-console",{body:payload});
