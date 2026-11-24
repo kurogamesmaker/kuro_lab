@@ -194,6 +194,31 @@ function requireMultiplayer(features: Record<string, unknown>) {
   requireFeature(features, "multiplayer");
 }
 
+async function getEquippedCosmeticsForUsers(userIds: string[]) {
+  const ids = [...new Set(userIds.filter((id) => typeof id === "string" && UUID_RE.test(id)))];
+  const byUser = new Map<string, Record<string, unknown>>();
+  if (!ids.length) return byUser;
+  const { data, error } = await admin.from("kuro_store_equipped_items")
+    .select("user_id,slot,item:kuro_store_items(item_key,name,category,icon,image_url,rarity)")
+    .in("user_id", ids);
+  if (error) throw new HttpError(500, "装備中アイテムを取得できませんでした。");
+  for (const row of data ?? []) {
+    const item = Array.isArray(row.item) ? row.item[0] : row.item;
+    if (!item || !["avatar", "frame", "background", "theme"].includes(String(row.slot))) continue;
+    const current = byUser.get(row.user_id) ?? {};
+    current[String(row.slot)] = {
+      itemKey: item.item_key ?? "",
+      name: item.name ?? "",
+      category: item.category ?? row.slot,
+      icon: item.icon ?? "✦",
+      imageUrl: item.image_url ?? null,
+      rarity: item.rarity ?? "common",
+    };
+    byUser.set(row.user_id, current);
+  }
+  return byUser;
+}
+
 async function getRoomMembers(roomId: string) {
   const { data: members, error } = await admin
     .from("game_online_room_members")
@@ -203,6 +228,7 @@ async function getRoomMembers(roomId: string) {
     .order("joined_at", { ascending: true });
   if (error) throw new HttpError(500, "参加者一覧を取得できませんでした。");
   const ids = (members ?? []).map((m) => m.user_id);
+  const cosmeticsByUser = await getEquippedCosmeticsForUsers(ids);
   let profiles = new Map<string, { kuro_id: string; username: string; display_name: string; avatar_url: string | null }>();
   if (ids.length) {
     const { data, error: profileError } = await admin.from("profiles")
@@ -229,6 +255,7 @@ async function getRoomMembers(roomId: string) {
         username: profile.username,
         display_name: profile.display_name || profile.username,
         avatar_url: profile.avatar_url,
+        cosmetics: cosmeticsByUser.get(m.user_id) ?? {},
         isGuest: !hasProfile,
       },
     };
@@ -843,8 +870,10 @@ async function handle(req: Request) {
       .maybeSingle();
     if (error) throw new HttpError(500, "KUROプロフィールを取得できませんでした。");
     if (!profile) throw new HttpError(404, "KUROプロフィールが見つかりません。再ログインしてください。");
+    const cosmeticsByUser = await getEquippedCosmeticsForUsers([user.id]);
     return reply(200, {
       profile: {
+        cosmetics: cosmeticsByUser.get(user.id) ?? {},
         kuroId: profile.kuro_id,
         username: profile.username,
         displayName: profile.username,
