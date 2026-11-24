@@ -50,7 +50,7 @@ function invoke(action,gameId,extra){return db.functions.invoke("kurogames-onlin
 function escapeHtml(value){return String(value??"").replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
 function makeSnippet(game){
 return [
-'<script src="/game-studio/kurog-online.js?v=20261122-unon-server1">'+'</'+'script>',
+'<script src="/game-studio/kurog-online.js?v=20261124-userstats1">'+'</'+'script>',
 '<script>',
 '(async function () {',
 '  // KUROGAMESのゲームプレイヤー内で実行してください。',
