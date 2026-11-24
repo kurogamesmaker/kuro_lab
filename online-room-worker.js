@@ -163,7 +163,7 @@ export class Room {
     this.tail = Promise.resolve();
     this.lifecycleTail = Promise.resolve();
     this.loaded = false;
-    this.data = { state: null, updatedAt: null, unonGame: null, unonCrypto: null, unonActionIds: [], unoDeadline: null, idleDeadline: null };
+    this.data = { state: null, updatedAt: null, unonGame: null, unonCrypto: null, unonActionIds: [], unoDeadline: null, idleDeadline: null, disconnectDeadlines: [] };
     this.unonPrivateKey = null;
     this.unonCryptoPromise = null;
   }
@@ -177,7 +177,7 @@ export class Room {
   async load() {
     if (this.loaded) return;
     const saved = await this.state.storage.get("room-state");
-    if (saved && typeof saved === "object") this.data = { unonGame: null, unonCrypto: null, unonActionIds: [], unoDeadline: null, idleDeadline: null, ...saved };
+    if (saved && typeof saved === "object") this.data = { unonGame: null, unonCrypto: null, unonActionIds: [], unoDeadline: null, idleDeadline: null, disconnectDeadlines: [], ...saved };
     this.loaded = true;
   }
   async save() {
@@ -185,7 +185,8 @@ export class Room {
   }
 
   async scheduleAlarm() {
-    const deadlines = [this.data.unoDeadline, this.data.idleDeadline].filter(value => Number.isFinite(value) && value > 0);
+    const departures = Array.isArray(this.data.disconnectDeadlines) ? this.data.disconnectDeadlines.map(item => item && item.deadline) : [];
+    const deadlines = [this.data.unoDeadline, this.data.idleDeadline, ...departures].filter(value => Number.isFinite(value) && value > 0);
     if (deadlines.length) await this.state.storage.setAlarm(Math.min(...deadlines));
     else await this.state.storage.deleteAlarm();
   }
@@ -261,6 +262,7 @@ export class Room {
       privateEnvelope = await this.sealUnonPrivate(userId, nextPrivate);
     }
     let winProof = null;
+    let lossProof = null;
     const proofPeer = Array.from(this.sockets.values()).find(peer => peer.id === userId);
     const proofGameId = (proofPeer && proofPeer.gameId) || this.gameId || "";
     const proofRoomId = (proofPeer && proofPeer.roomId) || this.roomId || "";
@@ -289,6 +291,27 @@ export class Room {
         });
       }
     }
+    if (nextGame.phase === "finished" && nextGame.result &&
+        nextGame.result.reason === "win" && nextGame.result.winnerId !== userId &&
+        Array.isArray(nextGame.players) && nextGame.players.some(player => player && player.userId === userId)) {
+      if (proofGameId === UNON_GAME_ID &&
+          UUID_RE.test(String(nextGame.matchId || "")) && validId(proofRoomId) &&
+          typeof this.env.TICKET_SECRET === "string" && this.env.TICKET_SECRET.length > 0) {
+        const now = Math.floor(Date.now() / 1000);
+        lossProof = await issueTicket({
+          typ: "unon_loss",
+          sub: userId,
+          room: proofRoomId,
+          game: proofGameId,
+          match: nextGame.matchId,
+          iat: now,
+          exp: now + 600,
+        }, this.env.TICKET_SECRET);
+        console.info("[kuro-online-room] UNON online loss proof issued", {
+          matchId: nextGame.matchId, userId, roomId: proofRoomId,
+        });
+      }
+    }
     return {
       phase: nextGame.phase === "finished" ? "finished" : "playing",
       matchId: nextGame.matchId,
@@ -298,6 +321,7 @@ export class Room {
       removeId: removeId || null,
       privateEnvelope,
       winProof,
+      lossProof,
     };
   }
   async broadcastUnonPatch(previousGame, nextGame, events, removeId, sourceSocket) {
@@ -316,16 +340,16 @@ export class Room {
   unonFailure(ws, requestId, error, code = "UNON_ERROR") {
     this.send(ws, { type: "unon-result", requestId, result: { ok: false, code, error } });
   }
-  async startUnonGame(ws, player, message) {
+  async startUnonGame(ws, player, message, serverConsensus = false) {
     const requestId = String(message.requestId || "");
-    if (!player.isHost) return this.unonFailure(ws, requestId, "ホストだけがゲームを開始できます。", "FORBIDDEN");
+    if (!player.isHost && serverConsensus !== true) return this.unonFailure(ws, requestId, "ホストだけがゲームを開始できます。", "FORBIDDEN");
     if (this.data.unonGame && this.data.unonGame.phase === "playing") {
       return this.unonFailure(ws, requestId, "ゲームはすでに進行中です。", "ALREADY_STARTED");
     }
     const roomState = this.data.state;
     const roster = roomState && Array.isArray(roomState.players) ? roomState.players : [];
     if (!roomState || roomState.phase !== "lobby" || roster.length < 2 || roster.length > 4 ||
-        !roster.every(item => item && item.ready === true)) {
+        !roster.every(item => item && item.ready === true && item.start === true)) {
       return this.unonFailure(ws, requestId, "2〜4人が参加し、全員が準備OKになると開始できます。", "NOT_READY");
     }
     for (const item of roster) {
@@ -350,7 +374,7 @@ export class Room {
     this.broadcast({ type: "state", state: nextState, updatedAt: this.data.updatedAt, from: player.id });
     const patch = await this.makeUnonPatch(player.id, null, game, [], null, true);
     this.send(ws, { type: "unon-result", requestId, result: { ok: true, patch, roomState: nextState, updatedAt: this.data.updatedAt } });
-    await this.broadcastUnonPatch(null, game, [], null, ws);
+    await this.broadcastUnonPatch(null, game, [], null, null);
   }
   async getUnonSnapshot(ws, player, message) {
     const requestId = String(message.requestId || "");
@@ -424,6 +448,63 @@ export class Room {
       this.send(ws, { type: "unon-result", requestId, result: { ok: true, roomState: this.data.state, updatedAt: this.data.updatedAt } });
     }
   }
+  async handleUnonDepartures() {
+    const entries = Array.isArray(this.data.disconnectDeadlines) ? this.data.disconnectDeadlines.slice() : [];
+    const now = Date.now();
+    const due = entries.filter(item => item && Number(item.deadline) <= now);
+    if (!due.length) return;
+    this.data.disconnectDeadlines = entries.filter(item => !item || Number(item.deadline) > now);
+    await this.save();
+
+    for (const departure of due) {
+      const userId = departure.userId;
+      if (typeof userId !== "string" || !userId) continue;
+      if (Array.from(this.sockets.values()).some(item => item.id === userId)) continue;
+
+      const roomState = this.data.state && typeof this.data.state === "object" ? this.data.state : {};
+      const roster = Array.isArray(roomState.players) ? roomState.players : [];
+      if (!roster.some(item => item && item.id === userId)) continue;
+
+      const game = this.data.unonGame;
+      const activeGame = game && game.phase === "playing" && game.players.some(item => item.userId === userId);
+      const survivors = activeGame
+        ? game.players.filter(item => item.userId !== userId).map(item => item.userId)
+        : roster.filter(item => item && item.id !== userId).map(item => item.id);
+      const survivorConnected = survivors.some(id => Array.from(this.sockets.values()).some(item => item.id === id));
+
+      // Never award a forfeit win to a disconnected player.
+      if (survivors.length > 0 && !survivorConnected) {
+        this.data.disconnectDeadlines.push({ userId, deadline: Date.now() + 5000 });
+        await this.save();
+        await this.scheduleAlarm();
+        continue;
+      }
+
+      const nextRoster = roster.filter(item => item && item.id !== userId);
+      if (activeGame) {
+        const applied = UNON_RULES.onLeave(game, userId);
+        if (!applied.ok) continue;
+        this.data.unonGame = applied.state;
+        this.data.state = { ...roomState, players: nextRoster };
+        this.syncUnonRoomMetadata(applied.state);
+        this.data.unoDeadline = applied.state.unoPending ? Date.now() + 3000 : null;
+        this.data.updatedAt = Math.max(Date.now(), (Number(this.data.updatedAt) || 0) + 1);
+        await this.save();
+        await this.scheduleAlarm();
+        this.broadcast({ type: "state", state: this.data.state, updatedAt: this.data.updatedAt, from: userId });
+        await this.broadcastUnonPatch(game, applied.state, applied.events, userId, null);
+        console.info("[kuro-online-room] finalized disconnected UNON player", { userId, roomId: this.roomId });
+      } else {
+        const nextState = { ...roomState, players: nextRoster, phase: nextRoster.length ? roomState.phase || "lobby" : "abandoned" };
+        this.data.state = nextState;
+        this.data.updatedAt = Math.max(Date.now(), (Number(this.data.updatedAt) || 0) + 1);
+        await this.save();
+        await this.scheduleAlarm();
+        this.broadcast({ type: "state", state: nextState, updatedAt: this.data.updatedAt, from: userId });
+        console.info("[kuro-online-room] removed disconnected UNON lobby player", { userId, roomId: this.roomId });
+      }
+    }
+  }
   async handleUnonAlarm() {
     const game = this.data.unonGame;
     if (!game || !game.unoPending || !this.data.unoDeadline || this.data.unoDeadline > Date.now()) return;
@@ -473,6 +554,7 @@ export class Room {
     return this.withLifecycleLock(async () => {
       await this.load();
       this.data.idleDeadline = null;
+      this.data.disconnectDeadlines = (Array.isArray(this.data.disconnectDeadlines) ? this.data.disconnectDeadlines : []).filter(item => item && item.userId !== userId);
       await this.save();
       await this.scheduleAlarm();
 
@@ -508,15 +590,21 @@ export class Room {
       const removed = this.sockets.delete(ws);
       if (!removed) return;
 
-      if (!Array.from(this.sockets.values()).some(p => p.id === userId)) {
+      const stillConnected = Array.from(this.sockets.values()).some(p => p.id === userId);
+      if (!stillConnected) {
         this.broadcast({ type: "players", players: this.players() });
+        const roster = this.data.state && Array.isArray(this.data.state.players) ? this.data.state.players : [];
+        if (this.gameId === UNON_GAME_ID && roster.some(item => item && item.id === userId)) {
+          const departures = Array.isArray(this.data.disconnectDeadlines) ? this.data.disconnectDeadlines.slice() : [];
+          if (!departures.some(item => item && item.userId === userId)) {
+            departures.push({ userId, deadline: Date.now() + 45000 });
+            this.data.disconnectDeadlines = departures;
+          }
+        }
       }
-      if (this.sockets.size === 0) {
-        // Keep a short reconnect grace period before removing persisted state.
-        this.data.idleDeadline = Date.now() + ROOM_IDLE_TTL_MS;
-        await this.save();
-        await this.scheduleAlarm();
-      }
+      if (this.sockets.size === 0) this.data.idleDeadline = Date.now() + ROOM_IDLE_TTL_MS;
+      await this.save();
+      await this.scheduleAlarm();
     });
     // WebSocket event listeners are not request handlers; keep the alarm write alive.
     this.state.waitUntil(cleanup);
@@ -524,13 +612,14 @@ export class Room {
   async alarm() {
     await this.withLifecycleLock(async () => {
       await this.load();
+      await this.handleUnonDepartures();
       if (this.data.unoDeadline && this.data.unoDeadline <= Date.now()) await this.handleUnonAlarm();
       if (this.sockets.size === 0 && this.data.idleDeadline && this.data.idleDeadline <= Date.now()) {
         await this.state.storage.deleteAll();
         this.loaded = false;
         this.unonPrivateKey = null;
         this.unonCryptoPromise = null;
-        this.data = { state: null, updatedAt: null, unonGame: null, unonCrypto: null, unonActionIds: [], unoDeadline: null, idleDeadline: null };
+        this.data = { state: null, updatedAt: null, unonGame: null, unonCrypto: null, unonActionIds: [], unoDeadline: null, idleDeadline: null, disconnectDeadlines: [] };
         console.info("[kuro-online-room] cleared storage after idle timeout");
         return;
       }
@@ -557,6 +646,16 @@ export class Room {
       return;
     }
     if (message.type === "leave") {
+      if (this.gameId === UNON_GAME_ID) {
+        const roster = this.data.state && Array.isArray(this.data.state.players) ? this.data.state.players : [];
+        if (roster.some(item => item && item.id === player.id)) {
+          const departures = Array.isArray(this.data.disconnectDeadlines) ? this.data.disconnectDeadlines.filter(item => item && item.userId !== player.id) : [];
+          departures.push({ userId: player.id, deadline: Date.now() + 250 });
+          this.data.disconnectDeadlines = departures;
+          await this.save();
+          await this.scheduleAlarm();
+        }
+      }
       try { ws.close(1000, "left"); } catch (_) {}
       return;
     }
@@ -586,7 +685,29 @@ export class Room {
         this.send(ws, { type: "state-result", requestId, result: { state: this.data.state, updatedAt: this.data.updatedAt, conflict: true } });
         return;
       }
-      this.data = { ...this.data, state: message.state, updatedAt: Math.max(Date.now(), (Number(this.data.updatedAt) || 0) + 1) };
+      let nextState = message.state;
+      const currentState = this.data.state;
+      // A host roster refresh must not erase votes already accepted by the server.
+      // New members have no previous entry, so they still start with false votes.
+      if (currentState && currentState.phase === "lobby" && nextState.phase === "lobby" &&
+          Array.isArray(currentState.players) && Array.isArray(nextState.players)) {
+        const previousById = new Map(currentState.players.filter(item => item && typeof item.id === "string").map(item => [item.id, item]));
+        nextState = {
+          ...nextState,
+          players: nextState.players.map(item => {
+            if (!item || typeof item.id !== "string") return item;
+            const previous = previousById.get(item.id);
+            if (!previous) return { ...item, ready: item.ready === true, start: item.start === true };
+            return {
+              ...item,
+              ready: item.ready === true || previous.ready === true,
+              start: item.start === true || previous.start === true,
+              pub: item.pub || previous.pub || null,
+            };
+          }),
+        };
+      }
+      this.data = { ...this.data, state: nextState, updatedAt: Math.max(Date.now(), (Number(this.data.updatedAt) || 0) + 1) };
       await this.save();
       this.loaded = true;
       const result = { state: this.data.state, updatedAt: this.data.updatedAt, conflict: false, roomStatus: "waiting" };
@@ -710,6 +831,90 @@ export class Room {
         this.send(ws, { type: "error", error: "invalid_event_type" });
         return;
       }
+      if (eventType === "unon-key") {
+        const pub = message.data && message.data.pub;
+        if (!pub || pub.kty !== "EC" || pub.crv !== "P-256" ||
+            typeof pub.x !== "string" || typeof pub.y !== "string" ||
+            pub.x.length > 128 || pub.y.length > 128) {
+          this.send(ws, { type: "error", error: "invalid_unon_public_key" });
+          return;
+        }
+        const current = this.data.state && typeof this.data.state === "object"
+          ? this.data.state
+          : { phase: "lobby", ruleMode: message.data && message.data.ruleMode === "local" ? "local" : "official", players: [] };
+        if (current.phase !== "lobby") return;
+        const roster = Array.isArray(current.players) ? current.players.slice() : [];
+        for (const connected of this.players()) {
+          if (!roster.some(item => item && item.id === connected.id)) {
+            roster.push({ id: connected.id, name: connected.name || "プレイヤー", ready: false, start: false, pub: null });
+          }
+        }
+        const index = roster.findIndex(item => item && item.id === player.id);
+        if (index < 0) {
+          if (roster.length >= 4) {
+            this.send(ws, { type: "error", error: "unon_room_full" });
+            return;
+          }
+          roster.push({ id: player.id, name: player.name || "プレイヤー", ready: false, start: false, pub });
+        } else {
+          roster[index] = { ...roster[index], name: roster[index].name || player.name || "プレイヤー", pub };
+        }
+        this.data.state = { ...current, phase: "lobby", players: roster };
+        this.data.updatedAt = Math.max(Date.now(), (Number(this.data.updatedAt) || 0) + 1);
+        await this.save();
+        this.broadcast({ type: "state", state: this.data.state, updatedAt: this.data.updatedAt, from: player.id });
+        const allVoted = roster.length >= 2 && roster.length <= 4 &&
+          roster.every(item => item && item.ready === true && item.start === true);
+        const keysReady = allVoted && roster.every(item =>
+          item.pub && item.pub.kty === "EC" && item.pub.crv === "P-256" &&
+          typeof item.pub.x === "string" && typeof item.pub.y === "string"
+        );
+        if (keysReady) await this.startUnonGame(ws, player, { ruleMode: this.data.state.ruleMode }, true);
+        return;
+      }
+      if (eventType === "unon-vote") {
+        const vote = message.data && message.data.vote;
+        if (vote !== "ready" && vote !== "start") {
+          this.send(ws, { type: "error", error: "invalid_unon_vote" });
+          return;
+        }
+        const roomState = this.data.state;
+        const roster = roomState && Array.isArray(roomState.players) ? roomState.players : [];
+        if (!roomState || roomState.phase !== "lobby") {
+          this.send(ws, { type: "error", error: "unon_lobby_not_available" });
+          return;
+        }
+        if (!roster.some(item => item && item.id === player.id)) {
+          this.send(ws, { type: "error", error: "unon_room_membership_required" });
+          return;
+        }
+        const nextPlayers = roster.map(item => item && item.id === player.id
+          ? { ...item, ready: true, start: item.start === true || vote === "start" }
+          : item);
+        this.data = {
+          ...this.data,
+          state: { ...roomState, players: nextPlayers },
+          updatedAt: Math.max(Date.now(), (Number(this.data.updatedAt) || 0) + 1),
+        };
+        await this.save();
+        const nextState = this.data.state;
+        this.broadcast({
+          type: "state",
+          state: nextState,
+          updatedAt: this.data.updatedAt,
+          from: player.id,
+        }, player.id);
+        const allVoted = nextPlayers.length >= 2 && nextPlayers.length <= 4 &&
+          nextPlayers.every(item => item && item.ready === true && item.start === true);
+        const keysReady = allVoted && nextPlayers.every(item =>
+          item.pub && item.pub.kty === "EC" && item.pub.crv === "P-256" &&
+          typeof item.pub.x === "string" && typeof item.pub.y === "string"
+        );
+        if (keysReady) {
+          await this.startUnonGame(ws, player, { ruleMode: nextState.ruleMode }, true);
+        }
+        return;
+      }
       const item = {
         id: crypto.randomUUID(),
         from: player.id,
@@ -746,7 +951,7 @@ export default {
         return json({ error: "invalid_json" }, 400);
       }
       const claims = await verifyTicket(body && body.proof, env.TICKET_SECRET || "");
-      if (!claims || claims.typ !== "unon_win" || claims.game !== UNON_GAME_ID ||
+      if (!claims || !["unon_win", "unon_loss"].includes(claims.typ) || claims.game !== UNON_GAME_ID ||
           !UUID_RE.test(String(claims.sub || "")) ||
           !UUID_RE.test(String(claims.match || "")) ||
           !validId(claims.room)) {
