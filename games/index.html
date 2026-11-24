@@ -1531,10 +1531,10 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   coinTopbar.hidden=false;coinTopbarValue.textContent="—P";
   const db=window.kuroGamesDB;
   if(!db||typeof db.rpc!=="function")return;
-  db.rpc("kuro_get_public_coin_balance",{p_user_id:user.id}).then(({data,error})=>{
+  db.functions.invoke("kuro-public-coin-balance",{body:{userId:user.id}}).then(({data,error})=>{
    if(seq!==coinRequestSeq||currentUser?.id!==user.id)return;
    if(error){console.warn("KURO COIN topbar balance load failed:",error);coinTopbarValue.textContent="—P";return;}
-   const amount=Number(data);
+   const amount=Number(data&&data.balance);
    const label=(Number.isFinite(amount)?Math.max(0,Math.floor(amount)):0).toLocaleString("ja-JP")+"P";
    coinTopbarValue.textContent=label;coinTopbar.title="KURO COIN残高："+label;
   }).catch(error=>{if(seq===coinRequestSeq)console.warn("KURO COIN topbar balance load failed:",error);});
@@ -1891,7 +1891,7 @@ initKuroRankingShowcase();
 <script src="/service-notification-box.js?v=20261124box1"></script>
 <script src="/usage-tracker.js"></script>
 
-<script defer src="/kuro-profile.js?v=20261124publiccoin1"></script><style id="kuro-games-topbar-mobile-fit">
+<script defer src="/kuro-profile.js?v=20261124publiccoin2"></script><style id="kuro-games-topbar-mobile-fit">
 @media(max-width:680px){
  .nav{gap:4px!important}
  .brand{gap:5px!important;font-size:16px!important}
