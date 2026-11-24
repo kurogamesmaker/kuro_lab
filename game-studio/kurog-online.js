@@ -706,6 +706,23 @@ const KuroGames = {
     async getAll(options) {
       return KuroGames.stats.get(Object.assign({}, options || {}, { allGames: true }));
     },
+    async recordResult(options) {
+      options = options || {};
+      const mode = typeof options.mode === "string" ? options.mode : "";
+      const submissionId = typeof options.submissionId === "string" &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(options.submissionId)
+        ? options.submissionId
+        : (crypto.randomUUID ? crypto.randomUUID() : null);
+      if (options.result !== "loss" || !/^[A-Za-z0-9_-]{1,40}$/.test(mode) || !submissionId) {
+        throw new TypeError("recordResultはmode・submissionId・result=lossを指定してください。");
+      }
+      return invoke("record_result", {
+        mode: mode,
+        result: "loss",
+        submissionId: submissionId,
+        metadata: options.metadata && typeof options.metadata === "object" ? options.metadata : {},
+      });
+    },
     // Backwards-compatible alias. This now returns aggregate rows, not play-by-play events.
     async history(options) {
       console.warn("KuroGames.stats.history() is deprecated; use stats.get() or stats.getAll().");
