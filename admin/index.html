@@ -1531,7 +1531,7 @@ async function loadOpsCoins(){
 }
 async function saveOpsCoinReward(row,button){
  const gameId=row.dataset.gameId,mode=row.dataset.mode,type=row.querySelector("[data-coin-type]").value;
- const amount=type==="fixed"?Number(row.querySelector("[data-coin-amount]").value):0,difficulty=row.dataset.cpuDifficulty||null;
+ const amount=Number(row.querySelector("[data-coin-amount]").value),difficulty=row.dataset.cpuDifficulty||null;
  const label=row.querySelector("[data-coin-label]").value.trim(),enabled=row.querySelector("[data-coin-enabled]").checked,status=row.querySelector("[data-coin-status]");
  const scoreTiers=type==="score_tier"?Array.from(row.querySelectorAll("[data-coin-tier-row]")).map(t=>({
   minScore:Number(t.querySelector("[data-tier-min]").value),maxScore:t.querySelector("[data-tier-max]").value===""?null:Number(t.querySelector("[data-tier-max]").value),
@@ -1549,7 +1549,8 @@ async function saveOpsCoinReward(row,button){
 }
 function addOpsCoinTier(row){
  const list=row.querySelector("[data-coin-tier-list]"),nodes=Array.from(list.querySelectorAll("[data-coin-tier-row]")),last=nodes[nodes.length-1];
- const nextMin=last&&last.querySelector("[data-tier-max]").value!==""?Number(last.querySelector("[data-tier-max]").value)+1:0;
+ if(last&&last.querySelector("[data-tier-max]").value===""){alert("最後の条件に上限スコアを入力してから、次の条件を追加してください。");return;}
+ const nextMin=last?Number(last.querySelector("[data-tier-max]").value)+1:0;
  list.insertAdjacentHTML("beforeend",renderCoinTierRows([{minScore:nextMin,maxScore:null,rewardAmount:1,enabled:true}]));
 }
 async function adjustOpsCoinBalance(event){
@@ -2521,7 +2522,7 @@ $("#opsCoinRewardsList").addEventListener("click",e=>{
 });
 $("#opsCoinRewardsList").addEventListener("change",e=>{
  if(e.target.matches("[data-coin-type]")){const row=e.target.closest("[data-coin-row]"),score=e.target.value==="score_tier";row.querySelector(".ops-coin-fixed-fields").hidden=score;row.querySelector(".ops-coin-score-fields").hidden=!score;}
- if(e.target.matches("[data-coin-enabled]"))filterOpsCoinRewards();
+ 
 });
 $("#opsCoinSearch").addEventListener("input",filterOpsCoinRewards);
 $("#opsCoinStatusFilter").addEventListener("change",filterOpsCoinRewards);
