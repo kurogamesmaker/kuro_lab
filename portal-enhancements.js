@@ -176,6 +176,11 @@
   function setupHeaderActions() {
     var header = document.querySelector(".portal-header-inner");
     if (!header) return;
+    // Remove the retired transport badge even when an older cached HTML shell still contains it.
+    header.querySelectorAll("#portal-transport-button,.portal-transport-button").forEach(function (el) { el.remove(); });
+    Array.from(header.children).forEach(function (el) {
+      if (el.id !== "portalNotificationBoxTrigger" && el.id !== "portal-account-button" && el.textContent.trim() === "Cloudflare経由") el.remove();
+    });
     if (!document.getElementById("portalNotificationBoxTrigger")) {
       var notificationButton = document.createElement("button");
       notificationButton.id = "portalNotificationBoxTrigger";
@@ -189,7 +194,7 @@
       if (!document.getElementById("portal-notification-button-position-style")) {
         var notificationStyle = document.createElement("style");
         notificationStyle.id = "portal-notification-button-position-style";
-        notificationStyle.textContent = ".portal-header-inner .portal-notification-button{order:999;margin-left:auto!important;background:#111!important;color:#fff!important;border-color:#111!important;box-shadow:0 2px 6px rgba(0,0,0,.18)!important}.portal-header-inner .portal-notification-button svg{stroke:#fff!important}.portal-header-inner #portal-account-button{order:1000}";
+        notificationStyle.textContent = ".portal-header-inner .portal-notification-button{order:999;margin-left:auto!important;color:#111!important}.portal-header-inner .portal-notification-button svg{stroke:#111!important}.portal-header-inner #portal-account-button{order:1000}";
         document.head.appendChild(notificationStyle);
       }
     }
