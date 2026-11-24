@@ -538,6 +538,48 @@ async function handle(req: Request) {
     });
   }
 
+  if (action === "stats_get") {
+    const user = await getUser(req);
+    requirePublished(game);
+    const allGames = body.allGames === true;
+    const targetGameId = typeof body.targetGameId === "string" && UUID_RE.test(body.targetGameId)
+      ? body.targetGameId
+      : game.id;
+    const limit = Math.max(1, Math.min(250, Number.isFinite(Number(body.limit)) ? Math.floor(Number(body.limit)) : 100));
+    let query = admin.from("kuro_game_user_stats")
+      .select("user_id,game_id,mode,plays,wins,losses,draws,best_score,best_time_ms,total_time_ms,last_played_at,metadata,updated_at")
+      .eq("user_id", user.id);
+    if (!allGames) query = query.eq("game_id", targetGameId);
+    if (typeof body.mode === "string" && body.mode.trim()) query = query.eq("mode", safeMode(body.mode));
+    const { data, error } = await query.order("updated_at", { ascending: false }).limit(limit);
+    if (error) {
+      console.error("[kurogames-online] unified stats read failed", error);
+      throw new HttpError(500, "ゲーム記録を取得できませんでした。");
+    }
+    return reply(200, { stats: data || [], allGames });
+  }
+
+  if (action === "stats_history") {
+    const user = await getUser(req);
+    requirePublished(game);
+    const allGames = body.allGames === true;
+    const targetGameId = typeof body.targetGameId === "string" && UUID_RE.test(body.targetGameId)
+      ? body.targetGameId
+      : game.id;
+    const limit = Math.max(1, Math.min(100, Number.isFinite(Number(body.limit)) ? Math.floor(Number(body.limit)) : 50));
+    let query = admin.from("kuro_game_play_events")
+      .select("id,submission_id,user_id,game_id,mode,result,score,duration_ms,metadata,created_at")
+      .eq("user_id", user.id);
+    if (!allGames) query = query.eq("game_id", targetGameId);
+    if (typeof body.mode === "string" && body.mode.trim()) query = query.eq("mode", safeMode(body.mode));
+    const { data, error } = await query.order("created_at", { ascending: false }).limit(limit);
+    if (error) {
+      console.error("[kurogames-online] unified history read failed", error);
+      throw new HttpError(500, "プレイ履歴を取得できませんでした。");
+    }
+    return reply(200, { events: data || [], allGames });
+  }
+
   if (action === "settings_get") {
     await requireOwner(req, game);
     return reply(200, {
@@ -1151,6 +1193,26 @@ async function handle(req: Request) {
     }
     const submitted = Array.isArray(submittedRows) ? submittedRows[0] : submittedRows;
     if (!submitted) throw new HttpError(500, "スコア登録結果を取得できませんでした。");
+
+    // Every accepted ranking submission also enters the user-centred event ledger.
+    // Win-event triggers may already have inserted the same submission; the RPC is idempotent.
+    const rawDuration = Number(metadata.durationMs ?? metadata.duration_ms);
+    const durationMs = Number.isSafeInteger(rawDuration) && rawDuration >= 0 ? rawDuration : null;
+    const { error: unifiedRecordError } = await admin.rpc("kuro_record_user_game_event", {
+      p_submission_id: submissionId,
+      p_user_id: user.id,
+      p_game_id: game.id,
+      p_mode: mode,
+      p_result: metadata.metric === "wins" ? "win" : "played",
+      p_score: score,
+      p_duration_ms: durationMs,
+      p_metadata: metadata,
+    });
+    if (unifiedRecordError) {
+      console.error("[kurogames-online] unified score event save failed", unifiedRecordError);
+      throw new HttpError(500, "統合ゲーム記録を保存できませんでした。再度お試しください。");
+    }
+
     if (game.id === UNON_GAME_ID && mode === "wins-online") {
       console.info("[kurogames-online] UNON online win recorded", {
         userId: user.id, submissionId, totalWins: Number(submitted.score) || 0,
