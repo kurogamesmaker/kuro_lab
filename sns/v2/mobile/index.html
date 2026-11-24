@@ -2332,7 +2332,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
 
         async function syncCurrentUserImpl(user) {
             if (!user) { currentUser = null; kuroTempSuspensionCheckedUserId = null; renderUserProfile(); return; }
-            if (await redirectIfTemporarilySuspended(user)) return;
+            // Temporary suspension no longer blocks browsing the public SNS interface.
             const metadata = user.user_metadata || {};
             const requestedUsername = String(metadata.username || metadata.handle || (user.email || 'user').split('@')[0].replace(/[^A-Za-z0-9_]/g, '').slice(0, 24)).replace(/^@/, '');
             const fallbackUsername = /^[A-Za-z0-9_]{3,24}$/.test(requestedUsername) ? requestedUsername : `kuro_${String(user.id).replace(/-/g, '').slice(0, 12)}`;
