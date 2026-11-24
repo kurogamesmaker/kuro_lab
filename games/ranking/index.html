@@ -58,8 +58,8 @@ button,select{font:inherit}
 .rank-medal{display:grid;place-items:center;width:34px;flex:0 0 34px;font-size:22px}
 .rank-number{display:none}
 .rank-profile{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
-.rank-avatar{display:grid;place-items:center;width:42px;height:42px;flex:0 0 42px;overflow:hidden;border:1px solid #e3eaf4;border-radius:50%;background:#f0f5fb;color:#60758f;font-size:15px;font-weight:950}
-.rank-avatar img{width:100%;height:100%;object-fit:cover}
+.rank-avatar{position:relative;display:grid;place-items:center;width:42px;height:42px;flex:0 0 42px;overflow:hidden;border:1px solid #e3eaf4;border-radius:50%;background:#f0f5fb;color:#60758f;font-size:15px;font-weight:950}
+.rank-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .rank-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#3b4e68;font-size:13px;font-weight:900}
 .rank-profile:hover .rank-name{color:#2675d0;text-decoration:underline;text-underline-offset:3px}
 .rank-score{color:#2d73c9;font-size:13px;font-weight:1000;white-space:nowrap}
@@ -214,6 +214,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   countEl.textContent=games.length+"ゲーム";
  }
  function renderFilters(game){
+  const previousLevel=levelSelect.value,previousCpu=cpuSelect.value;
   const groups=game.modeGroups||[];
   modeWrap.hidden=groups.length<=1;
   modeSelect.replaceChildren();
@@ -230,11 +231,13 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   levelSelect.replaceChildren();
   const allLevels=document.createElement("option");allLevels.value="";allLevels.textContent="すべて";levelSelect.append(allLevels);
   levels.forEach(value=>{const option=document.createElement("option");option.value=String(Number(value));option.textContent="Lv."+Number(value);levelSelect.append(option);});
+  levelSelect.value=levels.some(value=>String(Number(value))===previousLevel)?previousLevel:"";
   cpuWrap.hidden=!isCpu||!cpus.length;
   cpuSelect.replaceChildren();
   const allCpus=document.createElement("option");allCpus.value="";allCpus.textContent="すべて";cpuSelect.append(allCpus);
   const cpuNames={EASY:"よわい",NORMAL:"ふつう",HARD:"つよい",EXPERT:"Expert"};
   cpus.forEach(value=>{const option=document.createElement("option");option.value=value;option.textContent=cpuNames[value]||value;cpuSelect.append(option);});
+  cpuSelect.value=cpus.includes(previousCpu)?previousCpu:"";
  }
  async function loadCatalog(){
   const {data:published,error:gamesError}=await db.from("game_studio_games").select("id,title,status").eq("status","published").order("published_at",{ascending:false}).limit(60);
