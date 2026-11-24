@@ -27,6 +27,7 @@ const KNOWN_RANKING_MODES: Record<string, string[]> = {
   "903a4c45-37bb-4a4b-a259-a5a8245de998": ["werewolf_villager_wins", "werewolf_wolf_wins"],
   "79c9921a-d57a-45b1-8271-1ee7042801dc": ["easy", "normal", "hard"],
   "bb466662-5423-48e6-bbcc-d19da50ba818": ["number-time-easy", "number-time-normal", "number-time-hard", "number-time-expert", "number-time-master", "number-time-legend"],
+  "5c1e658b-f6d3-412a-8b97-61d2c0457e95": ["normal_beginner","normal_intermediate","normal_advanced","sudden_beginner","sudden_intermediate","sudden_advanced","endless_beginner","endless_intermediate","endless_advanced"],
 };
 class HttpError extends Error {
   status: number;
@@ -238,6 +239,8 @@ async function getRoomMembers(roomId: string) {
 const NUMBER_GAME_ID = "bb466662-5423-48e6-bbcc-d19da50ba818";
 const TICTACTOE_GAME_ID = "2dbd6773-2684-4f00-973e-c46acbc348e7";
 const PRIME_GAME_ID = "79c9921a-d57a-45b1-8271-1ee7042801dc";
+const SUSHI_GAME_ID = "5c1e658b-f6d3-412a-8b97-61d2c0457e95";
+const DAIFUGO_GAME_ID = "2eb37847-1b7e-43e4-ad98-901d5b830ac4";
 const NUMBER_LEVELS: Record<string, number> = {
   easy: 10, normal: 30, hard: 100, expert: 300, master: 1000, legend: 10000,
 };
@@ -509,6 +512,127 @@ async function primeRecordCompletedRun(userId: string, session: Record<string, a
   if (markError) throw new HttpError(500, "素因数分解の記録状態を更新できませんでした。");
   return { scoreRecorded: score > 0, score };
 }
+
+
+const SUSHI_WORD_BANK = {"advanced":[{"kana":"かいせんちらし","romaji":"kaisenchirashi"},{"kana":"しんせんまぐろ","romaji":"shinsenmaguro"},{"kana":"サーモンアボカド","romaji":"sa-monnabokado"},{"kana":"ほたてのバターやき","romaji":"hotatenobata-yaki"},{"kana":"あぶりえんがわ","romaji":"aburiengawa"},{"kana":"とろサーモン","romaji":"torosa-mon"},{"kana":"かにクリームコロッケ","romaji":"kanikuri-mukorokke"},{"kana":"まぐろづくし","romaji":"magurozukushi"},{"kana":"ねぎとろぐんかん","romaji":"negitorogunkan"},{"kana":"ぜいたくにぎり","romaji":"zeitakunigiri"},{"kana":"あぶりとろサーモン","romaji":"aburitorosa-mon"},{"kana":"おおとろづくし","romaji":"ootorozukushi"},{"kana":"ちゅうとろづくし","romaji":"chuutorozukushi"},{"kana":"とくじょうにぎり","romaji":"tokujounigiri"},{"kana":"さしみもりあわせ","romaji":"sashimimoriawase"},{"kana":"にぎりのもりあわせ","romaji":"nigirinomoriawase"},{"kana":"えびアボカドまき","romaji":"ebiabokadomaki"},{"kana":"カリフォルニアロール","romaji":"kariforuniaro-ru"},{"kana":"こんがりチーズやき","romaji":"kongarichi-zuyaki"},{"kana":"サーモンチーズやき","romaji":"sa-monchi-zuyaki"},{"kana":"てりやきチキンにぎり","romaji":"teriyakichikinnnigiri"},{"kana":"ローストビーフにぎり","romaji":"ro-sutobi-funigiri"},{"kana":"ほたてマヨやき","romaji":"hotatemayoyaki"},{"kana":"とろたくまき","romaji":"torotakumaki"},{"kana":"やきとりぐんかん","romaji":"yakitorigunkan"},{"kana":"とびこぐんかん","romaji":"tobikogunkan"},{"kana":"ツナマヨぐんかん","romaji":"tsunamayogunkan"},{"kana":"コーンマヨぐんかん","romaji":"ko-nmayogunkan"},{"kana":"たまごサラダぐんかん","romaji":"tamagosaradagunkan"},{"kana":"うにいくらどん","romaji":"uniikuradon"},{"kana":"まぐろどん","romaji":"magurodon"},{"kana":"ねぎとろどん","romaji":"negitorodon"},{"kana":"いくらのしょうゆづけ","romaji":"ikuranoshouyuzuke"},{"kana":"うなぎのかばやき","romaji":"unaginokabayaki"},{"kana":"あなごのてんぷら","romaji":"anagonotempura"},{"kana":"さんまのしおやき","romaji":"sanmanoshioyaki"},{"kana":"はまちのあぶり","romaji":"hamachinoaburi"},{"kana":"ぶりだいこん","romaji":"buridaikon"},{"kana":"いかげそのからあげ","romaji":"ikagesonokaraage"},{"kana":"やさいてんぷらもりあわせ","romaji":"yasaitempuramoriawase"},{"kana":"たこやき","romaji":"takoyaki"},{"kana":"おすすめせっと","romaji":"osusumesetto"},{"kana":"きょうのおすすめ","romaji":"kyounoosusume"},{"kana":"ほんじつのにぎり","romaji":"honjitsunonigiri"},{"kana":"しゅんのさかな","romaji":"shunnnosakana"},{"kana":"いかのおさしみ","romaji":"ikanoosashimi"},{"kana":"いらっしゃいませ","romaji":"irasshaimase"},{"kana":"ありがとうございます","romaji":"arigatougozaimasu"},{"kana":"ごちそうさまでした","romaji":"gochisousamadeshita"}],"beginner":[{"kana":"すし","romaji":"sushi"},{"kana":"まぐろ","romaji":"maguro"},{"kana":"たまご","romaji":"tamago"},{"kana":"さけ","romaji":"sake"},{"kana":"えび","romaji":"ebi"},{"kana":"いか","romaji":"ika"},{"kana":"たい","romaji":"tai"},{"kana":"ほたて","romaji":"hotate"},{"kana":"あなご","romaji":"anago"},{"kana":"うに","romaji":"uni"},{"kana":"いくら","romaji":"ikura"},{"kana":"かっぱまき","romaji":"kappamaki"},{"kana":"ぶり","romaji":"buri"},{"kana":"さば","romaji":"saba"},{"kana":"あじ","romaji":"aji"},{"kana":"たこ","romaji":"tako"},{"kana":"かに","romaji":"kani"},{"kana":"ひらめ","romaji":"hirame"},{"kana":"かつお","romaji":"katsuo"},{"kana":"はまち","romaji":"hamachi"},{"kana":"いわし","romaji":"iwashi"},{"kana":"あわび","romaji":"awabi"},{"kana":"あさり","romaji":"asari"},{"kana":"かんぱち","romaji":"kanpachi"},{"kana":"さわら","romaji":"sawara"},{"kana":"ふぐ","romaji":"fugu"},{"kana":"さんま","romaji":"sanma"},{"kana":"ほっけ","romaji":"hokke"},{"kana":"たら","romaji":"tara"},{"kana":"えんがわ","romaji":"engawa"},{"kana":"まき","romaji":"maki"},{"kana":"てまき","romaji":"temaki"},{"kana":"にぎり","romaji":"nigiri"},{"kana":"いなり","romaji":"inari"},{"kana":"おにぎり","romaji":"onigiri"},{"kana":"ぐんかん","romaji":"gunkan"},{"kana":"のり","romaji":"nori"},{"kana":"ごはん","romaji":"gohan"},{"kana":"わさび","romaji":"wasabi"},{"kana":"がり","romaji":"gari"},{"kana":"おちゃ","romaji":"ocha"},{"kana":"あがり","romaji":"agari"},{"kana":"さら","romaji":"sara"},{"kana":"はし","romaji":"hashi"},{"kana":"ゆのみ","romaji":"yunomi"},{"kana":"おかわり","romaji":"okawari"},{"kana":"おあいそ","romaji":"oaiso"},{"kana":"かいてん","romaji":"kaiten"},{"kana":"おまかせ","romaji":"omakase"},{"kana":"おしぼり","romaji":"oshibori"},{"kana":"まいど","romaji":"maido"},{"kana":"いらっしゃい","romaji":"irasshai"},{"kana":"おいしい","romaji":"oishii"},{"kana":"うまい","romaji":"umai"},{"kana":"ありがとう","romaji":"arigatou"},{"kana":"ひとつ","romaji":"hitotsu"},{"kana":"ふたつ","romaji":"futatsu"},{"kana":"えだまめ","romaji":"edamame"},{"kana":"ちくわ","romaji":"chikuwa"},{"kana":"ねぎ","romaji":"negi"},{"kana":"しそ","romaji":"shiso"},{"kana":"そば","romaji":"soba"},{"kana":"うどん","romaji":"udon"},{"kana":"おでん","romaji":"oden"},{"kana":"とうふ","romaji":"toufu"},{"kana":"たまねぎ","romaji":"tamanegi"},{"kana":"きゅうり","romaji":"kyuuri"},{"kana":"しょうが","romaji":"shouga"},{"kana":"みそしる","romaji":"misoshiru"},{"kana":"ちらし","romaji":"chirashi"}],"intermediate":[{"kana":"てんぷら","romaji":"tempura"},{"kana":"しんこまき","romaji":"shinkomaki"},{"kana":"ねぎとろ","romaji":"negitoro"},{"kana":"あぶりさーもん","romaji":"aburisa-mon"},{"kana":"こはだ","romaji":"kohada"},{"kana":"しめさば","romaji":"shimesaba"},{"kana":"かにみそ","romaji":"kanimiso"},{"kana":"てっかまき","romaji":"tekkamaki"},{"kana":"おおとろ","romaji":"ootoro"},{"kana":"ちゅうとろ","romaji":"chuutoro"},{"kana":"ぶりとろ","romaji":"buritoro"},{"kana":"あかみ","romaji":"akami"},{"kana":"はまちとろ","romaji":"hamachitoro"},{"kana":"さーもん","romaji":"sa-mon"},{"kana":"あぶりさけ","romaji":"aburisake"},{"kana":"ひらまさ","romaji":"hiramasa"},{"kana":"しまあじ","romaji":"shimaaji"},{"kana":"きんめだい","romaji":"kinmedai"},{"kana":"のどぐろ","romaji":"nodoguro"},{"kana":"ししゃも","romaji":"shishamo"},{"kana":"たらこ","romaji":"tarako"},{"kana":"めんたいこ","romaji":"mentaiko"},{"kana":"すじこ","romaji":"sujiko"},{"kana":"かずのこ","romaji":"kazunoko"},{"kana":"とびこ","romaji":"tobiko"},{"kana":"いくらぐんかん","romaji":"ikuragunkan"},{"kana":"うにぐんかん","romaji":"unigunkan"},{"kana":"ほっきがい","romaji":"hokkigai"},{"kana":"つぶがい","romaji":"tsubugai"},{"kana":"あかがい","romaji":"akagai"},{"kana":"とりがい","romaji":"torigai"},{"kana":"みるがい","romaji":"mirugai"},{"kana":"あおやぎ","romaji":"aoyagi"},{"kana":"ばいがい","romaji":"baigai"},{"kana":"しゃこ","romaji":"shako"},{"kana":"はまぐり","romaji":"hamaguri"},{"kana":"しじみ","romaji":"shijimi"},{"kana":"あまえび","romaji":"amaebi"},{"kana":"ぼたんえび","romaji":"botannebi"},{"kana":"くるまえび","romaji":"kurumaebi"},{"kana":"さくらえび","romaji":"sakuraebi"},{"kana":"たらばがに","romaji":"tarabagani"},{"kana":"ずわいがに","romaji":"zuwaigani"},{"kana":"かにかま","romaji":"kanikama"},{"kana":"いかそうめん","romaji":"ikasoumen"},{"kana":"げそ","romaji":"geso"},{"kana":"やりいか","romaji":"yariika"},{"kana":"すみいか","romaji":"sumiika"},{"kana":"あおりいか","romaji":"aoriika"},{"kana":"たこわさ","romaji":"takowasa"},{"kana":"かんぴょうまき","romaji":"kanpyoumaki"},{"kana":"ふとまき","romaji":"futomaki"},{"kana":"えほうまき","romaji":"ehoumaki"},{"kana":"ねぎとろまき","romaji":"negitoromaki"},{"kana":"ちらしずし","romaji":"chirashizushi"},{"kana":"おしずし","romaji":"oshizushi"},{"kana":"はこずし","romaji":"hakozushi"},{"kana":"さばずし","romaji":"sabazushi"},{"kana":"あなきゅう","romaji":"anakyuu"},{"kana":"てっかどん","romaji":"tekkadon"},{"kana":"だしまき","romaji":"dashimaki"},{"kana":"たまごやき","romaji":"tamagoyaki"},{"kana":"ちゃわんむし","romaji":"chawanmushi"},{"kana":"あらじる","romaji":"arajiru"},{"kana":"しらす","romaji":"shirasu"},{"kana":"かんぴょう","romaji":"kanpyou"},{"kana":"ひかりもの","romaji":"hikarimono"},{"kana":"ぎょくにぎり","romaji":"gyokunigiri"},{"kana":"あおさ","romaji":"aosa"}]};
+const SUSHI_ALIASES: Record<string,string[]> = {"ぁ":["xa","la"],"ぃ":["xi","li"],"ぅ":["xu","lu"],"ぇ":["xe","le"],"ぉ":["xo","lo"],"し":["shi","si"],"じ":["ji","zi"],"ち":["chi","ti"],"ぢ":["ji","di","zi"],"っ":["xtu","ltu","xtsu","ltsu"],"つ":["tsu","tu"],"づ":["zu","du"],"ふ":["fu","hu"],"ゃ":["xya","lya"],"ゅ":["xyu","lyu"],"ょ":["xyo","lyo"],"ん":["nn","n","xn","ln"],"ゔ":["vu"],"ー":["-"],"うぃ":["wi"],"うぇ":["we"],"きゃ":["kya"],"きゅ":["kyu"],"きょ":["kyo"],"ぎゃ":["gya"],"ぎゅ":["gyu"],"ぎょ":["gyo"],"しぇ":["she"],"しゃ":["sha","sya"],"しゅ":["shu","syu"],"しょ":["sho","syo"],"じぇ":["je"],"じゃ":["ja","jya","zya"],"じゅ":["ju","jyu","zyu"],"じょ":["jo","jyo","zyo"],"ちぇ":["che"],"ちゃ":["cha","tya","cya"],"ちゅ":["chu","tyu","cyu"],"ちょ":["cho","tyo","cyo"],"ぢゃ":["dya"],"ぢゅ":["dyu"],"ぢょ":["dyo"],"つぁ":["tsa"],"つぃ":["tsi"],"つぇ":["tse"],"つぉ":["tso"],"てぃ":["thi"],"てゅ":["thu"],"でぃ":["dhi"],"でゅ":["dhu"],"にゃ":["nya"],"にゅ":["nyu"],"にょ":["nyo"],"ひゃ":["hya"],"ひゅ":["hyu"],"ひょ":["hyo"],"びゃ":["bya"],"びゅ":["byu"],"びょ":["byo"],"ぴゃ":["pya"],"ぴゅ":["pyu"],"ぴょ":["pyo"],"ふぁ":["fa"],"ふぃ":["fi"],"ふぇ":["fe"],"ふぉ":["fo"],"ふゃ":["fya"],"ふゅ":["fyu"],"ふょ":["fyo"],"みゃ":["mya"],"みゅ":["myu"],"みょ":["myo"],"りゃ":["rya"],"りゅ":["ryu"],"りょ":["ryo"],"ゔぁ":["va"],"ゔぃ":["vi"],"ゔぇ":["ve"],"ゔぉ":["vo"]};
+const SUSHI_KANA_MAP: Record<string,string> = {"あ":"a","い":"i","う":"u","え":"e","お":"o","か":"ka","が":"ga","き":"ki","ぎ":"gi","く":"ku","ぐ":"gu","け":"ke","げ":"ge","こ":"ko","ご":"go","さ":"sa","ざ":"za","す":"su","ず":"zu","せ":"se","ぜ":"ze","そ":"so","ぞ":"zo","た":"ta","だ":"da","て":"te","で":"de","と":"to","ど":"do","な":"na","に":"ni","ぬ":"nu","ね":"ne","の":"no","は":"ha","ば":"ba","ぱ":"pa","ひ":"hi","び":"bi","ぴ":"pi","ふ":"fu","ぶ":"bu","ぷ":"pu","へ":"he","べ":"be","ぺ":"pe","ほ":"ho","ぼ":"bo","ぽ":"po","ま":"ma","み":"mi","む":"mu","め":"me","も":"mo","や":"ya","ゆ":"yu","よ":"yo","ら":"ra","り":"ri","る":"ru","れ":"re","ろ":"ro","わ":"wa","を":"wo","♾ 上限なし！ ":"⏱ "};
+const SUSHI_CFG: Record<string,{gain:number;fever:number;gold:number;miss:number;bonus:number}> = {
+  normal:{gain:10,fever:15,gold:10,miss:10,bonus:5},
+  sudden:{gain:10,fever:15,gold:10,miss:10,bonus:5},
+  endless:{gain:25,fever:35,gold:15,miss:10,bonus:8},
+};
+function sushiNormalizeKana(value:string) {
+  return value.replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60));
+}
+function sushiTokensOf(value:string) {
+  const units:string[]=[];
+  for(let i=0;i<value.length;) {
+    let part:string|null=null;
+    for(const n of [2,1]) {
+      const candidate=value.slice(i,i+n);
+      if(SUSHI_ALIASES[candidate]||(n===1&&SUSHI_KANA_MAP[candidate])) {part=candidate;break;}
+    }
+    if(!part) part=value[i];
+    units.push(part); i+=part.length;
+  }
+  return units;
+}
+function sushiRomajiOf(unit:string) {
+  return SUSHI_ALIASES[unit]||(SUSHI_KANA_MAP[unit]?[SUSHI_KANA_MAP[unit]]:[unit]);
+}
+function sushiVariants(kana:string) {
+  const units=sushiTokensOf(sushiNormalizeKana(kana));
+  let out=[{s:""}];
+  for(let k=0;k<units.length;k++) {
+    const unit=units[k],next=units[k+1];
+    let opts:string[];
+    if(unit==="っ") {
+      const firsts=next?sushiRomajiOf(next).map(r=>r[0]).filter(c=>c&&!"aiueonyx".includes(c)):[];
+      opts=firsts.length?Array.from(new Set(firsts)):SUSHI_ALIASES["っ"];
+    } else if(unit==="ん") opts=["nn","xn"];
+    else opts=sushiRomajiOf(unit);
+    const nextOut:Array<{s:string}>=[];
+    for(const prefix of out) for(const option of opts||[]) nextOut.push({s:prefix.s+option});
+    out=nextOut;
+    if(out.length>2048) throw new HttpError(400,"単語の入力パターンが多すぎます。");
+  }
+  const seen=new Set<string>();
+  return out.filter(item=>!seen.has(item.s)&&!!seen.add(item.s)).map(item=>item.s);
+}
+function sushiShuffle<T>(items:T[]) {
+  const out=items.slice();
+  for(let i=out.length-1;i>0;i--) {
+    const j=primeRandomIndex(i+1);
+    [out[i],out[j]]=[out[j],out[i]];
+  }
+  return out;
+}
+function sushiNextWord(state:Record<string,any>) {
+  const bank=SUSHI_WORD_BANK[String(state.level)] as Array<{kana:string;romaji:string}>;
+  if(!Array.isArray(bank)||!bank.length) throw new HttpError(400,"寿司タイピングのコースが正しくありません。");
+  if(!Array.isArray(state.wordQueue)||state.wordCursor>=state.wordQueue.length) {
+    state.wordQueue=sushiShuffle(bank.map((_,index)=>index));
+    state.wordCursor=0;
+  }
+  const word=bank[Number(state.wordQueue[state.wordCursor++])];
+  if(!word) throw new HttpError(500,"単語データを読み込めません。");
+  state.currentWord={kana:word.kana,romaji:word.romaji};
+  state.wordStartedAt=Date.now();
+  return state.currentWord;
+}
+function sushiTimeLeft(session:Record<string,any>,state:Record<string,any>) {
+  const elapsed=Math.max(0,Date.now()-Date.parse(session.started_at));
+  return Math.max(0,60000+Math.max(0,Number(state.timeAdjustment)||0)*1000-elapsed);
+}
+function sushiSnapshot(state:Record<string,any>,session:Record<string,any>,nonce:string) {
+  return {
+    nonce,score:Number(state.score)||0,miss:Number(state.miss)||0,combo:Number(state.combo)||0,
+    maxCombo:Number(state.maxCombo)||0,completed:Number(state.completed)||0,
+    gauge:Number(state.gauge)||0,gaugeLevel:Number(state.gaugeLevel)||0,
+    diffValue:Number(state.diffValue)||0,timeLeft:Math.round(sushiTimeLeft(session,state)/100)/10,
+  };
+}
+function sushiRandomChance(percent:number) {
+  const buffer=new Uint32Array(1);crypto.getRandomValues(buffer);
+  return (buffer[0]%10000)<percent*100;
+}
+async function sushiRecordCompletedRun(userId:string,session:Record<string,any>) {
+  const state=session.state&&typeof session.state==="object"?session.state as Record<string,any>:{};
+  const score=Math.max(0,Math.floor(Number(state.score)||0));
+  const mode=String(state.mode||"normal"),level=String(state.level||"beginner"),rankingMode=mode+"_"+level;
+  if(!SUSHI_CFG[mode]||!SUSHI_WORD_BANK[level]) throw new HttpError(400,"寿司タイピングの記録形式が正しくありません。");
+  const durationMs=Math.max(0,Math.min(10*60*1000,Date.now()-Date.parse(session.started_at)));
+  const metadata={
+    metric:"score",source:"sushi-typing-server",serverVerified:"sushi-typing-v1",
+    mode,level,completed:Number(state.completed)||0,miss:Number(state.miss)||0,
+    maxCombo:Number(state.maxCombo)||0,durationMs,sessionId:session.id,
+  };
+  if(score>0) {
+    const {error:scoreError}=await admin.rpc("kuro_submit_game_score",{
+      p_game_id:SUSHI_GAME_ID,p_user_id:userId,p_mode:rankingMode,p_score:score,
+      p_submission_id:session.id,p_metadata:metadata,p_level:null,p_cpu_difficulty:null,
+    });
+    if(scoreError) {
+      console.error("[kurogames-online] verified Sushi score save failed",scoreError);
+      throw new HttpError(500,"回転ずしタイピングのランキングを保存できませんでした。");
+    }
+    const {error:eventError}=await admin.rpc("kuro_record_user_game_event",{
+      p_submission_id:session.id,p_user_id:userId,p_game_id:SUSHI_GAME_ID,
+      p_mode:rankingMode,p_result:"played",p_score:score,p_duration_ms:durationMs,p_metadata:metadata,
+    });
+    if(eventError) {
+      console.error("[kurogames-online] verified Sushi event save failed",eventError);
+      throw new HttpError(500,"回転ずしタイピングの統合記録を保存できませんでした。");
+    }
+  }
+  const {error:markError}=await admin.from("game_verification_sessions")
+    .update({score_recorded:true})
+    .eq("id",session.id).eq("game_id",SUSHI_GAME_ID).eq("user_id",userId).eq("status","completed");
+  if(markError) throw new HttpError(500,"回転ずしタイピングの記録状態を更新できません。");
+  return {scoreRecorded:score>0,score};
+}
+
 
 async function reconcilePendingVerifiedSessions(userId:string,gameId:string) {
   const {data:pending,error} = await admin.from("game_verification_sessions")
