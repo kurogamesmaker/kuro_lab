@@ -119,7 +119,15 @@
         return;
       }
       if (event.target.closest(".kuro-profile-chat-open")) {
-        openDirectChat().catch(showSocialError);
+        var targetId = currentProfile && String(currentProfile.id || "");
+        if (!UUID_RE.test(targetId)) {
+          setSocialStatus("チャットを開けませんでした。プロフィールを再読み込みしてください。");
+          return;
+        }
+        stopChatRefresh();
+        var chatUrl = new URL("/sns/v2/", window.location.origin);
+        chatUrl.searchParams.set("chat", targetId);
+        window.location.assign(chatUrl.href);
         return;
       }
       if (event.target.closest(".kuro-profile-chat-close")) {
