@@ -27,4 +27,8 @@ where id in (
   '2eb37847-1b7e-43e4-ad98-901d5b830ac4'::uuid,
   '5c1e658b-f6d3-412a-8b97-61d2c0457e95'::uuid
 )
-and html_content ilike '%/game-studio/kurog-online.js%';
+and (
+  html_content ilike '%/game-studio/kurog-online.js?v=20261123-wins-online-v1%'
+  or html_content ilike '%/game-studio/kurog-online.js?v=20261122netlight1%'
+  or html_content ilike '%/game-studio/kurog-online.js"%'
+);
