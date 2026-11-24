@@ -335,7 +335,16 @@
         ? " kuro-profile-theme-neon"
         : equippedTheme && equippedTheme.itemKey === "kuro-classic-theme"
           ? " kuro-profile-theme-classic"
-          : "";
+          : equippedTheme && ["rare","epic","legendary"].includes(String(equippedTheme.rarity))
+            ? " kuro-profile-theme-" + String(equippedTheme.rarity)
+            : "";
+      var backgroundClass = equippedBackground && equippedBackground.itemKey === "midnight-background"
+        ? " kuro-profile-background-midnight"
+        : equippedBackground && equippedBackground.itemKey === "cyber-background"
+          ? " kuro-profile-background-cyber"
+          : equippedBackground && ["rare","epic","legendary"].includes(String(equippedBackground.rarity))
+            ? " kuro-profile-background-" + String(equippedBackground.rarity)
+            : "";
       var cosmeticChips = ["avatar","frame","background","theme"].map(function (slot) {
         var item = cosmetics[slot];
         return item && item.name
@@ -343,7 +352,7 @@
           : "";
       }).join("");
       var cosmeticBanner = equippedBackground
-        ? '<div class="kuro-profile-cosmetic-banner"' + backgroundStyle + '><span class="kuro-profile-cosmetic-banner-icon">' + escapeHtml(backgroundIcon || (backgroundImage ? "" : "✦")) + '</span><span><small>PROFILE BACKGROUND</small><strong>' + escapeHtml(equippedBackground.name || "背景") + '</strong></span></div>'
+        ? '<div class="kuro-profile-cosmetic-banner' + backgroundClass + '"' + backgroundStyle + '><span class="kuro-profile-cosmetic-banner-icon">' + escapeHtml(backgroundIcon || (backgroundImage ? "" : "✦")) + '</span><span><small>PROFILE BACKGROUND</small><strong>' + escapeHtml(equippedBackground.name || "背景") + '</strong></span></div>'
         : "";
       var bio = String(profile.bio || "").trim();
       var bioHtml = bio
