@@ -50,7 +50,7 @@ function invoke(action,gameId,extra){return db.functions.invoke("kurogames-onlin
 function escapeHtml(value){return String(value??"").replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
 function makeSnippet(game){
 return [
-'<script src="/game-studio/kurog-online.js?v=20261124-aggregate-records1">'+'</'+'script>',
+'<script src="/game-studio/kurog-online.js?v=20261125-unified-ranking-metrics1">'+'</'+'script>',
 '<script>',
 '(async function () {',
 '  // KUROGAMESのゲームプレイヤー内で実行してください。',
@@ -70,7 +70,7 @@ return [
 '  // ゲーム終了時に submitRanking(finalScore) を呼び出してください。',
 '  async function submitRanking(finalScore) {',
 '    if (!features.ranking) return;',
-'    await KuroGames.ranking.submit(finalScore, { mode: "default" });',
+'    await KuroGames.ranking.submit(finalScore, { mode: "default", metric: "score" });',
 '  }',
 '  // const topScores = await KuroGames.ranking.get({ mode: "default", limit: 20 });',
 '',
