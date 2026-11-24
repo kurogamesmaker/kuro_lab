@@ -290,10 +290,11 @@
         db.from("profiles").select("id,username,display_name,kuro_id,avatar_url,bio,created_at").eq("id", id).maybeSingle(),
         db.rpc("kuro_get_public_profile_game_stats", { p_user_id: id }),
         getFollowCounts(db, id),
-        getSignedInUser(db)
+        getSignedInUser(db),
+        db.rpc("kuro_get_public_coin_balance", { p_user_id: id })
       ]);
       if (thisRequest !== requestId) return;
-      var profileResult = results[0], statsResult = results[1];
+      var profileResult = results[0], statsResult = results[1], coinBalanceResult = results[4];
       if (profileResult.error) throw profileResult.error;
       if (!profileResult.data) {
         content.innerHTML = '<div class="kuro-profile-error">プロフィールが見つかりませんでした。</div>';
@@ -318,6 +319,10 @@
       var bioHtml = bio
         ? escapeHtml(bio).replace(/\r\n|\r|\n/g, "<br>")
         : '<span class="kuro-profile-muted">自己紹介はまだ設定されていません。</span>';
+      var coinBalance = coinBalanceResult && !coinBalanceResult.error ? Number(coinBalanceResult.data) : NaN;
+      var coinBalanceLabel = Number.isFinite(coinBalance)
+        ? Math.max(0, Math.floor(coinBalance)).toLocaleString("ja-JP") + "P"
+        : "—P";
       var joined = profile.created_at ? new Date(profile.created_at) : null;
       var joinedLabel = joined && !Number.isNaN(joined.getTime())
         ? '<span class="kuro-profile-joined">KUROメンバー · ' + joined.toLocaleDateString("ja-JP") + ' 登録</span>'
@@ -330,6 +335,10 @@
           renderSocial(profile, results[2], isSelf, !!viewerUser) +
         '</section>' +
         '<section class="kuro-profile-bio"><h3>自己紹介</h3><p>' + bioHtml + '</p></section>' +
+        '<section class="kuro-profile-coin-balance" aria-label="公開KURO COIN残高">' +
+          '<div class="kuro-profile-coin-copy"><span class="kuro-profile-coin-icon" aria-hidden="true">🪙</span><div><strong>KURO COIN</strong><small>公開残高</small></div></div>' +
+          '<strong class="kuro-profile-coin-value">' + escapeHtml(coinBalanceLabel) + '</strong>' +
+        '</section>' +
         '<div class="kuro-profile-social-panel kuro-profile-social-panel-wide" id="kuroProfileSocialPanel" hidden></div>' +
         '<section class="kuro-profile-records"><div class="kuro-profile-section-head"><h3>ゲーム記録</h3><span>ゲーム別・モード別</span></div>' +
           (statsResult.error
