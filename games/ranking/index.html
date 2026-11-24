@@ -51,20 +51,22 @@ button,select{font:inherit}
 .refresh-button{margin-left:auto;min-height:30px;padding:0 10px;border:1px solid #e0e8f3;border-radius:9px;background:#fff;color:#60748e;font-size:10px;font-weight:850;cursor:pointer}
 .refresh-button:hover{border-color:#b9d2f2;background:#f5f9ff}
 .rank-list{display:grid;gap:9px;padding:17px 0 20px}
-.rank-list.mode-board{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));align-items:start;gap:14px;padding:18px 0 22px;overflow:visible}
+.rank-list.mode-board{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));align-items:stretch;gap:0;padding:18px 0 22px;overflow:visible;border-top:1px solid #d8e1ec;border-bottom:1px solid #d8e1ec}
 .rank-list.mode-board>.mode-column{width:100%;min-width:0}
-.mode-column{min-width:0;width:100%;padding:12px;border:1px solid #e4ebf5;border-radius:15px;background:linear-gradient(180deg,#fbfdff,#fff);box-shadow:0 6px 18px #244c7a08}
-.mode-column-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px;padding:1px 2px 9px;border-bottom:1px solid #e8eef6}
-.mode-column-title{min-width:0;margin:0;color:#294665;font-size:13px;font-weight:1000;overflow-wrap:anywhere}
-.mode-column-count{flex:0 0 auto;color:#8a99ac;font-size:9px;font-weight:850}
-.mode-column-list{display:grid;gap:8px;min-width:0}
-.mode-column-list .rank-row{gap:8px;padding:10px 9px}
+.mode-column{min-width:0;width:100%;padding:0 12px;border:0;border-right:1px solid #e0e7f0;border-radius:0;background:transparent;box-shadow:none}
+.mode-column:last-child{border-right:0}
+.mode-column-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:43px;margin:0;padding:10px 9px;border-top:1px solid #f8fafc;border-bottom:1px solid #cfd9e6;background:#edf2f8}
+.mode-column-title{min-width:0;margin:0;color:#294665;font-size:12px;font-weight:1000;overflow-wrap:anywhere}
+.mode-column-count{flex:0 0 auto;color:#8291a5;font-size:9px;font-weight:850}
+.mode-column-list{display:grid;gap:0;min-width:0}
+.mode-column-list .rank-row{gap:8px;padding:11px 8px;border:0;border-bottom:1px solid #e5ebf3;border-radius:0;background:transparent;box-shadow:none}
+.mode-column-list .rank-row.top-one,.mode-column-list .rank-row.top-two,.mode-column-list .rank-row.top-three{border-color:#e5ebf3;background:transparent}
 .mode-column-list .rank-medal{width:27px;flex-basis:27px;font-size:18px}
 .mode-column-list .rank-avatar{width:36px;height:36px;flex-basis:36px}
 .mode-column-list .rank-name{font-size:11px}
 .mode-column-list .rank-score{font-size:11px}
-.mode-column-empty{display:grid;place-items:center;min-height:130px;padding:16px 10px;color:#8291a5;text-align:center;font-size:11px;line-height:1.7}
-@media(max-width:640px){.rank-list.mode-board{grid-template-columns:repeat(auto-fit,minmax(min(100%,165px),1fr));padding:14px 0;gap:10px}.rank-list.mode-board>.mode-column{width:100%}.mode-column{padding:10px}}
+.mode-column-empty{display:grid;place-items:center;min-height:110px;padding:16px 10px;color:#8291a5;text-align:center;font-size:11px;line-height:1.7}
+@media(max-width:640px){.rank-list.mode-board{grid-template-columns:repeat(auto-fit,minmax(min(100%,165px),1fr));padding:14px 0;gap:0}.rank-list.mode-board>.mode-column{width:100%}.mode-column{padding:0 7px}}
 .rank-row{display:flex;align-items:center;gap:12px;min-width:0;padding:12px 14px;border:1px solid #e9eef5;border-radius:14px;background:linear-gradient(100deg,#fff,#fbfdff)}
 .rank-row.top-one{border-color:#f0dfaa;background:linear-gradient(100deg,#fffdf5,#fff)}
 .rank-row.top-two{border-color:#e3e7ee;background:linear-gradient(100deg,#fff,#fafbfd)}
@@ -375,7 +377,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   const groups=game.modeGroups||[];
   titleEl.textContent=game.title+" ランキング";
   modeTextEl.textContent=groups.length>1
-   ? groups.length+"種類のランキングを横スクロールできる列で表示します。各列の順位は上から縦に並びます。"
+   ? groups.length+"種類のランキングを表形式で表示します。モードごとに横並び、順位は上から並びます。"
    : "ランキング上位5人";
   gameLink.href="/games/play/?id="+encodeURIComponent(game.id);
   showMessage("ランキングを読み込み中…","各モードのランキングを取得しています。");
