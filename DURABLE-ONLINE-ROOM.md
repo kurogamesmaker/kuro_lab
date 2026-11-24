@@ -58,7 +58,7 @@ UNON's normal online matches now run their rules engine inside the room Durable 
 
 This removes the extra guest → host → room round trip for card turns and reduces the per-turn payload. It does not eliminate ordinary Internet latency: each action still needs a WebSocket round trip to the room and a broadcast to the other players. A real match using two independently signed-in browsers is still needed to quantify actual latency on different networks.
 
-SDK cache reference for the published UNON HTML: `/game-studio/kurog-online.js?v=20261122-unon-server1`.
+SDK cache reference for the published UNON HTML: `/game-studio/kurog-online.js?v=20261124-userstats1`.
 ## Verification
 - Cloudflare API confirmed the DO namespace exists and the latest Worker deployment has a 100% traffic allocation.
 - Cloudflare API confirmed the `TICKET_SECRET` binding exists.
