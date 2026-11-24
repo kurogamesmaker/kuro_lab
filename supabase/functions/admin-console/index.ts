@@ -154,8 +154,11 @@ Deno.serve(async (req: Request) => {
           total_balance: 0, total_issued: 0, total_spent: 0, funded_users: 0, transaction_count: 0
         },
         games: (gamesResult.data || []).filter((game) => [
-          "2dbd6773-2684-4f00-973e-c46acbc348e7",
-          "faa155cb-2143-4361-9a96-dc759d334e46"
+          "2dbd6773-2684-4f00-973e-c46acbc348e7", // 〇✕ゲーム
+          "faa155cb-2143-4361-9a96-dc759d334e46", // UNON online
+          "79c9921a-d57a-45b1-8271-1ee7042801dc", // 素因数分解
+          "bb466662-5423-48e6-bbcc-d19da50ba818", // 数字当て
+          "5c1e658b-f6d3-412a-8b97-61d2c0457e95"  // 回転ずしタイピング
         ].includes(game.id)),
         rewards: (rewardsResult.data || []).map((reward) => ({
           ...reward,
