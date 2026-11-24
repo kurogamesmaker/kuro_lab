@@ -687,20 +687,24 @@ async function handle(req: Request) {
       if (rankingViewer) await reconcilePendingVerifiedSessions(rankingViewer.id, game.id);
     }
 
-    // 〇✕ゲームの公開ランキングも、旧クライアント投稿スコアではなく
-    // サーバー検証済み統計だけを返す。専用ランキングAPIと同じ信頼境界に統一する。
+    // Tic-Tac-Toe win rankings use the shared user/game/mode aggregate.
+    // The dedicated verified stats table remains the source for streak and win-rate views.
     if (game.id === TICTACTOE_GAME_ID) {
       if (!["normal", "vanish", "gobble", "reverse"].includes(mode)) {
         throw new HttpError(400, "ランキングルールが正しくありません。");
       }
       const { data: verifiedRows, error: verifiedError } = await admin
-        .from("game_tictactoe_verified_stats")
+        .from("kuro_game_user_stats")
         .select("user_id, wins, updated_at")
-        .eq("game_id", game.id).eq("rule", mode).gt("wins", 0);
-      if (verifiedError) throw new HttpError(500, "〇✕ゲームの検証済みランキングを取得できませんでした。");
-      const merged = new Map<string, {user_id:string; wins:number; updated_at:string; recordType:string}>();
-      for (const row of verifiedRows ?? []) merged.set(row.user_id,{user_id:row.user_id,wins:Number(row.wins)||0,updated_at:row.updated_at,recordType:"migrated"});
-      const combinedRows=Array.from(merged.values()).sort((a,b)=>b.wins-a.wins||String(a.updated_at).localeCompare(String(b.updated_at))).slice(0,limit);
+        .eq("game_id", game.id)
+        .eq("mode", mode)
+        .contains("metadata", { metric: "wins", source: "tictactoe-server" })
+        .gt("wins", 0);
+      if (verifiedError) throw new HttpError(500, "〇✕ゲームの集計ランキングを取得できませんでした。");
+      const combinedRows = (verifiedRows ?? [])
+        .map((row) => ({ ...row, wins: Number(row.wins) || 0 }))
+        .sort((a, b) => b.wins - a.wins || String(a.updated_at).localeCompare(String(b.updated_at)))
+        .slice(0, limit);
       const verifiedUserIds = Array.from(new Set(combinedRows.map((row) => row.user_id)));
       const verifiedProfiles = new Map<string, { kuro_id: string; username: string; avatar_url: string | null }>();
       if (verifiedUserIds.length) {
@@ -727,7 +731,7 @@ async function handle(req: Request) {
             score: row.wins,
             mode,
             createdAt: row.updated_at,
-            recordType: row.recordType,
+            recordType: "verified",
             user: {
               kuroId: profile.kuro_id || null,
               username: profile.username,
@@ -741,18 +745,24 @@ async function handle(req: Request) {
 
     let scores:any[] = [];
     if (game.id === NUMBER_GAME_ID) {
-      // 数字当てタイムランキングはサーバー検証済みの記録のみ対象。
-      // 旧クライアント投稿の記録や最低基準未満の値は混ぜない。
-      const { data: verifiedScores, error: verifiedError } = await admin.from("game_scores")
-        .select("id, user_id, score, mode, created_at, metadata").eq("game_id",game.id).eq("mode",mode)
-        .contains("metadata",{serverVerified:"number-guess-v1"}).gte("score",500);
+      // Number Guess time rankings read only server-verified best times from the common aggregate.
+      const { data: verifiedScores, error: verifiedError } = await admin.from("kuro_game_user_stats")
+        .select("user_id, mode, best_time_ms, last_played_at, updated_at")
+        .eq("game_id", game.id)
+        .eq("mode", mode)
+        .contains("metadata", { verifiedRanking: "number-guess-v1" })
+        .gte("best_time_ms", 500)
+        .lte("best_time_ms", 3600000)
+        .order("best_time_ms", { ascending: true })
+        .limit(limit);
       if (verifiedError) throw new HttpError(500, "検証済みランキングを取得できませんでした。");
-      const bestByUser=new Map<string,any>();
-      for (const row of verifiedScores ?? []) {
-        const previous=bestByUser.get(row.user_id);
-        if (!previous || Number(row.score)<Number(previous.score)) bestByUser.set(row.user_id,{...row,recordType:"verified"});
-      }
-      scores=Array.from(bestByUser.values()).sort((a,b)=>Number(a.score)-Number(b.score)||String(a.created_at).localeCompare(String(b.created_at))).slice(0,limit);
+      scores = (verifiedScores ?? []).map((row) => ({
+        user_id: row.user_id,
+        score: Number(row.best_time_ms),
+        mode: row.mode,
+        created_at: row.last_played_at || row.updated_at,
+        recordType: "verified",
+      }));
     } else {
       // Normal rankings are read from the single aggregate row per user/game/mode.
       // The verified TicTacToe and Number Guess branches above intentionally retain
@@ -1468,40 +1478,33 @@ async function handle(req: Request) {
     const user = await getUser(req);
     requirePublished(game);
 
-    // Count every completed online match. Paging by the unique result id
-    // avoids the previous 10,000-row ceiling and keeps the ranking cumulative.
-    const PAGE_SIZE = 1000;
-    const aggregate = new Map<string, { userId: string; wins: number }>();
-    for (let offset = 0; ; offset += PAGE_SIZE) {
-      const { data: results, error } = await admin.from("game_sevens_results")
-        .select("id, user_id, placement")
-        .eq("game_id", game.id)
-        .order("id", { ascending: true })
-        .range(offset, offset + PAGE_SIZE - 1);
-      if (error) throw new HttpError(500, "七並べランキングを取得できませんでした。");
+    // The shared aggregate is the only ranking source; orphaned legacy results
+    // are excluded by the authenticated user foreign key during reconciliation.
+    const { data: stats, error } = await admin.from("kuro_game_user_stats")
+      .select("user_id, wins, updated_at")
+      .eq("game_id", game.id)
+      .eq("mode", "online")
+      .gt("wins", 0)
+      .order("wins", { ascending: false })
+      .order("updated_at", { ascending: true })
+      .limit(100);
+    if (error) throw new HttpError(500, "七並べランキングを取得できませんでした。");
 
-      for (const row of results ?? []) {
-        const current = aggregate.get(row.user_id) || { userId: row.user_id, wins: 0 };
-        if (row.placement === 1) current.wins += 1;
-        aggregate.set(row.user_id, current);
-      }
-      if (!results || results.length < PAGE_SIZE) break;
-    }
-
-    const entries = Array.from(aggregate.values());
-    const ids = entries.map((entry) => entry.userId);
-    let profiles = new Map<string, string>();
+    const ids = (stats ?? []).map((entry) => entry.user_id);
+    const profiles = new Map<string, string>();
     if (ids.length) {
       const { data: profileRows, error: profileError } = await admin.from("profiles")
         .select("id, username, display_name").in("id", ids);
       if (profileError) throw new HttpError(500, "ランキングのプレイヤー名を取得できませんでした。");
-      profiles = new Map((profileRows ?? []).map((p) => [p.id, p.display_name || p.username || "プレイヤー"]));
+      for (const profile of profileRows ?? []) {
+        profiles.set(profile.id, profile.display_name || profile.username || "プレイヤー");
+      }
     }
 
-    const rows = entries.map((entry) => ({
-      name: profiles.get(entry.userId) || "プレイヤー",
-      userId: entry.userId,
-      wins: entry.wins,
+    const rows = (stats ?? []).map((entry) => ({
+      name: profiles.get(entry.user_id) || "プレイヤー",
+      userId: entry.user_id,
+      wins: Number(entry.wins) || 0,
     })).sort((a, b) => b.wins - a.wins || a.name.localeCompare(b.name));
 
     return reply(200, { rows, myUserId: user.id, period: "all" });
