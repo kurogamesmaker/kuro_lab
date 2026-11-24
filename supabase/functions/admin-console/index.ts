@@ -1007,7 +1007,7 @@ Deno.serve(async (req: Request) => {
         admin.from("profiles").select("id,username,display_name").in("id", ids),
         admin.from("portal_preferences").select("user_id,preferences").in("user_id", ids),
         admin.from("account_suspensions").select("id,user_id,starts_at,ends_at,reason")
-          .in("user_id", ids).is("revoked_at", null).lte("starts_at", nowIso)
+          .in("user_id", ids).is("revoked_at", null)
           .gt("ends_at", nowIso).order("starts_at", { ascending: false })
       ]) : [
         { data: [], error: null },
