@@ -632,7 +632,7 @@
  </div>
  <div id="opsGame-bannersView" hidden>
   <section class="panel">
-   <div class="toolbar"><div><strong>KURO GAMES ホーム文字バナー</strong><div class="sns-muted">ホーム上部バーの直下に流す文章を複数登録できます。有効なバナーは表示順に連結して流れます。</div></div><button class="btn" id="opsGameBannersRefresh" type="button">更新</button></div>
+   <div class="toolbar"><div><strong>KURO GAMES ホーム文字バナー</strong><div class="sns-muted">ホーム上部バーの直下に流す文章を複数登録できます。有効なバナーは表示順に連結して流れます。</div></div><div class="ops-inline-actions"><label>全バナー共通速度<select id="opsGameBannerSpeed"><option value="slow">ゆっくり</option><option value="normal">標準</option><option value="fast">速い</option></select></label><button class="btn primary" id="opsGameBannersApplySpeed" type="button">全バナーに適用</button><button class="btn" id="opsGameBannersRefresh" type="button">更新</button></div></div>
    <form id="opsGameBannerForm" class="ops-form">
     <input id="opsGameBannerId" type="hidden">
     <div class="ops-form-grid">
@@ -643,7 +643,7 @@
     <div class="ops-form-grid">
      <label class="ops-game-banner-color">文字色<input id="opsGameBannerTextColor" type="color" value="#ffffff"></label>
      <label>文字サイズ<select id="opsGameBannerSize"><option value="12">小</option><option value="14" selected>標準</option><option value="16">やや大きい</option><option value="18">大</option><option value="20">特大</option></select></label>
-     <label>流れる速度<select id="opsGameBannerSpeed"><option value="slow">ゆっくり</option><option value="normal" selected>標準</option><option value="fast">速い</option></select></label>
+     
      <label>表示順（小さい数字が先）<input id="opsGameBannerSort" type="number" min="-10000" max="10000" step="1" value="100"></label>
     </div>
     <div class="ops-form-grid">
@@ -1411,7 +1411,6 @@ function resetOpsGameBannerForm(){
  $("#opsGameBannerId").value="";
  $("#opsGameBannerTextColor").value="#ffffff";
  $("#opsGameBannerSize").value="14";
- $("#opsGameBannerSpeed").value="normal";
  $("#opsGameBannerSort").value="100";
  $("#opsGameBannerEnabled").checked=true;
  $("#opsGameBannerBold").checked=false;
@@ -1440,7 +1439,6 @@ function editOpsGameBanner(id){
  $("#opsGameBannerHref").value=item.href||"";
  $("#opsGameBannerTextColor").value=item.text_color||"#ffffff";
  $("#opsGameBannerSize").value=String(item.font_size||14);
- $("#opsGameBannerSpeed").value=item.speed||"normal";
  $("#opsGameBannerSort").value=String(item.sort_order??100);
  const toLocal=value=>{if(!value)return "";const d=new Date(value);if(!Number.isFinite(d.getTime()))return "";return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);};
  $("#opsGameBannerStarts").value=toLocal(item.starts_at);
@@ -1464,7 +1462,7 @@ async function saveOpsGameBanner(event){
    action:"save_game_banner",id:id||undefined,name,message,href:$("#opsGameBannerHref").value.trim(),
    text_color:$("#opsGameBannerTextColor").value,
    font_size:Number($("#opsGameBannerSize").value),
-   speed:$("#opsGameBannerSpeed").value,sort_order:Number($("#opsGameBannerSort").value),
+   speed:$("#opsGameBannerSpeed").value||"normal",sort_order:Number($("#opsGameBannerSort").value),
    starts_at:starts?new Date(starts).toISOString():null,ends_at:ends?new Date(ends).toISOString():null,
    enabled:$("#opsGameBannerEnabled").checked,is_bold:$("#opsGameBannerBold").checked
   });
