@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#100d1d">
+<meta name="description" content="KURO GAMES公式ストア。無料アイテムを取得して、マイアイテムで管理できます。">
+<link rel="icon" type="image/png" sizes="48x48" href="/assets/brand/logo/kurolab_icon_maru_48.png?v=20261122marufavicon2">
+<title>KURO STORE｜KURO GAMES</title>
+<style>
+:root{color-scheme:dark;--bg:#0c0a16;--panel:#151225;--panel2:#1c1830;--line:#302847;--text:#f4f0ff;--muted:#aaa1c3;--purple:#a78bfa;--pink:#e879f9;--green:#86efac}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 12% 0%,#2a1a4c 0,transparent 34%),radial-gradient(circle at 96% 15%,#1b2850 0,transparent 29%),var(--bg);color:var(--text);font-family:Inter,"Noto Sans JP",system-ui,sans-serif}a{color:inherit;text-decoration:none}button{font:inherit}.wrap{width:min(1160px,calc(100% - 36px));margin:auto}
+header{position:sticky;top:0;z-index:10;background:#100d1deF;backdrop-filter:blur(16px);border-bottom:1px solid #302847}.nav{height:68px;display:flex;align-items:center;gap:22px}.brand{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:1000;letter-spacing:.02em}.brand img{width:34px;height:34px;object-fit:contain}.brand em{font-style:normal;color:var(--purple)}.navlinks{display:flex;gap:18px;color:var(--muted);font-size:12px;font-weight:850}.navlinks a:hover{color:white}.spacer{flex:1}.account{padding:9px 13px;border:1px solid #49396b;border-radius:10px;background:#1d1730;color:#e9ddff;font-size:12px;font-weight:900;white-space:nowrap}
+.hero{margin:26px 0 25px;padding:clamp(25px,5vw,54px);border:1px solid #5b4383;border-radius:25px;overflow:hidden;position:relative;background:linear-gradient(115deg,#271644,#1c2145 62%,#322052);box-shadow:0 20px 60px #0004}.hero:after{content:"✦";position:absolute;right:8%;top:2%;font-size:clamp(100px,18vw,230px);line-height:1;color:#ffffff0b}.eyebrow{font-size:10px;letter-spacing:.22em;color:#d8b4fe;font-weight:1000}.hero h1{margin:12px 0 10px;font-size:clamp(32px,6vw,58px);letter-spacing:-.04em}.hero h1 span{color:#c4b5fd}.hero p{max-width:580px;margin:0;color:#d6cce8;font-size:14px;line-height:1.9}.hero-pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px}.pill{padding:7px 11px;border-radius:999px;background:#ffffff12;border:1px solid #ffffff20;color:#eadfff;font-size:10px;font-weight:850}
+.section{padding:10px 0 36px}.section-head{display:flex;align-items:end;justify-content:space-between;gap:12px;margin-bottom:16px}.section-head h2{margin:4px 0 0;font-size:22px}.section-head p{margin:5px 0 0;color:var(--muted);font-size:12px}.section-kicker{font-size:9px;letter-spacing:.18em;color:#b6a3d7;font-weight:1000}.count{color:#d9ccff;font-size:11px;font-weight:850;white-space:nowrap}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}.filter{border:1px solid var(--line);border-radius:999px;background:#151225;color:#bcb2d2;padding:9px 14px;font-size:11px;font-weight:900;cursor:pointer}.filter.active{background:#7650b8;border-color:#a78bfa;color:white;box-shadow:0 4px 16px #8b5cf633}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.item{min-width:0;overflow:hidden;border:1px solid var(--line);border-radius:17px;background:linear-gradient(150deg,#1b1730,#131021);box-shadow:0 9px 25px #0002;transition:transform .18s,border-color .18s}.item:hover{transform:translateY(-3px);border-color:#7960ad}.item-art{height:150px;display:grid;place-items:center;position:relative;overflow:hidden;background:radial-gradient(circle at 50% 30%,#56417d,#29203f 64%,#1c1830)}.item-art:before,.item-art:after{content:"";position:absolute;border:1px solid #ffffff25;border-radius:50%;width:175px;height:175px}.item-art:after{width:225px;height:225px}.item-art img{position:relative;z-index:1;width:100%;height:100%;object-fit:cover}.item-icon{position:relative;z-index:1;font-size:68px;filter:drop-shadow(0 9px 12px #0006)}.rarity{position:absolute;left:10px;top:10px;padding:5px 8px;border:1px solid #ffffff28;border-radius:7px;background:#100d1dbd;color:#e8dcff;font-size:8px;font-weight:1000;letter-spacing:.08em}.item-body{padding:13px}.item-body h3{margin:0 0 6px;font-size:14px}.item-desc{min-height:39px;margin:0;color:var(--muted);font-size:11px;line-height:1.7}.item-meta{display:flex;justify-content:space-between;gap:8px;margin-top:12px;color:#b9add2;font-size:10px;font-weight:850}.free{color:var(--green)}.action{width:100%;min-height:39px;margin-top:12px;border:1px solid #8b6bd0;border-radius:10px;background:linear-gradient(110deg,#7650b8,#5e4aa0);color:white;font-size:11px;font-weight:950;cursor:pointer}.action:hover{filter:brightness(1.12)}.action:disabled{cursor:default;opacity:.55}.action.owned{border-color:#365b47;background:#172a22;color:#a7f3c3}
+.inventory{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.inventory-card{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:14px;background:#171327}.inventory-icon{width:50px;height:50px;flex:0 0 50px;display:grid;place-items:center;border-radius:12px;background:#2b2144;font-size:26px;overflow:hidden}.inventory-icon img{width:100%;height:100%;object-fit:cover}.inventory-copy{min-width:0;flex:1}.inventory-copy strong{display:block;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inventory-copy small{display:block;margin-top:4px;color:var(--muted);font-size:10px}.inventory-actions{display:flex;gap:6px;margin-top:8px}.mini{border:1px solid #59467d;border-radius:8px;background:#211936;color:#e7dafa;padding:6px 9px;font-size:10px;font-weight:850;cursor:pointer}.mini:disabled{opacity:.5;cursor:default}.empty,.state{padding:25px;border:1px dashed #493d63;border-radius:15px;text-align:center;color:var(--muted);font-size:12px;line-height:1.8;background:#15122588}.status{min-height:24px;margin:0 0 12px;color:#d3c7ed;font-size:12px}.status.error{color:#fda4af}.status.success{color:var(--green)}footer{padding:28px 0 36px;border-top:1px solid #302847;color:#8f86a7;font-size:10px}.foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+@media(max-width:900px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.inventory{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.wrap{width:calc(100% - 24px)}.nav{height:60px;gap:12px}.brand{font-size:16px}.brand img{width:29px;height:29px}.navlinks{gap:10px;font-size:10px}.navlinks a:nth-child(2){display:none}.account{padding:8px 9px;font-size:10px}.hero{margin:14px 0 18px;border-radius:18px;padding:25px 20px}.hero p{font-size:12px}.section-head h2{font-size:19px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.item-art{height:122px}.item-body{padding:10px}.item-body h3{font-size:12px}.item-desc{font-size:10px;min-height:45px}.inventory{grid-template-columns:1fr}.inventory-card{padding:10px}.inventory-icon{width:44px;height:44px;flex-basis:44px}}
+</style>
+</head>
+<body>
+<header><div class="wrap nav">
+<a class="brand" href="/games/"><img src="/assets/brand/logo/kurolab_icon_toumei_160.png?v=20261121logosfix" alt=""><span>KURO <em>STORE</em></span></a>
+<nav class="navlinks"><a href="/games/">ゲーム一覧</a><a href="/games/ranking/">ランキング</a><a href="/games/mypage/">マイページ</a></nav>
+<div class="spacer"></div><a class="account" id="storeAccount" href="/games/?account=1">ログイン / 登録</a>
+</div></header>
+<main class="wrap">
+<section class="hero">
+<div class="eyebrow">KURO GAMES / OFFICIAL STORE</div>
+<h1>KURO <span>STORE</span></h1>
+<p>ゲームをもっと自分らしく。KURO GAMESのアイテムを取得して、あなたのコレクションに追加しよう。</p>
+<div class="hero-pills"><span class="pill">✦ 無料アイテム</span><span class="pill">◈ 共通アカウント連携</span><span class="pill">▣ マイアイテム</span></div>
+</section>
+<section class="section" id="catalogSection">
+<div class="section-head"><div><div class="section-kicker">DISCOVER ITEMS</div><h2>アイテム一覧</h2><p>取得したアイテムはアカウントの所持品に保存されます。</p></div><div id="storeItemCount" class="count">読み込み中…</div></div>
+<div class="filters" id="storeFilters">
+<button class="filter active" data-category="all" type="button">すべて</button>
+<button class="filter" data-category="avatar" type="button">アバター</button>
+<button class="filter" data-category="frame" type="button">フレーム</button>
+<button class="filter" data-category="background" type="button">背景</button>
+<button class="filter" data-category="theme" type="button">テーマ</button>
+</div>
+<p class="status" id="storeStatus" role="status" aria-live="polite">ストアを読み込んでいます…</p>
+<div class="grid" id="storeGrid"></div>
+<div class="state" id="storeEmpty" hidden>このカテゴリーの商品はまだありません。</div>
+</section>
+<section class="section" id="inventorySection">
+<div class="section-head"><div><div class="section-kicker">MY COLLECTION</div><h2>マイアイテム</h2><p>取得したアイテムと現在の装備設定を確認できます。</p></div><div class="count" id="inventoryCount">0件</div></div>
+<div class="inventory" id="inventoryGrid"></div>
+<div class="state" id="inventoryLogin" hidden>所持品を表示するにはログインしてください。<a href="/games/?account=1" style="color:#c4b5fd;text-decoration:underline">ログイン / 登録</a></div>
+<div class="state" id="inventoryEmpty" hidden>まだアイテムを取得していません。上のストアから無料アイテムを取得できます。</div>
+<div class="state" id="inventoryEquipped" hidden></div>
+</section>
+</main>
+<footer><div class="wrap foot"><span>© 2026 KURO GAMES</span><a href="/games/">ゲーム一覧へ戻る</a></div></footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const STORE_SUPABASE_URL="https://cprvpphlfpmiegjiutjn.supabase.co";
+const STORE_PUBLISHABLE_KEY="sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
+const KURO_RELAY_URL="https://kurolab.cc.cd/api/cloudflare-relay";
+async function storeCloudflareFetch(input,init){
+ const req=new Request(input,init),url=new URL(req.url);
+ if(url.origin!==STORE_SUPABASE_URL)return fetch(req);
+ const bytes=new Uint8Array(await req.arrayBuffer());let binary="";
+ for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
+ const headers={};req.headers.forEach((v,k)=>{headers[k]=v;});
+ const proxy=await fetch(KURO_RELAY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:"game-studio"})});
+ let result;try{result=await proxy.json();}catch{throw new Error("Cloudflare中継サーバーの応答を読み取れませんでした。");}
+ if(!proxy.ok||!result||typeof result.status!=="number")throw new Error(result&&result.error||"Cloudflare中継通信に失敗しました。");
+ let body=null;if(result.isBinary&&result.bodyBase64){const raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);body=out;}else if(result.bodyText!==undefined&&![204,205,304].includes(result.status))body=result.bodyText;
+ return new Response(body,{status:result.status,headers:result.headers||{"Content-Type":"application/json"}});
+}
+const storeDb=window.supabase.createClient(STORE_SUPABASE_URL,STORE_PUBLISHABLE_KEY,{global:{fetch:storeCloudflareFetch},auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}});
+const $=id=>document.getElementById(id);
+const html=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const categoryLabels={avatar:"アバター",frame:"フレーム",background:"背景",theme:"テーマ",other:"その他"};
+const rarityLabels={common:"COMMON",rare:"RARE",epic:"EPIC",legendary:"LEGENDARY"};
+let storeItems=[],inventory=[],equipped=[],currentCategory="all",isLoggedIn=false;
+function itemArt(item,small=false){
+ if(item.image_url)return '<img src="'+html(item.image_url)+'" alt="">';
+ return '<span class="'+(small?"":"item-icon")+'">'+html(item.icon||"🎁")+'</span>';
+}
+function status(message,type=""){
+ $("storeStatus").textContent=message;$("storeStatus").className="status"+(type?" "+type:"");
+}
+function ownedIds(){return new Set(inventory.map(row=>row.item_id));}
+function equippedFor(slot){return equipped.find(row=>row.slot===slot)||null;}
+function renderCatalog(){
+ const owned=ownedIds(),visible=storeItems.filter(item=>currentCategory==="all"||item.category===currentCategory);
+ $("storeItemCount").textContent=visible.length+" アイテム";
+ $("storeEmpty").hidden=visible.length>0;
+ $("storeGrid").innerHTML=visible.map(item=>{
+  const isOwned=owned.has(item.id);
+  const button=isOwned?'<button class="action owned" disabled>✓ 所持済み</button>':isLoggedIn?'<button class="action" data-claim="'+html(item.id)+'">無料で取得する</button>':'<a class="action" style="display:flex;align-items:center;justify-content:center" href="/games/?account=1">ログインして取得</a>';
+  return '<article class="item"><div class="item-art"><span class="rarity">'+html(rarityLabels[item.rarity]||"ITEM")+'</span>'+itemArt(item)+'</div><div class="item-body"><h3>'+html(item.name)+'</h3><p class="item-desc">'+html(item.description||"KURO STOREアイテム")+'</p><div class="item-meta"><span>'+html(categoryLabels[item.category]||"その他")+'</span><strong class="free">無料</strong></div>'+button+'</div></article>';
+ }).join("");
+}
+function renderInventory(){
+ const owned=ownedIds();
+ $("inventoryCount").textContent=inventory.length+"件";
+ $("inventoryLogin").hidden=isLoggedIn;
+ $("inventoryGrid").hidden=!isLoggedIn||inventory.length===0;
+ $("inventoryEmpty").hidden=!isLoggedIn||inventory.length!==0;
+ $("inventoryGrid").innerHTML="";
+ if(!isLoggedIn)return;
+ const itemMap=new Map(storeItems.map(item=>[item.id,item]));
+ const inventoryItems=inventory.map(row=>({row,item:itemMap.get(row.item_id)})).filter(x=>x.item);
+ $("inventoryGrid").innerHTML=inventoryItems.map(({row,item})=>{
+  const slot=["avatar","frame","background","theme"].includes(item.category)?item.category:null;
+  const active=slot&&equippedFor(slot)?.item_id===item.id;
+  let actions="";
+  if(slot){
+   actions=active?'<button class="mini" disabled>装備中</button><button class="mini" data-unequip="'+html(slot)+'">解除</button>':'<button class="mini" data-equip="'+html(item.id)+'" data-slot="'+html(slot)+'">装備する</button>';
+  }
+  return '<article class="inventory-card"><div class="inventory-icon">'+itemArt(item,true)+'</div><div class="inventory-copy"><strong>'+html(item.name)+'</strong><small>'+html(categoryLabels[item.category]||"その他")+' · '+(active?"装備中":"所持済み")+'</small><div class="inventory-actions">'+actions+'</div></div></article>';
+ }).join("");
+ const equippedLabels=equipped.map(row=>categoryLabels[row.slot]||row.slot);
+ $("inventoryEquipped").hidden=!equipped.length;
+ $("inventoryEquipped").textContent=equipped.length?"装備設定："+equippedLabels.join(" / "):"";
+}
+async function refreshStore(){
+ status("ストアを読み込んでいます…");
+ try{
+  const {data,error}=await storeDb.functions.invoke("kurogames-store",{body:{action:"catalog"}});
+  if(error)throw error;if(data?.error)throw new Error(data.error);
+  storeItems=Array.isArray(data.items)?data.items:[];
+  inventory=Array.isArray(data.inventory)?data.inventory:[];
+  equipped=Array.isArray(data.equipped)?data.equipped:[];
+  isLoggedIn=data.isLoggedIn===true;
+  const profile=data.profile||{};
+  $("storeAccount").textContent=isLoggedIn?(profile.display_name||profile.username||"アカウント"):"ログイン / 登録";
+  $("storeAccount").href=isLoggedIn?"/games/mypage/":"/games/?account=1";
+  $("storeAccount").title=isLoggedIn?(profile.kuro_id||"KUROアカウント"):"ログイン / 登録";
+  renderCatalog();renderInventory();status("アイテムを表示しています。取得したアイテムはアカウントに保存されます。","success");
+ }catch(error){
+  status("ストアを読み込めませんでした："+(error.message||error),"error");
+  $("storeGrid").innerHTML='<div class="state" style="grid-column:1/-1">通信状態を確認して、ページを再読み込みしてください。</div>';
+ }
+}
+async function claimItem(itemId,button){
+ if(!isLoggedIn){location.href="/games/?account=1";return;}
+ button.disabled=true;button.textContent="取得中…";
+ try{
+  const {data,error}=await storeDb.functions.invoke("kurogames-store",{body:{action:"claim_free",itemId}});
+  if(error)throw error;if(data?.error)throw new Error(data.error);
+  status(data?.result?.alreadyOwned?"このアイテムはすでに所持しています。":"アイテムを取得しました。マイアイテムに追加しました。","success");
+  await refreshStore();
+ }catch(error){status("取得できませんでした："+(error.message||error),"error");button.disabled=false;button.textContent="無料で取得する";}
+}
+async function equipItem(slot,itemId,button){
+ button.disabled=true;
+ try{
+  const {data,error}=await storeDb.functions.invoke("kurogames-store",{body:{action:"equip",slot,itemId}});
+  if(error)throw error;if(data?.error)throw new Error(data.error);
+  status(categoryLabels[slot]+"を装備しました。","success");await refreshStore();
+ }catch(error){status("装備を変更できませんでした："+(error.message||error),"error");button.disabled=false;}
+}
+async function unequipItem(slot,button){
+ button.disabled=true;
+ try{
+  const {data,error}=await storeDb.functions.invoke("kurogames-store",{body:{action:"equip",slot,itemId:null}});
+  if(error)throw error;if(data?.error)throw new Error(data.error);
+  status(categoryLabels[slot]+"を解除しました。","success");await refreshStore();
+ }catch(error){status("装備を解除できませんでした："+(error.message||error),"error");button.disabled=false;}
+}
+$("storeFilters").addEventListener("click",event=>{
+ const button=event.target.closest("[data-category]");if(!button)return;
+ currentCategory=button.dataset.category;
+ $("storeFilters").querySelectorAll("button").forEach(el=>el.classList.toggle("active",el===button));
+ renderCatalog();
+});
+$("storeGrid").addEventListener("click",event=>{
+ const button=event.target.closest("[data-claim]");if(button)claimItem(button.dataset.claim,button);
+});
+$("inventoryGrid").addEventListener("click",event=>{
+ const equip=event.target.closest("[data-equip]"),unequip=event.target.closest("[data-unequip]");
+ if(equip)equipItem(equip.dataset.slot,equip.dataset.equip,equip);
+ if(unequip)unequipItem(unequip.dataset.unequip,unequip);
+});
+storeDb.auth.onAuthStateChange(()=>{refreshStore();});
+refreshStore();
+</script>
+</body>
+</html>
