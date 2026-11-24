@@ -691,7 +691,7 @@ const KuroGames = {
     },
   },
 
-  // One aggregate row per user/game/mode. Writes are made only by trusted server code.
+  // One aggregate row per user/game/mode. There is no per-play event write; outcome writes use restricted, authenticated result actions or trusted server code.
   stats: {
     async get(options) {
       options = options || {};
