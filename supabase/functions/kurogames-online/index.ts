@@ -488,6 +488,95 @@ async function reconcilePendingVerifiedSessions(userId:string,gameId:string) {
   }
 }
 
+
+async function loadHardTictactoeStats(gameId: string, rule: string | null = null) {
+  const PAGE_SIZE = 1000;
+  const events: Array<{ user_id: string; result: string; created_at: string; submission_id: string }> = [];
+  for (let offset = 0; offset < 50000; offset += PAGE_SIZE) {
+    let query = admin.from("game_tictactoe_verified_events")
+      .select("user_id,result,created_at,submission_id")
+      .eq("game_id", gameId)
+      .eq("cpu_difficulty", "HARD")
+      .order("created_at", { ascending: true })
+      .order("submission_id", { ascending: true })
+      .range(offset, offset + PAGE_SIZE - 1);
+    if (rule) query = query.eq("rule", rule);
+    const { data, error } = await query;
+    if (error) {
+      console.error("[kurogames-online] hard CPU tic-tac-toe event read failed", error);
+      throw new HttpError(500, "〇✕ゲームの最強CPUランキング記録を取得できませんでした。");
+    }
+    const page = (data ?? []) as typeof events;
+    events.push(...page);
+    if (page.length < PAGE_SIZE) break;
+  }
+
+  const byUser = new Map<string, {
+    user_id: string; played: number; wins: number; losses: number; draws: number;
+    current_streak: number; best_streak: number; updated_at: string;
+  }>();
+  for (const event of events) {
+    let stats = byUser.get(event.user_id);
+    if (!stats) {
+      stats = {
+        user_id: event.user_id, played: 0, wins: 0, losses: 0, draws: 0,
+        current_streak: 0, best_streak: 0, updated_at: event.created_at,
+      };
+      byUser.set(event.user_id, stats);
+    }
+    stats.played += 1;
+    if (event.result === "win") {
+      stats.wins += 1;
+      stats.current_streak += 1;
+      stats.best_streak = Math.max(stats.best_streak, stats.current_streak);
+    } else {
+      if (event.result === "loss") stats.losses += 1;
+      else if (event.result === "draw") stats.draws += 1;
+      stats.current_streak = 0;
+    }
+    stats.updated_at = event.created_at;
+  }
+  return Array.from(byUser.values());
+}
+
+async function loadHardUnonSoloScores(gameId: string, limit: number) {
+  const PAGE_SIZE = 1000;
+  const byUser = new Map<string, { user_id: string; score: number; mode: string; created_at: string }>();
+  for (let offset = 0; offset < 50000; offset += PAGE_SIZE) {
+    const { data, error } = await admin.from("kuro_game_play_events")
+      .select("submission_id,user_id,score,mode,result,created_at,metadata")
+      .eq("game_id", gameId)
+      .eq("mode", "wins-solo")
+      .eq("result", "win")
+      .order("created_at", { ascending: true })
+      .order("submission_id", { ascending: true })
+      .range(offset, offset + PAGE_SIZE - 1);
+    if (error) {
+      console.error("[kurogames-online] UNON hard CPU event read failed", error);
+      throw new HttpError(500, "UNONの最強CPUランキング記録を取得できませんでした。");
+    }
+    const page = data ?? [];
+    for (const row of page) {
+      const metadata = row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
+        ? row.metadata as Record<string, unknown>
+        : {};
+      const difficulty = String(metadata.cpuDifficulty ?? metadata.cpu_difficulty ?? metadata.difficulty ?? "").trim().toLowerCase();
+      if (metadata.source !== "unon-solo" || difficulty !== "hard") continue;
+      const current = byUser.get(row.user_id);
+      if (current) {
+        current.score += 1;
+        current.created_at = row.created_at;
+      } else {
+        byUser.set(row.user_id, { user_id: row.user_id, score: 1, mode: "wins-solo", created_at: row.created_at });
+      }
+    }
+    if (page.length < PAGE_SIZE) break;
+  }
+  return Array.from(byUser.values())
+    .sort((a, b) => b.score - a.score || String(a.created_at).localeCompare(String(b.created_at)))
+    .slice(0, limit);
+}
+
 async function handle(req: Request) {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
   if (req.method !== "POST") throw new HttpError(405, "POSTで呼び出してください。");
@@ -689,32 +778,25 @@ async function handle(req: Request) {
 
     // Tic-Tac-Toe win rankings use the shared user/game/mode aggregate.
     // The dedicated verified stats table remains the source for streak and win-rate views.
+    // 〇✕ゲームはCPU最強（HARD）でサーバー確定した対局だけを公開ランキングへ集計する。
     if (game.id === TICTACTOE_GAME_ID) {
       if (!["normal", "vanish", "gobble", "reverse"].includes(mode)) {
         throw new HttpError(400, "ランキングルールが正しくありません。");
       }
-      const { data: verifiedRows, error: verifiedError } = await admin
-        .from("kuro_game_user_stats")
-        .select("user_id, wins, updated_at")
-        .eq("game_id", game.id)
-        .eq("mode", mode)
-        .contains("metadata", { metric: "wins", source: "tictactoe-server" })
-        .gt("wins", 0);
-      if (verifiedError) throw new HttpError(500, "〇✕ゲームの集計ランキングを取得できませんでした。");
-      const combinedRows = (verifiedRows ?? [])
-        .map((row) => ({ ...row, wins: Number(row.wins) || 0 }))
+      const aggregates = await loadHardTictactoeStats(game.id, mode);
+      const ranked = aggregates
+        .filter((row) => row.wins > 0)
         .sort((a, b) => b.wins - a.wins || String(a.updated_at).localeCompare(String(b.updated_at)))
         .slice(0, limit);
-      const verifiedUserIds = Array.from(new Set(combinedRows.map((row) => row.user_id)));
-      const verifiedProfiles = new Map<string, { kuro_id: string; username: string; avatar_url: string | null }>();
-      if (verifiedUserIds.length) {
-        const { data: profiles, error: profileError } = await admin
-          .from("profiles")
-          .select("id, kuro_id, username, avatar_url")
-          .in("id", verifiedUserIds);
+      const ids = Array.from(new Set(ranked.map((row) => row.user_id)));
+      const profileMap = new Map<string, { kuro_id: string; username: string; avatar_url: string | null }>();
+      if (ids.length) {
+        const { data: profiles, error: profileError } = await admin.from("profiles")
+          .select("id,kuro_id,username,avatar_url")
+          .in("id", ids);
         if (profileError) throw new HttpError(500, "ランキング参加者のプロフィールを取得できませんでした。");
         for (const profile of profiles ?? []) {
-          verifiedProfiles.set(profile.id, {
+          profileMap.set(profile.id, {
             kuro_id: profile.kuro_id ?? "",
             username: profile.username ?? "プレイヤー",
             avatar_url: profile.avatar_url ?? null,
@@ -723,15 +805,56 @@ async function handle(req: Request) {
       }
       return reply(200, {
         mode,
-        scores: combinedRows.map((row, index) => {
-          const profile = verifiedProfiles.get(row.user_id) ?? { kuro_id: "", username: "プレイヤー", avatar_url: null };
+        cpuDifficulty: "HARD",
+        scores: ranked.map((row, index) => {
+          const profile = profileMap.get(row.user_id) ?? { kuro_id: "", username: "プレイヤー", avatar_url: null };
           return {
             rank: index + 1,
             userId: row.user_id,
             score: row.wins,
             mode,
             createdAt: row.updated_at,
-            recordType: "verified",
+            recordType: "verified-hard-cpu",
+            user: {
+              kuroId: profile.kuro_id || null,
+              username: profile.username,
+              display_name: profile.username,
+              avatar_url: profile.avatar_url,
+            },
+          };
+        }),
+      });
+    }
+
+    if (game.id === UNON_GAME_ID && mode === "wins-solo") {
+      const hardScores = await loadHardUnonSoloScores(game.id, limit);
+      const ids = Array.from(new Set(hardScores.map((row) => row.user_id)));
+      const profileMap = new Map<string, { kuro_id: string; username: string; avatar_url: string | null }>();
+      if (ids.length) {
+        const { data: profiles, error: profileError } = await admin.from("profiles")
+          .select("id,kuro_id,username,avatar_url")
+          .in("id", ids);
+        if (profileError) throw new HttpError(500, "ランキング参加者のプロフィールを取得できませんでした。");
+        for (const profile of profiles ?? []) {
+          profileMap.set(profile.id, {
+            kuro_id: profile.kuro_id ?? "",
+            username: profile.username ?? "プレイヤー",
+            avatar_url: profile.avatar_url ?? null,
+          });
+        }
+      }
+      return reply(200, {
+        mode,
+        cpuDifficulty: "hard",
+        scores: hardScores.map((row, index) => {
+          const profile = profileMap.get(row.user_id) ?? { kuro_id: "", username: "プレイヤー", avatar_url: null };
+          return {
+            rank: index + 1,
+            userId: row.user_id,
+            score: row.score,
+            mode,
+            createdAt: row.created_at,
+            recordType: "hard-cpu",
             user: {
               kuroId: profile.kuro_id || null,
               username: profile.username,
@@ -862,61 +985,20 @@ async function handle(req: Request) {
     const viewer = await getOptionalUser(req);
     if (viewer) await reconcilePendingVerifiedSessions(viewer.id, game.id);
 
-    const PAGE_SIZE = 1000;
-    const statsRows: Array<{
-      user_id: string;
-      played: number | string;
-      wins: number | string;
-      losses: number | string;
-      draws: number | string;
-      current_streak: number | string;
-      best_streak: number | string;
-      updated_at: string;
-      recordType?: string;
-    }> = [];
-
-    if (metric === "wins") {
-      // The common aggregate is authoritative for the regular win-count ranking.
-      const { data, error } = await admin.from("kuro_game_user_stats")
-        .select("user_id, plays, wins, losses, draws, updated_at, metadata")
-        .eq("game_id", game.id)
-        .eq("mode", rule)
-        .contains("metadata", { metric: "wins", source: "tictactoe-server" })
-        .gt("wins", 0);
-      if (error) throw new HttpError(500, "〇✕ゲームの集計ランキングを取得できませんでした。");
-      for (const row of data ?? []) {
-        statsRows.push({
-          user_id: row.user_id,
-          played: row.plays,
-          wins: row.wins,
-          losses: row.losses,
-          draws: row.draws,
-          current_streak: 0,
-          best_streak: 0,
-          updated_at: row.updated_at,
-          recordType: "unified",
-        });
-      }
-    } else {
-      // Win-rate and streak metrics are not stored in the compact common row.
-      for (let offset = 0; offset < 50000; offset += PAGE_SIZE) {
-        const { data, error } = await admin.from("game_tictactoe_verified_stats")
-          .select("user_id, played, wins, losses, draws, current_streak, best_streak, updated_at")
-          .eq("game_id", game.id)
-          .eq("rule", rule)
-          .range(offset, offset + PAGE_SIZE - 1);
-        if (error) throw new HttpError(500, "〇✕ゲームのランキングを取得できませんでした。");
-        const page = (data ?? []) as typeof statsRows;
-        statsRows.push(...page);
-        if (page.length < PAGE_SIZE) break;
-      }
-    }
-
+    const statsRows = await loadHardTictactoeStats(game.id, rule);
     const mergedStats = new Map<string, any>();
-    for (const row of statsRows) mergedStats.set(row.user_id,{
-      user_id:row.user_id,played:Number(row.played)||0,wins:Number(row.wins)||0,losses:Number(row.losses)||0,draws:Number(row.draws)||0,
-      current_streak:Number(row.current_streak)||0,best_streak:Number(row.best_streak)||0,updated_at:row.updated_at,recordType:row.recordType || "migrated"
+    for (const row of statsRows) mergedStats.set(row.user_id, {
+      user_id: row.user_id,
+      played: Number(row.played) || 0,
+      wins: Number(row.wins) || 0,
+      losses: Number(row.losses) || 0,
+      draws: Number(row.draws) || 0,
+      current_streak: Number(row.current_streak) || 0,
+      best_streak: Number(row.best_streak) || 0,
+      updated_at: row.updated_at,
+      recordType: "verified-hard-cpu",
     });
+
     const entries = Array.from(mergedStats.values()).map(row => {
       const played = Number(row.played) || 0;
       const wins = Number(row.wins) || 0;
@@ -1217,13 +1299,17 @@ async function handle(req: Request) {
       : crypto.randomUUID();
 
     if (game.id === UNON_GAME_ID && mode === "wins-solo") {
-      const difficulty = typeof metadata.difficulty === "string" ? metadata.difficulty : "";
+      const difficulty = String(metadata.cpuDifficulty ?? metadata.cpu_difficulty ?? metadata.difficulty ?? "").trim().toLowerCase();
       const players = Number(metadata.players);
       if (score !== 1 || metadata.metric !== "wins" || metadata.source !== "unon-solo" ||
           !["easy", "normal", "hard"].includes(difficulty) ||
           !Number.isSafeInteger(players) || players < 2 || players > 4) {
         throw new HttpError(400, "UNONひとり用の勝利記録データが正しくありません。");
       }
+      if (difficulty !== "hard") {
+        throw new HttpError(403, "ランキング対象はCPU最強設定のみです。CPUの強さを「つよい」にして再挑戦してください。");
+      }
+      metadata.cpuDifficulty = "hard";
     }
 
     if (game.id === UNON_GAME_ID && mode === "wins-online") {
