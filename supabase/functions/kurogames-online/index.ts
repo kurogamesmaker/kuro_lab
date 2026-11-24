@@ -1520,8 +1520,6 @@ async function handle(req: Request) {
     const session=await loadVerifiedSession(user.id,body.sessionId,body.nonce,game.id,"sushi_typing");
     const state=cloneGameState(session.state as Record<string,any>);
     if(state.suddenEnded===true) return reply(200,{ok:true,suddenEnded:true,nonce:session.nonce,...sushiSnapshot(state,session,session.nonce)});
-    const lastActionMs=Date.now()-Date.parse(session.last_action_at);
-    if(Number.isFinite(lastActionMs)&&lastActionMs<40) throw new HttpError(429,"操作が速すぎます。");
     state.miss=(Number(state.miss)||0)+1;
     state.combo=0;
     const config=SUSHI_CFG[String(state.mode)];
