@@ -291,7 +291,7 @@
         db.rpc("kuro_get_public_profile_game_stats", { p_user_id: id }),
         getFollowCounts(db, id),
         getSignedInUser(db),
-        db.functions.invoke("kuro-public-coin-balance", { body: { userId: id } })
+        db.functions.invoke("kuro-public-coin-balance", { body: { userId: id } }).catch(function (error) { return { data: null, error: error }; })
       ]);
       if (thisRequest !== requestId) return;
       var profileResult = results[0], statsResult = results[1], coinBalanceResult = results[4];
