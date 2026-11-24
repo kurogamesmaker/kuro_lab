@@ -58,8 +58,8 @@ button,.button{display:inline-flex;align-items:center;justify-content:center;bor
    <p class="error" id="formError" role="alert"></p>
   </section>
   <section class="card" id="loginPanel" hidden>
-   <h2>ログインが必要です</h2><p class="muted">一時停止の詳細と問い合わせを確認するには、対象のKUROアカウントでログインしてください。</p>
-   <a class="button" href="/">KURO Labに戻ってログイン</a>
+   <h2>詳細確認・問い合わせにはログインが必要です</h2><p class="muted">このページ自体は公開されています。個別の停止日時・理由・管理者との問い合わせ履歴は対象アカウントでログインすると確認できます。</p>
+   <a class="button" href="/">KURO Labでログイン</a>
   </section>
   <section class="card" id="endedPanel" hidden>
    <h1>一時停止は終了しています</h1><p class="muted">現在、有効な一時停止はありません。サービスを通常どおり利用できます。</p>
@@ -72,7 +72,7 @@ button,.button{display:inline-flex;align-items:center;justify-content:center;bor
 (function(){
  "use strict";
  const SUPABASE_URL="https://cprvpphlfpmiegjiutjn.supabase.co";
- const PUBLISHABLE_KEY="sb_publishable_BYPUfB0lrh26Jv8_6ZQnpQ_wfAKOVyn";
+ const PUBLISHABLE_KEY="sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
  const $=id=>document.getElementById(id);
  const esc=value=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
  function cloudflareFetch(input,init){
@@ -95,7 +95,7 @@ button,.button{display:inline-flex;align-items:center;justify-content:center;bor
  let currentUser=null,currentSuspension=null,currentAppeal=null,currentSuspensionActive=false,currentSuspensionScheduled=false,refreshBusy=false;
  const fmt=value=>value?new Intl.DateTimeFormat("ja-JP",{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Tokyo"}).format(new Date(value)):"—";
  function showError(message){$("formError").textContent=message||"";}
- function showOnlyLogin(){ $("loading").hidden=true;$("loginPanel").hidden=false; }
+ function showOnlyLogin(){ $("loading").hidden=true;$("suspensionPanel").hidden=false;$("appealPanel").hidden=true;$("endedPanel").hidden=true;$("loginPanel").hidden=false;$("pageTitle").textContent="アカウント一時停止について"; $("pageDescription").textContent="このページは公開されています。対象アカウントでログインすると個別の停止状況と問い合わせを確認できます。"; $("stateText").textContent="詳細はログイン後に確認"; $("startsAt").textContent="—"; $("endsAt").textContent="—"; $("reasonBox").hidden=true; }
  async function load(){
   if(refreshBusy)return;refreshBusy=true;showError("");
   try{
