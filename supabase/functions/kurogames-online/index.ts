@@ -1270,27 +1270,27 @@ async function handle(req: Request) {
       // Normal rankings are read from the single aggregate row per user/game/mode.
       // The verified TicTacToe and Number Guess branches above intentionally retain
       // their specialized trusted sources and validation rules.
-      let aggregateQuery = admin.from("kuro_game_user_stats")
-        .select("user_id,mode,metric,wins,best_score,best_time_ms,last_played_at,created_at,updated_at,metadata")
+      let metricQuery = admin.from("kuro_game_user_stats")
+        .select("metric")
         .eq("game_id", game.id)
-        .eq("mode", mode);
+        .eq("mode", mode)
+        .limit(5000);
       if (game.id === PRIME_GAME_ID) {
-        aggregateQuery = aggregateQuery.contains("metadata", {
+        metricQuery = metricQuery.contains("metadata", {
           source: "prime-factor-server",
           serverVerified: "prime-breaker-v1",
         });
       } else if (game.id === SUSHI_GAME_ID) {
-        aggregateQuery = aggregateQuery.contains("metadata", {
+        metricQuery = metricQuery.contains("metadata", {
           source: "sushi-typing-server",
           serverVerified: "sushi-typing-v1",
         });
       }
-      const { data, error } = await aggregateQuery;
-      if (error) throw new HttpError(500, "集計ランキングを取得できませんでした。");
+      const { data: metricRows, error: metricError } = await metricQuery;
+      if (metricError) throw new HttpError(500, "ランキング指標を取得できませんでした。");
 
-      const aggregateRows = data ?? [];
       const metricCounts = new Map<string, number>();
-      for (const row of aggregateRows) {
+      for (const row of metricRows ?? []) {
         const metric = ["wins", "score", "time"].includes(String(row.metric)) ? String(row.metric) : "score";
         metricCounts.set(metric, (metricCounts.get(metric) || 0) + 1);
       }
@@ -1306,27 +1306,40 @@ async function handle(req: Request) {
         });
       }
 
-      scores = aggregateRows.filter((row: any) => String(row.metric || "score") === canonicalMetric)
-        .map((row: any) => {
-          const rawValue = canonicalMetric === "wins" ? row.wins
-            : canonicalMetric === "time" ? row.best_time_ms
-            : row.best_score;
-          if (rawValue === null || rawValue === undefined) return null;
-          const score = Number(rawValue);
-          if (!Number.isFinite(score) || (canonicalMetric === "wins" && score <= 0)) return null;
-          return {
-            user_id: row.user_id,
-            score,
-            mode: row.mode,
-            metric: canonicalMetric,
-            created_at: row.last_played_at || row.updated_at || row.created_at,
-          };
-        }).filter((row: any) => row !== null)
-        .sort((a: any, b: any) =>
-          (canonicalMetric === "time" ? a.score - b.score : b.score - a.score) ||
-          String(a.created_at || "").localeCompare(String(b.created_at || ""))
-        )
-        .slice(0, limit);
+      let rankingQuery = admin.from("kuro_game_user_stats")
+        .select("user_id,mode,metric,wins,best_score,best_time_ms,last_played_at,created_at,updated_at,metadata")
+        .eq("game_id", game.id)
+        .eq("mode", mode)
+        .eq("metric", canonicalMetric);
+      if (game.id === PRIME_GAME_ID) {
+        rankingQuery = rankingQuery.contains("metadata", {
+          source: "prime-factor-server",
+          serverVerified: "prime-breaker-v1",
+        });
+      } else if (game.id === SUSHI_GAME_ID) {
+        rankingQuery = rankingQuery.contains("metadata", {
+          source: "sushi-typing-server",
+          serverVerified: "sushi-typing-v1",
+        });
+      }
+      const orderColumn = canonicalMetric === "wins" ? "wins"
+        : canonicalMetric === "time" ? "best_time_ms"
+        : "best_score";
+      const { data, error } = await rankingQuery
+        .order(orderColumn, { ascending: canonicalMetric === "time" })
+        .order("updated_at", { ascending: true })
+        .limit(limit);
+      if (error) throw new HttpError(500, "集計ランキングを取得できませんでした。");
+
+      scores = (data ?? []).map((row: any) => ({
+        user_id: row.user_id,
+        score: Number(canonicalMetric === "wins" ? row.wins
+          : canonicalMetric === "time" ? row.best_time_ms
+          : row.best_score),
+        mode: row.mode,
+        metric: canonicalMetric,
+        created_at: row.last_played_at || row.updated_at || row.created_at,
+      })).filter((row: any) => Number.isFinite(row.score) && (canonicalMetric !== "wins" || row.score > 0));
     }
 
     const userIds = Array.from(new Set((scores ?? []).map((row) => row.user_id)));
