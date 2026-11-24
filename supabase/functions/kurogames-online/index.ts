@@ -872,23 +872,50 @@ async function handle(req: Request) {
       current_streak: number | string;
       best_streak: number | string;
       updated_at: string;
+      recordType?: string;
     }> = [];
-    for (let offset = 0; offset < 50000; offset += PAGE_SIZE) {
-      const { data, error } = await admin.from("game_tictactoe_verified_stats")
-        .select("user_id, played, wins, losses, draws, current_streak, best_streak, updated_at")
+
+    if (metric === "wins") {
+      // The common aggregate is authoritative for the regular win-count ranking.
+      const { data, error } = await admin.from("kuro_game_user_stats")
+        .select("user_id, plays, wins, losses, draws, updated_at, metadata")
         .eq("game_id", game.id)
-        .eq("rule", rule)
-        .range(offset, offset + PAGE_SIZE - 1);
-      if (error) throw new HttpError(500, "〇✕ゲームのランキングを取得できませんでした。");
-      const page = (data ?? []) as typeof statsRows;
-      statsRows.push(...page);
-      if (page.length < PAGE_SIZE) break;
+        .eq("mode", rule)
+        .contains("metadata", { metric: "wins", source: "tictactoe-server" })
+        .gt("wins", 0);
+      if (error) throw new HttpError(500, "〇✕ゲームの集計ランキングを取得できませんでした。");
+      for (const row of data ?? []) {
+        statsRows.push({
+          user_id: row.user_id,
+          played: row.plays,
+          wins: row.wins,
+          losses: row.losses,
+          draws: row.draws,
+          current_streak: 0,
+          best_streak: 0,
+          updated_at: row.updated_at,
+          recordType: "unified",
+        });
+      }
+    } else {
+      // Win-rate and streak metrics are not stored in the compact common row.
+      for (let offset = 0; offset < 50000; offset += PAGE_SIZE) {
+        const { data, error } = await admin.from("game_tictactoe_verified_stats")
+          .select("user_id, played, wins, losses, draws, current_streak, best_streak, updated_at")
+          .eq("game_id", game.id)
+          .eq("rule", rule)
+          .range(offset, offset + PAGE_SIZE - 1);
+        if (error) throw new HttpError(500, "〇✕ゲームのランキングを取得できませんでした。");
+        const page = (data ?? []) as typeof statsRows;
+        statsRows.push(...page);
+        if (page.length < PAGE_SIZE) break;
+      }
     }
 
     const mergedStats = new Map<string, any>();
     for (const row of statsRows) mergedStats.set(row.user_id,{
       user_id:row.user_id,played:Number(row.played)||0,wins:Number(row.wins)||0,losses:Number(row.losses)||0,draws:Number(row.draws)||0,
-      current_streak:Number(row.current_streak)||0,best_streak:Number(row.best_streak)||0,updated_at:row.updated_at,recordType:"migrated"
+      current_streak:Number(row.current_streak)||0,best_streak:Number(row.best_streak)||0,updated_at:row.updated_at,recordType:row.recordType || "migrated"
     });
     const entries = Array.from(mergedStats.values()).map(row => {
       const played = Number(row.played) || 0;
