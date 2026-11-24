@@ -122,6 +122,94 @@ Deno.serve(async (req: Request) => {
 
 
 
+    if (action === "get_store_items") {
+      const { data, error } = await admin.from("kuro_store_items")
+        .select("id,item_key,name,description,category,icon,image_url,rarity,price_kc,is_free,is_active,sort_order,created_at,updated_at")
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return reply({ items: data || [] }, 200, origin);
+    }
+
+    if (action === "save_store_item") {
+      const itemId = typeof body.id === "string" ? body.id.trim() : "";
+      const itemKey = typeof body.itemKey === "string" ? body.itemKey.trim().toLowerCase() : "";
+      const name = typeof body.name === "string" ? body.name.trim() : "";
+      const description = typeof body.description === "string" ? body.description.trim() : "";
+      const category = typeof body.category === "string" ? body.category : "";
+      const icon = typeof body.icon === "string" ? body.icon.trim() : "";
+      const imageInput = typeof body.imageUrl === "string" ? body.imageUrl.trim() : "";
+      const rarity = typeof body.rarity === "string" ? body.rarity : "common";
+      const sortOrder = Number(body.sortOrder ?? 100);
+      const isActive = body.isActive !== false;
+      const validCategories = new Set(["avatar", "frame", "background", "theme", "other"]);
+      const validRarities = new Set(["common", "rare", "epic", "legendary"]);
+      if (itemId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(itemId)) {
+        return reply({ error: "商品IDが正しくありません。" }, 400, origin);
+      }
+      if (!/^[a-z0-9][a-z0-9_-]{1,47}$/.test(itemKey)) return reply({ error: "商品キーは小文字英数字・_・-の2〜48文字で入力してください。" }, 400, origin);
+      if (!name || name.length > 60) return reply({ error: "商品名は1〜60文字で入力してください。" }, 400, origin);
+      if (description.length > 500) return reply({ error: "説明は500文字以内で入力してください。" }, 400, origin);
+      if (!validCategories.has(category)) return reply({ error: "カテゴリーが正しくありません。" }, 400, origin);
+      if (!icon || Array.from(icon).length > 12) return reply({ error: "アイコンは1〜12文字で入力してください。" }, 400, origin);
+      if (imageInput.length > 500 || (imageInput && !(imageInput.startsWith("/") && !imageInput.startsWith("//")) && !/^https:\/\//i.test(imageInput))) {
+        return reply({ error: "画像URLはサイト内パスまたはHTTPSのURLを指定してください。" }, 400, origin);
+      }
+      if (!validRarities.has(rarity)) return reply({ error: "レア度が正しくありません。" }, 400, origin);
+      if (!Number.isSafeInteger(sortOrder) || sortOrder < 0 || sortOrder > 9999) return reply({ error: "表示順は0〜9999で指定してください。" }, 400, origin);
+
+      const values = {
+        item_key: itemKey, name, description, category, icon,
+        image_url: imageInput || null, rarity,
+        price_kc: 0, is_free: true, is_active: isActive,
+        sort_order: sortOrder, updated_at: new Date().toISOString()
+      };
+      let saved;
+      if (itemId) {
+        const { data, error } = await admin.from("kuro_store_items")
+          .update(values).eq("id", itemId)
+          .select("id,item_key,name,category,is_active").maybeSingle();
+        if (error) throw error;
+        if (!data) return reply({ error: "商品が見つかりません。" }, 404, origin);
+        saved = data;
+      } else {
+        const { data, error } = await admin.from("kuro_store_items")
+          .insert({ ...values, created_by: caller.id })
+          .select("id,item_key,name,category,is_active").single();
+        if (error) {
+          if (error.code === "23505") return reply({ error: "同じ商品キーがすでに登録されています。" }, 409, origin);
+          throw error;
+        }
+        saved = data;
+      }
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id,
+        action: itemId ? "kuro_store.item_update" : "kuro_store.item_create",
+        metadata: saved
+      });
+      if (auditError) throw auditError;
+      return reply({ item: saved }, 200, origin);
+    }
+
+    if (action === "deactivate_store_item") {
+      const itemId = typeof body.id === "string" ? body.id.trim() : "";
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(itemId)) {
+        return reply({ error: "商品IDが正しくありません。" }, 400, origin);
+      }
+      const { data, error } = await admin.from("kuro_store_items")
+        .update({ is_active: false, updated_at: new Date().toISOString() })
+        .eq("id", itemId).select("id,item_key,name,is_active").maybeSingle();
+      if (error) throw error;
+      if (!data) return reply({ error: "商品が見つかりません。" }, 404, origin);
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id,
+        action: "kuro_store.item_deactivate",
+        metadata: data
+      });
+      if (auditError) throw auditError;
+      return reply({ item: data }, 200, origin);
+    }
+
     if (action === "get_coin_economy") {
       const [summaryResult, rewardsResult, ledgerResult, gamesResult] = await Promise.all([
         admin.rpc("kuro_coin_admin_overview"),
