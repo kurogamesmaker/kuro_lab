@@ -223,6 +223,17 @@
       '</div>';
   }
 
+  function safeRpc(db, name, args, fallback) {
+    try {
+      return Promise.resolve(db.rpc(name, args)).catch(function (error) {
+        return { data: fallback, error: error };
+      });
+    } catch (error) {
+      return Promise.resolve({ data: fallback, error: error });
+    }
+  }
+
+
   async function getSignedInUser(db) {
     if (!db || !db.auth || typeof db.auth.getUser !== "function") return null;
     try {
@@ -288,11 +299,11 @@
     try {
       var results = await Promise.all([
         db.from("profiles").select("id,username,display_name,kuro_id,avatar_url,bio,created_at").eq("id", id).maybeSingle(),
-        db.rpc("kuro_get_public_profile_game_stats", { p_user_id: id }),
+        safeRpc(db, "kuro_get_public_profile_game_stats", { p_user_id: id }, []),
         getFollowCounts(db, id),
         getSignedInUser(db),
         db.functions.invoke("kuro-public-coin-balance", { body: { userId: id } }).catch(function (error) { return { data: null, error: error }; }),
-        db.rpc("kuro_get_public_store_cosmetics", { p_user_id: id }).catch(function (error) { return { data: {}, error: error }; })
+        safeRpc(db, "kuro_get_public_store_cosmetics", { p_user_id: id }, {})
       ]);
       if (thisRequest !== requestId) return;
       var profileResult = results[0], statsResult = results[1], coinBalanceResult = results[4];
