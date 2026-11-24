@@ -169,7 +169,10 @@ Deno.serve(async (req: Request) => {
         const { data, error } = await admin.from("kuro_store_items")
           .update(values).eq("id", itemId)
           .select("id,item_key,name,category,is_active").maybeSingle();
-        if (error) throw error;
+        if (error) {
+          if (error.code === "23505") return reply({ error: "同じ商品キーがすでに登録されています。" }, 409, origin);
+          throw error;
+        }
         if (!data) return reply({ error: "商品が見つかりません。" }, 404, origin);
         saved = data;
       } else {
