@@ -145,16 +145,31 @@ Deno.serve(async (req: Request) => {
       const since7 = new Date(now.getTime() - 7 * 86400000).toISOString();
       const since24 = new Date(now.getTime() - 24 * 3600000).toISOString();
       const chatStatsSince = new Date(now.getTime() - 31 * 86400000).toISOString().slice(0, 10);
-      const [profileCount, postCount, eventResult, postRows, replyRows, chatRows, chatStatsRows] = await Promise.all([
+      // Page through all rows instead of silently stopping at Supabase's 10k row ceiling.
+      const fetchAllRows = async (queryForRange: (from: number, to: number) => any) => {
+        const all: any[] = [];
+        const pageSize = 1000;
+        for (let offset = 0; ; offset += pageSize) {
+          const result = await queryForRange(offset, offset + pageSize - 1);
+          if (result.error) throw result.error;
+          const page = result.data || [];
+          all.push(...page);
+          if (page.length < pageSize) break;
+        }
+        return { data: all, error: null };
+      };
+      const [profileCount, postCount, eventResult, postRows, replyRows, chatRows, chatStatsRows, dmRows, groupChatRows] = await Promise.all([
         admin.from("profiles").select("id", { count: "exact", head: true }),
         admin.from("posts").select("id", { count: "exact", head: true }),
-        admin.from("usage_events").select("user_id,visitor_id,event_name,created_at,widget_key,service_key,status_code,error_code").gte("created_at", since30).order("created_at", { ascending: false }).range(0, 9999),
-        admin.from("posts").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(0, 9999),
-        admin.from("post_replies").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(0, 9999),
-        admin.from("public_chat_messages").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(0, 9999),
-        admin.from("public_chat_daily_stats").select("chat_date,message_count").gte("chat_date", chatStatsSince).order("chat_date", { ascending: true }).range(0, 9999)
+        fetchAllRows((from, to) => admin.from("usage_events").select("user_id,visitor_id,event_name,created_at,widget_key,service_key,status_code,error_code").gte("created_at", since30).order("created_at", { ascending: false }).range(from, to)),
+        fetchAllRows((from, to) => admin.from("posts").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(from, to)),
+        fetchAllRows((from, to) => admin.from("post_replies").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(from, to)),
+        fetchAllRows((from, to) => admin.from("public_chat_messages").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(from, to)),
+        fetchAllRows((from, to) => admin.from("public_chat_daily_stats").select("chat_date,message_count").gte("chat_date", chatStatsSince).order("chat_date", { ascending: true }).range(from, to)),
+        fetchAllRows((from, to) => admin.from("chat_messages").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(from, to)),
+        fetchAllRows((from, to) => admin.from("group_chat_messages").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(from, to))
       ]);
-      for (const result of [profileCount, postCount, eventResult, postRows, replyRows, chatRows, chatStatsRows]) {
+      for (const result of [profileCount, postCount, eventResult, postRows, replyRows, chatRows, chatStatsRows, dmRows, groupChatRows]) {
         if (result.error) throw result.error;
       }
       const tokyoKey = (value: string | Date) => {
@@ -162,10 +177,10 @@ Deno.serve(async (req: Request) => {
         const part = (type: string) => parts.find((p) => p.type === type)?.value || "";
         return part("year") + "-" + part("month") + "-" + part("day");
       };
-      const dailyMap = new Map<string, { date: string; active_users: Set<string>; active_visitors: Set<string>; guest_users: Set<string>; posts: number; replies: number; chat: number }>();
+      const dailyMap = new Map<string, { date: string; active_users: Set<string>; active_visitors: Set<string>; guest_users: Set<string>; posts: number; replies: number; chat: number; public_chat: number; dm: number; group_chat: number }>();
       for (let i = 29; i >= 0; i--) {
         const key = tokyoKey(new Date(now.getTime() - i * 86400000));
-        dailyMap.set(key, { date: key, active_users: new Set(), active_visitors: new Set(), guest_users: new Set(), posts: 0, replies: 0, chat: 0 });
+        dailyMap.set(key, { date: key, active_users: new Set(), active_visitors: new Set(), guest_users: new Set(), posts: 0, replies: 0, chat: 0, public_chat: 0, dm: 0, group_chat: 0 });
       }
       const events = eventResult.data || [];
       for (const event of events) {
@@ -180,11 +195,13 @@ Deno.serve(async (req: Request) => {
       for (const row of replyRows.data || []) { const point = dailyMap.get(tokyoKey(row.created_at)); if (point) point.replies++; }
       for (const row of chatStatsRows.data || []) {
         const point = dailyMap.get(row.chat_date);
-        if (point) point.chat += Number(row.message_count) || 0;
+        if (point) { const count = Number(row.message_count) || 0; point.chat += count; point.public_chat += count; }
       }
-      // Count only messages still in the live table; archived dates are read from
-      // public_chat_daily_stats so the daily purge never makes the chart drop to zero.
-      for (const row of chatRows.data || []) { const point = dailyMap.get(tokyoKey(row.created_at)); if (point) point.chat++; }
+      // Public lobby: combine archived daily totals with rows still in the live table.
+      for (const row of chatRows.data || []) { const point = dailyMap.get(tokyoKey(row.created_at)); if (point) { point.chat++; point.public_chat++; } }
+      // Separate individual and group messages for charting.
+      for (const row of dmRows.data || []) { const point = dailyMap.get(tokyoKey(row.created_at)); if (point) { point.chat++; point.dm++; } }
+      for (const row of groupChatRows.data || []) { const point = dailyMap.get(tokyoKey(row.created_at)); if (point) { point.chat++; point.group_chat++; } }
       const rows7 = events.filter((e) => e.created_at >= since7);
       const rows24 = events.filter((e) => e.created_at >= since24);
       const pageViews = events.filter((e) => e.event_name === "page_view");
@@ -220,11 +237,11 @@ Deno.serve(async (req: Request) => {
         api_errors_24h: rows24.filter((e) => e.event_name === "api_error").length,
         daily: Array.from(dailyMap.values()).map((p) => ({
           date: p.date, active_users: p.active_users.size, active_visitors: p.active_visitors.size,
-          guest_users: p.guest_users.size, posts: p.posts, replies: p.replies, chat: p.chat
+          guest_users: p.guest_users.size, posts: p.posts, replies: p.replies, chat: p.chat, public_chat: p.public_chat, dm: p.dm, group_chat: p.group_chat
         })),
         widgets: Array.from(widgetMap.values()).sort((a, b) => b.views - a.views || b.adds - a.adds).slice(0, 20),
         apis: Array.from(apiMap.values()).map((item) => ({ ...item, error_rate: item.requests ? Math.round(item.errors / item.requests * 1000) / 10 : 0 })).sort((a, b) => b.errors - a.errors || b.requests - a.requests),
-        truncated: events.length >= 10000 || (postRows.data || []).length >= 10000 || (replyRows.data || []).length >= 10000 || (chatRows.data || []).length >= 10000 || (chatStatsRows.data || []).length >= 10000
+        truncated: false
       }, 200, origin);
     }
 
@@ -482,7 +499,7 @@ Deno.serve(async (req: Request) => {
       const content = typeof body.content === "string" ? body.content.trim() : "";
       const href = typeof body.href === "string" ? body.href.trim() : "";
       const audience = body.audience === "user" ? "user" : "all";
-      const serviceScope = ["lab","sns","both"].includes(body.serviceScope) ? body.serviceScope : "both";
+      const serviceScope = ["all","lab","sns","both","games"].includes(body.serviceScope) ? body.serviceScope : "all";
       const targetUserId = typeof body.userId === "string" ? body.userId : "";
       if (!title || title.length > 120) return reply({ error: "Title must be 1-120 characters" }, 400, origin);
       if (!content || content.length > 8000) return reply({ error: "Body must be 1-8000 characters" }, 400, origin);
@@ -504,7 +521,7 @@ Deno.serve(async (req: Request) => {
         recipientId = targetUserId;
       }
       let portalAnnouncementId: string | null = null;
-      if ((serviceScope === "lab" || serviceScope === "both") && audience === "all") {
+      if ((serviceScope === "all" || serviceScope === "lab" || serviceScope === "both") && audience === "all") {
         const { data: portalAnnouncement, error: portalError } = await admin.from("portal_announcements").insert({
           title, body: content, href: href || null, published: true,
           starts_at: new Date().toISOString(), ends_at: null
@@ -985,16 +1002,29 @@ Deno.serve(async (req: Request) => {
 
       const users = data.users || [];
       const ids = users.map((u) => u.id);
-      const [profilesResult, prefsResult] = ids.length ? await Promise.all([
+      const nowIso = new Date().toISOString();
+      const [profilesResult, prefsResult, suspensionsResult] = ids.length ? await Promise.all([
         admin.from("profiles").select("id,username,display_name").in("id", ids),
-        admin.from("portal_preferences").select("user_id,preferences").in("user_id", ids)
-      ]) : [{ data: [], error: null }, { data: [], error: null }];
+        admin.from("portal_preferences").select("user_id,preferences").in("user_id", ids),
+        admin.from("account_suspensions").select("id,user_id,starts_at,ends_at,reason")
+          .in("user_id", ids).is("revoked_at", null).lte("starts_at", nowIso)
+          .gt("ends_at", nowIso).order("starts_at", { ascending: false })
+      ]) : [
+        { data: [], error: null },
+        { data: [], error: null },
+        { data: [], error: null }
+      ];
 
       if (profilesResult.error) throw profilesResult.error;
       if (prefsResult.error) throw prefsResult.error;
+      if (suspensionsResult.error) throw suspensionsResult.error;
 
       const profiles = new Map((profilesResult.data || []).map((p) => [p.id, p]));
       const prefs = new Map((prefsResult.data || []).map((p) => [p.user_id, p.preferences || {}]));
+      const suspensions = new Map();
+      for (const suspension of suspensionsResult.data || []) {
+        if (!suspensions.has(suspension.user_id)) suspensions.set(suspension.user_id, suspension);
+      }
       const result = users.filter((u) => !u.is_anonymous).map((u) => {
         const profile = profiles.get(u.id);
         const pref = prefs.get(u.id) || {};
@@ -1011,6 +1041,7 @@ Deno.serve(async (req: Request) => {
           created_at: u.created_at,
           last_sign_in_at: u.last_sign_in_at || null,
           banned_until: u.banned_until || null,
+          temporary_suspension: suspensions.get(u.id) || null,
           board_count: boards,
           widget_count: widgets
         };
@@ -1051,6 +1082,213 @@ Deno.serve(async (req: Request) => {
       if (auditError) throw auditError;
 
       return reply({ ok: true, banned: enabled }, 200, origin);
+    }
+
+    if (action === "set_account_suspension") {
+      const targetUserId = typeof body.userId === "string" ? body.userId : "";
+      const startsAt = kuroSecretDate(body.startsAt);
+      const endsAt = kuroSecretDate(body.endsAt);
+      const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 1000) : "";
+      const now = Date.now();
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(targetUserId)) {
+        return reply({ error: "ユーザーIDが正しくありません。" }, 400, origin);
+      }
+      if (!startsAt || !endsAt || new Date(endsAt).getTime() <= new Date(startsAt).getTime()) {
+        return reply({ error: "開始日時と終了日時を正しく指定してください。" }, 400, origin);
+      }
+      if (new Date(endsAt).getTime() <= now || new Date(startsAt).getTime() > now + 365 * 86400000 ||
+          new Date(endsAt).getTime() - new Date(startsAt).getTime() > 365 * 86400000) {
+        return reply({ error: "一時停止期間は未来の終了日時を指定し、最長365日以内にしてください。" }, 400, origin);
+      }
+      if (targetUserId === caller.id) return reply({ error: "管理者自身のアカウントは変更できません。" }, 409, origin);
+
+      const { data: targetAdmin, error: targetAdminError } = await admin
+        .from("admin_users").select("user_id").eq("user_id", targetUserId).maybeSingle();
+      if (targetAdminError) throw targetAdminError;
+      if (targetAdmin) return reply({ error: "管理者アカウントは一時停止できません。" }, 409, origin);
+
+      const { data: targetData, error: targetError } = await admin.auth.admin.getUserById(targetUserId);
+      if (targetError || !targetData?.user || targetData.user.is_anonymous) {
+        return reply({ error: "対象アカウントが見つかりません。" }, 404, origin);
+      }
+
+      const { error: revokeError } = await admin.from("account_suspensions")
+        .update({ revoked_at: new Date().toISOString(), revoked_by: caller.id })
+        .eq("user_id", targetUserId).is("revoked_at", null);
+      if (revokeError) throw revokeError;
+
+      const { data: suspension, error: insertError } = await admin.from("account_suspensions")
+        .insert({
+          user_id: targetUserId,
+          starts_at: startsAt,
+          ends_at: endsAt,
+          reason,
+          created_by: caller.id
+        })
+        .select("id,user_id,starts_at,ends_at,reason")
+        .single();
+      if (insertError) throw insertError;
+
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id,
+        action: "account.temporary_suspend",
+        target_user_id: targetUserId,
+        metadata: { starts_at: startsAt, ends_at: endsAt, reason }
+      });
+      if (auditError) throw auditError;
+
+      const { error: notifyError } = await admin.from("admin_messages").insert({
+        title: "アカウントの一時停止について",
+        body: reason
+          ? "アカウントが一時停止されました。理由：" + reason + "。解除予定：" + endsAt
+          : "アカウントが一時停止されました。解除予定：" + endsAt,
+        href: "https://kurolab.cc.cd/account/suspension/",
+        audience: "user",
+        recipient_id: targetUserId,
+        created_by: caller.id,
+        published: true,
+        service_scope: "both"
+      });
+      if (notifyError) throw notifyError;
+
+      return reply({ ok: true, suspension }, 200, origin);
+    }
+
+    if (action === "revoke_account_suspension") {
+      const suspensionId = typeof body.suspensionId === "string" ? body.suspensionId : "";
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(suspensionId)) {
+        return reply({ error: "一時停止IDが正しくありません。" }, 400, origin);
+      }
+      const { data: suspension, error: suspensionError } = await admin.from("account_suspensions")
+        .select("id,user_id,ends_at").eq("id", suspensionId).is("revoked_at", null).maybeSingle();
+      if (suspensionError) throw suspensionError;
+      if (!suspension) return reply({ error: "有効な一時停止が見つかりません。" }, 404, origin);
+
+      const { error: updateError } = await admin.from("account_suspensions")
+        .update({ revoked_at: new Date().toISOString(), revoked_by: caller.id })
+        .eq("id", suspensionId).is("revoked_at", null);
+      if (updateError) throw updateError;
+
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id,
+        action: "account.temporary_unsuspend",
+        target_user_id: suspension.user_id,
+        metadata: { suspension_id: suspensionId }
+      });
+      if (auditError) throw auditError;
+
+      const { error: notifyError } = await admin.from("admin_messages").insert({
+        title: "アカウントの一時停止が解除されました",
+        body: "管理者により一時停止が解除されました。すべてのサービスを通常どおり利用できます。",
+        href: "https://kurolab.cc.cd/",
+        audience: "user",
+        recipient_id: suspension.user_id,
+        created_by: caller.id,
+        published: true,
+        service_scope: "both"
+      });
+      if (notifyError) throw notifyError;
+
+      return reply({ ok: true, revoked: true, userId: suspension.user_id }, 200, origin);
+    }
+
+    if (action === "list_suspension_appeals") {
+      const { data: appeals, error: appealsError } = await admin.from("account_suspension_appeals")
+        .select("id,user_id,suspension_id,subject,status,created_at,updated_at")
+        .order("updated_at", { ascending: false }).limit(250);
+      if (appealsError) throw appealsError;
+      const appealIds = (appeals || []).map((x) => x.id);
+      const userIds = Array.from(new Set((appeals || []).map((x) => x.user_id)));
+      if (!appealIds.length) return reply({ appeals: [] }, 200, origin);
+
+      const [profilesResult, suspensionsResult, messagesResult] = await Promise.all([
+        admin.from("profiles").select("id,username,display_name").in("id", userIds),
+        admin.from("account_suspensions").select("id,starts_at,ends_at,reason,revoked_at").in("id", (appeals || []).map((x) => x.suspension_id)),
+        admin.from("account_suspension_appeal_messages")
+          .select("id,appeal_id,sender_id,sender_role,message,created_at")
+          .in("appeal_id", appealIds).order("created_at", { ascending: true })
+      ]);
+      if (profilesResult.error) throw profilesResult.error;
+      if (suspensionsResult.error) throw suspensionsResult.error;
+      if (messagesResult.error) throw messagesResult.error;
+      const profiles = new Map((profilesResult.data || []).map((x) => [x.id, x]));
+      const suspensions = new Map((suspensionsResult.data || []).map((x) => [x.id, x]));
+      const messages = new Map();
+      for (const message of messagesResult.data || []) {
+        if (!messages.has(message.appeal_id)) messages.set(message.appeal_id, []);
+        messages.get(message.appeal_id).push(message);
+      }
+      return reply({
+        appeals: (appeals || []).map((item) => ({
+          ...item,
+          profile: profiles.get(item.user_id) || null,
+          suspension: suspensions.get(item.suspension_id) || null,
+          messages: messages.get(item.id) || []
+        }))
+      }, 200, origin);
+    }
+
+    if (action === "reply_suspension_appeal") {
+      const appealId = typeof body.appealId === "string" ? body.appealId : "";
+      const message = typeof body.message === "string" ? body.message.trim().slice(0, 4000) : "";
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(appealId) || !message) {
+        return reply({ error: "問い合わせと返信内容を確認してください。" }, 400, origin);
+      }
+      const { data: appeal, error: appealError } = await admin.from("account_suspension_appeals")
+        .select("id,user_id,status").eq("id", appealId).maybeSingle();
+      if (appealError) throw appealError;
+      if (!appeal) return reply({ error: "問い合わせが見つかりません。" }, 404, origin);
+      if (appeal.status === "closed") return reply({ error: "対応完了済みの問い合わせです。" }, 409, origin);
+
+      const { error: messageError } = await admin.from("account_suspension_appeal_messages").insert({
+        appeal_id: appealId,
+        sender_id: caller.id,
+        sender_role: "admin",
+        message
+      });
+      if (messageError) throw messageError;
+      const { error: updateError } = await admin.from("account_suspension_appeals")
+        .update({ status: "answered", updated_at: new Date().toISOString() }).eq("id", appealId);
+      if (updateError) throw updateError;
+
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id,
+        action: "account.suspension_appeal.reply",
+        target_user_id: appeal.user_id,
+        metadata: { appeal_id: appealId }
+      });
+      if (auditError) throw auditError;
+      const { error: notifyError } = await admin.from("admin_messages").insert({
+        title: "一時停止について管理者から返信が届きました",
+        body: "問い合わせBOXを開いて管理者からの返信を確認してください。",
+        href: "https://kurolab.cc.cd/account/suspension/",
+        audience: "user",
+        recipient_id: appeal.user_id,
+        created_by: caller.id,
+        published: true,
+        service_scope: "both"
+      });
+      if (notifyError) throw notifyError;
+
+      return reply({ ok: true }, 200, origin);
+    }
+
+    if (action === "set_suspension_appeal_status") {
+      const appealId = typeof body.appealId === "string" ? body.appealId : "";
+      const status = body.status === "open" || body.status === "answered" || body.status === "closed" ? body.status : "";
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(appealId) || !status) {
+        return reply({ error: "問い合わせ状態が正しくありません。" }, 400, origin);
+      }
+      const { error: updateError } = await admin.from("account_suspension_appeals")
+        .update({ status, updated_at: new Date().toISOString() }).eq("id", appealId);
+      if (updateError) throw updateError;
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id,
+        action: "account.suspension_appeal.status",
+        metadata: { appeal_id: appealId, status }
+      });
+      if (auditError) throw auditError;
+      return reply({ ok: true, status }, 200, origin);
     }
 
     if (action === "send_password_reset") {
