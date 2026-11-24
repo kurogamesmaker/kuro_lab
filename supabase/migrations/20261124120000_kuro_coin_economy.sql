@@ -72,8 +72,8 @@ declare
   v_balance bigint;
   v_new_balance bigint;
   v_ledger_id uuid;
+  v_cpu text := upper(coalesce(p_cpu_difficulty,''));
 begin
-  v_cpu := upper(coalesce(p_cpu_difficulty,''));
   if p_user_id is null or p_game_id is null or p_submission_id is null then
     return false;
   end if;
