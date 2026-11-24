@@ -630,7 +630,7 @@ async function handle(req: Request) {
       console.error("[kurogames-online] unified stats read failed", error);
       throw new HttpError(500, "ゲーム記録を取得できませんでした。");
     }
-    return reply(200, { stats: data || [], allGames });
+    return reply(200, { stats: (data || []).filter((row) => row.metadata?.internalRankingMode !== true), allGames });
   }
 
   if (action === "stats_history") {
@@ -651,7 +651,7 @@ async function handle(req: Request) {
       console.error("[kurogames-online] aggregate stats compatibility read failed", error);
       throw new HttpError(500, "ゲーム記録を取得できませんでした。");
     }
-    return reply(200, { stats: data || [], events: [], deprecated: true, allGames });
+    return reply(200, { stats: (data || []).filter((row) => row.metadata?.internalRankingMode !== true), events: [], deprecated: true, allGames });
   }
 
   if (action === "settings_get") {
