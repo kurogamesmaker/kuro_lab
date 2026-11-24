@@ -651,6 +651,124 @@ Deno.serve(async (req: Request) => {
     }
 
 
+    if (action === "list_game_banners") {
+      const { data, error } = await admin.from("kurogames_home_banners")
+        .select("id,name,message,href,enabled,sort_order,text_color,background_color,font_size,speed,icon,is_bold,starts_at,ends_at,created_at,updated_at")
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      return reply({ banners: data || [] }, 200, origin);
+    }
+
+    if (action === "save_game_banner") {
+      const id = typeof body.id === "string" ? body.id.trim() : "";
+      const name = typeof body.name === "string" ? body.name.trim() : "";
+      const message = typeof body.message === "string" ? body.message.trim() : "";
+      const href = typeof body.href === "string" ? body.href.trim() : "";
+      const sortOrder = Number(body.sort_order ?? 100);
+      const fontSize = Number(body.font_size ?? 14);
+      const speed = body.speed === "slow" || body.speed === "fast" ? body.speed : body.speed === "normal" ? "normal" : "";
+      const textColor = typeof body.text_color === "string" ? body.text_color.trim() : "#ffffff";
+      const backgroundColor = typeof body.background_color === "string" ? body.background_color.trim() : "#2563eb";
+      const icon = typeof body.icon === "string" ? body.icon.trim() : "";
+      const startsAt = kuroSecretDate(body.starts_at);
+      const endsAt = kuroSecretDate(body.ends_at);
+      if (id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+        return reply({ error: "バナーIDが正しくありません。" }, 400, origin);
+      }
+      if (!name || name.length > 80 || !message || message.length > 500) {
+        return reply({ error: "バナー名は1〜80文字、表示文章は1〜500文字で入力してください。" }, 400, origin);
+      }
+      if (href) {
+        if (href.startsWith("/") && !href.startsWith("//")) {
+          // Safe same-site relative path.
+        } else {
+          try {
+            if (new URL(href).protocol !== "https:") return reply({ error: "リンクはHTTPSまたはサイト内パスにしてください。" }, 400, origin);
+          } catch {
+            return reply({ error: "リンク先URLが正しくありません。" }, 400, origin);
+          }
+        }
+      }
+      if (!Number.isInteger(sortOrder) || sortOrder < -10000 || sortOrder > 10000) {
+        return reply({ error: "表示順は-10000〜10000の整数にしてください。" }, 400, origin);
+      }
+      if (!Number.isInteger(fontSize) || fontSize < 11 || fontSize > 22) {
+        return reply({ error: "文字サイズは11〜22にしてください。" }, 400, origin);
+      }
+      if (!["slow", "normal", "fast"].includes(speed)) {
+        return reply({ error: "流れる速度を選択してください。" }, 400, origin);
+      }
+      if (!/^#[0-9a-f]{6}$/i.test(textColor) || !/^#[0-9a-f]{6}$/i.test(backgroundColor)) {
+        return reply({ error: "文字色・背景色の指定が正しくありません。" }, 400, origin);
+      }
+      if (icon.length > 16) return reply({ error: "アイコンは16文字以内にしてください。" }, 400, origin);
+      if (startsAt === undefined || endsAt === undefined) {
+        return reply({ error: "表示期間の日付を確認してください。" }, 400, origin);
+      }
+      const startDate = startsAt || new Date().toISOString();
+      if (endsAt && new Date(endsAt).getTime() <= new Date(startDate).getTime()) {
+        return reply({ error: "終了日時は開始日時より後にしてください。" }, 400, origin);
+      }
+      const record = {
+        name,
+        message,
+        href: href || null,
+        enabled: body.enabled === true,
+        sort_order: sortOrder,
+        text_color: textColor,
+        background_color: backgroundColor,
+        font_size: fontSize,
+        speed,
+        icon: icon || null,
+        is_bold: body.is_bold === true,
+        starts_at: startDate,
+        ends_at: endsAt,
+        updated_at: new Date().toISOString()
+      };
+      let saved;
+      if (id) {
+        const { data, error } = await admin.from("kurogames_home_banners")
+          .update(record).eq("id", id)
+          .select("id,name,message,enabled,sort_order").maybeSingle();
+        if (error) throw error;
+        if (!data) return reply({ error: "バナーが見つかりません。" }, 404, origin);
+        saved = data;
+      } else {
+        const { data, error } = await admin.from("kurogames_home_banners")
+          .insert({ ...record, created_by: caller.id })
+          .select("id,name,message,enabled,sort_order").single();
+        if (error) throw error;
+        saved = data;
+      }
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id,
+        action: id ? "kurogames.home_banner.update" : "kurogames.home_banner.create",
+        metadata: saved
+      });
+      if (auditError) throw auditError;
+      return reply({ banner: saved }, 200, origin);
+    }
+
+    if (action === "delete_game_banner") {
+      const id = typeof body.id === "string" ? body.id.trim() : "";
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+        return reply({ error: "バナーIDが正しくありません。" }, 400, origin);
+      }
+      const { data, error } = await admin.from("kurogames_home_banners")
+        .delete().eq("id", id).select("id,name").maybeSingle();
+      if (error) throw error;
+      if (!data) return reply({ error: "バナーが見つかりません。" }, 404, origin);
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id,
+        action: "kurogames.home_banner.delete",
+        metadata: data
+      });
+      if (auditError) throw auditError;
+      return reply({ ok: true }, 200, origin);
+    }
+
     if (action === "list_pro_management") {
       const [appsResult, membersResult, invitesResult, controlsResult] = await Promise.all([
         admin.from("pro_applications").select("id,user_id,reason,requested_plan,status,admin_note,reviewed_by,reviewed_at,created_at").order("created_at",{ascending:false}).limit(300),
