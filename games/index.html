@@ -1285,6 +1285,7 @@ body.kuro-account-open { overflow: hidden; }
 #kuroRankingShowcase .rank-profile-link .rank-name{display:block;min-width:0;flex:1}
 #kuroRankingShowcase a.rank-profile-link:hover .rank-name{color:#236fc5;text-decoration:underline;text-underline-offset:2px}
 @media(max-width:680px){#kuroRankingShowcase .rank-profile-avatar{width:33px;height:33px;flex-basis:33px}}
+#kuroAccountOpen{display:inline-flex;align-items:center;gap:8px}#kuroAccountOpen .kuro-account-avatar{width:25px;height:25px;flex:0 0 25px;display:grid;place-items:center;border-radius:50%;overflow:hidden;background:#e9eff8;font-size:14px}#kuroAccountOpen .kuro-account-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 </style>
 </head>
 <body>
@@ -1295,7 +1296,7 @@ body.kuro-account-open { overflow: hidden; }
 <a class="activity-link" href="/games/activity/" aria-label="プレイ状況"><svg class="activity-glyph" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h3l2-6 4 12 2-6h7"/></svg><i class="activity-live" aria-hidden="true"></i><span class="activity-text">プレイ状況</span></a>
 <a class="lab ranking-page-link" href="/games/ranking/" aria-label="ランキング一覧">🏆 ランキング</a>
 <a class="lab kuro-sns-nav" href="/sns/" aria-label="KURO SNSを開く"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M20 8v6m3-3h-6"/></svg><span>KURO SNS</span></a><a class="lab" href="https://kurolab.cc.cd/">KURO Lab ↗</a><button class="kuro-notification-link" id="kuroNotificationLink" type="button" aria-label="通知BOX" title="このページ内で共通通知を確認"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></button>
-<button class="lab kuro-account-trigger" id="kuroAccountOpen" type="button" aria-haspopup="dialog" aria-controls="kuroAccountModal">ログイン</button>
+<button class="lab kuro-account-trigger" id="kuroAccountOpen" type="button" aria-haspopup="dialog" aria-controls="kuroAccountModal"><span class="kuro-account-avatar" id="kuroAccountAvatar" aria-hidden="true">👤</span><span id="kuroAccountButtonLabel">ログイン</span></button>
 </div></header>
 <div class="wrap kuro-home-ticker-host" id="kuroHomeTickerHost" hidden>
  <section class="kuro-home-ticker" id="kuroHomeTicker" aria-label="KuroGamesのお知らせ" hidden>
@@ -1332,7 +1333,7 @@ body.kuro-account-open { overflow: hidden; }
     <button class="kuro-account-primary" id="kuroAccountSubmit" type="submit">ログイン</button>
    </form>
   </div>
-  <div class="kuro-account-profile" id="kuroAccountProfile" hidden><strong id="kuroAccountProfileName"></strong><span id="kuroAccountProfileHandle"></span><p class="kuro-account-common">ログイン中です。このKUROアカウントはKURO Lab・KURO SNSでも共通して使用されます。</p><a class="kuro-account-logout" href="/account/" style="display:block;text-align:center;text-decoration:none">アカウント設定・削除</a><button class="kuro-account-logout" id="kuroAccountLogout" type="button">ログアウト</button></div>
+  <div class="kuro-account-profile" id="kuroAccountProfile" hidden><strong id="kuroAccountProfileName"></strong><span id="kuroAccountProfileHandle"></span><p class="kuro-account-common">ログイン中です。このKUROアカウントはKURO Lab・KURO SNSでも共通して使用されます。</p><a class="kuro-account-logout" href="/sns/?profile-edit=1" style="display:block;text-align:center;text-decoration:none;margin-bottom:9px">プロフィール編集</a><a class="kuro-account-logout" href="/account/" style="display:block;text-align:center;text-decoration:none">アカウント設定・削除</a><button class="kuro-account-logout" id="kuroAccountLogout" type="button">ログアウト</button></div>
   <div class="kuro-account-status" id="kuroAccountStatus" role="status" aria-live="polite"></div>
  </section>
 </div>
@@ -1432,7 +1433,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
 })();
 (function initKuroAccount(){
   // KURO_GAMES_NULL_SAFE_BOOT_20261122
- const openButton=document.getElementById("kuroAccountOpen"),stateLabel=document.getElementById("kuroAccountState"),modal=document.getElementById("kuroAccountModal"),closeButton=document.getElementById("kuroAccountClose"),form=document.getElementById("kuroAccountForm");
+ const openButton=document.getElementById("kuroAccountOpen"),buttonLabel=document.getElementById("kuroAccountButtonLabel"),avatarSlot=document.getElementById("kuroAccountAvatar"),stateLabel=document.getElementById("kuroAccountState"),modal=document.getElementById("kuroAccountModal"),closeButton=document.getElementById("kuroAccountClose"),form=document.getElementById("kuroAccountForm");
  const authPanel=document.getElementById("kuroAccountAuthPanel"),profilePanel=document.getElementById("kuroAccountProfile"),guestPanel=document.getElementById("kuroAccountGuest"),status=document.getElementById("kuroAccountStatus");
  const loginTab=document.getElementById("kuroAccountLoginTab"),signupTab=document.getElementById("kuroAccountSignupTab"),confirmRow=document.getElementById("kuroAccountConfirmRow");
  const password=document.getElementById("kuroAccountPassword"),confirm=document.getElementById("kuroAccountConfirm"),submit=document.getElementById("kuroAccountSubmit");
@@ -1468,16 +1469,16 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   const fallbackName=String(meta.username||meta.handle||"KUROユーザー");
   const fallbackHandle=String(meta.handle||meta.username||"");
   openButton.classList.toggle("kuro-signed-in",signedIn);
-  openButton.textContent=signedIn?"アカウント":"ログイン";if(stateLabel){stateLabel.textContent=signedIn?(fallbackHandle?"@"+fallbackHandle:fallbackName):"ゲスト";stateLabel.classList.toggle("is-signed-in",signedIn);}
+  if(buttonLabel)buttonLabel.textContent=signedIn?"アカウント":"ログイン";if(avatarSlot){avatarSlot.innerHTML="👤";avatarSlot.title="プロフィール画像";}if(stateLabel){stateLabel.textContent=signedIn?(fallbackHandle?"@"+fallbackHandle:fallbackName):"ゲスト";stateLabel.classList.toggle("is-signed-in",signedIn);}
   openButton.title=signedIn?(fallbackName+(fallbackHandle?" (@"+fallbackHandle+")":"")):"ゲストとして利用中。クリックしてログイン・登録";
   openButton.setAttribute("aria-label",signedIn?("ログイン中："+fallbackName+(fallbackHandle?"、@"+fallbackHandle:"")):"ゲストとして利用中。ログイン・新規登録");
   if(authPanel)authPanel.hidden=signedIn;if(profilePanel)profilePanel.hidden=!signedIn;if(guestPanel)guestPanel.hidden=signedIn;
   if(signedIn){if(profileName)profileName.textContent=fallbackName;if(profileHandle)profileHandle.textContent=fallbackHandle?"@"+fallbackHandle:"KURO共通アカウント";
    const userId=currentUser.id;
-   if(window.kuroGamesDB)window.kuroGamesDB.from("profiles").select("username,kuro_id").eq("id",userId).maybeSingle().then(({data,error})=>{
+   if(window.kuroGamesDB)window.kuroGamesDB.from("profiles").select("username,kuro_id,avatar_url").eq("id",userId).maybeSingle().then(({data,error})=>{
     if(error||!data||currentUser?.id!==userId)return;
     const h=String(data.username||fallbackHandle),id=String(data.kuro_id||"");
-    if(stateLabel)stateLabel.textContent=h?"@"+h:"ログイン中";openButton.textContent="アカウント";openButton.title=(h?"@"+h:"KUROアカウント")+(id?" ("+id+")":"");
+    if(stateLabel)stateLabel.textContent=h?"@"+h:"ログイン中";if(buttonLabel)buttonLabel.textContent="アカウント";if(avatarSlot){avatarSlot.innerHTML="👤";const av=String(data.avatar_url||"");if(av){const im=document.createElement("img");im.src=av;im.alt="";im.onerror=()=>{im.remove();};avatarSlot.appendChild(im);}}openButton.title=(h?"@"+h:"KUROアカウント")+(id?" ("+id+")":"");
     openButton.setAttribute("aria-label","ログイン中："+(h?"@"+h:"KUROアカウント")+(id?"、KURO ID："+id:""));
     if(profileName)profileName.textContent=h?"@"+h:"KUROユーザー";if(profileHandle)profileHandle.textContent=id||"KURO IDを取得できません";
    }).catch(err=>console.warn("KURO account profile display failed:",err));
