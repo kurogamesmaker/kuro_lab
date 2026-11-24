@@ -1551,8 +1551,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
  }
  let temporarySuspensionCheckUserId=null;
  async function checkTemporarySuspension(user){
-  if(!user||location.pathname.startsWith("/account/suspension/")||temporarySuspensionCheckUserId===user.id)return;
-  temporarySuspensionCheckUserId=user.id;
+  if(!user||location.pathname.startsWith("/account/suspension/"))return;
   try{
    const now=new Date().toISOString();
    const {data,error}=await window.kuroGamesDB.from("account_suspensions").select("id").eq("user_id",user.id)
@@ -1564,7 +1563,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
  function render(user){
   currentUser=user||null;const signedIn=!!currentUser;
   loadTopCoinBalance(currentUser);
-  temporarySuspensionCheckUserId=null; // Account suspension no longer blocks public game-page browsing.
+  if(currentUser)checkTemporarySuspension(currentUser); // Re-check signed-in users even while the page is already open.
   const meta=currentUser?.user_metadata||{};
   const fallbackName=String(meta.username||meta.handle||"KUROユーザー");
   const fallbackHandle=String(meta.handle||meta.username||"");
@@ -1656,6 +1655,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
  });
  if(window.kuroGamesDB){
   window.kuroGamesDB.auth.onAuthStateChange((_event,session)=>render(session?.user||null));
+  setInterval(()=>{if(document.visibilityState!=="hidden"&&currentUser)checkTemporarySuspension(currentUser);},10000);
   window.kuroGamesDB.auth.getSession().then(({data,error})=>{if(error)throw error;render(data?.session?.user||null);if(new URLSearchParams(location.search).get("account")==="1")openModal();})
    .catch(error=>{console.warn("KUROGAMES session restore failed:",error);status.textContent="ログイン状態を確認できませんでした。";});
  }else{openButton?.addEventListener("click",()=>{if(status)status.textContent="認証システムを読み込めませんでした。ページを再読み込みしてください。";});}
