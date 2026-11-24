@@ -136,7 +136,9 @@ function fmtCount(v){return Math.max(0,number(v)).toLocaleString("ja-JP");}
 function fmtTime(ms){var n=Math.max(0,number(ms));return (n/1000).toFixed(2)+"秒";}
 function fmtDate(value){var d=new Date(value);return Number.isNaN(d.getTime())?"日時不明":new Intl.DateTimeFormat("ja-JP",{dateStyle:"medium",timeStyle:"short"}).format(d);}
 function modeLabel(mode){
- var labels={"default":"通常","normal":"通常","easy":"かんたん","hard":"むずかしい","wins-bot":"CPU戦","wins-online":"オンライン対戦","wins-solo":"ひとりで遊ぶ","number-time-easy":"タイムアタック・かんたん","number-time-normal":"タイムアタック・ふつう","number-time-hard":"タイムアタック・むずかしい","official":"公式ルール","local":"ローカルルール","normal-bot":"通常・CPU戦","normal-online":"通常・オンライン"};
+ var labels={"default":"通常","normal":"通常","easy":"かんたん","hard":"むずかしい","wins-bot":"CPU戦","wins-online":"オンライン対戦","wins-solo":"ひとりで遊ぶ","official":"公式ルール","local":"ローカルルール","normal-bot":"通常・CPU戦","normal-online":"通常・オンライン"};
+ var numberMode=String(mode||"").match(/^number-(classic|time)-(.+)$/);
+ if(numberMode){var levels={easy:"かんたん",normal:"ふつう",hard:"むずかしい",expert:"エキスパート",master:"マスター",legend:"レジェンド"};return (numberMode[1]==="time"?"タイムアタック":"通常")+(levels[numberMode[2]]?"・"+levels[numberMode[2]]:"・"+numberMode[2]);}
  return labels[mode]||String(mode||"通常").replace(/[_-]+/g,"・");
 }
 function addProfile(profile,user){
@@ -175,25 +177,35 @@ function createGameIcon(iconValue){
  wrap.textContent=value||"🎮";
  return wrap;
 }
-function bestRecord(stat){
+function bestRecord(stat,isNumberGuess,fastestTimes){
  var metadata=stat&&stat.metadata&&typeof stat.metadata==="object"?stat.metadata:{};
  var metric=String(metadata.metric||"").toLowerCase();
+ if(isNumberGuess){
+  var time=stat.best_time_ms;
+  if(time===null||time===undefined){
+   var modeTime=fastestTimes&&fastestTimes.get(String(stat.mode||""));
+   if(modeTime!==undefined)time=modeTime;
+  }
+  return time===null||time===undefined?null:{label:"最短タイム",value:fmtTime(time)};
+ }
  if(metric==="wins"||((stat.best_score===null||stat.best_score===undefined)&&number(stat.wins)>0)){
   return {label:"最高勝利数",value:fmtCount(stat.wins)+"勝"};
  }
  if(stat.best_time_ms!==null&&stat.best_time_ms!==undefined){
-  return {label:"ベストタイム",value:fmtTime(stat.best_time_ms)};
+  return {label:"最短タイム",value:fmtTime(stat.best_time_ms)};
  }
  if(stat.best_score!==null&&stat.best_score!==undefined){
   return {label:"最高スコア",value:fmtCount(stat.best_score)};
  }
  return null;
 }
-function addGameStats(stats,gameMap){
+function addGameStats(stats,gameMap,fastestTimes){
  var host=$("myGameStats");host.replaceChildren();
  var grouped=new Map();
  stats.forEach(function(stat){
-  var record=bestRecord(stat);
+  var game=gameMap.get(String(stat.game_id||""))||{};
+  var isNumberGuess=String(game.title||"").includes("数字当て");
+  var record=bestRecord(stat,isNumberGuess,fastestTimes);
   if(!record)return;
   var id=String(stat.game_id||"");
   if(!id)return;
@@ -256,8 +268,21 @@ async function loadForUser(user){
  }
  if(token!==loadToken)return;
  var gameMap=new Map(games.map(function(game){return [String(game.id),{title:String(game.title||"KURO GAMES"),icon:game.icon||""}];}));
+ var numberGame=games.find(function(game){return String(game.title||"").includes("数字当て");});
+ var fastestNumberTimes=new Map();
+ if(numberGame){
+  var timeRows=await db.from("kuro_game_play_events").select("mode,duration_ms,metadata").eq("user_id",uid).eq("game_id",numberGame.id).eq("result","win").not("duration_ms","is",null).order("duration_ms",{ascending:true}).limit(5000);
+  if(timeRows.error)console.warn("number game time lookup failed:",timeRows.error);
+  else (timeRows.data||[]).forEach(function(event){
+   var duration=Number(event.duration_ms),mode=String(event.mode||"");
+   if(!Number.isFinite(duration)||duration<0||!mode)return;
+   var previous=fastestNumberTimes.get(mode);
+   if(previous===undefined||duration<previous)fastestNumberTimes.set(mode,duration);
+  });
+ }
+ if(token!==loadToken)return;
  addProfile(profile,fresh.data.user);
- addGameStats(stats,gameMap);
+ addGameStats(stats,gameMap,fastestNumberTimes);
  hide("myPageLoading");show("myPageContent");
 }
 function showLogin(){
