@@ -1598,6 +1598,7 @@ async function handle(req: Request) {
         mode:rewardMode,
         submission_id:session.id,
         cpu_difficulty:null,
+        verified_score:Math.max(0,Math.floor(Number(state.score)||0)),
       });
       if (coinEventError && coinEventError.code !== "23505") {
         console.error("[kurogames-online] sushi coin reward event failed",coinEventError);
@@ -1725,6 +1726,7 @@ async function handle(req: Request) {
         mode: String(state.difficulty || session.mode || ""),
         submission_id: session.id,
         cpu_difficulty: null,
+        verified_score: Math.max(0, Math.floor(Number(state.score) || 0)),
       });
       if (coinEventError && coinEventError.code !== "23505") {
         console.error("[kurogames-online] prime coin reward event failed",coinEventError);
