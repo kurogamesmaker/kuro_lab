@@ -1,0 +1,48 @@
+.kuro-profile-overlay[hidden]{display:none!important}
+.kuro-profile-overlay{position:fixed;inset:0;z-index:10050;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(4,9,20,.76);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.kuro-profile-dialog{width:min(720px,100%);max-height:min(88vh,920px);overflow:auto;border:1px solid rgba(148,163,184,.24);border-radius:24px;background:linear-gradient(145deg,#101a2c 0%,#111827 55%,#17243b 100%);color:#f8fafc;box-shadow:0 30px 100px rgba(0,0,0,.5);outline:none}
+.kuro-profile-topbar{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:17px 20px;border-bottom:1px solid rgba(148,163,184,.15);background:rgba(16,26,44,.94);backdrop-filter:blur(14px)}
+.kuro-profile-eyebrow{display:block;color:#8db7f5;font-size:9px;font-weight:900;letter-spacing:1.8px}
+.kuro-profile-topbar h2{margin:4px 0 0;font-size:20px;font-weight:900;letter-spacing:-.5px}
+.kuro-profile-close{display:grid;place-items:center;width:38px;height:38px;border:1px solid rgba(148,163,184,.22);border-radius:12px;background:rgba(255,255,255,.05);color:#e5e7eb;font-size:26px;line-height:1;cursor:pointer}
+.kuro-profile-close:hover{background:rgba(255,255,255,.12)}
+.kuro-profile-content{padding:20px}
+.kuro-profile-loading,.kuro-profile-error,.kuro-profile-empty{padding:22px;text-align:center;border:1px dashed rgba(148,163,184,.25);border-radius:16px;color:#aebbd0;font-size:13px;line-height:1.8}
+.kuro-profile-identity{display:flex;align-items:center;gap:18px;padding:4px 0 20px}
+.kuro-profile-avatar{display:grid;place-items:center;width:104px;height:104px;flex:0 0 104px;overflow:hidden;border:1px solid rgba(148,163,184,.35);border-radius:50%;background:linear-gradient(145deg,#2a3c58,#1d2940)}
+.kuro-profile-avatar-image{display:block;width:100%;height:100%;object-fit:cover}
+.kuro-profile-avatar-fallback{color:#dbeafe;font-size:40px;font-weight:900}
+.kuro-profile-names{min-width:0}
+.kuro-profile-names h3{margin:0;color:#fff;font-size:23px;font-weight:950;overflow-wrap:anywhere}
+.kuro-profile-names p{margin:4px 0;color:#9fb5d2;font-size:13px}
+.kuro-profile-names small{display:block;margin-top:8px;color:#83a2c9;font-size:11px;overflow-wrap:anywhere}
+.kuro-profile-joined{display:block;margin-top:6px;color:#8393aa;font-size:10px}
+.kuro-profile-bio{padding:15px 17px;border:1px solid rgba(148,163,184,.17);border-radius:16px;background:rgba(255,255,255,.035)}
+.kuro-profile-bio h3,.kuro-profile-section-head h3{margin:0;color:#dce9fb;font-size:13px;font-weight:900}
+.kuro-profile-bio p{margin:9px 0 0;color:#d2d9e5;font-size:13px;line-height:1.8;overflow-wrap:anywhere}
+.kuro-profile-muted{color:#8796ad}
+.kuro-profile-records{margin-top:20px}
+.kuro-profile-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.kuro-profile-section-head span{color:#8598b3;font-size:10px}
+.kuro-profile-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:12px}
+.kuro-profile-summary>div{display:flex;flex-direction:column;gap:4px;padding:12px;border:1px solid rgba(120,163,226,.2);border-radius:14px;background:linear-gradient(135deg,rgba(56,104,170,.18),rgba(255,255,255,.035))}
+.kuro-profile-summary strong{color:#fff;font-size:22px;font-weight:950;font-variant-numeric:tabular-nums}
+.kuro-profile-summary span{color:#9aacc3;font-size:10px}
+.kuro-profile-games{display:grid;gap:10px}
+.kuro-profile-game{padding:13px;border:1px solid rgba(148,163,184,.17);border-radius:16px;background:rgba(255,255,255,.035)}
+.kuro-profile-game-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.kuro-profile-game-icon{display:grid;place-items:center;width:38px;height:38px;flex:0 0 38px;border-radius:11px;background:rgba(114,157,216,.15);font-size:19px}
+.kuro-profile-game-title{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
+.kuro-profile-game-title strong{color:#f1f5fb;font-size:13px;font-weight:900}
+.kuro-profile-game-title small{color:#94a6bf;font-size:10px;line-height:1.5}
+.kuro-profile-modes{display:grid;gap:6px}
+.kuro-profile-mode{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:8px 10px;border-radius:10px;background:rgba(4,12,25,.32)}
+.kuro-profile-mode>span{flex:0 0 auto;color:#b9d5f7;font-size:10px;font-weight:850}
+.kuro-profile-mode small{color:#a6b2c4;font-size:10px;line-height:1.6;text-align:right}
+.kuro-profile-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px 16px;border-top:1px solid rgba(148,163,184,.14);color:#71839b;font-size:10px}
+.kuro-profile-sns-more{padding:8px 12px;border:1px solid rgba(141,183,245,.3);border-radius:10px;background:rgba(48,104,180,.16);color:#c5ddff;font-size:11px;font-weight:850;cursor:pointer}
+.kuro-profile-sns-more[hidden]{display:none!important}
+[data-kuro-profile-self]{cursor:pointer}
+[data-kuro-profile-self]:focus-visible{outline:2px solid #78aaf0;outline-offset:4px;border-radius:8px}
+@media(max-width:600px){.kuro-profile-overlay{align-items:flex-end;padding:0}.kuro-profile-dialog{width:100%;max-height:92dvh;border-radius:22px 22px 0 0;border-bottom:0}.kuro-profile-content{padding:15px}.kuro-profile-avatar{width:82px;height:82px;flex-basis:82px}.kuro-profile-names h3{font-size:19px}.kuro-profile-summary strong{font-size:19px}.kuro-profile-footer{padding:11px 15px max(14px,env(safe-area-inset-bottom))}.kuro-profile-mode{flex-direction:column;gap:3px}.kuro-profile-mode small{text-align:left}}
+@media(prefers-reduced-motion:reduce){.kuro-profile-overlay{backdrop-filter:none;-webkit-backdrop-filter:none}}
