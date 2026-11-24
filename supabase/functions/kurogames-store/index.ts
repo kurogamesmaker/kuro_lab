@@ -33,7 +33,7 @@ async function isSuspended(userId: string) {
   return !!data;
 }
 async function resolveUser(req: Request, required: boolean) {
-  const token = (req.headers.get("authorization") ?? "").match(/^Bearer\\s+(.+)$/i)?.[1] ?? "";
+  const token = (req.headers.get("authorization") ?? "").match(/^Bearer\s+(.+)$/i)?.[1] ?? "";
   if (!token || token.length > 8192 || token.split(".").length !== 3) {
     if (required) throw new HttpError(401, "アイテムの取得にはKUROアカウントでのログインが必要です。");
     return null;
