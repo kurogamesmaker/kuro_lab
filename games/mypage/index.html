@@ -85,6 +85,17 @@ footer{border-top:1px solid var(--line);background:white;padding:20px 0;color:#8
 .profile .avatar[data-frame="epic"]{border:3px solid #b67aff;box-shadow:0 0 0 4px #b67aff25}
 .profile .avatar[data-frame="legendary"]{border:3px solid #f2bc57;box-shadow:0 0 0 4px #f2bc5725}
 .my-profile-background{margin-top:8px;padding:7px 10px;border-radius:8px;background:linear-gradient(100deg,#e7e2f5,#e5edf8);color:#66518f;font-size:10px;font-weight:850}
+
+#myPageContent.my-profile-theme-neon .profile{border-color:#b58be6;background:linear-gradient(120deg,#fbf4ff,#f3f6ff)}
+#myPageContent.my-profile-theme-classic .profile{border-color:#cbd5e1;background:linear-gradient(120deg,#f7f9fc,#edf1f6)}
+#myPageContent.my-profile-theme-rare .profile{border-color:#8cbcf0;background:linear-gradient(120deg,#eef6ff,#e9f0ff)}
+#myPageContent.my-profile-theme-epic .profile{border-color:#c09be8;background:linear-gradient(120deg,#faf3ff,#f0eaff)}
+#myPageContent.my-profile-theme-legendary .profile{border-color:#e8c68c;background:linear-gradient(120deg,#fff9e9,#f8edda)}
+.my-profile-background-midnight{background:linear-gradient(100deg,#182445,#2a4b7b);color:#f3f5ff}
+.my-profile-background-cyber{background:linear-gradient(100deg,#3a1959,#284d7b);color:#f5eaff}
+.my-profile-background-rare{background:linear-gradient(100deg,#19385f,#3a6494);color:#fff}
+.my-profile-background-epic{background:linear-gradient(100deg,#421f62,#72438c);color:#fff}
+.my-profile-background-legendary{background:linear-gradient(100deg,#573719,#88612b);color:#fff}
 </style>
 </head>
 <body>
@@ -193,8 +204,14 @@ function addProfile(profile,user,cosmetics){
  var bg=$("myProfileCosmeticBackground");
  bg.hidden=!background;
  bg.textContent=background?(background.icon||"✦")+" "+(background.name||"プロフィール背景"):"";
+ $("myPageContent").classList.remove("my-profile-theme-neon","my-profile-theme-classic","my-profile-theme-rare","my-profile-theme-epic","my-profile-theme-legendary");
  if(theme&&theme.itemKey==="neon-theme")$("myPageContent").classList.add("my-profile-theme-neon");
- else $("myPageContent").classList.remove("my-profile-theme-neon");
+ else if(theme&&theme.itemKey==="kuro-classic-theme")$("myPageContent").classList.add("my-profile-theme-classic");
+ else if(theme&&["rare","epic","legendary"].includes(theme.rarity))$("myPageContent").classList.add("my-profile-theme-"+theme.rarity);
+ bg.classList.remove("my-profile-background-midnight","my-profile-background-cyber","my-profile-background-rare","my-profile-background-epic","my-profile-background-legendary");
+ if(background&&background.itemKey==="midnight-background")bg.classList.add("my-profile-background-midnight");
+ else if(background&&background.itemKey==="cyber-background")bg.classList.add("my-profile-background-cyber");
+ else if(background&&["rare","epic","legendary"].includes(background.rarity))bg.classList.add("my-profile-background-"+background.rarity);
 }
 function createGameIcon(iconValue){
  var wrap=node("div","game-icon");
