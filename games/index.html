@@ -1342,8 +1342,21 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   if(submit)submit.textContent=signup?"アカウントを作成":"ログイン";
   if(status)status.textContent="";
  }
+ let temporarySuspensionCheckUserId=null;
+ async function checkTemporarySuspension(user){
+  if(!user||location.pathname.startsWith("/account/suspension/")||temporarySuspensionCheckUserId===user.id)return;
+  temporarySuspensionCheckUserId=user.id;
+  try{
+   const now=new Date().toISOString();
+   const {data,error}=await window.kuroGamesDB.from("account_suspensions").select("id").eq("user_id",user.id)
+    .is("revoked_at",null).lte("starts_at",now).gt("ends_at",now).limit(1);
+   if(error)throw error;
+   if(data&&data.length)location.replace("/account/suspension/");
+  }catch(error){console.warn("KURO temporary suspension check failed:",error);temporarySuspensionCheckUserId=null;}
+ }
  function render(user){
   currentUser=user||null;const signedIn=!!currentUser;
+  if(currentUser)checkTemporarySuspension(currentUser);else temporarySuspensionCheckUserId=null;
   const meta=currentUser?.user_metadata||{};
   const fallbackName=String(meta.username||meta.handle||"KUROユーザー");
   const fallbackHandle=String(meta.handle||meta.username||"");
