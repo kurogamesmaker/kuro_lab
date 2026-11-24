@@ -461,6 +461,7 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 
 @keyframes kuroHomeTickerFallback{from{transform:translateX(0)}to{transform:translateX(calc(-1 * var(--kuro-home-ticker-distance, 0px)))}}/* KURO GAMES admin-managed scrolling home banners */
 .kuro-home-ticker-host{padding-top:10px}
+.kuro-home-ticker-host[hidden]{display:none!important}
 .kuro-home-ticker{display:flex;align-items:center;gap:10px;min-height:42px;padding:6px 10px;border:1px solid #e2e8f2;border-radius:13px;background:#fff;box-shadow:0 4px 14px #1b30520a;overflow:hidden}
 .kuro-home-ticker[hidden]{display:none!important}
 .kuro-home-ticker-label{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:0 8px 0 2px;color:#51627d;font-size:10px;font-weight:1000;letter-spacing:.08em;border-right:1px solid #e6ebf3}
@@ -1284,7 +1285,7 @@ body.kuro-account-open { overflow: hidden; }
 <span class="lab" aria-label="Cloudflare経由で通信">Cloudflare接続中</span><a class="lab" href="https://kurolab.cc.cd/">KURO Lab ↗</a><button class="kuro-notification-link" id="kuroNotificationLink" type="button" aria-label="通知BOX" title="このページ内で共通通知を確認"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></button>
 <button class="lab kuro-account-trigger" id="kuroAccountOpen" type="button" aria-haspopup="dialog" aria-controls="kuroAccountModal">ログイン</button>
 </div></header>
-<div class="wrap kuro-home-ticker-host">
+<div class="wrap kuro-home-ticker-host" id="kuroHomeTickerHost" hidden>
  <section class="kuro-home-ticker" id="kuroHomeTicker" aria-label="KuroGamesのお知らせ" hidden>
   <div class="kuro-home-ticker-label"><span aria-hidden="true">📢</span><b>INFO</b></div>
   <div class="kuro-home-ticker-viewport"><div class="kuro-home-ticker-track" id="kuroHomeTickerTrack"></div></div>
@@ -1353,6 +1354,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
 }
 (function initKuroHomeTicker(){
  const host=document.getElementById("kuroHomeTicker");
+ const hostWrap=document.getElementById("kuroHomeTickerHost");
  const viewport=host?.querySelector(".kuro-home-ticker-viewport");
  const track=document.getElementById("kuroHomeTickerTrack");
  const db=window.kuroGamesDB;
@@ -1396,7 +1398,8 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
  const render=rows=>{
   if(tickerAnimation){tickerAnimation.cancel();tickerAnimation=null;}
   track.replaceChildren();
-  if(!rows.length){host.hidden=true;return;}
+  if(!rows.length){host.hidden=true;if(hostWrap)hostWrap.hidden=true;return;}
+  if(hostWrap)hostWrap.hidden=false;
   host.hidden=false;
   const first=makeSet(rows);
   track.appendChild(first);
