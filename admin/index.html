@@ -456,7 +456,7 @@
 .ops-personal-user-list{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:11px;background:#0b1524;padding:6px;display:grid;gap:5px}.ops-personal-user-row{width:100%;text-align:left;border:1px solid transparent;background:transparent;color:var(--text);padding:10px 12px;border-radius:8px;cursor:pointer}.ops-personal-user-row:hover{background:#17283d;border-color:#304b68}.ops-personal-user-row.selected{background:#183753;border-color:#3984b6}.ops-personal-user-row strong,.ops-personal-user-row small{display:block;overflow-wrap:anywhere}.ops-personal-user-row small{color:var(--muted);font-size:11px}.ops-personal-selected{padding:9px 12px;border-radius:9px;background:#14263a;border:1px solid #29435f;color:#a9d9ff;font-size:12px}@media(max-width:680px){.ops-personal-user-list{max-height:240px}}
 .ops-game-banner-color input[type="color"]{width:100%;height:42px;padding:4px;background:#0b1524;border:1px solid var(--line);border-radius:9px;cursor:pointer}
 #opsGame-bannersView .ops-form-grid{align-items:end}
-#opsGame-bannersView .ops-game-banner-preview{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:8px;max-width:100%;overflow-wrap:anywhere}
+#opsGame-bannersView .ops-game-banner-preview{display:inline-flex;align-items:center;max-width:100%;overflow-wrap:anywhere}
 </style>
 \n</head>
 <body>
@@ -637,13 +637,11 @@
     <input id="opsGameBannerId" type="hidden">
     <div class="ops-form-grid">
      <label>管理用の名前<input id="opsGameBannerName" maxlength="80" required placeholder="例：新作ゲームのお知らせ"></label>
-     <label>アイコン（任意）<input id="opsGameBannerIcon" maxlength="16" placeholder="📢"></label>
     </div>
     <label>流す文章<textarea id="opsGameBannerMessage" maxlength="500" rows="3" required placeholder="ホーム画面に流す文章を入力"></textarea></label>
     <label>リンク先（任意・HTTPSまたはサイト内パス）<input id="opsGameBannerHref" type="text" maxlength="1000" placeholder="/games/ または https://..."></label>
     <div class="ops-form-grid">
      <label class="ops-game-banner-color">文字色<input id="opsGameBannerTextColor" type="color" value="#ffffff"></label>
-     <label class="ops-game-banner-color">背景色<input id="opsGameBannerBgColor" type="color" value="#2563eb"></label>
      <label>文字サイズ<select id="opsGameBannerSize"><option value="12">小</option><option value="14" selected>標準</option><option value="16">やや大きい</option><option value="18">大</option><option value="20">特大</option></select></label>
      <label>流れる速度<select id="opsGameBannerSpeed"><option value="slow">ゆっくり</option><option value="normal" selected>標準</option><option value="fast">速い</option></select></label>
      <label>表示順（小さい数字が先）<input id="opsGameBannerSort" type="number" min="-10000" max="10000" step="1" value="100"></label>
@@ -1412,7 +1410,6 @@ function resetOpsGameBannerForm(){
  form.reset();
  $("#opsGameBannerId").value="";
  $("#opsGameBannerTextColor").value="#ffffff";
- $("#opsGameBannerBgColor").value="#2563eb";
  $("#opsGameBannerSize").value="14";
  $("#opsGameBannerSpeed").value="normal";
  $("#opsGameBannerSort").value="100";
@@ -1430,7 +1427,7 @@ async function loadOpsGameBanners(){
   opsGameBanners=Array.isArray(data.banners)?data.banners:[];
   box.innerHTML=opsGameBanners.length?opsGameBanners.map(item=>{
    const active=!!item.enabled,start=item.starts_at?date(item.starts_at):"すぐに",end=item.ends_at?date(item.ends_at):"終了日時なし";
-   const preview='<span class="ops-game-banner-preview" style="color:'+esc(item.text_color||"#ffffff")+';background:'+esc(item.background_color||"#2563eb")+';font-size:'+Math.max(11,Math.min(22,Number(item.font_size)||14))+'px;font-weight:'+(item.is_bold?"800":"500")+'">'+(item.icon?esc(item.icon)+" ":"")+esc(item.message)+'</span>';
+   const preview='<span class="ops-game-banner-preview" style="color:'+esc(item.text_color||"#ffffff")+';font-size:'+Math.max(11,Math.min(22,Number(item.font_size)||14))+'px;font-weight:'+(item.is_bold?"800":"500")+'">'+esc(item.message)+'</span>';
    return '<article class="ops-ann-item"><div class="ops-ann-copy"><div class="meta"><strong>'+esc(item.name)+'</strong><span class="ops-status '+(active?"":"banned")+'">'+(active?"有効":"停止中")+'</span><span>表示順 '+esc(String(item.sort_order))+'</span></div><p>'+preview+'</p><div class="sns-muted">開始：'+esc(start)+' · 終了：'+esc(end)+' · 速度：'+esc(item.speed||"normal")+(item.href?' · '+esc(item.href):"")+'</div></div><div class="ops-inline-actions"><button class="btn" type="button" data-game-banner-edit="'+esc(item.id)+'">編集</button><button class="btn" type="button" data-game-banner-toggle="'+esc(item.id)+'">'+(active?"停止":"有効化")+'</button><button class="btn" type="button" data-game-banner-delete="'+esc(item.id)+'">削除</button></div></article>';
   }).join(""):'<div class="empty">バナーはまだありません。「バナーを追加」から作成できます。</div>';
  }catch(e){box.innerHTML='<div class="error">読み込みに失敗しました：'+esc(e.message)+'</div>';}
@@ -1441,9 +1438,7 @@ function editOpsGameBanner(id){
  $("#opsGameBannerName").value=item.name||"";
  $("#opsGameBannerMessage").value=item.message||"";
  $("#opsGameBannerHref").value=item.href||"";
- $("#opsGameBannerIcon").value=item.icon||"";
  $("#opsGameBannerTextColor").value=item.text_color||"#ffffff";
- $("#opsGameBannerBgColor").value=item.background_color||"#2563eb";
  $("#opsGameBannerSize").value=String(item.font_size||14);
  $("#opsGameBannerSpeed").value=item.speed||"normal";
  $("#opsGameBannerSort").value=String(item.sort_order??100);
@@ -1467,8 +1462,8 @@ async function saveOpsGameBanner(event){
  try{
   await opsInvoke({
    action:"save_game_banner",id:id||undefined,name,message,href:$("#opsGameBannerHref").value.trim(),
-   icon:$("#opsGameBannerIcon").value.trim(),text_color:$("#opsGameBannerTextColor").value,
-   background_color:$("#opsGameBannerBgColor").value,font_size:Number($("#opsGameBannerSize").value),
+   text_color:$("#opsGameBannerTextColor").value,
+   font_size:Number($("#opsGameBannerSize").value),
    speed:$("#opsGameBannerSpeed").value,sort_order:Number($("#opsGameBannerSort").value),
    starts_at:starts?new Date(starts).toISOString():null,ends_at:ends?new Date(ends).toISOString():null,
    enabled:$("#opsGameBannerEnabled").checked,is_bold:$("#opsGameBannerBold").checked
@@ -1483,7 +1478,7 @@ async function toggleOpsGameBanner(id){
  try{
   await opsInvoke({
    action:"save_game_banner",id:item.id,name:item.name,message:item.message,href:item.href||"",
-   icon:item.icon||"",text_color:item.text_color,background_color:item.background_color,font_size:item.font_size,
+   text_color:item.text_color,font_size:item.font_size,
    speed:item.speed,sort_order:item.sort_order,starts_at:item.starts_at,ends_at:item.ends_at,
    enabled:!item.enabled,is_bold:!!item.is_bold
   });
