@@ -1087,21 +1087,38 @@ async function handle(req: Request) {
   if (action === "leaderboard_modes") {
     requirePublished(game);
     requireFeature(settings.features, "ranking");
-    if (game.id === TICTACTOE_GAME_ID || game.id === NUMBER_GAME_ID || game.id === UNON_GAME_ID || game.id === PRIME_GAME_ID || game.id === SUSHI_GAME_ID) {
-      return reply(200, {
-        modes: [...(KNOWN_RANKING_MODES[game.id] ?? [])],
-        showcaseConfig: sanitizeRankingShowcaseConfig(settings.features.rankingShowcaseConfig),
-      });
-    }
-    const { data: rows, error } = await admin
-      .from("game_scores")
-      .select("mode")
+    const { data: aggregateRows, error: aggregateError } = await admin
+      .from("kuro_game_user_stats")
+      .select("mode,metric,metadata")
       .eq("game_id", game.id)
-      .limit(1000);
-    if (error) throw new HttpError(500, "ランキングモードを取得できませんでした。");
-    const modes = Array.from(new Set([...(KNOWN_RANKING_MODES[game.id] ?? []), ...(rows ?? []).map((row) => row.mode).filter((mode) => typeof mode === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(mode))])).sort();
+      .limit(5000);
+    if (aggregateError) throw new HttpError(500, "ランキングモードを取得できませんでした。");
+
+    let modes: string[];
+    if (KNOWN_RANKING_MODES[game.id]) {
+      modes = [...KNOWN_RANKING_MODES[game.id]];
+    } else {
+      const { data: scoreRows, error: scoreError } = await admin
+        .from("game_scores")
+        .select("mode")
+        .eq("game_id", game.id)
+        .limit(5000);
+      if (scoreError) throw new HttpError(500, "ランキングモードを取得できませんでした。");
+      modes = Array.from(new Set([
+        ...(scoreRows ?? []).map((row) => row.mode),
+        ...(aggregateRows ?? []).filter((row) => row.metadata?.internalRankingMode !== true).map((row) => row.mode),
+      ].filter((mode) => typeof mode === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(mode)))).sort();
+    }
+    const modeMetrics: Record<string, string> = {};
+    for (const mode of modes) {
+      const metrics = Array.from(new Set((aggregateRows ?? [])
+        .filter((row) => row.mode === mode && row.metadata?.internalRankingMode !== true)
+        .map((row) => String(row.metric || "score"))));
+      if (metrics.length === 1) modeMetrics[mode] = metrics[0];
+    }
     return reply(200, {
       modes: modes.length ? modes : ["default"],
+      modeMetrics,
       showcaseConfig: sanitizeRankingShowcaseConfig(settings.features.rankingShowcaseConfig),
     });
   }
@@ -1162,6 +1179,7 @@ async function handle(req: Request) {
       }
       return reply(200, {
         mode,
+        metric: "wins",
         cpuDifficulty: "HARD",
         scores: ranked.map((row, index) => {
           const profile = profileMap.get(row.user_id) ?? { kuro_id: "", username: "プレイヤー", avatar_url: null };
@@ -1170,6 +1188,7 @@ async function handle(req: Request) {
             userId: row.user_id,
             score: row.wins,
             mode,
+            metric: "wins",
             createdAt: row.updated_at,
             recordType: "verified-hard-cpu",
             user: {
@@ -1202,6 +1221,7 @@ async function handle(req: Request) {
       }
       return reply(200, {
         mode,
+        metric: "wins",
         cpuDifficulty: "hard",
         scores: hardScores.map((row, index) => {
           const profile = profileMap.get(row.user_id) ?? { kuro_id: "", username: "プレイヤー", avatar_url: null };
@@ -1210,6 +1230,7 @@ async function handle(req: Request) {
             userId: row.user_id,
             score: row.score,
             mode,
+            metric: "wins",
             createdAt: row.created_at,
             recordType: "hard-cpu",
             user: {
@@ -1223,66 +1244,6 @@ async function handle(req: Request) {
       });
     }
 
-
-    if (game.id === PRIME_GAME_ID) {
-      if (!(KNOWN_RANKING_MODES[game.id] ?? []).includes(mode)) throw new HttpError(400,"素因数分解のランキング難易度が正しくありません。");
-      const { data: events, error } = await admin.from("kuro_game_play_events")
-        .select("user_id,score,mode,created_at")
-        .eq("game_id",game.id).eq("mode",mode)
-        .contains("metadata",{source:"prime-factor-server",serverVerified:"prime-breaker-v1"})
-        .gt("score",0).order("created_at",{ascending:true}).limit(50000);
-      if (error) throw new HttpError(500,"素因数分解の検証済みランキングを取得できませんでした。");
-      const bestByUser = new Map<string,{user_id:string;score:number;mode:string;created_at:string}>();
-      for (const row of events ?? []) {
-        const current=bestByUser.get(row.user_id);
-        if (!current || Number(row.score)>current.score) bestByUser.set(row.user_id,{user_id:row.user_id,score:Number(row.score)||0,mode:row.mode,created_at:row.created_at});
-      }
-      const ranked=Array.from(bestByUser.values()).sort((a,b)=>b.score-a.score||String(a.created_at).localeCompare(String(b.created_at))).slice(0,limit);
-      const ids=Array.from(new Set(ranked.map(row=>row.user_id)));
-      const profileMap=new Map<string,{kuro_id:string;username:string;avatar_url:string|null}>();
-      if(ids.length){
-        const {data:profiles,error:profileError}=await admin.from("profiles").select("id,kuro_id,username,avatar_url").in("id",ids);
-        if(profileError) throw new HttpError(500,"ランキング参加者のプロフィールを取得できませんでした。");
-        for(const profile of profiles??[]) profileMap.set(profile.id,{kuro_id:profile.kuro_id??"",username:profile.username??"プレイヤー",avatar_url:profile.avatar_url??null});
-      }
-      return reply(200,{
-        mode,serverVerified:true,
-        scores:ranked.map((row,index)=>{
-          const profile=profileMap.get(row.user_id)??{kuro_id:"",username:"プレイヤー",avatar_url:null};
-          return {rank:index+1,userId:row.user_id,score:row.score,mode,createdAt:row.created_at,recordType:"verified-prime-factor",
-            user:{kuroId:profile.kuro_id||null,username:profile.username,display_name:profile.username,avatar_url:profile.avatar_url}};
-        }),
-      });
-    }
-
-
-    if(game.id===SUSHI_GAME_ID) {
-      if(!(KNOWN_RANKING_MODES[game.id]??[]).includes(mode)) throw new HttpError(400,"寿司タイピングのランキングモードが正しくありません。");
-      const {data:events,error}=await admin.from("kuro_game_play_events")
-        .select("user_id,score,mode,created_at")
-        .eq("game_id",game.id).eq("mode",mode)
-        .contains("metadata",{source:"sushi-typing-server",serverVerified:"sushi-typing-v1"})
-        .gt("score",0).order("created_at",{ascending:true}).limit(50000);
-      if(error) throw new HttpError(500,"寿司タイピングの検証済みランキングを取得できませんでした。");
-      const bestByUser=new Map<string,{user_id:string;score:number;mode:string;created_at:string}>();
-      for(const row of events??[]) {
-        const old=bestByUser.get(row.user_id);
-        if(!old||Number(row.score)>old.score) bestByUser.set(row.user_id,{user_id:row.user_id,score:Number(row.score)||0,mode:row.mode,created_at:row.created_at});
-      }
-      const ranked=Array.from(bestByUser.values()).sort((a,b)=>b.score-a.score||String(a.created_at).localeCompare(String(b.created_at))).slice(0,limit);
-      const ids=Array.from(new Set(ranked.map(row=>row.user_id)));
-      const profiles=new Map<string,{kuro_id:string;username:string;avatar_url:string|null}>();
-      if(ids.length) {
-        const {data,error:profileError}=await admin.from("profiles").select("id,kuro_id,username,avatar_url").in("id",ids);
-        if(profileError) throw new HttpError(500,"ランキング参加者のプロフィールを取得できませんでした。");
-        for(const profile of data??[]) profiles.set(profile.id,{kuro_id:profile.kuro_id??"",username:profile.username??"プレイヤー",avatar_url:profile.avatar_url??null});
-      }
-      return reply(200,{mode,serverVerified:true,scores:ranked.map((row,index)=>{
-        const p=profiles.get(row.user_id)??{kuro_id:"",username:"プレイヤー",avatar_url:null};
-        return {rank:index+1,userId:row.user_id,score:row.score,mode,createdAt:row.created_at,recordType:"verified-sushi-typing",
-          user:{kuroId:p.kuro_id||null,username:p.username,display_name:p.username,avatar_url:p.avatar_url}};
-      })});
-    }
 
     let scores:any[] = [];
     if (game.id === NUMBER_GAME_ID) {
@@ -1301,6 +1262,7 @@ async function handle(req: Request) {
         user_id: row.user_id,
         score: Number(row.best_time_ms),
         mode: row.mode,
+        metric: "time",
         created_at: row.last_played_at || row.updated_at,
         recordType: "verified",
       }));
@@ -1308,40 +1270,60 @@ async function handle(req: Request) {
       // Normal rankings are read from the single aggregate row per user/game/mode.
       // The verified TicTacToe and Number Guess branches above intentionally retain
       // their specialized trusted sources and validation rules.
-      const { data, error } = await admin.from("kuro_game_user_stats")
-        .select("user_id,mode,wins,best_score,best_time_ms,last_played_at,created_at,updated_at,metadata")
+      let aggregateQuery = admin.from("kuro_game_user_stats")
+        .select("user_id,mode,metric,wins,best_score,best_time_ms,last_played_at,created_at,updated_at,metadata")
         .eq("game_id", game.id)
         .eq("mode", mode);
+      if (game.id === PRIME_GAME_ID) {
+        aggregateQuery = aggregateQuery.contains("metadata", {
+          source: "prime-factor-server",
+          serverVerified: "prime-breaker-v1",
+        });
+      } else if (game.id === SUSHI_GAME_ID) {
+        aggregateQuery = aggregateQuery.contains("metadata", {
+          source: "sushi-typing-server",
+          serverVerified: "sushi-typing-v1",
+        });
+      }
+      const { data, error } = await aggregateQuery;
       if (error) throw new HttpError(500, "集計ランキングを取得できませんでした。");
 
       const aggregateRows = data ?? [];
-      const metricFor = (row: any) => String(
-        row?.metadata && typeof row.metadata === "object" ? row.metadata.metric ?? "" : ""
-      ).toLowerCase();
-      const isAggregateTimeRanking = isTimeRanking || aggregateRows.some((row: any) =>
-        ["clear_time_ms", "time_ms", "duration_ms"].includes(metricFor(row))
-      );
+      const metricCounts = new Map<string, number>();
+      for (const row of aggregateRows) {
+        const metric = ["wins", "score", "time"].includes(String(row.metric)) ? String(row.metric) : "score";
+        metricCounts.set(metric, (metricCounts.get(metric) || 0) + 1);
+      }
+      // A mode has one metric. Legacy rows with conflicting metrics are excluded
+      // rather than comparing wins, scores and milliseconds in the same ranking.
+      const preferredMetric = isTimeRanking ? "time" : "";
+      const metricOrder = ["score", "wins", "time"];
+      const canonicalMetric = preferredMetric || Array.from(metricCounts.entries())
+        .sort((a, b) => b[1] - a[1] || metricOrder.indexOf(a[0]) - metricOrder.indexOf(b[0]))[0]?.[0] || "score";
+      if (metricCounts.size > 1) {
+        console.warn("[kurogames-online] mixed legacy ranking metrics; excluded non-canonical rows", {
+          gameId: game.id, mode, canonicalMetric, metrics: Object.fromEntries(metricCounts),
+        });
+      }
 
-      scores = aggregateRows.map((row: any) => {
-        const hasScore = row.best_score !== null && row.best_score !== undefined;
-        const hasTime = row.best_time_ms !== null && row.best_time_ms !== undefined;
-        const wins = Number(row.wins) || 0;
-        const isWinsMetric = metricFor(row) === "wins" || (!hasScore && !hasTime && wins > 0);
-        const rawValue = isWinsMetric
-          ? row.wins
-          : (isAggregateTimeRanking ? row.best_time_ms : row.best_score);
-        if (rawValue === null || rawValue === undefined) return null;
-        const score = Number(rawValue);
-        if (!Number.isFinite(score)) return null;
-        return {
-          user_id: row.user_id,
-          score,
-          mode: row.mode,
-          created_at: row.last_played_at || row.updated_at || row.created_at,
-        };
-      }).filter((row: any) => row !== null)
+      scores = aggregateRows.filter((row: any) => String(row.metric || "score") === canonicalMetric)
+        .map((row: any) => {
+          const rawValue = canonicalMetric === "wins" ? row.wins
+            : canonicalMetric === "time" ? row.best_time_ms
+            : row.best_score;
+          if (rawValue === null || rawValue === undefined) return null;
+          const score = Number(rawValue);
+          if (!Number.isFinite(score) || (canonicalMetric === "wins" && score <= 0)) return null;
+          return {
+            user_id: row.user_id,
+            score,
+            mode: row.mode,
+            metric: canonicalMetric,
+            created_at: row.last_played_at || row.updated_at || row.created_at,
+          };
+        }).filter((row: any) => row !== null)
         .sort((a: any, b: any) =>
-          (isAggregateTimeRanking ? a.score - b.score : b.score - a.score) ||
+          (canonicalMetric === "time" ? a.score - b.score : b.score - a.score) ||
           String(a.created_at || "").localeCompare(String(b.created_at || ""))
         )
         .slice(0, limit);
@@ -1364,6 +1346,7 @@ async function handle(req: Request) {
 
     return reply(200, {
       mode,
+      metric: (scores ?? [])[0]?.metric || (isTimeRanking ? "time" : "score"),
       scores: (scores ?? []).map((row, index) => {
         const profile = profileMap.get(row.user_id) ?? { kuro_id: "", username: "プレイヤー", avatar_url: null };
         return {
@@ -1371,6 +1354,7 @@ async function handle(req: Request) {
           userId: row.user_id,
           score: row.score,
           mode: row.mode,
+          metric: row.metric || (isTimeRanking ? "time" : "score"),
           createdAt: row.created_at,
           ...(game.id === NUMBER_GAME_ID ? { recordType: row.recordType } : {}),
           user: {
@@ -1962,8 +1946,19 @@ async function handle(req: Request) {
       throw new HttpError(403, "オンライン勝利数は対局サーバーが登録します。");
     }
     const metadata = body.metadata && typeof body.metadata === "object" && !Array.isArray(body.metadata)
-      ? body.metadata as Record<string, unknown>
+      ? { ...(body.metadata as Record<string, unknown>) }
       : {};
+    const requestedMetric = String(body.metric || metadata.metric || "").toLowerCase();
+    const timeMode = /(^|[_-])(time|duration|elapsed|seconds?|milliseconds?|ms|fastest|clear_time)([_-]|$)/i.test(mode);
+    if (/^(time|time_ms|clear_time_ms|duration_ms)$/.test(requestedMetric) && !timeMode) {
+      throw new HttpError(400, "タイムランキングでは mode 名に time を含めてください。");
+    }
+    metadata.metric = timeMode
+      ? "time"
+      : /^(wins|win|win_count)$/.test(requestedMetric) ||
+        /(^|[_-])(wins?|victories)([_-]|$)/i.test(mode)
+        ? "wins"
+        : "score";
     if (new TextEncoder().encode(JSON.stringify(metadata)).length > 8192) {
       throw new HttpError(400, "追加データは8KB以内にしてください。");
     }
@@ -2017,6 +2012,10 @@ async function handle(req: Request) {
       p_score: score,
       p_submission_id: submissionId,
       p_metadata: metadata,
+      p_level: Number.isSafeInteger(Number(metadata.level)) && Number(metadata.level) >= 0 ? Number(metadata.level) : null,
+      p_cpu_difficulty: ["EASY", "NORMAL", "HARD", "EXPERT"].includes(String(metadata.cpuDifficulty || metadata.cpu_difficulty || "").toUpperCase())
+        ? String(metadata.cpuDifficulty || metadata.cpu_difficulty).toUpperCase()
+        : null,
     });
     if (error) {
       console.error("[kurogames-online] score_submit RPC failed", error);
