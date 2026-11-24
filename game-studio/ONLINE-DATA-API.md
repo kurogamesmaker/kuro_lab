@@ -1,7 +1,7 @@
 # KUROGAMES 共通オンライン・データ通信仕様
 
-- 仕様書バージョン: 2.1
-- 更新日: 2026-11-23
+- 仕様書バージョン: 2.2
+- 更新日: 2026-11-24
 - 対象: KUROGAMES / KURO Lab のゲームプレイヤー、ゲームスタジオ、共通SDK、オンラインAPI、Cloudflare Workers、Durable Objects、Supabase
 - 目的: ゲームごとの通信実装を統一し、個人データ・ルーム通信・ランキングを安全かつ一貫した方法で利用できるようにする
 
@@ -762,6 +762,45 @@ UNONは勝利回数をモード別に累積する。
 - ランキングの信頼性を必要とするゲームは、7章のサーバー側判定を実装する。
 - サーバー検証のないランキングには「参考記録」等の扱いを設けるか、正式ランキングへの登録を停止する。
 - 人狼の勝利回数も、最終的にはサーバー側が試合結果を確定してから登録する。
+
+
+### 8.7 ユーザー中心の統合ゲーム記録（実装済み）
+
+ランキングの保存先とは別に、ログイン中のユーザーを中心とした共通記録台帳を利用する。各行は `user_id + game_id + mode` で区分するため、ユーザーの全ゲーム記録をまとめて参照できる一方、ランキングのゲーム・モードは混ざらない。
+
+SDK API:
+
+    // このゲームのユーザー別・モード別集計
+    const ownGameStats = await KuroGames.stats.get({
+      mode: "normal",
+      limit: 100
+    });
+
+    // ログイン中の自分の全ゲーム記録
+    const allGameStats = await KuroGames.stats.getAll({ limit: 250 });
+
+    // 自分のプレイ履歴（初期値は現在のゲーム）
+    const recentPlays = await KuroGames.stats.history({
+      allGames: true,
+      limit: 50
+    });
+
+集計データには plays / wins / losses / draws / best_score / best_time_ms / total_time_ms / last_played_at / metadata を含む。イベント履歴には1プレイごとの result / score / duration_ms / metadata / created_at を保存する。
+
+実装ルール:
+- 保存はユーザーIDを軸とする。game_idとmodeは必須の分類キーであり、ランキングの集計境界を維持する。
+- `ranking.submit()` が成功したスコア送信は、同じsubmissionIdで統合履歴にも記録する。
+- 勝利イベント、サーバー検証済み〇✕結果、七並べの対局結果、数字当ての完了セッションはDB側トリガーから自動記録する。
+- submissionId（イベント種別によってはroomId）で二重記録を防止する。同じ要求の再送でplaysやwinsを二重加算しない。
+- `stats.get()` / `stats.getAll()` は本人の集計のみ返す。`stats.history()` は本人の履歴のみ返す。
+- ユーザーIDを引数で指定して他人の記録を取得するAPIは提供しない。
+- 既存のランキング取得API・既存テーブルは互換性維持のため継続する。ランキングは各ゲームのgame_id + modeで独立して取得する。
+- 旧game_scoresから移した記録は最高値のスナップショットであり、過去のプレイ回数が分からない場合はplaysを水増ししない。
+
+新方式の共通テーブル:
+- `kuro_game_user_stats`: ユーザー×ゲーム×モードの集計値
+- `kuro_game_play_events`: 個々のプレイイベント
+- クライアントから両テーブルへ直接書き込ませない。信頼済みEdge Function / DBトリガー経由で記録し、書き込み権限はサーバー側に限定する。
 
 ## 9. エラー形式・復旧ルール
 
