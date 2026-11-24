@@ -41,6 +41,7 @@ header{position:sticky;top:0;z-index:10;background:#100d1deF;backdrop-filter:blu
 <button class="filter" data-category="frame" type="button">フレーム</button>
 <button class="filter" data-category="background" type="button">背景</button>
 <button class="filter" data-category="theme" type="button">テーマ</button>
+<button class="filter" data-category="other" type="button">その他</button>
 </div>
 <p class="status" id="storeStatus" role="status" aria-live="polite">ストアを読み込んでいます…</p>
 <div class="grid" id="storeGrid"></div>
@@ -106,6 +107,7 @@ function renderInventory(){
  $("inventoryGrid").innerHTML="";
  if(!isLoggedIn)return;
  const itemMap=new Map(storeItems.map(item=>[item.id,item]));
+ inventory.forEach(row=>{if(row.item&&row.item.id)itemMap.set(row.item.id,row.item);});
  const inventoryItems=inventory.map(row=>({row,item:itemMap.get(row.item_id)})).filter(x=>x.item);
  $("inventoryGrid").innerHTML=inventoryItems.map(({row,item})=>{
   const slot=["avatar","frame","background","theme"].includes(item.category)?item.category:null;
