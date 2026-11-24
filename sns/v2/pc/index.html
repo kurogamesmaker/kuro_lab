@@ -2463,8 +2463,26 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             }
         }
 
+        let kuroTempSuspensionCheckedUserId = null;
+        async function redirectIfTemporarilySuspended(user) {
+            if (!user || location.pathname.startsWith('/account/suspension/') || kuroTempSuspensionCheckedUserId === user.id) return false;
+            kuroTempSuspensionCheckedUserId = user.id;
+            try {
+                const now = new Date().toISOString();
+                const { data, error } = await supabaseClient.from('account_suspensions').select('id')
+                    .eq('user_id', user.id).is('revoked_at', null).lte('starts_at', now).gt('ends_at', now).limit(1);
+                if (error) throw error;
+                if (data && data.length) { location.replace('/account/suspension/'); return true; }
+            } catch (error) {
+                console.warn('KURO temporary suspension check failed:', error);
+                kuroTempSuspensionCheckedUserId = null;
+            }
+            return false;
+        }
+
         async function syncCurrentUserImpl(user) {
-            if (!user) { currentUser = null; renderUserProfile(); return; }
+            if (!user) { currentUser = null; kuroTempSuspensionCheckedUserId = null; renderUserProfile(); return; }
+            if (await redirectIfTemporarilySuspended(user)) return;
             const metadata = user.user_metadata || {};
             const requestedUsername = String(metadata.username || metadata.handle || (user.email || 'user').split('@')[0].replace(/[^A-Za-z0-9_]/g, '').slice(0, 24)).replace(/^@/, '');
             const fallbackUsername = /^[A-Za-z0-9_]{3,24}$/.test(requestedUsername) ? requestedUsername : `kuro_${String(user.id).replace(/-/g, '').slice(0, 12)}`;
