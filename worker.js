@@ -265,6 +265,8 @@ async function handleWebSearch(request, env) {
   return response;
 }
 
+const suspensionStatusCache = new Map();
+
 async function checkActiveSuspension(headers) {
   const authorization = headers.get("authorization") || "";
   const bearer = authorization.match(/^Bearer\s+(.+)$/i);
@@ -283,6 +285,8 @@ async function checkActiveSuspension(headers) {
   }
   const userId = typeof claims?.sub === "string" ? claims.sub : "";
   if (!userId || claims?.is_anonymous) return null;
+  const cachedStatus = suspensionStatusCache.get(userId);
+  if (cachedStatus && cachedStatus.expiresAt > Date.now()) return cachedStatus.value;
 
   const authHeaders = new Headers({
     apikey: headers.get("apikey") || SUPABASE_KEY,
@@ -309,7 +313,10 @@ async function checkActiveSuspension(headers) {
     );
   }
   const rows = await statusResponse.json().catch(() => []);
-  return Array.isArray(rows) && rows.length ? rows[0] : null;
+  const suspension = Array.isArray(rows) && rows.length ? rows[0] : null;
+  if (suspensionStatusCache.size > 500) suspensionStatusCache.clear();
+  suspensionStatusCache.set(userId, { value: suspension, expiresAt: Date.now() + 4000 });
+  return suspension;
 }
 
 function isSuspensionAllowedRequest(pathname, method) {

@@ -30,6 +30,8 @@ function safeHeaders(input) {
   if(!h.has("apikey"))h.set("apikey",SUPABASE_KEY);if(!h.has("authorization"))h.set("authorization","Bearer "+SUPABASE_KEY);
   return h;
 }
+const suspensionStatusCache = new Map();
+
 async function checkActiveSuspension(headers) {
   const authorization=headers.get("authorization")||"";
   const bearer=authorization.match(/^Bearer\s+(.+)$/i);
@@ -43,6 +45,8 @@ async function checkActiveSuspension(headers) {
   }catch(_){return null;}
   const userId=typeof claims?.sub==="string"?claims.sub:"";
   if(!userId||claims?.is_anonymous)return null;
+  const cachedStatus=suspensionStatusCache.get(userId);
+  if(cachedStatus&&cachedStatus.expiresAt>Date.now())return cachedStatus.value;
   const authHeaders=new Headers({apikey:headers.get("apikey")||SUPABASE_KEY,authorization});
   const now=new Date().toISOString();
   const query=new URLSearchParams({
@@ -53,7 +57,10 @@ async function checkActiveSuspension(headers) {
   if(statusResponse.status===401)return null;
   if(!statusResponse.ok)throw Object.assign(new Error("アカウントの利用状態を確認できません。時間をおいて再度お試しください。"),{status:503});
   const rows=await statusResponse.json().catch(()=>[]);
-  return Array.isArray(rows)&&rows.length?rows[0]:null;
+  const suspension=Array.isArray(rows)&&rows.length?rows[0]:null;
+  if(suspensionStatusCache.size>500)suspensionStatusCache.clear();
+  suspensionStatusCache.set(userId,{value:suspension,expiresAt:Date.now()+4000});
+  return suspension;
 }
 function isSuspensionAllowedRequest(pathname,method) {
   if(pathname==="/rest/v1/account_suspensions"&&["GET","HEAD"].includes(method))return true;
