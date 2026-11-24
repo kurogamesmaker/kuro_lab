@@ -1,7 +1,7 @@
 # KUROGAMES 共通オンライン・データ通信仕様
 
-- 仕様書バージョン: 2.2
-- 更新日: 2026-11-24
+- 仕様書バージョン: 2.3
+- 更新日: 2026-11-25
 - 対象: KUROGAMES / KURO Lab のゲームプレイヤー、ゲームスタジオ、共通SDK、オンラインAPI、Cloudflare Workers、Durable Objects、Supabase
 - 目的: ゲームごとの通信実装を統一し、個人データ・ルーム通信・ランキングを安全かつ一貫した方法で利用できるようにする
 
@@ -644,11 +644,23 @@ SDK設計案:
 
 ランキング登録:
 
+    // スコア（大きい値が上位）
     await KuroGames.ranking.submit(15000, {
       mode: "default",
-      metadata: {
-        difficulty: "normal"
-      }
+      metric: "score",
+      metadata: { difficulty: "normal" }
+    });
+
+    // 勝利数（1勝ごとに1を登録）
+    await KuroGames.ranking.submit(1, {
+      mode: "wins-solo",
+      metric: "wins"
+    });
+
+    // タイム（ミリ秒、小さい値が上位。mode名に time を含める）
+    await KuroGames.ranking.submit(12500, {
+      mode: "time-attack",
+      metric: "time"
     });
 
 ランキング取得:
@@ -665,6 +677,10 @@ SDK設計案:
 - metadataはオブジェクトで8KB以内。
 - 現行APIには短時間の送信回数制限がある。
 - ranking.getは順位表データを返すAPIであり、ゲーム内の表示画面そのものはゲーム側で作る。
+- モードごとに指標は1つだけ固定する。`score` は大きい値が上位、`wins` は勝利数の降順、`time` はミリ秒の昇順。
+- `ranking.submit()` は `metric` を明示する。未指定時はmode名からSDKが補完する。
+- タイムランキングのmode名には `time`（または `duration` / `elapsed`）を含める。異なる指標の記録を同じmodeへ混在させない。
+- 共通集計表 `kuro_game_user_stats` の生成列 `metric` をランキング指標の基準とし、`game_scores` は最高記録と難易度などの記録次元を保持する。
 
 ### 8.2 ranking.getの戻り値
 
@@ -675,6 +691,7 @@ SDKは配列を返す。
         rank: 1,
         score: 15000,
         mode: "default",
+        metric: "score",
         createdAt: "2026-11-20T10:00:00.000Z",
         user: {
           kuroId: "KURO-...",
@@ -686,7 +703,8 @@ SDKは配列を返す。
     ]
 
 - rankは取得結果内の順位。
-- scoreはランキング値。
+- scoreはランキング値（winsでは累計勝利数、timeではミリ秒）。
+- metricは順位の計算方法を示し、score / wins / timeのいずれか。
 - modeは対象モード。
 - createdAtは記録日時。
 - userは公開用プロフィール情報。
