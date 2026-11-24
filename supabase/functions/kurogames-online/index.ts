@@ -760,7 +760,7 @@ async function loadHardUnonSoloScores(gameId: string, limit: number) {
     .select("user_id, wins, mode, last_played_at, updated_at, metadata")
     .eq("game_id", gameId)
     .eq("mode", "wins-solo-hard")
-    .contains("metadata", { metric: "wins", source: "unon-solo", cpuDifficulty: "hard" })
+    .contains("metadata", { metric: "wins", source: "unon-solo-server", serverVerified: "unon-solo-v1", cpuDifficulty: "hard" })
     .gt("wins", 0)
     .order("wins", { ascending: false })
     .order("updated_at", { ascending: true })
@@ -833,6 +833,9 @@ async function handle(req: Request) {
     requireFeature(settings.features, "ranking");
 
     const mode = safeMode(body.mode);
+    if (game.id === UNON_GAME_ID && mode === "wins-solo") {
+      throw new HttpError(403, "UNONのCPU戦ランキングはサーバー検証方式への移行中です。オンライン対戦の勝利数はこれまでどおり登録できます。");
+    }
     if (game.id === DAIFUGO_GAME_ID && mode === "wins-bot") {
       throw new HttpError(403, "大富豪のCPU戦ランキングはサーバー検証方式への移行中です。オンライン対戦の勝利数はこれまでどおり登録できます。");
     }
@@ -862,14 +865,7 @@ async function handle(req: Request) {
         throw new HttpError(403, "サーバーが確認した敗北記録ではありません。");
       }
       trustedSource = "unon-online-server-proof";
-    } else if (game.id === UNON_GAME_ID && mode === "wins-solo") {
-      const difficulty = String(metadata.cpuDifficulty ?? metadata.cpu_difficulty ?? metadata.difficulty ?? "").trim().toLowerCase();
-      const players = Number(metadata.players);
-      if (metadata.source !== "unon-solo" || difficulty !== "hard" ||
-          !Number.isSafeInteger(players) || players < 2 || players > 4) {
-        throw new HttpError(403, "記録できるUNONひとり用の敗北は、CPU最強設定の対戦のみです。");
-      }
-      trustedSource = "unon-solo-client-result";
+
     } else if (game.id === "2eb37847-1b7e-43e4-ad98-901d5b830ac4" && mode === "wins-bot") {
       if (metadata.source !== "daifugo-bot" || metadata.opponentMode !== "bot") {
         throw new HttpError(403, "記録できる敗北は大富豪のCPU対戦のみです。");
