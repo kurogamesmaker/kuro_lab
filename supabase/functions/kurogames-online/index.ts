@@ -563,21 +563,21 @@ async function handle(req: Request) {
     const user = await getUser(req);
     requirePublished(game);
     const allGames = body.allGames === true;
-    // When not explicitly requesting all of the caller's games, scope the
-    // result to the game authenticated by this request, never a body-supplied id.
+    // Compatibility endpoint only: return one aggregate row per game/mode.
+    // The per-play event archive is no longer queried by the new record system.
     const targetGameId = game.id;
-    const limit = Math.max(1, Math.min(100, Number.isFinite(Number(body.limit)) ? Math.floor(Number(body.limit)) : 50));
-    let query = admin.from("kuro_game_play_events")
-      .select("id,submission_id,user_id,game_id,mode,result,score,duration_ms,metadata,created_at")
+    const limit = Math.max(1, Math.min(250, Number.isFinite(Number(body.limit)) ? Math.floor(Number(body.limit)) : 100));
+    let query = admin.from("kuro_game_user_stats")
+      .select("user_id,game_id,mode,plays,wins,losses,draws,best_score,best_time_ms,total_time_ms,last_played_at,metadata,updated_at")
       .eq("user_id", user.id);
     if (!allGames) query = query.eq("game_id", targetGameId);
     if (typeof body.mode === "string" && body.mode.trim()) query = query.eq("mode", safeMode(body.mode));
-    const { data, error } = await query.order("created_at", { ascending: false }).limit(limit);
+    const { data, error } = await query.order("updated_at", { ascending: false }).limit(limit);
     if (error) {
-      console.error("[kurogames-online] unified history read failed", error);
-      throw new HttpError(500, "プレイ履歴を取得できませんでした。");
+      console.error("[kurogames-online] aggregate stats compatibility read failed", error);
+      throw new HttpError(500, "ゲーム記録を取得できませんでした。");
     }
-    return reply(200, { events: data || [], allGames });
+    return reply(200, { stats: data || [], events: [], deprecated: true, allGames });
   }
 
   if (action === "settings_get") {
