@@ -217,7 +217,7 @@ Deno.serve(async (req: Request) => {
       const [summaryResult, rewardsResult, ledgerResult, gamesResult] = await Promise.all([
         admin.rpc("kuro_coin_admin_overview"),
         admin.from("kuro_coin_game_rewards")
-          .select("game_id,mode,reward_amount,enabled,required_cpu_difficulty,reward_label,updated_at")
+          .select("game_id,mode,reward_amount,enabled,required_cpu_difficulty,reward_label,reward_type,score_tiers,updated_at")
           .order("updated_at", { ascending: false }),
         admin.from("kuro_coin_ledger")
           .select("id,user_id,amount,balance_after,transaction_type,description,source_game_id,source_mode,created_at")
@@ -266,6 +266,7 @@ Deno.serve(async (req: Request) => {
     if (action === "update_coin_reward") {
       const gameId = typeof body.gameId === "string" ? body.gameId : "";
       const mode = typeof body.mode === "string" ? body.mode.trim() : "";
+      const rewardType = body.rewardType === "score_tier" ? "score_tier" : "fixed";
       const amount = Number(body.rewardAmount);
       const enabled = body.enabled === true;
       const difficulty = body.requiredCpuDifficulty == null || body.requiredCpuDifficulty === ""
@@ -275,10 +276,10 @@ Deno.serve(async (req: Request) => {
         return reply({ error: "ゲームIDが正しくありません。" }, 400, origin);
       }
       if (!/^[A-Za-z0-9_-]{1,40}$/.test(mode)) {
-        return reply({ error: "モード名は英数字・_・-の40文字以内で入力してください。" }, 400, origin);
+        return reply({ error: "モード指定が正しくありません。" }, 400, origin);
       }
       if (!Number.isSafeInteger(amount) || amount < 0 || amount > 1000) {
-        return reply({ error: "報酬は0〜1000 KCで設定してください。" }, 400, origin);
+        return reply({ error: "固定報酬は0〜1000 Pで設定してください。" }, 400, origin);
       }
       if (difficulty !== null && !["EASY","NORMAL","HARD","EXPERT"].includes(difficulty)) {
         return reply({ error: "CPU難易度の指定が正しくありません。" }, 400, origin);
@@ -286,6 +287,7 @@ Deno.serve(async (req: Request) => {
       if (!label || label.length > 80) {
         return reply({ error: "報酬表示名は1〜80文字で入力してください。" }, 400, origin);
       }
+
       const verifiedTictactoe = gameId === "2dbd6773-2684-4f00-973e-c46acbc348e7" &&
         ["normal","vanish","gobble","reverse"].includes(mode) && difficulty === "HARD";
       const verifiedUnonOnline = gameId === "faa155cb-2143-4361-9a96-dc759d334e46" &&
@@ -309,9 +311,46 @@ Deno.serve(async (req: Request) => {
         sushiModes.has(mode) && difficulty === null;
       if (!verifiedTictactoe && !verifiedUnonOnline && !verifiedPrime && !verifiedNumber && !verifiedSushi) {
         return reply({
-          error: "報酬設定できるのはサーバー検証済みのゲーム・モードのみです。対応するゲームとモードを選択してください。"
+          error: "報酬を設定できるのはサーバー検証済みのゲーム・モードのみです。"
         }, 400, origin);
       }
+
+      let scoreTiers: Array<{minScore:number;maxScore:number|null;rewardAmount:number;enabled:boolean}> = [];
+      if (rewardType === "score_tier") {
+        // Currently only the prime-factor and sushi typing servers compute authoritative scores.
+        if (!(verifiedPrime || verifiedSushi)) {
+          return reply({ error: "スコア別報酬は素因数分解・回転ずしタイピングのみ対応しています。" }, 400, origin);
+        }
+        if (difficulty !== null || !Array.isArray(body.scoreTiers) ||
+            body.scoreTiers.length < 1 || body.scoreTiers.length > 20) {
+          return reply({ error: "スコア条件を1〜20段階で設定してください。" }, 400, origin);
+        }
+        scoreTiers = body.scoreTiers.map((tier:any) => ({
+          minScore: Number(tier?.minScore),
+          maxScore: tier?.maxScore === null || tier?.maxScore === undefined || tier?.maxScore === ""
+            ? null : Number(tier.maxScore),
+          rewardAmount: Number(tier?.rewardAmount),
+          enabled: tier?.enabled !== false,
+        }));
+        for (const tier of scoreTiers) {
+          if (!Number.isSafeInteger(tier.minScore) || tier.minScore < 0 ||
+              (tier.maxScore !== null && (!Number.isSafeInteger(tier.maxScore) || tier.maxScore < tier.minScore)) ||
+              !Number.isSafeInteger(tier.rewardAmount) || tier.rewardAmount < 0 || tier.rewardAmount > 1000) {
+            return reply({ error: "各条件のスコア範囲・ポイント数を確認してください。" }, 400, origin);
+          }
+        }
+        scoreTiers.sort((a,b)=>a.minScore-b.minScore);
+        for (let i=1;i<scoreTiers.length;i++) {
+          const previous=scoreTiers[i-1],current=scoreTiers[i];
+          if (previous.maxScore === null || previous.maxScore >= current.minScore) {
+            return reply({ error: "スコア範囲が重複しています。前の条件の上限と次の条件の下限を確認してください。" }, 400, origin);
+          }
+        }
+        if (scoreTiers.some((tier,i)=>tier.maxScore===null && i!==scoreTiers.length-1)) {
+          return reply({ error: "上限なしの条件は最後の段階にしてください。" }, 400, origin);
+        }
+      }
+
       const { data: game, error: gameError } = await admin.from("game_studio_games")
         .select("id,title,status").eq("id", gameId).maybeSingle();
       if (gameError) throw gameError;
@@ -321,10 +360,12 @@ Deno.serve(async (req: Request) => {
       const { error } = await admin.from("kuro_coin_game_rewards").upsert({
         game_id: gameId,
         mode,
-        reward_amount: amount,
+        reward_amount: rewardType === "fixed" ? amount : 0,
         enabled,
         required_cpu_difficulty: difficulty,
         reward_label: label,
+        reward_type: rewardType,
+        score_tiers: rewardType === "score_tier" ? scoreTiers : [],
         updated_by_user_id: caller.id,
         updated_at: new Date().toISOString()
       }, { onConflict: "game_id,mode" });
@@ -332,7 +373,12 @@ Deno.serve(async (req: Request) => {
       const { error: auditError } = await admin.from("admin_audit_logs").insert({
         actor_user_id: caller.id,
         action: "kuro_coin_reward_update",
-        metadata: { gameId, gameTitle: game.title, mode, rewardAmount: amount, enabled, requiredCpuDifficulty: difficulty, rewardLabel: label }
+        metadata: {
+          gameId, gameTitle: game.title, mode, rewardType,
+          rewardAmount: rewardType === "fixed" ? amount : null,
+          scoreTiers: rewardType === "score_tier" ? scoreTiers : [],
+          enabled, requiredCpuDifficulty: difficulty, rewardLabel: label
+        }
       });
       if (auditError) console.warn("[admin-console] KURO COIN reward audit insert failed", auditError);
       return reply({ ok: true }, 200, origin);
