@@ -1111,7 +1111,7 @@ img#profileAvatarPreview:not(.hidden) {
  transform: translateX(2px) !important;
 }
 </style>
-</head>
+<link rel="stylesheet" href="/kuro-profile.css?v=20261124profilemodal1"></head>
 
 <body class="kuro-page kuro-theme-dark">
 
@@ -3750,7 +3750,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             }
         }
 
-        async function openPublicProfile(userId) {
+        async function openPublicProfileLegacy(userId) {
             if (!userId) { showToast('プロフィールを開けませんでした'); return; }
             const modal = document.getElementById('publicProfileModal');
             const box = document.getElementById('publicProfilePosts');
@@ -3816,6 +3816,12 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 console.error('KURO public profile error:', error);
                 box.innerHTML = '<p class="text-sm text-red-300">プロフィールを読み込めませんでした。profiles・posts・followsのRLS設定を確認してください。</p>';
             }
+        }
+        async function openPublicProfile(userId) {
+            if (window.KuroProfile && typeof window.KuroProfile.open === 'function') {
+                return window.KuroProfile.open(userId, { onSnsMore: function () { return openPublicProfileLegacy(userId); } });
+            }
+            return openPublicProfileLegacy(userId);
         }
         function closePublicProfile() { document.getElementById('publicProfileModal')?.classList.add('hidden'); }
         async function togglePublicProfileFollow() {
@@ -5266,5 +5272,5 @@ body.kuro-page #postFeed article[data-post-card] {
 </script>
 <!-- Direct profile editing entry point from KURO Lab / KURO Games -->
 <script>(function(){if(new URLSearchParams(location.search).get("profile-edit")!=="1")return;function openEditor(){if(typeof window.openProfileModal==="function"){window.openProfileModal();return;}setTimeout(openEditor,350);}window.addEventListener("load",function(){setTimeout(openEditor,900);},{once:true});})();</script>
-</body>
+<script defer src="/kuro-profile.js?v=20261124profilemodal1"></script></body>
 </html>
