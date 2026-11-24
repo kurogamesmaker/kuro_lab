@@ -197,3 +197,24 @@
 .kuro-profile-coin-copy small{display:block;margin-top:3px;color:#aebbd0;font-size:9px}
 .kuro-profile-coin-value{color:#ffdc83;font-size:clamp(19px,3.4vw,24px);font-weight:1000;font-variant-numeric:tabular-nums;white-space:nowrap}
 @media(max-width:600px){.kuro-profile-coin-balance{margin-bottom:16px;padding:11px 13px}.kuro-profile-coin-icon{width:34px;height:34px;flex-basis:34px}}
+
+/* KURO STORE equipped profile cosmetics */
+.kuro-profile-custom-theme{--kuro-profile-accent:#83b5ff;--kuro-profile-accent-soft:rgba(85,145,228,.18)}
+.kuro-profile-theme-neon{--kuro-profile-accent:#d68aff;--kuro-profile-accent-soft:rgba(190,95,255,.22)}
+.kuro-profile-theme-classic{--kuro-profile-accent:#b8c7db;--kuro-profile-accent-soft:rgba(120,145,175,.18)}
+.kuro-profile-custom-theme .kuro-profile-identity{position:relative;isolation:isolate}
+.kuro-profile-custom-theme .kuro-profile-names h3{color:var(--kuro-profile-accent)}
+.kuro-profile-custom-theme .kuro-profile-avatar{position:relative;border-color:var(--kuro-profile-accent);box-shadow:0 0 0 4px var(--kuro-profile-accent-soft),0 0 24px var(--kuro-profile-accent-soft)}
+.kuro-profile-avatar.kuro-profile-frame-common{border:3px solid #bac7d8}
+.kuro-profile-avatar.kuro-profile-frame-rare{border:3px solid #65aaff;box-shadow:0 0 0 4px rgba(65,155,255,.18),0 0 26px rgba(65,155,255,.32)}
+.kuro-profile-avatar.kuro-profile-frame-epic{border:3px solid #bd80ff;box-shadow:0 0 0 4px rgba(189,128,255,.2),0 0 28px rgba(189,128,255,.42)}
+.kuro-profile-avatar.kuro-profile-frame-legendary{border:3px solid #ffc45e;box-shadow:0 0 0 4px rgba(255,196,94,.2),0 0 30px rgba(255,196,94,.5)}
+.kuro-profile-avatar-item{font-size:48px}
+.kuro-profile-cosmetic-banner{position:relative;min-height:66px;margin:0 0 12px;padding:12px 16px;display:flex;align-items:center;gap:11px;overflow:hidden;border:1px solid rgba(148,163,184,.24);border-radius:15px;background:linear-gradient(105deg,#30234a,#1c2943);background-size:cover;background-position:center}
+.kuro-profile-cosmetic-banner-icon{font-size:27px;filter:drop-shadow(0 3px 8px #0007)}
+.kuro-profile-cosmetic-banner small{display:block;color:#c1b4dc;font-size:8px;letter-spacing:1.4px;font-weight:950}
+.kuro-profile-cosmetic-banner strong{display:block;margin-top:3px;color:#fff;font-size:12px}
+.kuro-profile-cosmetic-strip{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
+.kuro-profile-cosmetic-chip{display:inline-flex;align-items:center;gap:5px;min-height:27px;padding:4px 8px;border:1px solid rgba(148,163,184,.2);border-radius:999px;background:var(--kuro-profile-accent-soft);color:#e7eaf2;font-size:9px;font-weight:850}
+.kuro-profile-cosmetic-chip>span{font-size:13px}
+.kuro-profile-custom-theme .kuro-profile-bio{border-color:var(--kuro-profile-accent-soft)}
