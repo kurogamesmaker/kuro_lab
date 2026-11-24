@@ -1527,7 +1527,7 @@ async function handle(req: Request) {
         return reply(200, { status: "cancelled" });
       }
       const members = await getRoomMembers(String(room.id));
-      if (members.length !== 2) {
+      if (isUnon ? (members.length < 2 || members.length > 4) : members.length !== 2) {
         await admin.rpc("kuro_daifugo_matchmaking_cancel", { p_game_id: game.id, p_user_id: user.id });
         return reply(200, { status: "cancelled" });
       }
