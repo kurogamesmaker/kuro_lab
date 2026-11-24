@@ -458,6 +458,28 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
   #kuroRankingShowcase.rank-transition .rank-list{animation:none!important}
 }
 
+
+@keyframes kuroHomeTickerFallback{from{transform:translateX(0)}to{transform:translateX(calc(-1 * var(--kuro-home-ticker-distance, 0px)))}}/* KURO GAMES admin-managed scrolling home banners */
+.kuro-home-ticker-host{padding-top:10px}
+.kuro-home-ticker{display:flex;align-items:center;gap:10px;min-height:42px;padding:6px 10px;border:1px solid #e2e8f2;border-radius:13px;background:#fff;box-shadow:0 4px 14px #1b30520a;overflow:hidden}
+.kuro-home-ticker[hidden]{display:none!important}
+.kuro-home-ticker-label{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:0 8px 0 2px;color:#51627d;font-size:10px;font-weight:1000;letter-spacing:.08em;border-right:1px solid #e6ebf3}
+.kuro-home-ticker-label span{font-size:15px}
+.kuro-home-ticker-viewport{flex:1;min-width:0;overflow:hidden}
+.kuro-home-ticker-track{display:flex;align-items:center;width:max-content;white-space:nowrap;will-change:transform}
+.kuro-home-ticker-set{display:flex;align-items:center;flex:0 0 auto;gap:10px;padding-right:10px}
+.kuro-home-ticker-item{display:inline-flex;align-items:center;gap:7px;min-height:28px;max-width:min(78vw,760px);padding:5px 11px;border:1px solid #ffffff38;border-radius:8px;white-space:nowrap;text-decoration:none;overflow:hidden;text-overflow:ellipsis;line-height:1.4}
+.kuro-home-ticker-item:hover{filter:brightness(1.08)}
+.kuro-home-ticker-item:focus-visible{outline:2px solid #2878ee;outline-offset:2px}
+.kuro-home-ticker-icon{flex:0 0 auto}
+@media(max-width:680px){
+ .kuro-home-ticker-host{padding-top:7px}
+ .kuro-home-ticker{min-height:38px;gap:8px;padding:5px 8px;border-radius:11px}
+ .kuro-home-ticker-label{font-size:9px;padding-right:7px}
+ .kuro-home-ticker-label span{font-size:13px}
+ .kuro-home-ticker-set{gap:8px;padding-right:8px}
+ .kuro-home-ticker-item{min-height:26px;max-width:76vw;padding:4px 9px}
+}
 </style>
 
 <!-- Google Analytics 4 -->
@@ -1262,6 +1284,12 @@ body.kuro-account-open { overflow: hidden; }
 <span class="lab" aria-label="Cloudflare経由で通信">Cloudflare接続中</span><a class="lab" href="https://kurolab.cc.cd/">KURO Lab ↗</a><button class="kuro-notification-link" id="kuroNotificationLink" type="button" aria-label="通知BOX" title="このページ内で共通通知を確認"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></button>
 <button class="lab kuro-account-trigger" id="kuroAccountOpen" type="button" aria-haspopup="dialog" aria-controls="kuroAccountModal">ログイン</button>
 </div></header>
+<div class="wrap kuro-home-ticker-host">
+ <section class="kuro-home-ticker" id="kuroHomeTicker" aria-label="KuroGamesのお知らせ" hidden>
+  <div class="kuro-home-ticker-label"><span aria-hidden="true">📢</span><b>INFO</b></div>
+  <div class="kuro-home-ticker-viewport"><div class="kuro-home-ticker-track" id="kuroHomeTickerTrack"></div></div>
+ </section>
+</div>
 <main class="wrap">
 <section class="library" id="games">
 
@@ -1323,6 +1351,79 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}
  });
 }
+(function initKuroHomeTicker(){
+ const host=document.getElementById("kuroHomeTicker");
+ const viewport=host?.querySelector(".kuro-home-ticker-viewport");
+ const track=document.getElementById("kuroHomeTickerTrack");
+ const db=window.kuroGamesDB;
+ if(!host||!viewport||!track||!db)return;
+ let tickerAnimation=null;
+ const validHref=value=>{
+  const raw=String(value||"").trim();
+  if(!raw)return "";
+  if(raw.startsWith("/")&&!raw.startsWith("//"))return raw;
+  try{const url=new URL(raw,location.origin);return url.protocol==="https:"?url.href:"";}catch{return "";}
+ };
+ const makeSet=rows=>{
+  const set=document.createElement("div");
+  set.className="kuro-home-ticker-set";
+  rows.forEach(row=>{
+   const href=validHref(row.href);
+   const item=href?document.createElement("a"):document.createElement("span");
+   item.className="kuro-home-ticker-item";
+   if(href){
+    item.href=href;
+    if(/^https:\/\//i.test(href)&&new URL(href).origin!==location.origin){item.target="_blank";item.rel="noopener noreferrer";}
+   }
+   item.style.color=row.text_color||"#ffffff";
+   item.style.backgroundColor=row.background_color||"#2563eb";
+   item.style.fontSize=Math.max(11,Math.min(22,Number(row.font_size)||14))+"px";
+   item.style.fontWeight=row.is_bold?"850":"600";
+   if(row.icon){
+    const icon=document.createElement("span");
+    icon.className="kuro-home-ticker-icon";
+    icon.textContent=String(row.icon);
+    icon.setAttribute("aria-hidden","true");
+    item.appendChild(icon);
+   }
+   const message=document.createElement("span");
+   message.textContent=String(row.message||"");
+   item.appendChild(message);
+   set.appendChild(item);
+  });
+  return set;
+ };
+ const render=rows=>{
+  if(tickerAnimation){tickerAnimation.cancel();tickerAnimation=null;}
+  track.replaceChildren();
+  if(!rows.length){host.hidden=true;return;}
+  host.hidden=false;
+  const first=makeSet(rows);
+  track.appendChild(first);
+  const baseWidth=Math.ceil(first.getBoundingClientRect().width);
+  if(!baseWidth){host.hidden=true;return;}
+  const groups=Math.max(2,Math.ceil((viewport.clientWidth+baseWidth)/baseWidth)+1);
+  for(let i=1;i<groups;i++)track.appendChild(makeSet(rows));
+  const pxPerSecond=rows.reduce((sum,row)=>sum+({slow:38,normal:58,fast:82}[row.speed]||58),0)/rows.length;
+  const duration=Math.max(12000,Math.min(180000,baseWidth/pxPerSecond*1000));
+  if(typeof track.animate==="function"){
+   tickerAnimation=track.animate([{transform:"translateX(0)"},{transform:"translateX(-"+baseWidth+"px)"}],{duration,iterations:Infinity,easing:"linear"});
+  }else{
+   track.style.animation="kuroHomeTickerFallback "+duration+"ms linear infinite";
+   track.style.setProperty("--kuro-home-ticker-distance",baseWidth+"px");
+  }
+ };
+ async function load(){
+  const {data,error}=await db.from("kurogames_home_banners")
+   .select("id,name,message,href,text_color,background_color,font_size,speed,icon,is_bold,sort_order")
+   .eq("enabled",true)
+   .order("sort_order",{ascending:true})
+   .order("created_at",{ascending:false});
+  if(error)throw error;
+  render(Array.isArray(data)?data.filter(row=>String(row.message||"").trim()):[]);
+ }
+ load().catch(error=>console.warn("[KuroGames home banners]",error));
+})();
 (function initKuroAccount(){
   // KURO_GAMES_NULL_SAFE_BOOT_20261122
  const openButton=document.getElementById("kuroAccountOpen"),stateLabel=document.getElementById("kuroAccountState"),modal=document.getElementById("kuroAccountModal"),closeButton=document.getElementById("kuroAccountClose"),form=document.getElementById("kuroAccountForm");
