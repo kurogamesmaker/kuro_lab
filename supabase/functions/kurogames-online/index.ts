@@ -1560,6 +1560,21 @@ async function handle(req: Request) {
     if(game.id!==SUSHI_GAME_ID) throw new HttpError(404,"回転ずしタイピングの認証先ではありません。");
     const session=await loadVerifiedSession(user.id,body.sessionId,body.nonce,game.id,"sushi_typing");
     const state=cloneGameState(session.state as Record<string,any>);
+    // Only award a completed run with a positive score calculated by the server.
+    if ((Number(state.score) || 0) > 0) {
+      const rewardMode=String(state.mode || "normal") + "_" + String(state.level || "beginner");
+      const {error:coinEventError}=await admin.from("kuro_coin_verified_game_events").insert({
+        game_id:SUSHI_GAME_ID,
+        user_id:user.id,
+        mode:rewardMode,
+        submission_id:session.id,
+        cpu_difficulty:null,
+      });
+      if (coinEventError && coinEventError.code !== "23505") {
+        console.error("[kurogames-online] sushi coin reward event failed",coinEventError);
+        throw new HttpError(500,"回転ずしタイピングの報酬を確定できませんでした。");
+      }
+    }
     const patch={state:{...state,timeLeftAtFinish:sushiTimeLeft(session,state)},status:"completed",result:"completed",completed_at:new Date().toISOString()};
     await saveVerifiedSession(session,patch);
     const saved=await sushiRecordCompletedRun(user.id,{...session,...patch});
@@ -1667,6 +1682,21 @@ async function handle(req: Request) {
     const session = await loadVerifiedSession(user.id,body.sessionId,body.nonce,game.id,"prime_factor");
     const state = cloneGameState(session.state as Record<string,any>);
     const timeLeft = primeGetTimeLeft(session,state);
+    // The prime-factor verifier owns the target, accepted factors and score.
+    // Pay only for a completed run with at least one server-verified solution.
+    if ((Number(state.solvedCount) || 0) > 0 && (Number(state.score) || 0) > 0) {
+      const {error:coinEventError} = await admin.from("kuro_coin_verified_game_events").insert({
+        game_id: PRIME_GAME_ID,
+        user_id: user.id,
+        mode: String(state.difficulty || session.mode || ""),
+        submission_id: session.id,
+        cpu_difficulty: null,
+      });
+      if (coinEventError && coinEventError.code !== "23505") {
+        console.error("[kurogames-online] prime coin reward event failed",coinEventError);
+        throw new HttpError(500,"素因数分解の報酬を確定できませんでした。");
+      }
+    }
     const patch = {state:{...state,timeLeftAtFinish:timeLeft},status:"completed",result:"completed",completed_at:new Date().toISOString(),score_recorded:false};
     await saveVerifiedSession(session,patch);
     const saved = await primeRecordCompletedRun(user.id,{...session,...patch});
@@ -1719,6 +1749,22 @@ async function handle(req: Request) {
     const lost = !correct && playMode === "classic" && attempts >= 5;
     const elapsedMs = correct ? Math.max(0,Date.now()-Date.parse(session.started_at)) : null;
     const completed = correct || lost;
+    // The answer and difficulty are read from the server-owned session.
+    // The session UUID is the idempotency key for this exact successful run.
+    if (correct) {
+      const rewardMode = "number-" + playMode + "-" + level;
+      const {error:coinEventError} = await admin.from("kuro_coin_verified_game_events").insert({
+        game_id: NUMBER_GAME_ID,
+        user_id: user.id,
+        mode: rewardMode,
+        submission_id: session.id,
+        cpu_difficulty: null,
+      });
+      if (coinEventError && coinEventError.code !== "23505") {
+        console.error("[kurogames-online] number coin reward event failed",coinEventError);
+        throw new HttpError(500,"数字当ての報酬を確定できませんでした。");
+      }
+    }
     const nextNonce = await saveVerifiedSession(session,{
       attempts,
       status:completed ? "completed" : "active",
