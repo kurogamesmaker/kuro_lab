@@ -303,10 +303,26 @@ await room.leave();</code></pre>
  <h2><span class="num">10</span>ランキング規格</h2>
  <div class="card">
   <h3>現行SDKの登録・取得</h3>
-  <pre><code>// スコア登録
+  <pre><code>// スコアランキング（大きい値が上位）
 await KuroGames.ranking.submit(15000, {
   mode: "default",
+  metric: "score",
   metadata: { difficulty: "normal" },
+  submissionId: roundId
+});
+
+// 勝利数ランキング（勝利ごとに1を送信）
+await KuroGames.ranking.submit(1, {
+  mode: "wins-solo",
+  metric: "wins",
+  metadata: { source: "game-result" },
+  submissionId: roundId
+});
+
+// タイムランキング（ミリ秒、小さい値が上位）
+await KuroGames.ranking.submit(12500, {
+  mode: "time-attack",
+  metric: "time",
   submissionId: roundId
 });
 
@@ -315,6 +331,7 @@ const rows = await KuroGames.ranking.get({
   mode: "default",
   limit: 20
 });</code></pre>
+  <p>各モードの指標は <code>score</code>（大きい値が上位）・<code>wins</code>（勝利数）・<code>time</code>（ミリ秒、小さい値が上位）のいずれか1つに固定します。タイムランキングのmode名には <code>time</code> を含めてください。同じmodeに異なる指標を混在させないでください。</p>
   <p><code>submissionId</code> は試合ごとのUUIDを使い、同じ試合の再送では同じIDを使います。SDKは指定IDが有効なら引き継ぎ、未指定・不正時のみUUIDを生成します。</p>
  </div>
  <div class="card">
