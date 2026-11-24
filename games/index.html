@@ -1345,12 +1345,28 @@ header .lab{padding-left:10px!important;padding-right:10px!important}
 }
 </style>
 <style id="kuro-games-coin-topbar-style">
-#kuroGamesTopCoins{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:0 0 auto;min-width:76px;height:42px;padding:0 10px;border:1px solid #ead8a9;border-radius:12px;background:linear-gradient(135deg,#fffaf0,#fff4d7);color:#785716;text-decoration:none;box-shadow:0 3px 10px rgba(147,105,26,.08);transition:transform .16s,border-color .16s,background .16s}
-#kuroGamesTopCoins[hidden]{display:none!important}
-#kuroGamesTopCoins:hover{transform:translateY(-1px);border-color:#d9bc70;background:#fff0c4}
+.kuro-coin-topbar-wrap{position:relative;display:inline-flex;flex:0 0 auto;align-items:center}
+.kuro-coin-topbar-wrap[hidden]{display:none!important}
+#kuroGamesTopCoins{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:0 0 auto;min-width:76px;height:42px;padding:0 10px;border:1px solid #ead8a9;border-radius:12px;background:linear-gradient(135deg,#fffaf0,#fff4d7);color:#785716;box-shadow:0 3px 10px rgba(147,105,26,.08);transition:transform .16s,border-color .16s,background .16s;font:inherit;cursor:pointer}
+#kuroGamesTopCoins:hover,#kuroGamesTopCoins[aria-expanded="true"]{transform:translateY(-1px);border-color:#d9bc70;background:#fff0c4}
 .kuro-coin-topbar-icon{font-size:16px;line-height:1}
 .kuro-coin-topbar-value{font-size:12px;font-weight:1000;font-variant-numeric:tabular-nums;white-space:nowrap}
-@media(max-width:680px){#kuroGamesTopCoins{min-width:0;height:36px;gap:3px;padding:0 6px;border-radius:10px}.kuro-coin-topbar-icon{font-size:14px}.kuro-coin-topbar-value{font-size:10px}}
+.kuro-coin-popover[hidden]{display:none!important}
+.kuro-coin-popover{position:absolute;z-index:90;top:calc(100% + 10px);right:0;width:min(270px,calc(100vw - 24px));padding:16px;border:1px solid #e9d8ad;border-radius:16px;background:#fffdf7;color:#473a21;box-shadow:0 18px 48px rgba(46,35,14,.2);animation:kuroCoinPopoverIn .16s ease-out both}
+.kuro-coin-popover-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.kuro-coin-popover-title{font-size:12px;font-weight:950;color:#806020}
+.kuro-coin-popover-close{display:grid;place-items:center;width:27px;height:27px;border:1px solid #eee5d2;border-radius:8px;background:#fff;color:#77694d;font-size:18px;line-height:1;cursor:pointer}
+.kuro-coin-popover-balance{display:block;margin:8px 0 3px;color:#6e4f13;font-size:30px;font-weight:1000;line-height:1.2;font-variant-numeric:tabular-nums}
+.kuro-coin-popover-note{margin:0;color:#978966;font-size:10px;line-height:1.65}
+.kuro-coin-popover-link{display:flex;align-items:center;justify-content:center;min-height:37px;margin-top:13px;padding:0 12px;border:1px solid #e8d69f;border-radius:10px;background:#fff5d9;color:#805f1c;font-size:11px;font-weight:950;text-decoration:none}
+.kuro-coin-popover-link:hover{background:#ffedc0;border-color:#d9bc70}
+@keyframes kuroCoinPopoverIn{from{opacity:0;transform:translateY(-4px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:680px){
+ #kuroGamesTopCoins{min-width:0;height:36px;gap:3px;padding:0 6px;border-radius:10px}
+ .kuro-coin-topbar-icon{font-size:14px}
+ .kuro-coin-topbar-value{font-size:10px}
+ .kuro-coin-popover{position:fixed;top:68px;right:10px;width:min(270px,calc(100vw - 20px))}
+}
 </style>
 </head>
 <body>
@@ -1361,7 +1377,17 @@ header .lab{padding-left:10px!important;padding-right:10px!important}
 <a class="activity-link" href="/games/activity/" aria-label="プレイ状況"><svg class="activity-glyph" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h3l2-6 4 12 2-6h7"/></svg><i class="activity-live" aria-hidden="true"></i><span class="activity-text">プレイ状況</span></a>
 <a class="lab ranking-page-link" href="/games/ranking/?v=20261124design1" aria-label="ランキング一覧">🏆 ランキング</a>
 <a class="lab kuro-sns-nav" href="/sns/" aria-label="KURO SNSを開く"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M20 8v6m3-3h-6"/></svg><span>KURO SNS</span></a><a class="lab" href="https://kurolab.cc.cd/">KURO Lab ↗</a>
-<a class="kuro-coin-topbar" id="kuroGamesTopCoins" href="/account/#accountCoinCard" hidden aria-label="KURO COIN残高" title="KURO COIN残高"><span class="kuro-coin-topbar-icon" aria-hidden="true">🪙</span><strong class="kuro-coin-topbar-value" id="kuroGamesTopCoinsValue">—P</strong></a>
+<div class="kuro-coin-topbar-wrap" id="kuroGamesCoinWrap" hidden>
+ <button class="kuro-coin-topbar" id="kuroGamesTopCoins" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="kuroGamesCoinPopover" aria-label="KURO COIN残高を表示" title="KURO COIN残高">
+  <span class="kuro-coin-topbar-icon" aria-hidden="true">🪙</span><strong class="kuro-coin-topbar-value" id="kuroGamesTopCoinsValue">—P</strong>
+ </button>
+ <section class="kuro-coin-popover" id="kuroGamesCoinPopover" role="dialog" aria-label="KURO COIN残高" hidden>
+  <div class="kuro-coin-popover-head"><span class="kuro-coin-popover-title">🪙 KURO COIN 残高</span><button class="kuro-coin-popover-close" id="kuroGamesCoinPopoverClose" type="button" aria-label="閉じる">×</button></div>
+  <strong class="kuro-coin-popover-balance" id="kuroGamesCoinPopoverValue">—P</strong>
+  <p class="kuro-coin-popover-note">KURO共通アカウントのポイントです。公開プロフィールにも残高が表示されます。</p>
+  <a class="kuro-coin-popover-link" href="/account/#accountCoinCard">履歴・詳細を見る</a>
+ </section>
+</div>
 <button class="kuro-games-top-profile" id="kuroGamesTopProfile" type="button" data-kuro-profile-self hidden aria-label="自分の共通プロフィールを開く" title="自分のプロフィール"><span class="kuro-games-top-profile-avatar" id="kuroGamesTopProfileAvatar" aria-hidden="true"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg></span><span class="kuro-games-top-profile-name" id="kuroGamesTopProfileName">@ユーザー</span></button>
 <button class="kuro-notification-link" id="kuroNotificationLink" type="button" aria-label="通知BOX" title="このページ内で共通通知を確認"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></button>
 <div class="kuro-settings-wrap">
@@ -1513,7 +1539,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
  const password=document.getElementById("kuroAccountPassword"),confirm=document.getElementById("kuroAccountConfirm"),submit=document.getElementById("kuroAccountSubmit");
  const profileName=document.getElementById("kuroAccountProfileName"),profileHandle=document.getElementById("kuroAccountProfileHandle"),logoutButton=document.getElementById("kuroAccountLogout"),profileBioEditor=document.getElementById("kuroAccountBioInput"),profileBioSave=document.getElementById("kuroAccountBioSave");
  if(!openButton||!modal||!form)return;
- const coinTopbar=document.getElementById("kuroGamesTopCoins"),coinTopbarValue=document.getElementById("kuroGamesTopCoinsValue");
+ const coinWrap=document.getElementById("kuroGamesCoinWrap"),coinTopbar=document.getElementById("kuroGamesTopCoins"),coinTopbarValue=document.getElementById("kuroGamesTopCoinsValue"),coinPopover=document.getElementById("kuroGamesCoinPopover"),coinPopoverValue=document.getElementById("kuroGamesCoinPopoverValue"),coinPopoverClose=document.getElementById("kuroGamesCoinPopoverClose");
  let mode="login",currentUser=null,coinRequestSeq=0;
  function renderTopProfileAvatar(url){
   if(!topProfileAvatar)return;
@@ -1524,21 +1550,36 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   image.onerror=()=>{if(image.parentNode===topProfileAvatar)topProfileAvatar.innerHTML=fallback;};
   topProfileAvatar.replaceChildren(image);
  }
+ function setCoinPopover(open){
+  if(!coinPopover||!coinTopbar)return;
+  coinPopover.hidden=!open;
+  coinTopbar.setAttribute("aria-expanded",String(!!open));
+  if(open&&currentUser)loadTopCoinBalance(currentUser);
+ }
  function loadTopCoinBalance(user){
   const seq=++coinRequestSeq;
-  if(!coinTopbar||!coinTopbarValue)return;
-  if(!user||user.is_anonymous){coinTopbar.hidden=true;return;}
-  coinTopbar.hidden=false;coinTopbarValue.textContent="—P";
+  if(!coinTopbar||!coinTopbarValue||!coinWrap)return;
+  if(!user||user.is_anonymous){coinWrap.hidden=true;setCoinPopover(false);return;}
+  coinWrap.hidden=false;coinTopbarValue.textContent="—P";if(coinPopoverValue)coinPopoverValue.textContent="—P";
   const db=window.kuroGamesDB;
-  if(!db||typeof db.rpc!=="function")return;
+  if(!db||!db.functions||typeof db.functions.invoke!=="function")return;
   db.functions.invoke("kuro-public-coin-balance",{body:{userId:user.id}}).then(({data,error})=>{
    if(seq!==coinRequestSeq||currentUser?.id!==user.id)return;
-   if(error){console.warn("KURO COIN topbar balance load failed:",error);coinTopbarValue.textContent="—P";return;}
+   if(error){console.warn("KURO COIN topbar balance load failed:",error);coinTopbarValue.textContent="—P";if(coinPopoverValue)coinPopoverValue.textContent="—P";return;}
    const amount=Number(data&&data.balance);
    const label=(Number.isFinite(amount)?Math.max(0,Math.floor(amount)):0).toLocaleString("ja-JP")+"P";
-   coinTopbarValue.textContent=label;coinTopbar.title="KURO COIN残高："+label;
+   coinTopbarValue.textContent=label;if(coinPopoverValue)coinPopoverValue.textContent=label;
+   coinTopbar.title="KURO COIN残高："+label;
   }).catch(error=>{if(seq===coinRequestSeq)console.warn("KURO COIN topbar balance load failed:",error);});
  }
+ coinTopbar?.addEventListener("click",()=>setCoinPopover(!!coinPopover?.hidden));
+ coinPopoverClose?.addEventListener("click",()=>setCoinPopover(false));
+ document.addEventListener("click",event=>{
+  if(coinWrap&&!coinWrap.contains(event.target))setCoinPopover(false);
+ });
+ document.addEventListener("keydown",event=>{
+  if(event.key==="Escape"&&coinPopover&&!coinPopover.hidden)setCoinPopover(false);
+ });
  function setMode(next){
   mode=next==="signup"?"signup":"login";const signup=mode==="signup";
   loginTab?.classList.toggle("active",!signup);signupTab?.classList.toggle("active",signup);
