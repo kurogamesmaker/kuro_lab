@@ -176,7 +176,10 @@ button,.button{display:inline-flex;align-items:center;justify-content:center;bor
    if(messageError)throw messageError;
    $("firstMessage").value="";$("subject").value="";
    await loadAppeal();
-  }catch(error){showError(error.message||"問い合わせを送信できませんでした。");}
+  }catch(error){
+   try{await loadAppeal();}catch(_){}
+   showError(error.message||"問い合わせを送信できませんでした。");
+  }
   finally{button.disabled=false;}
  });
  $("replyForm").addEventListener("submit",async e=>{
