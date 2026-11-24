@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f6f8fc"><meta name="robots" content="noindex,nofollow"><title>ゲームプレイ | KURO GAMES</title>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f6f8fc"><meta name="robots" content="noindex,nofollow"><title>ゲームプレイ | KURO GAMES</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f6f8fc;color:#17243c;font-family:Inter,"Noto Sans JP",system-ui,sans-serif}.top{height:64px;display:flex;align-items:center;gap:14px;padding:0 max(18px,calc((100% - 1180px)/2));background:#fff;border-bottom:1px solid #e6ebf3}.brand{font-weight:1000;font-size:19px;color:#2878ee;text-decoration:none}.back{margin-left:auto;text-decoration:none;font-size:12px;font-weight:850;color:#53647d}.wrap{width:min(1180px,calc(100% - 28px));margin:22px auto}.info{display:flex;align-items:center;gap:14px;margin-bottom:14px}.icon{width:82px;height:64px;flex:0 0 82px;display:grid;place-items:center;overflow:hidden;border-radius:12px;background:#e5edff;font-size:28px}.icon img{display:block;width:100%;height:100%;object-fit:cover}.copy{min-width:0}.copy h1{font-size:clamp(19px,3vw,27px);margin:0 0 4px}.copy p{margin:0;color:#718098;font-size:12px;line-height:1.6}.game-description{margin:16px 0 8px;padding:14px 16px;border:1px solid #dce3ee;border-radius:12px;background:#fff;color:#596a83;font-size:13px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}.game-description[hidden]{display:none}.game-description-label{margin:0 0 5px;font-size:11px;font-weight:900;letter-spacing:.04em;color:#8794a8}.frame-wrap{display:flex;justify-content:center;overflow:hidden;border:1px solid #dce3ee;border-radius:14px;background:#fff;box-shadow:0 12px 35px #263d5b12}.game-frame{display:block;flex:0 0 auto;width:100%;height:auto;aspect-ratio:16/9;max-height:none;border:0;background:#fff}frame-wrap:fullscreen{width:100vw;height:100vh;border:0;border-radius:0;background:#101522;display:grid;place-items:center}.frame-wrap:fullscreen .game-frame{max-width:100vw;max-height:100vh}.state{padding:70px 20px;text-align:center;color:#718098}.state strong{display:block;color:#17243c;font-size:18px;margin-bottom:8px}.guest-choice{width:100%;min-height:340px;display:grid;place-items:center;padding:24px;background:#eef4ff}.guest-card{width:min(100%,440px);padding:28px 24px;background:#fff;border:1px solid #dbe5f3;border-radius:18px;text-align:center}.guest-card h2{margin:10px 0;font-size:22px}.guest-card p{color:#697a93;font-size:13px;line-height:1.7}.guest-actions{display:grid;gap:10px;margin-top:20px}.guest-actions button{border:0;border-radius:10px;padding:13px;font-weight:800;cursor:pointer}.guest-primary{background:#2878ee;color:white}.guest-secondary{background:#edf3fc;color:#244365}.hint{font-size:11px;color:#8390a5;margin:12px 4px}@media(max-width:600px){.top{height:56px;padding:0 14px}.wrap{margin:14px auto}.icon{width:72px;height:56px;flex-basis:72px}}
 .online-auth-backdrop[hidden]{display:none!important}.online-auth-backdrop{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;padding:18px;background:#14223caa;backdrop-filter:blur(5px)}.online-auth-card{width:min(440px,100%);padding:26px 22px;border:1px solid #dce5f2;border-radius:18px;background:#fff;box-shadow:0 24px 80px #101c3340;text-align:center}.online-auth-card h2{margin:0 0 10px;color:#1d2e49;font-size:21px}.online-auth-card p{margin:0;color:#65758e;font-size:13px;line-height:1.8}.online-auth-actions{display:grid;gap:9px;margin-top:20px}.online-auth-actions a,.online-auth-actions button{display:block;width:100%;padding:12px 14px;border:0;border-radius:10px;font:800 13px system-ui;text-decoration:none;cursor:pointer}.online-auth-login{background:#2878ee;color:#fff}.online-auth-close{background:#edf2f8;color:#29415f}
@@ -26,6 +26,71 @@ button.back{font-family:inherit;cursor:pointer;background:transparent;border:0}
 .kuro-account-switch{display:block;width:100%;margin-top:10px;padding:11px;border:1px solid #dce5f2;border-radius:10px;background:#f7f9fc;color:#35506f;font-size:12px;font-weight:850;cursor:pointer}
 .kuro-account-foot{text-align:center;margin-top:15px}
 @media(max-width:600px){.kuro-account-card{padding:25px 18px 18px;border-radius:16px}.kuro-account-card h2{font-size:19px}}
+
+/* Mobile gameplay layout only: portrait-first, full-height play area.
+   Desktop/tablet layout rules above remain unchanged. */
+@media(max-width:600px){
+ html,body{
+  width:100%;
+  height:100%;
+  min-height:0;
+  overflow:hidden;
+  overscroll-behavior:none;
+ }
+ body{
+  padding-top:env(safe-area-inset-top);
+  -webkit-text-size-adjust:100%;
+ }
+ .top{
+  height:calc(52px + env(safe-area-inset-top));
+  min-height:calc(52px + env(safe-area-inset-top));
+  padding:env(safe-area-inset-top) 9px 0;
+  gap:7px;
+ }
+ .brand{font-size:16px;letter-spacing:-.4px;white-space:nowrap}
+ .back{font-size:10px;padding:7px;white-space:nowrap}
+ .game-account-button{padding:7px 8px;font-size:10px}
+ #gamePageWrap{
+  width:100%!important;
+  max-width:none!important;
+  height:calc(100dvh - 52px - env(safe-area-inset-top));
+  min-height:0;
+  margin:0;
+  padding:8px 8px calc(8px + env(safe-area-inset-bottom));
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+ }
+ #gameInfo{flex:0 0 auto;gap:10px;margin:0;min-height:42px}
+ #gameInfo .icon{width:46px;height:42px;flex-basis:46px;border-radius:10px;font-size:22px}
+ #gameInfo .copy h1{font-size:17px;margin:0}
+ #frameWrap{
+  flex:1 1 auto;
+  min-height:0;
+  width:100%;
+  border-radius:12px;
+  box-shadow:0 4px 18px #263d5b12;
+ }
+ #frameWrap .game-frame{
+  width:100%!important;
+  height:100%!important;
+  max-width:100%!important;
+  max-height:none!important;
+  aspect-ratio:auto!important;
+ }
+ .game-description{
+  flex:0 1 auto;
+  margin:0;
+  padding:8px 10px;
+  max-height:72px;
+  overflow:auto;
+  font-size:11px;
+  line-height:1.6;
+  border-radius:10px;
+ }
+ .game-description-label{font-size:9px;margin:0 0 2px}
+ .hint{display:none}
+}
 </style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
 <body><header class="top"><a class="brand" href="/games/">KURO GAMES</a><button class="back game-account-button" id="gameAccountButton" type="button">ログイン / 登録</button><a class="back" href="/games/">← ゲーム一覧へ</a></header>
 <div class="online-auth-backdrop" id="onlineAuthPrompt" hidden>
