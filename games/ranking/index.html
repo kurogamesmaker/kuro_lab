@@ -51,6 +51,19 @@ button,select{font:inherit}
 .refresh-button{margin-left:auto;min-height:30px;padding:0 10px;border:1px solid #e0e8f3;border-radius:9px;background:#fff;color:#60748e;font-size:10px;font-weight:850;cursor:pointer}
 .refresh-button:hover{border-color:#b9d2f2;background:#f5f9ff}
 .rank-list{display:grid;gap:9px;padding:17px 20px 20px}
+.rank-list.mode-board{grid-template-columns:repeat(auto-fit,minmax(min(100%,285px),1fr));align-items:start;gap:14px}
+.mode-column{min-width:0;padding:12px;border:1px solid #e4ebf5;border-radius:15px;background:linear-gradient(180deg,#fbfdff,#fff)}
+.mode-column-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px;padding:1px 2px 9px;border-bottom:1px solid #e8eef6}
+.mode-column-title{min-width:0;margin:0;color:#294665;font-size:13px;font-weight:1000;overflow-wrap:anywhere}
+.mode-column-count{flex:0 0 auto;color:#8a99ac;font-size:9px;font-weight:850}
+.mode-column-list{display:grid;gap:8px;min-width:0}
+.mode-column-list .rank-row{gap:8px;padding:10px 9px}
+.mode-column-list .rank-medal{width:27px;flex-basis:27px;font-size:18px}
+.mode-column-list .rank-avatar{width:36px;height:36px;flex-basis:36px}
+.mode-column-list .rank-name{font-size:11px}
+.mode-column-list .rank-score{font-size:11px}
+.mode-column-empty{display:grid;place-items:center;min-height:130px;padding:16px 10px;color:#8291a5;text-align:center;font-size:11px;line-height:1.7}
+@media(max-width:640px){.rank-list.mode-board{grid-template-columns:minmax(0,1fr);padding:13px}.mode-column{padding:10px}}
 .rank-row{display:flex;align-items:center;gap:12px;min-width:0;padding:12px 14px;border:1px solid #e9eef5;border-radius:14px;background:linear-gradient(100deg,#fff,#fbfdff)}
 .rank-row.top-one{border-color:#f0dfaa;background:linear-gradient(100deg,#fffdf5,#fff)}
 .rank-row.top-two{border-color:#e3e7ee;background:linear-gradient(100deg,#fff,#fafbfd)}
@@ -213,26 +226,22 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   });
   countEl.textContent=games.length+"ゲーム";
  }
+ function isCpuMode(mode){return /cpu|bot/i.test(String(mode||""));}
  function renderFilters(game){
   const previousLevel=levelSelect.value,previousCpu=cpuSelect.value;
   const groups=game.modeGroups||[];
-  modeWrap.hidden=groups.length<=1;
+  // Multiple ranking modes are displayed side-by-side; no mode dropdown is needed.
+  modeWrap.hidden=true;
   modeSelect.replaceChildren();
-  groups.forEach(group=>{
-   const option=document.createElement("option");option.value=group.key;option.textContent=group.label;modeSelect.append(option);
-  });
-  modeSelect.value=game.selectedGroupKey;
-  const active=selectedModeInfo(game);
-  const group=groups.find(item=>item.key===game.selectedGroupKey)||groups[0];
-  const isCpu=/cpu|bot/i.test(String(group&&group.key||"")+" "+active.mode);
   const levels=Array.isArray(game.levels)?game.levels:[];
   const cpus=Array.isArray(game.cpuDifficulties)?game.cpuDifficulties:[];
+  const hasCpuMode=groups.some(group=>group.modes.some(item=>isCpuMode(item.mode)));
   levelWrap.hidden=!levels.length;
   levelSelect.replaceChildren();
   const allLevels=document.createElement("option");allLevels.value="";allLevels.textContent="すべて";levelSelect.append(allLevels);
   levels.forEach(value=>{const option=document.createElement("option");option.value=String(Number(value));option.textContent="Lv."+Number(value);levelSelect.append(option);});
   levelSelect.value=levels.some(value=>String(Number(value))===previousLevel)?previousLevel:"";
-  cpuWrap.hidden=!isCpu||!cpus.length;
+  cpuWrap.hidden=!hasCpuMode||!cpus.length;
   cpuSelect.replaceChildren();
   const allCpus=document.createElement("option");allCpus.value="";allCpus.textContent="すべて";cpuSelect.append(allCpus);
   const cpuNames={EASY:"よわい",NORMAL:"ふつう",HARD:"つよい",EXPERT:"Expert"};
@@ -271,15 +280,16 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   }));
   return loaded.filter(Boolean);
  }
- async function fetchRanking(game){
-  const active=selectedModeInfo(game);
+ async function fetchRanking(game,modeInfo){
+  const mode=modeInfo.mode;
   const level=levelSelect.value||"",cpu=cpuSelect.value||"";
-  const key=game.id+"::"+active.mode+"::"+level+"::"+cpu;
+  const useCpuFilter=isCpuMode(mode);
+  const key=game.id+"::"+mode+"::"+level+"::"+(useCpuFilter?cpu:"");
   const cached=cache.get(key);
   if(cached&&Date.now()-cached.at<30000)return cached.rows;
-  const body={action:"leaderboard",gameId:game.id,mode:active.mode,limit:5};
+  const body={action:"leaderboard",gameId:game.id,mode:mode,limit:5};
   if(level!=="")body.level=Number(level);
-  if(cpu!=="")body.cpuDifficulty=cpu;
+  if(useCpuFilter&&cpu!=="")body.cpuDifficulty=cpu;
   const {data,error}=await db.functions.invoke("kurogames-online",{body:body});
   if(error)throw error;
   const rows=(Array.isArray(data&&data.scores)?data.scores:[]).slice(0,5).map((row,index)=>Object.assign({},row,{
@@ -319,17 +329,32 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   profile.append(avatar,name);
   return profile;
  }
- function renderRows(game,rows){
+ function renderModeColumns(game,results){
   listEl.replaceChildren();
-  if(!rows.length){showMessage("まだランキングの記録がありません。","このゲームでプレイすると、記録がここに表示されます。");return;}
-  rows.forEach((row,index)=>{
-   const item=document.createElement("article");
-   item.className="rank-row"+(index===0?" top-one":index===1?" top-two":index===2?" top-three":"");
-   const medal=document.createElement("span");medal.className="rank-medal";medal.textContent=medals[index]||String(index+1);
-   const profile=makeProfile(row);
-   const score=document.createElement("span");score.className="rank-score";
-   score.textContent=scoreText(game,row,selectedModeInfo(game).mode);
-   item.append(medal,profile,score);listEl.append(item);
+  listEl.classList.toggle("mode-board",results.length>1);
+  results.forEach(result=>{
+   const column=document.createElement("section");column.className="mode-column";
+   const head=document.createElement("div");head.className="mode-column-head";
+   const heading=document.createElement("h3");heading.className="mode-column-title";heading.textContent=result.group.label;
+   const count=document.createElement("span");count.className="mode-column-count";count.textContent="TOP 5";
+   head.append(heading,count);
+   const columnList=document.createElement("div");columnList.className="mode-column-list";
+   if(result.error){
+    const empty=document.createElement("div");empty.className="mode-column-empty";empty.textContent="このランキングを取得できませんでした。";columnList.append(empty);
+   }else if(!result.rows.length){
+    const empty=document.createElement("div");empty.className="mode-column-empty";empty.textContent="まだ記録がありません。";columnList.append(empty);
+   }else{
+    const mode=result.group.modes[0].mode;
+    result.rows.forEach((row,index)=>{
+     const item=document.createElement("article");
+     item.className="rank-row"+(index===0?" top-one":index===1?" top-two":index===2?" top-three":"");
+     const medal=document.createElement("span");medal.className="rank-medal";medal.textContent=medals[index]||String(row.rank||index+1);
+     const profile=makeProfile(row);
+     const score=document.createElement("span");score.className="rank-score";score.textContent=scoreText(game,row,mode);
+     item.append(medal,profile,score);columnList.append(item);
+    });
+   }
+   column.append(head,columnList);listEl.append(column);
   });
  }
  async function selectGame(gameId,forceRefresh){
@@ -339,30 +364,22 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   const token=++requestToken;
   renderTabs();
   renderFilters(game);
-  const active=selectedModeInfo(game);
+  const groups=game.modeGroups||[];
   titleEl.textContent=game.title+" ランキング";
-  const group=game.modeGroups.find(item=>item.key===game.selectedGroupKey);
-  const modeLabel=(group&&group.label)||active.mode;
-  modeTextEl.textContent="ランキング区分："+modeLabel;
+  modeTextEl.textContent=groups.length>1
+   ? groups.length+"種類のランキングを横並びで表示しています。各列に上位5人を縦に表示します。"
+   : "ランキング上位5人";
   gameLink.href="/games/play/?id="+encodeURIComponent(game.id);
-  showMessage("ランキングを読み込み中…","最新のランキングを取得しています。");
+  showMessage("ランキングを読み込み中…","各モードのランキングを取得しています。");
   if(forceRefresh)cache.clear();
-  try{
-   const rows=await fetchRanking(game);
-   if(token!==requestToken||selectedGameId!==game.id)return;
-   renderRows(game,rows);
-  }catch(error){
-   if(token!==requestToken||selectedGameId!==game.id)return;
-   showMessage("ランキングを取得できませんでした。","通信状態を確認して、更新ボタンから再試行してください。");
-   console.warn("KURO ranking page fetch failed:",error);
-  }
+  const results=await Promise.all(groups.map(async group=>{
+   const modeInfo=group.modes[0]||{mode:"default",difficulty:""};
+   try{return {group:group,rows:await fetchRanking(game,modeInfo),error:null};}
+   catch(error){console.warn("KURO ranking mode fetch failed:",game.id,modeInfo.mode,error);return {group:group,rows:[],error:error};}
+  }));
+  if(token!==requestToken||selectedGameId!==game.id)return;
+  renderModeColumns(game,results);
  }
- modeSelect.addEventListener("change",()=>{
-  const game=games.find(item=>item.id===selectedGameId);if(!game)return;
-  game.selectedGroupKey=modeSelect.value;
-  const active=selectedModeInfo(game);game.selectedMode=active.mode;
-  selectGame(game.id,true);
- });
  cpuSelect.addEventListener("change",()=>selectGame(selectedGameId,true));
  levelSelect.addEventListener("change",()=>selectGame(selectedGameId,true));
  refreshButton.addEventListener("click",()=>selectGame(selectedGameId,true));
