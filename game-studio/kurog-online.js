@@ -635,6 +635,36 @@ const KuroGames = {
 
   get config() { return gameConfig; },
 
+  profile: {
+    async get() { return KuroGames.auth.getProfile(); },
+    async getCosmetics() { return KuroGames.auth.getCosmetics(); },
+    renderAvatar(target, profile, options) {
+      options = options || {};
+      const element = typeof target === "string" ? document.querySelector(target) : target;
+      if (!element || typeof element.replaceChildren !== "function") return false;
+      const cosmetics = profile && profile.cosmetics && typeof profile.cosmetics === "object" ? profile.cosmetics : {};
+      const avatar = cosmetics.avatar && typeof cosmetics.avatar === "object" ? cosmetics.avatar : null;
+      const frame = cosmetics.frame && typeof cosmetics.frame === "object" ? cosmetics.frame : null;
+      const image = avatar && typeof avatar.imageUrl === "string" ? avatar.imageUrl : "";
+      element.replaceChildren();
+      if (image && (/^https:\/\//i.test(image) || (image.startsWith("/") && !image.startsWith("//")))) {
+        const img = document.createElement("img");
+        img.src = image;
+        img.alt = "";
+        img.loading = "lazy";
+        img.style.width = "100%";
+        img.style.height = "100%";
+        img.style.objectFit = "cover";
+        element.appendChild(img);
+      } else {
+        element.textContent = avatar && avatar.icon ? String(avatar.icon) : String(options.fallback || "👤");
+      }
+      element.dataset.kuroStoreFrame = frame && ["common","rare","epic","legendary"].includes(frame.rarity) ? frame.rarity : "";
+      element.classList.add("kuro-store-avatar");
+      return true;
+    },
+  },
+
   auth: {
     async getUser() {
       ensureReady();
@@ -648,6 +678,10 @@ const KuroGames = {
     async getKuroId() {
       const result = await invoke("profile_me");
       return result.profile && result.profile.kuroId || null;
+    },
+    async getCosmetics() {
+      const result = await invoke("profile_me");
+      return result.profile && result.profile.cosmetics || {};
     },
     onChange(callback) {
       if (typeof callback !== "function") return function () {};
