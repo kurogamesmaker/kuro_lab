@@ -89,6 +89,39 @@
  <div class="callout warn">オンライン対戦・オンラインランキング・クラウド保存はKUROアカウントへのログインが必要です。匿名Auth・ゲストトークン・ゲーム独自の認証方式は追加しません。</div>
 </section>
 
+<section class="section" id="cosmetics">
+ <h2><span class="num">03.5</span>KURO STORE・共通プロフィールの装備</h2>
+ <p class="section-intro">ユーザーが取得・装備したアバターやフレームはKURO共通プロフィールに保存されます。ゲームごとに別の所持品データベースを作りません。</p>
+ <div class="card">
+  <h3>自分のプロフィールと装備情報</h3>
+  <pre><code>const profile = await KuroGames.auth.getProfile();
+// profile.cosmetics.avatar / frame / background / theme
+// imageUrl・icon・name・rarity・itemKeyを含む公開用データ
+
+const cosmetics = await KuroGames.auth.getCosmetics();
+
+// ゲーム内のプレイヤー表示要素にアバターを反映
+KuroGames.profile.renderAvatar(
+  document.querySelector("#playerAvatar"),
+  profile,
+  { fallback: "👤" }
+);</code></pre>
+  <p class="muted">renderAvatarは指定要素の中身とdata-kuro-store-frameを更新します。ゲーム側で表示場所を用意してください。画像URLはHTTPSまたは同一サイト内パスだけを許可します。</p>
+ </div>
+ <div class="card">
+  <h3>オンライン参加者の装備</h3>
+  <pre><code>// room.members / room.getPlayers() の各プレイヤー情報
+const players = room.getPlayers();
+players.forEach(player => {
+  const profile = player.user || {};
+  const cosmetics = profile.cosmetics || {};
+  // cosmetics.avatar / frame / background / theme
+});</code></pre>
+  <p class="muted">サーバーから返るのは装備中アイテムの公開表示情報だけです。所持品一覧・取得履歴・購入履歴・残高はゲーム参加者へ配信しません。</p>
+ </div>
+ <div class="callout good">装備の取得・変更・所有権チェックはKURO STOREのサーバー処理が担当します。ゲームコードから装備データやアイテム所有権を直接書き換えないでください。</div>
+</section>
+
 <section class="section" id="instant">
  <h2><span class="num">04</span>即時反応・先行反映（Optimistic UI）</h2>
  <p class="section-intro">押した瞬間の反応を大切にします。ただし、画面上の仮反映とサーバー確定を混同しません。</p>
