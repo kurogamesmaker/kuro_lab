@@ -529,6 +529,9 @@
   <div class="ops-nav-group"><small>09 / ECONOMY</small>
    <button data-ops-tab="coins"><b>13</b><span>KURO COIN経済管理</span></button>
   </div>
+  <div class="ops-nav-group"><small>10 / STORE</small>
+   <button data-ops-tab="store"><b>14</b><span>KURO GAMES ストア管理</span></button>
+  </div>
  </div>
  <div class="ops-shell-bar" id="opsShellBar">
   <div><span class="ops-shell-prompt">KURO@OPS:~$</span> <strong id="opsShellName">overview</strong></div>
@@ -578,6 +581,39 @@
   <section class="panel">
    <div class="toolbar"><div><strong>直近のコイン取引</strong><div class="sns-muted">勝利報酬・管理者補正・ショップ取引の記録</div></div><span id="opsCoinTransactionCount" class="sns-muted">—</span></div>
    <div class="ops-tablewrap" id="opsCoinTransactions"><div class="empty">取引履歴を読み込み中…</div></div>
+  </section>
+ </div>
+ <div id="opsStoreView" hidden>
+  <div class="ops-overview-head">
+   <div><strong>KURO GAMES STORE 管理</strong><div class="sns-muted">ストア商品の登録・編集・公開停止を行います。初期リリースは無料アイテムのみ対応しています。</div></div>
+   <div class="ops-overview-tools"><span id="opsStoreUpdated" class="sns-muted">準備中…</span><button class="btn" id="opsStoreRefresh" type="button">更新</button></div>
+  </div>
+  <section class="panel" style="margin-bottom:16px">
+   <div class="toolbar"><div><strong>商品を追加・編集</strong><div class="sns-muted">商品画像はサイト内パス、またはHTTPS URLを指定できます。</div></div></div>
+   <form id="opsStoreForm" class="ops-form">
+    <input id="opsStoreItemId" type="hidden" value="">
+    <div class="ops-form-grid">
+     <label>商品キー<input id="opsStoreItemKey" maxlength="48" minlength="2" pattern="[a-z0-9][a-z0-9_-]{1,47}" required placeholder="kuro-purple-frame"></label>
+     <label>商品名<input id="opsStoreName" maxlength="60" required placeholder="パープルフレーム"></label>
+    </div>
+    <div class="ops-form-grid">
+     <label>カテゴリー<select id="opsStoreCategory" required><option value="avatar">アバター</option><option value="frame">フレーム</option><option value="background">背景</option><option value="theme">テーマ</option><option value="other">その他</option></select></label>
+     <label>レア度<select id="opsStoreRarity" required><option value="common">COMMON</option><option value="rare">RARE</option><option value="epic">EPIC</option><option value="legendary">LEGENDARY</option></select></label>
+    </div>
+    <div class="ops-form-grid">
+     <label>アイコン（絵文字）<input id="opsStoreIcon" maxlength="12" required value="🎁" placeholder="💜"></label>
+     <label>表示順（小さいほど先）<input id="opsStoreSortOrder" type="number" min="0" max="9999" step="1" value="100" required></label>
+    </div>
+    <label>説明<textarea id="opsStoreDescription" maxlength="500" rows="2" placeholder="アイテムの説明"></textarea></label>
+    <label>画像URL（任意）<input id="opsStoreImageUrl" maxlength="500" placeholder="/assets/store/item.png または https://..."></label>
+    <label class="ops-check"><input id="opsStoreActive" type="checkbox" checked> ストアに公開する</label>
+    <div class="ops-form-actions"><button class="btn primary" id="opsStoreSave" type="submit">商品を登録</button><button class="btn" type="reset">入力をクリア</button></div>
+    <div id="opsStoreFormStatus" class="sns-muted" role="status">すべて無料アイテムとして登録されます。取得済みユーザーの所持品は公開停止後も保持されます。</div>
+   </form>
+  </section>
+  <section class="panel">
+   <div class="toolbar"><div><strong>登録済み商品</strong><div class="sns-muted">公開停止にすると、新規取得できなくなります。既存の所持品は削除されません。</div></div><span id="opsStoreCount" class="sns-muted">—</span></div>
+   <div class="list" id="opsStoreItemsList"><div class="empty">商品一覧を読み込み中…</div></div>
   </section>
  </div>
  <div id="opsRealtimeView" hidden>
@@ -1469,12 +1505,88 @@ async function adjustOpsCoinBalance(event){
  finally{button.disabled=false;}
 }
 
+function resetOpsStoreForm(){
+ const form=$("#opsStoreForm");if(!form)return;
+ form.reset();
+ $("#opsStoreItemId").value="";
+ $("#opsStoreIcon").value="🎁";
+ $("#opsStoreSortOrder").value="100";
+ $("#opsStoreActive").checked=true;
+ $("#opsStoreSave").textContent="商品を登録";
+ $("#opsStoreFormStatus").textContent="すべて無料アイテムとして登録されます。取得済みユーザーの所持品は公開停止後も保持されます。";
+}
+async function loadOpsStoreItems(){
+ const host=$("#opsStoreItemsList");if(!host)return;
+ host.innerHTML='<div class="empty">ストア商品を読み込み中…</div>';
+ try{
+  const data=await opsInvoke({action:"get_store_items"});
+  const items=Array.isArray(data.items)?data.items:[];
+  opsStoreItems=items;
+  $("#opsStoreCount").textContent=items.length+"件";
+  $("#opsStoreUpdated").textContent="更新 "+new Date().toLocaleTimeString("ja-JP");
+  if(!items.length){host.innerHTML='<div class="empty">商品はまだ登録されていません。</div>';return;}
+  const categoryLabels={avatar:"アバター",frame:"フレーム",background:"背景",theme:"テーマ",other:"その他"};
+  host.innerHTML=items.map(item=>
+   '<article class="ops-flag-item" data-store-row="'+esc(item.id)+'">'+
+    '<div class="ops-flag-copy"><div class="meta"><strong>'+esc(item.icon||"🎁")+' '+esc(item.name)+'</strong><span class="ops-status '+(item.is_active?"done":"")+'">'+(item.is_active?"公開中":"非公開")+'</span></div>'+
+    '<div class="ops-audit-meta">'+esc(categoryLabels[item.category]||item.category)+' · '+esc(item.item_key)+' · '+esc(String(item.rarity||"common").toUpperCase())+' · 表示順 '+esc(item.sort_order)+'</div>'+
+    '<p class="sns-muted" style="margin:8px 0 0">'+esc(item.description||"説明なし")+'</p>'+
+    '<div class="ops-inline-actions"><button class="btn" type="button" data-store-edit="'+esc(item.id)+'">編集</button>'+
+    (item.is_active?'<button class="btn" type="button" data-store-deactivate="'+esc(item.id)+'">公開停止</button>':'')+
+    '</div></div></article>'
+  ).join("");
+ }catch(error){
+  host.innerHTML='<div class="error">商品一覧を取得できませんでした：'+esc(error.message||error)+'</div>';
+ }
+}
+function editOpsStoreItem(itemId){
+ const item=(opsStoreItems||[]).find(row=>row.id===itemId);if(!item)return;
+ $("#opsStoreItemId").value=item.id;
+ $("#opsStoreItemKey").value=item.item_key||"";
+ $("#opsStoreName").value=item.name||"";
+ $("#opsStoreCategory").value=item.category||"other";
+ $("#opsStoreRarity").value=item.rarity||"common";
+ $("#opsStoreIcon").value=item.icon||"🎁";
+ $("#opsStoreSortOrder").value=String(item.sort_order??100);
+ $("#opsStoreDescription").value=item.description||"";
+ $("#opsStoreImageUrl").value=item.image_url||"";
+ $("#opsStoreActive").checked=item.is_active===true;
+ $("#opsStoreSave").textContent="変更を保存";
+ $("#opsStoreFormStatus").textContent="編集中："+item.name+"。保存するとストアに反映されます。";
+ $("#opsStoreForm").scrollIntoView({behavior:"smooth",block:"start"});
+}
+async function saveOpsStoreItem(event){
+ event.preventDefault();
+ const payload={
+  action:"save_store_item",id:$("#opsStoreItemId").value||null,
+  itemKey:$("#opsStoreItemKey").value.trim().toLowerCase(),
+  name:$("#opsStoreName").value.trim(),category:$("#opsStoreCategory").value,
+  rarity:$("#opsStoreRarity").value,icon:$("#opsStoreIcon").value.trim(),
+  sortOrder:Number($("#opsStoreSortOrder").value),description:$("#opsStoreDescription").value.trim(),
+  imageUrl:$("#opsStoreImageUrl").value.trim(),isActive:$("#opsStoreActive").checked
+ };
+ const button=$("#opsStoreSave"),status=$("#opsStoreFormStatus");
+ button.disabled=true;status.textContent="保存中…";
+ try{
+  await opsInvoke(payload);
+  status.textContent="商品を保存しました。KURO STOREに反映されています。";
+  resetOpsStoreForm();await loadOpsStoreItems();
+ }catch(error){status.textContent="保存できませんでした："+(error.message||error);}
+ finally{button.disabled=false;}
+}
+async function deactivateOpsStoreItem(itemId,button){
+ if(!window.confirm("この商品をストアで非公開にしますか？既に所持しているユーザーのアイテムは保持されます。"))return;
+ button.disabled=true;
+ try{await opsInvoke({action:"deactivate_store_item",id:itemId});await loadOpsStoreItems();}
+ catch(error){alert("公開停止できませんでした："+(error.message||error));button.disabled=false;}
+}
+
 function setOpsView(view){
  opsView=view;
- const shellNames={overview:"overview",users:"accounts.users",audit:"moderation.audit",reports:"moderation.reports","suspension-appeals":"accounts.suspension_appeals",announcements:"content.announcements","game-banners":"content.kurogames_home_banners",messages:"content.broadcast",flags:"config.feature_flags",secret:"kurogames.secret",coins:"economy.kuro_coin",analytics:"analytics.usage",realtime:"system.realtime",logs:"system.logs"}
+ const shellNames={overview:"overview",users:"accounts.users",audit:"moderation.audit",reports:"moderation.reports","suspension-appeals":"accounts.suspension_appeals",announcements:"content.announcements","game-banners":"content.kurogames_home_banners",messages:"content.broadcast",flags:"config.feature_flags",secret:"kurogames.secret",coins:"economy.kuro_coin",store:"kurogames.store",analytics:"analytics.usage",realtime:"system.realtime",logs:"system.logs"}
  const shellName=$("#opsShellName");if(shellName)shellName.textContent=shellNames[view]||view;
  const shellClock=$("#opsShellClock");if(shellClock)shellClock.textContent="LOCAL "+new Date().toLocaleTimeString("ja-JP");
- ["overview","users","audit","reports","suspension-appeals","announcements","game-banners","messages","flags","secret","coins","analytics","realtime","logs"].forEach(name=>{
+ ["overview","users","audit","reports","suspension-appeals","announcements","game-banners","messages","flags","secret","coins","store","analytics","realtime","logs"].forEach(name=>{
   const target=$("#ops"+name.charAt(0).toUpperCase()+name.slice(1)+"View");
   if(target)target.hidden=name!==view;
   const button=$("#opsTabs [data-ops-tab='"+name+"']");
@@ -1491,6 +1603,7 @@ function setOpsView(view){
  if(view==="flags")loadOpsFlags();
  if(view==="secret")loadOpsSecretManager();
  if(view==="coins")loadOpsCoins();
+ if(view==="store")loadOpsStoreItems();
  if(view==="analytics")loadOpsAnalytics();
  if(view==="logs")loadOpsLogs(true);
 }
@@ -2322,6 +2435,14 @@ $("#opsFlagForm").addEventListener("reset",()=>{setTimeout(()=>{$("#opsFlagKey")
 $("#opsFlagsList").addEventListener("click",e=>{const edit=e.target.closest("[data-flag-edit]"),del=e.target.closest("[data-flag-delete]");if(edit)editFeatureFlag(edit.dataset.flagEdit);if(del)deleteFeatureFlag(del.dataset.flagDelete);});
 $("#opsSecretRefresh").addEventListener("click",loadOpsSecretManager);
 $("#opsCoinsRefresh").addEventListener("click",loadOpsCoins);
+$("#opsStoreRefresh").addEventListener("click",loadOpsStoreItems);
+$("#opsStoreForm").addEventListener("submit",saveOpsStoreItem);
+$("#opsStoreForm").addEventListener("reset",()=>setTimeout(resetOpsStoreForm,0));
+$("#opsStoreItemsList").addEventListener("click",event=>{
+ const edit=event.target.closest("[data-store-edit]"),off=event.target.closest("[data-store-deactivate]");
+ if(edit)editOpsStoreItem(edit.dataset.storeEdit);
+ if(off)deactivateOpsStoreItem(off.dataset.storeDeactivate,off);
+});
 $("#opsCoinRewardForm").addEventListener("submit",createOpsCoinReward);
 $("#opsCoinRewardsList").addEventListener("click",e=>{const b=e.target.closest("[data-coin-save]");if(b){const row=b.closest("[data-coin-row]");if(row)saveOpsCoinReward(row,b);}});
 $("#opsCoinAdjustForm").addEventListener("submit",adjustOpsCoinBalance);
