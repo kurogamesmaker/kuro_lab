@@ -462,24 +462,22 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 @keyframes kuroHomeTickerFallback{from{transform:translateX(0)}to{transform:translateX(calc(-1 * var(--kuro-home-ticker-distance, 0px)))}}/* KURO GAMES admin-managed scrolling home banners */
 .kuro-home-ticker-host{padding-top:10px}
 .kuro-home-ticker-host[hidden]{display:none!important}
-.kuro-home-ticker{display:flex;align-items:center;gap:10px;min-height:42px;padding:6px 10px;border:1px solid #e2e8f2;border-radius:13px;background:#fff;box-shadow:0 4px 14px #1b30520a;overflow:hidden}
+.kuro-home-ticker{display:block;min-height:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:hidden}
 .kuro-home-ticker[hidden]{display:none!important}
-.kuro-home-ticker-label{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:0 8px 0 2px;color:#51627d;font-size:10px;font-weight:1000;letter-spacing:.08em;border-right:1px solid #e6ebf3}
-.kuro-home-ticker-label span{font-size:15px}
-.kuro-home-ticker-viewport{flex:1;min-width:0;overflow:hidden}
+.kuro-home-ticker-viewport{width:100%;min-width:0;overflow:hidden}
 .kuro-home-ticker-track{display:flex;align-items:center;width:max-content;white-space:nowrap;will-change:transform}
-.kuro-home-ticker-set{display:flex;align-items:center;flex:0 0 auto;gap:10px;padding-right:10px}
-.kuro-home-ticker-item{display:inline-flex;align-items:center;gap:7px;min-height:28px;max-width:min(78vw,760px);padding:5px 11px;border:1px solid #ffffff38;border-radius:8px;white-space:nowrap;text-decoration:none;overflow:hidden;text-overflow:ellipsis;line-height:1.4}
+.kuro-home-ticker-set{display:flex;align-items:center;flex:0 0 auto;gap:26px;padding-right:26px}
+.kuro-home-ticker-item{display:inline-flex;align-items:center;min-height:0;max-width:min(90vw,1000px);padding:0;border:0;border-radius:0;white-space:nowrap;text-decoration:none;overflow:visible;text-overflow:clip;line-height:1.5}
+.kuro-home-ticker-item:hover{opacity:.85}
+.kuro-home-ticker-icon{display:none!important}
 .kuro-home-ticker-item:hover{filter:brightness(1.08)}
 .kuro-home-ticker-item:focus-visible{outline:2px solid #2878ee;outline-offset:2px}
 .kuro-home-ticker-icon{flex:0 0 auto}
 @media(max-width:680px){
  .kuro-home-ticker-host{padding-top:7px}
- .kuro-home-ticker{min-height:38px;gap:8px;padding:5px 8px;border-radius:11px}
- .kuro-home-ticker-label{font-size:9px;padding-right:7px}
- .kuro-home-ticker-label span{font-size:13px}
- .kuro-home-ticker-set{gap:8px;padding-right:8px}
- .kuro-home-ticker-item{min-height:26px;max-width:76vw;padding:4px 9px}
+ .kuro-home-ticker{min-height:0;padding:0}
+ .kuro-home-ticker-set{gap:26px;padding-right:26px}
+ .kuro-home-ticker-item{min-height:0;max-width:90vw;padding:0}
 }
 </style>
 
@@ -1287,7 +1285,6 @@ body.kuro-account-open { overflow: hidden; }
 </div></header>
 <div class="wrap kuro-home-ticker-host" id="kuroHomeTickerHost" hidden>
  <section class="kuro-home-ticker" id="kuroHomeTicker" aria-label="KuroGamesのお知らせ" hidden>
-  <div class="kuro-home-ticker-label"><span aria-hidden="true">📢</span><b>INFO</b></div>
   <div class="kuro-home-ticker-viewport"><div class="kuro-home-ticker-track" id="kuroHomeTickerTrack"></div></div>
  </section>
 </div>
@@ -1378,16 +1375,8 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
     if(/^https:\/\//i.test(href)&&new URL(href).origin!==location.origin){item.target="_blank";item.rel="noopener noreferrer";}
    }
    item.style.color=row.text_color||"#ffffff";
-   item.style.backgroundColor=row.background_color||"#2563eb";
    item.style.fontSize=Math.max(11,Math.min(22,Number(row.font_size)||14))+"px";
    item.style.fontWeight=row.is_bold?"850":"600";
-   if(row.icon){
-    const icon=document.createElement("span");
-    icon.className="kuro-home-ticker-icon";
-    icon.textContent=String(row.icon);
-    icon.setAttribute("aria-hidden","true");
-    item.appendChild(icon);
-   }
    const message=document.createElement("span");
    message.textContent=String(row.message||"");
    item.appendChild(message);
