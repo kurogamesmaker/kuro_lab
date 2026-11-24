@@ -540,41 +540,26 @@ async function loadHardTictactoeStats(gameId: string, rule: string | null = null
 }
 
 async function loadHardUnonSoloScores(gameId: string, limit: number) {
-  const PAGE_SIZE = 1000;
-  const byUser = new Map<string, { user_id: string; score: number; mode: string; created_at: string }>();
-  for (let offset = 0; offset < 50000; offset += PAGE_SIZE) {
-    const { data, error } = await admin.from("kuro_game_play_events")
-      .select("submission_id,user_id,score,mode,result,created_at,metadata")
-      .eq("game_id", gameId)
-      .eq("mode", "wins-solo")
-      .eq("result", "win")
-      .order("created_at", { ascending: true })
-      .order("submission_id", { ascending: true })
-      .range(offset, offset + PAGE_SIZE - 1);
-    if (error) {
-      console.error("[kurogames-online] UNON hard CPU event read failed", error);
-      throw new HttpError(500, "UNONの最強CPUランキング記録を取得できませんでした。");
-    }
-    const page = data ?? [];
-    for (const row of page) {
-      const metadata = row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
-        ? row.metadata as Record<string, unknown>
-        : {};
-      const difficulty = String(metadata.cpuDifficulty ?? metadata.cpu_difficulty ?? metadata.difficulty ?? "").trim().toLowerCase();
-      if (metadata.source !== "unon-solo" || difficulty !== "hard") continue;
-      const current = byUser.get(row.user_id);
-      if (current) {
-        current.score += 1;
-        current.created_at = row.created_at;
-      } else {
-        byUser.set(row.user_id, { user_id: row.user_id, score: 1, mode: "wins-solo", created_at: row.created_at });
-      }
-    }
-    if (page.length < PAGE_SIZE) break;
+  // Hard CPU wins are kept as a separate aggregate row, not as play-by-play events.
+  const { data, error } = await admin.from("kuro_game_user_stats")
+    .select("user_id, wins, mode, last_played_at, updated_at, metadata")
+    .eq("game_id", gameId)
+    .eq("mode", "wins-solo-hard")
+    .contains("metadata", { metric: "wins", source: "unon-solo", cpuDifficulty: "hard" })
+    .gt("wins", 0)
+    .order("wins", { ascending: false })
+    .order("updated_at", { ascending: true })
+    .limit(limit);
+  if (error) {
+    console.error("[kurogames-online] UNON hard CPU aggregate read failed", error);
+    throw new HttpError(500, "UNONの最強CPUランキング記録を取得できませんでした。");
   }
-  return Array.from(byUser.values())
-    .sort((a, b) => b.score - a.score || String(a.created_at).localeCompare(String(b.created_at)))
-    .slice(0, limit);
+  return (data ?? []).map((row) => ({
+    user_id: row.user_id,
+    score: Number(row.wins) || 0,
+    mode: "wins-solo",
+    created_at: row.last_played_at || row.updated_at,
+  }));
 }
 
 async function handle(req: Request) {
@@ -1370,6 +1355,32 @@ async function handle(req: Request) {
     if (unifiedRecordError) {
       console.error("[kurogames-online] unified score event save failed", unifiedRecordError);
       throw new HttpError(500, "統合ゲーム記録を保存できませんでした。再度お試しください。");
+    }
+
+    // Keep a dedicated compact aggregate for the Hard-only UNON solo leaderboard.
+    // The regular wins-solo row remains the user's overall solo record.
+    if (game.id === UNON_GAME_ID && mode === "wins-solo") {
+      const { error: hardStatsError } = await admin.rpc("kuro_record_user_game_event", {
+        p_submission_id: submissionId,
+        p_user_id: user.id,
+        p_game_id: game.id,
+        p_mode: "wins-solo-hard",
+        p_result: "win",
+        p_score: 1,
+        p_duration_ms: null,
+        p_metadata: {
+          metric: "wins",
+          source: "unon-solo",
+          cpuDifficulty: "hard",
+          difficulty: "hard",
+          players: Number(metadata.players),
+          internalRankingMode: true,
+        },
+      });
+      if (hardStatsError) {
+        console.error("[kurogames-online] UNON hard CPU aggregate save failed", hardStatsError);
+        throw new HttpError(500, "UNONの最強CPUランキング記録を保存できませんでした。");
+      }
     }
 
     if (game.id === UNON_GAME_ID && mode === "wins-online") {
