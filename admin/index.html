@@ -575,7 +575,7 @@
    <article class="ops-metric"><small>流通残高</small><strong id="opsCoinTotalBalance">—</strong><span class="sns-muted">全ユーザー保有分</span></article>
    <article class="ops-metric"><small>累計発行</small><strong id="opsCoinTotalIssued">—</strong><span class="sns-muted">付与・補正を含む正の取引</span></article>
    <article class="ops-metric"><small>累計消費</small><strong id="opsCoinTotalSpent">—</strong><span class="sns-muted">ショップ等での消費</span></article>
-   <article class="ops-metric"><small>保有ユーザー</small><strong id="opsCoinFundedUsers">—</strong><span class="sns-muted">残高が1 KC以上</span></article>
+   <article class="ops-metric"><small>保有ユーザー</small><strong id="opsCoinFundedUsers">—</strong><span class="sns-muted">残高が1 P以上</span></article>
   </div>
   <section class="panel ops-coin-config-panel">
     <div class="toolbar">
@@ -594,6 +594,18 @@
     <div class="ops-coin-help">報酬はサーバーで確定したゲーム結果だけを対象にします。スコア別は現在、素因数分解・回転ずしタイピングで利用できます。</div>
     <div class="list ops-coin-game-list" id="opsCoinRewardsList"><div class="empty">報酬設定を読み込み中…</div></div>
    </section>
+  <section class="panel" style="margin:0 0 16px">
+   <div class="toolbar"><div><strong>ユーザー残高の管理者補正</strong><div class="sns-muted">増減理由を取引台帳と監査ログに保存します。</div></div></div>
+   <form id="opsCoinAdjustForm" class="ops-form">
+    <div class="ops-form-grid">
+     <label>KUROユーザーID<input id="opsCoinAdjustUser" required placeholder="ユーザーUUID"></label>
+     <label>補正ポイント<input id="opsCoinAdjustAmount" type="number" min="-100000" max="100000" step="1" required placeholder="例：50 / -20"></label>
+    </div>
+    <label>補正理由<input id="opsCoinAdjustReason" maxlength="200" minlength="3" required placeholder="問い合わせ対応による残高補正"></label>
+    <div class="ops-form-actions"><button class="btn primary" type="submit">残高を補正</button></div>
+    <div id="opsCoinAdjustStatus" class="sns-muted" role="status"></div>
+   </form>
+  </section>
   <section class="panel">
    <div class="toolbar"><div><strong>直近のコイン取引</strong><div class="sns-muted">勝利報酬・管理者補正・ショップ取引の記録</div></div><span id="opsCoinTransactionCount" class="sns-muted">—</span></div>
    <div class="ops-tablewrap" id="opsCoinTransactions"><div class="empty">取引履歴を読み込み中…</div></div>
@@ -1545,10 +1557,10 @@ async function adjustOpsCoinBalance(event){
  const payload={action:"adjust_coin_balance",userId:$("#opsCoinAdjustUser").value.trim(),amount:Number($("#opsCoinAdjustAmount").value),reason:$("#opsCoinAdjustReason").value.trim()};
  const status=$("#opsCoinAdjustStatus"),button=$("#opsCoinAdjustForm").querySelector('button[type="submit"]');
  if(!payload.userId||!Number.isSafeInteger(payload.amount)||payload.amount===0||!payload.reason){status.textContent="ユーザーID・補正枚数・理由を入力してください。";return;}
- if(!window.confirm(payload.userId+" の残高を "+(payload.amount>0?"+":"")+payload.amount+" KC 補正します。理由："+payload.reason+"。続行しますか？"))return;
+ if(!window.confirm(payload.userId+" の残高を "+(payload.amount>0?"+":"")+payload.amount+" P 補正します。理由："+payload.reason+"。続行しますか？"))return;
  button.disabled=true;status.textContent="補正中…";
  try{
-  const data=await opsInvoke(payload);status.textContent="補正しました。新しい残高："+coinFormat(data.balance)+" KC";
+  const data=await opsInvoke(payload);status.textContent="補正しました。新しい残高："+coinFormat(data.balance)+" P";
   $("#opsCoinAdjustAmount").value="";$("#opsCoinAdjustReason").value="";
   await loadOpsCoins();
  }catch(error){status.textContent="補正できませんでした："+(error.message||error);}
