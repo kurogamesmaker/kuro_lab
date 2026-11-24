@@ -645,7 +645,8 @@ const KuroGames = {
       const cosmetics = profile && profile.cosmetics && typeof profile.cosmetics === "object" ? profile.cosmetics : {};
       const avatar = cosmetics.avatar && typeof cosmetics.avatar === "object" ? cosmetics.avatar : null;
       const frame = cosmetics.frame && typeof cosmetics.frame === "object" ? cosmetics.frame : null;
-      const image = avatar && typeof avatar.imageUrl === "string" ? avatar.imageUrl : "";
+      const profileImage = profile && (profile.avatarUrl || profile.avatar_url) || "";
+      const image = avatar && typeof avatar.imageUrl === "string" && avatar.imageUrl ? avatar.imageUrl : String(profileImage || "");
       element.replaceChildren();
       if (image && (/^https:\/\//i.test(image) || (image.startsWith("/") && !image.startsWith("//")))) {
         const img = document.createElement("img");
