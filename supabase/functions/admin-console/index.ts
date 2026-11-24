@@ -122,6 +122,138 @@ Deno.serve(async (req: Request) => {
 
 
 
+    if (action === "get_coin_economy") {
+      const [summaryResult, rewardsResult, ledgerResult, gamesResult] = await Promise.all([
+        admin.rpc("kuro_coin_admin_overview"),
+        admin.from("kuro_coin_game_rewards")
+          .select("game_id,mode,reward_amount,enabled,required_cpu_difficulty,reward_label,updated_at")
+          .order("updated_at", { ascending: false }),
+        admin.from("kuro_coin_ledger")
+          .select("id,user_id,amount,balance_after,transaction_type,description,source_game_id,source_mode,created_at")
+          .order("created_at", { ascending: false })
+          .limit(60),
+        admin.from("game_studio_games")
+          .select("id,title,slug,icon,status")
+          .order("title", { ascending: true })
+      ]);
+      if (summaryResult.error) throw summaryResult.error;
+      if (rewardsResult.error) throw rewardsResult.error;
+      if (ledgerResult.error) throw ledgerResult.error;
+      if (gamesResult.error) throw gamesResult.error;
+
+      const transactions = ledgerResult.data || [];
+      const userIds = [...new Set(transactions.map((row) => row.user_id).filter(Boolean))];
+      const { data: profiles, error: profileError } = userIds.length
+        ? await admin.from("profiles").select("id,username,display_name,kuro_id").in("id", userIds)
+        : { data: [], error: null };
+      if (profileError) throw profileError;
+      const profileMap = new Map((profiles || []).map((profile) => [profile.id, profile]));
+      const gameMap = new Map((gamesResult.data || []).map((game) => [game.id, game]));
+      return reply({
+        summary: (Array.isArray(summaryResult.data) ? summaryResult.data[0] : summaryResult.data) || {
+          total_balance: 0, total_issued: 0, total_spent: 0, funded_users: 0, transaction_count: 0
+        },
+        games: gamesResult.data || [],
+        rewards: (rewardsResult.data || []).map((reward) => ({
+          ...reward,
+          game: gameMap.get(reward.game_id) || null
+        })),
+        transactions: transactions.map((row) => ({
+          ...row,
+          profile: profileMap.get(row.user_id) || null,
+          game: row.source_game_id ? (gameMap.get(row.source_game_id) || null) : null
+        }))
+      }, 200, origin);
+    }
+
+    if (action === "update_coin_reward") {
+      const gameId = typeof body.gameId === "string" ? body.gameId : "";
+      const mode = typeof body.mode === "string" ? body.mode.trim() : "";
+      const amount = Number(body.rewardAmount);
+      const enabled = body.enabled === true;
+      const difficulty = body.requiredCpuDifficulty == null || body.requiredCpuDifficulty === ""
+        ? null : String(body.requiredCpuDifficulty).toUpperCase();
+      const label = typeof body.rewardLabel === "string" ? body.rewardLabel.trim() : "";
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(gameId)) {
+        return reply({ error: "ゲームIDが正しくありません。" }, 400, origin);
+      }
+      if (!/^[A-Za-z0-9_-]{1,40}$/.test(mode)) {
+        return reply({ error: "モード名は英数字・_・-の40文字以内で入力してください。" }, 400, origin);
+      }
+      if (!Number.isSafeInteger(amount) || amount < 0 || amount > 1000) {
+        return reply({ error: "報酬は0〜1000 KCで設定してください。" }, 400, origin);
+      }
+      if (difficulty !== null && !["EASY","NORMAL","HARD","EXPERT"].includes(difficulty)) {
+        return reply({ error: "CPU難易度の指定が正しくありません。" }, 400, origin);
+      }
+      if (!label || label.length > 80) {
+        return reply({ error: "報酬表示名は1〜80文字で入力してください。" }, 400, origin);
+      }
+      const { data: game, error: gameError } = await admin.from("game_studio_games")
+        .select("id,title,status").eq("id", gameId).maybeSingle();
+      if (gameError) throw gameError;
+      if (!game || game.status !== "published") {
+        return reply({ error: "公開中のゲームだけ報酬設定を変更できます。" }, 400, origin);
+      }
+      const { error } = await admin.from("kuro_coin_game_rewards").upsert({
+        game_id: gameId,
+        mode,
+        reward_amount: amount,
+        enabled,
+        required_cpu_difficulty: difficulty,
+        reward_label: label,
+        updated_by_user_id: caller.id,
+        updated_at: new Date().toISOString()
+      }, { onConflict: "game_id,mode" });
+      if (error) throw error;
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id,
+        action: "kuro_coin_reward_update",
+        metadata: { gameId, gameTitle: game.title, mode, rewardAmount: amount, enabled, requiredCpuDifficulty: difficulty, rewardLabel: label }
+      });
+      if (auditError) console.warn("[admin-console] KURO COIN reward audit insert failed", auditError);
+      return reply({ ok: true }, 200, origin);
+    }
+
+    if (action === "adjust_coin_balance") {
+      const userId = typeof body.userId === "string" ? body.userId.trim() : "";
+      const amount = Number(body.amount);
+      const reason = typeof body.reason === "string" ? body.reason.trim() : "";
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId)) {
+        return reply({ error: "ユーザーIDが正しくありません。" }, 400, origin);
+      }
+      if (!Number.isSafeInteger(amount) || amount === 0 || amount < -100000 || amount > 100000) {
+        return reply({ error: "補正枚数は-100000〜100000 KCの整数（0以外）で入力してください。" }, 400, origin);
+      }
+      if (reason.length < 3 || reason.length > 200) {
+        return reply({ error: "補正理由は3〜200文字で入力してください。" }, 400, origin);
+      }
+      const { data: targetUser, error: targetError } = await admin.auth.admin.getUserById(userId);
+      if (targetError || !targetUser?.user) {
+        return reply({ error: "対象のKUROアカウントが見つかりません。" }, 404, origin);
+      }
+      const { data: balance, error } = await admin.rpc("kuro_coin_admin_adjust", {
+        p_user_id: userId,
+        p_amount: amount,
+        p_reason: reason,
+        p_actor_user_id: caller.id
+      });
+      if (error) {
+        if (String(error.message || "").includes("COIN_BALANCE_INSUFFICIENT")) {
+          return reply({ error: "残高が不足するため減算できません。" }, 400, origin);
+        }
+        throw error;
+      }
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id,
+        action: "kuro_coin_balance_adjust",
+        target_user_id: userId,
+        metadata: { amount, reason, balanceAfter: Number(balance) || 0 }
+      });
+      if (auditError) console.warn("[admin-console] KURO COIN adjustment audit insert failed", auditError);
+      return reply({ ok: true, balance: Number(balance) || 0 }, 200, origin);
+    }
+
     if (action === "get_realtime_monitor") {
       const now = new Date();
       const since15 = new Date(now.getTime() - 15 * 60000).toISOString();
