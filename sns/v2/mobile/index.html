@@ -2315,8 +2315,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
 
         let kuroTempSuspensionCheckedUserId = null;
         async function redirectIfTemporarilySuspended(user) {
-            if (!user || location.pathname.startsWith('/account/suspension/') || kuroTempSuspensionCheckedUserId === user.id) return false;
-            kuroTempSuspensionCheckedUserId = user.id;
+            if (!user || location.pathname.startsWith('/account/suspension/')) return false;
             try {
                 const now = new Date().toISOString();
                 const { data, error } = await supabaseClient.from('account_suspensions').select('id')
@@ -2332,7 +2331,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
 
         async function syncCurrentUserImpl(user) {
             if (!user) { currentUser = null; kuroTempSuspensionCheckedUserId = null; renderUserProfile(); return; }
-            // Temporary suspension no longer blocks browsing the public SNS interface.
+            if (await redirectIfTemporarilySuspended(user)) return;
             const metadata = user.user_metadata || {};
             const requestedUsername = String(metadata.username || metadata.handle || (user.email || 'user').split('@')[0].replace(/[^A-Za-z0-9_]/g, '').slice(0, 24)).replace(/^@/, '');
             const fallbackUsername = /^[A-Za-z0-9_]{3,24}$/.test(requestedUsername) ? requestedUsername : `kuro_${String(user.id).replace(/-/g, '').slice(0, 12)}`;
@@ -4900,6 +4899,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
 
                 // Register auth events before any async DB/profile request. Otherwise a startup
                 // failure could leave the page without a listener to update its login state.
+                setInterval(()=>{if(document.visibilityState!=='hidden'&&currentUser)redirectIfTemporarilySuspended(currentUser);},10000);
                 supabaseClient.auth.onAuthStateChange((event, session) => {
                     // INITIAL_SESSION は getSession() 側で処理。TOKEN_REFRESHED などで
                     // 毎回プロフィール・フォロー・通知を再取得する連鎖を防ぐ。
