@@ -716,10 +716,27 @@ const KuroGames = {
     async submit(score, options) {
       options = options || {};
       if (!Number.isSafeInteger(Number(score))) throw new TypeError("scoreは整数で指定してください。");
+      const mode = options.mode || "default";
+      const metadata = options.metadata && typeof options.metadata === "object" && !Array.isArray(options.metadata)
+        ? Object.assign({}, options.metadata)
+        : {};
+      const requestedMetric = String(options.metric || metadata.metric || "").toLowerCase();
+      const timeMode = /(^|[_-])(time|duration|elapsed|seconds?|milliseconds?|ms|fastest|clear_time)([_-]|$)/i.test(mode);
+      const metric = timeMode || /^(time|time_ms|clear_time_ms|duration_ms)$/.test(requestedMetric)
+        ? "time"
+        : /^(wins|win|win_count)$/.test(requestedMetric) ||
+          /(^|[_-])(wins?|victories)([_-]|$)/i.test(mode)
+          ? "wins"
+          : "score";
+      if (metric === "time" && !timeMode) {
+        throw new TypeError("タイムランキングでは mode 名に time を含めてください（例: time-attack）。");
+      }
+      metadata.metric = metric;
       return invoke("score_submit", {
         score: Number(score),
-        mode: options.mode || "default",
-        metadata: options.metadata || {},
+        mode: mode,
+        metric: metric,
+        metadata: metadata,
         submissionId: typeof options.submissionId === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(options.submissionId) ? options.submissionId : crypto.randomUUID(),
       });
     },
