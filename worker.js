@@ -260,17 +260,90 @@ async function handleWebSearch(request, env) {
   return response;
 }
 
+async function checkActiveSuspension(headers) {
+  const authorization = headers.get("authorization") || "";
+  if (!/^Bearer\\s+.+/i.test(authorization)) return null;
+
+  const authHeaders = new Headers({
+    apikey: headers.get("apikey") || SUPABASE_KEY,
+    authorization
+  });
+  const userResponse = await fetch(SUPABASE_URL + "/auth/v1/user", { headers: authHeaders });
+  if (!userResponse.ok) return null;
+
+  const user = await userResponse.json().catch(() => null);
+  if (!user?.id || user.is_anonymous) return null;
+
+  const now = new Date().toISOString();
+  const query = new URLSearchParams({
+    select: "id,ends_at",
+    user_id: "eq." + user.id,
+    revoked_at: "is.null",
+    starts_at: "lte." + now,
+    ends_at: "gt." + now,
+    limit: "1"
+  });
+  const statusResponse = await fetch(
+    SUPABASE_URL + "/rest/v1/account_suspensions?" + query.toString(),
+    { headers: authHeaders }
+  );
+  if (!statusResponse.ok) {
+    throw Object.assign(
+      new Error("アカウントの利用状態を確認できません。時間をおいて再度お試しください。"),
+      { status: 503 }
+    );
+  }
+  const rows = await statusResponse.json().catch(() => []);
+  return Array.isArray(rows) && rows.length ? rows[0] : null;
+}
+
+function isSuspensionAllowedWrite(pathname, method) {
+  if (pathname === "/rest/v1/account_suspension_appeals" && method === "POST") return true;
+  if (pathname === "/rest/v1/account_suspension_appeal_messages" && method === "POST") return true;
+  if (pathname === "/rest/v1/admin_message_reads" && ["POST", "PATCH", "DELETE"].includes(method)) return true;
+  if (pathname === "/rest/v1/usage_events" && method === "POST") return true;
+  if (pathname === "/functions/v1/change-password" && method === "POST") return true;
+  if (pathname === "/functions/v1/delete-account" && method === "POST") return true;
+  return false;
+}
+
 async function proxy(payload) {
   const target = targetFor(payload.path);
   const method = String(payload.method || "GET").toUpperCase();
   if (!METHODS.has(method)) throw Object.assign(new Error("Method not allowed"), { status: 405 });
+
+  const requestHeaders = headersFor(payload.headers);
+  if (
+    !["GET", "HEAD"].includes(method) &&
+    (target.pathname.startsWith("/rest/v1/") || target.pathname.startsWith("/functions/v1/")) &&
+    !isSuspensionAllowedWrite(target.pathname, method)
+  ) {
+    const suspension = await checkActiveSuspension(requestHeaders);
+    if (suspension) {
+      return {
+        status: 403,
+        headers: {
+          "content-type": "application/json; charset=utf-8",
+          "cache-control": "no-store"
+        },
+        isBinary: false,
+        bodyBase64: "",
+        bodyText: JSON.stringify({
+          code: "ACCOUNT_TEMPORARILY_SUSPENDED",
+          error: "このアカウントは一時停止中です。解除予定：" + suspension.ends_at + "。問い合わせは一時停止画面から行えます。",
+          ends_at: suspension.ends_at
+        }),
+        service: "KURO account suspension guard"
+      };
+    }
+  }
 
   const body = !["GET", "HEAD"].includes(method) && payload.bodyBase64
     ? base64Decode(payload.bodyBase64)
     : undefined;
   const upstream = await fetch(target.href, {
     method,
-    headers: headersFor(payload.headers),
+    headers: requestHeaders,
     body,
     redirect: "manual"
   });
