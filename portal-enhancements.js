@@ -185,7 +185,13 @@
       notificationButton.title = "このサービス内で通知を確認";
       notificationButton.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg>';
       var accountButton = document.getElementById("portal-account-button");
-      header.insertBefore(notificationButton, accountButton || null);
+      header.appendChild(notificationButton);
+      if (!document.getElementById("portal-notification-button-position-style")) {
+        var notificationStyle = document.createElement("style");
+        notificationStyle.id = "portal-notification-button-position-style";
+        notificationStyle.textContent = ".portal-header-inner .portal-notification-button{order:999;margin-left:auto!important;background:#111!important;color:#fff!important;border-color:#111!important;box-shadow:0 2px 6px rgba(0,0,0,.18)!important}.portal-header-inner .portal-notification-button svg{stroke:#fff!important}.portal-header-inner #portal-account-button{order:1000}";
+        document.head.appendChild(notificationStyle);
+      }
     }
     if (!document.getElementById("kuro-service-notification-box-script")) {
       var notificationScript = document.createElement("script");
