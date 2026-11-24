@@ -105,6 +105,15 @@ header.top.kuro-game-theme-neon{background:linear-gradient(100deg,#21153f,#13264
 header.top.kuro-game-theme-neon .brand,header.top.kuro-game-theme-neon .back{color:#dfc5ff}
 header.top.kuro-game-theme-classic{background:linear-gradient(100deg,#eff3f8,#e6ecf4)}
 @media(max-width:680px){.top{gap:7px;padding:0 9px}.brand{font-size:15px}.game-cosmetic-avatar{width:29px;height:29px;flex-basis:29px;font-size:17px}.game-cosmetic-effects{display:none}.top .back{font-size:10px}}
+
+header.top.kuro-game-theme-rare{background:linear-gradient(100deg,#14294b,#223e62);border-bottom-color:#4586c7}
+header.top.kuro-game-theme-epic{background:linear-gradient(100deg,#321446,#4a286a);border-bottom-color:#9a68c4}
+header.top.kuro-game-theme-legendary{background:linear-gradient(100deg,#4a2a16,#71501d);border-bottom-color:#c28b3c}
+header.top.kuro-game-background-midnight{background:linear-gradient(100deg,#111b38,#273e67)}
+header.top.kuro-game-background-cyber{background:linear-gradient(100deg,#35124d,#203f65)}
+header.top.kuro-game-background-rare{background:linear-gradient(100deg,#142b50,#29517e)}
+header.top.kuro-game-background-epic{background:linear-gradient(100deg,#33184e,#573178)}
+header.top.kuro-game-background-legendary{background:linear-gradient(100deg,#4b2c17,#73501c)}
 </style>
 </head>
 <body><header class="top"><a class="brand" href="/games/">KURO GAMES</a><span class="game-cosmetic-avatar" id="gameCosmeticAvatar" hidden aria-label="装備中アバター"></span><span class="game-cosmetic-effects" id="gameCosmeticEffects" hidden></span><button class="back game-account-button" id="gameAccountButton" type="button">ログイン / 登録</button><a class="back" href="/games/">← ゲーム一覧へ</a></header>
@@ -605,8 +614,13 @@ window.addEventListener("message", async event => {
   const labels=[background,theme].filter(Boolean);
   labels.forEach(item=>{const chip=document.createElement("span");chip.textContent=(item.icon||"✦")+" "+(item.name||"");effectsHost.appendChild(chip);});
   effectsHost.hidden=labels.length===0;
-  header.classList.toggle("kuro-game-theme-neon",!!(theme&&theme.item_key==="neon-theme"));
-  header.classList.toggle("kuro-game-theme-classic",!!(theme&&theme.item_key==="kuro-classic-theme"));
+  ["kuro-game-theme-neon","kuro-game-theme-classic","kuro-game-theme-rare","kuro-game-theme-epic","kuro-game-theme-legendary","kuro-game-background-midnight","kuro-game-background-cyber","kuro-game-background-rare","kuro-game-background-epic","kuro-game-background-legendary"].forEach(name=>header.classList.remove(name));
+  if(theme&&theme.item_key==="neon-theme")header.classList.add("kuro-game-theme-neon");
+  else if(theme&&theme.item_key==="kuro-classic-theme")header.classList.add("kuro-game-theme-classic");
+  else if(theme&&["rare","epic","legendary"].includes(theme.rarity))header.classList.add("kuro-game-theme-"+theme.rarity);
+  if(background&&background.item_key==="midnight-background")header.classList.add("kuro-game-background-midnight");
+  else if(background&&background.item_key==="cyber-background")header.classList.add("kuro-game-background-cyber");
+  else if(background&&["rare","epic","legendary"].includes(background.rarity))header.classList.add("kuro-game-background-"+background.rarity);
   if(background&&typeof background.image_url==="string"){
    let image="";
    try{const parsed=new URL(background.image_url,location.origin);if(parsed.protocol==="https:"||parsed.origin===location.origin)image=parsed.href;}catch(_){}
