@@ -457,6 +457,35 @@
 .ops-game-banner-color input[type="color"]{width:100%;height:42px;padding:4px;background:#0b1524;border:1px solid var(--line);border-radius:9px;cursor:pointer}
 #opsGame-bannersView .ops-form-grid{align-items:end}
 #opsGame-bannersView .ops-game-banner-preview{display:inline-flex;align-items:center;max-width:100%;overflow-wrap:anywhere}
+
+.ops-coin-controls{display:grid;grid-template-columns:minmax(180px,1fr) 170px 190px;gap:9px;padding:14px;border-bottom:1px solid var(--line)}
+.ops-coin-controls input,.ops-coin-controls select{min-width:0;width:100%;background:#0b1524;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.ops-coin-help{padding:11px 16px;color:var(--muted);font-size:12px;border-bottom:1px solid var(--line)}
+.ops-coin-game-list{gap:12px}.ops-coin-game{border:1px solid var(--line);border-radius:14px;background:rgba(7,15,27,.32);overflow:hidden}.ops-coin-game[hidden]{display:none}
+.ops-coin-game-summary{display:flex;align-items:center;gap:12px;padding:15px 17px;cursor:pointer;list-style:none}.ops-coin-game-summary::-webkit-details-marker{display:none}
+.ops-coin-game[open]>.ops-coin-game-summary{border-bottom:1px solid var(--line);background:rgba(32,57,83,.38)}
+.ops-coin-game-icon{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:#18324c;font-size:21px}
+.ops-coin-game-title{display:grid;gap:2px;min-width:0;flex:1}.ops-coin-game-title strong{font-size:15px}.ops-coin-game-title small{font-size:11px;color:var(--muted)}
+.ops-coin-game-status{font-size:11px;color:#9ce5c8;background:#164638;border-radius:99px;padding:4px 9px;white-space:nowrap}
+.ops-coin-game-chevron{color:var(--muted);font-size:19px;transition:transform .15s}.ops-coin-game[open] .ops-coin-game-chevron{transform:rotate(180deg)}
+.ops-coin-mode-list{display:grid;gap:10px;padding:12px}.ops-coin-mode{border:1px solid #30435c;border-radius:12px;padding:13px;background:rgba(12,24,39,.72);min-width:0}.ops-coin-mode[hidden]{display:none}
+.ops-coin-mode-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.ops-coin-mode-head strong{font-size:14px}.ops-coin-mode-meta{font-size:11px;color:var(--muted);margin-top:3px}
+.ops-coin-switch{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;white-space:nowrap}.ops-coin-switch input{width:18px;height:18px;accent-color:var(--green)}
+.ops-coin-mode-fields{display:grid;grid-template-columns:minmax(150px,220px) minmax(150px,1fr);gap:12px;align-items:start;margin-top:13px}
+.ops-coin-mode-fields label,.ops-coin-label{display:grid;gap:5px;font-size:11px;color:var(--muted)}
+.ops-coin-mode-fields select,.ops-coin-mode-fields input,.ops-coin-label input{width:100%;min-width:0;background:#091625;color:var(--text);border:1px solid #344961;border-radius:8px;padding:8px 10px}
+.ops-coin-fixed-fields{align-self:end}.ops-coin-fixed-fields[hidden],.ops-coin-score-fields[hidden]{display:none}.ops-coin-score-fields{min-width:0}
+.ops-coin-score-intro{font-size:11px;color:var(--muted);margin:0 0 8px}.ops-coin-tier-list{display:grid;gap:7px}
+.ops-coin-tier{display:grid;grid-template-columns:1fr 1fr 1fr auto auto;gap:7px;align-items:end}
+.ops-coin-tier label{display:grid;gap:4px;min-width:0;font-size:10px;color:var(--muted)}
+.ops-coin-tier input:not([type=checkbox]){min-width:0;width:100%;background:#091625;color:var(--text);border:1px solid #344961;border-radius:7px;padding:7px 8px}
+.ops-coin-tier-enabled{display:flex!important;align-items:center;gap:5px;white-space:nowrap;padding:8px 0}.ops-coin-tier-enabled input{accent-color:var(--green)}
+.ops-coin-tier-remove{padding:6px 9px;font-size:11px}.ops-coin-tier-add{margin-top:8px;padding:6px 9px;font-size:11px}
+.ops-coin-label{margin-top:11px}.ops-coin-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding-top:10px;border-top:1px solid #26364d}
+.ops-coin-footer .btn{padding:7px 11px;font-size:12px}
+@media(max-width:760px){.ops-coin-controls{grid-template-columns:1fr 1fr}.ops-coin-controls input{grid-column:1/-1}.ops-coin-mode-fields{grid-template-columns:1fr}.ops-coin-tier{grid-template-columns:1fr 1fr 1fr auto}.ops-coin-tier-remove{grid-column:4}.ops-coin-footer{align-items:flex-start;flex-direction:column}.ops-coin-footer button{width:100%}}
+@media(max-width:460px){.ops-coin-tier{grid-template-columns:1fr 1fr}.ops-coin-tier-enabled{justify-content:flex-start;padding:0}.ops-coin-tier-remove{grid-column:auto}.ops-coin-game-summary{padding:12px}.ops-coin-game-status{font-size:10px}}
+
 </style>
 \n</head>
 <body>
@@ -548,36 +577,23 @@
    <article class="ops-metric"><small>累計消費</small><strong id="opsCoinTotalSpent">—</strong><span class="sns-muted">ショップ等での消費</span></article>
    <article class="ops-metric"><small>保有ユーザー</small><strong id="opsCoinFundedUsers">—</strong><span class="sns-muted">残高が1 KC以上</span></article>
   </div>
-  <section class="panel" style="margin-bottom:16px">
-   <div class="toolbar"><div><strong>勝利報酬設定を追加・更新</strong><div class="sns-muted">報酬対象モードとCPU難易度条件を指定します。未検証モードは有効化しないでください。</div></div></div>
-   <form id="opsCoinRewardForm" class="ops-form">
-    <div class="ops-form-grid">
-     <label>ゲーム<select id="opsCoinNewGame" required><option value="">ゲームを選択</option></select></label>
-     <label>モード名<input id="opsCoinNewMode" maxlength="40" pattern="[A-Za-z0-9_-]{1,40}" required placeholder="wins-online"></label>
+  <section class="panel ops-coin-config-panel">
+    <div class="toolbar">
+     <div><strong>ゲーム別の報酬設定</strong><div class="sns-muted">ゲームを開いてモードごとにポイントと付与方法を編集します。</div></div>
+     <span class="sns-muted" id="opsCoinModeCount">—</span>
     </div>
-    <div class="ops-form-grid">
-     <label>報酬（KC）<input id="opsCoinNewAmount" type="number" min="0" max="1000" step="1" value="10" required></label>
-     <label>CPU条件<select id="opsCoinNewDifficulty"><option value="">条件なし（オンライン等）</option><option value="EASY">EASY</option><option value="NORMAL">NORMAL</option><option value="HARD">HARD</option><option value="EXPERT">EXPERT</option></select></label>
+    <div class="ops-coin-controls">
+     <input class="search" id="opsCoinSearch" type="search" placeholder="ゲーム名・モード名で検索">
+     <select id="opsCoinStatusFilter" aria-label="付与状態">
+      <option value="all">すべての状態</option><option value="enabled">付与ONのみ</option><option value="disabled">付与OFFのみ</option>
+     </select>
+     <select id="opsCoinTypeFilter" aria-label="報酬方式">
+      <option value="all">すべての方式</option><option value="fixed">固定ポイント</option><option value="score_tier">スコア別ポイント</option>
+     </select>
     </div>
-    <label>履歴に表示する名前<input id="opsCoinNewLabel" maxlength="80" required value="ゲーム勝利報酬" placeholder="ゲーム勝利報酬"></label>
-    <label class="ops-check"><input id="opsCoinNewEnabled" type="checkbox" checked> この報酬を有効にする</label>
-    <div class="ops-form-actions"><button class="btn primary" type="submit">報酬設定を保存</button></div>
-    <div id="opsCoinRewardStatus" class="sns-muted" role="status">同じゲーム・モードの設定は上書き更新されます。</div>
-   </form>
-   <div class="list" id="opsCoinRewardsList"><div class="empty">報酬設定を読み込み中…</div></div>
-  </section>
-  <section class="panel" style="margin-bottom:16px">
-   <div class="toolbar"><div><strong>ユーザー残高の管理者補正</strong><div class="sns-muted">増減理由は台帳と監査ログに保存されます。マイナス指定は残高不足の場合に拒否されます。</div></div></div>
-   <form id="opsCoinAdjustForm" class="ops-form">
-    <div class="ops-form-grid">
-     <label>KUROユーザーID<input id="opsCoinAdjustUser" required placeholder="UUID形式"></label>
-     <label>補正枚数（KC）<input id="opsCoinAdjustAmount" type="number" min="-100000" max="100000" step="1" required placeholder="例：50 / -20"></label>
-    </div>
-    <label>補正理由<input id="opsCoinAdjustReason" maxlength="200" minlength="3" required placeholder="問い合わせ対応による残高補正"></label>
-    <div class="ops-form-actions"><button class="btn primary" type="submit">残高を補正</button></div>
-    <div id="opsCoinAdjustStatus" class="sns-muted" role="status"></div>
-   </form>
-  </section>
+    <div class="ops-coin-help">報酬はサーバーで確定したゲーム結果だけを対象にします。スコア別は現在、素因数分解・回転ずしタイピングで利用できます。</div>
+    <div class="list ops-coin-game-list" id="opsCoinRewardsList"><div class="empty">報酬設定を読み込み中…</div></div>
+   </section>
   <section class="panel">
    <div class="toolbar"><div><strong>直近のコイン取引</strong><div class="sns-muted">勝利報酬・管理者補正・ショップ取引の記録</div></div><span id="opsCoinTransactionCount" class="sns-muted">—</span></div>
    <div class="ops-tablewrap" id="opsCoinTransactions"><div class="empty">取引履歴を読み込み中…</div></div>
@@ -1403,92 +1419,126 @@ function coinTransactionLabel(type){
  const labels={game_win_reward:"ゲーム勝利報酬",admin_adjustment:"管理者補正",shop_purchase:"ショップ購入",shop_refund:"ショップ返金"};
  return labels[type]||String(type||"取引");
 }
+const COIN_PRIME_GAME_ID="79c9921a-d57a-45b1-8271-1ee7042801dc";
+const COIN_SUSHI_GAME_ID="5c1e658b-f6d3-412a-8b97-61d2c0457e95";
+const COIN_GAME_NAMES={
+ "2dbd6773-2684-4f00-973e-c46acbc348e7":"〇✕ゲーム",
+ "faa155cb-2143-4361-9a96-dc759d334e46":"UNON",
+ "79c9921a-d57a-45b1-8271-1ee7042801dc":"素因数分解",
+ "bb466662-5423-48e6-bbcc-d19da50ba818":"数字当て",
+ "5c1e658b-f6d3-412a-8b97-61d2c0457e95":"回転ずしタイピング"
+};
+const COIN_DIFFICULTY_NAMES={easy:"初級",normal:"中級",hard:"上級",expert:"エキスパート",master:"マスター",legend:"レジェンド",beginner:"初級",intermediate:"中級",advanced:"上級"};
+function coinModeLabel(gameId,mode){
+ if(gameId==="2dbd6773-2684-4f00-973e-c46acbc348e7"){
+  return ({normal:"通常ルール",vanish:"消える〇✕",gobble:"ゴブレット",reverse:"逆〇✕"})[mode]||"対戦ルール";
+ }
+ if(gameId==="faa155cb-2143-4361-9a96-dc759d334e46") return mode==="wins-online"?"オンライン対戦・勝利":"オンライン対戦";
+ if(gameId===COIN_PRIME_GAME_ID) return "難易度："+(COIN_DIFFICULTY_NAMES[mode]||mode);
+ if(gameId==="bb466662-5423-48e6-bbcc-d19da50ba818"){
+  const m=mode.match(/^number-(classic|time)-([a-z]+)$/);
+  if(m)return (m[1]==="time"?"タイムアタック":"通常")+"・"+(COIN_DIFFICULTY_NAMES[m[2]]||m[2]);
+ }
+ if(gameId===COIN_SUSHI_GAME_ID){
+  const m=mode.match(/^(normal|sudden|endless)_([a-z]+)$/);
+  if(m)return ({normal:"通常",sudden:"突発",endless:"エンドレス"})[m[1]]+"・"+(COIN_DIFFICULTY_NAMES[m[2]]||m[2]);
+ }
+ return "その他のモード";
+}
+function coinScoreSupported(gameId){return gameId===COIN_PRIME_GAME_ID||gameId===COIN_SUSHI_GAME_ID;}
+function renderCoinTierRows(tiers){
+ const values=Array.isArray(tiers)&&tiers.length?tiers:[
+  {minScore:0,maxScore:99,rewardAmount:1,enabled:true},
+  {minScore:100,maxScore:499,rewardAmount:3,enabled:true},
+  {minScore:500,maxScore:null,rewardAmount:5,enabled:true}
+ ];
+ return values.map(t=>'<div class="ops-coin-tier" data-coin-tier-row>'+
+  '<label>最低スコア<input data-tier-min type="number" min="0" step="1" value="'+esc(t.minScore??0)+'"></label>'+
+  '<label>最高スコア<input data-tier-max type="number" min="0" step="1" placeholder="上限なし" value="'+(t.maxScore==null?"":esc(t.maxScore))+'"></label>'+
+  '<label>付与ポイント<input data-tier-points type="number" min="0" max="1000" step="1" value="'+esc(t.rewardAmount??1)+'"></label>'+
+  '<label class="ops-coin-tier-enabled"><input data-tier-enabled type="checkbox" '+(t.enabled===false?"":"checked")+'> ON</label>'+
+  '<button class="btn ops-coin-tier-remove" type="button" data-coin-tier-remove aria-label="この条件を削除">削除</button>'+
+ '</div>').join("");
+}
+function renderCoinRewardMode(reward){
+ const gameId=reward.game_id,mode=reward.mode,name=coinModeLabel(gameId,mode);
+ const type=reward.reward_type==="score_tier"?"score_tier":"fixed",scoreAllowed=coinScoreSupported(gameId);
+ return '<article class="ops-coin-mode" data-coin-row data-game-id="'+esc(gameId)+'" data-mode="'+esc(mode)+'" data-cpu-difficulty="'+esc(reward.required_cpu_difficulty||"")+'" data-search="'+esc(((COIN_GAME_NAMES[gameId]||"")+" "+name).toLowerCase())+'">'+
+  '<div class="ops-coin-mode-head"><div><strong>'+esc(name)+'</strong><div class="ops-coin-mode-meta">'+(reward.required_cpu_difficulty?("CPU条件："+esc(reward.required_cpu_difficulty)):"サーバー検証済み結果を使用")+'</div></div>'+
+  '<label class="ops-coin-switch"><input data-coin-enabled type="checkbox" '+(reward.enabled?"checked":"")+'><span>付与ON</span></label></div>'+
+  '<div class="ops-coin-mode-fields">'+
+   '<label>報酬方式<select data-coin-type><option value="fixed" '+(type==="fixed"?"selected":"")+'>固定ポイント</option><option value="score_tier" '+(type==="score_tier"?"selected":"")+(scoreAllowed?"":" disabled")+'>スコア別ポイント'+(scoreAllowed?"":"（未対応）")+'</option></select></label>'+
+   '<div class="ops-coin-fixed-fields" '+(type==="score_tier"?"hidden":"")+'><label>1回の付与ポイント<input data-coin-amount type="number" min="0" max="1000" step="1" value="'+esc(reward.reward_amount??0)+'"></label></div>'+
+   '<div class="ops-coin-score-fields" '+(type!=="score_tier"?"hidden":"")+'><div class="ops-coin-score-intro">サーバー確定スコアに一致する条件を1つ適用します。範囲は重複できません。</div><div class="ops-coin-tier-list" data-coin-tier-list>'+renderCoinTierRows(reward.score_tiers)+'</div><button class="btn ops-coin-tier-add" type="button" data-coin-tier-add>＋ 条件を追加</button></div>'+
+  '</div>'+
+  '<label class="ops-coin-label">履歴に表示する名前<input data-coin-label maxlength="80" value="'+esc(reward.reward_label||"ゲーム報酬")+'"></label>'+
+  '<div class="ops-coin-footer"><span data-coin-status class="sns-muted">更新：'+esc(reward.updated_at?date(reward.updated_at):"—")+'</span><button class="btn primary" type="button" data-coin-save>このモードを保存</button></div>'+
+ '</article>';
+}
+function filterOpsCoinRewards(){
+ const q=($("#opsCoinSearch")?.value||"").trim().toLowerCase(),status=$("#opsCoinStatusFilter")?.value||"all",type=$("#opsCoinTypeFilter")?.value||"all";
+ document.querySelectorAll("[data-coin-row]").forEach(row=>{
+  const matchText=!q||(row.dataset.search||"").includes(q),enabled=!!row.querySelector("[data-coin-enabled]")?.checked,currentType=row.querySelector("[data-coin-type]")?.value||"fixed";
+  row.hidden=!(matchText&&(status==="all"||(status==="enabled"&&enabled)||(status==="disabled"&&!enabled))&&(type==="all"||type===currentType));
+ });
+ document.querySelectorAll("[data-coin-game-card]").forEach(card=>{card.hidden=card.querySelectorAll("[data-coin-row]:not([hidden])").length===0;});
+}
 async function loadOpsCoins(){
  const rewardsHost=$("#opsCoinRewardsList"),txHost=$("#opsCoinTransactions");
  if(rewardsHost)rewardsHost.innerHTML='<div class="empty">KURO COINを読み込み中…</div>';
  if(txHost)txHost.innerHTML='<div class="empty">取引履歴を読み込み中…</div>';
  try{
-  const data=await opsInvoke({action:"get_coin_economy"});
-  const summary=data.summary||{};
-  $("#opsCoinTotalBalance").textContent=coinFormat(summary.total_balance)+" KC";
-  $("#opsCoinTotalIssued").textContent=coinFormat(summary.total_issued)+" KC";
-  $("#opsCoinTotalSpent").textContent=coinFormat(summary.total_spent)+" KC";
+  const data=await opsInvoke({action:"get_coin_economy"}),summary=data.summary||{};
+  $("#opsCoinTotalBalance").textContent=coinFormat(summary.total_balance)+" P";
+  $("#opsCoinTotalIssued").textContent=coinFormat(summary.total_issued)+" P";
+  $("#opsCoinTotalSpent").textContent=coinFormat(summary.total_spent)+" P";
   $("#opsCoinFundedUsers").textContent=coinFormat(summary.funded_users)+"人";
   $("#opsCoinTransactionCount").textContent=coinFormat(summary.transaction_count)+"件";
   $("#opsCoinsUpdated").textContent="更新 "+new Date().toLocaleTimeString("ja-JP");
-  const games=Array.isArray(data.games)?data.games.filter(game=>game.status==="published"):[];
-  const gameSelect=$("#opsCoinNewGame");
-  const currentGame=gameSelect.value;
-  gameSelect.replaceChildren(new Option("ゲームを選択",""));
-  games.forEach(game=>gameSelect.add(new Option((game.icon||"🎮")+" "+game.title,game.id)));
-  if(games.some(game=>game.id===currentGame))gameSelect.value=currentGame;
-  const rewards=Array.isArray(data.rewards)?data.rewards:[];
-  if(!rewards.length){
-   rewardsHost.innerHTML='<div class="empty">報酬設定はありません。</div>';
-  }else{
-   rewardsHost.innerHTML=rewards.map(reward=>{
-    const game=reward.game||{};
-    const difficulty=reward.required_cpu_difficulty||"";
-    return '<article class="ops-flag-item" data-coin-row data-game-id="'+esc(reward.game_id)+'" data-mode="'+esc(reward.mode)+'">'+
-     '<div class="ops-flag-copy"><div class="meta"><strong>'+esc(game.icon||"🎮")+' '+esc(game.title||"ゲーム")+' / '+esc(reward.mode)+'</strong><span class="ops-status '+(reward.enabled?"done":"")+'">'+(reward.enabled?"有効":"無効")+'</span></div>'+
-     '<div class="ops-audit-meta">CPU条件：'+esc(difficulty||"条件なし")+' · 更新：'+esc(reward.updated_at?date(reward.updated_at):"—")+'</div>'+
-     '<div class="ops-form-grid" style="margin-top:10px">'+
-      '<label>報酬 KC<input data-coin-amount type="number" min="0" max="1000" step="1" value="'+esc(reward.reward_amount)+'"></label>'+
-      '<label>CPU条件<select data-coin-difficulty><option value="" '+(!difficulty?"selected":"")+'>条件なし</option><option value="EASY" '+(difficulty==="EASY"?"selected":"")+'>EASY</option><option value="NORMAL" '+(difficulty==="NORMAL"?"selected":"")+'>NORMAL</option><option value="HARD" '+(difficulty==="HARD"?"selected":"")+'>HARD</option><option value="EXPERT" '+(difficulty==="EXPERT"?"selected":"")+'>EXPERT</option></select></label>'+
-     '</div>'+
-     '<label style="display:grid;gap:6px;margin-top:9px;color:var(--muted);font-size:12px">履歴表示名<input data-coin-label maxlength="80" value="'+esc(reward.reward_label||"ゲーム勝利報酬")+'"></label>'+
-     '<label class="ops-check" style="margin-top:9px"><input data-coin-enabled type="checkbox" '+(reward.enabled?"checked":"")+'> 報酬を有効にする</label>'+
-     '<div class="ops-inline-actions"><button class="btn primary" data-coin-save type="button">この設定を保存</button></div></div></article>';
-   }).join("");
-  }
+  const rewards=Array.isArray(data.rewards)?data.rewards:[],groups=new Map();
+  for(const reward of rewards){if(!groups.has(reward.game_id))groups.set(reward.game_id,[]);groups.get(reward.game_id).push(reward);}
+  let modeCount=0;
+  const groupHtml=Array.from(groups.entries()).map(([gameId,items])=>{
+   modeCount+=items.length;const title=COIN_GAME_NAMES[gameId]||items[0]?.game?.title||"ゲーム",active=items.filter(r=>r.enabled).length;
+   const rows=items.slice().sort((a,b)=>coinModeLabel(gameId,a.mode).localeCompare(coinModeLabel(gameId,b.mode),"ja"));
+   return '<details class="ops-coin-game" data-coin-game-card><summary class="ops-coin-game-summary"><span class="ops-coin-game-icon">🎮</span><span class="ops-coin-game-title"><strong>'+esc(title)+'</strong><small>'+items.length+'モード · '+active+'モード付与ON</small></span><span class="ops-coin-game-status">'+active+'/'+items.length+' ON</span><span class="ops-coin-game-chevron">⌄</span></summary><div class="ops-coin-mode-list">'+rows.map(renderCoinRewardMode).join("")+'</div></details>';
+  }).join("");
+  if(rewardsHost)rewardsHost.innerHTML=groupHtml||'<div class="empty">報酬設定はありません。</div>';
+  $("#opsCoinModeCount").textContent=modeCount+"モード";
+  filterOpsCoinRewards();
   const tx=Array.isArray(data.transactions)?data.transactions:[];
-  if(!tx.length){
-   txHost.innerHTML='<div class="empty">まだ取引履歴はありません。</div>';
-  }else{
-   txHost.innerHTML='<table class="ops-table"><thead><tr><th>日時</th><th>ユーザー</th><th>内容</th><th>増減</th><th>取引後残高</th></tr></thead><tbody>'+
-    tx.map(row=>{
-     const profile=row.profile||{},userName=profile.display_name||profile.username||"KUROユーザー";
-     const sign=Number(row.amount)>0?"+":"",amount=Number(row.amount)||0;
-     return '<tr><td>'+esc(row.created_at?date(row.created_at):"—")+'</td><td>'+esc(userName)+'<small>'+esc(profile.kuro_id||row.user_id)+'</small></td>'+
-      '<td>'+esc(row.description||coinTransactionLabel(row.transaction_type))+'<small>'+esc(row.game&&row.game.title?row.game.title+" · ":"")+esc(row.source_mode||coinTransactionLabel(row.transaction_type))+'</small></td>'+
-      '<td style="font-weight:900;color:'+(amount>=0?"#46c69a":"#ef7777")+'">'+sign+coinFormat(Math.abs(amount))+' KC</td><td>'+coinFormat(row.balance_after)+' KC</td></tr>';
-    }).join("")+'</tbody></table>';
-  }
+  if(!tx.length)txHost.innerHTML='<div class="empty">まだ取引履歴はありません。</div>';
+  else txHost.innerHTML='<table class="ops-table"><thead><tr><th>日時</th><th>ユーザー</th><th>内容</th><th>増減</th><th>取引後残高</th></tr></thead><tbody>'+
+   tx.map(row=>{const profile=row.profile||{},userName=profile.display_name||profile.username||"KUROユーザー",sign=Number(row.amount)>0?"+":"",amount=Number(row.amount)||0;
+    return '<tr><td>'+esc(row.created_at?date(row.created_at):"—")+'</td><td>'+esc(userName)+'<small>'+esc(profile.kuro_id||row.user_id)+'</small></td><td>'+esc(row.description||coinTransactionLabel(row.transaction_type))+'<small>'+esc(row.game&&row.game.title?row.game.title+" · ":"")+esc(row.source_mode||coinTransactionLabel(row.transaction_type))+'</small></td><td style="font-weight:900;color:'+(amount>=0?"#46c69a":"#ef7777")+'">'+sign+coinFormat(Math.abs(amount))+' P</td><td>'+coinFormat(row.balance_after)+' P</td></tr>';
+   }).join("")+'</tbody></table>';
  }catch(error){
   if(rewardsHost)rewardsHost.innerHTML='<div class="error">経済情報を取得できませんでした：'+esc(error.message||error)+'</div>';
   if(txHost)txHost.innerHTML='<div class="error">取引履歴を取得できませんでした。</div>';
  }
 }
 async function saveOpsCoinReward(row,button){
- const gameId=row.dataset.gameId,mode=row.dataset.mode;
- const amount=Number(row.querySelector("[data-coin-amount]").value);
- const difficulty=row.querySelector("[data-coin-difficulty]").value||null;
- const label=row.querySelector("[data-coin-label]").value.trim();
- const enabled=row.querySelector("[data-coin-enabled]").checked;
- if(!Number.isSafeInteger(amount)||amount<0||amount>1000){alert("報酬は0〜1000 KCで入力してください。");return;}
- button.disabled=true;
+ const gameId=row.dataset.gameId,mode=row.dataset.mode,type=row.querySelector("[data-coin-type]").value;
+ const amount=type==="fixed"?Number(row.querySelector("[data-coin-amount]").value):0,difficulty=row.dataset.cpuDifficulty||null;
+ const label=row.querySelector("[data-coin-label]").value.trim(),enabled=row.querySelector("[data-coin-enabled]").checked,status=row.querySelector("[data-coin-status]");
+ const scoreTiers=type==="score_tier"?Array.from(row.querySelectorAll("[data-coin-tier-row]")).map(t=>({
+  minScore:Number(t.querySelector("[data-tier-min]").value),maxScore:t.querySelector("[data-tier-max]").value===""?null:Number(t.querySelector("[data-tier-max]").value),
+  rewardAmount:Number(t.querySelector("[data-tier-points]").value),enabled:t.querySelector("[data-tier-enabled]").checked
+ })):[];
+ if(type==="fixed"&&(!Number.isSafeInteger(amount)||amount<0||amount>1000)){alert("固定ポイントは0〜1000の整数で入力してください。");return;}
+ if(type==="score_tier"&&!scoreTiers.length){alert("スコア条件を少なくとも1つ追加してください。");return;}
+ if(!label||label.length>80){alert("履歴表示名を入力してください。");return;}
+ button.disabled=true;if(status)status.textContent="保存中…";
  try{
-  await opsInvoke({action:"update_coin_reward",gameId,mode,rewardAmount:amount,requiredCpuDifficulty:difficulty,rewardLabel:label,enabled});
-  await loadOpsCoins();
- }catch(error){alert("報酬設定を保存できませんでした："+(error.message||error));}
+  await opsInvoke({action:"update_coin_reward",gameId,mode,rewardType:type,rewardAmount:amount,scoreTiers,requiredCpuDifficulty:difficulty,rewardLabel:label,enabled});
+  if(status)status.textContent="保存しました";await loadOpsCoins();
+ }catch(error){if(status)status.textContent="保存失敗";alert("報酬設定を保存できませんでした："+(error.message||error));}
  finally{button.disabled=false;}
 }
-async function createOpsCoinReward(event){
- event.preventDefault();
- const payload={
-  action:"update_coin_reward",gameId:$("#opsCoinNewGame").value,
-  mode:$("#opsCoinNewMode").value.trim(),rewardAmount:Number($("#opsCoinNewAmount").value),
-  requiredCpuDifficulty:$("#opsCoinNewDifficulty").value||null,
-  rewardLabel:$("#opsCoinNewLabel").value.trim(),enabled:$("#opsCoinNewEnabled").checked
- };
- const status=$("#opsCoinRewardStatus"),button=$("#opsCoinRewardForm").querySelector('button[type="submit"]');
- if(!payload.gameId||!payload.mode||!payload.rewardLabel){status.textContent="ゲーム・モード名・表示名を入力してください。";return;}
- button.disabled=true;status.textContent="保存中…";
- try{
-  await opsInvoke(payload);status.textContent="報酬設定を保存しました。";$("#opsCoinNewMode").value="";
-  await loadOpsCoins();
- }catch(error){status.textContent="保存できませんでした："+(error.message||error);}
- finally{button.disabled=false;}
+function addOpsCoinTier(row){
+ const list=row.querySelector("[data-coin-tier-list]"),nodes=Array.from(list.querySelectorAll("[data-coin-tier-row]")),last=nodes[nodes.length-1];
+ const nextMin=last&&last.querySelector("[data-tier-max]").value!==""?Number(last.querySelector("[data-tier-max]").value)+1:0;
+ list.insertAdjacentHTML("beforeend",renderCoinTierRows([{minScore:nextMin,maxScore:null,rewardAmount:1,enabled:true}]));
 }
 async function adjustOpsCoinBalance(event){
  event.preventDefault();
@@ -2451,8 +2501,19 @@ $("#opsStoreItemsList").addEventListener("click",event=>{
  if(edit)editOpsStoreItem(edit.dataset.storeEdit);
  if(off)deactivateOpsStoreItem(off.dataset.storeDeactivate,off);
 });
-$("#opsCoinRewardForm").addEventListener("submit",createOpsCoinReward);
-$("#opsCoinRewardsList").addEventListener("click",e=>{const b=e.target.closest("[data-coin-save]");if(b){const row=b.closest("[data-coin-row]");if(row)saveOpsCoinReward(row,b);}});
+$("#opsCoinRewardsList").addEventListener("click",e=>{
+ const add=e.target.closest("[data-coin-tier-add]"),remove=e.target.closest("[data-coin-tier-remove]"),save=e.target.closest("[data-coin-save]");
+ if(add){const row=add.closest("[data-coin-row]");if(row)addOpsCoinTier(row);return;}
+ if(remove){const row=remove.closest("[data-coin-tier-row]");if(row)row.remove();return;}
+ if(save){const row=save.closest("[data-coin-row]");if(row)saveOpsCoinReward(row,save);}
+});
+$("#opsCoinRewardsList").addEventListener("change",e=>{
+ if(e.target.matches("[data-coin-type]")){const row=e.target.closest("[data-coin-row]"),score=e.target.value==="score_tier";row.querySelector(".ops-coin-fixed-fields").hidden=score;row.querySelector(".ops-coin-score-fields").hidden=!score;}
+ if(e.target.matches("[data-coin-enabled]"))filterOpsCoinRewards();
+});
+$("#opsCoinSearch").addEventListener("input",filterOpsCoinRewards);
+$("#opsCoinStatusFilter").addEventListener("change",filterOpsCoinRewards);
+$("#opsCoinTypeFilter").addEventListener("change",filterOpsCoinRewards);
 $("#opsCoinAdjustForm").addEventListener("submit",adjustOpsCoinBalance);
 $("#opsSecretCodeForm").addEventListener("submit",saveSecretCode);
 $("#opsSecretCodeForm").addEventListener("reset",()=>setTimeout(resetSecretCodeForm,0));
