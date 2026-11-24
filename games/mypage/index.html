@@ -93,7 +93,7 @@ footer{border-top:1px solid var(--line);background:white;padding:20px 0;color:#8
 <div class="profile-actions"><button class="action" type="button" data-kuro-profile-self>共通プロフィールを見る</button><a class="action" href="/account/">アカウント設定</a></div>
 </section>
 <section class="section">
-<div class="section-title"><h2>最高記録</h2><p id="recordsCount">0件</p></div>
+<div class="section-title"><h2>ゲーム記録</h2><p id="recordsCount">0件</p></div>
 <div id="myGameStats" class="game-list"></div>
 <div id="myGameStatsEmpty" class="panel state" hidden><strong>まだゲーム記録がありません</strong>ゲームを遊んで結果が保存されると、ここに追加されます。</div>
 </section>
@@ -203,7 +203,6 @@ function addGameStats(stats,gameMap){
   var game=gameMap.get(String(stat.game_id||""))||{};
   var isNumberGuess=String(game.title||"").includes("数字当て");
   var record=bestRecord(stat,isNumberGuess);
-  if(!record)return;
   var id=String(stat.game_id||"");
   if(!id)return;
   if(!grouped.has(id))grouped.set(id,[]);
@@ -235,8 +234,13 @@ function addGameStats(stats,gameMap){
    if(counters.length)modeName.appendChild(node("small","mode-counts",counters.join("・")));
    row.appendChild(modeName);
    var best=node("div","mode-best");
-   best.appendChild(node("small","",item.record.label));
-   best.appendChild(document.createTextNode(item.record.value));
+   if(item.record){
+    best.appendChild(node("small","",item.record.label));
+    best.appendChild(document.createTextNode(item.record.value));
+   }else{
+    best.appendChild(node("small","","最高記録"));
+    best.appendChild(document.createTextNode("—"));
+   }
    row.appendChild(best);
    modes.appendChild(row);
    recordCount++;
