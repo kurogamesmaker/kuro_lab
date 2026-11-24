@@ -2438,7 +2438,14 @@ $("#opsSecretRefresh").addEventListener("click",loadOpsSecretManager);
 $("#opsCoinsRefresh").addEventListener("click",loadOpsCoins);
 $("#opsStoreRefresh").addEventListener("click",loadOpsStoreItems);
 $("#opsStoreForm").addEventListener("submit",saveOpsStoreItem);
-$("#opsStoreForm").addEventListener("reset",()=>setTimeout(resetOpsStoreForm,0));
+$("#opsStoreForm").addEventListener("reset",()=>setTimeout(()=>{
+ $("#opsStoreItemId").value="";
+ $("#opsStoreIcon").value="🎁";
+ $("#opsStoreSortOrder").value="100";
+ $("#opsStoreActive").checked=true;
+ $("#opsStoreSave").textContent="商品を登録";
+ $("#opsStoreFormStatus").textContent="すべて無料アイテムとして登録されます。取得済みユーザーの所持品は公開停止後も保持されます。";
+},0));
 $("#opsStoreItemsList").addEventListener("click",event=>{
  const edit=event.target.closest("[data-store-edit]"),off=event.target.closest("[data-store-deactivate]");
  if(edit)editOpsStoreItem(edit.dataset.storeEdit);
