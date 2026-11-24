@@ -34,6 +34,33 @@ function safeError(error: unknown) {
   return String((error as { message?: string })?.message || error || "Unknown error").slice(0, 240);
 }
 
+async function kuroRemoveOwnedStorageObjects(admin: any, userId: string) {
+  const { data, error } = await admin.rpc("kuro_list_storage_objects_for_owner", {
+    p_user_id: userId
+  });
+  if (error) throw new Error("Storage ownership lookup failed: " + String((error as { message?: string })?.message || error));
+
+  const byBucket = new Map<string, string[]>();
+  for (const row of Array.isArray(data) ? data : []) {
+    const bucket = typeof row?.bucket_id === "string" ? row.bucket_id : "";
+    const objectName = typeof row?.object_name === "string" ? row.object_name : "";
+    if (!bucket || !objectName) continue;
+    if (!byBucket.has(bucket)) byBucket.set(bucket, []);
+    byBucket.get(bucket)!.push(objectName);
+  }
+
+  for (const [bucket, objectNames] of byBucket) {
+    for (let offset = 0; offset < objectNames.length; offset += 100) {
+      const batch = objectNames.slice(offset, offset + 100);
+      const { error: removeError } = await admin.storage.from(bucket).remove(batch);
+      if (removeError) {
+        throw new Error("Storage cleanup failed: " + bucket + ": " + String((removeError as { message?: string })?.message || removeError));
+      }
+    }
+  }
+  return { buckets: byBucket.size, objects: Array.from(byBucket.values()).reduce((n, items) => n + items.length, 0) };
+}
+
 async function kuroSecretHmacHex(secret: string, message: string) {
   const key = await crypto.subtle.importKey(
     "raw",
@@ -1017,7 +1044,7 @@ Deno.serve(async (req: Request) => {
 
     if (action === "delete_user") {
       const targetUserId = typeof body.userId === "string" ? body.userId : "";
-      const confirmEmail = typeof body.confirmEmail === "string" ? body.confirmEmail.trim().toLowerCase() : "";
+      const confirmUsername = typeof body.confirmUsername === "string" ? body.confirmUsername.trim() : "";
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(targetUserId)) {
         return reply({ error: "Invalid user ID" }, 400, origin);
       }
@@ -1026,20 +1053,42 @@ Deno.serve(async (req: Request) => {
         .select("user_id").eq("user_id", targetUserId).maybeSingle();
       if (targetAdminError) throw targetAdminError;
       if (targetAdmin) return reply({ error: "Administrator accounts are protected from deletion" }, 409, origin);
+
       const { data: targetData, error: targetError } = await admin.auth.admin.getUserById(targetUserId);
       if (targetError || !targetData?.user) return reply({ error: "User not found" }, 404, origin);
-      const actualEmail = (targetData.user.email || "").trim().toLowerCase();
-      if (!actualEmail || !confirmEmail || confirmEmail !== actualEmail) {
-        return reply({ error: "Confirmation email does not match" }, 409, origin);
+      const { data: targetProfile, error: profileError } = await admin
+        .from("profiles").select("username").eq("id", targetUserId).maybeSingle();
+      if (profileError) throw profileError;
+      const expectedConfirmation = String(targetProfile?.username || targetUserId).trim();
+      if (!confirmUsername || confirmUsername !== expectedConfirmation) {
+        return reply({ error: "Confirmation username or user ID does not match" }, 409, origin);
       }
+
+      // Storage ownership is separate from auth.users foreign keys; remove all
+      // owned objects first and abort safely if any removal fails.
+      const storageCleanup = await kuroRemoveOwnedStorageObjects(admin, targetUserId);
+
+      // pro_invitations.created_by is RESTRICT; remove only invitations authored
+      // by this account. Other user-owned rows cascade through auth.users FKs.
+      const { error: invitationError } = await admin.from("pro_invitations")
+        .delete().eq("created_by", targetUserId);
+      if (invitationError) throw invitationError;
+
       const { error: auditError } = await admin.from("admin_audit_logs").insert({
         actor_user_id: caller.id, action: "account.delete", target_user_id: targetUserId,
-        metadata: { email: targetData.user.email || "", username: String(body.username || "").slice(0, 100) }
+        metadata: {
+          email: targetData.user.email || "",
+          username: expectedConfirmation,
+          storage_objects_removed: storageCleanup.objects
+        }
       });
       if (auditError) throw auditError;
+
+      // auth.users deletion cascades profiles, game records, rankings, saves and
+      // refresh sessions. Restrictive RLS also rejects this user's still-live JWT.
       const { error: deleteError } = await admin.auth.admin.deleteUser(targetUserId);
       if (deleteError) throw deleteError;
-      return reply({ ok: true }, 200, origin);
+      return reply({ ok: true, storage_objects_removed: storageCleanup.objects }, 200, origin);
     }
 
     if (action === "update_user_email") {
@@ -1416,6 +1465,9 @@ Deno.serve(async (req: Request) => {
       }
       const { data: targetData, error: targetError } = await admin.auth.admin.getUserById(targetUserId);
       if (targetError || !targetData?.user?.email) return reply({ error: "User email not found" }, 404, origin);
+      if (targetData.user.email.toLowerCase().endsWith("@username.kurolab.invalid")) {
+        return reply({ error: "このアカウントはメール未登録のため、再設定メールを送信できません。" }, 409, origin);
+      }
 
       const { error: resetError } = await admin.auth.resetPasswordForEmail(targetData.user.email);
       if (resetError) throw resetError;
