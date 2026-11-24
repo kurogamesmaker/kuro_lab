@@ -51,7 +51,8 @@ button,select{font:inherit}
 .refresh-button{margin-left:auto;min-height:30px;padding:0 10px;border:1px solid #e0e8f3;border-radius:9px;background:#fff;color:#60748e;font-size:10px;font-weight:850;cursor:pointer}
 .refresh-button:hover{border-color:#b9d2f2;background:#f5f9ff}
 .rank-list{display:grid;gap:9px;padding:17px 20px 20px}
-.rank-list.mode-board{grid-template-columns:repeat(auto-fit,minmax(min(100%,285px),1fr));align-items:start;gap:14px}
+.rank-list.mode-board{display:flex;align-items:stretch;gap:14px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-inline:contain;scroll-snap-type:x proximity;scrollbar-width:thin;scrollbar-color:#c6d8ed transparent;padding-bottom:18px}
+.rank-list.mode-board>.mode-column{flex:0 0 clamp(270px,calc((100% - 28px)/3),340px);scroll-snap-align:start}
 .mode-column{min-width:0;padding:12px;border:1px solid #e4ebf5;border-radius:15px;background:linear-gradient(180deg,#fbfdff,#fff)}
 .mode-column-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px;padding:1px 2px 9px;border-bottom:1px solid #e8eef6}
 .mode-column-title{min-width:0;margin:0;color:#294665;font-size:13px;font-weight:1000;overflow-wrap:anywhere}
@@ -63,7 +64,7 @@ button,select{font:inherit}
 .mode-column-list .rank-name{font-size:11px}
 .mode-column-list .rank-score{font-size:11px}
 .mode-column-empty{display:grid;place-items:center;min-height:130px;padding:16px 10px;color:#8291a5;text-align:center;font-size:11px;line-height:1.7}
-@media(max-width:640px){.rank-list.mode-board{grid-template-columns:minmax(0,1fr);padding:13px}.mode-column{padding:10px}}
+@media(max-width:640px){.rank-list.mode-board{padding:13px;gap:11px}.rank-list.mode-board>.mode-column{flex-basis:min(84vw,320px)}.mode-column{padding:10px}}
 .rank-row{display:flex;align-items:center;gap:12px;min-width:0;padding:12px 14px;border:1px solid #e9eef5;border-radius:14px;background:linear-gradient(100deg,#fff,#fbfdff)}
 .rank-row.top-one{border-color:#f0dfaa;background:linear-gradient(100deg,#fffdf5,#fff)}
 .rank-row.top-two{border-color:#e3e7ee;background:linear-gradient(100deg,#fff,#fafbfd)}
@@ -127,7 +128,6 @@ button,select{font:inherit}
    <span class="live-pill"><i></i> LIVE RANKING</span>
   </div>
   <div class="filters">
-   <label class="filter-label" id="modeWrap" hidden>ランキング区分<select id="modeSelect"></select></label>
    <label class="filter-label" id="cpuWrap" hidden>CPU難易度<select id="cpuSelect"><option value="">すべて</option></select></label>
    <label class="filter-label" id="levelWrap" hidden>レベル<select id="levelSelect"><option value="">すべて</option></select></label>
    <button class="refresh-button" id="refreshButton" type="button">↻ 更新</button>
@@ -165,7 +165,6 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
  const tabsEl=document.getElementById("gameTabs"),countEl=document.getElementById("gameCount");
  const titleEl=document.getElementById("selectedGameTitle"),modeTextEl=document.getElementById("selectedModeText");
  const listEl=document.getElementById("rankList"),gameLink=document.getElementById("gameLink");
- const modeWrap=document.getElementById("modeWrap"),modeSelect=document.getElementById("modeSelect");
  const cpuWrap=document.getElementById("cpuWrap"),cpuSelect=document.getElementById("cpuSelect");
  const levelWrap=document.getElementById("levelWrap"),levelSelect=document.getElementById("levelSelect");
  const refreshButton=document.getElementById("refreshButton");
@@ -230,9 +229,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
  function renderFilters(game){
   const previousLevel=levelSelect.value,previousCpu=cpuSelect.value;
   const groups=game.modeGroups||[];
-  // Multiple ranking modes are displayed side-by-side; no mode dropdown is needed.
-  modeWrap.hidden=true;
-  modeSelect.replaceChildren();
+  // Multiple ranking modes are displayed in independent columns.
   const levels=Array.isArray(game.levels)?game.levels:[];
   const cpus=Array.isArray(game.cpuDifficulties)?game.cpuDifficulties:[];
   const hasCpuMode=groups.some(group=>group.modes.some(item=>isCpuMode(item.mode)));
@@ -329,9 +326,27 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   profile.append(avatar,name);
   return profile;
  }
+ function createRankRow(game,row,index,mode){
+  const item=document.createElement("article");
+  item.className="rank-row"+(index===0?" top-one":index===1?" top-two":index===2?" top-three":"");
+  const medal=document.createElement("span");medal.className="rank-medal";medal.textContent=medals[index]||String(row.rank||index+1);
+  const profile=makeProfile(row);
+  const score=document.createElement("span");score.className="rank-score";score.textContent=scoreText(game,row,mode);
+  item.append(medal,profile,score);
+  return item;
+ }
  function renderModeColumns(game,results){
   listEl.replaceChildren();
-  listEl.classList.toggle("mode-board",results.length>1);
+  const multiMode=results.length>1;
+  listEl.classList.toggle("mode-board",multiMode);
+  if(!multiMode){
+   const result=results[0];
+   if(!result||result.error){showMessage("ランキングを取得できませんでした。","更新ボタンから再試行してください。");return;}
+   if(!result.rows.length){showMessage("まだランキングの記録がありません。","このゲームでプレイすると、記録がここに表示されます。");return;}
+   const mode=result.group.modes[0].mode;
+   result.rows.forEach((row,index)=>listEl.append(createRankRow(game,row,index,mode)));
+   return;
+  }
   results.forEach(result=>{
    const column=document.createElement("section");column.className="mode-column";
    const head=document.createElement("div");head.className="mode-column-head";
@@ -345,14 +360,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
     const empty=document.createElement("div");empty.className="mode-column-empty";empty.textContent="まだ記録がありません。";columnList.append(empty);
    }else{
     const mode=result.group.modes[0].mode;
-    result.rows.forEach((row,index)=>{
-     const item=document.createElement("article");
-     item.className="rank-row"+(index===0?" top-one":index===1?" top-two":index===2?" top-three":"");
-     const medal=document.createElement("span");medal.className="rank-medal";medal.textContent=medals[index]||String(row.rank||index+1);
-     const profile=makeProfile(row);
-     const score=document.createElement("span");score.className="rank-score";score.textContent=scoreText(game,row,mode);
-     item.append(medal,profile,score);columnList.append(item);
-    });
+    result.rows.forEach((row,index)=>columnList.append(createRankRow(game,row,index,mode)));
    }
    column.append(head,columnList);listEl.append(column);
   });
@@ -367,7 +375,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   const groups=game.modeGroups||[];
   titleEl.textContent=game.title+" ランキング";
   modeTextEl.textContent=groups.length>1
-   ? groups.length+"種類のランキングを横並びで表示しています。各列に上位5人を縦に表示します。"
+   ? groups.length+"種類のランキングを横スクロールできる列で表示します。各列の順位は上から縦に並びます。"
    : "ランキング上位5人";
   gameLink.href="/games/play/?id="+encodeURIComponent(game.id);
   showMessage("ランキングを読み込み中…","各モードのランキングを取得しています。");
