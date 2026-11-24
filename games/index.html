@@ -1327,10 +1327,18 @@ body.kuro-account-open { overflow: hidden; }
  .kuro-settings-menu{right:0;width:min(270px,calc(100vw - 24px))}
 }
 </style><style id="kuro-games-profile-name-visible-fix">
+/* Give the brand more room on the left and reserve a stable slot for the account name. */
+header .nav.wrap{width:100%!important;max-width:none!important;margin:0!important;padding:0 14px!important;gap:12px!important}
+header .brand{margin-left:0!important;flex:0 0 auto!important}
+header .search{width:min(280px,24vw)!important;min-width:120px!important;flex:0 1 280px!important}
+header .lab{padding-left:10px!important;padding-right:10px!important}
+
 #kuroGamesTopProfile{display:inline-flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:8px!important;flex:0 0 auto!important;min-width:84px!important;width:max-content!important;max-width:190px!important;white-space:nowrap!important}
 #kuroGamesTopProfileAvatar{display:grid!important;flex:0 0 31px!important}
 #kuroGamesTopProfileName{display:inline-block!important;position:static!important;visibility:visible!important;opacity:1!important;flex:0 1 auto!important;min-width:fit-content!important;width:auto!important;max-width:120px!important;margin:0!important;white-space:nowrap!important;line-height:1.2!important}
 @media(max-width:680px){
+ header .nav.wrap{padding-left:8px!important;padding-right:8px!important;gap:4px!important}
+ header .search{min-width:0!important}
  #kuroGamesTopProfile{min-width:76px!important;max-width:clamp(88px,28vw,132px)!important;height:38px!important;gap:6px!important}
  #kuroGamesTopProfileAvatar{flex-basis:28px!important;width:28px!important;height:28px!important}
  #kuroGamesTopProfileName{max-width:88px!important;font-size:10px!important}
