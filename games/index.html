@@ -1286,6 +1286,12 @@ body.kuro-account-open { overflow: hidden; }
 #kuroRankingShowcase a.rank-profile-link:hover .rank-name{color:#236fc5;text-decoration:underline;text-underline-offset:2px}
 @media(max-width:680px){#kuroRankingShowcase .rank-profile-avatar{width:33px;height:33px;flex-basis:33px}}
 #kuroAccountOpen{display:inline-flex;align-items:center;gap:8px}#kuroAccountOpen .kuro-account-avatar{width:25px;height:25px;flex:0 0 25px;display:grid;place-items:center;border-radius:50%;overflow:hidden;background:#e9eff8;font-size:14px}#kuroAccountOpen .kuro-account-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}.kuro-account-profile-social{display:flex;align-items:center;gap:12px;margin-bottom:12px}.kuro-account-profile-avatar{width:54px;height:54px;display:grid;place-items:center;border-radius:50%;overflow:hidden;background:#e9eff8;font-size:26px;flex:0 0 54px}.kuro-account-profile-avatar img{width:100%;height:100%;object-fit:cover}.kuro-account-profile-social div{display:grid;gap:5px}.kuro-account-profile-bio{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--muted,#667085);margin:10px 0}
+#kuroAccountModal .kuro-account-bio-editor{display:grid;gap:8px;margin:12px 0;padding:12px;border:1px solid #e0eaf7;border-radius:12px;background:#fff}
+#kuroAccountModal .kuro-account-bio-editor summary{cursor:pointer;color:#2878ee;font-size:12px;font-weight:850}
+#kuroAccountModal .kuro-account-bio-editor label{color:#526780;font-size:11px;font-weight:850}
+#kuroAccountModal .kuro-account-bio-editor textarea{width:100%;min-height:90px;resize:vertical;padding:10px 11px;border:1px solid #dce5f0;border-radius:10px;background:#fbfcfe;color:#17243c;font:inherit;font-size:13px;line-height:1.65;box-sizing:border-box}
+#kuroAccountModal .kuro-account-bio-editor textarea:focus{outline:2px solid #83b4f5;outline-offset:1px}
+#kuroAccountModal .kuro-account-bio-editor button{width:100%;min-height:40px}
 </style>
 </head>
 <body>
@@ -1333,7 +1339,7 @@ body.kuro-account-open { overflow: hidden; }
     <button class="kuro-account-primary" id="kuroAccountSubmit" type="submit">ログイン</button>
    </form>
   </div>
-  <div class="kuro-account-profile" id="kuroAccountProfile" hidden><div class="kuro-account-profile-social"><span class="kuro-account-profile-avatar" id="kuroAccountProfileAvatar">👤</span><div><strong id="kuroAccountProfileName"></strong><span id="kuroAccountProfileHandle"></span></div></div><p class="kuro-account-profile-bio" id="kuroAccountProfileBio">KURO SNSの共通プロフィール</p><p class="kuro-account-common">KURO SNSのプロフィールを各サービスのマイページに共通表示します。</p><a class="kuro-account-logout" href="/sns/?profile-edit=1" style="display:block;text-align:center;text-decoration:none;margin-bottom:9px">プロフィール編集</a><a class="kuro-account-logout" href="/account/" style="display:block;text-align:center;text-decoration:none">アカウント設定・削除</a><button class="kuro-account-logout" id="kuroAccountLogout" type="button">ログアウト</button></div>
+  <div class="kuro-account-profile" id="kuroAccountProfile" hidden><div class="kuro-account-profile-social"><span class="kuro-account-profile-avatar" id="kuroAccountProfileAvatar">👤</span><div><strong id="kuroAccountProfileName"></strong><span id="kuroAccountProfileHandle"></span></div></div><p class="kuro-account-profile-bio" id="kuroAccountProfileBio">自己紹介はまだ設定されていません。</p><details class="kuro-account-bio-editor" id="kuroAccountBioDetails"><summary>この画面で自己紹介を編集</summary><label for="kuroAccountBioInput">共通の自己紹介（160文字まで）</label><textarea id="kuroAccountBioInput" rows="4" maxlength="160" placeholder="好きなことや興味のあることを書こう"></textarea><button class="kuro-account-primary" id="kuroAccountBioSave" type="button">自己紹介を保存</button></details><p class="kuro-account-common">ここで保存した自己紹介はKURO Lab・KURO SNSにも共通で反映されます。</p><a class="kuro-account-logout" href="/account/" style="display:block;text-align:center;text-decoration:none;margin-bottom:9px">アカウント設定・削除</a><button class="kuro-account-logout" id="kuroAccountLogout" type="button">ログアウト</button></div>
   <div class="kuro-account-status" id="kuroAccountStatus" role="status" aria-live="polite"></div>
  </section>
 </div>
@@ -1437,7 +1443,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
  const authPanel=document.getElementById("kuroAccountAuthPanel"),profilePanel=document.getElementById("kuroAccountProfile"),guestPanel=document.getElementById("kuroAccountGuest"),status=document.getElementById("kuroAccountStatus");
  const loginTab=document.getElementById("kuroAccountLoginTab"),signupTab=document.getElementById("kuroAccountSignupTab"),confirmRow=document.getElementById("kuroAccountConfirmRow");
  const password=document.getElementById("kuroAccountPassword"),confirm=document.getElementById("kuroAccountConfirm"),submit=document.getElementById("kuroAccountSubmit");
- const profileName=document.getElementById("kuroAccountProfileName"),profileHandle=document.getElementById("kuroAccountProfileHandle"),logoutButton=document.getElementById("kuroAccountLogout");
+ const profileName=document.getElementById("kuroAccountProfileName"),profileHandle=document.getElementById("kuroAccountProfileHandle"),logoutButton=document.getElementById("kuroAccountLogout"),profileBioEditor=document.getElementById("kuroAccountBioInput"),profileBioSave=document.getElementById("kuroAccountBioSave");
  if(!openButton||!modal||!form)return;
  let mode="login",currentUser=null;
  function setMode(next){
@@ -1480,7 +1486,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
     const h=String(data.username||fallbackHandle),id=String(data.kuro_id||"");
     if(stateLabel)stateLabel.textContent=h?"@"+h:"ログイン中";if(buttonLabel)buttonLabel.textContent="アカウント";if(avatarSlot){avatarSlot.innerHTML="👤";const av=String(data.avatar_url||"");if(av){const im=document.createElement("img");im.src=av;im.alt="";im.onerror=()=>{im.remove();};avatarSlot.appendChild(im);}}openButton.title=(h?"@"+h:"KUROアカウント")+(id?" ("+id+")":"");
     openButton.setAttribute("aria-label","ログイン中："+(h?"@"+h:"KUROアカウント")+(id?"、KURO ID："+id:""));
-    if(profileName)profileName.textContent=h?"@"+h:"KUROユーザー";if(profileHandle)profileHandle.textContent=id||"KURO IDを取得できません";const profileAvatar=document.getElementById("kuroAccountProfileAvatar"),profileBio=document.getElementById("kuroAccountProfileBio");if(profileAvatar){profileAvatar.innerHTML="👤";if(av){const avatarImg=document.createElement("img");avatarImg.src=av;avatarImg.alt="";avatarImg.onerror=()=>avatarImg.remove();profileAvatar.appendChild(avatarImg);}}if(profileBio)profileBio.textContent=data.bio||"プロフィール紹介はまだ設定されていません。";
+    if(profileName)profileName.textContent=h?"@"+h:"KUROユーザー";if(profileHandle)profileHandle.textContent=id||"KURO IDを取得できません";const profileAvatar=document.getElementById("kuroAccountProfileAvatar"),profileBio=document.getElementById("kuroAccountProfileBio");if(profileAvatar){profileAvatar.innerHTML="👤";if(av){const avatarImg=document.createElement("img");avatarImg.src=av;avatarImg.alt="";avatarImg.onerror=()=>avatarImg.remove();profileAvatar.appendChild(avatarImg);}}if(profileBio)profileBio.textContent=data.bio||"プロフィール紹介はまだ設定されていません。";if(profileBioEditor&&document.activeElement!==profileBioEditor)profileBioEditor.value=data.bio||"";
    }).catch(err=>console.warn("KURO account profile display failed:",err));
   }
  }
@@ -1518,6 +1524,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   }catch(error){console.error("KUROGAMES account auth failed:",error);status.textContent=error?.message||"認証に失敗しました。時間をおいて再度お試しください。";}
   finally{submit.disabled=false;}
  });
+ profileBioSave?.addEventListener("click",async()=>{if(!currentUser||!window.kuroGamesDB){status.textContent="ログインしてください。";return;}const bio=String(profileBioEditor?.value||"").trim();if(bio.length>160){status.textContent="自己紹介は160文字以内にしてください。";return;}profileBioSave.disabled=true;profileBioSave.textContent="保存中…";status.textContent="";try{const auth=await window.kuroGamesDB.auth.getUser();if(auth.error||!auth.data?.user||auth.data.user.id!==currentUser.id)throw new Error("ログイン状態を確認できません。再ログインしてください。");const {data,error}=await window.kuroGamesDB.from("profiles").update({bio,updated_at:new Date().toISOString()}).eq("id",auth.data.user.id).select("bio").single();if(error)throw error;const profileBio=document.getElementById("kuroAccountProfileBio");if(profileBio)profileBio.textContent=data.bio||"自己紹介はまだ設定されていません。";status.textContent="保存しました。KURO Lab・KURO SNSにも共通で反映されます。";}catch(error){console.error("KURO GAMES common profile bio save failed:",error);status.textContent=error?.message||"保存できませんでした。";}finally{profileBioSave.disabled=false;profileBioSave.textContent="自己紹介を保存";}});
  logoutButton?.addEventListener("click",async()=>{
   if(!window.kuroGamesDB){status.textContent="認証システムを読み込めませんでした。";return;}
   logoutButton.disabled=true;status.textContent="ログアウトしています…";
