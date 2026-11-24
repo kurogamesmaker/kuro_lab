@@ -536,7 +536,7 @@
       if (status) status.textContent = "送信しました。";
       await loadChatMessages();
       if (db.functions && typeof db.functions.invoke === "function" && currentProfile) {
-        db.functions.invoke("send-chat-push", { body: { type: "message", targetUserId: currentProfile.id } })
+        db.functions.invoke("send-chat-push", { body: { messageId: result.data.id } })
           .catch(function (pushError) { console.warn("KURO chat push skipped:", pushError); });
       }
     } catch (error) {
