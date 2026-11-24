@@ -1942,6 +1942,29 @@ async function handle(req: Request) {
     const submitted = Array.isArray(submittedRows) ? submittedRows[0] : submittedRows;
     if (!submitted) throw new HttpError(500, "スコア登録結果を取得できませんでした。");
 
+    // UNON wins are accepted only after the independent online-room worker has
+    // verified a signed win proof bound to this user, game, match and room above.
+    // Persist that verified victory in the authoritative win-event table so its
+    // AFTER INSERT trigger awards KURO COIN and synchronizes unified game records.
+    // The unique dimensions index makes retries/parallel duplicate submissions safe.
+    if (game.id === UNON_GAME_ID && mode === "wins-online") {
+      const { error: winEventError } = await admin.from("kuro_game_win_events").insert({
+        game_id: game.id,
+        user_id: user.id,
+        mode,
+        submission_id: submissionId,
+        level: null,
+        cpu_difficulty: null,
+      });
+      if (winEventError && winEventError.code !== "23505") {
+        console.error("[kurogames-online] verified UNON win event insert failed", winEventError);
+        throw new HttpError(500, "UNONの勝利報酬を確定できませんでした。再度お試しください。");
+      }
+      console.info("[kurogames-online] verified UNON win event persisted", {
+        userId: user.id, submissionId, duplicate: winEventError?.code === "23505",
+      });
+    }
+
     // Every accepted ranking submission also enters the user-centred event ledger.
     // Win-event triggers may already have inserted the same submission; the RPC is idempotent.
     const rawDuration = Number(metadata.durationMs ?? metadata.duration_ms);
