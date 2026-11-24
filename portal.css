@@ -3482,5 +3482,55 @@ html body.kuro-portal .portal-header-inner .portal-dashboard-toolbar-in-header .
 .portal-account-avatar,.portal-account-avatar-fallback{width:25px;height:25px;flex:0 0 25px;border-radius:50%;overflow:hidden;display:inline-grid;place-items:center;background:rgba(120,140,170,.18);font-size:14px}
 .portal-account-avatar{object-fit:cover}
 
-/* Integrated KURO SNS profile card on portal My Page */
-.portal-social-profile-head{display:flex;align-items:center;gap:14px}.portal-social-profile-head img,.portal-social-profile-head span#portal-mypage-avatar-fallback{width:64px;height:64px;flex:0 0 64px;border-radius:50%;object-fit:cover;display:grid;place-items:center;background:var(--portal-surface-2,rgba(120,130,150,.15));font-size:30px}.portal-social-profile-head h2{margin:4px 0;font-size:18px}.portal-social-bio{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--muted,#667085);margin:14px 0}
+/* KURO SNS shared profile card on My Page */
+.portal-social-profile-head {
+  display:flex;
+  align-items:center;
+  gap:14px;
+  min-width:0;
+}
+.portal-social-profile-head img,
+.portal-social-profile-head #portal-mypage-avatar-fallback {
+  width:64px;
+  height:64px;
+  flex:0 0 64px;
+  border-radius:50%;
+  object-fit:cover;
+  background:var(--surface2,rgba(120,130,150,.15));
+  font-size:30px;
+}
+.portal-social-profile-head img { display:block; }
+.portal-social-profile-head #portal-mypage-avatar-fallback {
+  display:grid;
+  place-items:center;
+}
+.portal-social-profile-head > div { min-width:0; flex:1; }
+.portal-social-profile-head h2 {
+  margin:4px 0;
+  font-size:18px;
+  line-height:1.4;
+  overflow-wrap:anywhere;
+}
+.portal-social-profile-head .portal-muted {
+  overflow-wrap:anywhere;
+}
+.portal-social-profile .portal-social-bio {
+  margin:14px 0 0;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.75;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+/* Author CSS must not override the hidden attribute on either avatar state. */
+.portal-social-profile [hidden] { display:none !important; }
+@media(max-width:520px) {
+  .portal-social-profile { padding:16px; }
+  .portal-social-profile-head { gap:11px; }
+  .portal-social-profile-head img,
+  .portal-social-profile-head #portal-mypage-avatar-fallback {
+    width:56px;
+    height:56px;
+    flex-basis:56px;
+  }
+}
