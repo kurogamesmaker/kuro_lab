@@ -1538,7 +1538,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
  }
  function render(user){
   currentUser=user||null;const signedIn=!!currentUser;
-  if(currentUser)checkTemporarySuspension(currentUser);else temporarySuspensionCheckUserId=null;
+  temporarySuspensionCheckUserId=null; // Account suspension no longer blocks public game-page browsing.
   const meta=currentUser?.user_metadata||{};
   const fallbackName=String(meta.username||meta.handle||"KUROユーザー");
   const fallbackHandle=String(meta.handle||meta.username||"");
