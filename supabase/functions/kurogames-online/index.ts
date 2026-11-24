@@ -1058,6 +1058,10 @@ async function handle(req: Request) {
     requirePublished(game);
     requireFeature(settings.features, "ranking");
     const mode = safeMode(body.mode);
+    if (game.id === DAIFUGO_GAME_ID && mode === "wins-bot") {
+      // CPU bot actions are still client-simulated. Keep legacy client claims out of the public ranking.
+      return reply(200, { mode, scores: [], serverVerified: true, unavailableReason: "CPU戦のサーバー検証移行中です。" });
+    }
     if (game.id === UNON_GAME_ID && !(KNOWN_RANKING_MODES[game.id] ?? []).includes(mode)) {
       throw new HttpError(400, "UNONのランキングは勝利回数のみです。");
     }
