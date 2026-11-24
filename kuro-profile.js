@@ -291,7 +291,7 @@
         db.rpc("kuro_get_public_profile_game_stats", { p_user_id: id }),
         getFollowCounts(db, id),
         getSignedInUser(db),
-        db.rpc("kuro_get_public_coin_balance", { p_user_id: id })
+        db.functions.invoke("kuro-public-coin-balance", { body: { userId: id } })
       ]);
       if (thisRequest !== requestId) return;
       var profileResult = results[0], statsResult = results[1], coinBalanceResult = results[4];
@@ -319,7 +319,7 @@
       var bioHtml = bio
         ? escapeHtml(bio).replace(/\r\n|\r|\n/g, "<br>")
         : '<span class="kuro-profile-muted">自己紹介はまだ設定されていません。</span>';
-      var coinBalance = coinBalanceResult && !coinBalanceResult.error ? Number(coinBalanceResult.data) : NaN;
+      var coinBalance = coinBalanceResult && !coinBalanceResult.error ? Number(coinBalanceResult.data && coinBalanceResult.data.balance) : NaN;
       var coinBalanceLabel = Number.isFinite(coinBalance)
         ? Math.max(0, Math.floor(coinBalance)).toLocaleString("ja-JP") + "P"
         : "—P";
