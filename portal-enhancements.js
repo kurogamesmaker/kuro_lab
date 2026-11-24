@@ -699,7 +699,6 @@
     if (migrated && pathNow() === "/" && typeof getApi().render === "function") getApi().render();
     addThemeOptions();
     updateBadges();
-    if (pathNow() === "/notifications/") markAnnouncementsRead();
     updateViewportClass();
   }
 
@@ -832,9 +831,6 @@
         select.dispatchEvent(new Event("change", { bubbles: true }));
       }
       return;
-    }
-    if (event.target.closest('a[href="/notifications/"]')) {
-      markAnnouncementsRead();
     }
   });
 
