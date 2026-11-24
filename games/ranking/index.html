@@ -270,7 +270,8 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
     });
     const modeGroups=buildModeGroups(modes);
     if(!modeGroups.length)return null;
-    return {id:game.id,title:game.title,modeGroups:modeGroups,selectedGroupKey:modeGroups[0].key,selectedMode:modeGroups[0].modes[0].mode,levels:levels,cpuDifficulties:cpuDifficulties,showcaseConfig:showcaseConfig};
+    const modeMetrics=data&&data.modeMetrics&&typeof data.modeMetrics==="object"?data.modeMetrics:{};
+    return {id:game.id,title:game.title,modeGroups:modeGroups,selectedGroupKey:modeGroups[0].key,selectedMode:modeGroups[0].modes[0].mode,levels:levels,cpuDifficulties:cpuDifficulties,modeMetrics:modeMetrics,showcaseConfig:showcaseConfig};
    }catch(error){console.debug("Ranking modes skipped:",game.id,error);return null;}
   }));
   return loaded.filter(Boolean);
@@ -295,11 +296,18 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   return rows;
  }
  function scoreText(game,row,mode){
-  const value=Number(row.score||0).toLocaleString("ja-JP");
+  const numeric=Number(row.score||0),value=numeric.toLocaleString("ja-JP");
   const setting=game.showcaseConfig&&game.showcaseConfig.modes&&game.showcaseConfig.modes[mode];
   if(setting&&typeof setting.scoreSuffix==="string")return value+setting.scoreSuffix;
-  if(game.id===TICTACTOE_GAME_ID||/wins|_wins/.test(mode))return value+"勝";
-  if(/score|normal_beginner/.test(mode))return value+"点";
+  const metric=String(row.metric||game.modeMetrics&&game.modeMetrics[mode]||
+   (game.id===TICTACTOE_GAME_ID||/wins|_wins/.test(mode)?"wins":
+    /(^|[_-])(time|duration|elapsed|seconds?|milliseconds?|ms|fastest|clear_time)([_-]|$)/i.test(mode)?"time":"score"));
+  if(metric==="wins")return value+"勝";
+  if(metric==="time"&&Number.isFinite(numeric)&&numeric>=0){
+   const total=numeric/1000,minutes=Math.floor(total/60),seconds=(total%60).toFixed(2);
+   return minutes>0?minutes+":"+seconds.padStart(5,"0"):total.toFixed(2)+"秒";
+  }
+  if(metric==="score")return value+"点";
   return value;
  }
  function makeProfile(row){
