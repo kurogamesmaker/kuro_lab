@@ -1224,7 +1224,7 @@ async function handle(req: Request) {
     const factors = raw.map(Number);
     const product = factors.reduce((acc,value)=>acc*value,1);
     const nonPrime = factors.find(value=>!primeIsPrime(value));
-    const correct = factors.length >= config.minFactors && factors.length <= config.maxFactors &&
+    const correct = factors.length >= 2 && factors.length <= config.maxFactors &&
       factors.length > 0 && product === Number(session.secret_number) && nonPrime === undefined;
     let reason = "";
     if (factors.length===0) reason = "式を入力してから確定しよう！";
