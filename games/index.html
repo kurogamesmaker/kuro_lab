@@ -460,7 +460,8 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 
 
 @keyframes kuroHomeTickerFallback{from{transform:translateX(0)}to{transform:translateX(calc(-1 * var(--kuro-home-ticker-distance, 0px)))}}/* KURO GAMES admin-managed scrolling home banners */
-.kuro-home-ticker-host{padding-top:10px}
+.kuro-home-ticker-host{padding-top:0;margin-bottom:0}
+.kuro-home-ticker-host:not([hidden]) + main.wrap .library{padding-top:12px}
 .kuro-home-ticker-host[hidden]{display:none!important}
 .kuro-home-ticker{display:block;min-height:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:hidden}
 .kuro-home-ticker[hidden]{display:none!important}
@@ -474,7 +475,7 @@ footer{border-top:1px solid #e6eaf1;background:white;padding:24px 0;color:#8691a
 .kuro-home-ticker-item:focus-visible{outline:2px solid #2878ee;outline-offset:2px}
 .kuro-home-ticker-icon{flex:0 0 auto}
 @media(max-width:680px){
- .kuro-home-ticker-host{padding-top:7px}
+ .kuro-home-ticker-host{padding-top:0}
  .kuro-home-ticker{min-height:0;padding:0}
  .kuro-home-ticker-set{gap:26px;padding-right:26px}
  .kuro-home-ticker-item{min-height:0;max-width:90vw;padding:0}
