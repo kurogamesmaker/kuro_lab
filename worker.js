@@ -21,14 +21,19 @@ function applyMaruFavicon(html, requestPath = "") {
     '}' +
     '</style>';
   const isGamePlayPath = /^\/games\/play(?:\/|$)/i.test(String(requestPath || ""));
+  const isSuspensionSupportPath = /^\/account\/suspension(?:\/|$)/i.test(String(requestPath || ""));
+  const suspensionGuardTag = isSuspensionSupportPath
+    ? ""
+    : '<script id="kuro-suspension-guard-loader" src="/suspension-guard.js?v=20261124globalguard1"></script>';
   let cleanHtml = String(html || "").replace(iconTags, "");
+  cleanHtml = cleanHtml.replace(/<script\b[^>]*\bid=["']kuro-suspension-guard-loader["'][^>]*><\/script>/gi, "");
   if (isGamePlayPath) {
     cleanHtml = cleanHtml.replace(
       /(<script\b[^>]*\bsrc\s*=\s*["']\/games\/recommendations\.js)(?:\?[^"']*)?(["'][^>]*>)/i,
       '$1?v=20261122-sidecards100fix1$2'
     );
   }
-  const withFavicon = cleanHtml.replace(/<head\b[^>]*>/i, head => head + forcedLinks);
+  const withFavicon = cleanHtml.replace(/<head\b[^>]*>/i, head => head + forcedLinks + suspensionGuardTag);
   const retiredRailGuard = isGamePlayPath
     ? '<style id="kuro-retired-rail-guard-style">' +
       'a[href*="/game/kaiten-sushi-typing"],a[href*="/game/block-blast"],' +
@@ -262,25 +267,31 @@ async function handleWebSearch(request, env) {
 
 async function checkActiveSuspension(headers) {
   const authorization = headers.get("authorization") || "";
-  if (!/^Bearer\s+.+/i.test(authorization)) return null;
+  const bearer = authorization.match(/^Bearer\s+(.+)$/i);
+  if (!bearer) return null;
+
+  // The JWT subject is used only to form the lookup. Supabase verifies the
+  // bearer token and applies RLS to the query before returning any row.
+  let claims;
+  try {
+    const part = bearer[1].split(".")[1];
+    if (!part) return null;
+    const base64 = part.replace(/-/g, "+").replace(/_/g, "/");
+    claims = JSON.parse(atob(base64 + "=".repeat((4 - base64.length % 4) % 4)));
+  } catch (_) {
+    return null;
+  }
+  const userId = typeof claims?.sub === "string" ? claims.sub : "";
+  if (!userId || claims?.is_anonymous) return null;
 
   const authHeaders = new Headers({
     apikey: headers.get("apikey") || SUPABASE_KEY,
     authorization
   });
-  const userResponse = await fetch(SUPABASE_URL + "/auth/v1/user", { headers: authHeaders });
-  if (userResponse.status >= 500) {
-    throw Object.assign(new Error("アカウントの利用状態を確認できません。時間をおいて再度お試しください。"), { status: 503 });
-  }
-  if (!userResponse.ok) return null;
-
-  const user = await userResponse.json().catch(() => null);
-  if (!user?.id || user.is_anonymous) return null;
-
   const now = new Date().toISOString();
   const query = new URLSearchParams({
     select: "id,ends_at",
-    user_id: "eq." + user.id,
+    user_id: "eq." + userId,
     revoked_at: "is.null",
     starts_at: "lte." + now,
     ends_at: "gt." + now,
@@ -290,6 +301,7 @@ async function checkActiveSuspension(headers) {
     SUPABASE_URL + "/rest/v1/account_suspensions?" + query.toString(),
     { headers: authHeaders }
   );
+  if (statusResponse.status === 401) return null;
   if (!statusResponse.ok) {
     throw Object.assign(
       new Error("アカウントの利用状態を確認できません。時間をおいて再度お試しください。"),
@@ -300,9 +312,11 @@ async function checkActiveSuspension(headers) {
   return Array.isArray(rows) && rows.length ? rows[0] : null;
 }
 
-function isSuspensionAllowedWrite(pathname, method) {
-  if (pathname === "/rest/v1/account_suspension_appeals" && method === "POST") return true;
-  if (pathname === "/rest/v1/account_suspension_appeal_messages" && method === "POST") return true;
+function isSuspensionAllowedRequest(pathname, method) {
+  // Only these endpoints are needed by the dedicated suspension support page.
+  if (pathname === "/rest/v1/account_suspensions" && ["GET", "HEAD"].includes(method)) return true;
+  if (pathname === "/rest/v1/account_suspension_appeals" && ["GET", "HEAD", "POST"].includes(method)) return true;
+  if (pathname === "/rest/v1/account_suspension_appeal_messages" && ["GET", "HEAD", "POST"].includes(method)) return true;
   if (pathname === "/rest/v1/admin_message_reads" && ["POST", "PATCH", "DELETE"].includes(method)) return true;
   if (pathname === "/rest/v1/usage_events" && method === "POST") return true;
   if (pathname === "/functions/v1/change-password" && method === "POST") return true;
@@ -317,9 +331,8 @@ async function proxy(payload) {
 
   const requestHeaders = headersFor(payload.headers);
   if (
-    !["GET", "HEAD"].includes(method) &&
     (target.pathname.startsWith("/rest/v1/") || target.pathname.startsWith("/functions/v1/")) &&
-    !isSuspensionAllowedWrite(target.pathname, method)
+    !isSuspensionAllowedRequest(target.pathname, method)
   ) {
     const suspension = await checkActiveSuspension(requestHeaders);
     if (suspension) {

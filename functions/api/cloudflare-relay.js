@@ -32,41 +32,44 @@ function safeHeaders(input) {
 }
 async function checkActiveSuspension(headers) {
   const authorization=headers.get("authorization")||"";
-  if(!/^Bearer\\s+.+/i.test(authorization))return null;
+  const bearer=authorization.match(/^Bearer\s+(.+)$/i);
+  if(!bearer)return null;
+  let claims;
+  try{
+    const part=bearer[1].split(".")[1];
+    if(!part)return null;
+    const base64=part.replace(/-/g,"+").replace(/_/g,"/");
+    claims=JSON.parse(atob(base64+"=".repeat((4-base64.length%4)%4)));
+  }catch(_){return null;}
+  const userId=typeof claims?.sub==="string"?claims.sub:"";
+  if(!userId||claims?.is_anonymous)return null;
   const authHeaders=new Headers({apikey:headers.get("apikey")||SUPABASE_KEY,authorization});
-  const userResponse=await fetch(SUPABASE_URL+"/auth/v1/user",{headers:authHeaders});
-  if(!userResponse.ok)return null;
-  const user=await userResponse.json().catch(()=>null);
-  if(!user||!user.id||user.is_anonymous)return null;
   const now=new Date().toISOString();
   const query=new URLSearchParams({
-    select:"id,ends_at",
-    user_id:"eq."+user.id,
-    revoked_at:"is.null",
-    starts_at:"lte."+now,
-    ends_at:"gt."+now,
-    limit:"1"
+    select:"id,ends_at",user_id:"eq."+userId,revoked_at:"is.null",
+    starts_at:"lte."+now,ends_at:"gt."+now,limit:"1"
   });
   const statusResponse=await fetch(SUPABASE_URL+"/rest/v1/account_suspensions?"+query.toString(),{headers:authHeaders});
+  if(statusResponse.status===401)return null;
   if(!statusResponse.ok)throw Object.assign(new Error("アカウントの利用状態を確認できません。時間をおいて再度お試しください。"),{status:503});
   const rows=await statusResponse.json().catch(()=>[]);
   return Array.isArray(rows)&&rows.length?rows[0]:null;
 }
-function isSuspensionAllowedWrite(pathname,method) {
-  if(pathname==="/rest/v1/account_suspension_appeals"&&method==="POST")return true;
-  if(pathname==="/rest/v1/account_suspension_appeal_messages"&&method==="POST")return true;
+function isSuspensionAllowedRequest(pathname,method) {
+  if(pathname==="/rest/v1/account_suspensions"&&["GET","HEAD"].includes(method))return true;
+  if(pathname==="/rest/v1/account_suspension_appeals"&&["GET","HEAD","POST"].includes(method))return true;
+  if(pathname==="/rest/v1/account_suspension_appeal_messages"&&["GET","HEAD","POST"].includes(method))return true;
   if(pathname==="/rest/v1/admin_message_reads"&&["POST","PATCH","DELETE"].includes(method))return true;
-  if(pathname==="/functions/v1/change-password")return true;
   if(pathname==="/rest/v1/usage_events"&&method==="POST")return true;
+  if(pathname==="/functions/v1/change-password"&&method==="POST")return true;
   return false;
 }
 async function proxy(payload) {
   const target=validatePath(payload.path),method=String(payload.method||"GET").toUpperCase();
   if(!ALLOWED_METHODS.has(method))throw Object.assign(new Error("Method not allowed"),{status:405});
   const headers=safeHeaders(payload.headers);
-  if(!["GET","HEAD"].includes(method)&&
-     (target.pathname.startsWith("/rest/v1/")||target.pathname.startsWith("/functions/v1/"))&&
-     !isSuspensionAllowedWrite(target.pathname,method)) {
+  if((target.pathname.startsWith("/rest/v1/")||target.pathname.startsWith("/functions/v1/"))&&
+     !isSuspensionAllowedRequest(target.pathname,method)) {
     const suspension=await checkActiveSuspension(headers);
     if(suspension) {
       return {status:403,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store"},
