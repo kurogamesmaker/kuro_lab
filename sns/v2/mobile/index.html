@@ -2272,7 +2272,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 const { data: officialProfile, error: officialError } = await supabaseClient
                     .from('profiles')
                     .select('id')
-                    .eq('username', 'kuro_creator')
+                    .eq('username', 'kuro_admin')
                     .maybeSingle();
                 if (officialError) throw officialError;
 
