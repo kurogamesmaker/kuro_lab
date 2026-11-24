@@ -1016,7 +1016,7 @@ async function handle(req: Request) {
 
     // 勝率ランキングは10試合以上のプレイヤーだけを対象にする。
     const ranked = entries
-      .filter(entry => metric !== "win_rate" || entry.played >= 10)
+      .filter(entry => metric === "wins" ? entry.wins > 0 : metric === "win_rate" ? entry.played >= 10 : true)
       .sort((a, b) =>
         b.score - a.score ||
         b.wins - a.wins ||
