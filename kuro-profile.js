@@ -687,117 +687,135 @@
   });
 
 
-  var levelXpChannel = null;
-  var levelXpToastTimer = null;
-  var levelXpKnownLevel = 1;
-
-  function showLevelXpToast(amount) {
-    var value = Math.max(0, Math.floor(Number(amount) || 0));
-    if (!value) return;
-    var toast = document.getElementById("kuroLevelXpToast");
-    if (!toast) {
-      toast = document.createElement("div");
-      toast.id = "kuroLevelXpToast";
-      toast.className = "kuro-level-xp-toast";
-      toast.setAttribute("role", "status");
-      toast.setAttribute("aria-live", "polite");
-      toast.innerHTML = '<span class="kuro-level-xp-icon" aria-hidden="true">✦</span><span><small>KURO GAMES XP</small><strong></strong></span>';
-      document.body.appendChild(toast);
-    }
-    toast.querySelector("strong").textContent = "+" + value.toLocaleString("ja-JP") + " XP";
-    toast.classList.remove("is-visible");
-    void toast.offsetWidth;
-    toast.classList.add("is-visible");
-    if (levelXpToastTimer) window.clearTimeout(levelXpToastTimer);
-    levelXpToastTimer = window.setTimeout(function () {
-      toast.classList.remove("is-visible");
-    }, 3200);
-  }
-
-  function showLevelUpEffect(previousLevel, nextLevel) {
-    var from = Math.max(1, Math.floor(Number(previousLevel) || 1));
-    var to = Math.max(from + 1, Math.floor(Number(nextLevel) || from + 1));
-    var overlay = document.getElementById("kuroLevelUpOverlay");
-    if (!overlay) {
-      overlay = document.createElement("div");
-      overlay.id = "kuroLevelUpOverlay";
-      overlay.className = "kuro-level-up-overlay";
-      overlay.innerHTML =
-        '<section class="kuro-level-up-card" role="dialog" aria-modal="true" aria-labelledby="kuroLevelUpTitle">' +
-          '<span class="kuro-level-up-spark" aria-hidden="true">✦</span>' +
-          '<small>KURO GAMES</small><h2 id="kuroLevelUpTitle">LEVEL UP!</h2>' +
-          '<p class="kuro-level-up-change"></p><span class="kuro-level-up-caption">新しいレベルに到達しました</span>' +
-          '<button type="button" class="kuro-level-up-close">閉じる</button>' +
-        '</section>';
-      document.body.appendChild(overlay);
-      overlay.addEventListener("click", function (event) {
-        if (event.target === overlay || event.target.closest(".kuro-level-up-close")) {
-          overlay.classList.remove("is-visible");
-          overlay.setAttribute("aria-hidden", "true");
-        }
-      });
-    }
-    overlay.querySelector(".kuro-level-up-change").textContent =
-      "Lv." + from.toLocaleString("ja-JP") + "  →  Lv." + to.toLocaleString("ja-JP");
-    overlay.setAttribute("aria-hidden", "false");
-    overlay.classList.remove("is-visible");
-    void overlay.offsetWidth;
-    overlay.classList.add("is-visible");
-  }
+  var levelXpPollTimer = null;
+  var levelXpPollInFlight = false;
+  var levelXpPollUserId = null;
+  var levelXpSeenLedgerIds = Object.create(null);
+  var levelXpSeenReady = false;
+  var levelXpPollErrorLogged = false;
+  var levelXpVisibilityHandler = null;
 
   function stopLevelXpNotifications() {
-    var db = getDb();
-    if (db && levelXpChannel && typeof db.removeChannel === "function") {
-      db.removeChannel(levelXpChannel).catch(function () {});
+    if (levelXpPollTimer) window.clearInterval(levelXpPollTimer);
+    levelXpPollTimer = null;
+    if (levelXpVisibilityHandler) {
+      document.removeEventListener("visibilitychange", levelXpVisibilityHandler);
     }
-    levelXpChannel = null;
+    levelXpVisibilityHandler = null;
+    levelXpPollUserId = null;
+    levelXpPollInFlight = false;
+    levelXpSeenLedgerIds = Object.create(null);
+    levelXpSeenReady = false;
+    levelXpPollErrorLogged = false;
+  }
+
+  async function pollLevelXpNotifications(db, userId) {
+    if (!userId || levelXpPollUserId !== userId || levelXpPollInFlight ||
+        document.visibilityState === "hidden") return;
+    levelXpPollInFlight = true;
+    try {
+      var ledgerResult = await db.from("kuro_level_ledger")
+        .select("id,xp_amount")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(40);
+      if (ledgerResult.error) throw ledgerResult.error;
+
+      var rows = Array.isArray(ledgerResult.data) ? ledgerResult.data : [];
+      var nextSeen = Object.create(null);
+      var newRows = [];
+      rows.forEach(function (row) {
+        var rowId = String(row && row.id || "");
+        if (!rowId) return;
+        if (levelXpSeenReady && !levelXpSeenLedgerIds[rowId]) newRows.push(row);
+        nextSeen[rowId] = true;
+      });
+      levelXpSeenLedgerIds = nextSeen;
+      if (!levelXpSeenReady) {
+        // On the first successful read, establish a baseline instead of replaying old XP.
+        levelXpSeenReady = true;
+        newRows = [];
+      }
+
+      var earnedXp = newRows.reduce(function (total, row) {
+        return total + Math.max(0, Math.floor(Number(row.xp_amount) || 0));
+      }, 0);
+      if (earnedXp > 0) {
+        showLevelXpToast(earnedXp);
+        var current = await db.from("kuro_level_users")
+          .select("current_level,total_xp")
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (current.error) throw current.error;
+        if (current.data) {
+          var nextLevel = Math.max(1, Number(current.data.current_level) || 1);
+          if (nextLevel > levelXpKnownLevel) {
+            showLevelUpEffect(levelXpKnownLevel, nextLevel);
+          }
+          levelXpKnownLevel = Math.max(levelXpKnownLevel, nextLevel);
+        }
+      }
+      levelXpPollErrorLogged = false;
+    } catch (error) {
+      if (!levelXpPollErrorLogged) {
+        console.warn("KURO level XP notification polling failed:", error);
+        levelXpPollErrorLogged = true;
+      }
+    } finally {
+      levelXpPollInFlight = false;
+    }
   }
 
   function initLevelXpNotifications() {
-    // Notifications belong on the actual KuroGames launcher, not every page
-    // that happens to share the profile modal.
-    if (window.location.pathname !== "/games/" && window.location.pathname !== "/games" && window.location.pathname !== "/games/index.html") return;
+    // Use authenticated HTTPS polling for XP notifications. This avoids making
+    // the profile/level UI depend on a browser WebSocket connection.
+    if (window.location.pathname !== "/games/" && window.location.pathname !== "/games" &&
+        window.location.pathname !== "/games/index.html") return;
     var db = getDb();
-    if (!db || !db.auth || typeof db.channel !== "function") return;
+    if (!db || !db.auth || typeof db.auth.getUser !== "function") return;
+
     db.auth.getUser().then(async function (result) {
+      if (result && result.error) throw result.error;
       var user = result && result.data && result.data.user;
-      if (result && result.error || !user || user.is_anonymous || !UUID_RE.test(String(user.id || ""))) return;
+      if (!user || user.is_anonymous || !UUID_RE.test(String(user.id || ""))) return;
+
+      stopLevelXpNotifications();
       var initial = await db.from("kuro_level_users")
         .select("current_level").eq("user_id", user.id).maybeSingle();
       if (initial && !initial.error && initial.data) {
         levelXpKnownLevel = Math.max(1, Number(initial.data.current_level) || 1);
+      } else {
+        levelXpKnownLevel = 1;
       }
-      stopLevelXpNotifications();
-      levelXpChannel = db.channel("kuro-level-xp-" + user.id)
-        .on("postgres_changes", {
-          event: "INSERT",
-          schema: "public",
-          table: "kuro_level_ledger",
-          filter: "user_id=eq." + user.id
-        }, function (payload) {
-          var row = payload && payload.new;
-          if (!row || Number(row.xp_amount) <= 0) return;
-          showLevelXpToast(row.xp_amount);
-          db.from("kuro_level_users").select("current_level,total_xp")
-            .eq("user_id", user.id).maybeSingle()
-            .then(function (current) {
-              if (current && !current.error && current.data) {
-                var nextLevel = Math.max(1, Number(current.data.current_level) || 1);
-                if (nextLevel > levelXpKnownLevel) {
-                  showLevelUpEffect(levelXpKnownLevel, nextLevel);
-                }
-                levelXpKnownLevel = Math.max(levelXpKnownLevel, nextLevel);
-              }
-            })
-            .catch(function (error) {
-              console.warn("KURO level refresh failed:", error);
-            });
-        })
-        .subscribe(function (status) {
-          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-            console.warn("KURO level XP notifications unavailable:", status);
-          }
+
+      // Seed recent ledger IDs so existing history never appears as a new alert.
+      var baseline = await db.from("kuro_level_ledger")
+        .select("id")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(40);
+      if (baseline && !baseline.error && Array.isArray(baseline.data)) {
+        var initialSeen = Object.create(null);
+        baseline.data.forEach(function (row) {
+          if (row && row.id) initialSeen[String(row.id)] = true;
         });
+        levelXpSeenLedgerIds = initialSeen;
+        levelXpSeenReady = true;
+      }
+
+      levelXpPollUserId = user.id;
+      levelXpVisibilityHandler = function () {
+        if (document.visibilityState === "visible") {
+          pollLevelXpNotifications(db, user.id);
+        }
+      };
+      document.addEventListener("visibilitychange", levelXpVisibilityHandler);
+      levelXpPollTimer = window.setInterval(function () {
+        pollLevelXpNotifications(db, user.id);
+      }, 8000);
+      // Run once immediately; when baseline loading failed, the first successful
+      // poll only seeds IDs and intentionally does not replay historical alerts.
+      pollLevelXpNotifications(db, user.id);
     }).catch(function (error) {
       console.warn("KURO level XP notification setup failed:", error);
     });
