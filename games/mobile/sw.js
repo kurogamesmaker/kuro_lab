@@ -1,9 +1,11 @@
-const CACHE_NAME = "kurogames-mobile-shell-v1";
+const CACHE_NAME = "kurogames-mobile-shell-v2";
 const SHELL_URLS = [
   "/games/mobile/",
-  "/games/mobile/mobile.css?v=20261125app1",
-  "/games/mobile/mobile.js?v=20261125app1",
-  "/games/mobile/manifest.webmanifest?v=20261125app1"
+  "/games/mobile/mobile.css?v=20261125app2",
+  "/games/mobile/mobile.js?v=20261125app2",
+  "/games/mobile/manifest.webmanifest?v=20261125app2",
+  "/games/mobile/subpage.css?v=20261125app3",
+  "/games/mobile/subpage.js?v=20261125app3"
 ];
 
 self.addEventListener("install", event => {
@@ -32,7 +34,9 @@ self.addEventListener("fetch", event => {
     url.pathname === "/games/mobile/index.html" ||
     url.pathname === "/games/mobile/mobile.css" ||
     url.pathname === "/games/mobile/mobile.js" ||
-    url.pathname === "/games/mobile/manifest.webmanifest";
+    url.pathname === "/games/mobile/manifest.webmanifest" ||
+    url.pathname === "/games/mobile/subpage.css" ||
+    url.pathname === "/games/mobile/subpage.js";
 
   if (!isShellAsset) return;
 
