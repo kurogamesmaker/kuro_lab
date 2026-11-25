@@ -72,7 +72,7 @@
       #kuro-service-notification-box .kuro-nb-source{padding:3px 6px;border-radius:99px;background:#f0f3f8;color:#5e6f87;font-weight:900}
       #kuro-service-notification-box .kuro-nb-source.admin{background:#eef4ff;color:#286dc7}
       #kuro-service-notification-box .kuro-nb-source.sns{background:#f4efff;color:#7754b7}
-      #kuro-service-notification-box .kuro-nb-source.reply{background:#eaf8f0;color:#278052}
+      #kuro-service-notification-box .kuro-nb-source.reply{background:#eaf8f0;color:#278052}\n      #kuro-service-notification-box .kuro-nb-source.points{background:#fff7df;color:#956500}
       #kuro-service-notification-box .kuro-nb-meta time{margin-left:auto;white-space:nowrap}
       #kuro-service-notification-box .kuro-nb-item h3{margin:6px 0 4px;font-size:12px;line-height:1.55;overflow-wrap:anywhere}
       #kuro-service-notification-box .kuro-nb-item p{margin:0;color:#65748b;font-size:10px;line-height:1.75;white-space:pre-wrap;overflow-wrap:anywhere}
@@ -143,7 +143,7 @@
           <button class="kuro-nb-filter" data-filter="unread" type="button">未読</button>
           <button class="kuro-nb-filter" data-filter="admin" type="button">運営</button>
           <button class="kuro-nb-filter" data-filter="social" type="button">SNS・チャット</button>
-          <button class="kuro-nb-filter" data-filter="reply" type="button">返信</button>
+          <button class="kuro-nb-filter" data-filter="reply" type="button">返信</button>\n          <button class="kuro-nb-filter" data-filter="points" type="button">ポイント</button>
           <button class="kuro-nb-filter" data-filter="announcement" type="button">お知らせ</button>
         </nav>
         <div class="kuro-nb-status"><span data-nb-status>通知を読み込んでいます…</span><strong data-nb-count>未読 0 件</strong></div>
@@ -213,7 +213,7 @@
   }
 
   function iconFor(item) {
-    return ({ admin: "📢", social: item.type === "message" || item.type === "mention" ? "💬" : "👤", reply: "✉️", announcement: "🔔" })[item.kind] || "🔔";
+    return ({ admin: "📢", social: item.type === "message" || item.type === "mention" ? "💬" : "👤", reply: "✉️", points: "🪙", announcement: "🔔" })[item.kind] || "🔔";
   }
 
   function visibleItems() {
@@ -246,8 +246,8 @@
       return;
     }
     list.innerHTML = shown.map((item) => {
-      const source = item.kind === "admin" ? "運営のお知らせ" : item.kind === "social" ? "KURO SNS・チャット" : item.kind === "reply" ? "リクエストBOXへの返信" : "サービスのお知らせ";
-      const sourceClass = item.kind === "admin" || item.kind === "announcement" ? "admin" : item.kind === "social" ? "sns" : "reply";
+      const source = item.kind === "points" ? "ポイント獲得" : item.kind === "admin" ? "運営のお知らせ" : item.kind === "social" ? "KURO SNS・チャット" : item.kind === "reply" ? "リクエストBOXへの返信" : "サービスのお知らせ";
+      const sourceClass = item.kind === "points" ? "points" : item.kind === "admin" || item.kind === "announcement" ? "admin" : item.kind === "social" ? "sns" : "reply";
       return '<article class="kuro-nb-item ' + (item.read ? "" : "is-unread") + '"><div class="kuro-nb-icon">' + iconFor(item) + '</div><div><div class="kuro-nb-meta"><span class="kuro-nb-source ' + sourceClass + '">' + source + '</span><span>' + esc(item.serviceLabel || "") + '</span><time>' + esc(formatDate(item.created_at)) + '</time></div><h3>' + esc(item.title) + '</h3><p>' + esc(item.body || "") + '</p><div class="kuro-nb-actions">' + (!item.read ? '<button class="kuro-nb-action" type="button" data-read="' + esc(item.key) + '">既読にする</button>' : '<span class="kuro-nb-meta">既読</span>') + '<button class="kuro-nb-action" type="button" data-dismiss="' + esc(item.key) + '">非表示</button></div></div></article>';
     }).join("");
   }
@@ -295,14 +295,14 @@
         render();
         return;
       }
-      const [messagesResult, socialResult, repliesResult, announcementsResult, preferencesResult] = await Promise.all([
+      const [messagesResult, socialResult, repliesResult, announcementsResult, preferencesResult, coinResult] = await Promise.all([
         client.from("admin_messages").select("id,title,body,href,audience,recipient_id,created_at,service_scope,portal_announcement_id").eq("published", true).or("audience.eq.all,recipient_id.eq." + user.id).order("created_at", { ascending: false }).limit(200),
-        client.from("notifications").select("id,type,actor_id,created_at,read_at,group_id,message_id").eq("recipient_id", user.id).order("created_at", { ascending: false }).limit(100),
+        client.from("notifications").select("id,type,actor_id,created_at,read_at,group_id,message_id,notification_details").eq("recipient_id", user.id).order("created_at", { ascending: false }).limit(100),
         client.from("portal_request_notifications").select("id,request_id,created_at,read_at,request:portal_requests(message,admin_reply,replied_at)").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50),
         client.from("portal_announcements").select("id,title,body,href,created_at").eq("published", true).order("created_at", { ascending: false }).limit(100),
         client.from("portal_preferences").select("preferences").eq("user_id", user.id).maybeSingle()
       ]);
-      for (const result of [messagesResult, socialResult, repliesResult, announcementsResult, preferencesResult]) if (result.error) throw result.error;
+      for (const result of [messagesResult, socialResult, repliesResult, announcementsResult, preferencesResult, coinResult]) if (result.error) throw result.error;
       prefs = preferencesResult.data && preferencesResult.data.preferences && typeof preferencesResult.data.preferences === "object" ? preferencesResult.data.preferences : {};
       const messages = messagesResult.data || [];
       const messageIds = messages.map((row) => row.id);
