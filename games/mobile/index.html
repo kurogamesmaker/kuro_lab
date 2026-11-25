@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#080d17">
+  <meta name="description" content="KURO GAMES MOBILE。スマートフォンに最適化されたゲーム体験。">
+  <meta name="robots" content="index,follow">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" type="image/png" sizes="48x48" href="/assets/brand/logo/kurolab_icon_maru_48.png?v=20261122marufavicon2">
+  <link rel="apple-touch-icon" href="/assets/brand/logo/kurolab_icon_maru_160.png?v=20261122marufavicon2">
+  <link rel="manifest" href="/games/mobile/manifest.webmanifest?v=20261125app1">
+  <link rel="stylesheet" href="/games/mobile/mobile.css?v=20261125app1">
+  <title>KURO GAMES MOBILE</title>
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="/games/mobile/mobile.js?v=20261125app1"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <a class="brand" href="/games/mobile/" aria-label="KURO GAMES ホーム">
+        <img src="/assets/brand/logo/kurolab_icon_maru_48.png?v=20261122marufavicon2" alt="">
+        <span>KURO<span class="brand-accent">GAMES</span></span>
+      </a>
+      <div class="header-actions">
+        <span class="account-state" id="accountState">ゲスト</span>
+        <button class="icon-button install-button" id="installButton" type="button" aria-label="ホーム画面に追加" title="ホーム画面に追加">⇧</button>
+        <button class="account-button" id="accountButton" type="button">ログイン</button>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <section class="hero">
+        <div class="hero-glow hero-glow-one"></div>
+        <div class="hero-glow hero-glow-two"></div>
+        <div class="hero-content">
+          <span class="eyebrow"><i></i> MOBILE GAME HUB</span>
+          <h1>あそびを、<br><span>もっと自由に。</span></h1>
+          <p>タップひとつでゲームの世界へ。<br>スマートフォンに合わせたKURO GAMES。</p>
+          <a class="hero-button" href="#games">ゲームを探す <span>↘</span></a>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <div class="orb orb-back"></div>
+          <div class="orb orb-front">K</div>
+          <span class="float-symbol symbol-one">✦</span>
+          <span class="float-symbol symbol-two">＋</span>
+          <span class="float-symbol symbol-three">◈</span>
+        </div>
+        <div class="hero-bottom-line"><span>PLAY</span><span>CREATE</span><span>CONNECT</span></div>
+      </section>
+
+      <section class="library-section" id="games">
+        <div class="section-heading">
+          <div>
+            <span class="section-kicker">YOUR NEXT GAME</span>
+            <h2>ゲームを探す</h2>
+            <p>気になるゲームをタップしてすぐにプレイ。</p>
+          </div>
+          <span class="game-count" id="gameCount">読み込み中</span>
+        </div>
+
+        <label class="search-box">
+          <span aria-hidden="true">⌕</span>
+          <input id="gameSearch" type="search" placeholder="ゲーム名・キーワードで検索" autocomplete="off">
+          <kbd>SEARCH</kbd>
+        </label>
+
+        <div class="category-row" id="categoryFilters" aria-label="ジャンル">
+          <button class="category-chip is-active" type="button" data-category="all">すべて</button>
+        </div>
+
+        <div class="game-grid" id="gameGrid" aria-live="polite">
+          <div class="loading-card">
+            <span class="loading-orbit"></span>
+            <strong>ゲームを読み込んでいます</strong>
+            <small>KURO GAMESと接続中…</small>
+          </div>
+        </div>
+        <p class="empty-state" id="emptyState" hidden>ゲームが見つかりませんでした。検索ワードを変えてみてください。</p>
+        <p class="error-state" id="errorState" hidden></p>
+      </section>
+
+      <section class="ranking-banner">
+        <div class="ranking-icon">🏆</div>
+        <div class="ranking-copy">
+          <span>COMPETE WITH PLAYERS</span>
+          <h2>ランキングに挑戦</h2>
+          <p>みんなの記録をチェックしよう。</p>
+        </div>
+        <a href="/games/ranking/" aria-label="ランキングを見る">→</a>
+      </section>
+
+      <section class="profile-banner">
+        <div class="profile-banner-icon">✦</div>
+        <div>
+          <span>YOUR GAME DATA</span>
+          <h2>プレイ記録・レベル</h2>
+          <p>戦績や成長をいつでも確認。</p>
+        </div>
+        <a href="/games/mypage/" aria-label="マイページを見る">→</a>
+      </section>
+
+      <footer class="app-footer">
+        <span>KURO GAMES MOBILE</span>
+        <span>Powered by KURO Lab</span>
+      </footer>
+    </main>
+
+    <nav class="bottom-nav" aria-label="メインメニュー">
+      <a class="nav-item is-current" href="/games/mobile/" aria-current="page"><span>⌂</span><small>ホーム</small></a>
+      <a class="nav-item" href="#games"><span>▦</span><small>ゲーム</small></a>
+      <a class="nav-item" href="/games/ranking/"><span>♛</span><small>ランキング</small></a>
+      <a class="nav-item" href="/games/mypage/"><span>◉</span><small>マイページ</small></a>
+    </nav>
+  </div>
+
+  <div class="account-overlay" id="accountOverlay" hidden>
+    <button class="overlay-backdrop" id="closeAccountBackdrop" type="button" aria-label="閉じる"></button>
+    <section class="account-panel" role="dialog" aria-modal="true" aria-label="KUROアカウント">
+      <div class="account-panel-head">
+        <div><span>KURO ACCOUNT</span><strong>アカウント</strong></div>
+        <button id="closeAccountButton" type="button" aria-label="閉じる">×</button>
+      </div>
+      <iframe id="accountFrame" title="KUROアカウント画面" loading="lazy"></iframe>
+    </section>
+  </div>
+
+  <div class="toast" id="appToast" role="status" aria-live="polite"></div>
+</body>
+</html>
