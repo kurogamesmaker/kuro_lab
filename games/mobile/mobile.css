@@ -31,6 +31,14 @@ a { color: inherit; text-decoration: none; }
 .brand img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
 .brand-accent { color: #91b8ff; margin-left: 3px; }
 .header-actions { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.network-state { display:inline-flex;align-items:center;gap:5px;max-width:90px;padding:6px 7px;border:1px solid #30415a;border-radius:99px;background:#111b2a;color:#a8b7cc;font-size:8px;font-weight:850;white-space:nowrap; }
+.network-state i { width:6px;height:6px;flex:0 0 6px;border-radius:50%;background:#91a0b5;box-shadow:0 0 0 3px #91a0b51b; }
+.network-state[data-state="online"] { border-color:#28584e;background:#102a29;color:#8be5c7; }
+.network-state[data-state="online"] i { background:#73e2c1;box-shadow:0 0 0 3px #73e2c122; }
+.network-state[data-state="offline"],.network-state[data-state="unstable"] { border-color:#71504b;background:#2a1b20;color:#ffb4a7; }
+.network-state[data-state="offline"] i,.network-state[data-state="unstable"] i { background:#ff9b87;box-shadow:0 0 0 3px #ff9b8722; }
+.network-state[data-state="retrying"],.network-state[data-state="connecting"] { border-color:#47577a;background:#182338;color:#b4caff; }
+.network-state[data-state="retrying"] i,.network-state[data-state="connecting"] i { background:#8eb5ff;box-shadow:0 0 0 3px #8eb5ff22; }
 .account-state { max-width: 82px; overflow: hidden; color: #9baac0; font-size: 10px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
 .account-button, .icon-button {
   min-height: 36px; border: 1px solid #34445c; border-radius: 11px; background: #172337; color: #eaf1ff; cursor: pointer;
@@ -144,6 +152,7 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 380px) {
   .app-header { padding-left: 12px; padding-right: 12px; }
   .account-state { display: none; }
+  .network-state { max-width:76px;padding:6px 6px;font-size:7px; }
   .app-main { padding-left: 12px; padding-right: 12px; }
   .hero { min-height: 295px; padding-left: 19px; }
   .hero-content { max-width: 72%; }
