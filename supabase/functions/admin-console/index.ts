@@ -391,12 +391,15 @@ Deno.serve(async (req: Request) => {
         games: (gamesResult.data || []).filter((game) => [
           "faa155cb-2143-4361-9a96-dc759d334e46", // UNON online
           "2eb37847-1b7e-43e4-ad98-901d5b830ac4", // 大富豪 online
-          "4ccccb72-d5db-4098-a7d4-1c28a0755e7b"  // 七並べ online
+          "4ccccb72-d5db-4098-a7d4-1c28a0755e7b", // 七並べ online
+          "903a4c45-37bb-4a4b-a259-a5a8245de998"  // 人狼 online
         ].includes(game.id)),
         rewards: (rewardsResult.data || []).filter((reward) =>
           ((reward.game_id === "faa155cb-2143-4361-9a96-dc759d334e46" ||
             reward.game_id === "2eb37847-1b7e-43e4-ad98-901d5b830ac4") && reward.mode === "wins-online" ||
-           reward.game_id === "4ccccb72-d5db-4098-a7d4-1c28a0755e7b" && reward.mode === "online") &&
+           reward.game_id === "4ccccb72-d5db-4098-a7d4-1c28a0755e7b" && reward.mode === "online" ||
+           reward.game_id === "903a4c45-37bb-4a4b-a259-a5a8245de998" &&
+             ["werewolf_villager_wins","werewolf_wolf_wins"].includes(reward.mode)) &&
           reward.required_cpu_difficulty === "NONE"
         ).map((reward) => ({
           ...reward,
@@ -438,7 +441,9 @@ Deno.serve(async (req: Request) => {
       const isOnlineWinReward =
         ((gameId === "faa155cb-2143-4361-9a96-dc759d334e46" ||
           gameId === "2eb37847-1b7e-43e4-ad98-901d5b830ac4") && mode === "wins-online") ||
-        (gameId === "4ccccb72-d5db-4098-a7d4-1c28a0755e7b" && mode === "online");
+        (gameId === "4ccccb72-d5db-4098-a7d4-1c28a0755e7b" && mode === "online") ||
+        (gameId === "903a4c45-37bb-4a4b-a259-a5a8245de998" &&
+          ["werewolf_villager_wins","werewolf_wolf_wins"].includes(mode));
       if (!isOnlineWinReward || difficulty !== "NONE" || rewardType !== "fixed") {
         return reply({
           error: "ポイントを設定できるのはサーバー検証済みオンライン対戦の勝利報酬のみです。"
