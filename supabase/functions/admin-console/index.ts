@@ -2211,7 +2211,8 @@ Deno.serve(async (req: Request) => {
       const title = typeof body.title === "string" ? body.title.trim() : "";
       const description = typeof body.description === "string" ? body.description.trim() : "";
       const eventKey = typeof body.eventKey === "string" ? body.eventKey.trim() : "";
-      const xp = Number(body.xpReward);\n      const conditionValue = Number(body.conditionValue ?? 1);
+      const xp = Number(body.xpReward);
+      const conditionValue = Number(body.conditionValue ?? 1);
       if (!/^[a-z0-9][a-z0-9_]{1,48}$/.test(key)) return reply({ error: "クエストIDは英数字と_で2〜49文字にしてください。" }, 400, origin);
       if (!title || title.length > 100) return reply({ error: "タイトルは1〜100文字です。" }, 400, origin);
       if (!description || description.length > 500) return reply({ error: "説明は1〜500文字です。" }, 400, origin);
