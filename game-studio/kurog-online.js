@@ -489,8 +489,17 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
       return result;
     },
     async startUnoGame(ruleMode) {
+      // Close the database lobby immediately before starting in the realtime room.
+      // This prevents new matchmaking joins from entering an already-started UNON game.
+      const roomId = roomData && roomData.id;
+      const lock = await invoke("unon_room_set_started", { roomId: roomId, started: true });
+      if (!lock || lock.ok !== true) throw new Error("対戦ルームを開始状態にできませんでした。");
       const result = await sendRequest("unon-start", { ruleMode: ruleMode === "local" ? "local" : "official" });
-      if (!result.ok) throw new Error(result.error || "ゲームを開始できませんでした。");
+      if (!result.ok) {
+        try { await invoke("unon_room_set_started", { roomId: roomId, started: false }); }
+        catch (unlockError) { console.warn("UNON lobby unlock after rejected start failed:", unlockError); }
+        throw new Error(result.error || "ゲームを開始できませんでした。");
+      }
       if (result.roomState) emitMessage({
         type: "room-state-updated",
         data: { state: result.roomState, updatedAt: result.updatedAt || null },
