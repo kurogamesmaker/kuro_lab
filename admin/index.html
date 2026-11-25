@@ -603,7 +603,7 @@
       <option value="cpu-easy">CPU・弱い</option><option value="cpu-normal">CPU・ふつう</option><option value="cpu-hard">CPU・強い</option>
      </select>
     </div>
-    <div class="ops-coin-help">〇✕ゲームはCPU「弱い・ふつう・強い」を別々に設定できます。数字当て・素因数分解・回転ずしタイピングは全レベルを選択可能。UNON・大富豪のCPU戦はサーバー検証未対応のため、報酬対象にはしていません。</div>
+    <div class="ops-coin-help">〇✕ゲームはCPU「弱い・ふつう・強い」を別々に設定できます。数字当て・素因数分解・回転ずしタイピングはモード別に設定でき、七並べはオンライン1位に付与します。報酬はサーバー検証済みの結果でのみ確定します。</div>
     <div class="list ops-coin-game-list" id="opsCoinRewardsList"><div class="empty">報酬設定を読み込み中…</div></div>
    </section>
   <section class="panel" style="margin:0 0 16px">
@@ -1445,12 +1445,14 @@ function coinTransactionLabel(type){
 }
 const COIN_PRIME_GAME_ID="79c9921a-d57a-45b1-8271-1ee7042801dc";
 const COIN_SUSHI_GAME_ID="5c1e658b-f6d3-412a-8b97-61d2c0457e95";
+const COIN_SEVENS_GAME_ID="4ccccb72-d5db-4098-a7d4-1c28a0755e7b";
 const COIN_GAME_NAMES={
  "2dbd6773-2684-4f00-973e-c46acbc348e7":"〇✕ゲーム",
  "faa155cb-2143-4361-9a96-dc759d334e46":"UNON",
  "79c9921a-d57a-45b1-8271-1ee7042801dc":"素因数分解",
  "bb466662-5423-48e6-bbcc-d19da50ba818":"数字当て",
- "5c1e658b-f6d3-412a-8b97-61d2c0457e95":"回転ずしタイピング"
+ "5c1e658b-f6d3-412a-8b97-61d2c0457e95":"回転ずしタイピング",
+ "4ccccb72-d5db-4098-a7d4-1c28a0755e7b":"七並べ"
 };
 const COIN_DIFFICULTY_NAMES={easy:"初級",normal:"中級",hard:"上級",expert:"エキスパート",master:"マスター",legend:"レジェンド",beginner:"初級",intermediate:"中級",advanced:"上級"};
 const COIN_CPU_LEVEL_NAMES={NONE:"条件なし",EASY:"弱い",NORMAL:"ふつう",HARD:"強い",EXPERT:"エキスパート"};
@@ -1460,6 +1462,7 @@ function coinModeLabel(gameId,mode,cpu="NONE"){
   return rule+"・CPU（"+(COIN_CPU_LEVEL_NAMES[cpu]||cpu)+"）";
  }
  if(gameId==="faa155cb-2143-4361-9a96-dc759d334e46") return mode==="wins-online"?"オンライン対戦・勝利":"オンライン対戦";
+ if(gameId===COIN_SEVENS_GAME_ID)return mode==="online"?"オンライン対戦・1位":"オンライン対戦";
  if(gameId===COIN_PRIME_GAME_ID) return "難易度："+(COIN_DIFFICULTY_NAMES[mode]||mode);
  if(gameId==="bb466662-5423-48e6-bbcc-d19da50ba818"){
   const m=mode.match(/^number-(classic|time)-([a-z]+)$/);
@@ -1474,6 +1477,7 @@ function coinModeLabel(gameId,mode,cpu="NONE"){
 function coinModePlayType(gameId,mode){
  if(gameId==="2dbd6773-2684-4f00-973e-c46acbc348e7")return "cpu";
  if(gameId==="faa155cb-2143-4361-9a96-dc759d334e46")return "online";
+ if(gameId===COIN_SEVENS_GAME_ID)return "online";
  if(gameId==="bb466662-5423-48e6-bbcc-d19da50ba818")return mode.indexOf("number-time-")===0?"time":"normal";
  if(gameId===COIN_SUSHI_GAME_ID)return "typing";
  return "normal";
@@ -1481,6 +1485,7 @@ function coinModePlayType(gameId,mode){
 function coinModeLevel(gameId,mode,cpu="NONE"){
  if(gameId==="2dbd6773-2684-4f00-973e-c46acbc348e7")return "cpu-"+String(cpu||"NONE").toLowerCase();
  if(gameId===COIN_PRIME_GAME_ID)return mode;
+ if(gameId===COIN_SEVENS_GAME_ID)return "all";
  const number=mode.match(/^number-(?:classic|time)-([a-z]+)$/);
  if(number)return number[1];
  const sushi=mode.match(/^(?:normal|sudden|endless)_([a-z]+)$/);
