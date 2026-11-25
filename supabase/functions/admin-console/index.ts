@@ -95,12 +95,17 @@ Deno.serve(async (req: Request) => {
 
   try {
     const callerClient = createClient(url, anon, {
-      global: { headers: { Authorization: authHeader } },
       auth: { autoRefreshToken: false, persistSession: false }
     });
-    const { data: callerData, error: callerError } = await callerClient.auth.getUser();
-    const caller = callerData?.user;
-    if (callerError || !caller) return reply({ error: "Unauthorized" }, 401, origin);
+    // Verify the supplied access token against the project's JWKS.
+    // This avoids an Auth-server round trip for every admin-console action.
+    const accessToken = authHeader.slice(7).trim();
+    const { data: claimsData, error: claimsError } = await callerClient.auth.getClaims(accessToken);
+    const callerId = claimsData?.claims?.sub;
+    if (claimsError || typeof callerId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(callerId)) {
+      return reply({ error: "Unauthorized" }, 401, origin);
+    }
+    const caller = { id: callerId };
 
     const admin = createClient(url, service, {
       auth: { autoRefreshToken: false, persistSession: false }
