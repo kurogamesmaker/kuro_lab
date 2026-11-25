@@ -19,6 +19,7 @@
  body.mobile-game-mode #frameWrap .game-frame {
   position:absolute!important;inset:0!important;display:block!important;width:100vw!important;height:100dvh!important;
   max-width:none!important;max-height:none!important;margin:0!important;border:0!important;border-radius:0!important;aspect-ratio:auto!important;background:#070b13!important;
+  pointer-events:auto!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent;
  }
  body.mobile-game-mode #kuroGameRewardBar[data-visible="true"] {
   position:fixed!important;z-index:30!important;left:9px!important;right:9px!important;bottom:calc(58px + env(safe-area-inset-bottom))!important;
