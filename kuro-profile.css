@@ -237,3 +237,22 @@
 .kuro-profile-level-progress>i{display:block;height:5px;overflow:hidden;border-radius:99px;background:rgba(148,163,184,.18);font-style:normal}
 .kuro-profile-level-progress>i>b{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#7c5cff,#49b8ff)}
 @media(max-width:600px){.kuro-profile-level-progress{max-width:230px}}
+
+/* KuroGames XP award toast and level-up effect */
+.kuro-level-xp-toast{position:fixed;z-index:2147483000;right:18px;bottom:22px;display:flex;align-items:center;gap:11px;min-width:185px;padding:12px 16px;border:1px solid rgba(143,115,255,.46);border-radius:14px;background:linear-gradient(130deg,#17152b,#18283b);color:#f4f2ff;box-shadow:0 14px 42px rgba(10,12,28,.34);opacity:0;transform:translateY(14px);pointer-events:none;transition:opacity .22s ease,transform .22s ease}
+.kuro-level-xp-toast.is-visible{opacity:1;transform:translateY(0)}
+.kuro-level-xp-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:rgba(139,92,246,.22);color:#c4b5fd;font-size:20px}
+.kuro-level-xp-toast>span:last-child{display:grid;gap:1px}.kuro-level-xp-toast small{color:#9daac2;font-size:9px;font-weight:800;letter-spacing:.12em}.kuro-level-xp-toast strong{color:#c4b5fd;font-size:17px;line-height:1.2;font-weight:900}
+.kuro-level-up-overlay{position:fixed;z-index:2147483001;inset:0;display:grid;place-items:center;padding:20px;background:rgba(8,12,24,.72);backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:opacity .22s ease}
+.kuro-level-up-overlay.is-visible{opacity:1;pointer-events:auto}
+.kuro-level-up-card{position:relative;display:grid;justify-items:center;gap:10px;width:min(370px,100%);padding:30px 24px 24px;border:1px solid rgba(167,139,250,.55);border-radius:22px;background:radial-gradient(circle at 50% 0%,rgba(124,92,255,.28),transparent 48%),#111827;color:#f8f7ff;box-shadow:0 24px 90px rgba(0,0,0,.48);transform:translateY(12px) scale(.97);transition:transform .24s ease}
+.kuro-level-up-overlay.is-visible .kuro-level-up-card{transform:translateY(0) scale(1)}
+.kuro-level-up-spark{font-size:38px;line-height:1;color:#c4b5fd;text-shadow:0 0 28px rgba(167,139,250,.8);animation:kuroLevelSpark 1.5s ease-in-out infinite}
+.kuro-level-up-card>small{font-size:10px;font-weight:900;letter-spacing:.2em;color:#a5b4fc}
+.kuro-level-up-card h2{margin:0;font-size:29px;letter-spacing:.06em;background:linear-gradient(90deg,#d8b4fe,#93c5fd);-webkit-background-clip:text;background-clip:text;color:transparent}
+.kuro-level-up-change{margin:4px 0 0;font-size:23px;font-weight:900;font-variant-numeric:tabular-nums}
+.kuro-level-up-caption{font-size:12px;color:#a6b2c7}
+.kuro-level-up-close{margin-top:10px;min-width:120px;padding:10px 18px;border:0;border-radius:10px;background:#8b5cf6;color:white;font:inherit;font-weight:800;cursor:pointer}
+@keyframes kuroLevelSpark{0%,100%{transform:scale(.94) rotate(-8deg)}50%{transform:scale(1.12) rotate(8deg)}}
+@media(max-width:600px){.kuro-level-xp-toast{right:12px;bottom:14px}.kuro-level-up-card{padding:26px 18px 20px}}
+@media(prefers-reduced-motion:reduce){.kuro-level-xp-toast,.kuro-level-up-overlay,.kuro-level-up-card{transition:none}.kuro-level-up-spark{animation:none}}
