@@ -2217,7 +2217,8 @@ Deno.serve(async (req: Request) => {
       if (!title || title.length > 100) return reply({ error: "タイトルは1〜100文字です。" }, 400, origin);
       if (!description || description.length > 500) return reply({ error: "説明は1〜500文字です。" }, 400, origin);
       if (!Number.isInteger(xp) || xp < 1 || xp > 100000) return reply({ error: "XPは1〜100000の整数です。" }, 400, origin);
-      if (!["profile_created", "first_post", "post_count", "game_play_count", "game_win_count"].includes(eventKey)) return reply({ error: "達成条件が不正です。" }, 400, origin);\n      if (!Number.isInteger(conditionValue) || conditionValue < 1 || conditionValue > 1000000) return reply({ error: "必要回数は1〜1,000,000の整数です。" }, 400, origin);
+      if (!["profile_created", "first_post", "post_count", "game_play_count", "game_win_count"].includes(eventKey)) return reply({ error: "達成条件が不正です。" }, 400, origin);
+      if (!Number.isInteger(conditionValue) || conditionValue < 1 || conditionValue > 1000000) return reply({ error: "必要回数は1〜1,000,000の整数です。" }, 400, origin);
       const { data, error } = await admin.from("kuro_quests").upsert({
         quest_key: key, title, description, xp_reward: xp, event_key: eventKey, condition_value: conditionValue,
         enabled: body.enabled === true, updated_at: new Date().toISOString()
