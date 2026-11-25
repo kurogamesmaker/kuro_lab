@@ -585,8 +585,8 @@
   </div>
   <section class="panel ops-coin-config-panel">
     <div class="toolbar">
-     <div><strong>ゲーム別の報酬設定</strong><div class="sns-muted">ゲームを開いてモードごとにポイントと付与方法を編集します。</div></div>
-     <span class="sns-muted" id="opsCoinModeCount">—</span>
+     <div><strong>ゲーム別の報酬設定</strong><div class="sns-muted">各モードを編集し、まとめて保存できます。</div></div>
+     <div class="ops-inline-actions"><span class="sns-muted" id="opsCoinModeCount">—</span><button class="btn primary" id="opsCoinBulkSave" type="button">表示中の設定を一括保存</button></div>
     </div>
     <div class="ops-coin-controls">
      <input class="search" id="opsCoinSearch" type="search" placeholder="ゲーム名・モード名で検索">
@@ -1611,7 +1611,7 @@ async function loadOpsCoins(){
   if(txHost)txHost.innerHTML='<div class="error">取引履歴を取得できませんでした。</div>';
  }
 }
-async function saveOpsCoinReward(row,button){
+async function saveOpsCoinReward(row,button,skipReload=false){
  const gameId=row.dataset.gameId,mode=row.dataset.mode,type=row.querySelector("[data-coin-type]").value;
  const amount=Number(row.querySelector("[data-coin-amount]").value),difficulty=row.dataset.cpuDifficulty||null;
  const label=row.querySelector("[data-coin-label]").value.trim(),enabled=row.querySelector("[data-coin-enabled]").checked,status=row.querySelector("[data-coin-status]");
@@ -1627,7 +1627,7 @@ async function saveOpsCoinReward(row,button){
  button.disabled=true;if(status)status.textContent="保存中…";
  try{
   await opsInvoke({action:"update_coin_reward",gameId,mode,rewardType:type,rewardAmount:amount,scoreTiers,scoreRatio,requiredCpuDifficulty:difficulty,rewardLabel:label,enabled});
-  if(status)status.textContent="保存しました";await loadOpsCoins();
+  if(status)status.textContent="保存しました";if(!skipReload)await loadOpsCoins();
  }catch(error){if(status)status.textContent="保存失敗";alert("報酬設定を保存できませんでした："+(error.message||error));}
  finally{button.disabled=false;}
 }
@@ -2728,6 +2728,7 @@ $("#opsStoreItemsList").addEventListener("click",event=>{
  if(edit)editOpsStoreItem(edit.dataset.storeEdit);
  if(off)deactivateOpsStoreItem(off.dataset.storeDeactivate,off);
 });
+$("#opsCoinBulkSave").addEventListener("click",async e=>{const button=e.currentTarget,rows=Array.from(document.querySelectorAll("[data-coin-row]:not([hidden])"));if(!rows.length){alert("保存する設定がありません。");return;}if(!confirm("表示中の"+rows.length+"モードの報酬設定をまとめて保存します。続行しますか？"))return;button.disabled=true;button.textContent="一括保存中…";let ok=0,fail=0;for(const row of rows){const saveButton=row.querySelector("[data-coin-save]");try{await saveOpsCoinReward(row,saveButton,true);ok++;}catch(err){fail++;}}await loadOpsCoins();button.disabled=false;button.textContent="表示中の設定を一括保存";if(fail)alert(ok+"件保存、"+fail+"件失敗しました。");else alert(ok+"件の設定を保存しました。");});
 $("#opsCoinRewardsList").addEventListener("click",e=>{
  const add=e.target.closest("[data-coin-tier-add]"),remove=e.target.closest("[data-coin-tier-remove]"),save=e.target.closest("[data-coin-save]");
  if(add){const row=add.closest("[data-coin-row]");if(row)addOpsCoinTier(row);return;}
