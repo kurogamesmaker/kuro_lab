@@ -2558,10 +2558,10 @@ async function handle(req: Request) {
         await admin.rpc(isUnon ? "kuro_unon_matchmaking_cancel" : "kuro_daifugo_matchmaking_cancel", { p_game_id: game.id, p_user_id: user.id });
         return reply(200, { status: "cancelled" });
       }
-      // UNON random matches are four-seat groups. Include all assigned members,
-      // even when a participant's presence timestamp is temporarily stale.
+      // UNON random matches support two to four players. Include every assigned
+      // member, even when a participant's presence timestamp is temporarily stale.
       const members = await getRoomMembers(String(room.id), isUnon);
-      if (isUnon ? members.length !== 4 : members.length !== 2) {
+      if (isUnon ? (members.length < 2 || members.length > 4) : members.length !== 2) {
         await admin.rpc(isUnon ? "kuro_unon_matchmaking_cancel" : "kuro_daifugo_matchmaking_cancel", { p_game_id: game.id, p_user_id: user.id });
         return reply(200, { status: "cancelled" });
       }
