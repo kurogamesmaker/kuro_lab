@@ -1565,7 +1565,7 @@ function renderCoinRewardMode(reward){
    '<div class="ops-coin-score-fields" '+(type!=="score_tier"?"hidden":"")+'><div class="ops-coin-score-intro">サーバー確定スコアに一致する条件を1つ適用します。範囲は重複できません。</div><div class="ops-coin-tier-list" data-coin-tier-list>'+renderCoinTierRows(reward.score_tiers)+'</div><button class="btn ops-coin-tier-add" type="button" data-coin-tier-add>＋ 条件を追加</button></div><div class="ops-coin-ratio-fields" '+(type!=="score_ratio"?"hidden":"")+'><div class="ops-coin-score-intro">スコアの一定単位ごとにポイントを付与します。端数は切り捨てます。</div><div class="ops-coin-ratio-inputs"><label>必要スコア<input data-score-unit type="number" min="1" max="1000000" step="1" value="'+esc(ratio.minScore??100)+'"></label><label>付与ポイント<input data-score-points type="number" min="1" max="1000" step="1" value="'+esc(ratio.rewardAmount??1)+'"></label></div><div class="ops-coin-score-intro">例：100スコアごとに1ポイント。250スコアなら2ポイント。</div></div>'+
   '</div>'+
   '<label class="ops-coin-label">履歴に表示する名前<input data-coin-label maxlength="80" value="'+esc(reward.reward_label||"ゲーム報酬")+'"></label>'+
-  '<div class="ops-coin-footer"><span data-coin-status class="sns-muted">更新：'+esc(reward.updated_at?date(reward.updated_at):"—")+'</span><button class="btn primary" type="button" data-coin-save>このモードを保存</button></div>'+
+  '<div class="ops-coin-footer"><span data-coin-status class="sns-muted">更新：'+esc(reward.updated_at?date(reward.updated_at):"—")+'</span></div>'+
  '</article>';
 }
 function filterOpsCoinRewards(){
@@ -1624,12 +1624,12 @@ async function saveOpsCoinReward(row,button,skipReload=false){
  if(type==="score_tier"&&!scoreTiers.length){alert("スコア条件を少なくとも1つ追加してください。");return;}
  if(type==="score_ratio"&&(!Number.isSafeInteger(scoreRatio.scoreUnit)||scoreRatio.scoreUnit<1||scoreRatio.scoreUnit>1000000||!Number.isSafeInteger(scoreRatio.rewardPoints)||scoreRatio.rewardPoints<1||scoreRatio.rewardPoints>1000)){alert("換算スコアと付与ポイントを正しく入力してください。");return;}
  if(!label||label.length>80){alert("履歴表示名を入力してください。");return;}
- button.disabled=true;if(status)status.textContent="保存中…";
+ if(button)button.disabled=true;if(status)status.textContent="保存中…";
  try{
   await opsInvoke({action:"update_coin_reward",gameId,mode,rewardType:type,rewardAmount:amount,scoreTiers,scoreRatio,requiredCpuDifficulty:difficulty,rewardLabel:label,enabled});
   if(status)status.textContent="保存しました";if(!skipReload)await loadOpsCoins();
- }catch(error){if(status)status.textContent="保存失敗";alert("報酬設定を保存できませんでした："+(error.message||error));}
- finally{button.disabled=false;}
+ }catch(error){if(status)status.textContent="保存失敗";throw error;}
+ finally{if(button)button.disabled=false;}
 }
 function addOpsCoinTier(row){
  const list=row.querySelector("[data-coin-tier-list]"),nodes=Array.from(list.querySelectorAll("[data-coin-tier-row]")),last=nodes[nodes.length-1];
@@ -2728,7 +2728,16 @@ $("#opsStoreItemsList").addEventListener("click",event=>{
  if(edit)editOpsStoreItem(edit.dataset.storeEdit);
  if(off)deactivateOpsStoreItem(off.dataset.storeDeactivate,off);
 });
-$("#opsCoinBulkSave").addEventListener("click",async e=>{const button=e.currentTarget,rows=Array.from(document.querySelectorAll("[data-coin-row]:not([hidden])"));if(!rows.length){alert("保存する設定がありません。");return;}if(!confirm("表示中の"+rows.length+"モードの報酬設定をまとめて保存します。続行しますか？"))return;button.disabled=true;button.textContent="一括保存中…";let ok=0,fail=0;for(const row of rows){const saveButton=row.querySelector("[data-coin-save]");try{await saveOpsCoinReward(row,saveButton,true);ok++;}catch(err){fail++;}}await loadOpsCoins();button.disabled=false;button.textContent="表示中の設定を一括保存";if(fail)alert(ok+"件保存、"+fail+"件失敗しました。");else alert(ok+"件の設定を保存しました。");});
+$("#opsCoinBulkSave").addEventListener("click",async e=>{
+ const button=e.currentTarget,rows=Array.from(document.querySelectorAll("[data-coin-row]"));
+ if(!rows.length){alert("保存する設定がありません。");return;}
+ if(!confirm("全"+rows.length+"モードの報酬設定をまとめて保存します。続行しますか？"))return;
+ button.disabled=true;button.textContent="全モード一括保存中…";
+ let ok=0,fail=0,failures=[];
+ for(const row of rows){try{await saveOpsCoinReward(row,null,true);ok++;}catch(err){fail++;failures.push((row.querySelector(".ops-coin-mode-head strong")?.textContent||row.dataset.mode)+": "+(err.message||String(err)));}}
+ await loadOpsCoins();button.disabled=false;button.textContent="全モードを一括保存";
+ if(fail)alert(ok+"件保存、"+fail+"件失敗しました。\n"+failures.slice(0,5).join("\n"));else alert(ok+"件すべて保存しました。");
+});
 $("#opsCoinRewardsList").addEventListener("click",e=>{
  const add=e.target.closest("[data-coin-tier-add]"),remove=e.target.closest("[data-coin-tier-remove]"),save=e.target.closest("[data-coin-save]");
  if(add){const row=add.closest("[data-coin-row]");if(row)addOpsCoinTier(row);return;}
