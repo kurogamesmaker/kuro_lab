@@ -264,16 +264,9 @@
   }
 
   function openAccount() {
-    const overlay = $("accountOverlay");
-    const frame = $("accountFrame");
-    if (!overlay || !frame) return;
-    overlay.hidden = false;
-    document.body.classList.add("account-open");
-    if (!accountFrameLoaded) {
-      frame.src = "/games/?account=1";
-      accountFrameLoaded = true;
-    }
-    $("closeAccountButton")?.focus();
+    // The KURO GAMES page sends X-Frame-Options: deny, so it cannot be embedded
+    // in this app's account iframe. Open the account page as a top-level page.
+    location.assign("/games/");
   }
 
   function closeAccount() {
