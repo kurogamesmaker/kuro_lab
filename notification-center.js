@@ -23,7 +23,7 @@
     try {
       const auth = await db.auth.getUser();
       const user = auth.data && auth.data.user;
-      if (auth.error || !user || user.is_anonymous) {
+      if (auth?.error || !user || user.is_anonymous) {
         paint(0);
         return;
       }
@@ -54,11 +54,11 @@
           .maybeSingle()
       ]);
 
-      if (messagesResult.error) throw messagesResult.error;
-      if (socialResult.error) throw socialResult.error;
-      if (repliesResult.error) throw repliesResult.error;
-      if (announcementsResult.error) throw announcementsResult.error;
-      if (preferencesResult.error) throw preferencesResult.error;
+      if (messagesResult?.error) throw messagesResult.error;
+      if (socialResult?.error) throw socialResult.error;
+      if (repliesResult?.error) throw repliesResult.error;
+      if (announcementsResult?.error) throw announcementsResult.error;
+      if (preferencesResult?.error) throw preferencesResult.error;
 
       const messages = messagesResult.data || [];
       const ids = messages.map((row) => row.id).filter(Boolean);
@@ -68,7 +68,7 @@
           .select("message_id")
           .eq("user_id", user.id)
           .in("message_id", ids);
-        if (readsResult.error) throw readsResult.error;
+        if (readsResult?.error) throw readsResult.error;
         const readIds = new Set((readsResult.data || []).map((row) => row.message_id));
         unreadAdmin = ids.filter((id) => !readIds.has(id)).length;
       }
