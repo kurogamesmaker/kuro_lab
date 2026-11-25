@@ -543,3 +543,166 @@ test("generic room snapshots never expose the server-only UNON deck, hands or EC
   assert.equal(JSON.stringify(sent[0]).includes("server-private-key"), false);
   assert.equal(JSON.stringify(sent[0]).includes("private-card"), false);
 });
+
+
+function localUnonState({ players, deck = [], top = { id: "top", color: "red", value: "5" }, turn = 0, pendingDraw = 0, drawn = null, ruleMode = "local" }) {
+  return {
+    ver: 1,
+    version: 0,
+    phase: "playing",
+    scoreMultiplier: 2,
+    ruleMode,
+    players,
+    deck,
+    pile: [top],
+    turn,
+    direction: 1,
+    activeColor: top.color,
+    pendingDraw,
+    drawn,
+    unoPending: null,
+    matchId: "local-test-match",
+  };
+}
+
+const unonCard = (id, color, value) => ({ id, color, value });
+
+test("UNON local mode plays all selected same-value cards in one action", () => {
+  const cards = [
+    unonCard("red-7-a", "red", "7"),
+    unonCard("blue-7-a", "blue", "7"),
+    unonCard("green-7-a", "green", "7"),
+    unonCard("yellow-7-a", "yellow", "7"),
+    unonCard("red-7-b", "red", "7"),
+  ];
+  const state = localUnonState({
+    players: [
+      { userId: "p1", name: "P1", hand: [...cards, unonCard("spare", "blue", "1")] },
+      { userId: "p2", name: "P2", hand: [unonCard("other", "green", "2")] },
+    ],
+    top: unonCard("top", "red", "7"),
+  });
+
+  const result = UNON_RULES.applyAction(state, "p1", {
+    type: "play",
+    cardIds: cards.map(card => card.id),
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.state.players[0].hand.length, 1);
+  assert.deepEqual(result.state.pile.slice(-5).map(card => card.id), cards.map(card => card.id));
+  assert.equal(result.state.turn, 1);
+  assert.equal(result.state.unoPending, "p1");
+});
+
+test("UNON local mode stacks mixed plus-two and plus-four cards and accumulates the penalty", () => {
+  const cards = [
+    unonCard("d2-red", "red", "D2"),
+    unonCard("d2-blue", "blue", "D2"),
+    unonCard("w4-a", "wild", "W4"),
+    unonCard("w4-b", "wild", "W4"),
+    unonCard("d2-green", "green", "D2"),
+  ];
+  const state = localUnonState({
+    turn: 1,
+    pendingDraw: 2,
+    players: [
+      { userId: "p1", name: "P1", hand: [unonCard("p1-card", "red", "3")] },
+      { userId: "p2", name: "P2", hand: [...cards, unonCard("spare-a", "blue", "4"), unonCard("spare-b", "green", "8")] },
+    ],
+    top: unonCard("top", "red", "5"),
+  });
+
+  const result = UNON_RULES.applyAction(state, "p2", {
+    type: "play",
+    cardIds: cards.map(card => card.id),
+    color: "yellow",
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.state.pendingDraw, 16);
+  assert.equal(result.state.turn, 0);
+  assert.equal(result.state.players[1].hand.length, 2);
+  assert.equal(result.state.activeColor, "green");
+});
+
+test("UNON local mode lets the player who takes a stacked penalty continue their turn", () => {
+  const drawnCards = Array.from({ length: 6 }, (_, i) => unonCard("draw-" + i, "blue", String(i + 1)));
+  const state = localUnonState({
+    turn: 1,
+    pendingDraw: 6,
+    players: [
+      { userId: "p1", name: "P1", hand: [unonCard("p1-card", "red", "1")] },
+      { userId: "p2", name: "P2", hand: [unonCard("p2-card", "green", "2")] },
+    ],
+    deck: drawnCards,
+  });
+
+  const result = UNON_RULES.applyAction(state, "p2", { type: "draw" });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.state.pendingDraw, 0);
+  assert.equal(result.state.players[1].hand.length, 7);
+  assert.equal(result.state.turn, 1);
+});
+
+test("UNON official mode still rejects multi-card plays", () => {
+  const cards = [
+    unonCard("official-red-7", "red", "7"),
+    unonCard("official-blue-7", "blue", "7"),
+  ];
+  const state = localUnonState({
+    ruleMode: "official",
+    players: [
+      { userId: "p1", name: "P1", hand: cards },
+      { userId: "p2", name: "P2", hand: [unonCard("other", "red", "1")] },
+    ],
+    top: unonCard("top", "red", "7"),
+  });
+
+  const result = UNON_RULES.applyAction(state, "p1", {
+    type: "play",
+    cardIds: cards.map(card => card.id),
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "ONE_CARD_ONLY");
+});
+
+test("UNON online action endpoint accepts a five-card local-rule play", async () => {
+  const fixture = createRoom();
+  fixture.room.loaded = true;
+  const hostKeys = await makePlayerKeys();
+  const guestKeys = await makePlayerKeys();
+  const cards = Array.from({ length: 5 }, (_, i) => unonCard("local-d2-" + i, ["red", "blue", "green", "yellow", "red"][i], "D2"));
+  fixture.room.data.state = {
+    phase: "playing",
+    players: [
+      { id: "host-user", name: "Host", pub: hostKeys.pub, ready: true },
+      { id: "guest-user", name: "Guest", pub: guestKeys.pub, ready: true },
+    ],
+  };
+  fixture.room.data.unonGame = localUnonState({
+    players: [
+      { userId: "host-user", name: "Host", hand: [...cards, unonCard("host-spare-a", "red", "3"), unonCard("host-spare-b", "blue", "4")] },
+      { userId: "guest-user", name: "Guest", hand: [unonCard("guest-card", "green", "6")] },
+    ],
+    top: unonCard("top", "red", "D2"),
+  });
+  const sent = [];
+  const socket = { send(payload) { sent.push(JSON.parse(payload)); } };
+  const host = { id: "host-user", isHost: true };
+  fixture.room.sockets.set(socket, host);
+
+  await fixture.room.onMessage(socket, host, JSON.stringify({
+    type: "unon-action",
+    requestId: "five-card-local-play",
+    actionId: "five-card-local-play",
+    action: { type: "play", cardIds: cards.map(card => card.id) },
+  }));
+
+  const result = sent.filter(item => item.type === "unon-result").at(-1).result;
+  assert.equal(result.ok, true);
+  assert.equal(fixture.room.data.unonGame.pendingDraw, 10);
+  assert.equal(fixture.room.data.unonGame.players[0].hand.length, 2);
+});
