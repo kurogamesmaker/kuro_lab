@@ -1710,6 +1710,7 @@ function addOpsCoinTier(row){
  list.insertAdjacentHTML("beforeend",renderCoinTierRows([{minScore:nextMin,maxScore:null,rewardAmount:1,enabled:true}]));
 }
 let opsCoinAdjustSelectedUser=null,opsCoinAdjustBalance=0,opsCoinAdjustDirection="add",opsCoinAdjustSearchResults=[];
+function opsCoinSignedFormat(value){const n=Number(value)||0;return (n>0?"+":n<0?"-":"")+coinFormat(Math.abs(n));}
 function getOpsCoinAdjustReason(){
  const kind=$("#opsCoinAdjustReasonType").value,note=$("#opsCoinAdjustReasonNote").value.trim();
  if(kind==="その他")return note;
@@ -1720,7 +1721,7 @@ function updateOpsCoinAdjustPreview(){
  const delta=validAmount?(opsCoinAdjustDirection==="add"?amount:-amount):0;
  const next=opsCoinAdjustBalance+delta,validNext=validAmount&&Number.isSafeInteger(next)&&next>=0;
  $("#opsCoinAdjustPreviewCurrent").textContent=coinFormat(opsCoinAdjustBalance)+" P";
- $("#opsCoinAdjustPreviewDelta").textContent=validAmount?(delta>0?"+":"")+coinFormat(delta)+" P":"— P";
+ $("#opsCoinAdjustPreviewDelta").textContent=validAmount?opsCoinSignedFormat(delta)+" P":"— P";
  $("#opsCoinAdjustPreviewDelta").style.color=validAmount?(delta>0?"#7be0b7":"#ffabb2"):"";
  $("#opsCoinAdjustPreviewAfter").textContent=validNext?coinFormat(next)+" P":(validAmount&&next<0?"残高不足":"— P");
  $("#opsCoinAdjustPreviewAfter").style.color=validNext?"#7be0b7":(validAmount?"#ffabb2":"");
@@ -1754,7 +1755,7 @@ function renderOpsCoinAdjustHistory(rows){
  const labels={game_win_reward:"ゲーム報酬",admin_adjustment:"管理者補正",shop_purchase:"ショップ購入",shop_refund:"ショップ返金"};
  host.innerHTML='<table class="ops-table"><thead><tr><th>日時</th><th>取引</th><th>理由・内容</th><th>増減</th><th>取引後残高</th></tr></thead><tbody>'+
  rows.map(row=>{
-  const amount=Number(row.amount)||0,sign=amount>0?"+":"";
+  const amount=Number(row.amount)||0,signed=opsCoinSignedFormat(amount);
   return '<tr><td>'+esc(row.created_at?date(row.created_at):"—")+'</td><td>'+esc(labels[row.transaction_type]||row.transaction_type||"取引")+'</td><td>'+esc(row.description||"—")+'</td><td style="font-weight:850;color:'+(amount>=0?"#46c69a":"#ef7777")+'">'+sign+coinFormat(amount)+' P</td><td>'+coinFormat(row.balance_after)+' P</td></tr>';
  }).join("")+'</tbody></table>';
 }
