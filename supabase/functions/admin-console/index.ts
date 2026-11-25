@@ -295,6 +295,8 @@ Deno.serve(async (req: Request) => {
         mode === "wins-online" && difficulty === "NONE";
       const verifiedPrime = gameId === "79c9921a-d57a-45b1-8271-1ee7042801dc" &&
         ["easy","normal","hard"].includes(mode) && difficulty === "NONE";
+      const verifiedSevens = gameId === "4ccccb72-d5db-4098-a7d4-1c28a0755e7b" &&
+        mode === "online" && difficulty === "NONE";
       const numberModes = new Set([
         "number-classic-easy","number-classic-normal","number-classic-hard",
         "number-classic-expert","number-classic-master","number-classic-legend",
@@ -310,7 +312,7 @@ Deno.serve(async (req: Request) => {
       ]);
       const verifiedSushi = gameId === "5c1e658b-f6d3-412a-8b97-61d2c0457e95" &&
         sushiModes.has(mode) && difficulty === "NONE";
-      if (!verifiedTictactoe && !verifiedUnonOnline && !verifiedPrime && !verifiedNumber && !verifiedSushi) {
+      if (!verifiedTictactoe && !verifiedUnonOnline && !verifiedPrime && !verifiedSevens && !verifiedNumber && !verifiedSushi) {
         return reply({
           error: "報酬を設定できるのはサーバー検証済みのゲーム・モードのみです。"
         }, 400, origin);
