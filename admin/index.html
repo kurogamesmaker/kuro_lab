@@ -94,6 +94,11 @@
 .ops-coin-search-row input,.ops-coin-adjust-form input:not([type=hidden]),.ops-coin-adjust-form select{width:100%;min-width:0;background:#0b1524;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:10px 12px;outline:none}
 .ops-coin-search-row input{flex:1}
 .ops-coin-search-results{display:grid;gap:7px}
+.ops-coin-picker-box{display:grid;gap:9px;padding:10px;border:1px solid var(--line);border-radius:10px;background:rgba(7,15,27,.32)}
+.ops-coin-picker-box label{font-size:12px;color:var(--muted);font-weight:700}
+.ops-coin-user-picker{width:100%;min-width:0;min-height:44px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#0b1524;color:var(--text);font:inherit}
+.ops-coin-picker-confirm{width:100%;justify-content:center;min-height:42px}
+.ops-coin-picker-confirm:disabled{opacity:.55;cursor:not-allowed}
 .ops-coin-user-hit{width:100%;display:flex;align-items:center;gap:10px;text-align:left;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:rgba(7,15,27,.48);color:var(--text)}
 .ops-coin-user-hit:hover{border-color:#438fc6;background:#10233a}
 .ops-coin-user-hit{cursor:pointer;position:relative;pointer-events:auto;touch-action:manipulation}
@@ -1743,42 +1748,71 @@ async function searchOpsCoinUsers(){
   const data=await opsInvoke({action:"search_coin_users",query});
   opsCoinAdjustSearchResults=Array.isArray(data.users)?data.users.filter(user=>user&&typeof user.id==="string"&&user.id):[];
   if(!opsCoinAdjustSearchResults.length){status.textContent="該当するユーザーが見つかりませんでした。";return;}
-  status.textContent=opsCoinAdjustSearchResults.length+"人見つかりました。補正するユーザーを選択してください。";
-  const fragment=document.createDocumentFragment();
-  opsCoinAdjustSearchResults.forEach(user=>{
+  status.textContent=opsCoinAdjustSearchResults.length+"人見つかりました。候補を選択欄から選び、「このユーザーを選択」を押してください。";
+
+  const pickerBox=document.createElement("div");
+  pickerBox.className="ops-coin-picker-box";
+  const label=document.createElement("label");
+  label.htmlFor="opsCoinAdjustUserPicker";
+  label.textContent="選択するアカウント（"+opsCoinAdjustSearchResults.length+"人）";
+  const picker=document.createElement("select");
+  picker.id="opsCoinAdjustUserPicker";
+  picker.className="ops-coin-user-picker";
+  picker.setAttribute("aria-label","選択するアカウント");
+
+  const placeholder=document.createElement("option");
+  placeholder.value="";
+  placeholder.textContent="アカウントを選択してください";
+  picker.append(placeholder);
+
+  for(const user of opsCoinAdjustSearchResults){
    const name=String(user.display_name||user.username||user.email||"名称未設定");
-   const details=[user.username?"@"+user.username:"",user.kuro_id?"KURO ID："+user.kuro_id:"",user.email||""].filter(Boolean).join(" · ");
-   const hit=document.createElement("button");
-   hit.className="ops-coin-user-hit";
-   hit.type="button";
-   hit.dataset.coinUserId=user.id;
-   hit.setAttribute("aria-label",name+"を選択");
-   const avatar=document.createElement("span");
-   avatar.className="ops-coin-avatar";
-   avatar.textContent=Array.from(name)[0]||"K";
-   const copy=document.createElement("span");
-   copy.className="ops-coin-user-hit-copy";
-   const title=document.createElement("strong");
-   title.textContent=name;
-   const detail=document.createElement("small");
-   detail.textContent=details||user.id;
-   const uuid=document.createElement("small");
-   uuid.className="ops-coin-user-id";
-   uuid.textContent=user.id;
-   const pickLabel=document.createElement("span");
-   pickLabel.className="ops-coin-user-pick-label";
-   pickLabel.textContent="選択 ›";
-   copy.append(title,detail,uuid);
-   hit.append(avatar,copy,pickLabel);
-   hit.addEventListener("click",()=>{
-    if(!hit.dataset.coinUserId)return;
-    host.querySelectorAll(".ops-coin-user-hit").forEach(node=>node.setAttribute("aria-pressed",node===hit?"true":"false"));
-    status.textContent="選択したユーザーを読み込んでいます…";
-    loadOpsCoinAdjustUser(hit.dataset.coinUserId);
-   });
-   fragment.append(hit);
+   const parts=[user.username?"@"+user.username:"",user.kuro_id?"KURO ID："+user.kuro_id:"",user.email||""].filter(Boolean);
+   const option=document.createElement("option");
+   option.value=user.id;
+   option.textContent=name+" · "+(parts.join(" · ")||user.id);
+   picker.append(option);
+  }
+
+  const selectButton=document.createElement("button");
+  selectButton.type="button";
+  selectButton.className="btn primary ops-coin-picker-confirm";
+  selectButton.textContent="このユーザーを選択";
+  selectButton.disabled=true;
+  picker.addEventListener("change",()=>{
+   selectButton.disabled=!picker.value;
+   if(picker.value){
+    const user=opsCoinAdjustSearchResults.find(item=>item.id===picker.value);
+    status.textContent=user
+     ?"選択候補："+(user.display_name||user.username||user.email||user.id)+"。確定ボタンを押してください。"
+     :"候補を選択してください。";
+   }
   });
-  host.replaceChildren(fragment);
+  selectButton.addEventListener("click",async()=>{
+   const userId=picker.value;
+   if(!userId)return;
+   const user=opsCoinAdjustSearchResults.find(item=>item.id===userId);
+   if(!user){status.textContent="選択した候補を確認できません。もう一度検索してください。";return;}
+   selectButton.disabled=true;
+   picker.disabled=true;
+   selectButton.textContent="ユーザー情報を確認中…";
+   await loadOpsCoinAdjustUser(userId);
+   if(opsCoinAdjustSelectedUser?.id===userId){
+    selectButton.textContent="選択済み："+(opsCoinAdjustSelectedUser.display_name||opsCoinAdjustSelectedUser.username||opsCoinAdjustSelectedUser.id);
+    status.textContent="選択中："+(opsCoinAdjustSelectedUser.display_name||opsCoinAdjustSelectedUser.username||opsCoinAdjustSelectedUser.id)+"。別の候補に変更する場合は選択欄から選び直してください。";
+   }else{
+    selectButton.textContent="もう一度選択";
+    picker.disabled=false;
+    selectButton.disabled=!picker.value;
+   }
+  });
+
+  pickerBox.append(label,picker,selectButton);
+  host.replaceChildren(pickerBox);
+  if(opsCoinAdjustSearchResults.length===1){
+   picker.value=opsCoinAdjustSearchResults[0].id;
+   selectButton.disabled=false;
+  }
  }catch(error){status.textContent="検索できませんでした："+(error.message||error);}
  finally{button.disabled=false;}
 }
