@@ -286,7 +286,8 @@
     const sequence = ++refreshSequence;
     try {
       const auth = await client.auth.getUser();
-      if (auth.error) throw auth.error;
+      if (auth?.error) throw auth.error;
+      if (!auth?.data) throw new Error("認証情報の応答がありません。");
       user = auth.data && auth.data.user && !auth.data.user.is_anonymous ? auth.data.user : null;
       if (!user) {
         items = [];
@@ -302,7 +303,7 @@
         client.from("portal_announcements").select("id,title,body,href,created_at").eq("published", true).order("created_at", { ascending: false }).limit(100),
         client.from("portal_preferences").select("preferences").eq("user_id", user.id).maybeSingle()
       ]);
-      for (const result of [messagesResult, socialResult, repliesResult, announcementsResult, preferencesResult]) { if (result?.error) throw result.error; }
+      for (const result of [messagesResult, socialResult, repliesResult, announcementsResult, preferencesResult]) { if (result?.error) throw result.error; if (!result) throw new Error("通知データの応答がありません。"); }
       prefs = preferencesResult.data && preferencesResult.data.preferences && typeof preferencesResult.data.preferences === "object" ? preferencesResult.data.preferences : {};
       const messages = messagesResult.data || [];
       const messageIds = messages.map((row) => row.id);
