@@ -586,7 +586,7 @@
   <section class="panel ops-coin-config-panel">
     <div class="toolbar">
      <div><strong>ゲーム別の報酬設定</strong><div class="sns-muted">各モードを編集し、まとめて保存できます。</div></div>
-     <div class="ops-inline-actions"><span class="sns-muted" id="opsCoinModeCount">—</span><button class="btn primary" id="opsCoinBulkSave" type="button">表示中の設定を一括保存</button></div>
+     <div class="ops-inline-actions"><span class="sns-muted" id="opsCoinModeCount">—</span><button class="btn" id="opsCoinAllOn" type="button">全部オン</button><button class="btn" id="opsCoinAllOff" type="button">全部オフ</button><button class="btn primary" id="opsCoinBulkSave" type="button">全モードを一括保存</button></div>
     </div>
     <div class="ops-coin-controls">
      <input class="search" id="opsCoinSearch" type="search" placeholder="ゲーム名・モード名で検索">
@@ -2728,6 +2728,8 @@ $("#opsStoreItemsList").addEventListener("click",event=>{
  if(edit)editOpsStoreItem(edit.dataset.storeEdit);
  if(off)deactivateOpsStoreItem(off.dataset.storeDeactivate,off);
 });
+$("#opsCoinAllOn").addEventListener("click",()=>{const rows=Array.from(document.querySelectorAll("[data-coin-row]"));if(!rows.length)return;if(!confirm("全"+rows.length+"モードのポイント付与をONにします。変更は一括保存するまで保存されません。続行しますか？"))return;rows.forEach(row=>{const input=row.querySelector("[data-coin-enabled]");if(input)input.checked=true;});});
+$("#opsCoinAllOff").addEventListener("click",()=>{const rows=Array.from(document.querySelectorAll("[data-coin-row]"));if(!rows.length)return;if(!confirm("全"+rows.length+"モードのポイント付与をOFFにします。変更は一括保存するまで保存されません。続行しますか？"))return;rows.forEach(row=>{const input=row.querySelector("[data-coin-enabled]");if(input)input.checked=false;});});
 $("#opsCoinBulkSave").addEventListener("click",async e=>{
  const button=e.currentTarget,rows=Array.from(document.querySelectorAll("[data-coin-row]"));
  if(!rows.length){alert("保存する設定がありません。");return;}
