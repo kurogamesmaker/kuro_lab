@@ -62,6 +62,12 @@
         ends_at: "gt." + now,
         limit: "1"
       });
+      // Never leave the whole page invisible if the relay stalls.
+      // Server-side writes remain protected by the Worker suspension check.
+      const controller = typeof AbortController === "function" ? new AbortController() : null;
+      const requestTimeout = controller
+        ? window.setTimeout(() => controller.abort(), 6000)
+        : null;
       const response = await fetch(RELAY_URL, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -77,8 +83,10 @@
           clientId: "suspension-guard"
         }),
         cache: "no-store",
-        credentials: "same-origin"
+        credentials: "same-origin",
+        signal: controller ? controller.signal : undefined
       });
+      if (requestTimeout) window.clearTimeout(requestTimeout);
       if (!response.ok) throw new Error("suspension status relay returned " + response.status);
       const result = await response.json();
       if (!result || typeof result.status !== "number") throw new Error("invalid suspension status response");
@@ -93,6 +101,7 @@
     } catch (error) {
       console.warn("KURO global suspension guard check failed:", error);
     } finally {
+      if (requestTimeout) window.clearTimeout(requestTimeout);
       checking = false;
       if (!redirected) showPage();
     }
