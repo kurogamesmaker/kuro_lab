@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#070b13">
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="manifest" href="/games/mobile/manifest.webmanifest?v=20261125app1">
+  <title>ゲームプレイ | KURO GAMES MOBILE</title>
+  <style>
+    *{box-sizing:border-box}
+    html,body{width:100%;height:100%;min-height:100%;margin:0;overflow:hidden;background:#070b13}
+    body{position:fixed;inset:0;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);font-family:system-ui,sans-serif}
+    #gameFrame{display:block;width:100%;height:100%;border:0;background:#070b13}
+    #loading{position:absolute;inset:0;display:grid;place-content:center;gap:10px;padding:24px;color:#edf4ff;text-align:center;background:#070b13;font-size:12px}
+    #loading strong{font-size:16px}
+    #loading[hidden]{display:none}
+  </style>
+</head>
+<body>
+  <div id="loading"><strong>ゲームを起動しています</strong><span>KURO GAMES MOBILE</span></div>
+  <iframe id="gameFrame" title="KURO GAMES モバイルゲーム" allow="autoplay; fullscreen; clipboard-read; clipboard-write" allowfullscreen></iframe>
+  <script>
+  (function(){
+    "use strict";
+    var params = new URLSearchParams(location.search);
+    var id = params.get("id") || "";
+    var loading = document.getElementById("loading");
+    var frame = document.getElementById("gameFrame");
+    if (!/^[0-9a-f-]{36}$/i.test(id)) {
+      loading.innerHTML = "<strong>ゲームを開けませんでした</strong><span>ゲームIDが正しくありません。</span>";
+      return;
+    }
+    frame.addEventListener("load", function(){
+      loading.hidden = true;
+      try {
+        var innerDoc = frame.contentDocument;
+        var back = innerDoc && innerDoc.getElementById("mobileGameBack");
+        if (back && !back.dataset.kuroMobileAppBackBound) {
+          back.dataset.kuroMobileAppBackBound = "1";
+          back.addEventListener("click", function(event){
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            location.replace("/games/mobile/");
+          }, true);
+        }
+      } catch (error) {
+        console.warn("[KURO GAMES MOBILE] player bridge unavailable", error);
+      }
+    });
+    frame.addEventListener("error", function(){
+      loading.hidden = false;
+      loading.innerHTML = "<strong>ゲームを読み込めませんでした</strong><span>通信状態を確認して、もう一度お試しください。</span>";
+    });
+    frame.src = "/games/play/?id=" + encodeURIComponent(id);
+  })();
+  </script>
+</body>
+</html>
