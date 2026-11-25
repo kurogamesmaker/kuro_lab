@@ -645,7 +645,7 @@
      <select id="opsCoinPlayTypeFilter" aria-label="対象" disabled><option value="online">オンライン勝利</option></select>
      <select id="opsCoinLevelFilter" aria-label="対象レベル" hidden><option value="all">すべて</option></select>
     </div>
-    <div class="ops-coin-help">報酬対象はUNON・大富豪・七並べのサーバー検証済みオンライン勝利のみです。CPU戦・ソロプレイ・タイピング・通常モード・敗北・途中退出には付与されません。</div>
+    <div class="ops-coin-help">報酬対象はUNON・大富豪・七並べ・人狼ゲームのサーバー検証済みオンライン勝利のみです。CPU戦・ソロプレイ・タイピング・通常モード・敗北・途中退出には付与されません。</div>
     <div class="list ops-coin-game-list" id="opsCoinRewardsList"><div class="empty">報酬設定を読み込み中…</div></div>
    </section>
   <section class="panel ops-coin-adjust-panel" style="margin:0 0 16px">
@@ -1562,10 +1562,12 @@ const COIN_PRIME_GAME_ID="79c9921a-d57a-45b1-8271-1ee7042801dc";
 const COIN_SUSHI_GAME_ID="5c1e658b-f6d3-412a-8b97-61d2c0457e95";
 const COIN_SEVENS_GAME_ID="4ccccb72-d5db-4098-a7d4-1c28a0755e7b";
 const COIN_DAIFUGO_GAME_ID="2eb37847-1b7e-43e4-ad98-901d5b830ac4";
+const COIN_WEREWOLF_GAME_ID="903a4c45-37bb-4a4b-a259-a5a8245de998";
 const COIN_GAME_NAMES={
  "2dbd6773-2684-4f00-973e-c46acbc348e7":"〇✕ゲーム",
  "faa155cb-2143-4361-9a96-dc759d334e46":"UNON",
  "2eb37847-1b7e-43e4-ad98-901d5b830ac4":"大富豪",
+ "903a4c45-37bb-4a4b-a259-a5a8245de998":"人狼ゲーム",
  "79c9921a-d57a-45b1-8271-1ee7042801dc":"素因数分解",
  "bb466662-5423-48e6-bbcc-d19da50ba818":"数字当て",
  "5c1e658b-f6d3-412a-8b97-61d2c0457e95":"回転ずしタイピング",
@@ -1580,6 +1582,7 @@ function coinModeLabel(gameId,mode,cpu="NONE"){
  }
  if(gameId==="faa155cb-2143-4361-9a96-dc759d334e46") return "オンライン対戦・勝利";
  if(gameId===COIN_DAIFUGO_GAME_ID)return "オンライン対戦・勝利";
+ if(gameId===COIN_WEREWOLF_GAME_ID)return mode==="werewolf_wolf_wins"?"人狼陣営・オンライン勝利":"村人陣営・オンライン勝利";
  if(gameId===COIN_SEVENS_GAME_ID)return mode==="online"?"オンライン対戦・1位":"オンライン対戦";
  if(gameId===COIN_PRIME_GAME_ID) return "難易度："+(COIN_DIFFICULTY_NAMES[mode]||mode);
  if(gameId==="bb466662-5423-48e6-bbcc-d19da50ba818"){
@@ -1596,6 +1599,7 @@ function coinModePlayType(gameId,mode){
  if(gameId==="2dbd6773-2684-4f00-973e-c46acbc348e7")return "cpu";
  if(gameId==="faa155cb-2143-4361-9a96-dc759d334e46")return "online";
  if(gameId===COIN_DAIFUGO_GAME_ID)return "online";
+ if(gameId===COIN_WEREWOLF_GAME_ID)return "online";
  if(gameId===COIN_SEVENS_GAME_ID)return "online";
  if(gameId==="bb466662-5423-48e6-bbcc-d19da50ba818")return mode.indexOf("number-time-")===0?"time":"normal";
  if(gameId===COIN_SUSHI_GAME_ID)return "typing";
@@ -2954,7 +2958,7 @@ $("#opsCoinBulkSave").addEventListener("click",async e=>{
  const button=e.currentTarget,rows=Array.from(document.querySelectorAll("[data-coin-row]"));
  if(!rows.length){alert("保存する設定がありません。");return;}
  if(!confirm("オンライン勝利報酬"+rows.length+"件をまとめて保存します。続行しますか？"))return;
- button.disabled=true;button.textContent="全モード一括保存中…";
+ button.disabled=true;button.textContent="オンライン報酬一括保存中…";
  let ok=0,fail=0,failures=[];
  for(const row of rows){try{await saveOpsCoinReward(row,null,true);ok++;}catch(err){fail++;failures.push((row.querySelector(".ops-coin-mode-head strong")?.textContent||row.dataset.mode)+": "+(err.message||String(err)));}}
  await loadOpsCoins();button.disabled=false;button.textContent="オンライン報酬を一括保存";
