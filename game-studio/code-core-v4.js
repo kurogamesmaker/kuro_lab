@@ -176,6 +176,7 @@ function stripStudioInjectedRuntime(source){
   if(lower.includes("const senderror")&&lower.includes("kuro-studio-error")&&lower.includes("filename:"))return "";
   body=body.replace(/^const __kuroSend=\(level,args\)=>{[\s\S]*?window\.addEventListener\(['"]error['"],function\(e\){try{parent\.postMessage\(\{type:['"]kuro-studio-error['"],message:e\.message\},['"]\*['"]\)\}catch\(_\)\{\}\}\);[\t ]*\r?\n?/,"");
   if(lower.includes("kuro responsive fit")||lower.includes("data.kuroautofit"))return "";
+  if(/^\s*window\.kuro_games_platform=["'](?:pc|mobile)["'];?\s*$/i.test(body.trim()))return "";
   if(!body.trim())return "";
   return "<script"+attrs+">"+body+"</scr"+"ipt>";
  });
