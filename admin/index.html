@@ -1741,10 +1741,10 @@ async function searchOpsCoinUsers(){
   opsCoinAdjustSearchResults=Array.isArray(data.users)?data.users:[];
   if(!opsCoinAdjustSearchResults.length){status.textContent="該当するユーザーが見つかりませんでした。";return;}
   status.textContent=opsCoinAdjustSearchResults.length+"人見つかりました。補正するユーザーを選択してください。";
-  host.innerHTML=opsCoinAdjustSearchResults.map(user=>{
+  host.innerHTML=opsCoinAdjustSearchResults.map((user,index)=>{
    const name=user.display_name||user.username||user.email||"名称未設定";
    const details=[user.username?"@"+user.username:"",user.kuro_id?"KURO ID："+user.kuro_id:"",user.email||""].filter(Boolean).join(" · ");
-   return '<button class="ops-coin-user-hit" type="button" data-coin-user-pick="'+esc(user.id)+'"><span class="ops-coin-avatar">'+esc(String(name).slice(0,1)||"K")+'</span><span class="ops-coin-user-hit-copy"><strong>'+esc(name)+'</strong><small>'+esc(details||user.id)+'</small><small>'+esc(user.id)+'</small></span><span>選択 ›</span></button>';
+   return '<button class="ops-coin-user-hit" type="button" data-coin-user-index="'+index+'"><span class="ops-coin-avatar">'+esc(String(name).slice(0,1)||"K")+'</span><span class="ops-coin-user-hit-copy"><strong>'+esc(name)+'</strong><small>'+esc(details||user.id)+'</small><small class="ops-coin-user-id">'+esc(user.id)+'</small></span><span class="ops-coin-user-pick-label">選択 ›</span></button>';
   }).join("");
  }catch(error){status.textContent="検索できませんでした："+(error.message||error);}
  finally{button.disabled=false;}
@@ -2913,8 +2913,10 @@ $("#opsCoinLevelFilter").addEventListener("change",filterOpsCoinRewards);
 $("#opsCoinAdjustSearchButton").addEventListener("click",searchOpsCoinUsers);
 $("#opsCoinAdjustSearch").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();searchOpsCoinUsers();}});
 $("#opsCoinAdjustSearchResults").addEventListener("click",e=>{
- const pick=e.target.closest("[data-coin-user-pick]");if(!pick)return;
- const user=opsCoinAdjustSearchResults.find(row=>row.id===pick.dataset.coinUserPick);if(user)loadOpsCoinAdjustUser(user.id);
+ const pick=e.target.closest("[data-coin-user-index]");if(!pick||!$("#opsCoinAdjustSearchResults").contains(pick))return;
+ const index=Number(pick.dataset.coinUserIndex);
+ if(!Number.isInteger(index)||index<0||index>=opsCoinAdjustSearchResults.length)return;
+ const user=opsCoinAdjustSearchResults[index];if(user&&user.id)loadOpsCoinAdjustUser(user.id);
 });
 $("#opsCoinAdjustClear").addEventListener("click",()=>{
  opsCoinAdjustSelectedUser=null;opsCoinAdjustBalance=0;$("#opsCoinAdjustUser").value="";
