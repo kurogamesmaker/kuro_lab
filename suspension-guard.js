@@ -51,6 +51,7 @@
     lastCheckAt = nowMs;
     checking = true;
     hideInitialPage();
+    let requestTimeout = null;
 
     try {
       const now = new Date().toISOString();
@@ -65,7 +66,7 @@
       // Never leave the whole page invisible if the relay stalls.
       // Server-side writes remain protected by the Worker suspension check.
       const controller = typeof AbortController === "function" ? new AbortController() : null;
-      const requestTimeout = controller
+      requestTimeout = controller
         ? window.setTimeout(() => controller.abort(), 6000)
         : null;
       const response = await fetch(RELAY_URL, {
@@ -86,7 +87,6 @@
         credentials: "same-origin",
         signal: controller ? controller.signal : undefined
       });
-      if (requestTimeout) window.clearTimeout(requestTimeout);
       if (!response.ok) throw new Error("suspension status relay returned " + response.status);
       const result = await response.json();
       if (!result || typeof result.status !== "number") throw new Error("invalid suspension status response");
