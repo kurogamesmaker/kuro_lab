@@ -389,13 +389,16 @@ Deno.serve(async (req: Request) => {
           total_balance: 0, total_issued: 0, total_spent: 0, funded_users: 0, transaction_count: 0
         },
         games: (gamesResult.data || []).filter((game) => [
-          "2dbd6773-2684-4f00-973e-c46acbc348e7", // 〇✕ゲーム
           "faa155cb-2143-4361-9a96-dc759d334e46", // UNON online
-          "79c9921a-d57a-45b1-8271-1ee7042801dc", // 素因数分解
-          "bb466662-5423-48e6-bbcc-d19da50ba818", // 数字当て
-          "5c1e658b-f6d3-412a-8b97-61d2c0457e95"  // 回転ずしタイピング
+          "2eb37847-1b7e-43e4-ad98-901d5b830ac4", // 大富豪 online
+          "4ccccb72-d5db-4098-a7d4-1c28a0755e7b"  // 七並べ online
         ].includes(game.id)),
-        rewards: (rewardsResult.data || []).map((reward) => ({
+        rewards: (rewardsResult.data || []).filter((reward) =>
+          ((reward.game_id === "faa155cb-2143-4361-9a96-dc759d334e46" ||
+            reward.game_id === "2eb37847-1b7e-43e4-ad98-901d5b830ac4") && reward.mode === "wins-online" ||
+           reward.game_id === "4ccccb72-d5db-4098-a7d4-1c28a0755e7b" && reward.mode === "online") &&
+          reward.required_cpu_difficulty === "NONE"
+        ).map((reward) => ({
           ...reward,
           game: gameMap.get(reward.game_id) || null
         })),
@@ -410,7 +413,7 @@ Deno.serve(async (req: Request) => {
     if (action === "update_coin_reward") {
       const gameId = typeof body.gameId === "string" ? body.gameId : "";
       const mode = typeof body.mode === "string" ? body.mode.trim() : "";
-      const rewardType = body.rewardType === "score_tier" ? "score_tier" : "fixed";
+      const rewardType = body.rewardType === "fixed" ? "fixed" : "";
       const amount = Number(body.rewardAmount);
       const enabled = body.enabled === true;
       const difficulty = body.requiredCpuDifficulty == null || body.requiredCpuDifficulty === ""
@@ -425,79 +428,24 @@ Deno.serve(async (req: Request) => {
       if (!Number.isSafeInteger(amount) || amount < 0 || amount > 1000) {
         return reply({ error: "固定報酬は0〜1000 Pで設定してください。" }, 400, origin);
       }
-      if (!["NONE","EASY","NORMAL","HARD","EXPERT"].includes(difficulty)) {
-        return reply({ error: "CPU難易度の指定が正しくありません。" }, 400, origin);
+      if (difficulty !== "NONE") {
+        return reply({ error: "オンライン勝利報酬にCPU難易度は指定できません。" }, 400, origin);
       }
       if (!label || label.length > 80) {
         return reply({ error: "報酬表示名は1〜80文字で入力してください。" }, 400, origin);
       }
 
-      const verifiedTictactoe = gameId === "2dbd6773-2684-4f00-973e-c46acbc348e7" &&
-        ["normal","vanish","gobble","reverse"].includes(mode) &&
-        ["EASY","NORMAL","HARD"].includes(difficulty);
-      const verifiedUnonOnline = gameId === "faa155cb-2143-4361-9a96-dc759d334e46" &&
-        mode === "wins-online" && difficulty === "NONE";
-      const verifiedPrime = gameId === "79c9921a-d57a-45b1-8271-1ee7042801dc" &&
-        ["easy","normal","hard"].includes(mode) && difficulty === "NONE";
-      const verifiedSevens = gameId === "4ccccb72-d5db-4098-a7d4-1c28a0755e7b" &&
-        mode === "online" && difficulty === "NONE";
-      const numberModes = new Set([
-        "number-classic-easy","number-classic-normal","number-classic-hard",
-        "number-classic-expert","number-classic-master","number-classic-legend",
-        "number-time-easy","number-time-normal","number-time-hard",
-        "number-time-expert","number-time-master","number-time-legend"
-      ]);
-      const verifiedNumber = gameId === "bb466662-5423-48e6-bbcc-d19da50ba818" &&
-        numberModes.has(mode) && difficulty === "NONE";
-      const sushiModes = new Set([
-        "normal_beginner","normal_intermediate","normal_advanced",
-        "sudden_beginner","sudden_intermediate","sudden_advanced",
-        "endless_beginner","endless_intermediate","endless_advanced"
-      ]);
-      const verifiedSushi = gameId === "5c1e658b-f6d3-412a-8b97-61d2c0457e95" &&
-        sushiModes.has(mode) && difficulty === "NONE";
-      if (!verifiedTictactoe && !verifiedUnonOnline && !verifiedPrime && !verifiedSevens && !verifiedNumber && !verifiedSushi) {
+      const isOnlineWinReward =
+        ((gameId === "faa155cb-2143-4361-9a96-dc759d334e46" ||
+          gameId === "2eb37847-1b7e-43e4-ad98-901d5b830ac4") && mode === "wins-online") ||
+        (gameId === "4ccccb72-d5db-4098-a7d4-1c28a0755e7b" && mode === "online");
+      if (!isOnlineWinReward || difficulty !== "NONE" || rewardType !== "fixed") {
         return reply({
-          error: "報酬を設定できるのはサーバー検証済みのゲーム・モードのみです。"
+          error: "ポイントを設定できるのはサーバー検証済みオンライン対戦の勝利報酬のみです。"
         }, 400, origin);
       }
 
-      let scoreTiers: Array<{minScore:number;maxScore:number|null;rewardAmount:number;enabled:boolean}> = [];
-      if (rewardType === "score_tier") {
-        // Currently only the prime-factor and sushi typing servers compute authoritative scores.
-        if (!(verifiedPrime || verifiedSushi)) {
-          return reply({ error: "スコア別報酬は素因数分解・回転ずしタイピングのみ対応しています。" }, 400, origin);
-        }
-        if (difficulty !== "NONE" || !Array.isArray(body.scoreTiers) ||
-            body.scoreTiers.length < 1 || body.scoreTiers.length > 20) {
-          return reply({ error: "スコア条件を1〜20段階で設定してください。" }, 400, origin);
-        }
-        scoreTiers = body.scoreTiers.map((tier:any) => ({
-          minScore: Number(tier?.minScore),
-          maxScore: tier?.maxScore === null || tier?.maxScore === undefined || tier?.maxScore === ""
-            ? null : Number(tier.maxScore),
-          rewardAmount: Number(tier?.rewardAmount),
-          enabled: tier?.enabled !== false,
-        }));
-        for (const tier of scoreTiers) {
-          if (!Number.isSafeInteger(tier.minScore) || tier.minScore < 0 ||
-              (tier.maxScore !== null && (!Number.isSafeInteger(tier.maxScore) || tier.maxScore < tier.minScore)) ||
-              !Number.isSafeInteger(tier.rewardAmount) || tier.rewardAmount < 0 || tier.rewardAmount > 1000) {
-            return reply({ error: "各条件のスコア範囲・ポイント数を確認してください。" }, 400, origin);
-          }
-        }
-        scoreTiers.sort((a,b)=>a.minScore-b.minScore);
-        for (let i=1;i<scoreTiers.length;i++) {
-          const previous=scoreTiers[i-1],current=scoreTiers[i];
-          if (previous.maxScore === null || previous.maxScore >= current.minScore) {
-            return reply({ error: "スコア範囲が重複しています。前の条件の上限と次の条件の下限を確認してください。" }, 400, origin);
-          }
-        }
-        if (scoreTiers.some((tier,i)=>tier.maxScore===null && i!==scoreTiers.length-1)) {
-          return reply({ error: "上限なしの条件は最後の段階にしてください。" }, 400, origin);
-        }
-      }
-
+      const scoreTiers: Array<{minScore:number;maxScore:number|null;rewardAmount:number;enabled:boolean}> = [];
       const { data: game, error: gameError } = await admin.from("game_studio_games")
         .select("id,title,status").eq("id", gameId).maybeSingle();
       if (gameError) throw gameError;
