@@ -10,7 +10,6 @@
   let games = [];
   let activeCategory = "all";
   let deferredInstallPrompt = null;
-  let accountFrameLoaded = false;
   let accountRefreshPromise = null;
   let gamesLoadPromise = null;
   let toastTimer = null;
