@@ -90,6 +90,10 @@ BEGIN
 
     SELECT r.player_count, r.max_players INTO v_player_count, v_attempt
     FROM public.game_online_rooms r WHERE r.id=v_room_id;
+    -- Return to the late-joining caller even if the lobby is not full yet.
+    IF v_oldest_created_at IS NOT NULL THEN
+      RETURN v_room_id;
+    END IF;
     IF v_player_count >= v_attempt THEN
       RETURN v_room_id;
     END IF;
