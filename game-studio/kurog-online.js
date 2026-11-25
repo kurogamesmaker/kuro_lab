@@ -601,13 +601,13 @@ async function connectMatchedMatchmakingResult(result) {
   return { status: "matched", room: room };
 }
 
-async function connectMatchedUnonMatchmakingResult(result) {
+async function connectMatchedUnonMatchmakingResult(result, ruleMode) {
   if (!result || result.status !== "matched" || !result.room || !result.room.id) {
     return { status: result && result.status === "cancelled" ? "cancelled" : "waiting" };
   }
   const room = await connectRoom(result.room, result.members || []);
   try {
-    await invoke("unon_matchmaking_ack", { roomId: result.room.id });
+    await invoke("unon_matchmaking_ack", { roomId: result.room.id, ruleMode: ruleMode === "local" ? "local" : "official" });
   } catch (error) {
     console.warn("UNON matchmaking acknowledgement:", error);
   }
@@ -845,14 +845,15 @@ const KuroGames = {
     },
     async findUnoRandomMatch(ruleMode) {
       const mode = ruleMode === "local" ? "local" : "official";
-      return connectMatchedUnonMatchmakingResult(await invoke("unon_matchmaking_join", { ruleMode: mode }));
+      return connectMatchedUnonMatchmakingResult(await invoke("unon_matchmaking_join", { ruleMode: mode }), mode);
     },
     async getUnoRandomMatchStatus(ruleMode) {
       const mode = ruleMode === "local" ? "local" : "official";
-      return connectMatchedUnonMatchmakingResult(await invoke("unon_matchmaking_status", { ruleMode: mode }));
+      return connectMatchedUnonMatchmakingResult(await invoke("unon_matchmaking_status", { ruleMode: mode }), mode);
     },
-    async cancelUnoRandomMatch() {
-      return invoke("unon_matchmaking_cancel");
+    async cancelUnoRandomMatch(ruleMode) {
+      const mode = ruleMode === "local" ? "local" : "official";
+      return invoke("unon_matchmaking_cancel", { ruleMode: mode });
     },
     async listRooms() {
       const result = await invoke("room_list");
