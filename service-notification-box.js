@@ -295,7 +295,7 @@
         render();
         return;
       }
-      const [messagesResult, socialResult, repliesResult, announcementsResult, preferencesResult, coinResult] = await Promise.all([
+      const [messagesResult, socialResult, repliesResult, announcementsResult, preferencesResult] = await Promise.all([
         client.from("admin_messages").select("id,title,body,href,audience,recipient_id,created_at,service_scope,portal_announcement_id").eq("published", true).or("audience.eq.all,recipient_id.eq." + user.id).order("created_at", { ascending: false }).limit(200),
         client.from("notifications").select("id,type,actor_id,created_at,read_at,group_id,message_id,notification_details").eq("recipient_id", user.id).order("created_at", { ascending: false }).limit(100),
         client.from("portal_request_notifications").select("id,request_id,created_at,read_at,request:portal_requests(message,admin_reply,replied_at)").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50),
