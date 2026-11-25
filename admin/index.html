@@ -589,7 +589,7 @@
       <option value="all">すべての状態</option><option value="enabled">付与ONのみ</option><option value="disabled">付与OFFのみ</option>
      </select>
      <select id="opsCoinTypeFilter" aria-label="報酬方式">
-      <option value="all">すべての方式</option><option value="fixed">固定ポイント</option><option value="score_tier">スコア別ポイント</option>
+      <option value="all">すべての方式</option><option value="fixed">固定ポイント</option><option value="score_tier">スコア別ポイント</option><option value="score_ratio">スコア換算ポイント</option>
      </select>
      <select id="opsCoinPlayTypeFilter" aria-label="対戦・ゲーム形式">
       <option value="all">すべての形式</option><option value="cpu">CPU戦</option><option value="online">オンライン</option><option value="normal">通常モード</option><option value="time">タイムアタック</option><option value="typing">タイピング</option>
@@ -1504,14 +1504,14 @@ function renderCoinTierRows(tiers){
 function renderCoinRewardMode(reward){
  const gameId=reward.game_id,mode=reward.mode,cpu=reward.required_cpu_difficulty||"NONE";
  const name=coinModeLabel(gameId,mode,cpu),level=coinModeLevel(gameId,mode,cpu),playType=coinModePlayType(gameId,mode);
- const type=reward.reward_type==="score_tier"?"score_tier":"fixed",scoreAllowed=coinScoreSupported(gameId);
+ const type=reward.reward_type==="score_ratio"?"score_ratio":reward.reward_type==="score_tier"?"score_tier":"fixed",scoreAllowed=coinScoreSupported(gameId),ratio=(Array.isArray(reward.score_tiers)&&reward.score_tiers[0])||{minScore:100,rewardAmount:1};
  return '<article class="ops-coin-mode" data-coin-row data-game-id="'+esc(gameId)+'" data-mode="'+esc(mode)+'" data-cpu-difficulty="'+esc(cpu)+'" data-level="'+esc(level)+'" data-play-type="'+esc(playType)+'" data-search="'+esc(((COIN_GAME_NAMES[gameId]||"")+" "+name).toLowerCase())+'">'+
   '<div class="ops-coin-mode-head"><div><strong>'+esc(name)+'</strong><div class="ops-coin-mode-meta">'+(cpu!=="NONE"?("CPU戦・"+esc(COIN_CPU_LEVEL_NAMES[cpu]||cpu)):"サーバー検証済み結果を使用")+'</div></div>'+
   '<label class="ops-coin-switch"><input data-coin-enabled type="checkbox" '+(reward.enabled?"checked":"")+'><span>付与ON</span></label></div>'+
   '<div class="ops-coin-mode-fields">'+
-   '<label>報酬方式<select data-coin-type><option value="fixed" '+(type==="fixed"?"selected":"")+'>固定ポイント</option><option value="score_tier" '+(type==="score_tier"?"selected":"")+(scoreAllowed?"":" disabled")+'>スコア別ポイント'+(scoreAllowed?"":"（未対応）")+'</option></select></label>'+
+   '<label>報酬方式<select data-coin-type><option value="fixed" '+(type==="fixed"?"selected":"")+'>固定ポイント</option><option value="score_tier" '+(type==="score_tier"?"selected":"")+(scoreAllowed?"":" disabled")+'>スコア別ポイント'+(scoreAllowed?"":"（未対応）")+'</option><option value="score_ratio" '+(type==="score_ratio"?"selected":"")+(scoreAllowed?"":" disabled")+'>スコア換算ポイント'+(scoreAllowed?"":"（未対応）")+'</option></select></label>'+
    '<div class="ops-coin-fixed-fields" '+(type==="score_tier"?"hidden":"")+'><label>1回の付与ポイント<input data-coin-amount type="number" min="0" max="1000" step="1" value="'+esc(reward.reward_amount??0)+'"></label></div>'+
-   '<div class="ops-coin-score-fields" '+(type!=="score_tier"?"hidden":"")+'><div class="ops-coin-score-intro">サーバー確定スコアに一致する条件を1つ適用します。範囲は重複できません。</div><div class="ops-coin-tier-list" data-coin-tier-list>'+renderCoinTierRows(reward.score_tiers)+'</div><button class="btn ops-coin-tier-add" type="button" data-coin-tier-add>＋ 条件を追加</button></div>'+
+   '<div class="ops-coin-score-fields" '+(type!=="score_tier"?"hidden":"")+'><div class="ops-coin-score-intro">サーバー確定スコアに一致する条件を1つ適用します。範囲は重複できません。</div><div class="ops-coin-tier-list" data-coin-tier-list>'+renderCoinTierRows(reward.score_tiers)+'</div><button class="btn ops-coin-tier-add" type="button" data-coin-tier-add>＋ 条件を追加</button></div><div class="ops-coin-ratio-fields" '+(type!=="score_ratio"?"hidden":"")+'><div class="ops-coin-score-intro">スコアの一定単位ごとにポイントを付与します。端数は切り捨てます。</div><div class="ops-coin-ratio-inputs"><label>必要スコア<input data-score-unit type="number" min="1" max="1000000" step="1" value="'+esc(ratio.minScore??100)+'"></label><label>付与ポイント<input data-score-points type="number" min="1" max="1000" step="1" value="'+esc(ratio.rewardAmount??1)+'"></label></div><div class="ops-coin-score-intro">例：100スコアごとに1ポイント。250スコアなら2ポイント。</div></div>'+
   '</div>'+
   '<label class="ops-coin-label">履歴に表示する名前<input data-coin-label maxlength="80" value="'+esc(reward.reward_label||"ゲーム報酬")+'"></label>'+
   '<div class="ops-coin-footer"><span data-coin-status class="sns-muted">更新：'+esc(reward.updated_at?date(reward.updated_at):"—")+'</span><button class="btn primary" type="button" data-coin-save>このモードを保存</button></div>'+
@@ -1564,16 +1564,18 @@ async function saveOpsCoinReward(row,button){
  const gameId=row.dataset.gameId,mode=row.dataset.mode,type=row.querySelector("[data-coin-type]").value;
  const amount=Number(row.querySelector("[data-coin-amount]").value),difficulty=row.dataset.cpuDifficulty||null;
  const label=row.querySelector("[data-coin-label]").value.trim(),enabled=row.querySelector("[data-coin-enabled]").checked,status=row.querySelector("[data-coin-status]");
+ const scoreRatio={scoreUnit:Number(row.querySelector("[data-score-unit]")?.value),rewardPoints:Number(row.querySelector("[data-score-points]")?.value)};
  const scoreTiers=type==="score_tier"?Array.from(row.querySelectorAll("[data-coin-tier-row]")).map(t=>({
   minScore:Number(t.querySelector("[data-tier-min]").value),maxScore:t.querySelector("[data-tier-max]").value===""?null:Number(t.querySelector("[data-tier-max]").value),
   rewardAmount:Number(t.querySelector("[data-tier-points]").value),enabled:t.querySelector("[data-tier-enabled]").checked
  })):[];
  if(type==="fixed"&&(!Number.isSafeInteger(amount)||amount<0||amount>1000)){alert("固定ポイントは0〜1000の整数で入力してください。");return;}
  if(type==="score_tier"&&!scoreTiers.length){alert("スコア条件を少なくとも1つ追加してください。");return;}
+ if(type==="score_ratio"&&(!Number.isSafeInteger(scoreRatio.scoreUnit)||scoreRatio.scoreUnit<1||scoreRatio.scoreUnit>1000000||!Number.isSafeInteger(scoreRatio.rewardPoints)||scoreRatio.rewardPoints<1||scoreRatio.rewardPoints>1000)){alert("換算スコアと付与ポイントを正しく入力してください。");return;}
  if(!label||label.length>80){alert("履歴表示名を入力してください。");return;}
  button.disabled=true;if(status)status.textContent="保存中…";
  try{
-  await opsInvoke({action:"update_coin_reward",gameId,mode,rewardType:type,rewardAmount:amount,scoreTiers,requiredCpuDifficulty:difficulty,rewardLabel:label,enabled});
+  await opsInvoke({action:"update_coin_reward",gameId,mode,rewardType:type,rewardAmount:amount,scoreTiers,scoreRatio,requiredCpuDifficulty:difficulty,rewardLabel:label,enabled});
   if(status)status.textContent="保存しました";await loadOpsCoins();
  }catch(error){if(status)status.textContent="保存失敗";alert("報酬設定を保存できませんでした："+(error.message||error));}
  finally{button.disabled=false;}
@@ -2552,7 +2554,7 @@ $("#opsCoinRewardsList").addEventListener("click",e=>{
  if(save){const row=save.closest("[data-coin-row]");if(row)saveOpsCoinReward(row,save);}
 });
 $("#opsCoinRewardsList").addEventListener("change",e=>{
- if(e.target.matches("[data-coin-type]")){const row=e.target.closest("[data-coin-row]"),score=e.target.value==="score_tier";row.querySelector(".ops-coin-fixed-fields").hidden=score;row.querySelector(".ops-coin-score-fields").hidden=!score;}
+ if(e.target.matches("[data-coin-type]")){const row=e.target.closest("[data-coin-row]"),score=e.target.value==="score_tier",ratio=e.target.value==="score_ratio";row.querySelector(".ops-coin-fixed-fields").hidden=score||ratio;row.querySelector(".ops-coin-score-fields").hidden=!score;row.querySelector(".ops-coin-ratio-fields").hidden=!ratio;}
  
 });
 $("#opsCoinSearch").addEventListener("input",filterOpsCoinRewards);
