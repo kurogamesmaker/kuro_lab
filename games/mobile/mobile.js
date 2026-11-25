@@ -11,8 +11,12 @@
   let activeCategory = "all";
   let deferredInstallPrompt = null;
   let accountFrameLoaded = false;
+  let accountRefreshPromise = null;
+  let gamesLoadPromise = null;
   let toastTimer = null;
   let favorites = [];
+  const CATALOG_CACHE_KEY = "kurogames_mobile_catalog_v1";
+  const CATALOG_CACHE_MAX_AGE = 14 * 24 * 60 * 60 * 1000;
 
   const categoryNames = {
     typing: "タイピング", rpg: "RPG", action: "アクション", shooting: "シューティング",
@@ -27,12 +31,58 @@
     return "game-studio";
   }
 
+  function setNetworkState(state) {
+    const host = $("networkState");
+    if (!host) return;
+    const labels = {
+      online: "接続中",
+      connecting: "接続確認中",
+      retrying: "再接続中",
+      unstable: "通信不安定",
+      offline: "オフライン"
+    };
+    host.dataset.state = state;
+    const label = host.querySelector("span");
+    if (label) label.textContent = labels[state] || labels.connecting;
+  }
+
+  function waitForRetry(delay, signal) {
+    return new Promise((resolve, reject) => {
+      if (signal && signal.aborted) {
+        reject(signal.reason || new Error("通信が中断されました。"));
+        return;
+      }
+      const timer = window.setTimeout(() => {
+        signal?.removeEventListener("abort", onAbort);
+        resolve();
+      }, delay);
+      function onAbort() {
+        window.clearTimeout(timer);
+        signal?.removeEventListener("abort", onAbort);
+        reject(signal.reason || new Error("通信が中断されました。"));
+      }
+      signal?.addEventListener("abort", onAbort, { once: true });
+    });
+  }
+
   async function cloudflareFetch(input, init) {
-    const request = new Request(input, init);
+    const request = input instanceof Request
+      ? (init ? new Request(input, init) : input)
+      : new Request(input, init);
     const url = new URL(request.url);
     if (url.origin !== SUPABASE_URL) return fetch(request);
 
-    const bytes = new Uint8Array(await request.arrayBuffer());
+    const method = request.method.toUpperCase();
+    const retryableRead = method === "GET" || method === "HEAD";
+    const maxAttempts = retryableRead ? 2 : 1;
+
+    if (navigator.onLine === false) {
+      setNetworkState("offline");
+      throw new TypeError("インターネットに接続されていません。");
+    }
+
+    // Read a clone so the original request remains intact for Supabase's caller.
+    const bytes = new Uint8Array(await request.clone().arrayBuffer());
     let binary = "";
     for (let i = 0; i < bytes.length; i += 0x8000) {
       binary += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + 0x8000, bytes.length)));
@@ -41,43 +91,101 @@
     const headers = {};
     request.headers.forEach((value, key) => { headers[key] = value; });
 
-    const response = await fetch(CLOUDFLARE_PROXY_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        path: url.pathname + url.search,
-        method: request.method,
-        headers: headers,
-        bodyBase64: bytes.length ? btoa(binary) : "",
-        clientId: cloudflareClientId()
-      })
+    const relayBody = JSON.stringify({
+      path: url.pathname + url.search,
+      method: method,
+      headers: headers,
+      bodyBase64: bytes.length ? btoa(binary) : "",
+      clientId: "kurogames-mobile"
     });
 
-    let result;
-    try {
-      result = await response.json();
-    } catch (_) {
-      throw new Error("Cloudflare中継サーバーの応答を読み取れませんでした。");
+    let lastError = null;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const controller = new AbortController();
+      const abortFromCaller = () => controller.abort(
+        request.signal.reason || new Error("通信が中断されました。")
+      );
+      request.signal.addEventListener("abort", abortFromCaller, { once: true });
+      const timeoutId = window.setTimeout(
+        () => controller.abort(new Error("Cloudflare中継がタイムアウトしました。")),
+        15000
+      );
+
+      try {
+        const relayResponse = await fetch(CLOUDFLARE_PROXY_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: relayBody,
+          cache: "no-store",
+          credentials: "omit",
+          signal: controller.signal
+        });
+
+        let result;
+        try {
+          result = await relayResponse.json();
+        } catch (_) {
+          throw new Error("Cloudflare中継サーバーの応答を読み取れませんでした。");
+        }
+
+        if (!relayResponse.ok || !result || typeof result.status !== "number") {
+          const canRetry = retryableRead &&
+            attempt + 1 < maxAttempts &&
+            [502, 503, 504].includes(relayResponse.status);
+          if (canRetry) {
+            setNetworkState("retrying");
+            await waitForRetry(250 * (attempt + 1), request.signal);
+            continue;
+          }
+          throw new Error(result && result.error || "Cloudflare中継通信に失敗しました。");
+        }
+
+        if (retryableRead && attempt + 1 < maxAttempts &&
+            [502, 503, 504].includes(result.status)) {
+          setNetworkState("retrying");
+          await waitForRetry(250 * (attempt + 1), request.signal);
+          continue;
+        }
+
+        let body = null;
+        if (result.isBinary && result.bodyBase64) {
+          const raw = atob(result.bodyBase64);
+          const output = new Uint8Array(raw.length);
+          for (let i = 0; i < raw.length; i++) output[i] = raw.charCodeAt(i);
+          body = output;
+        } else if (result.bodyText !== undefined && ![204, 205, 304].includes(result.status)) {
+          body = result.bodyText;
+        }
+
+        setNetworkState("online");
+        return new Response(body, {
+          status: result.status,
+          headers: result.headers || { "Content-Type": "application/json" }
+        });
+      } catch (error) {
+        lastError = error;
+        const callerCancelled = request.signal.aborted;
+        const mayRetry = retryableRead &&
+          attempt + 1 < maxAttempts &&
+          !callerCancelled &&
+          navigator.onLine !== false;
+
+        if (mayRetry) {
+          setNetworkState("retrying");
+          await waitForRetry(250 * (attempt + 1), request.signal);
+          continue;
+        }
+
+        setNetworkState(navigator.onLine === false ? "offline" : "unstable");
+        throw error;
+      } finally {
+        window.clearTimeout(timeoutId);
+        request.signal.removeEventListener("abort", abortFromCaller);
+      }
     }
 
-    if (!response.ok || !result || typeof result.status !== "number") {
-      throw new Error(result && result.error || "Cloudflare中継通信に失敗しました。");
-    }
-
-    let body = null;
-    if (result.isBinary && result.bodyBase64) {
-      const raw = atob(result.bodyBase64);
-      const output = new Uint8Array(raw.length);
-      for (let i = 0; i < raw.length; i++) output[i] = raw.charCodeAt(i);
-      body = output;
-    } else if (result.bodyText !== undefined && ![204, 205, 304].includes(result.status)) {
-      body = result.bodyText;
-    }
-
-    return new Response(body, {
-      status: result.status,
-      headers: result.headers || { "Content-Type": "application/json" }
-    });
+    setNetworkState(navigator.onLine === false ? "offline" : "unstable");
+    throw lastError || new Error("Cloudflare中継通信に失敗しました。");
   }
 
   function normalizeSearch(value) {
@@ -134,16 +242,24 @@
     button.setAttribute("aria-label", "KUROアカウントを開く");
   }
 
-  async function refreshAccountState() {
-    if (!db) return;
-    try {
-      const result = await db.auth.getSession();
-      if (result.error) throw result.error;
-      setAccountState(result.data && result.data.session ? result.data.session.user : null);
-    } catch (error) {
-      console.warn("[KURO GAMES MOBILE] account state unavailable:", error && error.message || error);
-      setAccountState(null);
-    }
+  function refreshAccountState() {
+    if (!db) return Promise.resolve();
+    if (accountRefreshPromise) return accountRefreshPromise;
+
+    accountRefreshPromise = (async () => {
+      try {
+        const result = await db.auth.getSession();
+        if (result.error) throw result.error;
+        setAccountState(result.data && result.data.session ? result.data.session.user : null);
+      } catch (error) {
+        console.warn("[KURO GAMES MOBILE] account state unavailable:", error && error.message || error);
+        setAccountState(null);
+      }
+    })().finally(() => {
+      accountRefreshPromise = null;
+    });
+
+    return accountRefreshPromise;
   }
 
   function openAccount() {
@@ -293,36 +409,103 @@
     if (count) count.textContent = filtered.length + " GAMES";
   }
 
-  async function loadGames() {
-    const host = $("gameGrid");
-    const errorBox = $("errorState");
+  function readCachedCatalog() {
     try {
-      if (!db) throw new Error("データベース接続を初期化できませんでした。");
-
-      const result = await db
-        .from("game_studio_games")
-        .select("id,title,description,category,categories,icon,search_aliases,published_at")
-        .eq("status", "published")
-        .order("published_at", { ascending: false })
-        .limit(60);
-
-      if (result.error) throw result.error;
-      games = (Array.isArray(result.data) ? result.data : []).filter(game => !isRetiredGame(game));
-      renderCategories();
-      renderGames();
-
-      if (!games.length && host) {
-        host.innerHTML = '<div class="loading-card"><strong>公開中のゲームはまだありません</strong><small>ゲームが公開されると、ここに表示されます。</small></div>';
-      }
-    } catch (error) {
-      console.error("[KURO GAMES MOBILE] game list load failed:", error);
-      if (host) host.replaceChildren();
-      if (errorBox) {
-        errorBox.hidden = false;
-        errorBox.textContent = "ゲーム一覧を読み込めませんでした。通信状態を確認して、ページを再読み込みしてください。";
-      }
-      if ($("gameCount")) $("gameCount").textContent = "OFFLINE";
+      const saved = JSON.parse(localStorage.getItem(CATALOG_CACHE_KEY) || "null");
+      if (!saved || !Array.isArray(saved.games) || !Number.isFinite(Number(saved.savedAt))) return null;
+      if (Date.now() - Number(saved.savedAt) > CATALOG_CACHE_MAX_AGE) return null;
+      return saved.games.filter(game => game && typeof game.id === "string" && !isRetiredGame(game));
+    } catch (_) {
+      return null;
     }
+  }
+
+  function saveCatalogCache(list) {
+    try {
+      const safeGames = list.map(game => ({
+        id: game.id,
+        title: String(game.title || "").slice(0, 120),
+        description: String(game.description || "").slice(0, 500),
+        category: game.category || "other",
+        categories: getCategories(game).slice(0, 8),
+        icon: /^data:image\\//i.test(String(game.icon || "")) ? "🎮" : String(game.icon || "🎮").slice(0, 500),
+        search_aliases: Array.isArray(game.search_aliases) ? game.search_aliases.slice(0, 40) : [],
+        published_at: game.published_at || null
+      }));
+      localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify({
+        savedAt: Date.now(),
+        games: safeGames
+      }));
+    } catch (error) {
+      console.debug("[KURO GAMES MOBILE] catalog cache skipped:", error && error.message || error);
+    }
+  }
+
+  function renderCachedCatalog(message) {
+    const cached = readCachedCatalog();
+    if (!cached || !cached.length) return false;
+
+    games = cached;
+    renderCategories();
+    renderGames();
+
+    const errorBox = $("errorState");
+    if (errorBox) {
+      errorBox.hidden = false;
+      errorBox.textContent = message || "通信できないため、前回取得したゲーム一覧を表示しています。";
+    }
+    if ($("gameCount")) $("gameCount").textContent = games.length + " SAVED";
+    return true;
+  }
+
+  function loadGames() {
+    if (gamesLoadPromise) return gamesLoadPromise;
+
+    gamesLoadPromise = (async () => {
+      const host = $("gameGrid");
+      const errorBox = $("errorState");
+
+      try {
+        if (!db) throw new Error("データベース接続を初期化できませんでした。");
+
+        const result = await db
+          .from("game_studio_games")
+          .select("id,title,description,category,categories,icon,search_aliases,published_at")
+          .eq("status", "published")
+          .order("published_at", { ascending: false })
+          .limit(60);
+
+        if (result.error) throw result.error;
+        games = (Array.isArray(result.data) ? result.data : []).filter(game => !isRetiredGame(game));
+        saveCatalogCache(games);
+        renderCategories();
+        renderGames();
+        if (errorBox) errorBox.hidden = true;
+
+        if (!games.length && host) {
+          host.innerHTML = '<div class="loading-card"><strong>公開中のゲームはまだありません</strong><small>ゲームが公開されると、ここに表示されます。</small></div>';
+        }
+      } catch (error) {
+        console.error("[KURO GAMES MOBILE] game list load failed:", error);
+        const restored = renderCachedCatalog(
+          navigator.onLine === false
+            ? "オフラインのため、保存済みのゲーム一覧を表示しています。"
+            : "通信が不安定なため、保存済みのゲーム一覧を表示しています。"
+        );
+        if (!restored && host) host.replaceChildren();
+
+        if (!restored && errorBox) {
+          errorBox.hidden = false;
+          errorBox.textContent = "ゲーム一覧を読み込めませんでした。通信状態を確認して、もう一度お試しください。";
+        }
+        if ($("gameCount")) $("gameCount").textContent = restored ? games.length + " SAVED" : "OFFLINE";
+        setNetworkState(navigator.onLine === false ? "offline" : "unstable");
+      }
+    })().finally(() => {
+      gamesLoadPromise = null;
+    });
+
+    return gamesLoadPromise;
   }
 
   function setupInstall() {
@@ -396,6 +579,17 @@
       if (event.key === "Escape") closeAccount();
     });
 
+    window.addEventListener("offline", () => {
+      setNetworkState("offline");
+      showToast("インターネット接続が切断されました。");
+    });
+    window.addEventListener("online", () => {
+      setNetworkState("connecting");
+      showToast("ネットワークに再接続しました。");
+      refreshAccountState();
+      loadGames();
+    });
+
     document.querySelectorAll('.nav-item[href="#games"]').forEach(link => {
       link.addEventListener("click", () => {
         document.querySelectorAll(".nav-item").forEach(item => item.classList.remove("is-current"));
@@ -405,6 +599,7 @@
   }
 
   function init() {
+    setNetworkState(navigator.onLine === false ? "offline" : "connecting");
     bindUI();
     loadFavorites();
     setupInstall();
