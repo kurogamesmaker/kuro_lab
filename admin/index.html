@@ -1813,10 +1813,12 @@ async function loadOpsCoinAdjustUser(userId,quiet=false){
   $("#opsCoinAdjustAmount").value="";
   renderOpsCoinAdjustHistory(data.ledger||[]);
   updateOpsCoinAdjustPreview();
+  $("#opsCoinAdjustSearchStatus").textContent="選択中："+(data.user.display_name||data.user.username||data.user.email||data.user.id)+"。別の候補も選択できます。";
   if(!quiet)status.textContent="対象ユーザーを選択しました。補正内容を入力してください。";
  }catch(error){
   if(requestId!==opsCoinAdjustSelectionRequest)return;
   selected.hidden=true;opsCoinAdjustSelectedUser=null;$("#opsCoinAdjustUser").value="";
+  $("#opsCoinAdjustSearchStatus").textContent="ユーザーを選択できませんでした："+(error.message||error);
   if(!quiet)status.textContent="ユーザー情報を取得できませんでした："+(error.message||error);
   updateOpsCoinAdjustPreview();
  }
@@ -2951,8 +2953,11 @@ $("#opsCoinAdjustSearchButton").addEventListener("click",searchOpsCoinUsers);
 $("#opsCoinAdjustSearch").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();searchOpsCoinUsers();}});
 // 各候補ボタンにUUIDを直接紐付け、検索結果一覧のindexに依存しない選択処理にする。
 $("#opsCoinAdjustClear").addEventListener("click",()=>{
+ opsCoinAdjustSelectionRequest++;
  opsCoinAdjustSelectedUser=null;opsCoinAdjustBalance=0;$("#opsCoinAdjustUser").value="";
  $("#opsCoinAdjustSelected").hidden=true;$("#opsCoinAdjustStatus").textContent="";
+ $("#opsCoinAdjustSearchStatus").textContent="選択を解除しました。補正するユーザーを選択してください。";
+ $("#opsCoinAdjustSearchResults").querySelectorAll(".ops-coin-user-hit").forEach(node=>node.setAttribute("aria-pressed","false"));
  updateOpsCoinAdjustPreview();
 });
 document.querySelector(".ops-coin-direction").addEventListener("click",e=>{
