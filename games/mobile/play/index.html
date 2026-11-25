@@ -35,10 +35,13 @@
       loading.hidden = true;
       try {
         var innerDoc = frame.contentDocument;
-        var back = innerDoc && innerDoc.getElementById("mobileGameBack");
-        if (back && !back.dataset.kuroMobileAppBackBound) {
-          back.dataset.kuroMobileAppBackBound = "1";
-          back.addEventListener("click", function(event){
+        if (innerDoc && !innerDoc.documentElement.dataset.kuroMobileAppBackBound) {
+          innerDoc.documentElement.dataset.kuroMobileAppBackBound = "1";
+          innerDoc.addEventListener("click", function(event){
+            var target = event.target && event.target.closest
+              ? event.target.closest("#mobileGameBack")
+              : null;
+            if (!target) return;
             event.preventDefault();
             event.stopPropagation();
             event.stopImmediatePropagation();
