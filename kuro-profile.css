@@ -227,3 +227,13 @@
 .kuro-profile-background-rare{background-image:linear-gradient(105deg,#152b51,#264e7d)!important}
 .kuro-profile-background-epic{background-image:linear-gradient(105deg,#33134e,#583279)!important}
 .kuro-profile-background-legendary{background-image:linear-gradient(105deg,#4b2c17,#73501c)!important}
+
+/* KuroGames level / XP badge */
+.kuro-profile-name-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.kuro-profile-level-badge{display:inline-flex;align-items:center;padding:3px 8px;border:1px solid rgba(167,139,250,.5);border-radius:8px;background:linear-gradient(135deg,rgba(109,73,216,.38),rgba(59,130,246,.25));color:#e6ddff;font-size:11px;font-weight:950;letter-spacing:.02em;white-space:nowrap;vertical-align:middle}
+.kuro-profile-level-progress{display:grid;gap:5px;max-width:290px;margin-top:7px;color:#a9b8cc}
+.kuro-profile-level-progress>div{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:9px;line-height:1.3;font-variant-numeric:tabular-nums}
+.kuro-profile-level-progress small{color:#8297b4;font-size:9px}
+.kuro-profile-level-progress>i{display:block;height:5px;overflow:hidden;border-radius:99px;background:rgba(148,163,184,.18);font-style:normal}
+.kuro-profile-level-progress>i>b{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#7c5cff,#49b8ff)}
+@media(max-width:600px){.kuro-profile-level-progress{max-width:230px}}
