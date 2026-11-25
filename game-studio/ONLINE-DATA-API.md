@@ -439,6 +439,7 @@ UNO：
 - `getUnoRandomMatchStatus(ruleMode)`
 - `cancelUnoRandomMatch(ruleMode)`
 - `ruleMode` は `official` または `local`。モードが異なる参加者を混ぜない。
+- UNONランダムマッチは最少2人・最大4人。最初の参加者から15秒間は同じ募集グループへの追加参加を受け付け、4人揃えば即成立、15秒経過時に2〜3人ならその人数で成立する。
 - 現在のEdge FunctionではUNO専用RPC（`kuro_unon_matchmaking_*`）へ接続される。
 
 七並べ：
