@@ -2304,4 +2304,19 @@ initKuroRankingShowcase();
  .kuro-level-topbar-meta small{display:inline!important;font-size:7px!important;letter-spacing:-.25px!important}
 }
 </style>
+
+<style id="kuro-level-right-cut-fix">
+/* Final override: prevent remaining-XP text from being clipped by earlier width rules. */
+.kuro-level-topbar{box-sizing:border-box!important;max-width:none!important;min-width:0!important;overflow:visible!important}
+.kuro-level-topbar-main{min-width:0!important;overflow:visible!important}
+.kuro-level-topbar-meta{min-width:0!important;overflow:visible!important;flex-wrap:wrap!important;white-space:normal!important}
+.kuro-level-topbar-meta b,.kuro-level-topbar-meta small{overflow:visible!important;text-overflow:clip!important;white-space:normal!important;max-width:none!important}
+@media(max-width:680px){
+ .kuro-level-topbar{width:112px!important;min-width:112px!important;max-width:112px!important;flex:0 0 112px!important;gap:5px!important}
+ .kuro-level-topbar-main{flex:1 1 auto!important}
+ .kuro-level-topbar-meta{display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:1px!important;line-height:1.05!important}
+ .kuro-level-topbar-meta b{font-size:7px!important;letter-spacing:0!important;line-height:1.1!important}
+ .kuro-level-topbar-meta small{display:block!important;font-size:7px!important;letter-spacing:0!important;line-height:1.1!important}
+}
+</style>
 </body></html>
