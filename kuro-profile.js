@@ -741,7 +741,6 @@
         return total + Math.max(0, Math.floor(Number(row.xp_amount) || 0));
       }, 0);
       if (earnedXp > 0) {
-        showLevelXpToast(earnedXp);
         var current = await db.from("kuro_level_users")
           .select("current_level,total_xp")
           .eq("user_id", userId)
