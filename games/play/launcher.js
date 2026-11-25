@@ -422,7 +422,7 @@ async function loadKuroGameRewards(gameId, db){const bar=document.getElementById
   $("gameTitle").textContent=data.title;loadKuroGameRewards(id,db);const gameDescription=String(data.description||"").trim();$("gameDescription").textContent=gameDescription;$("gameDescriptionBox").hidden=!gameDescription;const iconValue=data.icon||"🎮",iconNode=$("gameIcon");if(/^data:image\//i.test(iconValue)||/^https?:\/\//i.test(iconValue)){const img=document.createElement("img");img.src=iconValue;img.alt="";img.style.cssText="width:100%;height:100%;object-fit:cover;border-radius:inherit";iconNode.replaceChildren(img);}else iconNode.textContent=iconValue;$("gameInfo").hidden=false;
   const launchGame=(guest)=>{kuroGameGuestMode=!!guest;
   if(kuroGameIsMobileDevice){document.body.classList.add("mobile-game-mode");const mobileControls=$("mobileGameControls");if(mobileControls)mobileControls.hidden=false;}
-  const frame=document.createElement("iframe");frame.className="game-frame";frame.title=data.title;frame.setAttribute("sandbox","allow-scripts allow-forms allow-modals");frame.setAttribute("allow","autoplay; fullscreen");frame.setAttribute("allowfullscreen","");frame.referrerPolicy="no-referrer";
+  const frame=document.createElement("iframe");frame.className="game-frame";frame.title=data.title;frame.setAttribute("sandbox","allow-scripts allow-forms allow-modals");frame.setAttribute("allow","autoplay; fullscreen");frame.referrerPolicy="no-referrer";
   const frameMeta=String(selectedGameHtml||"").match(/<meta\s+name=["']kuro-game-frame["']\s+content=["'](\d{3,4})x(\d{3,4})["'][^>]*>/i);
   const frameWidth=frameMeta?Math.max(240,Math.min(3840,Number(frameMeta[1]))):960;
    const frameHeight=frameMeta?Math.max(160,Math.min(2160,Number(frameMeta[2]))):540;
