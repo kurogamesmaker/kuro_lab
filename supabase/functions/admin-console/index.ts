@@ -552,12 +552,19 @@ Deno.serve(async (req: Request) => {
       const safeQuery = query.replace(/[\\%_,()"]/g, " ").replace(/\s+/g, " ").trim();
       if (!safeQuery) return reply({ users: [] }, 200, origin);
       const pattern = `%${safeQuery}%`;
-      const { data: profiles, error: profileError } = await admin.from("profiles")
-        .select("id,username,display_name,kuro_id")
-        .or(`username.ilike.${pattern},display_name.ilike.${pattern},kuro_id.ilike.${pattern}`)
-        .limit(20);
-      if (profileError) throw profileError;
-      return reply({ users: (profiles || []).map((profile) => ({
+      const [usernameResult, displayNameResult, kuroIdResult] = await Promise.all([
+        admin.from("profiles").select("id,username,display_name,kuro_id").ilike("username", pattern).limit(20),
+        admin.from("profiles").select("id,username,display_name,kuro_id").ilike("display_name", pattern).limit(20),
+        admin.from("profiles").select("id,username,display_name,kuro_id").ilike("kuro_id", pattern).limit(20)
+      ]);
+      for (const result of [usernameResult, displayNameResult, kuroIdResult]) {
+        if (result.error) throw result.error;
+      }
+      const uniqueProfiles = new Map<string, any>();
+      for (const profile of [
+        ...(usernameResult.data || []), ...(displayNameResult.data || []), ...(kuroIdResult.data || [])
+      ]) uniqueProfiles.set(profile.id, profile);
+      return reply({ users: Array.from(uniqueProfiles.values()).slice(0, 20).map((profile) => ({
         id: profile.id, username: profile.username || "",
         display_name: profile.display_name || "", kuro_id: profile.kuro_id || ""
       })) }, 200, origin);
