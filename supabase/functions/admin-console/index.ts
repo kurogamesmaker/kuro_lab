@@ -636,7 +636,19 @@ Deno.serve(async (req: Request) => {
         metadata: { amount, reason, balanceAfter: Number(balance) || 0 }
       });
       if (auditError) console.warn("[admin-console] KURO COIN adjustment audit insert failed", auditError);
-      return reply({ ok: true, balance: Number(balance) || 0 }, 200, origin);
+      const { error: notificationError } = await admin.from("notifications").insert({
+        recipient_id: userId,
+        actor_id: userId,
+        type: "coin_reward",
+        notification_details: {
+          amount,
+          description: "管理者によるポイント補正：" + reason,
+          balanceAfter: Number(balance) || 0,
+          adminAdjustment: true
+        }
+      });
+      if (notificationError) console.warn("[admin-console] KURO COIN adjustment notification failed", notificationError.message);
+      return reply({ ok: true, balance: Number(balance) || 0, notificationSent: !notificationError }, 200, origin);
     }
 
     if (action === "get_realtime_monitor") {
