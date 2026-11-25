@@ -303,11 +303,31 @@
         getFollowCounts(db, id),
         getSignedInUser(db),
         db.functions.invoke("kuro-public-coin-balance", { body: { userId: id } }).catch(function (error) { return { data: null, error: error }; }),
-        safeRpc(db, "kuro_get_public_store_cosmetics", { p_user_id: id }, {})
-      ]);
+        safeRpc(db, "kuro_get_public_store_cosmetics", { p_user_id: id }, {}),
+        db.from("kuro_level_users").select("total_xp,current_level").eq("user_id", id).maybeSingle(),
+        db.from("kuro_level_thresholds").select("level,required_xp").order("level", { ascending: true })      ]);
       if (thisRequest !== requestId) return;
       var profileResult = results[0], statsResult = results[1], coinBalanceResult = results[4];
       var cosmeticsResult = results[5];
+      var levelResult = results[6], levelThresholdsResult = results[7];
+      var levelData = levelResult && !levelResult.error && levelResult.data ? levelResult.data : {};
+      var currentLevel = Math.max(1, Math.floor(Number(levelData.current_level) || 1));
+      var totalXp = Math.max(0, Math.floor(Number(levelData.total_xp) || 0));
+      var levelThresholds = levelThresholdsResult && !levelThresholdsResult.error && Array.isArray(levelThresholdsResult.data) ? levelThresholdsResult.data : [];
+      function requiredXpForLevel(level) {
+        var match = levelThresholds.find(function (item) { return Number(item.level) === level; });
+        if (match) return Number(match.required_xp) || 0;
+        var baseItem = levelThresholds.reduce(function (best, item) {
+          return Number(item.level) > Number(best && best.level || 0) ? item : best;
+        }, null);
+        var baseLevel = Number(baseItem && baseItem.level || 10);
+        var baseXp = Number(baseItem && baseItem.required_xp || 10000);
+        var nextCount = Math.max(0, level - baseLevel);
+        return baseXp + 2000 * nextCount + 100 * nextCount * (nextCount + 1);
+      }
+      var nextLevelXp = requiredXpForLevel(currentLevel + 1);
+      var currentLevelXp = requiredXpForLevel(currentLevel);
+      var levelProgress = Math.max(0, Math.min(100, nextLevelXp > currentLevelXp ? (totalXp - currentLevelXp) / (nextLevelXp - currentLevelXp) * 100 : 0));
       var cosmetics = cosmeticsResult && !cosmeticsResult.error && cosmeticsResult.data && typeof cosmeticsResult.data === "object" ? cosmeticsResult.data : {};
       if (profileResult.error) throw profileResult.error;
       if (!profileResult.data) {
@@ -383,7 +403,8 @@
         (cosmeticChips ? '<section class="kuro-profile-cosmetic-strip" aria-label="装備中アイテム">' + cosmeticChips + '</section>' : '') +
         '<section class="kuro-profile-identity">' +
           '<div class="kuro-profile-identity-main"><div class="kuro-profile-avatar' + frameClass + '">' + avatar + '</div>' +
-          '<div class="kuro-profile-names"><h3>' + escapeHtml(name) + '</h3><p>' + escapeHtml(handle) + '</p>' +
+          '<div class="kuro-profile-names"><h3 class="kuro-profile-name-line"><span>' + escapeHtml(name) + '</span><span class="kuro-profile-level-badge">Lv.' + currentLevel.toLocaleString("ja-JP") + '</span></h3><p>' + escapeHtml(handle) + '</p>' +
+          '<div class="kuro-profile-level-progress" aria-label="レベル経験値"><div><span>' + totalXp.toLocaleString("ja-JP") + ' / ' + nextLevelXp.toLocaleString("ja-JP") + ' XP</span><small>次のレベルまで ' + Math.max(0,nextLevelXp-totalXp).toLocaleString("ja-JP") + ' XP</small></div><i><b style="width:' + levelProgress.toFixed(1) + '%"></b></i></div>' +
           '<small>KURO ID：' + escapeHtml(profile.kuro_id || "未設定") + '</small>' + joinedLabel + '</div></div>' +
           renderSocial(profile, results[2], isSelf, !!viewerUser) +
         '</section>' +
