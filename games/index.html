@@ -1424,10 +1424,18 @@ header .lab{padding-left:10px!important;padding-right:10px!important}
 <a class="brand" href="/games/"><img class="mark" src="/assets/brand/logo/kurolab_icon_toumei_160.png?v=20261121logosfix" width="38" height="38" alt=""><span>KURO <em>GAMES</em></span></a>
 <div class="spacer"></div>
 <label class="search"><span>⌕</span><input id="gameSearch" type="search" placeholder="ゲームを検索..." autocomplete="off"></label>
+
+<div class="kuro-level-topbar" id="kuroGamesTopLevel" hidden aria-label="プレイヤーレベル">
+ <strong class="kuro-level-topbar-badge" id="kuroGamesTopLevelBadge">Lv.1</strong>
+ <span class="kuro-level-topbar-main">
+  <span class="kuro-level-topbar-meta"><b id="kuroGamesTopLevelXp">0 / 300 XP</b><small id="kuroGamesTopLevelRemaining">次のレベルまで 300 XP</small></span>
+  <span class="kuro-level-topbar-track" aria-hidden="true"><i id="kuroGamesTopLevelProgress"></i></span>
+ </span>
+</div>
 <a class="activity-link" href="/games/activity/" aria-label="プレイ状況"><svg class="activity-glyph" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h3l2-6 4 12 2-6h7"/></svg><i class="activity-live" aria-hidden="true"></i><span class="activity-text">プレイ状況</span></a>
-<a class="lab ranking-page-link" href="/games/ranking/?v=20261124design1" aria-label="ランキング一覧">🏆 ランキング</a>
-<a class="lab kuro-store-nav" href="/games/store/" aria-label="KURO STORE">🛍 ストア</a>
-<a class="kuro-sns-nav lab" href="/sns/" aria-label="KURO SNSを開く"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M20 8v6m3-3h-6"/></svg><span>KURO SNS</span></a><a class="lab" href="https://kurolab.cc.cd/">KURO Lab ↗</a>
+<a class="lab ranking-page-link kuro-compact-nav" href="/games/ranking/?v=20261124design1" aria-label="プレイランキング" title="プレイランキング"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4v2a4 4 0 0 0 4 4M17 6h3v2a4 4 0 0 1-4 4"/></svg></a>
+<a class="lab kuro-store-nav kuro-compact-nav" href="/games/store/" aria-label="ショップ" title="ショップ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 13H6L5 8Z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/></svg></a>
+<a class="kuro-sns-nav lab kuro-compact-nav" href="/sns/" aria-label="KURO SNS" title="KURO SNS"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3H13a8 8 0 0 1 8 8v.5Z"/></svg></a><a class="lab" href="https://kurolab.cc.cd/">KURO Lab ↗</a>
 <div class="kuro-coin-topbar-wrap" id="kuroGamesCoinWrap" hidden>
  <button class="kuro-coin-topbar" id="kuroGamesTopCoins" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="kuroGamesCoinPopover" aria-label="KURO COIN残高を表示" title="KURO COIN残高">
   <span class="kuro-coin-topbar-icon" aria-hidden="true">🪙</span><strong class="kuro-coin-topbar-value" id="kuroGamesTopCoinsValue">—P</strong>
@@ -2137,4 +2145,132 @@ initKuroRankingShowcase();
 .kuro-store-nav{border-color:#d9cafa;background:linear-gradient(135deg,#faf7ff,#f2eaff);color:#7449aa!important;font-weight:950}
 @media(max-width:680px){.kuro-store-nav{width:36px;height:36px;padding:0!important;display:inline-flex;align-items:center;justify-content:center;font-size:0!important;flex:0 0 36px}.kuro-store-nav::before{content:"🛍";font-size:15px}}
 </style>
+
+<style id="kuro-games-level-topbar-style">
+.kuro-level-topbar{display:inline-flex;align-items:center;gap:8px;flex:0 1 204px;width:204px;min-width:154px;max-width:220px;height:42px;padding:6px 9px;border:1px solid #ded5f5;border-radius:12px;background:linear-gradient(135deg,#fbf8ff,#f2f4ff);color:#43506a;box-shadow:0 3px 10px rgba(85,65,145,.07);overflow:hidden}
+.kuro-level-topbar[hidden]{display:none!important}
+.kuro-level-topbar-badge{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:42px;padding:5px 6px;border:1px solid rgba(167,139,250,.5);border-radius:8px;background:linear-gradient(135deg,rgba(109,73,216,.18),rgba(59,130,246,.12));color:#7658b9;font-size:11px;font-weight:950;white-space:nowrap}
+.kuro-level-topbar-main{display:grid;gap:5px;flex:1;min-width:0}
+.kuro-level-topbar-meta{display:flex;align-items:center;justify-content:space-between;gap:5px;min-width:0;white-space:nowrap;font-variant-numeric:tabular-nums;line-height:1.2}
+.kuro-level-topbar-meta b{overflow:hidden;text-overflow:ellipsis;color:#56627b;font-size:9px;font-weight:900}
+.kuro-level-topbar-meta small{overflow:hidden;text-overflow:ellipsis;color:#8b91a7;font-size:8px}
+.kuro-level-topbar-track{display:block;height:5px;overflow:hidden;border-radius:99px;background:rgba(148,163,184,.22)}
+.kuro-level-topbar-track i{display:block;width:0;height:100%;border-radius:99px;background:linear-gradient(90deg,#7c5cff,#49b8ff);transition:width .3s ease}
+.kuro-compact-nav{display:inline-flex!important;align-items:center;justify-content:center;flex:0 0 42px!important;width:42px!important;min-width:42px!important;height:42px!important;padding:0!important;border-radius:12px!important;font-size:0!important;line-height:0!important}
+.kuro-compact-nav svg{display:block;width:19px;height:19px;flex:0 0 19px}
+.ranking-page-link.kuro-compact-nav{border-color:#d6e4f8;background:linear-gradient(135deg,#f4f8ff,#eaf2ff);color:#3974c7!important}
+.kuro-store-nav.kuro-compact-nav{border-color:#d9cafa;background:linear-gradient(135deg,#faf7ff,#f2eaff);color:#7449aa!important}
+.kuro-sns-nav.kuro-compact-nav{border-color:#d9ccff;background:linear-gradient(135deg,#f5f0ff,#eee8ff);color:#6546a5!important}
+.kuro-compact-nav:hover{transform:translateY(-1px);filter:brightness(.98)}
+.kuro-store-nav.kuro-compact-nav::before{content:none!important;display:none!important}
+@media(max-width:1300px){
+ header .search{width:min(210px,19vw)!important;min-width:100px!important;flex:0 1 210px!important}
+ .kuro-level-topbar{flex-basis:182px;width:182px;min-width:142px;padding-left:7px;padding-right:7px;gap:6px}
+}
+@media(max-width:680px){
+ .kuro-level-topbar{height:36px;flex:0 0 94px;width:94px;min-width:94px;max-width:94px;padding:4px 5px;gap:5px;border-radius:10px}
+ .kuro-level-topbar-badge{min-width:31px;padding:4px 4px;font-size:9px;border-radius:7px}
+ .kuro-level-topbar-main{gap:4px}
+ .kuro-level-topbar-meta{justify-content:flex-start}
+ .kuro-level-topbar-meta b{font-size:7.5px;letter-spacing:-.2px}
+ .kuro-level-topbar-meta small{display:none}
+ .kuro-level-topbar-track{height:4px}
+ .kuro-compact-nav{width:34px!important;min-width:34px!important;flex-basis:34px!important;height:36px!important;border-radius:10px!important}
+ .kuro-compact-nav svg{width:17px;height:17px;flex-basis:17px}
+}
+@media(prefers-reduced-motion:reduce){.kuro-level-topbar-track i{transition:none}}
+</style>
+<script id="kuro-games-level-topbar">
+(function(){
+ "use strict";
+ var host=document.getElementById("kuroGamesTopLevel");
+ var db=window.kuroGamesDB;
+ if(!host||!db||!db.auth)return;
+ var badge=document.getElementById("kuroGamesTopLevelBadge");
+ var xpLabel=document.getElementById("kuroGamesTopLevelXp");
+ var remainingLabel=document.getElementById("kuroGamesTopLevelRemaining");
+ var progress=document.getElementById("kuroGamesTopLevelProgress");
+ var activeUserId="";
+ var requestId=0;
+ var thresholds=null;
+ var refreshTimer=0;
+
+ function requiredXpForLevel(level){
+  var match=(thresholds||[]).find(function(item){return Number(item.level)===level;});
+  if(match)return Number(match.required_xp)||0;
+  var baseItem=(thresholds||[]).reduce(function(best,item){
+   return Number(item.level)>Number(best&&best.level||0)?item:best;
+  },null);
+  var baseLevel=Number(baseItem&&baseItem.level||10);
+  var baseXp=Number(baseItem&&baseItem.required_xp||10000);
+  var nextCount=Math.max(0,level-baseLevel);
+  return baseXp+2000*nextCount+100*nextCount*(nextCount+1);
+ }
+ function hide(){
+  requestId++;
+  activeUserId="";
+  host.hidden=true;
+ }
+ async function load(userId){
+  if(!userId||userId!==activeUserId)return;
+  var thisRequest=++requestId;
+  try{
+   var tasks=[
+    db.from("kuro_level_users").select("total_xp,current_level").eq("user_id",userId).maybeSingle()
+   ];
+   if(!thresholds)tasks.push(db.from("kuro_level_thresholds").select("level,required_xp").order("level",{ascending:true}));
+   var results=await Promise.all(tasks);
+   if(thisRequest!==requestId||userId!==activeUserId)return;
+   var levelResult=results[0];
+   if(levelResult.error)throw levelResult.error;
+   if(!thresholds){
+    var thresholdResult=results[1];
+    if(thresholdResult.error)throw thresholdResult.error;
+    thresholds=Array.isArray(thresholdResult.data)?thresholdResult.data:[];
+   }
+   var data=levelResult.data||{};
+   var currentLevel=Math.max(1,Math.floor(Number(data.current_level)||1));
+   var totalXp=Math.max(0,Math.floor(Number(data.total_xp)||0));
+   var currentLevelXp=requiredXpForLevel(currentLevel);
+   var nextLevelXp=requiredXpForLevel(currentLevel+1);
+   var needed=Math.max(0,nextLevelXp-totalXp);
+   var percent=nextLevelXp>currentLevelXp
+    ?Math.max(0,Math.min(100,(totalXp-currentLevelXp)/(nextLevelXp-currentLevelXp)*100)):0;
+   var number=function(value){return Math.max(0,Math.floor(Number(value)||0)).toLocaleString("ja-JP");};
+   badge.textContent="Lv."+number(currentLevel);
+   xpLabel.textContent=number(totalXp)+" / "+number(nextLevelXp)+" XP";
+   remainingLabel.textContent="次のレベルまで "+number(needed)+" XP";
+   progress.style.width=percent.toFixed(1)+"%";
+   host.title="Lv."+currentLevel+" · "+number(totalXp)+" / "+number(nextLevelXp)+" XP · 次のレベルまで "+number(needed)+" XP";
+   host.setAttribute("aria-label",host.title);
+   host.hidden=false;
+  }catch(error){
+   if(thisRequest===requestId){
+    host.hidden=true;
+    console.warn("KURO GAMES topbar level load failed:",error);
+   }
+  }
+ }
+ function setUser(user){
+  if(!user||user.is_anonymous){hide();return;}
+  if(activeUserId!==user.id){activeUserId=user.id;thresholds=null;}
+  load(user.id);
+ }
+ db.auth.getSession().then(function(result){
+  if(result.error)throw result.error;
+  setUser(result.data&&result.data.session&&result.data.session.user||null);
+ }).catch(function(error){hide();console.warn("KURO GAMES topbar session check failed:",error);});
+ db.auth.onAuthStateChange(function(_event,session){setUser(session&&session.user||null);});
+ function refresh(){
+  if(activeUserId&&document.visibilityState!=="hidden")load(activeUserId);
+ }
+ document.addEventListener("visibilitychange",refresh);
+ window.addEventListener("focus",refresh);
+ refreshTimer=window.setInterval(refresh,45000);
+ window.addEventListener("beforeunload",function(){
+  if(refreshTimer)window.clearInterval(refreshTimer);
+ });
+})();
+</script>
+
 </body></html>
