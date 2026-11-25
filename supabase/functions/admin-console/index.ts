@@ -531,6 +531,68 @@ Deno.serve(async (req: Request) => {
       return reply({ ok: true }, 200, origin);
     }
 
+    if (action === "search_coin_users") {
+      const query = typeof body.query === "string" ? body.query.trim().slice(0, 80) : "";
+      if (!query) return reply({ users: [] }, 200, origin);
+
+      const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (uuidPattern.test(query)) {
+        const { data: userData, error: userError } = await admin.auth.admin.getUserById(query);
+        if (userError || !userData?.user) return reply({ users: [] }, 200, origin);
+        const { data: profile, error: profileError } = await admin.from("profiles")
+          .select("id,username,display_name,kuro_id").eq("id", query).maybeSingle();
+        if (profileError) throw profileError;
+        const user = userData.user;
+        return reply({ users: [{
+          id: user.id, email: user.email || "", username: profile?.username || "",
+          display_name: profile?.display_name || "", kuro_id: profile?.kuro_id || ""
+        }] }, 200, origin);
+      }
+
+      const safeQuery = query.replace(/[\\%_,()"]/g, " ").replace(/\s+/g, " ").trim();
+      if (!safeQuery) return reply({ users: [] }, 200, origin);
+      const pattern = `%${safeQuery}%`;
+      const { data: profiles, error: profileError } = await admin.from("profiles")
+        .select("id,username,display_name,kuro_id")
+        .or(`username.ilike.${pattern},display_name.ilike.${pattern},kuro_id.ilike.${pattern}`)
+        .limit(20);
+      if (profileError) throw profileError;
+      return reply({ users: (profiles || []).map((profile) => ({
+        id: profile.id, username: profile.username || "",
+        display_name: profile.display_name || "", kuro_id: profile.kuro_id || ""
+      })) }, 200, origin);
+    }
+
+    if (action === "get_coin_user_detail") {
+      const userId = typeof body.userId === "string" ? body.userId.trim() : "";
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId)) {
+        return reply({ error: "ユーザーIDが正しくありません。" }, 400, origin);
+      }
+      const { data: userData, error: userError } = await admin.auth.admin.getUserById(userId);
+      if (userError || !userData?.user) return reply({ error: "対象のKUROアカウントが見つかりません。" }, 404, origin);
+      const [profileResult, balanceResult, ledgerResult] = await Promise.all([
+        admin.from("profiles").select("id,username,display_name,kuro_id").eq("id", userId).maybeSingle(),
+        admin.from("kuro_coin_balances").select("balance,updated_at").eq("user_id", userId).maybeSingle(),
+        admin.from("kuro_coin_ledger")
+          .select("id,amount,balance_after,transaction_type,description,created_at,created_by_user_id")
+          .eq("user_id", userId).order("created_at", { ascending: false }).limit(10)
+      ]);
+      if (profileResult.error) throw profileResult.error;
+      if (balanceResult.error) throw balanceResult.error;
+      if (ledgerResult.error) throw ledgerResult.error;
+      const profile = profileResult.data || {};
+      const user = userData.user;
+      return reply({
+        user: {
+          id: user.id, email: user.email || "", username: profile.username || "",
+          display_name: profile.display_name || "", kuro_id: profile.kuro_id || ""
+        },
+        balance: Number(balanceResult.data?.balance || 0),
+        balanceUpdatedAt: balanceResult.data?.updated_at || null,
+        ledger: ledgerResult.data || []
+      }, 200, origin);
+    }
+
     if (action === "adjust_coin_balance") {
       const userId = typeof body.userId === "string" ? body.userId.trim() : "";
       const amount = Number(body.amount);
