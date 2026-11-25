@@ -320,12 +320,13 @@
       const actors = new Map((actorResult.data || []).map((row) => [row.id, row]));
       const mirrored = new Set(messages.map((row) => row.portal_announcement_id).filter(Boolean));
       const next = [];
+      social.filter((row) => row.type === "coin_reward").forEach((row) => { const d = row.notification_details || {}; const amount = Number(d.amount || 0); next.push({ key: "points:" + row.id, kind: "points", id: row.id, type: row.type, title: "ポイントを獲得しました！ +" + amount + " P", body: (d.description || "報酬を獲得しました。") + (d.balanceAfter != null ? "\n現在の残高: " + d.balanceAfter + " P" : ""), created_at: row.created_at, read: !!row.read_at, serviceLabel: "KURO GAMES", href: "/games/store/" }); });
       messages.forEach((row) => next.push({
         key: "admin:" + row.id, kind: "admin", id: row.id, title: row.title, body: row.body, href: row.href,
         created_at: row.created_at, read: readMessageIds.has(row.id), serviceLabel: serviceLabel(row.service_scope),
         portal_announcement_id: row.portal_announcement_id
       }));
-      social.forEach((row) => {
+      social.filter((row) => row.type !== "coin_reward").forEach((row) => {
         const actor = actors.get(row.actor_id) || {};
         const name = actor.display_name || actor.username || "ユーザー";
         const typeText = { follow: "フォローされました", follow_back: "フォローバックされました", like: "投稿にいいねされました", reply: "投稿に返信がありました", message: "メッセージが届きました", mention: "グループチャットでメンションされました" };
