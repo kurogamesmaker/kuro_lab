@@ -392,7 +392,7 @@ export class Room {
     if (typeof actionId !== "string" || actionId.length < 1 || actionId.length > 80 ||
         !action || typeof action !== "object" || Array.isArray(action) ||
         !["play", "draw", "pass", "uno"].includes(action.type) ||
-        (action.type === "play" && (!Array.isArray(action.cardIds) || action.cardIds.length < 1 || action.cardIds.length > 4 ||
+        (action.type === "play" && (!Array.isArray(action.cardIds) || action.cardIds.length < 1 || action.cardIds.length > 12 ||
           action.cardIds.some(id => typeof id !== "string" || id.length > 40) ||
           (action.color !== undefined && !UNON_RULES.COLORS.includes(action.color))))) {
       return this.unonFailure(ws, requestId, "操作データが正しくありません。", "BAD_ACTION");
