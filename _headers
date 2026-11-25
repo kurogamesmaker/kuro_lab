@@ -4,6 +4,9 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Strict-Transport-Security: max-age=63072000; includeSubDomains
 
+/games/play/*
+  X-Frame-Options: SAMEORIGIN
+
 /game-studio/code.html
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
   Pragma: no-cache
