@@ -121,6 +121,7 @@
 
       var state = innerDoc.getElementById("state");
       if (state && /ゲームを開けませんでした/.test(state.textContent || "")) {
+        stopWatching();
         showLoading("ゲームを開けませんでした", "ゲーム情報を取得できませんでした。通信状態を確認してください。", true);
       }
     }
@@ -144,12 +145,13 @@
     }
 
     if (!/^[0-9a-f-]{36}$/i.test(id)) {
-      showLoading("ゲームを開けませんでした", "ゲームIDが正しくありません。", true);
+      showLoading("ゲームを開けませんでした", "ゲームIDが正しくありません。", false);
       return;
     }
 
     frame.addEventListener("load", attachPlayerDocument);
     frame.addEventListener("error", function(){
+      stopWatching();
       showLoading("ゲームを読み込めませんでした", "通信状態を確認して、もう一度お試しください。", true);
     });
 
