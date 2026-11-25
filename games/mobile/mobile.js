@@ -96,7 +96,7 @@
       method: method,
       headers: headers,
       bodyBase64: bytes.length ? btoa(binary) : "",
-      clientId: "kurogames-mobile"
+      clientId: cloudflareClientId()
     });
 
     let lastError = null;
@@ -157,7 +157,7 @@
           body = result.bodyText;
         }
 
-        setNetworkState("online");
+        setNetworkState(result.status >= 500 ? "unstable" : "online");
         return new Response(body, {
           status: result.status,
           headers: result.headers || { "Content-Type": "application/json" }
@@ -165,6 +165,7 @@
       } catch (error) {
         lastError = error;
         const callerCancelled = request.signal.aborted;
+        if (callerCancelled) throw error;
         const mayRetry = retryableRead &&
           attempt + 1 < maxAttempts &&
           !callerCancelled &&
