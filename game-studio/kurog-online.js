@@ -496,8 +496,13 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
       if (!lock || lock.ok !== true) throw new Error("対戦ルームを開始状態にできませんでした。");
       const result = await sendRequest("unon-start", { ruleMode: ruleMode === "local" ? "local" : "official" });
       if (!result.ok) {
-        try { await invoke("unon_room_set_started", { roomId: roomId, started: false }); }
-        catch (unlockError) { console.warn("UNON lobby unlock after rejected start failed:", unlockError); }
+        // Only these replies prove that the worker kept the lobby in its lobby phase.
+        // ALREADY_STARTED and unexpected failures must stay locked to avoid admitting
+        // a late player into a game that may already be running.
+        if (["NOT_READY", "KEY_MISSING"].includes(result.code)) {
+          try { await invoke("unon_room_set_started", { roomId: roomId, started: false }); }
+          catch (unlockError) { console.warn("UNON lobby unlock after rejected start failed:", unlockError); }
+        }
         throw new Error(result.error || "ゲームを開始できませんでした。");
       }
       if (result.roomState) emitMessage({
