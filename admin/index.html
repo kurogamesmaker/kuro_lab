@@ -1781,6 +1781,7 @@ async function searchOpsCoinUsers(){
   selectButton.disabled=true;
   picker.addEventListener("change",()=>{
    selectButton.disabled=!picker.value;
+   selectButton.textContent="このユーザーに切り替える";
    if(picker.value){
     const user=opsCoinAdjustSearchResults.find(item=>item.id===picker.value);
     status.textContent=user
@@ -1798,7 +1799,9 @@ async function searchOpsCoinUsers(){
    selectButton.textContent="ユーザー情報を確認中…";
    await loadOpsCoinAdjustUser(userId);
    if(opsCoinAdjustSelectedUser?.id===userId){
-    selectButton.textContent="選択済み："+(opsCoinAdjustSelectedUser.display_name||opsCoinAdjustSelectedUser.username||opsCoinAdjustSelectedUser.id);
+    picker.disabled=false;
+    selectButton.textContent="選択済み ✓（別の候補に変更できます）";
+    selectButton.disabled=false;
     status.textContent="選択中："+(opsCoinAdjustSelectedUser.display_name||opsCoinAdjustSelectedUser.username||opsCoinAdjustSelectedUser.id)+"。別の候補に変更する場合は選択欄から選び直してください。";
    }else{
     selectButton.textContent="もう一度選択";
@@ -2985,7 +2988,7 @@ $("#opsCoinPlayTypeFilter").addEventListener("change",filterOpsCoinRewards);
 $("#opsCoinLevelFilter").addEventListener("change",filterOpsCoinRewards);
 $("#opsCoinAdjustSearchButton").addEventListener("click",searchOpsCoinUsers);
 $("#opsCoinAdjustSearch").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();searchOpsCoinUsers();}});
-// 各候補ボタンにUUIDを直接紐付け、検索結果一覧のindexに依存しない選択処理にする。
+// 検索候補は選択欄からUUIDを指定し、確定ボタンで詳細を読み込む。
 $("#opsCoinAdjustClear").addEventListener("click",()=>{
  opsCoinAdjustSelectionRequest++;
  opsCoinAdjustSelectedUser=null;opsCoinAdjustBalance=0;$("#opsCoinAdjustUser").value="";
