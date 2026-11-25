@@ -22,7 +22,7 @@
 <nav class="side" aria-label="マニュアル目次">
  <div class="side-title">DEVELOPMENT GUIDE</div>
  <div class="group">基本</div>
- <a href="#principles">01 基本原則</a><a href="#architecture">02 全体構成</a><a href="#start">03 制作開始・認証</a>
+ <a href="#principles">01 基本原則</a><a href="#architecture">02 全体構成</a><a href="#platforms">02.5 PC・スマホ別UI</a><a href="#start">03 制作開始・認証</a>
  <div class="group">ゲーム設計</div>
  <a href="#instant">04 即時反応・先行反映</a><a href="#animation">05 演出・パフォーマンス</a><a href="#data">06 データ設計</a>
  <div class="group">オンライン</div>
@@ -62,6 +62,21 @@
   <div class="card"><h3>サーバーが担当すること</h3><ul><li>ログイン本人・権限・ゲーム公開状態の検証</li><li>ルーム参加者・マッチング・永続データ</li><li>対戦ゲームの合法手・ターン・勝敗の検証</li><li>ランキングなど重要記録の確定</li></ul></div>
  </div>
  <div class="callout good">原則：ゲーム側は <code>KuroGames</code> SDKを利用する。Supabase URL・独自認証・Service Roleキー・個別のDB書き込み処理を各ゲームへコピーしない。</div>
+</section>
+
+<section class="section" id="platforms">
+ <h2><span class="num">02.5</span>PC版・スマホ版の画面分離</h2>
+ <p class="section-intro">画面構成とスタイルは端末別に分離し、ゲームルール・通信・ランキング・保存処理は共通JavaScriptで維持します。</p>
+ <div class="grid2">
+  <div class="card"><h3>PC版</h3><ul><li><code>html_content</code> にPC用HTMLを保存</li><li>PC用CSSでマウス・キーボード向けレイアウトを構築</li><li>既存のPCデザインと操作を維持</li></ul></div>
+  <div class="card"><h3>スマホ版</h3><ul><li><code>mobile_html_content</code> にスマホ用HTMLを保存</li><li>スマホ用CSSでタッチ操作・画面サイズ・安全領域に最適化</li><li>ゲームプレイ中は全画面のアプリ型シェルを使用</li></ul></div>
+ </div>
+ <div class="card">
+  <h3>Studioでの編集手順</h3>
+  <ol><li>コードエディター上部で「PC版」または「スマホ版」を選択</li><li>HTML・CSSをそれぞれの画面用に編集してプレビュー</li><li>JavaScriptタブは共通ゲーム本体。勝敗・ランキング・ポイント・オンライン通信を二重実装しない</li><li>「公開・更新」で両画面をまとめて保存</li></ol>
+  <p><code>window.KURO_GAMES_PLATFORM</code> は <code>"pc"</code> または <code>"mobile"</code> を返します。画面側の微調整に使用できますが、ゲームルールを端末で分岐させないでください。</p>
+ </div>
+ <div class="callout warn">既存作品で <code>mobile_html_content</code> が未設定の場合、スマホ表示はPC版を互換用に使用します。Studioでスマホ版を作成して公開すると、その後は端末に応じて別々のHTML/CSSが読み込まれます。ブラウザのアドレスバーを隠せるかどうかは端末・ブラウザの仕様に依存します。</div>
 </section>
 
 <section class="section" id="start">
