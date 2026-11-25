@@ -670,7 +670,7 @@ async function loadKuroGameRewards(gameId, db){const bar=document.getElementById
   if(!userId||(!force&&gameCosmeticUserId===userId))return;
   const request=++gameCosmeticRequest;gameCosmeticUserId=userId;
   try{
-   const {data,error}=await kuroGameAuthClient.functions.invoke("kurogames-store",{body:{action:"catalog"}});
+   const client=window.kuroGameAuthClient;if(!client)throw new Error("KURO認証クライアントを読み込めませんでした。");const {data,error}=await client.functions.invoke("kurogames-store",{body:{action:"catalog"}});
    if(request!==gameCosmeticRequest)return;
    if(error)throw error;
    if(data&&data.error)throw new Error(data.error);
@@ -725,7 +725,7 @@ async function loadKuroGameRewards(gameId, db){const bar=document.getElementById
   });
   let payload={};try{payload=await response.json();}catch(_){}
   if(!response.ok||!payload.session)throw new Error(payload.error||"KURO共通アカウントの認証に失敗しました。");
-  const applied=await kuroGameAuthClient.auth.setSession({
+  const client=window.kuroGameAuthClient;if(!client)throw new Error("KURO認証クライアントを読み込めませんでした。");const applied=await client.auth.setSession({
    access_token:payload.session.access_token,
    refresh_token:payload.session.refresh_token
   });
@@ -751,14 +751,14 @@ async function loadKuroGameRewards(gameId, db){const bar=document.getElementById
   const submit=$("kuroAccountSubmit"),username=identity.value.trim(),pass=password.value;
   submit.disabled=true;showError("");
   try{
-   if(!kuroGameAuthClient)throw new Error("認証機能を読み込めませんでした。ページを再読み込みしてください。");
+   const authClient=window.kuroGameAuthClient;if(!authClient)throw new Error("認証機能を読み込めませんでした。ページを再読み込みしてください。");
    let result;
    if(mode==="register"){
     if(!/^[A-Za-z0-9_]{3,24}$/.test(username))throw new Error("ユーザーネームは半角英数字と_の3〜24文字で入力してください。");
     if(pass.length<8||pass.length>72)throw new Error("パスワードは8〜72文字で入力してください。");
     result=await usernameAuth("register",username,pass);
    }else if(username.includes("@")){
-    result=await kuroGameAuthClient.auth.signInWithPassword({email:username,password:pass});
+    result=await authClient.auth.signInWithPassword({email:username,password:pass});
     if(result.error)throw result.error;
    }else{
     result=await usernameAuth("login",username,pass);
@@ -767,7 +767,7 @@ async function loadKuroGameRewards(gameId, db){const bar=document.getElementById
    if(active?.user?.is_anonymous)throw new Error("匿名アカウントではログインできません。KURO共通アカウントを使用してください。");
    kuroGameAuthPromise=Promise.resolve(active||null);
    kuroGameGuestMode=!active;
-   if(active?.access_token)kuroGameAuthClient.realtime.setAuth(active.access_token);
+   if(active?.access_token)authClient.realtime.setAuth(active.access_token);
    if(kuroGameFrame?.contentWindow)kuroGameFrame.contentWindow.postMessage({type:"kuro-account-auth-state",authenticated:!!active},"*");
    password.value="";
    closeAccount();
