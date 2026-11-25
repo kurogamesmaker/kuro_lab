@@ -213,6 +213,150 @@ Deno.serve(async (req: Request) => {
       return reply({ item: data }, 200, origin);
     }
 
+    if (action === "get_level_system") {
+      const [settingsResult, rewardsResult, thresholdsResult, gamesResult, usersResult, ledgerResult] = await Promise.all([
+        admin.from("kuro_level_system_settings").select("enabled,default_win_xp,updated_at").eq("singleton", true).maybeSingle(),
+        admin.from("kuro_level_game_rewards").select("game_id,xp_per_win,enabled,updated_at").order("updated_at", { ascending: false }),
+        admin.from("kuro_level_thresholds").select("level,required_xp").order("level", { ascending: true }),
+        admin.from("game_studio_games").select("id,title,slug,icon,status").order("title", { ascending: true }),
+        admin.from("kuro_level_users").select("user_id,total_xp,current_level,updated_at", { count: "exact" }).order("total_xp", { ascending: false }).limit(50),
+        admin.from("kuro_level_ledger").select("id,user_id,xp_amount,total_xp_after,source_game_id,source_mode,reason,created_at").order("created_at", { ascending: false }).limit(40)
+      ]);
+      for (const result of [settingsResult,rewardsResult,thresholdsResult,gamesResult,usersResult,ledgerResult]) {
+        if (result.error) throw result.error;
+      }
+      const userIds = Array.from(new Set([
+        ...(usersResult.data || []).map((row) => row.user_id),
+        ...(ledgerResult.data || []).map((row) => row.user_id)
+      ].filter(Boolean)));
+      const { data: profiles, error: profilesError } = userIds.length
+        ? await admin.from("profiles").select("id,username,display_name,kuro_id").in("id", userIds)
+        : { data: [], error: null };
+      if (profilesError) throw profilesError;
+      const profileMap = new Map((profiles || []).map((item) => [item.id,item]));
+      const gameMap = new Map((gamesResult.data || []).map((item) => [item.id,item]));
+      return reply({
+        settings: settingsResult.data || { enabled: true, default_win_xp: 100 },
+        rewards: (rewardsResult.data || []).map((row) => ({ ...row, game: gameMap.get(row.game_id) || null })),
+        thresholds: thresholdsResult.data || [],
+        games: gamesResult.data || [],
+        user_count: usersResult.count || 0,
+        users: (usersResult.data || []).map((row) => ({ ...row, profile: profileMap.get(row.user_id) || null })),
+        ledger: (ledgerResult.data || []).map((row) => ({
+          ...row, profile: profileMap.get(row.user_id) || null,
+          game: row.source_game_id ? (gameMap.get(row.source_game_id) || null) : null
+        }))
+      }, 200, origin);
+    }
+
+    if (action === "save_level_settings") {
+      const enabled = body.enabled === true;
+      const defaultWinXp = Number(body.defaultWinXp);
+      if (!Number.isSafeInteger(defaultWinXp) || defaultWinXp < 0 || defaultWinXp > 100000) {
+        return reply({ error: "基本XPは0〜100,000の整数で指定してください。" }, 400, origin);
+      }
+      const { data, error } = await admin.from("kuro_level_system_settings").upsert({
+        singleton: true, enabled, default_win_xp: defaultWinXp,
+        updated_at: new Date().toISOString(), updated_by: caller.id
+      }, { onConflict: "singleton" }).select("enabled,default_win_xp,updated_at").single();
+      if (error) throw error;
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id, action: "kurogames_level.settings",
+        metadata: data
+      });
+      if (auditError) throw auditError;
+      return reply({ settings: data }, 200, origin);
+    }
+
+    if (action === "save_level_game_reward") {
+      const gameId = typeof body.gameId === "string" ? body.gameId.trim() : "";
+      const xpPerWin = Number(body.xpPerWin);
+      const enabled = body.enabled === true;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(gameId)) {
+        return reply({ error: "ゲームIDが正しくありません。" }, 400, origin);
+      }
+      if (!Number.isSafeInteger(xpPerWin) || xpPerWin < 0 || xpPerWin > 100000) {
+        return reply({ error: "勝利XPは0〜100,000の整数で指定してください。" }, 400, origin);
+      }
+      const { data, error } = await admin.from("kuro_level_game_rewards").upsert({
+        game_id: gameId, xp_per_win: xpPerWin, enabled,
+        updated_at: new Date().toISOString(), updated_by: caller.id
+      }, { onConflict: "game_id" }).select("game_id,xp_per_win,enabled,updated_at").single();
+      if (error) throw error;
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id, action: "kurogames_level.game_reward",
+        metadata: data
+      });
+      if (auditError) throw auditError;
+      return reply({ reward: data }, 200, origin);
+    }
+
+    if (action === "save_level_thresholds") {
+      const input = Array.isArray(body.thresholds) ? body.thresholds : [];
+      if (input.length < 2 || input.length > 100) {
+        return reply({ error: "レベル設定は2〜100段階で指定してください。" }, 400, origin);
+      }
+      const thresholds: Array<{ level: number; required_xp: number; updated_at: string }> = [];
+      for (let index = 0; index < input.length; index++) {
+        const item = input[index] || {};
+        const level = Number(item.level);
+        const requiredXp = Number(item.requiredXp);
+        if (!Number.isSafeInteger(level) || level !== index + 1 ||
+            !Number.isSafeInteger(requiredXp) || requiredXp < 0 || requiredXp > 1000000000000) {
+          return reply({ error: "レベルは1から連番、必要XPは0以上の整数にしてください。" }, 400, origin);
+        }
+        if (index === 0 && requiredXp !== 0) {
+          return reply({ error: "Lv.1の必要XPは必ず0にしてください。" }, 400, origin);
+        }
+        if (index > 0 && requiredXp <= thresholds[index - 1].required_xp) {
+          return reply({ error: "必要XPはレベルが上がるほど大きくしてください。" }, 400, origin);
+        }
+        thresholds.push({ level, required_xp: requiredXp, updated_at: new Date().toISOString() });
+      }
+      const { error: upsertError } = await admin.from("kuro_level_thresholds").upsert(thresholds, { onConflict: "level" });
+      if (upsertError) throw upsertError;
+      const { error: deleteError } = await admin.from("kuro_level_thresholds").delete().gt("level", thresholds.length);
+      if (deleteError) throw deleteError;
+      const { data: recalculated, error: recalculateError } = await admin.rpc("kuro_level_recalculate_all");
+      if (recalculateError) throw recalculateError;
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id, action: "kurogames_level.thresholds",
+        metadata: { count: thresholds.length, last_level: thresholds.length, recalculated }
+      });
+      if (auditError) throw auditError;
+      return reply({ thresholds, recalculated }, 200, origin);
+    }
+
+    if (action === "adjust_level_xp") {
+      const userId = typeof body.userId === "string" ? body.userId.trim() : "";
+      const amount = Number(body.amount);
+      const reason = typeof body.reason === "string" ? body.reason.trim() : "";
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId)) {
+        return reply({ error: "ユーザーIDが正しくありません。" }, 400, origin);
+      }
+      if (!Number.isSafeInteger(amount) || amount === 0 || Math.abs(amount) > 1000000) {
+        return reply({ error: "XP補正は-1,000,000〜1,000,000の0以外の整数にしてください。" }, 400, origin);
+      }
+      if (!reason || reason.length > 200) return reply({ error: "補正理由を1〜200文字で入力してください。" }, 400, origin);
+      const { data, error } = await admin.rpc("kuro_level_admin_adjust", {
+        p_user_id: userId, p_amount: amount, p_reason: reason, p_actor_user_id: caller.id
+      });
+      if (error) {
+        if (String(error.message || "").includes("LEVEL_XP_CANNOT_BE_NEGATIVE")) {
+          return reply({ error: "XPは0未満にはできません。" }, 400, origin);
+        }
+        throw error;
+      }
+      const result = Array.isArray(data) ? data[0] : data;
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id, target_user_id: userId,
+        action: "kurogames_level.manual_adjustment",
+        metadata: { amount, reason, result }
+      });
+      if (auditError) throw auditError;
+      return reply({ result, ok: true }, 200, origin);
+    }
+
     if (action === "get_coin_economy") {
       const [summaryResult, rewardsResult, ledgerResult, gamesResult] = await Promise.all([
         admin.rpc("kuro_coin_admin_overview"),
