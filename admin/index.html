@@ -488,7 +488,8 @@
 @media(max-width:460px){.ops-coin-tier{grid-template-columns:1fr 1fr}.ops-coin-tier-enabled{justify-content:flex-start;padding:0}.ops-coin-tier-remove{grid-column:auto}.ops-coin-game-summary{padding:12px}.ops-coin-game-status{font-size:10px}}
 
 .ops-coin-ratio-inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ops-coin-ratio-inputs label{display:grid;gap:6px;color:var(--muted);font-size:12px}.ops-coin-ratio-inputs input{width:100%;background:#0b1524;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:9px 11px}@media(max-width:600px){.ops-coin-ratio-inputs{grid-template-columns:1fr}}
-</style>
+
+.ops-level-panel{margin:0 0 16px}.ops-level-settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:center}.ops-level-settings-grid>label:not(.ops-check){display:grid;gap:6px;color:var(--muted);font-size:12px}.ops-level-settings-grid input[type=number],.ops-level-game-row input[type=number],.ops-level-threshold-row input{width:100%;min-width:0;background:#0b1524;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:8px 10px}.ops-level-list{display:grid;gap:0;padding:0 14px}.ops-level-game-row{display:grid;grid-template-columns:minmax(150px,1fr) auto 120px auto;align-items:center;gap:12px;padding:12px 2px;border-bottom:1px solid var(--line)}.ops-level-game-copy{min-width:0;display:grid;gap:2px}.ops-level-game-copy strong{font-size:13px}.ops-level-game-copy small{font-size:10px;color:var(--muted);overflow-wrap:anywhere}.ops-level-game-row>label:not(.ops-check){display:grid;gap:4px;font-size:10px;color:var(--muted)}.ops-level-thresholds{display:grid;gap:8px;padding:14px}.ops-level-threshold-row{display:grid;grid-template-columns:120px minmax(120px,1fr) auto;gap:10px;align-items:end}.ops-level-threshold-row label{display:grid;gap:5px;color:var(--muted);font-size:11px}.ops-level-threshold-row:first-child [data-level-number]{opacity:.65}.ops-level-threshold-row:first-child [data-level-number]{pointer-events:none}.ops-level-threshold-row:first-child [data-level-threshold-remove]{opacity:.4;pointer-events:none}.ops-level-panel>.ops-form-actions{padding:0 16px 16px}.ops-level-settings-grid .ops-check{margin:0}.ops-level-game-row .btn{padding:7px 10px;font-size:11px}@media(max-width:720px){.ops-level-settings-grid{grid-template-columns:1fr}.ops-level-game-row{grid-template-columns:minmax(0,1fr) auto;gap:8px}.ops-level-game-row>label:not(.ops-check){grid-column:1}.ops-level-game-row>.btn{grid-column:2;grid-row:2}.ops-level-threshold-row{grid-template-columns:90px minmax(100px,1fr) auto}}</style>
 \n</head>
 <body>
 <section id="loginView" class="login">
@@ -560,8 +561,11 @@
   <div class="ops-nav-group"><small>09 / ECONOMY</small>
    <button data-ops-tab="coins"><b>13</b><span>KURO COIN経済管理</span></button>
   </div>
-  <div class="ops-nav-group"><small>10 / STORE</small>
-   <button data-ops-tab="store"><b>14</b><span>KURO GAMES ストア管理</span></button>
+  <div class="ops-nav-group"><small>10 / LEVEL SYSTEM</small>
+   <button data-ops-tab="levels"><b>14</b><span>レベル・XP管理</span></button>
+  </div>
+  <div class="ops-nav-group"><small>11 / STORE</small>
+   <button data-ops-tab="store"><b>15</b><span>KURO GAMES ストア管理</span></button>
   </div>
  </div>
  <div class="ops-shell-bar" id="opsShellBar">
@@ -621,6 +625,47 @@
   <section class="panel">
    <div class="toolbar"><div><strong>直近のコイン取引</strong><div class="sns-muted">勝利報酬・管理者補正・ショップ取引の記録</div></div><span id="opsCoinTransactionCount" class="sns-muted">—</span></div>
    <div class="ops-tablewrap" id="opsCoinTransactions"><div class="empty">取引履歴を読み込み中…</div></div>
+  </section>
+ </div>
+ <div id="opsLevelsView" hidden>
+  <div class="ops-overview-head">
+   <div><strong>KURO GAMES レベル・XP管理</strong><div class="sns-muted">勝利経験値・必要XP・プレイヤーの成長データを管理します。KURO COINとは独立しています。</div></div>
+   <div class="ops-overview-tools"><span id="opsLevelsUpdated" class="sns-muted">準備中…</span><button class="btn" id="opsLevelsRefresh" type="button">更新</button></div>
+  </div>
+  <section class="panel ops-level-panel">
+   <div class="toolbar"><div><strong>制度の基本設定</strong><div class="sns-muted">新しい勝利イベントに適用する共通設定です。</div></div></div>
+   <form id="opsLevelSettingsForm" class="ops-form">
+    <div class="ops-level-settings-grid">
+     <label class="ops-check"><input type="checkbox" id="opsLevelEnabled"> レベル制度を有効にする</label>
+     <label>共通の勝利XP<input id="opsLevelDefaultXp" type="number" min="0" max="100000" step="1" required></label>
+    </div>
+    <div class="ops-form-actions"><button class="btn primary" type="submit">基本設定を保存</button><span id="opsLevelSettingsStatus" class="sns-muted" role="status"></span></div>
+   </form>
+  </section>
+  <section class="panel ops-level-panel">
+   <div class="toolbar"><div><strong>ゲーム別の勝利XP</strong><div class="sns-muted">個別設定がないゲームは共通XPを使用します。</div></div></div>
+   <div id="opsLevelGameRewards" class="ops-level-list"><div class="empty">読み込み中…</div></div>
+  </section>
+  <section class="panel ops-level-panel">
+   <div class="toolbar"><div><strong>レベルごとの必要XP</strong><div class="sns-muted">Lv.1は0 XP固定。レベルが上がるほど必要XPが増える設定にします。</div></div><button class="btn" type="button" id="opsLevelThresholdAdd">レベルを追加</button></div>
+   <div id="opsLevelThresholdsList" class="ops-level-thresholds"></div>
+   <div class="ops-form-actions" style="padding:0 16px 16px"><button class="btn primary" type="button" id="opsLevelThresholdSave">必要XPを保存</button><span id="opsLevelThresholdStatus" class="sns-muted" role="status"></span></div>
+  </section>
+  <section class="panel ops-level-panel">
+   <div class="toolbar"><div><strong>プレイヤーのレベル</strong><div class="sns-muted">経験値上位50人を表示します。ユーザーを選ぶと手動補正フォームに反映します。</div></div><span id="opsLevelUserCount" class="sns-muted">—</span></div>
+   <div class="ops-tablewrap" id="opsLevelUsersList"><div class="empty">読み込み中…</div></div>
+   <form id="opsLevelAdjustForm" class="ops-form">
+    <div class="ops-form-grid">
+     <label>ユーザーID<input id="opsLevelAdjustUserId" type="text" required placeholder="UUID"></label>
+     <label>XP増減（マイナス可）<input id="opsLevelAdjustAmount" type="number" min="-1000000" max="1000000" step="1" required placeholder="例：500 または -100"></label>
+    </div>
+    <label>補正理由<input id="opsLevelAdjustReason" type="text" maxlength="200" required placeholder="理由を入力"></label>
+    <div class="ops-form-actions"><button class="btn primary" type="submit">XPを補正</button><span id="opsLevelAdjustStatus" class="sns-muted" role="status"></span></div>
+   </form>
+  </section>
+  <section class="panel ops-level-panel">
+   <div class="toolbar"><div><strong>最近のXP履歴</strong><div class="sns-muted">勝利による獲得と管理者補正の記録。</div></div></div>
+   <div class="ops-tablewrap" id="opsLevelLedger"><div class="empty">読み込み中…</div></div>
   </section>
  </div>
  <div id="opsStoreView" hidden>
@@ -1607,6 +1652,127 @@ async function adjustOpsCoinBalance(event){
  finally{button.disabled=false;}
 }
 
+
+let opsLevelData=null;
+function levelFormat(value){return Math.max(0,Number(value)||0).toLocaleString("ja-JP");}
+function renderOpsLevelThresholds(rows){
+ const host=$("#opsLevelThresholdsList");if(!host)return;
+ host.innerHTML=(rows||[]).map(row=>'<div class="ops-level-threshold-row" data-level-threshold-row>'+
+  '<label>レベル<input type="number" min="1" max="100" step="1" data-level-number value="'+esc(row.level)+'"></label>'+
+  '<label>累計必要XP<input type="number" min="0" max="1000000000000" step="1" data-level-required-xp value="'+esc(row.required_xp)+'"></label>'+
+  '<button class="btn" type="button" data-level-threshold-remove>削除</button></div>').join("");
+}
+function renderOpsLevelGameRewards(data){
+ const host=$("#opsLevelGameRewards");if(!host)return;
+ const rewards=new Map((data.rewards||[]).map(row=>[row.game_id,row]));
+ const games=Array.isArray(data.games)?data.games:[];
+ host.innerHTML=games.length?games.map(game=>{
+  const saved=rewards.get(game.id),enabled=saved?saved.enabled!==false:true;
+  const xp=saved?Number(saved.xp_per_win):Number(data.settings.default_win_xp||100);
+  return '<div class="ops-level-game-row" data-level-game-row data-game-id="'+esc(game.id)+'">'+
+   '<div class="ops-level-game-copy"><strong>'+esc(game.title||game.slug||"ゲーム")+'</strong><small>'+esc(game.slug||game.id)+' · '+(saved?"個別設定":"共通設定を使用中")+'</small></div>'+
+   '<label class="ops-check"><input type="checkbox" data-level-game-enabled '+(enabled?"checked":"")+'> XP付与</label>'+
+   '<label>勝利XP<input type="number" min="0" max="100000" step="1" data-level-game-xp value="'+esc(xp)+'"></label>'+
+   '<button class="btn" type="button" data-level-game-save>保存</button></div>';
+ }).join(""):'<div class="empty">ゲームがありません。</div>';
+}
+function renderOpsLevelUsers(data){
+ const host=$("#opsLevelUsersList");if(!host)return;
+ const users=Array.isArray(data.users)?data.users:[];
+ $("#opsLevelUserCount").textContent=levelFormat(data.user_count||users.length)+"人";
+ if(!users.length){host.innerHTML='<div class="empty">まだXPを獲得したユーザーはいません。</div>';return;}
+ host.innerHTML='<table class="ops-table"><thead><tr><th>ユーザー</th><th>レベル</th><th>累計XP</th><th>更新</th><th>補正</th></tr></thead><tbody>'+
+ users.map(row=>{const p=row.profile||{};return '<tr><td>'+esc(p.display_name||p.username||"KUROユーザー")+'<small>'+esc(p.kuro_id||row.user_id)+'</small></td>'+
+  '<td>Lv.'+levelFormat(row.current_level)+'</td><td>'+levelFormat(row.total_xp)+' XP</td><td>'+esc(row.updated_at?date(row.updated_at):"—")+'</td>'+
+  '<td><button class="btn" type="button" data-level-pick="'+esc(row.user_id)+'">このユーザー</button></td></tr>';}).join("")+
+ '</tbody></table>';
+}
+function renderOpsLevelLedger(data){
+ const host=$("#opsLevelLedger");if(!host)return;
+ const rows=Array.isArray(data.ledger)?data.ledger:[];
+ if(!rows.length){host.innerHTML='<div class="empty">XP履歴はまだありません。</div>';return;}
+ host.innerHTML='<table class="ops-table"><thead><tr><th>日時</th><th>ユーザー</th><th>内容</th><th>増減</th><th>累計XP</th></tr></thead><tbody>'+
+ rows.map(row=>{const p=row.profile||{},n=Number(row.xp_amount)||0;return '<tr><td>'+esc(row.created_at?date(row.created_at):"—")+'</td>'+
+  '<td>'+esc(p.display_name||p.username||"KUROユーザー")+'<small>'+esc(p.kuro_id||row.user_id)+'</small></td>'+
+  '<td>'+esc(row.reason||"XP")+'<small>'+esc((row.game&&row.game.title?row.game.title+" · ":"")+(row.source_mode||""))+'</small></td>'+
+  '<td style="font-weight:900;color:'+(n>=0?"#46c69a":"#ef7777")+'">'+(n>0?"+":"")+levelFormat(Math.abs(n))+' XP</td><td>'+levelFormat(row.total_xp_after)+' XP</td></tr>';}).join("")+
+ '</tbody></table>';
+}
+async function loadOpsLevels(){
+ const status=$("#opsLevelSettingsStatus");if(status)status.textContent="読み込み中…";
+ $("#opsLevelGameRewards").innerHTML='<div class="empty">読み込み中…</div>';
+ $("#opsLevelUsersList").innerHTML='<div class="empty">読み込み中…</div>';
+ $("#opsLevelLedger").innerHTML='<div class="empty">読み込み中…</div>';
+ try{
+  const data=await opsInvoke({action:"get_level_system"});opsLevelData=data;
+  $("#opsLevelEnabled").checked=data.settings?.enabled!==false;
+  $("#opsLevelDefaultXp").value=Number(data.settings?.default_win_xp??100);
+  renderOpsLevelGameRewards(data);renderOpsLevelThresholds(data.thresholds||[]);
+  renderOpsLevelUsers(data);renderOpsLevelLedger(data);
+  $("#opsLevelsUpdated").textContent="更新 "+new Date().toLocaleTimeString("ja-JP");
+  if(status)status.textContent="読み込み完了";
+ }catch(error){
+  const message=esc(error.message||error);
+  $("#opsLevelGameRewards").innerHTML='<div class="error">設定を読み込めませんでした：'+message+'</div>';
+  $("#opsLevelUsersList").innerHTML='<div class="error">ユーザー情報を読み込めませんでした。</div>';
+  $("#opsLevelLedger").innerHTML='<div class="error">履歴を読み込めませんでした。</div>';
+  if(status)status.textContent="読み込み失敗";
+ }
+}
+async function saveOpsLevelSettings(event){
+ event.preventDefault();const button=event.submitter||event.target.querySelector('button[type="submit"]');
+ button.disabled=true;$("#opsLevelSettingsStatus").textContent="保存中…";
+ try{
+  await opsInvoke({action:"save_level_settings",enabled:$("#opsLevelEnabled").checked,defaultWinXp:Number($("#opsLevelDefaultXp").value)});
+  $("#opsLevelSettingsStatus").textContent="保存しました";await loadOpsLevels();
+ }catch(error){$("#opsLevelSettingsStatus").textContent="保存できませんでした："+(error.message||error);}
+ finally{button.disabled=false;}
+}
+async function saveOpsLevelGameReward(row,button){
+ button.disabled=true;
+ try{
+  await opsInvoke({action:"save_level_game_reward",gameId:row.dataset.gameId,
+   enabled:row.querySelector("[data-level-game-enabled]").checked,
+   xpPerWin:Number(row.querySelector("[data-level-game-xp]").value)});
+  await loadOpsLevels();
+ }catch(error){alert("ゲーム別XPを保存できませんでした："+(error.message||error));button.disabled=false;}
+}
+function addOpsLevelThreshold(){
+ const host=$("#opsLevelThresholdsList"),rows=Array.from(host.querySelectorAll("[data-level-threshold-row]"));
+ const last=rows[rows.length-1],lastLevel=last?Number(last.querySelector("[data-level-number]").value):0;
+ const lastXp=last?Number(last.querySelector("[data-level-required-xp]").value):0;
+ if(last&&(!Number.isSafeInteger(lastLevel)||!Number.isSafeInteger(lastXp))){alert("最後のレベル設定を確認してください。");return;}
+ if(lastLevel>=100){alert("設定できるのはLv.100までです。");return;}
+ host.insertAdjacentHTML("beforeend",'<div class="ops-level-threshold-row" data-level-threshold-row>'+
+  '<label>レベル<input type="number" min="1" max="100" step="1" data-level-number value="'+(lastLevel+1)+'"></label>'+
+  '<label>累計必要XP<input type="number" min="0" max="1000000000000" step="1" data-level-required-xp value="'+(lastXp+2000)+'"></label>'+
+  '<button class="btn" type="button" data-level-threshold-remove>削除</button></div>');
+}
+async function saveOpsLevelThresholds(){
+ const button=$("#opsLevelThresholdSave"),status=$("#opsLevelThresholdStatus");
+ const thresholds=Array.from($("#opsLevelThresholdsList").querySelectorAll("[data-level-threshold-row]")).map(row=>({
+  level:Number(row.querySelector("[data-level-number]").value),
+  requiredXp:Number(row.querySelector("[data-level-required-xp]").value)
+ }));
+ button.disabled=true;status.textContent="保存中…";
+ try{const data=await opsInvoke({action:"save_level_thresholds",thresholds});
+  status.textContent="保存しました。"+levelFormat(data.recalculated||0)+"人のレベルを再計算しました。";await loadOpsLevels();
+ }catch(error){status.textContent="保存できませんでした："+(error.message||error);}
+ finally{button.disabled=false;}
+}
+async function adjustOpsLevelXp(event){
+ event.preventDefault();const form=event.target,button=form.querySelector('button[type="submit"]');
+ const userId=$("#opsLevelAdjustUserId").value.trim(),amount=Number($("#opsLevelAdjustAmount").value),reason=$("#opsLevelAdjustReason").value.trim();
+ if(!window.confirm(userId+" のXPを "+(amount>0?"+":"")+amount+" XP補正します。理由："+reason+"。続行しますか？"))return;
+ button.disabled=true;$("#opsLevelAdjustStatus").textContent="補正中…";
+ try{const result=await opsInvoke({action:"adjust_level_xp",userId,amount,reason});
+  $("#opsLevelAdjustAmount").value="";$("#opsLevelAdjustReason").value="";
+  $("#opsLevelAdjustStatus").textContent="補正しました。累計 "+levelFormat(result.result?.total_xp)+" XP / Lv."+levelFormat(result.result?.current_level);
+  await loadOpsLevels();
+ }catch(error){$("#opsLevelAdjustStatus").textContent="補正できませんでした："+(error.message||error);}
+ finally{button.disabled=false;}
+}
+
 let opsStoreItems=[];
 function resetOpsStoreForm(){
  const form=$("#opsStoreForm");if(!form)return;
@@ -1686,10 +1852,10 @@ async function deactivateOpsStoreItem(itemId,button){
 
 function setOpsView(view){
  opsView=view;
- const shellNames={overview:"overview",users:"accounts.users",audit:"moderation.audit",reports:"moderation.reports","suspension-appeals":"accounts.suspension_appeals",announcements:"content.announcements","game-banners":"content.kurogames_home_banners",messages:"content.broadcast",flags:"config.feature_flags",secret:"kurogames.secret",coins:"economy.kuro_coin",store:"kurogames.store",analytics:"analytics.usage",realtime:"system.realtime",logs:"system.logs"}
+ const shellNames={overview:"overview",users:"accounts.users",audit:"moderation.audit",reports:"moderation.reports","suspension-appeals":"accounts.suspension_appeals",announcements:"content.announcements","game-banners":"content.kurogames_home_banners",messages:"content.broadcast",flags:"config.feature_flags",secret:"kurogames.secret",coins:"economy.kuro_coin",levels:"kurogames.levels",store:"kurogames.store",analytics:"analytics.usage",realtime:"system.realtime",logs:"system.logs"}
  const shellName=$("#opsShellName");if(shellName)shellName.textContent=shellNames[view]||view;
  const shellClock=$("#opsShellClock");if(shellClock)shellClock.textContent="LOCAL "+new Date().toLocaleTimeString("ja-JP");
- ["overview","users","audit","reports","suspension-appeals","announcements","game-banners","messages","flags","secret","coins","store","analytics","realtime","logs"].forEach(name=>{
+ ["overview","users","audit","reports","suspension-appeals","announcements","game-banners","messages","flags","secret","coins","levels","store","analytics","realtime","logs"].forEach(name=>{
   const target=$("#ops"+name.charAt(0).toUpperCase()+name.slice(1)+"View");
   if(target)target.hidden=name!==view;
   const button=$("#opsTabs [data-ops-tab='"+name+"']");
@@ -1706,6 +1872,7 @@ function setOpsView(view){
  if(view==="flags")loadOpsFlags();
  if(view==="secret")loadOpsSecretManager();
  if(view==="coins")loadOpsCoins();
+ if(view==="levels")loadOpsLevels();
  if(view==="store")loadOpsStoreItems();
  if(view==="analytics")loadOpsAnalytics();
  if(view==="logs")loadOpsLogs(true);
@@ -2538,6 +2705,14 @@ $("#opsFlagForm").addEventListener("reset",()=>{setTimeout(()=>{$("#opsFlagKey")
 $("#opsFlagsList").addEventListener("click",e=>{const edit=e.target.closest("[data-flag-edit]"),del=e.target.closest("[data-flag-delete]");if(edit)editFeatureFlag(edit.dataset.flagEdit);if(del)deleteFeatureFlag(del.dataset.flagDelete);});
 $("#opsSecretRefresh").addEventListener("click",loadOpsSecretManager);
 $("#opsCoinsRefresh").addEventListener("click",loadOpsCoins);
+$("#opsLevelsRefresh").addEventListener("click",loadOpsLevels);
+$("#opsLevelSettingsForm").addEventListener("submit",saveOpsLevelSettings);
+$("#opsLevelThresholdAdd").addEventListener("click",addOpsLevelThreshold);
+$("#opsLevelThresholdSave").addEventListener("click",saveOpsLevelThresholds);
+$("#opsLevelThresholdsList").addEventListener("click",e=>{const b=e.target.closest("[data-level-threshold-remove]");if(b){const row=b.closest("[data-level-threshold-row]");if(row&&Number(row.querySelector("[data-level-number]").value)!==1)row.remove();else alert("Lv.1は削除できません。");}});
+$("#opsLevelGameRewards").addEventListener("click",e=>{const b=e.target.closest("[data-level-game-save]");if(b){const row=b.closest("[data-level-game-row]");if(row)saveOpsLevelGameReward(row,b);}});
+$("#opsLevelUsersList").addEventListener("click",e=>{const b=e.target.closest("[data-level-pick]");if(b)$("#opsLevelAdjustUserId").value=b.dataset.levelPick;});
+$("#opsLevelAdjustForm").addEventListener("submit",adjustOpsLevelXp);
 $("#opsStoreRefresh").addEventListener("click",loadOpsStoreItems);
 $("#opsStoreForm").addEventListener("submit",saveOpsStoreItem);
 $("#opsStoreForm").addEventListener("reset",()=>setTimeout(()=>{
