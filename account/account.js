@@ -104,64 +104,6 @@
       || "KUROアカウント";
   }
 
-  async function loadCoinSummary() {
-    const balanceNode = $("accountCoinBalance");
-    const historyNode = $("accountCoinHistory");
-    if (!currentUser || !balanceNode || !historyNode) return;
-    balanceNode.textContent = "読み込み中…";
-    historyNode.replaceChildren();
-    try {
-      const auth = await client.auth.getUser();
-      if (auth.error || !auth.data || !auth.data.user || auth.data.user.id !== currentUser.id) {
-        throw new Error("ログイン状態を確認できません。");
-      }
-      const { data, error } = await client.functions.invoke("kurogames-online", {
-        body: { action: "coin_summary" }
-      });
-      if (error) throw error;
-      if (!data || data.error) throw new Error(data && data.error || "KURO COINの情報を取得できませんでした。");
-      if (!currentUser || currentUser.id !== auth.data.user.id) return;
-      const balance = Math.max(0, Number(data.balance) || 0);
-      balanceNode.textContent = balance.toLocaleString("ja-JP") + " KC";
-      const transactions = Array.isArray(data.transactions) ? data.transactions : [];
-      if (!transactions.length) {
-        const empty = document.createElement("div");
-        empty.className = "account-hint";
-        empty.textContent = "まだコインの獲得・使用履歴がありません。対象ゲームで勝利するとここに記録されます。";
-        historyNode.appendChild(empty);
-      } else {
-        transactions.forEach(function (item) {
-          const row = document.createElement("div");
-          row.className = "account-coin-row";
-          const copy = document.createElement("div");
-          const title = document.createElement("strong");
-          title.textContent = String(item.description || "KURO COIN");
-          const meta = document.createElement("small");
-          const date = item.created_at ? new Date(item.created_at) : null;
-          meta.textContent = (date && !Number.isNaN(date.getTime())
-            ? new Intl.DateTimeFormat("ja-JP", { dateStyle: "medium", timeStyle: "short" }).format(date)
-            : "日時不明") + (item.source_mode ? " · " + String(item.source_mode) : "");
-          copy.append(title, meta);
-          const amount = document.createElement("span");
-          const value = Number(item.amount) || 0;
-          amount.className = "account-coin-amount " + (value >= 0 ? "positive" : "negative");
-          amount.textContent = (value > 0 ? "+" : "") + value.toLocaleString("ja-JP") + " KC";
-          row.append(copy, amount);
-          historyNode.appendChild(row);
-        });
-      }
-      setStatus("accountCoinStatus", "KURO Lab共通の残高です。", "success");
-    } catch (error) {
-      console.error("KURO COIN summary load failed", error);
-      balanceNode.textContent = "— KC";
-      const message = document.createElement("div");
-      message.className = "account-hint";
-      message.textContent = error && error.message || "KURO COINを読み込めませんでした。";
-      historyNode.appendChild(message);
-      setStatus("accountCoinStatus", "コイン情報を取得できませんでした。再読み込みしてください。", "error");
-    }
-  }
-
   async function loadAccount(authenticatedUser) {
     let user = authenticatedUser || null;
     if (!user) {
@@ -173,7 +115,6 @@
         $("accountUser").hidden = true;
         $("accountPasswordCard").hidden = true;
         $("accountProfileCard").hidden = true;
-        $("accountCoinCard").hidden = true;
         $("accountDeleteCard").hidden = true;
         return;
       }
@@ -184,7 +125,6 @@
       currentUser = null;
       $("accountLoggedOut").hidden = false;
       $("accountUser").hidden = true;
-      $("accountCoinCard").hidden = true;
       $("accountPasswordCard").hidden = true;
       $("accountDeleteCard").hidden = true;
       return;
@@ -206,12 +146,10 @@
     $("accountDisplayName").textContent = getReadableName(profile, currentUser);
     $("accountBioInput").value = profile && typeof profile.bio === "string" ? profile.bio : "";
     $("accountProfileCard").hidden = false;
-    $("accountCoinCard").hidden = false;
     $("accountUser").hidden = false;
     $("accountLoggedOut").hidden = true;
     $("accountPasswordCard").hidden = false;
     $("accountDeleteCard").hidden = false;
-    loadCoinSummary();
 
     $("accountPasswordIntro").textContent = needsSetup
       ? "このアカウントにはまだパスワードが設定されていません。ここで設定すると、KUROLAB・SNS・GAMES共通で使えます。"
@@ -452,7 +390,6 @@
       try { localStorage.removeItem("sb-" + PROJECT_REF + "-auth-token"); } catch (_) {}
       $("accountPasswordCard").hidden = true;
       $("accountDeleteCard").hidden = true;
-      $("accountCoinCard").hidden = true;
       $("accountUser").hidden = true;
       $("accountLoggedOut").hidden = false;
       $("accountLoggedOut").querySelector("strong").textContent = "アカウントを削除しました";
@@ -486,7 +423,6 @@
       currentUser = null;
       $("accountUser").hidden = true;
       $("accountProfileCard").hidden = true;
-      $("accountCoinCard").hidden = true;
       $("accountPasswordCard").hidden = true;
       $("accountDeleteCard").hidden = true;
       $("accountLoggedOut").hidden = false;
