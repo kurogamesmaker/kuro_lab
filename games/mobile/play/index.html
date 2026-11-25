@@ -12,13 +12,28 @@
     html,body{width:100%;height:100%;min-height:100%;margin:0;overflow:hidden;background:#070b13}
     body{position:fixed;inset:0;padding:0;font-family:system-ui,sans-serif}
     #gameFrame{display:block;width:100%;height:100%;border:0;background:#070b13}
-    #loading{position:absolute;inset:0;display:grid;place-content:center;gap:10px;padding:24px;color:#edf4ff;text-align:center;background:#070b13;font-size:12px}
+    #loading{position:absolute;z-index:5;inset:0;display:grid;align-content:center;justify-items:center;gap:11px;padding:24px;color:#edf4ff;text-align:center;background:#070b13;font-size:12px}
     #loading strong{font-size:16px}
-    #loading[hidden]{display:none}
+    #loading span{color:#9aaac2;line-height:1.7}
+    #loading[hidden],#loadingActions[hidden]{display:none}
+    .loading-orbit{width:27px;height:27px;border:2px solid #34465f;border-top-color:#8eb5ff;border-radius:50%;animation:mobile-spin .8s linear infinite}
+    @keyframes mobile-spin{to{transform:rotate(360deg)}}
+    #loadingActions{display:flex;align-items:center;justify-content:center;gap:9px;margin-top:8px}
+    #loadingActions button,#loadingActions a{min-height:39px;display:inline-flex;align-items:center;justify-content:center;padding:0 13px;border:1px solid #516b94;border-radius:10px;background:#1a2a43;color:#f0f5ff;font:800 11px system-ui;text-decoration:none;cursor:pointer}
+    #loadingActions a{border-color:#34445c;background:#111b2a;color:#b8c6db}
+    @media(prefers-reduced-motion:reduce){.loading-orbit{animation:none}}
   </style>
 </head>
 <body>
-  <div id="loading"><strong>ゲームを起動しています</strong><span>KURO GAMES MOBILE</span></div>
+  <div id="loading" role="status" aria-live="polite">
+    <div class="loading-orbit" aria-hidden="true"></div>
+    <strong id="loadingTitle">ゲームを起動しています</strong>
+    <span id="loadingMessage">ゲームデータと通信しています。</span>
+    <div id="loadingActions" hidden>
+      <button id="retryGame" type="button">もう一度読み込む</button>
+      <a href="/games/mobile/">ホームへ戻る</a>
+    </div>
+  </div>
   <iframe id="gameFrame" title="KURO GAMES モバイルゲーム" allow="autoplay; fullscreen; clipboard-read; clipboard-write" allowfullscreen></iframe>
   <script>
   (function(){
@@ -26,37 +41,127 @@
     var params = new URLSearchParams(location.search);
     var id = params.get("id") || "";
     var loading = document.getElementById("loading");
+    var title = document.getElementById("loadingTitle");
+    var message = document.getElementById("loadingMessage");
+    var actions = document.getElementById("loadingActions");
+    var retry = document.getElementById("retryGame");
     var frame = document.getElementById("gameFrame");
+    var ready = false;
+    var observer = null;
+    var timeout = null;
+    var attached = new WeakSet();
+    var GAME_LOAD_TIMEOUT_MS = 40000;
+
+    function showLoading(titleText, messageText, canRetry) {
+      loading.hidden = false;
+      title.textContent = titleText;
+      message.textContent = messageText;
+      actions.hidden = !canRetry;
+    }
+
+    function stopWatching() {
+      if (timeout) window.clearTimeout(timeout);
+      timeout = null;
+      if (observer) observer.disconnect();
+      observer = null;
+    }
+
+    function markReady() {
+      if (ready) return;
+      ready = true;
+      stopWatching();
+      loading.hidden = true;
+    }
+
+    function attachPlayerDocument() {
+      var innerDoc;
+      try {
+        innerDoc = frame.contentDocument;
+      } catch (error) {
+        console.warn("[KURO GAMES MOBILE] player document unavailable", error);
+        return;
+      }
+      if (!innerDoc || !innerDoc.documentElement) return;
+
+      if (!innerDoc.documentElement.dataset.kuroMobileAppBackBound) {
+        innerDoc.documentElement.dataset.kuroMobileAppBackBound = "1";
+        innerDoc.addEventListener("click", function(event){
+          var target = event.target && event.target.closest
+            ? event.target.closest("#mobileGameBack")
+            : null;
+          if (!target) return;
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          location.replace("/games/mobile/");
+        }, true);
+      }
+
+      function watchForGameFrame() {
+        var game = innerDoc.querySelector("#frameWrap iframe.game-frame");
+        if (!game || attached.has(game)) return;
+        attached.add(game);
+        game.addEventListener("load", markReady, { once: true });
+      }
+
+      // The player document loads before it finishes fetching the published game.
+      // Keep the app loader visible until the actual sandboxed game frame loads.
+      innerDoc.addEventListener("load", function(event) {
+        var target = event.target;
+        if (target && target.matches && target.matches("#frameWrap iframe.game-frame")) {
+          markReady();
+        }
+      }, true);
+
+      watchForGameFrame();
+      if (innerDoc.body && typeof MutationObserver === "function") {
+        observer = new MutationObserver(watchForGameFrame);
+        observer.observe(innerDoc.body, { childList: true, subtree: true });
+      }
+
+      var state = innerDoc.getElementById("state");
+      if (state && /ゲームを開けませんでした/.test(state.textContent || "")) {
+        showLoading("ゲームを開けませんでした", "ゲーム情報を取得できませんでした。通信状態を確認してください。", true);
+      }
+    }
+
+    function loadPlayer() {
+      ready = false;
+      stopWatching();
+      attached = new WeakSet();
+      showLoading("ゲームを起動しています", "ゲームデータと通信しています。", false);
+      timeout = window.setTimeout(function(){
+        if (ready) return;
+        showLoading(
+          "読み込みに時間がかかっています",
+          navigator.onLine === false
+            ? "インターネット接続を確認してから、もう一度お試しください。"
+            : "通信が混み合っている可能性があります。再読み込みできます。",
+          true
+        );
+      }, GAME_LOAD_TIMEOUT_MS);
+      frame.src = "/games/play/?id=" + encodeURIComponent(id) + "&mobileReload=" + Date.now();
+    }
+
     if (!/^[0-9a-f-]{36}$/i.test(id)) {
-      loading.innerHTML = "<strong>ゲームを開けませんでした</strong><span>ゲームIDが正しくありません。</span>";
+      showLoading("ゲームを開けませんでした", "ゲームIDが正しくありません。", true);
       return;
     }
-    frame.addEventListener("load", function(){
-      loading.hidden = true;
-      try {
-        var innerDoc = frame.contentDocument;
-        if (innerDoc && !innerDoc.documentElement.dataset.kuroMobileAppBackBound) {
-          innerDoc.documentElement.dataset.kuroMobileAppBackBound = "1";
-          innerDoc.addEventListener("click", function(event){
-            var target = event.target && event.target.closest
-              ? event.target.closest("#mobileGameBack")
-              : null;
-            if (!target) return;
-            event.preventDefault();
-            event.stopPropagation();
-            event.stopImmediatePropagation();
-            location.replace("/games/mobile/");
-          }, true);
-        }
-      } catch (error) {
-        console.warn("[KURO GAMES MOBILE] player bridge unavailable", error);
-      }
-    });
+
+    frame.addEventListener("load", attachPlayerDocument);
     frame.addEventListener("error", function(){
-      loading.hidden = false;
-      loading.innerHTML = "<strong>ゲームを読み込めませんでした</strong><span>通信状態を確認して、もう一度お試しください。</span>";
+      showLoading("ゲームを読み込めませんでした", "通信状態を確認して、もう一度お試しください。", true);
     });
-    frame.src = "/games/play/?id=" + encodeURIComponent(id);
+
+    retry.addEventListener("click", loadPlayer);
+    window.addEventListener("offline", function(){
+      if (!ready) showLoading("接続が切れました", "ネットワークに再接続してから、もう一度お試しください。", true);
+    });
+    window.addEventListener("online", function(){
+      if (!ready) showLoading("接続が戻りました", "ゲームを再読み込みできます。", true);
+    });
+
+    loadPlayer();
   })();
   </script>
 </body>
