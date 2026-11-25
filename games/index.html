@@ -1368,6 +1368,56 @@ header .lab{padding-left:10px!important;padding-right:10px!important}
  .kuro-coin-popover{position:fixed;top:68px;right:10px;width:min(270px,calc(100vw - 20px))}
 }
 </style>
+<style id="kuro-level-ranking-style">
+.kuro-level-ranking{margin:22px 0 0;padding:20px;border:1px solid #e3def7;border-radius:20px;background:linear-gradient(145deg,#fff 0%,#fbfaff 55%,#f5f8ff 100%);box-shadow:0 10px 28px #49368a0b}
+.kuro-level-ranking-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:15px}
+.kuro-level-ranking-eyebrow{display:block;color:#8064c8;font-size:9px;font-weight:1000;letter-spacing:1.65px}
+.kuro-level-ranking-head h2{margin:5px 0 3px;color:#27304a;font-size:21px;letter-spacing:-.55px}
+.kuro-level-ranking-head h2 span{color:#8c6bd8;margin-right:5px}
+.kuro-level-ranking-head p{margin:0;color:#7c879b;font-size:11px}
+.kuro-level-ranking-tools{display:flex;align-items:center;gap:9px;flex:0 0 auto}
+.kuro-level-ranking-tools>span{color:#778198;font-size:11px;font-weight:850}
+.kuro-level-ranking-tools button{border:1px solid #e1d9f3;border-radius:9px;background:#fff;color:#6f55b0;padding:7px 10px;font-size:11px;font-weight:850;cursor:pointer}
+.kuro-level-ranking-tools button:hover{background:#f5f0ff;border-color:#c7b7ed}
+.kuro-level-ranking-tools button:disabled{opacity:.55;cursor:wait}
+.kuro-level-ranking-list{display:grid;gap:7px}
+.kuro-level-ranking-row{width:100%;min-width:0;display:flex;align-items:center;gap:11px;padding:10px 12px;border:1px solid #e9e8f1;border-radius:12px;background:#fff;text-align:left;color:#26334b;cursor:pointer;transition:background .15s,border-color .15s,transform .15s}
+.kuro-level-ranking-row:hover{background:#faf8ff;border-color:#cfc2ef;transform:translateY(-1px)}
+.kuro-level-ranking-row[data-rank="1"]{border-color:#ead8a7;background:linear-gradient(100deg,#fffdf5,#fff)}
+.kuro-level-ranking-row[data-rank="2"]{border-color:#dce2ec;background:linear-gradient(100deg,#f8faff,#fff)}
+.kuro-level-ranking-row[data-rank="3"]{border-color:#ead9ca;background:linear-gradient(100deg,#fff9f5,#fff)}
+.kuro-level-ranking-position{width:31px;flex:0 0 31px;text-align:center;color:#7f89a0;font-size:14px;font-weight:1000}
+.kuro-level-ranking-position.medal{font-size:20px}
+.kuro-level-ranking-avatar{width:36px;height:36px;flex:0 0 36px;display:grid;place-items:center;overflow:hidden;border-radius:50%;background:linear-gradient(145deg,#eee8ff,#e5f0ff);color:#6751a5;font-size:14px;font-weight:950}
+.kuro-level-ranking-avatar img{width:100%;height:100%;object-fit:cover}
+.kuro-level-ranking-user{display:grid;gap:2px;flex:1;min-width:0}
+.kuro-level-ranking-user strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#34425b;font-size:12px;font-weight:900}
+.kuro-level-ranking-user small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#8a94a7;font-size:10px}
+.kuro-level-ranking-level{flex:0 0 auto;min-width:53px;padding:5px 8px;border:1px solid #e4dcf7;border-radius:9px;background:#f8f5ff;color:#7658b9;text-align:center;font-size:11px;font-weight:1000}
+.kuro-level-ranking-xp{min-width:74px;flex:0 0 auto;color:#51617c;text-align:right;font-size:11px;font-weight:950;font-variant-numeric:tabular-nums}
+.kuro-level-ranking-message{display:grid;place-items:center;min-height:98px;padding:18px;border:1px dashed #ddd7ec;border-radius:12px;color:#7e899e;text-align:center;font-size:12px;line-height:1.8}
+.kuro-level-ranking-message.error{color:#b65b67;border-color:#edcbd0;background:#fffafb}
+.kuro-level-ranking-foot{display:flex;justify-content:space-between;gap:10px;margin-top:13px;padding-top:10px;border-top:1px solid #ebe8f3;color:#8992a4;font-size:10px}
+.kuro-level-ranking-foot span:last-child{color:#8b70c5;font-weight:1000;letter-spacing:1px}
+@media(max-width:680px){
+ .kuro-level-ranking{margin-top:16px;padding:14px;border-radius:16px}
+ .kuro-level-ranking-head{align-items:flex-start;gap:9px}
+ .kuro-level-ranking-head h2{font-size:18px}
+ .kuro-level-ranking-head p{max-width:230px;font-size:10px;line-height:1.6}
+ .kuro-level-ranking-tools{gap:5px;flex-direction:column;align-items:flex-end}
+ .kuro-level-ranking-tools>span{font-size:10px}
+ .kuro-level-ranking-tools button{padding:6px 8px;font-size:10px}
+ .kuro-level-ranking-row{gap:8px;padding:9px}
+ .kuro-level-ranking-position{width:24px;flex-basis:24px;font-size:12px}
+ .kuro-level-ranking-position.medal{font-size:18px}
+ .kuro-level-ranking-avatar{width:32px;height:32px;flex-basis:32px}
+ .kuro-level-ranking-user strong{font-size:11px}
+ .kuro-level-ranking-user small{font-size:9px}
+ .kuro-level-ranking-level{min-width:47px;padding:5px 6px;font-size:10px}
+ .kuro-level-ranking-xp{min-width:62px;font-size:10px}
+ .kuro-level-ranking-foot{font-size:9px}
+}
+</style>
 </head>
 <body>
 <header><div class="wrap nav">
@@ -1416,6 +1466,26 @@ header .lab{padding-left:10px!important;padding-right:10px!important}
  <label id="kuroRankCpuWrap" hidden>CPU難易度<select id="kuroRankCpu"><option value="">すべて</option></select></label>
  <label id="kuroRankLevelWrap" hidden>レベル<select id="kuroRankLevel"><option value="">すべて</option></select></label>
 </div><div class="rank-list" id="kuroRankList"><div class="rank-message">ランキングを読み込み中…</div></div><div class="rank-foot"><a id="kuroRankGameLink" href="/games/">ゲームを遊ぶ ↗</a><div class="rank-controls"><button id="kuroRankPrev" type="button" aria-label="前のランキング">‹</button><span id="kuroRankDots"></span><button id="kuroRankNext" type="button" aria-label="次のランキング">›</button></div></div></aside></div>
+<section class="kuro-level-ranking" id="kuroLevelRanking" aria-labelledby="kuroLevelRankingTitle">
+  <div class="kuro-level-ranking-head">
+    <div>
+      <span class="kuro-level-ranking-eyebrow">KURO GAMES PLAYER LEVELS</span>
+      <h2 id="kuroLevelRankingTitle"><span aria-hidden="true">✦</span> レベルランキング</h2>
+      <p>ゲームで獲得した経験値で、プレイヤーの成長をチェック。</p>
+    </div>
+    <div class="kuro-level-ranking-tools">
+      <span id="kuroLevelRankingCount">集計中…</span>
+      <button id="kuroLevelRankingRefresh" type="button" aria-label="レベルランキングを更新" title="ランキングを更新">↻ 更新</button>
+    </div>
+  </div>
+  <div class="kuro-level-ranking-list" id="kuroLevelRankingList" aria-live="polite">
+    <div class="kuro-level-ranking-message">レベルランキングを読み込み中…</div>
+  </div>
+  <div class="kuro-level-ranking-foot">
+    <span>順位はレベル順。同じレベルの場合は累計XPで決まります。</span>
+    <span>TOP 10</span>
+  </div>
+</section>
 <div class="empty" id="empty"><strong>ゲームが見つかりませんでした</strong>検索ワードやジャンルを変えて、もう一度探してみてください。</div>
 <div class="more"><div class="more-icon">✦</div><div><h3>新しいゲームを準備中！</h3><p>KURO GAMESでは、これからもオリジナルゲームを追加していきます。次のゲームもお楽しみに。</p></div><small>MORE GAMES COMING SOON</small></div>
 </section>
@@ -1934,6 +2004,119 @@ function initKuroRankingShowcase(){
  initialize();
 }
 initKuroRankingShowcase();
+</script>
+<script id="kuro-level-ranking-script">
+(function initKuroLevelRanking(){
+ "use strict";
+ const panel=document.getElementById("kuroLevelRanking");
+ const list=document.getElementById("kuroLevelRankingList");
+ const count=document.getElementById("kuroLevelRankingCount");
+ const refresh=document.getElementById("kuroLevelRankingRefresh");
+ const db=window.kuroGamesDB;
+ if(!panel||!list||!count||!refresh)return;
+ let busy=false,hasRendered=false;
+ const escapeHtml=value=>String(value==null?"":value).replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[char]);
+ const safeAvatar=value=>{
+  if(!value)return "";
+  try{
+   const url=new URL(String(value),window.location.origin);
+   if(url.protocol==="https:"||(url.protocol==="http:"&&url.origin===window.location.origin))return url.href;
+  }catch(_){}
+  return "";
+ };
+ const showMessage=(message,isError)=>{
+  list.innerHTML='<div class="kuro-level-ranking-message'+(isError?' error':'')+'">'+escapeHtml(message)+'</div>';
+ };
+ const render=rows=>{
+  if(!rows.length){
+   count.textContent="0 人";
+   showMessage("まだランキングデータがありません。ゲームで勝利してXPを獲得すると、ここに表示されます。",false);
+   hasRendered=true;
+   return;
+  }
+  const medals=["🥇","🥈","🥉"];
+  let previousKey=null,previousRank=0;
+  list.innerHTML=rows.map((row,index)=>{
+   const totalXp=Math.max(0,Math.floor(Number(row.total_xp)||0));
+   const level=Math.max(1,Math.floor(Number(row.current_level)||1));
+   const key=String(level)+":"+String(totalXp);
+   const rank=key===previousKey?previousRank:index+1;
+   previousKey=key;previousRank=rank;
+   const profile=row.profile||{};
+   const name=String(profile.display_name||profile.username||"KUROユーザー");
+   const username=profile.username?"@"+String(profile.username):"KURO GAMES プレイヤー";
+   const avatarUrl=safeAvatar(profile.avatar_url);
+   const avatar=avatarUrl
+    ?'<img src="'+escapeHtml(avatarUrl)+'" alt="" loading="lazy">'
+    :escapeHtml(Array.from(name)[0]||"👤");
+   const position=medals[index]&&rank===index+1?medals[index]:String(rank);
+   return '<button class="kuro-level-ranking-row" type="button" data-user-id="'+escapeHtml(row.user_id)+'" data-rank="'+rank+'" aria-label="プロフィールを見る：'+escapeHtml(name)+'">'+
+    '<span class="kuro-level-ranking-position'+(index<3?' medal':'')+'">'+position+'</span>'+
+    '<span class="kuro-level-ranking-avatar">'+avatar+'</span>'+
+    '<span class="kuro-level-ranking-user"><strong>'+escapeHtml(name)+'</strong><small>'+escapeHtml(username)+'</small></span>'+
+    '<span class="kuro-level-ranking-level">Lv.'+level.toLocaleString("ja-JP")+'</span>'+
+    '<span class="kuro-level-ranking-xp">'+totalXp.toLocaleString("ja-JP")+' XP</span>'+
+   '</button>';
+  }).join("");
+  count.textContent=rows.length.toLocaleString("ja-JP")+" 人";
+  hasRendered=true;
+ };
+ async function loadRanking(){
+  if(busy||document.visibilityState==="hidden")return;
+  busy=true;refresh.disabled=true;
+  if(!hasRendered)showMessage("レベルランキングを読み込み中…",false);
+  try{
+   if(!db){throw new Error("データベースに接続できませんでした。ページを再読み込みしてください。");}
+   const levelResult=await db.from("kuro_level_users")
+    .select("user_id,total_xp,current_level")
+    .order("current_level",{ascending:false})
+    .order("total_xp",{ascending:false})
+    .limit(50);
+   if(levelResult.error)throw levelResult.error;
+   const entries=Array.isArray(levelResult.data)?levelResult.data:[];
+   if(!entries.length){render([]);return;}
+   const ids=entries.map(row=>row.user_id).filter(Boolean);
+   const profileResult=await db.from("profiles")
+    .select("id,username,display_name,avatar_url")
+    .in("id",ids);
+   if(profileResult.error)throw profileResult.error;
+   const profiles=Object.create(null);
+   (Array.isArray(profileResult.data)?profileResult.data:[]).forEach(profile=>{
+    profiles[String(profile.id)]=profile;
+   });
+   entries.forEach(row=>{row.profile=profiles[String(row.user_id)]||null;});
+   entries.sort((a,b)=>{
+    const levelDiff=(Number(b.current_level)||1)-(Number(a.current_level)||1);
+    if(levelDiff)return levelDiff;
+    const xpDiff=(Number(b.total_xp)||0)-(Number(a.total_xp)||0);
+    if(xpDiff)return xpDiff;
+    return String(a.user_id).localeCompare(String(b.user_id));
+   });
+   render(entries.slice(0,10));
+  }catch(error){
+   console.warn("KURO level ranking load failed:",error);
+   count.textContent="—";
+   showMessage("ランキングを読み込めませんでした。通信状態を確認して、もう一度お試しください。",true);
+  }finally{
+   busy=false;refresh.disabled=false;
+  }
+ }
+ refresh.addEventListener("click",loadRanking);
+ list.addEventListener("click",event=>{
+  const button=event.target.closest("[data-user-id]");
+  if(!button)return;
+  const userId=button.getAttribute("data-user-id");
+  if(!userId)return;
+  if(window.KuroProfile&&typeof window.KuroProfile.open==="function"){
+   window.KuroProfile.open(userId).catch(error=>console.warn("KURO level ranking profile open failed:",error));
+  }
+ });
+ document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible")loadRanking();
+ });
+ window.setInterval(loadRanking,30000);
+ loadRanking();
+})();
 </script>
 
 <script src="/service-notification-box.js?v=20261125coinreward3"></script>
