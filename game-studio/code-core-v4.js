@@ -116,8 +116,24 @@ if(!project.mobileCode||typeof project.mobileCode!=="object")project.mobileCode=
  if(typeof project.code[k]!=="string")project.code[k]="";
  if(typeof project.mobileCode[k]!=="string")project.mobileCode[k]=project.code[k]||"";
 });
-function activeCode(){return activeSurface==="mobile"?project.mobileCode:project.code;}
-function setActiveCode(value){if(activeSurface==="mobile")project.mobileCode=value;else project.code=value;return activeCode();}
+function activeCode(){
+ if(activeSurface!=="mobile")return project.code;
+ return new Proxy(project.mobileCode,{
+  get(target,key){return key==="js"?project.code.js:target[key];},
+  set(target,key,value){if(key==="js"){project.code.js=value;return true;}target[key]=value;return true;}
+ });
+}
+function setActiveCode(value){
+ if(activeSurface==="mobile"){
+  project.mobileCode=project.mobileCode||{};
+  if(value&&typeof value.html==="string")project.mobileCode.html=value.html;
+  if(value&&typeof value.css==="string")project.mobileCode.css=value.css;
+  if(value&&typeof value.js==="string")project.code.js=value.js;
+  delete project.mobileCode.js;
+ }else project.code=value;
+ return activeCode();
+}
+delete project.mobileCode.js;
 function setStatus(text,color){$("saveStatus").textContent=text;$("saveStatus").style.color=color||"var(--good)"}
 function toast(s){$("toast").textContent=s;$("toast").classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>$("toast").classList.remove("show"),2200)}
 function persist(silent){
@@ -148,7 +164,7 @@ function renderGutter(){
 function showTab(tab){
  activeTab=tab;
  document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
- $("fileTag").textContent=(activeSurface==="mobile"?"mobile/":"pc/")+({html:"index.html",css:"style.css",js:"game.js"}[tab]);
+ $("fileTag").textContent=(tab==="js"?"shared/":(activeSurface==="mobile"?"mobile/":"pc/"))+({html:"index.html",css:"style.css",js:"game.js"}[tab]);
  $("codeEditor").value=activeCode()[tab]||"";
  renderGutter();
 }
@@ -210,8 +226,9 @@ function splitMixedCode(source){
 }
 function safeScript(source){return String(source||"").replace(/<\/script/gi,"<\\/script");}
 function makeDocument(sourceCode,targetPlatform){
- const code=sourceCode||activeCode();
  const platform=targetPlatform||activeSurface;
+ const source=sourceCode||activeCode();
+ const code=platform==="mobile"?{html:source.html||"",css:source.css||"",js:project.code.js||""}:source;
  let html=code.html||"";
  // HTMLタブ内のインラインscriptにもトップレベルawait対応を適用
  html=html.replace(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi,(whole,attrs,body)=>{
@@ -225,6 +242,8 @@ function makeDocument(sourceCode,targetPlatform){
  const frameHeight=platform==="mobile"?844:Math.max(160,Math.min(2160,Number(project.settings&&project.settings.gameFrameHeight)||540));
  const frameScale=platform==="mobile"?100:Math.max(25,Math.min(300,Number(project.settings&&project.settings.gameFrameScale)||100));
  const frameMeta='<meta name="kuro-game-frame" content="'+frameWidth+'x'+frameHeight+'"><meta name="kuro-game-scale" content="'+frameScale+'">';
+ const viewportMeta=platform==="mobile"&&!/<meta\b(?=[^>]*\bname=["']viewport["'])[^>]*>/i.test(html)?'<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">':"";
+ const platformScript='<script>window.KURO_GAMES_PLATFORM='+JSON.stringify(platform)+';</script>';
  const styleBlock="<style>"+css+"</style>";
  const moduleMode=/^\s*(?:import|export)\b/m.test(rawJs)||/\bawait\b/.test(rawJs);
  const scriptOpen=(moduleMode?"<scr"+"ipt type=\"module\">":"<scr"+"ipt>");
@@ -240,14 +259,14 @@ function makeDocument(sourceCode,targetPlatform){
  const autoFitScript=project.settings&&project.settings.autoFitOverflow===false?"":"<scr"+"ipt>(function(){try{document.documentElement.style.overflowX='auto';document.body.style.overflowX='auto';document.querySelectorAll('img,video,svg,iframe').forEach(function(el){el.style.maxWidth='100%';});}catch(e){console.warn('KURO responsive fit',e);}})();<"+"/script>";
  if(/<html[\s>]/i.test(html)){
   let doc=html;
-  if(/<head\b[^>]*>/i.test(doc))doc=doc.replace(/<head\b[^>]*>/i,m=>m+errorReporter+authGuard+audioUnlock+frameMeta+styleBlock);
-  else if(/<html[^>]*>/i.test(doc))doc=doc.replace(/<html[^>]*>/i,m=>m+"<head>"+errorReporter+authGuard+audioUnlock+frameMeta+styleBlock+"</head>");
-  else doc="<!doctype html><html lang=\"ja\"><head><meta charset=\"utf-8\">"+errorReporter+authGuard+frameMeta+styleBlock+"</head><body>"+doc+"</body></html>";
+  if(/<head\b[^>]*>/i.test(doc))doc=doc.replace(/<head\b[^>]*>/i,m=>m+errorReporter+authGuard+audioUnlock+viewportMeta+frameMeta+styleBlock+platformScript);
+  else if(/<html[^>]*>/i.test(doc))doc=doc.replace(/<html[^>]*>/i,m=>m+"<head>"+errorReporter+authGuard+audioUnlock+viewportMeta+frameMeta+styleBlock+platformScript+"</head>");
+  else doc="<!doctype html><html lang=\"ja\"><head><meta charset=\"utf-8\">"+errorReporter+authGuard+viewportMeta+frameMeta+styleBlock+platformScript+"</head><body>"+doc+"</body></html>";
   if(/<\/body>/i.test(doc))doc=doc.replace(/<\/body>/i,scriptBlock+autoFitScript+"</body>");
   else doc+=scriptBlock+autoFitScript;
   return doc;
  }
- return '<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+escapeHTML(project.name||"KURO Game")+'</title>'+errorReporter+authGuard+audioUnlock+frameMeta+styleBlock+'</head><body>'+html+scriptBlock+autoFitScript+'</body></html>';
+ return '<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+escapeHTML(project.name||"KURO Game")+'</title>'+errorReporter+authGuard+audioUnlock+viewportMeta+frameMeta+styleBlock+platformScript+'</head><body>'+html+scriptBlock+autoFitScript+'</body></html>';
 }
 let previewMode="fit";
 function applyPreviewSize(){
@@ -439,6 +458,7 @@ async function loadPublishedGameFromCloud(){
   const isKuroXoGame=data.id==="2dbd6773-2684-4f00-973e-c46acbc348e7";
   const loadedCode=useDraft&&draft.code?clone(draft.code):clone(parsed.parts);
   const loadedMobileCode=useDraft&&draft.mobileCode?clone(draft.mobileCode):clone(mobileParsed.parts);
+  delete loadedMobileCode.js;
   if(isKuroXoGame){
    // Force Studio to use the current published layout instead of stale 960x540 draft dimensions.
    savedSettings.gameFrameWidth=publishedWidth;
