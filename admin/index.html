@@ -86,6 +86,46 @@
 .ops-inline-actions{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
 .ops-inline-actions .btn{padding:6px 9px;font-size:12px}
 .ops-flag-key{font:12px ui-monospace,monospace;color:#9bd9ff}
+
+.ops-coin-adjust-body{padding:16px;display:grid;gap:14px}
+.ops-coin-search-box{display:grid;gap:8px}
+.ops-coin-search-box>label,.ops-coin-adjust-form label{display:grid;gap:6px;color:var(--muted);font-size:12px}
+.ops-coin-search-row{display:flex;gap:8px}
+.ops-coin-search-row input,.ops-coin-adjust-form input:not([type=hidden]),.ops-coin-adjust-form select{width:100%;min-width:0;background:#0b1524;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:10px 12px;outline:none}
+.ops-coin-search-row input{flex:1}
+.ops-coin-search-results{display:grid;gap:7px}
+.ops-coin-user-hit{width:100%;display:flex;align-items:center;gap:10px;text-align:left;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:rgba(7,15,27,.48);color:var(--text)}
+.ops-coin-user-hit:hover{border-color:#438fc6;background:#10233a}
+.ops-coin-user-hit-copy{min-width:0;display:grid;gap:2px;flex:1}
+.ops-coin-user-hit-copy strong{font-size:13px}
+.ops-coin-user-hit-copy small{color:var(--muted);font-size:11px;overflow-wrap:anywhere}
+.ops-coin-avatar{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:#1c3b59;color:#dff3ff;font-weight:800;flex:0 0 40px}
+.ops-coin-selected{border:1px solid var(--line);border-radius:13px;padding:14px;background:rgba(7,15,27,.28);display:grid;gap:14px}
+.ops-coin-selected-head{display:flex;align-items:center;gap:10px;min-width:0}
+.ops-coin-selected-copy{display:grid;gap:2px;min-width:0;flex:1}
+.ops-coin-selected-copy strong{overflow-wrap:anywhere}
+.ops-coin-selected-copy small{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.ops-coin-balance-card{border:1px solid rgba(70,198,154,.28);border-radius:11px;background:rgba(30,115,85,.12);padding:12px 14px;display:grid;gap:2px}
+.ops-coin-balance-card span,.ops-coin-preview span{font-size:11px;color:var(--muted)}
+.ops-coin-balance-card strong{font-size:28px;font-variant-numeric:tabular-nums;color:#7be0b7}
+.ops-coin-balance-card small{font-size:10px;color:var(--muted)}
+.ops-coin-adjust-form{display:grid;gap:11px;padding-top:2px}
+.ops-coin-adjust-form-title{font-weight:800}
+.ops-coin-direction{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ops-coin-direction button{border:1px solid var(--line);border-radius:10px;padding:11px;background:#0b1524;color:var(--muted);font-weight:750}
+.ops-coin-direction button[data-coin-adjust-direction=add].active{background:rgba(41,146,93,.18);border-color:#329c68;color:#86e0ae}
+.ops-coin-direction button[data-coin-adjust-direction=subtract].active{background:rgba(181,64,75,.17);border-color:#b84d59;color:#ffabb2}
+.ops-coin-adjust-amount-label input{font-size:18px;font-weight:700}
+.ops-coin-preview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:12px;border-radius:10px;background:rgba(7,15,27,.45);border:1px solid var(--line)}
+.ops-coin-preview>div{display:grid;gap:3px}
+.ops-coin-preview strong{font-size:17px;font-variant-numeric:tabular-nums}
+.ops-coin-preview-total{grid-column:1/-1;border-top:1px solid var(--line);padding-top:9px;margin-top:2px}
+.ops-coin-preview-total strong{font-size:23px;color:#7be0b7}
+.ops-coin-history{display:grid;gap:8px}
+.ops-coin-history-title{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ops-coin-history .ops-table{min-width:650px}
+@media(max-width:680px){.ops-coin-adjust-body{padding:12px}.ops-coin-search-row{flex-wrap:wrap}.ops-coin-search-row button{width:100%}.ops-coin-selected-head{flex-wrap:wrap}.ops-coin-selected-head #opsCoinAdjustClear{margin-left:auto}.ops-coin-preview{grid-template-columns:1fr 1fr}.ops-coin-adjust-form .ops-form-grid{grid-template-columns:1fr}}
+
 @media(max-width:680px){.ops-form-grid{grid-template-columns:1fr}.ops-ann-item,.ops-flag-item{flex-direction:column}.ops-inline-actions{width:100%}}
 
 .ops-analytics-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:14px 0 18px}
@@ -610,17 +650,49 @@
     <div class="ops-coin-help">〇✕ゲームはCPU「弱い・ふつう・強い」を別々に設定できます。数字当て・素因数分解・回転ずしタイピングはモード別に設定でき、七並べはオンライン1位に付与します。報酬はサーバー検証済みの結果でのみ確定します。</div>
     <div class="list ops-coin-game-list" id="opsCoinRewardsList"><div class="empty">報酬設定を読み込み中…</div></div>
    </section>
-  <section class="panel" style="margin:0 0 16px">
-   <div class="toolbar"><div><strong>ユーザー残高の管理者補正</strong><div class="sns-muted">増減理由を取引台帳と監査ログに保存します。</div></div></div>
-   <form id="opsCoinAdjustForm" class="ops-form">
-    <div class="ops-form-grid">
-     <label>KUROユーザーID<input id="opsCoinAdjustUser" required placeholder="ユーザーUUID"></label>
-     <label>補正ポイント<input id="opsCoinAdjustAmount" type="number" min="-100000" max="100000" step="1" required placeholder="例：50 / -20"></label>
+  <section class="panel ops-coin-adjust-panel" style="margin:0 0 16px">
+   <div class="toolbar"><div><strong>ユーザー残高の管理者補正</strong><div class="sns-muted">ユーザーを検索して選択し、残高と履歴を確認してから補正できます。</div></div></div>
+   <div class="ops-coin-adjust-body">
+    <div class="ops-coin-search-box">
+     <label for="opsCoinAdjustSearch">ユーザー検索（ユーザー名・表示名・KURO ID・UUID）</label>
+     <div class="ops-coin-search-row"><input id="opsCoinAdjustSearch" type="search" maxlength="80" placeholder="例：ユーザー名 / KURO ID / UUID"><button class="btn primary" id="opsCoinAdjustSearchButton" type="button">検索</button></div>
+     <div id="opsCoinAdjustSearchStatus" class="sns-muted" role="status">検索して対象ユーザーを選択してください。</div>
+     <div id="opsCoinAdjustSearchResults" class="ops-coin-search-results"></div>
     </div>
-    <label>補正理由<input id="opsCoinAdjustReason" maxlength="200" minlength="3" required placeholder="問い合わせ対応による残高補正"></label>
-    <div class="ops-form-actions"><button class="btn primary" type="submit">残高を補正</button></div>
-    <div id="opsCoinAdjustStatus" class="sns-muted" role="status"></div>
-   </form>
+    <div id="opsCoinAdjustSelected" class="ops-coin-selected" hidden>
+     <div class="ops-coin-selected-head">
+      <div class="ops-coin-avatar" id="opsCoinAdjustAvatar">K</div>
+      <div class="ops-coin-selected-copy"><strong id="opsCoinAdjustName">ユーザー</strong><small id="opsCoinAdjustIdentity"></small><small id="opsCoinAdjustUuid"></small></div>
+      <button class="btn" id="opsCoinAdjustClear" type="button">選択解除</button>
+     </div>
+     <div class="ops-coin-balance-card"><span>現在の残高</span><strong id="opsCoinAdjustCurrentBalance">— P</strong><small id="opsCoinAdjustBalanceUpdated"></small></div>
+     <form id="opsCoinAdjustForm" class="ops-coin-adjust-form">
+      <input id="opsCoinAdjustUser" type="hidden" required>
+      <div class="ops-coin-adjust-form-title">補正内容</div>
+      <div class="ops-coin-direction" role="group" aria-label="補正方向">
+       <button class="active" type="button" data-coin-adjust-direction="add">＋ 増やす</button>
+       <button type="button" data-coin-adjust-direction="subtract">− 減らす</button>
+      </div>
+      <label class="ops-coin-adjust-amount-label" for="opsCoinAdjustAmount">補正ポイント<input id="opsCoinAdjustAmount" type="number" min="1" max="100000" step="1" required placeholder="補正するポイント数"></label>
+      <div class="ops-coin-preview">
+       <div><span>現在</span><strong id="opsCoinAdjustPreviewCurrent">— P</strong></div>
+       <div><span>今回の補正</span><strong id="opsCoinAdjustPreviewDelta">— P</strong></div>
+       <div class="ops-coin-preview-total"><span>補正後の予定残高</span><strong id="opsCoinAdjustPreviewAfter">— P</strong></div>
+      </div>
+      <div class="ops-form-grid">
+       <label>補正理由<select id="opsCoinAdjustReasonType" required><option value="問い合わせ対応">問い合わせ対応</option><option value="不具合によるポイント修正">不具合によるポイント修正</option><option value="イベント報酬">イベント報酬</option><option value="誤付与の修正">誤付与の修正</option><option value="その他">その他</option></select></label>
+       <label>詳細・メモ（任意）<input id="opsCoinAdjustReasonNote" maxlength="150" placeholder="対象イベント名や対応内容など"></label>
+      </div>
+      <div id="opsCoinAdjustReasonHint" class="sns-muted">選択した理由は取引履歴と監査ログに記録されます。</div>
+      <div class="ops-form-actions"><button class="btn primary" id="opsCoinAdjustSubmit" type="submit" disabled>この内容で補正する</button></div>
+      <div id="opsCoinAdjustStatus" class="sns-muted" role="status"></div>
+     </form>
+     <div class="ops-coin-history">
+      <div class="ops-coin-history-title"><strong>このユーザーの最近の取引</strong><span class="sns-muted">最新10件</span></div>
+      <div class="ops-tablewrap" id="opsCoinAdjustHistory"><div class="empty">履歴を読み込み中…</div></div>
+     </div>
+    </div>
+   </div>
   </section>
   <section class="panel">
    <div class="toolbar"><div><strong>直近のコイン取引</strong><div class="sns-muted">勝利報酬・管理者補正・ショップ取引の記録</div></div><span id="opsCoinTransactionCount" class="sns-muted">—</span></div>
