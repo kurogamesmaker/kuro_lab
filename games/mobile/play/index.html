@@ -73,6 +73,16 @@
       loading.hidden = true;
     }
 
+    // The nested game iframe is sandboxed without allow-same-origin, so
+    // contentDocument may be null and its load event can race the observer.
+    // Accept an explicit ready signal from the same-origin player page.
+    window.addEventListener("message", function(event) {
+      var data = event.data;
+      if (event.source !== frame.contentWindow || event.origin !== window.location.origin) return;
+      if (!data || data.type !== "kuro-mobile-game-frame-ready" || data.gameId !== id) return;
+      markReady();
+    });
+
     function attachPlayerDocument() {
       var innerDoc;
       try {
