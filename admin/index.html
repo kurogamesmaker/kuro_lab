@@ -622,7 +622,7 @@
  </div>
  <div id="opsCoinsView" hidden>
   <div class="ops-overview-head">
-   <div><strong>KURO COIN 経済管理</strong><div class="sns-muted">共通残高・発行履歴・ゲーム別勝利報酬を管理します。報酬はサーバー検証済みイベントでのみ付与されます。</div></div>
+   <div><strong>KURO COIN 経済管理</strong><div class="sns-muted">共通残高・発行履歴を維持し、サーバーが確認したオンライン対戦の勝利時だけゲーム報酬を付与します。</div></div>
    <div class="ops-overview-tools"><span id="opsCoinsUpdated" class="sns-muted">準備中…</span><button class="btn" id="opsCoinsRefresh">更新</button></div>
   </div>
   <div class="ops-analytics-grid">
@@ -633,29 +633,19 @@
   </div>
   <section class="panel ops-coin-config-panel">
     <div class="toolbar">
-     <div><strong>ゲーム別の報酬設定</strong><div class="sns-muted">各モードを編集し、まとめて保存できます。</div></div>
-     <div class="ops-inline-actions"><span class="sns-muted" id="opsCoinModeCount">—</span><button class="btn" id="opsCoinAllOn" type="button">全部オン</button><button class="btn" id="opsCoinAllOff" type="button">全部オフ</button><button class="btn primary" id="opsCoinBulkSave" type="button">全モードを一括保存</button></div>
+     <div><strong>オンライン対戦の勝利報酬</strong><div class="sns-muted">オンライン対戦で勝ったときの付与ポイントをゲーム別に設定します。</div></div>
+     <div class="ops-inline-actions"><span class="sns-muted" id="opsCoinModeCount">—</span><button class="btn" id="opsCoinAllOn" type="button">オンライン報酬を全部ON</button><button class="btn" id="opsCoinAllOff" type="button">オンライン報酬を全部OFF</button><button class="btn primary" id="opsCoinBulkSave" type="button">オンライン報酬を一括保存</button></div>
     </div>
     <div class="ops-coin-controls">
      <input class="search" id="opsCoinSearch" type="search" placeholder="ゲーム名・モード名で検索">
      <select id="opsCoinStatusFilter" aria-label="付与状態">
       <option value="all">すべての状態</option><option value="enabled">付与ONのみ</option><option value="disabled">付与OFFのみ</option>
      </select>
-     <select id="opsCoinTypeFilter" aria-label="報酬方式">
-      <option value="all">すべての方式</option><option value="fixed">固定ポイント</option><option value="score_tier">スコア別ポイント</option><option value="score_ratio">スコア換算ポイント</option>
-     </select>
-     <select id="opsCoinPlayTypeFilter" aria-label="対戦・ゲーム形式">
-      <option value="all">すべての形式</option><option value="cpu">CPU戦</option><option value="online">オンライン</option><option value="normal">通常モード</option><option value="time">タイムアタック</option><option value="typing">タイピング</option>
-     </select>
-     <select id="opsCoinLevelFilter" aria-label="レベル・CPUの強さ">
-      <option value="all">すべてのレベル</option>
-      <option value="easy">初級・かんたん</option><option value="normal">中級・ふつう</option><option value="hard">上級・むずかしい</option>
-      <option value="expert">エキスパート</option><option value="master">マスター</option><option value="legend">レジェンド</option>
-      <option value="beginner">初心者</option><option value="intermediate">中級者</option><option value="advanced">上級者</option>
-      <option value="cpu-easy">CPU・弱い</option><option value="cpu-normal">CPU・ふつう</option><option value="cpu-hard">CPU・強い</option>
-     </select>
+     <select id="opsCoinTypeFilter" aria-label="報酬方式"><option value="fixed">固定ポイント</option></select>
+     <select id="opsCoinPlayTypeFilter" aria-label="対象" disabled><option value="online">オンライン勝利</option></select>
+     <select id="opsCoinLevelFilter" aria-label="対象レベル" hidden><option value="all">すべて</option></select>
     </div>
-    <div class="ops-coin-help">〇✕ゲームはCPU「弱い・ふつう・強い」を別々に設定できます。数字当て・素因数分解・回転ずしタイピングはモード別に設定でき、七並べはオンライン1位に付与します。報酬はサーバー検証済みの結果でのみ確定します。</div>
+    <div class="ops-coin-help">報酬対象はUNON・大富豪・七並べのサーバー検証済みオンライン勝利のみです。CPU戦・ソロプレイ・タイピング・通常モード・敗北・途中退出には付与されません。</div>
     <div class="list ops-coin-game-list" id="opsCoinRewardsList"><div class="empty">報酬設定を読み込み中…</div></div>
    </section>
   <section class="panel ops-coin-adjust-panel" style="margin:0 0 16px">
@@ -1571,9 +1561,11 @@ function coinTransactionLabel(type){
 const COIN_PRIME_GAME_ID="79c9921a-d57a-45b1-8271-1ee7042801dc";
 const COIN_SUSHI_GAME_ID="5c1e658b-f6d3-412a-8b97-61d2c0457e95";
 const COIN_SEVENS_GAME_ID="4ccccb72-d5db-4098-a7d4-1c28a0755e7b";
+const COIN_DAIFUGO_GAME_ID="2eb37847-1b7e-43e4-ad98-901d5b830ac4";
 const COIN_GAME_NAMES={
  "2dbd6773-2684-4f00-973e-c46acbc348e7":"〇✕ゲーム",
  "faa155cb-2143-4361-9a96-dc759d334e46":"UNON",
+ "2eb37847-1b7e-43e4-ad98-901d5b830ac4":"大富豪",
  "79c9921a-d57a-45b1-8271-1ee7042801dc":"素因数分解",
  "bb466662-5423-48e6-bbcc-d19da50ba818":"数字当て",
  "5c1e658b-f6d3-412a-8b97-61d2c0457e95":"回転ずしタイピング",
@@ -1586,7 +1578,8 @@ function coinModeLabel(gameId,mode,cpu="NONE"){
   const rule=({normal:"通常ルール",vanish:"消える〇✕",gobble:"ゴブレット",reverse:"逆〇✕"})[mode]||"対戦ルール";
   return rule+"・CPU（"+(COIN_CPU_LEVEL_NAMES[cpu]||cpu)+"）";
  }
- if(gameId==="faa155cb-2143-4361-9a96-dc759d334e46") return mode==="wins-online"?"オンライン対戦・勝利":"オンライン対戦";
+ if(gameId==="faa155cb-2143-4361-9a96-dc759d334e46") return "オンライン対戦・勝利";
+ if(gameId===COIN_DAIFUGO_GAME_ID)return "オンライン対戦・勝利";
  if(gameId===COIN_SEVENS_GAME_ID)return mode==="online"?"オンライン対戦・1位":"オンライン対戦";
  if(gameId===COIN_PRIME_GAME_ID) return "難易度："+(COIN_DIFFICULTY_NAMES[mode]||mode);
  if(gameId==="bb466662-5423-48e6-bbcc-d19da50ba818"){
@@ -1602,6 +1595,7 @@ function coinModeLabel(gameId,mode,cpu="NONE"){
 function coinModePlayType(gameId,mode){
  if(gameId==="2dbd6773-2684-4f00-973e-c46acbc348e7")return "cpu";
  if(gameId==="faa155cb-2143-4361-9a96-dc759d334e46")return "online";
+ if(gameId===COIN_DAIFUGO_GAME_ID)return "online";
  if(gameId===COIN_SEVENS_GAME_ID)return "online";
  if(gameId==="bb466662-5423-48e6-bbcc-d19da50ba818")return mode.indexOf("number-time-")===0?"time":"normal";
  if(gameId===COIN_SUSHI_GAME_ID)return "typing";
@@ -1634,17 +1628,12 @@ function renderCoinTierRows(tiers){
 }
 function renderCoinRewardMode(reward){
  const gameId=reward.game_id,mode=reward.mode,cpu=reward.required_cpu_difficulty||"NONE";
- const name=coinModeLabel(gameId,mode,cpu),level=coinModeLevel(gameId,mode,cpu),playType=coinModePlayType(gameId,mode);
- const type=reward.reward_type==="score_ratio"?"score_ratio":reward.reward_type==="score_tier"?"score_tier":"fixed",scoreAllowed=coinScoreSupported(gameId),ratio=(Array.isArray(reward.score_tiers)&&reward.score_tiers[0])||{minScore:100,rewardAmount:1};
- return '<article class="ops-coin-mode" data-coin-row data-game-id="'+esc(gameId)+'" data-mode="'+esc(mode)+'" data-cpu-difficulty="'+esc(cpu)+'" data-level="'+esc(level)+'" data-play-type="'+esc(playType)+'" data-search="'+esc(((COIN_GAME_NAMES[gameId]||"")+" "+name).toLowerCase())+'">'+
-  '<div class="ops-coin-mode-head"><div><strong>'+esc(name)+'</strong><div class="ops-coin-mode-meta">'+(cpu!=="NONE"?("CPU戦・"+esc(COIN_CPU_LEVEL_NAMES[cpu]||cpu)):"サーバー検証済み結果を使用")+'</div></div>'+
+ const name=coinModeLabel(gameId,mode,cpu),level="all",playType="online";
+ return '<article class="ops-coin-mode" data-coin-row data-game-id="'+esc(gameId)+'" data-mode="'+esc(mode)+'" data-cpu-difficulty="'+esc(cpu)+'" data-level="'+level+'" data-play-type="'+playType+'" data-search="'+esc(((COIN_GAME_NAMES[gameId]||"")+" "+name).toLowerCase())+'">'+
+  '<div class="ops-coin-mode-head"><div><strong>'+esc(name)+'</strong><div class="ops-coin-mode-meta">オンライン対戦の勝利時のみ付与</div></div>'+
   '<label class="ops-coin-switch"><input data-coin-enabled type="checkbox" '+(reward.enabled?"checked":"")+'><span>付与ON</span></label></div>'+
-  '<div class="ops-coin-mode-fields">'+
-   '<label>報酬方式<select data-coin-type><option value="fixed" '+(type==="fixed"?"selected":"")+'>固定ポイント</option><option value="score_tier" '+(type==="score_tier"?"selected":"")+(scoreAllowed?"":" disabled")+'>スコア別ポイント'+(scoreAllowed?"":"（未対応）")+'</option><option value="score_ratio" '+(type==="score_ratio"?"selected":"")+(scoreAllowed?"":" disabled")+'>スコア換算ポイント'+(scoreAllowed?"":"（未対応）")+'</option></select></label>'+
-   '<div class="ops-coin-fixed-fields" '+(type==="score_tier"||type==="score_ratio"?"hidden":"")+'><label>1回の付与ポイント<input data-coin-amount type="number" min="0" max="1000" step="1" value="'+esc(reward.reward_amount??0)+'"></label></div>'+
-   '<div class="ops-coin-score-fields" '+(type!=="score_tier"?"hidden":"")+'><div class="ops-coin-score-intro">サーバー確定スコアに一致する条件を1つ適用します。範囲は重複できません。</div><div class="ops-coin-tier-list" data-coin-tier-list>'+renderCoinTierRows(reward.score_tiers)+'</div><button class="btn ops-coin-tier-add" type="button" data-coin-tier-add>＋ 条件を追加</button></div><div class="ops-coin-ratio-fields" '+(type!=="score_ratio"?"hidden":"")+'><div class="ops-coin-score-intro">スコアの一定単位ごとにポイントを付与します。端数は切り捨てます。</div><div class="ops-coin-ratio-inputs"><label>必要スコア<input data-score-unit type="number" min="1" max="1000000" step="1" value="'+esc(ratio.minScore??100)+'"></label><label>付与ポイント<input data-score-points type="number" min="1" max="1000" step="1" value="'+esc(ratio.rewardAmount??1)+'"></label></div><div class="ops-coin-score-intro">例：100スコアごとに1ポイント。250スコアなら2ポイント。</div></div>'+
-  '</div>'+
-  '<label class="ops-coin-label">履歴に表示する名前<input data-coin-label maxlength="80" value="'+esc(reward.reward_label||"ゲーム報酬")+'"></label>'+
+  '<div class="ops-coin-mode-fields"><input data-coin-type type="hidden" value="fixed"><label>勝利時の付与ポイント<input data-coin-amount type="number" min="0" max="1000" step="1" value="'+esc(reward.reward_amount??0)+'"></label></div>'+
+  '<label class="ops-coin-label">履歴に表示する名前<input data-coin-label maxlength="80" value="'+esc(reward.reward_label||"オンライン勝利報酬")+'"></label>'+
   '<div class="ops-coin-footer"><span data-coin-status class="sns-muted">更新：'+esc(reward.updated_at?date(reward.updated_at):"—")+'</span></div>'+
  '</article>';
 }
@@ -2959,16 +2948,16 @@ $("#opsStoreItemsList").addEventListener("click",event=>{
  if(edit)editOpsStoreItem(edit.dataset.storeEdit);
  if(off)deactivateOpsStoreItem(off.dataset.storeDeactivate,off);
 });
-$("#opsCoinAllOn").addEventListener("click",()=>{const rows=Array.from(document.querySelectorAll("[data-coin-row]"));if(!rows.length)return;if(!confirm("全"+rows.length+"モードのポイント付与をONにします。変更は一括保存するまで保存されません。続行しますか？"))return;rows.forEach(row=>{const input=row.querySelector("[data-coin-enabled]");if(input)input.checked=true;});});
-$("#opsCoinAllOff").addEventListener("click",()=>{const rows=Array.from(document.querySelectorAll("[data-coin-row]"));if(!rows.length)return;if(!confirm("全"+rows.length+"モードのポイント付与をOFFにします。変更は一括保存するまで保存されません。続行しますか？"))return;rows.forEach(row=>{const input=row.querySelector("[data-coin-enabled]");if(input)input.checked=false;});});
+$("#opsCoinAllOn").addEventListener("click",()=>{const rows=Array.from(document.querySelectorAll("[data-coin-row]"));if(!rows.length)return;if(!confirm("オンライン勝利報酬"+rows.length+"件をONにします。変更は一括保存するまで保存されません。続行しますか？"))return;rows.forEach(row=>{const input=row.querySelector("[data-coin-enabled]");if(input)input.checked=true;});});
+$("#opsCoinAllOff").addEventListener("click",()=>{const rows=Array.from(document.querySelectorAll("[data-coin-row]"));if(!rows.length)return;if(!confirm("オンライン勝利報酬"+rows.length+"件をOFFにします。変更は一括保存するまで保存されません。続行しますか？"))return;rows.forEach(row=>{const input=row.querySelector("[data-coin-enabled]");if(input)input.checked=false;});});
 $("#opsCoinBulkSave").addEventListener("click",async e=>{
  const button=e.currentTarget,rows=Array.from(document.querySelectorAll("[data-coin-row]"));
  if(!rows.length){alert("保存する設定がありません。");return;}
- if(!confirm("全"+rows.length+"モードの報酬設定をまとめて保存します。続行しますか？"))return;
+ if(!confirm("オンライン勝利報酬"+rows.length+"件をまとめて保存します。続行しますか？"))return;
  button.disabled=true;button.textContent="全モード一括保存中…";
  let ok=0,fail=0,failures=[];
  for(const row of rows){try{await saveOpsCoinReward(row,null,true);ok++;}catch(err){fail++;failures.push((row.querySelector(".ops-coin-mode-head strong")?.textContent||row.dataset.mode)+": "+(err.message||String(err)));}}
- await loadOpsCoins();button.disabled=false;button.textContent="全モードを一括保存";
+ await loadOpsCoins();button.disabled=false;button.textContent="オンライン報酬を一括保存";
  if(fail)alert(ok+"件保存、"+fail+"件失敗しました。\n"+failures.slice(0,5).join("\n"));else alert(ok+"件すべて保存しました。");
 });
 $("#opsCoinRewardsList").addEventListener("click",e=>{
