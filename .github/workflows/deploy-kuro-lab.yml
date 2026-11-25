@@ -1,14 +1,9 @@
-name: Deploy KURO Lab Worker
+name: Deploy KURO Lab Worker and static assets
 
 on:
   push:
     branches:
       - main
-    # Static HTML/CSS/JS assets are served from the live main branch by Worker.
-    # Deploy the Worker only when its runtime entrypoint or Wrangler config changes.
-    paths:
-      - "worker.js"
-      - "wrangler.jsonc"
   workflow_dispatch:
 
 permissions:
@@ -31,6 +26,8 @@ jobs:
         with:
           node-version: 22
 
+      # wrangler.jsonc bundles the repository root as Worker static assets.
+      # Therefore HTML/CSS/JS changes must deploy too, not only worker.js changes.
       - name: Deploy to Cloudflare
         run: npx --yes wrangler@4 deploy --config wrangler.jsonc
         env:
