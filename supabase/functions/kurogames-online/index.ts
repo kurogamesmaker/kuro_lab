@@ -219,12 +219,15 @@ async function getEquippedCosmeticsForUsers(userIds: string[]) {
   return byUser;
 }
 
-async function getRoomMembers(roomId: string) {
-  const { data: members, error } = await admin
+async function getRoomMembers(roomId: string, includeInactive = false) {
+  let memberQuery = admin
     .from("game_online_room_members")
     .select("user_id, joined_at, last_seen_at")
-    .eq("room_id", roomId)
-    .gte("last_seen_at", new Date(Date.now() - 90000).toISOString())
+    .eq("room_id", roomId);
+  if (!includeInactive) {
+    memberQuery = memberQuery.gte("last_seen_at", new Date(Date.now() - 90000).toISOString());
+  }
+  const { data: members, error } = await memberQuery
     .order("joined_at", { ascending: true });
   if (error) throw new HttpError(500, "参加者一覧を取得できませんでした。");
   const ids = (members ?? []).map((m) => m.user_id);
@@ -2552,19 +2555,21 @@ async function handle(req: Request) {
         : {};
       if (roomError || !room || room.status !== "waiting" ||
           (isUnon && roomData.ruleMode !== ruleMode)) {
-        await admin.rpc("kuro_daifugo_matchmaking_cancel", { p_game_id: game.id, p_user_id: user.id });
+        await admin.rpc(isUnon ? "kuro_unon_matchmaking_cancel" : "kuro_daifugo_matchmaking_cancel", { p_game_id: game.id, p_user_id: user.id });
         return reply(200, { status: "cancelled" });
       }
-      const members = await getRoomMembers(String(room.id));
-      if (isUnon ? (members.length < 2 || members.length > 4) : members.length !== 2) {
-        await admin.rpc("kuro_daifugo_matchmaking_cancel", { p_game_id: game.id, p_user_id: user.id });
+      // UNON random matches are four-seat groups. Include all assigned members,
+      // even when a participant's presence timestamp is temporarily stale.
+      const members = await getRoomMembers(String(room.id), isUnon);
+      if (isUnon ? members.length !== 4 : members.length !== 2) {
+        await admin.rpc(isUnon ? "kuro_unon_matchmaking_cancel" : "kuro_daifugo_matchmaking_cancel", { p_game_id: game.id, p_user_id: user.id });
         return reply(200, { status: "cancelled" });
       }
       return reply(200, { status: "matched", room, members });
     }
 
     if (isCancel) {
-      const { data, error } = await admin.rpc("kuro_daifugo_matchmaking_cancel", {
+      const { data, error } = await admin.rpc(isUnon ? "kuro_unon_matchmaking_cancel" : "kuro_daifugo_matchmaking_cancel", {
         p_game_id: game.id,
         p_user_id: user.id,
       });
@@ -2574,7 +2579,7 @@ async function handle(req: Request) {
 
     const roomId = typeof body.roomId === "string" && UUID_RE.test(body.roomId) ? body.roomId : "";
     if (!roomId) throw new HttpError(400, "roomIdが正しくありません。");
-    const { data, error } = await admin.rpc("kuro_daifugo_matchmaking_ack", {
+    const { data, error } = await admin.rpc(isUnon ? "kuro_unon_matchmaking_ack" : "kuro_daifugo_matchmaking_ack", {
       p_game_id: game.id,
       p_user_id: user.id,
       p_room_id: roomId,
