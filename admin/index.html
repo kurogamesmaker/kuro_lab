@@ -487,6 +487,7 @@
 @media(max-width:760px){.ops-coin-controls{grid-template-columns:1fr 1fr}.ops-coin-controls input{grid-column:1/-1}.ops-coin-mode-fields{grid-template-columns:1fr}.ops-coin-tier{grid-template-columns:1fr 1fr 1fr auto}.ops-coin-tier-remove{grid-column:4}.ops-coin-footer{align-items:flex-start;flex-direction:column}.ops-coin-footer button{width:100%}}
 @media(max-width:460px){.ops-coin-tier{grid-template-columns:1fr 1fr}.ops-coin-tier-enabled{justify-content:flex-start;padding:0}.ops-coin-tier-remove{grid-column:auto}.ops-coin-game-summary{padding:12px}.ops-coin-game-status{font-size:10px}}
 
+.ops-coin-ratio-inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ops-coin-ratio-inputs label{display:grid;gap:6px;color:var(--muted);font-size:12px}.ops-coin-ratio-inputs input{width:100%;background:#0b1524;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:9px 11px}@media(max-width:600px){.ops-coin-ratio-inputs{grid-template-columns:1fr}}
 </style>
 \n</head>
 <body>
@@ -1510,7 +1511,7 @@ function renderCoinRewardMode(reward){
   '<label class="ops-coin-switch"><input data-coin-enabled type="checkbox" '+(reward.enabled?"checked":"")+'><span>付与ON</span></label></div>'+
   '<div class="ops-coin-mode-fields">'+
    '<label>報酬方式<select data-coin-type><option value="fixed" '+(type==="fixed"?"selected":"")+'>固定ポイント</option><option value="score_tier" '+(type==="score_tier"?"selected":"")+(scoreAllowed?"":" disabled")+'>スコア別ポイント'+(scoreAllowed?"":"（未対応）")+'</option><option value="score_ratio" '+(type==="score_ratio"?"selected":"")+(scoreAllowed?"":" disabled")+'>スコア換算ポイント'+(scoreAllowed?"":"（未対応）")+'</option></select></label>'+
-   '<div class="ops-coin-fixed-fields" '+(type==="score_tier"?"hidden":"")+'><label>1回の付与ポイント<input data-coin-amount type="number" min="0" max="1000" step="1" value="'+esc(reward.reward_amount??0)+'"></label></div>'+
+   '<div class="ops-coin-fixed-fields" '+(type==="score_tier"||type==="score_ratio"?"hidden":"")+'><label>1回の付与ポイント<input data-coin-amount type="number" min="0" max="1000" step="1" value="'+esc(reward.reward_amount??0)+'"></label></div>'+
    '<div class="ops-coin-score-fields" '+(type!=="score_tier"?"hidden":"")+'><div class="ops-coin-score-intro">サーバー確定スコアに一致する条件を1つ適用します。範囲は重複できません。</div><div class="ops-coin-tier-list" data-coin-tier-list>'+renderCoinTierRows(reward.score_tiers)+'</div><button class="btn ops-coin-tier-add" type="button" data-coin-tier-add>＋ 条件を追加</button></div><div class="ops-coin-ratio-fields" '+(type!=="score_ratio"?"hidden":"")+'><div class="ops-coin-score-intro">スコアの一定単位ごとにポイントを付与します。端数は切り捨てます。</div><div class="ops-coin-ratio-inputs"><label>必要スコア<input data-score-unit type="number" min="1" max="1000000" step="1" value="'+esc(ratio.minScore??100)+'"></label><label>付与ポイント<input data-score-points type="number" min="1" max="1000" step="1" value="'+esc(ratio.rewardAmount??1)+'"></label></div><div class="ops-coin-score-intro">例：100スコアごとに1ポイント。250スコアなら2ポイント。</div></div>'+
   '</div>'+
   '<label class="ops-coin-label">履歴に表示する名前<input data-coin-label maxlength="80" value="'+esc(reward.reward_label||"ゲーム報酬")+'"></label>'+
