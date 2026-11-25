@@ -437,7 +437,7 @@ if (result.status === "matched") {
 UNO：
 - `findUnoRandomMatch(ruleMode)`
 - `getUnoRandomMatchStatus(ruleMode)`
-- `cancelUnoRandomMatch()`
+- `cancelUnoRandomMatch(ruleMode)`
 - `ruleMode` は `official` または `local`。モードが異なる参加者を混ぜない。
 - 現在のEdge FunctionではUNO専用RPC（`kuro_unon_matchmaking_*`）へ接続される。
 
