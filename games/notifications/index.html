@@ -151,7 +151,7 @@ async function load(){
   const actors=new Map((actorResult.data||[]).map(x=>[x.id,x]));
   const mirrored=new Set(messages.map(x=>x.portal_announcement_id).filter(Boolean));
   const next=[];
-  social.filter(x=>x.type==="coin_reward").forEach(x=>{const d=x.notification_details||{},amount=Number(d.amount||0);next.push({key:"points:"+x.id,kind:"points",id:x.id,type:x.type,title:"ポイントを獲得しました！ +"+amount+" P",body:(d.description||"報酬を獲得しました。")+(d.balanceAfter!=null?"\n現在の残高: "+d.balanceAfter+" P":""),created_at:x.created_at,read:!!x.read_at,serviceLabel:"KURO GAMES",href:"/games/store/"});});
+  social.filter(x=>x.type==="coin_reward").forEach(x=>{const d=x.notification_details||{},amount=Number(d.amount||0),title=d.adminAdjustment?"管理者によるポイント補正 "+(amount>0?"+":"")+amount+" P":"ポイントを獲得しました！ +"+amount+" P";next.push({key:"points:"+x.id,kind:"points",id:x.id,type:x.type,title,body:(d.description||"報酬を獲得しました。")+(d.balanceAfter!=null?"\n補正後の残高: "+d.balanceAfter+" P":""),created_at:x.created_at,read:!!x.read_at,serviceLabel:"KURO GAMES",href:"/games/store/"});});
   messages.forEach(x=>next.push({key:"admin:"+x.id,kind:"admin",id:x.id,title:x.title,body:x.body,href:x.href,created_at:x.created_at,read:readMessageIds.has(x.id),serviceLabel:serviceLabel(x.service_scope),portal_announcement_id:x.portal_announcement_id}));
   social.filter(x=>x.type!=="coin_reward").forEach(x=>{
    const actor=actors.get(x.actor_id)||{},name=actor.display_name||actor.username||"ユーザー";
