@@ -140,14 +140,14 @@ async function load(){
    db.from("portal_announcements").select("id,title,body,href,created_at").eq("published",true).order("created_at",{ascending:false}).limit(100),
    db.from("portal_preferences").select("preferences").eq("user_id",user.id).maybeSingle()
   ]);
-  for(const r of [messagesResult,socialResult,repliesResult,annResult,prefsResult])if(r.error)throw r.error;
+  for(const r of [messagesResult,socialResult,repliesResult,annResult,prefsResult]){if(r?.error)throw r.error;if(!r)throw new Error("通知データの応答がありません。");}
   prefs=prefsResult.data&&prefsResult.data.preferences&&typeof prefsResult.data.preferences==="object"?prefsResult.data.preferences:{};
   const messages=messagesResult.data||[],messageIds=messages.map(x=>x.id),readsResult=messageIds.length?await db.from("admin_message_reads").select("message_id,read_at").eq("user_id",user.id).in("message_id",messageIds):{data:[],error:null};
-  if(readsResult.error)throw readsResult.error;
+  if(readsResult?.error)throw readsResult.error;
   const readMessageIds=new Set((readsResult.data||[]).map(x=>x.message_id));
   const social=socialResult.data||[],actorIds=Array.from(new Set(social.map(x=>x.actor_id).filter(Boolean)));
   const actorResult=actorIds.length?await db.from("profiles").select("id,username,display_name").in("id",actorIds):{data:[],error:null};
-  if(actorResult.error)throw actorResult.error;
+  if(actorResult?.error)throw actorResult.error;
   const actors=new Map((actorResult.data||[]).map(x=>[x.id,x]));
   const mirrored=new Set(messages.map(x=>x.portal_announcement_id).filter(Boolean));
   const next=[];
