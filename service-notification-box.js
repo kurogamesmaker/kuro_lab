@@ -302,7 +302,7 @@
         client.from("portal_announcements").select("id,title,body,href,created_at").eq("published", true).order("created_at", { ascending: false }).limit(100),
         client.from("portal_preferences").select("preferences").eq("user_id", user.id).maybeSingle()
       ]);
-      for (const result of [messagesResult, socialResult, repliesResult, announcementsResult, preferencesResult, coinResult]) if (result.error) throw result.error;
+      for (const result of [messagesResult, socialResult, repliesResult, announcementsResult, preferencesResult]) { if (result?.error) throw result.error; }
       prefs = preferencesResult.data && preferencesResult.data.preferences && typeof preferencesResult.data.preferences === "object" ? preferencesResult.data.preferences : {};
       const messages = messagesResult.data || [];
       const messageIds = messages.map((row) => row.id);
@@ -369,7 +369,7 @@
     let result = { error: null };
     if (item.kind === "admin") {
       result = await client.from("admin_message_reads").upsert({ message_id: item.id, user_id: user.id, read_at: now }, { onConflict: "message_id,user_id" });
-    } else if (item.kind === "social") {
+    } else if (item.kind === "social" || item.kind === "points") {
       result = await client.from("notifications").update({ read_at: now }).eq("id", item.id).eq("recipient_id", user.id);
     } else if (item.kind === "reply") {
       result = await client.from("portal_request_notifications").update({ read_at: now }).eq("id", item.id).eq("user_id", user.id);
@@ -405,7 +405,7 @@
       const client = activeDb();
       const now = new Date().toISOString();
       const admin = items.filter((row) => row.kind === "admin" && !row.read);
-      const social = items.filter((row) => row.kind === "social" && !row.read);
+      const social = items.filter((row) => (row.kind === "social" || row.kind === "points") && !row.read);
       const replies = items.filter((row) => row.kind === "reply" && !row.read);
       const announcements = items.filter((row) => row.kind === "announcement" && !row.read);
       const operations = [];
