@@ -95,7 +95,7 @@ test("idle alarm clears only the room's own storage and resets its cache", async
   assert.equal(fixture.deleteAllCalls, 1);
   assert.equal(fixture.values.size, 0);
   assert.equal(fixture.room.loaded, false);
-  assert.deepEqual(fixture.room.data, { state: null, updatedAt: null, unonGame: null, unonCrypto: null, unonActionIds: [], unoDeadline: null, idleDeadline: null });
+  assert.deepEqual(fixture.room.data, { state: null, updatedAt: null, unonGame: null, unonCrypto: null, unonActionIds: [], unoDeadline: null, idleDeadline: null, disconnectDeadlines: [] });
 });
 
 test("an alarm never clears storage while any socket is connected", async () => {
@@ -394,8 +394,8 @@ test("UNON server starts the match and encrypts each hand only for its owner", a
   fixture.room.data.state = {
     phase: "lobby",
     players: [
-      { id: "host-user", name: "Host", pub: hostKeys.pub, ready: true },
-      { id: "guest-user", name: "Guest", pub: guestKeys.pub, ready: true },
+      { id: "host-user", name: "Host", pub: hostKeys.pub, ready: true, start: true },
+      { id: "guest-user", name: "Guest", pub: guestKeys.pub, ready: true, start: true },
     ],
   };
   const hostMessages = [], guestMessages = [];
