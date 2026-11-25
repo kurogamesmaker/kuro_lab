@@ -756,7 +756,7 @@
   function initLevelXpNotifications() {
     // Notifications belong on the actual KuroGames launcher, not every page
     // that happens to share the profile modal.
-    if (window.location.pathname.replace(/\\/+$/, "") !== "/games") return;
+    if (window.location.pathname !== "/games/" && window.location.pathname !== "/games" && window.location.pathname !== "/games/index.html") return;
     var db = getDb();
     if (!db || !db.auth || typeof db.channel !== "function") return;
     db.auth.getUser().then(async function (result) {
