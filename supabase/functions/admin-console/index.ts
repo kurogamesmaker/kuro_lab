@@ -552,21 +552,36 @@ Deno.serve(async (req: Request) => {
       const safeQuery = query.replace(/[\\%_,()"]/g, " ").replace(/\s+/g, " ").trim();
       if (!safeQuery) return reply({ users: [] }, 200, origin);
       const pattern = `%${safeQuery}%`;
-      const [usernameResult, displayNameResult, kuroIdResult] = await Promise.all([
+      const [usernameResult, displayNameResult, kuroIdResult, authUsersResult] = await Promise.all([
         admin.from("profiles").select("id,username,display_name,kuro_id").ilike("username", pattern).limit(20),
         admin.from("profiles").select("id,username,display_name,kuro_id").ilike("display_name", pattern).limit(20),
-        admin.from("profiles").select("id,username,display_name,kuro_id").ilike("kuro_id", pattern).limit(20)
+        admin.from("profiles").select("id,username,display_name,kuro_id").ilike("kuro_id", pattern).limit(20),
+        admin.auth.admin.listUsers({ page: 1, perPage: 1000 })
       ]);
       for (const result of [usernameResult, displayNameResult, kuroIdResult]) {
         if (result.error) throw result.error;
       }
+      if (authUsersResult.error) throw authUsersResult.error;
       const uniqueProfiles = new Map<string, any>();
       for (const profile of [
         ...(usernameResult.data || []), ...(displayNameResult.data || []), ...(kuroIdResult.data || [])
       ]) uniqueProfiles.set(profile.id, profile);
+      const emailMatches = (authUsersResult.data?.users || []).filter((user) =>
+        String(user.email || "").toLowerCase().includes(safeQuery.toLowerCase())
+      );
+      for (const user of emailMatches) {
+        if (uniqueProfiles.has(user.id)) continue;
+        const { data: profile, error: profileError } = await admin.from("profiles")
+          .select("id,username,display_name,kuro_id").eq("id", user.id).maybeSingle();
+        if (profileError) throw profileError;
+        uniqueProfiles.set(user.id, {
+          id: user.id, username: profile?.username || "",
+          display_name: profile?.display_name || "", kuro_id: profile?.kuro_id || ""
+        });
+      }
       return reply({ users: Array.from(uniqueProfiles.values()).slice(0, 20).map((profile) => ({
-        id: profile.id, username: profile.username || "",
-        display_name: profile.display_name || "", kuro_id: profile.kuro_id || ""
+        id: profile.id, email: emailMatches.find(user => user.id === profile.id)?.email || "",
+        username: profile.username || "", display_name: profile.display_name || "", kuro_id: profile.kuro_id || ""
       })) }, 200, origin);
     }
 
