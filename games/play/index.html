@@ -115,7 +115,8 @@ header.top.kuro-game-background-rare{background:linear-gradient(100deg,#142b50,#
 header.top.kuro-game-background-epic{background:linear-gradient(100deg,#33184e,#573178)}
 header.top.kuro-game-background-legendary{background:linear-gradient(100deg,#4b2c17,#73501c)}
 </style>
-</head>
+
+<style id="kuro-game-reward-style">#kuroGameRewardBar{display:none;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 13px;border:1px solid #f0d99c;border-radius:12px;background:linear-gradient(110deg,#fffaf0,#fff7df);color:#6b4b13;font-size:12px;line-height:1.5}#kuroGameRewardBar[data-visible="true"]{display:flex}#kuroGameRewardTitle{display:inline-flex;align-items:center;gap:5px;font-weight:900;white-space:nowrap;color:#9a6b16}#kuroGameRewardList{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}.kuro-game-reward-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid #ead8a8;border-radius:8px;background:#fff;color:#604b20;font-weight:800}.kuro-game-reward-chip strong{color:#ad7b18;font-size:13px}@media(max-width:600px){#kuroGameRewardBar{gap:7px;padding:8px 10px;font-size:11px}#kuroGameRewardList{gap:5px}.kuro-game-reward-chip{padding:4px 7px}}</style></head>
 <body><header class="top"><a class="brand" href="/games/">KURO GAMES</a><span class="game-cosmetic-avatar" id="gameCosmeticAvatar" hidden aria-label="装備中アバター"></span><span class="game-cosmetic-effects" id="gameCosmeticEffects" hidden></span><button class="back game-account-button" id="gameAccountButton" type="button">ログイン / 登録</button><a class="back" href="/games/">← ゲーム一覧へ</a></header>
 <div class="online-auth-backdrop" id="onlineAuthPrompt" hidden>
  <section class="online-auth-card" role="dialog" aria-modal="true" aria-labelledby="onlineAuthTitle">
@@ -145,7 +146,7 @@ header.top.kuro-game-background-legendary{background:linear-gradient(100deg,#4b2
   <p class="kuro-account-foot">新規登録はKURO Lab共通アカウントです。KuroGames専用のアカウントは作成されません。</p>
  </section>
 </div>
-<main class="wrap" id="gamePageWrap"><div class="info" id="gameInfo" hidden><div class="icon" id="gameIcon">🎮</div><div class="copy"><h1 id="gameTitle">読み込み中…</h1></div></div><div class="frame-wrap" id="frameWrap"><div class="state" id="state"><strong>ゲームを読み込んでいます</strong>少しお待ちください。</div></div><section class="game-description" id="gameDescriptionBox" hidden><p class="game-description-label">ゲーム説明</p><div id="gameDescription"></div></section><p class="hint">このゲームは独立したサンドボックス内で実行されます。</p></main>
+<main class="wrap" id="gamePageWrap"><div class="info" id="gameInfo" hidden><div class="icon" id="gameIcon">🎮</div><div class="copy"><h1 id="gameTitle">読み込み中…</h1></div></div><div id="kuroGameRewardBar" aria-live="polite" hidden><span id="kuroGameRewardTitle">🪙 ポイント報酬</span><div id="kuroGameRewardList"></div></div><div class="frame-wrap" id="frameWrap"><div class="state" id="state"><strong>ゲームを読み込んでいます</strong>少しお待ちください。</div></div><section class="game-description" id="gameDescriptionBox" hidden><p class="game-description-label">ゲーム説明</p><div id="gameDescription"></div></section><p class="hint">このゲームは独立したサンドボックス内で実行されます。</p></main>
 
 <script>
 
@@ -549,6 +550,7 @@ window.addEventListener("message", async event => {
  }
 });
 
+async function loadKuroGameRewards(gameId, db){const bar=document.getElementById("kuroGameRewardBar"),list=document.getElementById("kuroGameRewardList");if(!bar||!list)return;try{const {data,error}=await db.from("kuro_public_game_rewards").select("mode,reward_amount,reward_label,reward_type,score_tiers,required_cpu_difficulty").eq("game_id",gameId).eq("enabled",true).gt("reward_amount",0);if(error)throw error;const rows=Array.isArray(data)?data.filter(row=>Number(row.reward_amount)>0):[];if(!rows.length){bar.hidden=true;return;}list.replaceChildren();rows.forEach(row=>{const chip=document.createElement("span");chip.className="kuro-game-reward-chip";const label=String(row.reward_label||"クリア報酬").trim().slice(0,42)||"ゲーム報酬";const txt=document.createElement("span");txt.textContent=label;const amount=document.createElement("strong");amount.textContent="+"+Number(row.reward_amount)+" P";chip.append(txt,amount);list.appendChild(chip);});bar.hidden=false;}catch(error){bar.hidden=true;console.warn("[KURO GAMES rewards] config unavailable",error?.message||error);}}
 (async function(){
  const $=id=>document.getElementById(id),params=new URLSearchParams(location.search),id=params.get("id");
  
@@ -557,7 +559,7 @@ window.addEventListener("message", async event => {
  if(!window.supabase||!window.supabase.createClient){fail("通信ライブラリを読み込めませんでした。");return;}
  try{const db=kuroGameAuthClient;
   const {data,error}=await db.from("game_studio_games").select("title,description,icon,html_content").eq("id",id).eq("status","published").maybeSingle();if(error)throw error;if(!data){fail("公開が終了したか、URLが正しくありません。");return;}
-  $("gameTitle").textContent=data.title;const gameDescription=String(data.description||"").trim();$("gameDescription").textContent=gameDescription;$("gameDescriptionBox").hidden=!gameDescription;const iconValue=data.icon||"🎮",iconNode=$("gameIcon");if(/^data:image\//i.test(iconValue)||/^https?:\/\//i.test(iconValue)){const img=document.createElement("img");img.src=iconValue;img.alt="";img.style.cssText="width:100%;height:100%;object-fit:cover;border-radius:inherit";iconNode.replaceChildren(img);}else iconNode.textContent=iconValue;$("gameInfo").hidden=false;
+  $("gameTitle").textContent=data.title;loadKuroGameRewards(id,db);const gameDescription=String(data.description||"").trim();$("gameDescription").textContent=gameDescription;$("gameDescriptionBox").hidden=!gameDescription;const iconValue=data.icon||"🎮",iconNode=$("gameIcon");if(/^data:image\//i.test(iconValue)||/^https?:\/\//i.test(iconValue)){const img=document.createElement("img");img.src=iconValue;img.alt="";img.style.cssText="width:100%;height:100%;object-fit:cover;border-radius:inherit";iconNode.replaceChildren(img);}else iconNode.textContent=iconValue;$("gameInfo").hidden=false;
   const launchGame=(guest)=>{kuroGameGuestMode=!!guest;const frame=document.createElement("iframe");frame.className="game-frame";frame.title=data.title;frame.setAttribute("sandbox","allow-scripts allow-forms allow-modals");frame.setAttribute("allow","autoplay");frame.referrerPolicy="no-referrer";
   const frameMeta=String(data.html_content||"").match(/<meta\s+name=["']kuro-game-frame["']\s+content=["'](\d{3,4})x(\d{3,4})["'][^>]*>/i);
   const frameWidth=frameMeta?Math.max(240,Math.min(3840,Number(frameMeta[1]))):960;
