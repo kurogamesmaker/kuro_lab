@@ -21,7 +21,7 @@ button, input { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 a { color: inherit; text-decoration: none; }
 [hidden] { display: none !important; }
-.app-shell { width: min(100%, 760px); min-height: 100dvh; margin: 0 auto; padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+.app-shell { width: min(100%, 760px); min-height: 100dvh; margin: 0 auto; padding-bottom: calc(84px + env(safe-area-inset-bottom)); }\nbody.account-open { overflow: hidden; }
 .app-header {
   position: sticky; top: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 10px;
   min-height: calc(62px + env(safe-area-inset-top)); padding: calc(8px + env(safe-area-inset-top)) 18px 8px;
