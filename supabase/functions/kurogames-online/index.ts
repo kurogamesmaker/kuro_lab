@@ -2513,6 +2513,55 @@ async function handle(req: Request) {
     return reply(200,data);
   }
 
+  if (action === "unon_room_set_started") {
+    const user = await getUser(req);
+    requirePublished(game);
+    requireMultiplayer(settings.features);
+    if (game.id !== UNON_GAME_ID) throw new HttpError(404, "この操作はUNON専用です。");
+
+    const roomId = typeof body.roomId === "string" && UUID_RE.test(body.roomId) ? body.roomId : "";
+    if (!roomId) throw new HttpError(400, "roomIdが正しくありません。");
+    const { data: room, error: roomError } = await admin.from("game_online_rooms")
+      .select("id, host_user_id, status")
+      .eq("id", roomId).eq("game_id", game.id).maybeSingle();
+    if (roomError || !room) throw new HttpError(404, "対戦ルームが見つかりません。");
+    if (room.host_user_id !== user.id) throw new HttpError(403, "ゲームを開始できるのはルームホストだけです。");
+
+    const { data: member, error: memberError } = await admin.from("game_online_room_members")
+      .select("user_id").eq("room_id", roomId).eq("user_id", user.id).maybeSingle();
+    if (memberError) throw new HttpError(500, "ルーム参加状態を確認できませんでした。");
+    if (!member) throw new HttpError(403, "このルームの参加者ではありません。");
+
+    const started = body.started !== false;
+    if (started) {
+      if (room.status === "closed") throw new HttpError(409, "このルームは終了しています。");
+      if (room.status !== "playing") {
+        const { data: updated, error: updateError } = await admin.from("game_online_rooms")
+          .update({ status: "playing" })
+          .eq("id", roomId).eq("game_id", game.id).eq("status", "waiting")
+          .select("id").maybeSingle();
+        if (updateError) throw new HttpError(500, "対戦開始状態を保存できませんでした。");
+        if (!updated) {
+          const { data: current, error: currentError } = await admin.from("game_online_rooms")
+            .select("status").eq("id", roomId).eq("game_id", game.id).maybeSingle();
+          if (currentError || current?.status !== "playing") {
+            throw new HttpError(409, "ルーム状態が変更されたため開始できません。");
+          }
+        }
+      }
+      return reply(200, { ok: true, started: true });
+    }
+
+    // The client calls this only after the server explicitly rejected a start request.
+    if (room.status === "playing") {
+      const { error: unlockError } = await admin.from("game_online_rooms")
+        .update({ status: "waiting" })
+        .eq("id", roomId).eq("game_id", game.id).eq("status", "playing");
+      if (unlockError) throw new HttpError(500, "待機状態へ戻せませんでした。");
+    }
+    return reply(200, { ok: true, started: false });
+  }
+
   if (
     action === "matchmaking_join" || action === "matchmaking_status" ||
     action === "matchmaking_cancel" || action === "matchmaking_ack" ||
