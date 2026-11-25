@@ -289,7 +289,7 @@
     host.replaceChildren();
     filtered.forEach(game => host.appendChild(createGameCard(game)));
 
-    if (empty) empty.hidden = filtered.length > 0;
+    if (empty) empty.hidden = games.length === 0 || filtered.length > 0;
     if (count) count.textContent = filtered.length + " GAMES";
   }
 
