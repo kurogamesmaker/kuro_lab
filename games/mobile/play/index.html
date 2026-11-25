@@ -101,6 +101,14 @@
         var game = innerDoc.querySelector("#frameWrap iframe.game-frame");
         if (!game || attached.has(game)) return;
         attached.add(game);
+        // A fast game can finish loading before MutationObserver sees the iframe.
+        // Check its state before waiting for a load event that may already have fired.
+        try {
+          if (game.contentDocument && game.contentDocument.readyState === "complete") {
+            markReady();
+            return;
+          }
+        } catch (_) {}
         game.addEventListener("load", markReady, { once: true });
       }
 
