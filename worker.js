@@ -799,6 +799,8 @@ export default {
 
         if (liveAssetResponse) {
           const headers = new Headers(liveAssetResponse.headers);
+          // The mobile shell embeds this same-origin player page. Keep DENY everywhere else.
+          if (/^\\/games\\/play(?:\\/|$)/i.test(url.pathname)) headers.set("X-Frame-Options", "SAMEORIGIN");
           const extension = resolvedLiveAssetPath.slice(resolvedLiveAssetPath.lastIndexOf(".") + 1).toLowerCase();
           const contentTypes = {
             html: "text/html; charset=utf-8",
@@ -863,6 +865,8 @@ export default {
 
     // Use the same no-stale-cache policy for every static fallback resource.
     const fallbackHeaders = new Headers(assetResponse.headers);
+    // The mobile shell embeds /games/play/; only that same-origin player route may be framed.
+    if (/^\\/games\\/play(?:\\/|$)/i.test(url.pathname)) fallbackHeaders.set("X-Frame-Options", "SAMEORIGIN");
     fallbackHeaders.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
     fallbackHeaders.set("Pragma", "no-cache");
 
