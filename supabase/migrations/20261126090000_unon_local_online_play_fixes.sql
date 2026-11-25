@@ -13,10 +13,6 @@ BEGIN
     v_html := replace(v_html, $old_0$let sel=[],unoArmed=false,onlineWildIdx=-1,lastPlayIdx=-1,pendingSnap=null,prevSnap=null,pendingSkip=0,pendingDraw=0,playerCount=4,difficulty="normal",waitingEffectCard=null,setupOnly=true,isDealing=false,ruleMode="official",awaiting=false;$old_0$, $new_0$let sel=[],unoArmed=false,onlineWildIdx=-1,onlineWildCardIds=[],lastPlayIdx=-1,pendingSnap=null,prevSnap=null,pendingSkip=0,pendingDraw=0,playerCount=4,difficulty="normal",waitingEffectCard=null,setupOnly=true,isDealing=false,ruleMode="official",awaiting=false;$new_0$);
   END IF;
 
-  IF position($new_0$ in v_html) = 0 THEN
-    IF position($old_0$ in v_html) = 0 THEN RAISE EXCEPTION 'UNON local-mode patch 0 did not match'; END IF;
-    v_html := replace(v_html, $old_0$, $new_0$);
-  END IF;
   IF position($new_1$direction=pub.direction;activeColor=pub.activeColor;pendingDraw=Math.max(0,Math.floor(Number(pub.pendingDraw)||0));
  hasDrawn=!!pub.drawnPending&&turn===0;drawnCardIndex=null;$new_1$ in v_html) = 0 THEN
     IF position($old_1$direction=pub.direction;activeColor=pub.activeColor;
@@ -26,10 +22,6 @@ BEGIN
  hasDrawn=!!pub.drawnPending&&turn===0;drawnCardIndex=null;$new_1$);
   END IF;
 
-  IF position($new_1$ in v_html) = 0 THEN
-    IF position($old_1$ in v_html) = 0 THEN RAISE EXCEPTION 'UNON local-mode patch 1 did not match'; END IF;
-    v_html := replace(v_html, $old_1$, $new_1$);
-  END IF;
   IF position($new_2$const mine=turn===0?(hasDrawn?(ruleMode==="local"?"引いたカードを出してください":"引いたカードを出すか、パスできます"):(ruleMode==="local"&&pendingDraw>0?`＋カードを重ねるか、${pendingDraw}枚引いて続行できます`:"あなたの番です")):`${PN(turn)} の番…`;
  setStatus(pre+mine)}$new_2$ in v_html) = 0 THEN
     IF position($old_2$setStatus(pre+(turn===0?(hasDrawn?"引いたカードを出すか、パスできます":"あなたの番です"):`${PN(turn)} の番…`))}$old_2$ in v_html) = 0 THEN RAISE EXCEPTION 'UNON local-mode patch 2 did not match'; END IF;
@@ -37,10 +29,6 @@ BEGIN
  setStatus(pre+mine)}$new_2$);
   END IF;
 
-  IF position($new_2$ in v_html) = 0 THEN
-    IF position($old_2$ in v_html) = 0 THEN RAISE EXCEPTION 'UNON local-mode patch 2 did not match'; END IF;
-    v_html := replace(v_html, $old_2$, $new_2$);
-  END IF;
   IF position($new_3$function onlinePick(i){
  const c=hands[0][i];if(!c||awaiting)return;
  if(ruleMode!=="local"){
@@ -158,28 +146,16 @@ function sendPlayCards(cardIds,color){
 }$new_3$);
   END IF;
 
-  IF position($new_3$ in v_html) = 0 THEN
-    IF position($old_3$ in v_html) = 0 THEN RAISE EXCEPTION 'UNON local-mode patch 3 did not match'; END IF;
-    v_html := replace(v_html, $old_3$, $new_3$);
-  END IF;
   IF position($new_4$if(window.ONL){waitingColor=false;const ids=onlineWildCardIds.slice();onlineWildCardIds=[];onlineWildIdx=-1;render();sendPlayCards(ids,b.dataset.color);return}$new_4$ in v_html) = 0 THEN
     IF position($old_4$if(window.ONL){waitingColor=false;const i=onlineWildIdx;onlineWildIdx=-1;render();sendPlay(i,b.dataset.color);return}$old_4$ in v_html) = 0 THEN RAISE EXCEPTION 'UNON local-mode patch 4 did not match'; END IF;
     v_html := replace(v_html, $old_4$if(window.ONL){waitingColor=false;const i=onlineWildIdx;onlineWildIdx=-1;render();sendPlay(i,b.dataset.color);return}$old_4$, $new_4$if(window.ONL){waitingColor=false;const ids=onlineWildCardIds.slice();onlineWildCardIds=[];onlineWildIdx=-1;render();sendPlayCards(ids,b.dataset.color);return}$new_4$);
   END IF;
 
-  IF position($new_4$ in v_html) = 0 THEN
-    IF position($old_4$ in v_html) = 0 THEN RAISE EXCEPTION 'UNON local-mode patch 4 did not match'; END IF;
-    v_html := replace(v_html, $old_4$, $new_4$);
-  END IF;
-  IF position($new_5$("playBtn").onclick=()=>{if(!sel.length||turn!==0||awaiting)return;const ix=[...sel];if(window.ONL){const cards=ix.map(i=>hands[0][i]).filter(Boolean),ids=cards.map(c=>c.id);if(!ids.length){sel=[];render();return}if(cards.some(c=>c.color==="wild")){sel=[];onlineWildCardIds=ids;waitingColor=true;render();setStatus("色を選んでください")}else{sendPlayCards(ids)}return}sel=[];play(0,ix)};$new_5$ in v_html) = 0 THEN
-    IF position($old_5$("playBtn").onclick=()=>{if(!sel.length||turn!==0)return;const ix=[...sel];sel=[];play(0,ix)};$old_5$ in v_html) = 0 THEN RAISE EXCEPTION 'UNON local-mode patch 5 did not match'; END IF;
-    v_html := replace(v_html, $old_5$("playBtn").onclick=()=>{if(!sel.length||turn!==0)return;const ix=[...sel];sel=[];play(0,ix)};$old_5$, $new_5$("playBtn").onclick=()=>{if(!sel.length||turn!==0||awaiting)return;const ix=[...sel];if(window.ONL){const cards=ix.map(i=>hands[0][i]).filter(Boolean),ids=cards.map(c=>c.id);if(!ids.length){sel=[];render();return}if(cards.some(c=>c.color==="wild")){sel=[];onlineWildCardIds=ids;waitingColor=true;render();setStatus("色を選んでください")}else{sendPlayCards(ids)}return}sel=[];play(0,ix)};$new_5$);
+  IF position($new_5$$("playBtn").onclick=()=>{if(!sel.length||turn!==0||awaiting)return;const ix=[...sel];if(window.ONL){const cards=ix.map(i=>hands[0][i]).filter(Boolean),ids=cards.map(c=>c.id);if(!ids.length){sel=[];render();return}if(cards.some(c=>c.color==="wild")){sel=[];onlineWildCardIds=ids;waitingColor=true;render();setStatus("色を選んでください")}else{sendPlayCards(ids)}return}sel=[];play(0,ix)};$new_5$ in v_html) = 0 THEN
+    IF position($old_5$$("playBtn").onclick=()=>{if(!sel.length||turn!==0)return;const ix=[...sel];sel=[];play(0,ix)};$old_5$ in v_html) = 0 THEN RAISE EXCEPTION 'UNON local-mode patch 5 did not match'; END IF;
+    v_html := replace(v_html, $old_5$$("playBtn").onclick=()=>{if(!sel.length||turn!==0)return;const ix=[...sel];sel=[];play(0,ix)};$old_5$, $new_5$$("playBtn").onclick=()=>{if(!sel.length||turn!==0||awaiting)return;const ix=[...sel];if(window.ONL){const cards=ix.map(i=>hands[0][i]).filter(Boolean),ids=cards.map(c=>c.id);if(!ids.length){sel=[];render();return}if(cards.some(c=>c.color==="wild")){sel=[];onlineWildCardIds=ids;waitingColor=true;render();setStatus("色を選んでください")}else{sendPlayCards(ids)}return}sel=[];play(0,ix)};$new_5$);
   END IF;
 
-  IF position($new_5$ in v_html) = 0 THEN
-    IF position($old_5$ in v_html) = 0 THEN RAISE EXCEPTION 'UNON local-mode patch 5 did not match'; END IF;
-    v_html := replace(v_html, $old_5$, $new_5$);
-  END IF;
   IF position($new_6$const n=hands.length,save={hands:hands.map(h=>h.slice()),pile:pile.slice(),turn,direction,activeColor,hasDrawn,drawnCardIndex,pendingDraw,sel:sel.slice(),prev:prevSnap};
  const undo=()=>{hands=save.hands;pile=save.pile;turn=save.turn;direction=save.direction;activeColor=save.activeColor;hasDrawn=save.hasDrawn;drawnCardIndex=save.drawnCardIndex;pendingDraw=save.pendingDraw;sel=save.sel;prevSnap=save.prev;awaiting=false;render()};
  if(a.type==="draw"){
@@ -201,10 +177,6 @@ function sendPlayCards(cardIds,color){
   else{hands[0].push({id:"?"+Date.now(),color:"pending",value:""});flyCards(0,1);bumpPrev(ONL.myId,1);render();setStatus("カードを引いています…")}}$new_6$);
   END IF;
 
-  IF position($new_6$ in v_html) = 0 THEN
-    IF position($old_6$ in v_html) = 0 THEN RAISE EXCEPTION 'UNON local-mode patch 6 did not match'; END IF;
-    v_html := replace(v_html, $old_6$, $new_6$);
-  END IF;
   IF position($new_7$else if(a.type==="play"){
   if(Array.isArray(a.cardIds)&&a.cardIds.length>1){awaiting=true;sel=[];render();setStatus("選択したカードをまとめて出しています…");return undo}
   const i=hands[0].findIndex(c=>c.id===a.cardIds[0]);if(i<0)return null;$new_7$ in v_html) = 0 THEN
@@ -216,37 +188,21 @@ function sendPlayCards(cardIds,color){
   const i=hands[0].findIndex(c=>c.id===a.cardIds[0]);if(i<0)return null;$new_7$);
   END IF;
 
-  IF position($new_7$ in v_html) = 0 THEN
-    IF position($old_7$ in v_html) = 0 THEN RAISE EXCEPTION 'UNON local-mode patch 7 did not match'; END IF;
-    v_html := replace(v_html, $old_7$, $new_7$);
-  END IF;
   IF position($new_8$if(extra){if(ruleMode==="local")pendingDraw+=extra;else{const t=((direction%n)+n)%n,o=ONL.order&&ONL.order[t];for(let k=0;k<extra;k++)hands[t].push({color:"back",value:""});flyCards(t,extra);if(o)bumpPrev(o.userId,extra)}}$new_8$ in v_html) = 0 THEN
     IF position($old_8$if(extra){const t=((direction%n)+n)%n,o=ONL.order&&ONL.order[t];for(let k=0;k<extra;k++)hands[t].push({color:"back",value:""});flyCards(t,extra);if(o)bumpPrev(o.userId,extra)}$old_8$ in v_html) = 0 THEN RAISE EXCEPTION 'UNON local-mode patch 8 did not match'; END IF;
     v_html := replace(v_html, $old_8$if(extra){const t=((direction%n)+n)%n,o=ONL.order&&ONL.order[t];for(let k=0;k<extra;k++)hands[t].push({color:"back",value:""});flyCards(t,extra);if(o)bumpPrev(o.userId,extra)}$old_8$, $new_8$if(extra){if(ruleMode==="local")pendingDraw+=extra;else{const t=((direction%n)+n)%n,o=ONL.order&&ONL.order[t];for(let k=0;k<extra;k++)hands[t].push({color:"back",value:""});flyCards(t,extra);if(o)bumpPrev(o.userId,extra)}}$new_8$);
   END IF;
 
-  IF position($new_8$ in v_html) = 0 THEN
-    IF position($old_8$ in v_html) = 0 THEN RAISE EXCEPTION 'UNON local-mode patch 8 did not match'; END IF;
-    v_html := replace(v_html, $old_8$, $new_8$);
-  END IF;
   IF position($new_9$sel=[];waitingColor=false;onlineWildCardIds=[];humanUnoPending=false;finished=false;$new_9$ in v_html) = 0 THEN
     IF position($old_9$sel=[];waitingColor=false;humanUnoPending=false;finished=false;$old_9$ in v_html) = 0 THEN RAISE EXCEPTION 'UNON local-mode patch 9 did not match'; END IF;
     v_html := replace(v_html, $old_9$sel=[];waitingColor=false;humanUnoPending=false;finished=false;$old_9$, $new_9$sel=[];waitingColor=false;onlineWildCardIds=[];humanUnoPending=false;finished=false;$new_9$);
   END IF;
 
-  IF position($new_9$ in v_html) = 0 THEN
-    IF position($old_9$ in v_html) = 0 THEN RAISE EXCEPTION 'UNON local-mode patch 9 did not match'; END IF;
-    v_html := replace(v_html, $old_9$, $new_9$);
-  END IF;
   IF position($new_10$ruleMode=snap.public.ruleMode==="local"?"local":"official";difficulty="normal";sel=[];unoArmed=false;waitingColor=false;onlineWildCardIds=[];pendingDraw=0;pendingSnap=null;finished=false;humanUnoPending=false;hasDrawn=false;pile=[];$new_10$ in v_html) = 0 THEN
     IF position($old_10$ruleMode=snap.public.ruleMode==="local"?"local":"official";difficulty="normal";sel=[];unoArmed=false;waitingColor=false;pendingSnap=null;finished=false;humanUnoPending=false;hasDrawn=false;pile=[];$old_10$ in v_html) = 0 THEN RAISE EXCEPTION 'UNON local-mode patch 10 did not match'; END IF;
     v_html := replace(v_html, $old_10$ruleMode=snap.public.ruleMode==="local"?"local":"official";difficulty="normal";sel=[];unoArmed=false;waitingColor=false;pendingSnap=null;finished=false;humanUnoPending=false;hasDrawn=false;pile=[];$old_10$, $new_10$ruleMode=snap.public.ruleMode==="local"?"local":"official";difficulty="normal";sel=[];unoArmed=false;waitingColor=false;onlineWildCardIds=[];pendingDraw=0;pendingSnap=null;finished=false;humanUnoPending=false;hasDrawn=false;pile=[];$new_10$);
   END IF;
 
-  IF position($new_10$ in v_html) = 0 THEN
-    IF position($old_10$ in v_html) = 0 THEN RAISE EXCEPTION 'UNON local-mode patch 10 did not match'; END IF;
-    v_html := replace(v_html, $old_10$, $new_10$);
-  END IF;
   UPDATE public.game_studio_games SET html_content = v_html, updated_at = now()
   WHERE id = 'faa155cb-2143-4361-9a96-dc759d334e46'::uuid;
 END;
