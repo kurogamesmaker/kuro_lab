@@ -93,7 +93,7 @@
         <p class="account-hint">新規登録が必要な場合は <a href="/?auth=1&amp;next=%2Faccount%2F">KUROLABトップ（ログイン・新規登録）</a> から登録できます。</p>
       </div>
       <nav class="account-nav" aria-label="サービスへ移動">
-        <a href="/">KUROLABトップ</a><a href="#accountProfileCard">共通プロフィール編集</a><a href="/sns/">KURO SNS</a><a href="/games/">KURO GAMES</a>
+        <a href="/">KUROLABトップ</a><a href="#accountProfileCard">共通プロフィール編集</a><a href="/account/points/">ポイント履歴</a><a href="/sns/">KURO SNS</a><a href="/games/">KURO GAMES</a>
       </nav>
     </section>
 
@@ -109,20 +109,7 @@
         <p id="accountBioStatus" class="account-status" role="status" aria-live="polite"></p>
       </form>
     </section>
-
-    <section id="accountCoinCard" class="account-card" hidden>
-      <h2>KURO COIN</h2>
-      <p>KURO GAMESの対象ゲームで勝利すると獲得できる、KURO Lab共通コインです。残高と獲得・使用履歴を確認できます。</p>
-      <div class="account-coin-hero">
-        <div><div class="account-coin-label">KURO LAB COMMON CURRENCY</div><div class="account-coin-balance" id="accountCoinBalance">— KC</div></div>
-        <div aria-hidden="true" style="font-size:36px">🪙</div>
-      </div>
-      <div class="account-actions"><a class="account-button" href="/games/">ゲームでコインを獲得</a></div>
-      <div id="accountCoinStatus" class="account-status" role="status" aria-live="polite"></div>
-      <div id="accountCoinHistory" class="account-coin-history"><div class="account-hint">履歴を読み込み中…</div></div>
-    </section>
-
-        <section id="accountPasswordCard" class="account-card" hidden>
+<section id="accountPasswordCard" class="account-card" hidden>
       <h2>パスワード変更</h2>
       <p id="accountPasswordIntro">KUROLAB共通アカウントのパスワードを変更します。</p>
       <form id="accountPasswordForm">
