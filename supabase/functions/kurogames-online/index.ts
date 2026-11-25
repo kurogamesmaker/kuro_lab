@@ -483,16 +483,24 @@ function primeRandomIndex(length: number) {
 function primeCreateTarget(difficulty: string, previous: number | null = null) {
   const config = PRIME_DIFFICULTY[difficulty];
   if (!config) throw new HttpError(400, "素因数分解の難易度が正しくありません。");
+  const minimumPrime = Math.min(...config.primes);
   for (let attempt = 0; attempt < 80; attempt++) {
     const factorCount = config.minFactors + primeRandomIndex(config.maxFactors - config.minFactors + 1);
     let number = 1;
+    let generatedFactors = 0;
     for (let i = 0; i < factorCount; i++) {
-      const weighted = Math.floor(Math.pow((primeRandomIndex(1000000) + 1) / 1000000, 1.2) * config.primes.length);
-      const prime = config.primes[Math.min(config.primes.length - 1, weighted)];
-      if (number * prime <= config.maxValue) number *= prime;
-      else if (i < 2) number *= 2;
+      const remainingFactors = factorCount - i - 1;
+      const candidates = config.primes.filter((prime) =>
+        number * prime * Math.pow(minimumPrime, remainingFactors) <= config.maxValue
+      );
+      if (!candidates.length) break;
+      const weighted = Math.floor(Math.pow((primeRandomIndex(1000000) + 1) / 1000000, 1.2) * candidates.length);
+      const prime = candidates[Math.min(candidates.length - 1, weighted)];
+      number *= prime;
+      generatedFactors++;
     }
-    if (primeIsPrime(number) || number <= 3) number *= config.primes[primeRandomIndex(Math.min(2, config.primes.length))];
+    // Reject a partial factor set instead of silently creating an easier problem.
+    if (generatedFactors !== factorCount) continue;
     if (number !== previous && number > 3 && !primeIsPrime(number)) return number;
   }
   throw new HttpError(503, "問題を生成できませんでした。もう一度開始してください。");
@@ -1715,8 +1723,8 @@ async function handle(req: Request) {
     const factors = raw.map(Number);
     const product = factors.reduce((acc,value)=>acc*value,1);
     const nonPrime = factors.find(value=>!primeIsPrime(value));
-    const correct = factors.length >= 2 && factors.length <= config.maxFactors &&
-      factors.length > 0 && product === Number(session.secret_number) && nonPrime === undefined;
+    const correct = factors.length >= config.minFactors && factors.length <= config.maxFactors &&
+      product === Number(session.secret_number) && nonPrime === undefined;
     let reason = "";
     if (factors.length===0) reason = "式を入力してから確定しよう！";
     else if (product !== Number(session.secret_number)) reason = "積が " + product + " になってしまう！ (" + Number(session.secret_number) + " ではない)";
