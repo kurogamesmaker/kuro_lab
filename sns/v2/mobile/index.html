@@ -995,6 +995,15 @@ img#profileAvatarPreview:not(.hidden) {
 .kuro-sns-avatar-frame-host.kuro-sns-avatar-large-frame .kuro-sns-avatar-frame{inset:-8px}
 #kuroBottomNav [data-tab] #kuroProfileTabAvatarHost{display:grid!important;position:relative!important}
 #kuroBottomNav [data-tab] #kuroProfileTabAvatarHost .kuro-sns-avatar-frame{display:block!important}
+
+.kuro-sns-composer-author{display:flex;align-items:center;gap:11px;min-width:0}
+.kuro-sns-composer-author .kuro-sns-composer-name{min-width:0;display:grid;gap:2px}
+.kuro-sns-composer-author .kuro-sns-composer-name strong{font-size:13px;color:#f3f4f6;line-height:1.4}
+.kuro-sns-composer-author .kuro-sns-composer-name small{font-size:11px;color:#9ca3af}
+#profileAvatarPreviewFrameHost{position:relative;display:grid;place-items:center;overflow:visible!important;flex:0 0 6rem}
+#profileAvatarPreviewFrameHost .kuro-sns-avatar-frame{inset:-8px}
+#profileAvatarPreviewFrameHost .kuro-sns-avatar-preview-inner{width:6rem;height:6rem;overflow:hidden;border-radius:50%;border:1px solid #374151;background:#030712;display:flex;align-items:center;justify-content:center}
+#profileAvatarPreviewFrameHost .kuro-sns-avatar-preview-inner>img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 </style>
 </head>
 
@@ -1196,9 +1205,11 @@ img#profileAvatarPreview:not(.hidden) {
 
             <form id="profileForm" onsubmit="saveProfile(event)" class="space-y-4">
                 <div class="flex flex-col items-center gap-3 mb-5">
-                    <div class="w-24 h-24 rounded-full border border-kuro-700 bg-kuro-950 overflow-hidden flex items-center justify-center">
-                        <img id="profileAvatarPreview" class="hidden w-full h-full object-cover" alt="プロフィール画像プレビュー">
-                        <svg id="profileAvatarPlaceholder" class="text-gray-500" viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg>
+                    <div id="profileAvatarPreviewFrameHost" class="kuro-sns-avatar-frame-host w-24 h-24">
+                        <div class="kuro-sns-avatar-preview-inner">
+                            <img id="profileAvatarPreview" class="hidden w-full h-full object-cover" alt="プロフィール画像プレビュー">
+                            <svg id="profileAvatarPlaceholder" class="text-gray-500" viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg>
+                        </div>
                     </div>
                     <label for="profileAvatarInput" class="cursor-pointer text-sm bg-kuro-800 hover:bg-kuro-700 border border-kuro-700 rounded-lg px-4 py-2">
                         <i class="fa-solid fa-image mr-2"></i>画像を選択
@@ -1806,7 +1817,7 @@ function kuroRouteCloudflareRealtime(client) {
             } else {
                 avatar.removeAttribute('src'); avatar.classList.add('hidden'); placeholder.classList.remove('hidden');
             }
-            kuroSnsBindAvatar(avatar.parentElement,currentUser.id);
+            kuroSnsBindAvatar(avatar.parentElement?.parentElement,currentUser.id);
             document.getElementById('myProfileHandle').textContent = '@' + (currentUser.handle || 'user');
             document.getElementById('myProfileName').textContent = currentUser.kuroId ? 'KURO ID: ' + currentUser.kuroId : 'KURO IDを取得できません';
             document.getElementById('myProfileBio').textContent = currentUser.bio || '自己紹介はまだありません。';
@@ -2538,6 +2549,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 img.classList.add('hidden');
                 placeholder.classList.remove('hidden');
             }
+            if(currentUser?.id)kuroSnsBindAvatar(document.getElementById('profileAvatarPreviewFrameHost'),currentUser.id);
         }
 
         function previewProfileAvatar(input) {
@@ -2652,6 +2664,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
 
             document.getElementById('profileAvatarInput').value = '';
             showAvatarPreview(currentUser.avatarUrl || '');
+            kuroSnsBindAvatar(document.getElementById('profileAvatarPreviewFrameHost'),currentUser.id);
 
             document.getElementById('profileUsername').value = currentUser.handle || '';
             document.getElementById('profileKuroId').textContent = currentUser.kuroId || '取得できません';
@@ -3205,7 +3218,13 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 return;
             }
             const authorDisplay = document.getElementById('authorDisplay');
-            authorDisplay.textContent = `${currentUser.name || 'KUROユーザー'} (@${currentUser.handle || 'user'}) として投稿`;
+            const composerAvatarUrl = currentUser.avatarUrl ? kuroSnsAvatarUrl(currentUser.avatarUrl) : '';
+            const composerAvatarInner = composerAvatarUrl
+                ? '<img src="' + escapeHTML(composerAvatarUrl) + '" alt="" class="w-9 h-9 rounded-full object-cover">'
+                : '<span class="w-9 h-9 rounded-full bg-kuro-800 border border-kuro-700 flex items-center justify-center text-gray-300">♙</span>';
+            authorDisplay.innerHTML = '<div class="kuro-sns-composer-author">' +
+                kuroSnsAvatarHostMarkup(currentUser.id,composerAvatarInner,'w-9 h-9 kuro-sns-avatar-small-frame') +
+                '<span class="kuro-sns-composer-name"><strong>' + escapeHTML(currentUser.name || 'KUROユーザー') + '</strong><small>@' + escapeHTML(currentUser.handle || 'user') + ' として投稿</small></span></div>';
             document.getElementById('postContent').value = ''; window.KuroSNSMedia?.clear('post');
             updatePostCounter();
             document.getElementById('submitModal').classList.remove('hidden');
