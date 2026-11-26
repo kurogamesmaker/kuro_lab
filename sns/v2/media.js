@@ -52,7 +52,7 @@
       if(next.some(x=>x.file.name===file.name&&x.file.size===file.size&&x.file.lastModified===file.lastModified))continue;
       next.push({file,url:URL.createObjectURL(file)});
     }
-    revoke(selected[type]);selected[type]=next;preview(type);
+    selected[type]=next;preview(type);
   }
   function clear(type){if(!selected[type])return;revoke(selected[type]);selected[type]=[];preview(type)}
   function removeSelected(type,i){if(!selected[type]?.[i])return;revoke([selected[type].splice(i,1)[0]]);preview(type)}
@@ -129,7 +129,7 @@
     '.kuro-sns-attach-menu button{display:flex;align-items:center;gap:10px;width:100%;min-height:42px;padding:9px 11px;border-radius:10px;color:#f4f4f5;text-align:left;font-size:13px}',
     '.kuro-sns-attach-menu button:hover{background:#27272a}',
     '#chatModal #chatConversationPanel form[onsubmit="sendChatMessage(event)"] .kuro-sns-media-preview{flex:0 0 100%}',
-    '.kuro-sns-media-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:12px;max-width:560px}.kuro-sns-media-grid.kuro-sns-media-count-1{grid-template-columns:minmax(0,1fr);max-width:460px}.kuro-sns-media-tile{display:block;min-width:0;overflow:hidden;padding:0!important;border:0;border-radius:14px;background:#18181b;aspect-ratio:1.2}.kuro-sns-media-count-1 .kuro-sns-media-tile{aspect-ratio:auto;max-height:520px}.kuro-sns-media-tile img{display:block;width:100%;height:100%;max-height:520px;object-fit:cover}.kuro-sns-media-count-1 .kuro-sns-media-tile img{object-fit:contain}',
+    '.kuro-sns-media-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:12px;max-width:560px}.kuro-sns-media-grid.kuro-sns-media-count-1{grid-template-columns:minmax(0,1fr);max-width:460px}.kuro-sns-media-tile{display:block;min-width:0;overflow:hidden;padding:0!important;border:0;border-radius:14px;background:#18181b;aspect-ratio:1.2}.kuro-sns-media-count-1 .kuro-sns-media-tile{aspect-ratio:auto;max-height:520px}.kuro-sns-media-tile img{display:block;width:100%;height:100%;max-height:520px;object-fit:contain}.kuro-sns-media-count-1 .kuro-sns-media-tile img{object-fit:contain}',
     '#submitForm{flex-wrap:wrap}#chatModal #chatConversationPanel form[onsubmit="sendChatMessage(event)"]{flex-wrap:wrap}#chatModal #chatConversationPanel form[onsubmit="sendChatMessage(event)"] #chatMessageInput{flex:1 1 120px}',
     '#publicChatForm #publicChatImagePreview{display:flex!important}#publicChatForm #publicChatImagePreview.hidden{display:none!important}#publicChatForm>div:not(#publicChatImagePreview){grid-template-columns:44px minmax(0,1fr) auto!important;align-items:center}#publicChatForm #publicChatNickname{grid-column:1/-1!important;width:100%!important}#publicChatForm #publicChatInput{grid-column:2!important;min-width:0}#publicChatForm .kuro-sns-attach-wrap{grid-column:1!important}#publicChatForm #publicChatSendButton{grid-column:3!important}#publicChatForm #publicChatImageInput{display:none!important}',
     '.kuro-sns-media-viewer{position:fixed;inset:0;z-index:10050;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.92)}.kuro-sns-media-viewer.hidden{display:none!important}.kuro-sns-media-viewer>img{max-width:min(96vw,1400px);max-height:90dvh;object-fit:contain}.kuro-sns-media-viewer-close{position:absolute;right:18px;top:14px;width:44px;height:44px;border-radius:50%;background:#fff;color:#111;font-size:28px;line-height:1}'
