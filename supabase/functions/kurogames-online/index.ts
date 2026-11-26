@@ -1904,7 +1904,7 @@ async function handle(req: Request) {
     let elapsedUs: bigint | null = null;
     let legacyStartUs = "";
     if (correct && playMode === "time") {
-      if (/^\\d+$/.test(preciseStartUsText)) {
+      if (/^\d+$/.test(preciseStartUsText)) {
         const deltaUs = requestReceivedAtUs - BigInt(preciseStartUsText);
         elapsedUs = deltaUs >= 0n ? deltaUs : 0n;
         legacyStartUs = preciseStartUsText;
