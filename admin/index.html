@@ -1899,7 +1899,7 @@ function renderOpsLevelCoinRewards(rows){
  if(!items.length){host.innerHTML='<div class="empty">到達報酬はまだ設定されていません。</div>';return;}
  host.innerHTML=items.map(row=>'<div class="ops-level-threshold-row" data-level-coin-reward-row>'+
   '<label>到達レベル<input type="number" min="2" max="10000" step="1" data-level-coin-level value="'+esc(row.level)+'"></label>'+
-  '<label>付与KURO COIN<input type="number" min="0" max="1000000" step="1" data-level-coin-amount value="'+esc(row.reward_amount)+'"></label>'+
+  '<label>付与ポイント<input type="number" min="0" max="1000000" step="1" data-level-coin-amount value="'+esc(row.reward_amount)+'"></label>'+
   '<label class="ops-check"><input type="checkbox" data-level-coin-enabled '+(row.enabled===true?'checked':'')+'> 有効</label>'+
   '<button class="btn" type="button" data-level-coin-remove>削除</button></div>').join("");
 }
@@ -1912,7 +1912,7 @@ function addOpsLevelCoinReward(){
  if(!rows.length)host.innerHTML="";
  host.insertAdjacentHTML("beforeend",'<div class="ops-level-threshold-row" data-level-coin-reward-row>'+
   '<label>到達レベル<input type="number" min="2" max="10000" step="1" data-level-coin-level value="'+nextLevel+'"></label>'+
-  '<label>付与KURO COIN<input type="number" min="0" max="1000000" step="1" data-level-coin-amount value="100"></label>'+
+  '<label>付与ポイント<input type="number" min="0" max="1000000" step="1" data-level-coin-amount value="100"></label>'+
   '<label class="ops-check"><input type="checkbox" data-level-coin-enabled checked> 有効</label>'+
   '<button class="btn" type="button" data-level-coin-remove>削除</button></div>');
 }
