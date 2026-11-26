@@ -465,6 +465,177 @@ function designGetImage(url){
   img.src=safeAssetUrl(url);
  });
 }
+
+function designImageLayers(){
+ if(!Array.isArray(designData.imageLayers))designData.imageLayers=[];
+ return designData.imageLayers;
+}
+function designSelectedImageLayer(){
+ return designImageLayers().find(layer=>layer.id===selectedImageLayerId)||null;
+}
+function designLayerControlIds(){
+ return ["imageLayerFit","imageLayerX","imageLayerY","imageLayerWidth","imageLayerHeight","imageLayerRotation","imageLayerOpacity","imageLayerBrightness","imageLayerContrast","imageLayerSaturation","imageLayerBlur","imageLayerGrayscale","imageLayerFlipX","imageLayerFlipY"];
+}
+function designUpdateLayerControls(){
+ const layers=designImageLayers(),selected=designSelectedImageLayer();
+ $("imageLayerSelect").innerHTML=layers.length
+  ?layers.map((layer,index)=>'<option value="'+html(layer.id)+'">'+html(layer.name||("画像 "+(index+1)))+'</option>').join("")
+  :'<option value="">画像はまだありません</option>';
+ $("imageLayerSelect").value=selected?selected.id:"";
+ const ids=designLayerControlIds();
+ ids.forEach(id=>$(id).disabled=!selected);
+ ["duplicateImageLayer","deleteImageLayer","imageLayerUp","imageLayerDown"].forEach(id=>$(id).disabled=!selected);
+ if(!selected){
+  $("imageLayerSelect").disabled=true;
+  return;
+ }
+ $("imageLayerSelect").disabled=false;
+ const pairs={
+  imageLayerFit:selected.fit||"contain",imageLayerX:selected.x??50,imageLayerY:selected.y??50,
+  imageLayerWidth:selected.width??35,imageLayerHeight:selected.height??35,
+  imageLayerRotation:selected.rotation??0,imageLayerOpacity:selected.opacity??100,
+  imageLayerBrightness:selected.brightness??100,imageLayerContrast:selected.contrast??100,
+  imageLayerSaturation:selected.saturation??100,imageLayerBlur:selected.blur??0,
+  imageLayerGrayscale:selected.grayscale??0
+ };
+ Object.entries(pairs).forEach(([id,value])=>$(id).value=value);
+ $("imageLayerFlipX").checked=selected.flipX===true;
+ $("imageLayerFlipY").checked=selected.flipY===true;
+ designUpdateLayerOutputs();
+}
+function designUpdateLayerOutputs(){
+ const selected=designSelectedImageLayer();
+ const values={
+  imageLayerX:(selected?.x??50)+"%",imageLayerY:(selected?.y??50)+"%",
+  imageLayerWidth:(selected?.width??35)+"%",imageLayerHeight:(selected?.height??35)+"%",
+  imageLayerRotation:(selected?.rotation??0)+"°",imageLayerOpacity:(selected?.opacity??100)+"%",
+  imageLayerBrightness:(selected?.brightness??100)+"%",imageLayerContrast:(selected?.contrast??100)+"%",
+  imageLayerSaturation:(selected?.saturation??100)+"%",imageLayerBlur:(selected?.blur??0)+"px",
+  imageLayerGrayscale:(selected?.grayscale??0)+"%"
+ };
+ Object.entries(values).forEach(([id,value])=>$(id+"Value").textContent=value);
+}
+function designChangeSelectedLayer(key,value){
+ const selected=designSelectedImageLayer();if(!selected)return;
+ selected[key]=value;
+ designUpdateLayerOutputs();designRender();designScheduleSave();
+}
+async function designDrawImageLayers(ctx,width,height,showSelection=true){
+ const layers=designImageLayers();
+ for(const layer of layers){
+  const img=await designGetImage(layer.imageUrl);if(!img)continue;
+  const w=width*Math.max(.02,Math.min(1.6,Number(layer.width||35)/100));
+  const h=height*Math.max(.02,Math.min(1.6,Number(layer.height||35)/100));
+  const cx=width*Math.max(0,Math.min(100,Number(layer.x??50)))/100;
+  const cy=height*Math.max(0,Math.min(100,Number(layer.y??50)))/100;
+  ctx.save();ctx.translate(cx,cy);ctx.rotate((Number(layer.rotation)||0)*Math.PI/180);
+  ctx.scale(layer.flipX===true?-1:1,layer.flipY===true?-1:1);
+  ctx.globalAlpha=Math.max(0,Math.min(100,Number(layer.opacity??100)))/100;
+  const brightness=Math.max(0,Math.min(200,Number(layer.brightness??100)));
+  const contrast=Math.max(0,Math.min(200,Number(layer.contrast??100)));
+  const saturation=Math.max(0,Math.min(200,Number(layer.saturation??100)));
+  const grayscale=Math.max(0,Math.min(100,Number(layer.grayscale??0)));
+  const blur=Math.max(0,Math.min(20,Number(layer.blur)||0));
+  if("filter" in ctx)ctx.filter="brightness("+brightness+"%) contrast("+contrast+"%) saturate("+saturation+"%) grayscale("+grayscale+"%) blur("+blur+"px)";
+  const fit=layer.fit||"contain";
+  if(fit==="cover"){
+   const sourceRatio=img.width/img.height,targetRatio=w/h;
+   let sx=0,sy=0,sw=img.width,sh=img.height;
+   if(sourceRatio>targetRatio){sw=img.height*targetRatio;sx=(img.width-sw)/2;}
+   else{sh=img.width/targetRatio;sy=(img.height-sh)/2;}
+   ctx.drawImage(img,sx,sy,sw,sh,-w/2,-h/2,w,h);
+  }else if(fit==="contain"){
+   const scale=Math.min(w/img.width,h/img.height),dw=img.width*scale,dh=img.height*scale;
+   ctx.drawImage(img,-dw/2,-dh/2,dw,dh);
+  }else ctx.drawImage(img,-w/2,-h/2,w,h);
+  if(showSelection&&layer.id===selectedImageLayerId){
+   if("filter" in ctx)ctx.filter="none";
+   ctx.globalAlpha=1;ctx.lineWidth=Math.max(2,width/480);ctx.strokeStyle="#ffffff";ctx.setLineDash([8,5]);ctx.strokeRect(-w/2,-h/2,w,h);ctx.setLineDash([]);
+   const handle=Math.max(10,width/64);ctx.fillStyle="#ffffff";
+   [[-w/2,-h/2],[w/2,-h/2],[-w/2,h/2],[w/2,h/2]].forEach(([x,y])=>ctx.fillRect(x-handle/2,y-handle/2,handle,handle));
+  }
+  ctx.restore();
+ }
+}
+function designCanvasPoint(event){
+ const canvas=$("designCanvas"),rect=canvas.getBoundingClientRect();
+ return {x:(event.clientX-rect.left)/rect.width*canvas.width,y:(event.clientY-rect.top)/rect.height*canvas.height};
+}
+function designLayerHit(layer,point,width,height){
+ const cx=width*Number(layer.x??50)/100,cy=height*Number(layer.y??50)/100;
+ let dx=point.x-cx,dy=point.y-cy;
+ const angle=-(Number(layer.rotation)||0)*Math.PI/180;
+ const rx=dx*Math.cos(angle)-dy*Math.sin(angle),ry=dx*Math.sin(angle)+dy*Math.cos(angle);
+ const w=width*Number(layer.width??35)/100,h=height*Number(layer.height??35)/100;
+ return Math.abs(rx)<=w/2&&Math.abs(ry)<=h/2;
+}
+function designBindLayerControls(){
+ $("imageLayerSelect").addEventListener("change",()=>{
+  selectedImageLayerId=$("imageLayerSelect").value||null;designUpdateLayerControls();designRender();
+ });
+ const rangeMap={
+  imageLayerX:["x",Number],imageLayerY:["y",Number],imageLayerWidth:["width",Number],imageLayerHeight:["height",Number],
+  imageLayerRotation:["rotation",Number],imageLayerOpacity:["opacity",Number],imageLayerBrightness:["brightness",Number],
+  imageLayerContrast:["contrast",Number],imageLayerSaturation:["saturation",Number],imageLayerBlur:["blur",Number],
+  imageLayerGrayscale:["grayscale",Number],imageLayerFit:["fit",String]
+ };
+ Object.entries(rangeMap).forEach(([id,[key,cast]])=>{
+  $(id).addEventListener("input",event=>designChangeSelectedLayer(key,cast(event.target.value)));
+  $(id).addEventListener("change",()=>{designPushHistory();designScheduleSave();});
+ });
+ $("imageLayerFlipX").addEventListener("change",event=>{designChangeSelectedLayer("flipX",event.target.checked);designPushHistory();});
+ $("imageLayerFlipY").addEventListener("change",event=>{designChangeSelectedLayer("flipY",event.target.checked);designPushHistory();});
+ $("insertImageButton").addEventListener("click",()=>$("designInsertImage").click());
+ $("designInsertImage").addEventListener("change",async event=>{
+  const file=event.target.files&&event.target.files[0];event.target.value="";if(!file)return;
+  try{
+   designSetState("画像をアップロード中…");
+   const imageUrl=await uploadImage(file),layer={id:crypto.randomUUID(),name:file.name.replace(/\.[^.]+$/,"").slice(0,40)||"画像",imageUrl,x:50,y:50,width:35,height:35,rotation:0,opacity:100,brightness:100,contrast:100,saturation:100,blur:0,grayscale:0,flipX:false,flipY:false,fit:"contain"};
+   designImageLayers().push(layer);selectedImageLayerId=layer.id;designUpdateLayerControls();await designRender();designPushHistory();designScheduleSave();
+   designSetState("画像を追加しました");
+  }catch(error){designSetState("画像を追加できませんでした: "+error.message);}
+ });
+ $("duplicateImageLayer").addEventListener("click",()=>{
+  const layer=designSelectedImageLayer();if(!layer)return;
+  const copy={...layer,id:crypto.randomUUID(),name:(layer.name||"画像")+" コピー",x:Math.min(100,Number(layer.x??50)+3),y:Math.min(100,Number(layer.y??50)+3)};
+  const layers=designImageLayers(),index=layers.findIndex(item=>item.id===layer.id);layers.splice(index+1,0,copy);
+  selectedImageLayerId=copy.id;designUpdateLayerControls();designRender();designPushHistory();designScheduleSave();
+ });
+ $("deleteImageLayer").addEventListener("click",()=>{
+  const layer=designSelectedImageLayer();if(!layer)return;
+  designData.imageLayers=designImageLayers().filter(item=>item.id!==layer.id);selectedImageLayerId=designData.imageLayers.length?designData.imageLayers[designData.imageLayers.length-1].id:null;
+  designUpdateLayerControls();designRender();designPushHistory();designScheduleSave();
+ });
+ $("imageLayerUp").addEventListener("click",()=>{
+  const layers=designImageLayers(),index=layers.findIndex(item=>item.id===selectedImageLayerId);if(index<0||index===layers.length-1)return;
+  [layers[index],layers[index+1]]=[layers[index+1],layers[index]];designUpdateLayerControls();designRender();designPushHistory();designScheduleSave();
+ });
+ $("imageLayerDown").addEventListener("click",()=>{
+  const layers=designImageLayers(),index=layers.findIndex(item=>item.id===selectedImageLayerId);if(index<=0)return;
+  [layers[index],layers[index-1]]=[layers[index-1],layers[index]];designUpdateLayerControls();designRender();designPushHistory();designScheduleSave();
+ });
+ const canvas=$("designCanvas");
+ canvas.addEventListener("pointerdown",event=>{
+  const point=designCanvasPoint(event),layers=designImageLayers(),width=canvas.width,height=canvas.height;
+  let hit=null;
+  for(let i=layers.length-1;i>=0;i--){if(designLayerHit(layers[i],point,width,height)){hit=layers[i];break;}}
+  if(!hit){selectedImageLayerId=null;imageDrag=null;designUpdateLayerControls();designRender();return;}
+  selectedImageLayerId=hit.id;imageDrag={id:hit.id,offsetX:point.x-width*Number(hit.x??50)/100,offsetY:point.y-height*Number(hit.y??50)/100};
+  canvas.setPointerCapture(event.pointerId);designUpdateLayerControls();designRender();event.preventDefault();
+ });
+ canvas.addEventListener("pointermove",event=>{
+  if(!imageDrag)return;
+  const point=designCanvasPoint(event),layer=designSelectedImageLayer();if(!layer)return;
+  layer.x=Math.max(-40,Math.min(140,(point.x-imageDrag.offsetX)/canvas.width*100));
+  layer.y=Math.max(-40,Math.min(140,(point.y-imageDrag.offsetY)/canvas.height*100));
+  designUpdateLayerOutputs();designRender();
+ });
+ const finishDrag=()=>{
+  if(!imageDrag)return;imageDrag=null;designPushHistory();designScheduleSave();designUpdateLayerControls();
+ };
+ canvas.addEventListener("pointerup",finishDrag);canvas.addEventListener("pointercancel",finishDrag);
+ canvas.addEventListener("pointerleave",()=>{if(imageDrag&&!canvas.hasPointerCapture?.(event.pointerId))finishDrag();});
+}
 async function designRender(){
  const {canvas,ctx}=designCanvasContext();
  if(!ctx)return;
