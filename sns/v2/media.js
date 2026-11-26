@@ -111,7 +111,7 @@
     const cells=valid.map(x=>{
       const source=isPublic?db().storage.from(PUB).getPublicUrl(x.path).data.publicUrl:urls.get(x.path);
       const url=relayAssetUrl(source);
-      return url?'<button type="button" class="kuro-sns-media-tile" data-kuro-media-open="'+esc(url)+'" aria-label="写真を拡大"><img loading="lazy" decoding="async" src="'+esc(url)+'" alt="写真"></button>':'';
+      return url?'<button type="button" class="kuro-sns-media-tile" data-kuro-media-open="'+esc(url)+'" data-kuro-media-fallback="'+esc(source||'')+'" aria-label="写真を拡大"><img loading="lazy" decoding="async" src="'+esc(url)+'" data-kuro-media-fallback="'+esc(source||'')+'" alt="写真"></button>':'';
     }).join('');
     const contextClass=context==='chat'?' kuro-sns-chat-media':'';
     return cells?'<div class="kuro-sns-media-grid kuro-sns-media-count-'+valid.length+contextClass+'">'+cells+'</div>':'';
@@ -129,7 +129,15 @@
     v.addEventListener('click',e=>{if(e.target===v||e.target.closest('.kuro-sns-media-viewer-close'))v.classList.add('hidden')});
     document.addEventListener('keydown',e=>{if(e.key==='Escape')v.classList.add('hidden')});return v;
   }
-  document.addEventListener('click',e=>{const b=e.target.closest('[data-kuro-media-open]');if(!b)return;e.preventDefault();const v=viewer();v.querySelector('img').src=b.getAttribute('data-kuro-media-open');v.classList.remove('hidden')});
+  document.addEventListener('click',e=>{const b=e.target.closest('[data-kuro-media-open]');if(!b)return;e.preventDefault();const v=viewer(),img=v.querySelector('img');img.dataset.kuroMediaFallback=b.getAttribute('data-kuro-media-fallback')||'';img.src=b.getAttribute('data-kuro-media-open');v.classList.remove('hidden')});
+  document.addEventListener('error',e=>{
+    const img=e.target;
+    if(!(img instanceof HTMLImageElement))return;
+    const fallback=img.dataset.kuroMediaFallback;
+    if(!fallback)return;
+    delete img.dataset.kuroMediaFallback;
+    if(img.src!==fallback)img.src=fallback;
+  },true);
   const css=document.createElement('style');css.id='kuro-sns-media-style';css.textContent=[
     '.kuro-sns-media-preview{display:flex;gap:8px;flex-wrap:wrap;width:100%;padding:4px 0}.kuro-sns-media-preview.hidden{display:none!important}',
     '.kuro-sns-preview-item{position:relative;width:76px;height:76px;border-radius:12px;overflow:hidden;border:1px solid #52525b;background:#18181b}.kuro-sns-preview-item img{width:100%;height:100%;object-fit:cover}.kuro-sns-preview-item button{position:absolute;right:4px;top:4px;width:24px;height:24px;min-height:24px!important;border-radius:50%;background:#111c;color:#fff;font-size:18px;line-height:1}',
