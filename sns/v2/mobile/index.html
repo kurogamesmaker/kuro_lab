@@ -4753,6 +4753,10 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             const handle = activeChatHandle || document.getElementById('chatWithLabel').textContent.replace(/^@/,'');
             const box = document.getElementById('chatMessages');
             const sendButton = document.getElementById('chatSendButton');
+            let uploadedMedia = [];
+            try { if (selectedImages.length) uploadedMedia = await window.KuroSNSMedia.upload(supabaseClient, 'dm', conversationId, selectedImages); }
+            catch (uploadError) { showToast(uploadError.message || '写真をアップロードできませんでした'); return; }
+            const localMediaHTML = uploadedMedia.length ? await window.KuroSNSMedia.renderPrivateOne(supabaseClient, uploadedMedia) : '';
             const localId = 'local-' + Date.now() + '-' + Math.random().toString(36).slice(2,8);
             const now = new Date();
             const dateLabel = `${now.getMonth()+1}/${now.getDate()}`;
@@ -4767,7 +4771,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             const optimistic = document.createElement('div');
             optimistic.dataset.localMessageId = localId;
             optimistic.className = 'flex items-end justify-end gap-1.5';
-            optimistic.innerHTML = `<div class="text-right pb-0.5"><span class="block text-[10px] text-gray-400">送信中…</span><span class="block text-[10px] leading-4 text-gray-500 whitespace-nowrap">${timeLabel}</span></div><div class="max-w-[78%] rounded-2xl px-3 py-2.5 bg-white text-black rounded-br-md"><p class="text-sm whitespace-pre-wrap break-words">${socialEscape(content)}</p></div>`;
+            optimistic.innerHTML = `<div class="text-right pb-0.5"><span class="block text-[10px] text-gray-400">送信中…</span><span class="block text-[10px] leading-4 text-gray-500 whitespace-nowrap">${timeLabel}</span></div><div class="max-w-[78%] rounded-2xl px-3 py-2.5 bg-white text-black rounded-br-md"><p class="text-sm whitespace-pre-wrap break-words">${socialEscape(content)}</p>${localMediaHTML}</div>`;
             const pullIndicator = document.getElementById('chatPullIndicator');
             if (pullIndicator && pullIndicator.parentElement === box) box.insertBefore(optimistic, pullIndicator);
             else box.appendChild(optimistic);
@@ -4779,12 +4783,13 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
 
             try {
                 const {data: sentMessage, error} = await supabaseClient.from('chat_messages')
-                    .insert({conversation_id:conversationId,sender_id:senderId,content})
+                    .insert({conversation_id:conversationId,sender_id:senderId,content,media:uploadedMedia})
                     .select('id').single();
                 if (error) throw error;
 
                 optimistic.querySelector('.text-gray-400')?.remove();
                 optimistic.dataset.serverMessageId = sentMessage.id;
+                window.KuroSNSMedia?.clear('chat');
                 await supabaseClient.from('chat_conversations').update({updated_at:new Date().toISOString()}).eq('id',conversationId);
                 writeChatCache('messages', conversationId, box.innerHTML);
 
@@ -4800,6 +4805,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 }
             } catch (error) {
                 console.error('KURO message send error:', error);
+                if (uploadedMedia.length) await window.KuroSNSMedia.remove(supabaseClient, uploadedMedia);
                 optimistic.querySelector('.text-gray-400')?.remove();
                 optimistic.classList.add('opacity-60');
                 const status = document.createElement('span');
