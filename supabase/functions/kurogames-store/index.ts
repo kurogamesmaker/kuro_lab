@@ -152,25 +152,43 @@ Deno.serve(async (req: Request) => {
     if (action === "studio_dashboard") {
       const user = await resolveUser(req, true);
       const studioMember = await requireStudioMember(user!.id);
-      const [itemsResult, salesResult, recentSalesResult] = await Promise.all([
+      const [itemsResult, salesSummaryResult, recentSalesResult, membersResult] = await Promise.all([
         admin.from("kuro_store_items").select("id,item_key,name,description,category,icon,image_url,rarity,price_kc,is_free,is_active,sort_order,created_at,updated_at").order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
-        admin.from("kuro_store_transactions").select("id,amount_kc", { count: "exact" }).eq("transaction_type", "shop_purchase").eq("status", "completed"),
+        admin.rpc("kuro_store_studio_sales_summary"),
         admin.from("kuro_store_transactions").select("id,amount_kc,created_at,item:kuro_store_items(name,item_key)").eq("transaction_type", "shop_purchase").eq("status", "completed").order("created_at", { ascending: false }).limit(20),
+        studioMember.role === "owner"
+          ? admin.from("kuro_store_studio_members").select("user_id,role,is_active,created_at").order("created_at", { ascending: true })
+          : Promise.resolve({ data: [], error: null }),
       ]);
       if (itemsResult.error) throw itemsResult.error;
-      if (salesResult.error) throw salesResult.error;
+      if (salesSummaryResult.error) throw salesSummaryResult.error;
       if (recentSalesResult.error) throw recentSalesResult.error;
+      if (membersResult.error) throw membersResult.error;
       const items = itemsResult.data ?? [];
-      const sales = salesResult.data ?? [];
+      let studioMembers: Record<string, unknown>[] = [];
+      if (studioMember.role === "owner") {
+        const memberIds = (membersResult.data ?? []).map((member: any) => member.user_id);
+        const profilesResult = memberIds.length
+          ? await admin.from("profiles").select("id,username,display_name,kuro_id").in("id", memberIds)
+          : { data: [], error: null };
+        if (profilesResult.error) throw profilesResult.error;
+        const profileById = new Map((profilesResult.data ?? []).map((profile: any) => [profile.id, profile]));
+        studioMembers = (membersResult.data ?? []).map((member: any) => ({
+          ...member,
+          profile: profileById.get(member.user_id) ?? null,
+        }));
+      }
+      const salesSummary = salesSummaryResult.data ?? {};
       return reply(200, {
         items,
         recentSales: recentSalesResult.data ?? [],
+        members: studioMembers,
         member: { role: studioMember.role },
         stats: {
           totalItems: items.length,
           activeItems: items.filter((item: any) => item.is_active).length,
-          salesCount: salesResult.count ?? sales.length,
-          salesTotalKC: sales.reduce((sum: number, row: any) => sum + Number(row.amount_kc || 0), 0),
+          salesCount: Number(salesSummary.purchaseCount ?? 0),
+          salesTotalKC: Number(salesSummary.totalKC ?? 0),
         },
       });
     }
@@ -221,6 +239,34 @@ Deno.serve(async (req: Request) => {
       return reply(200, { item: data });
     }
 
+
+    if (action === "studio_set_member") {
+      const user = await resolveUser(req, true);
+      const actorMember = await requireStudioMember(user!.id);
+      if (actorMember.role !== "owner") throw new HttpError(403, "メンバー管理はShop Studioのownerのみ実行できます。");
+      const kuroId = typeof body.kuroId === "string" ? body.kuroId.trim().toUpperCase() : "";
+      const role = typeof body.role === "string" ? body.role : "editor";
+      const isActive = body.isActive !== false;
+      if (!/^KURO-[A-Z0-9]{6,32}$/.test(kuroId)) throw new HttpError(400, "KURO IDを正しく入力してください。");
+      if (!["owner", "editor"].includes(role)) throw new HttpError(400, "権限の種類が正しくありません。");
+      const targetResult = await admin.from("profiles").select("id,username,display_name,kuro_id").eq("kuro_id", kuroId).maybeSingle();
+      if (targetResult.error) throw targetResult.error;
+      if (!targetResult.data) throw new HttpError(404, "指定したKURO IDのアカウントが見つかりません。");
+      if (await isSuspended(targetResult.data.id)) throw new HttpError(403, "利用停止中のアカウントにはShop Studio権限を付与できません。");
+      const { data, error } = await admin.rpc("kuro_store_studio_set_member", {
+        p_actor_user_id: user!.id,
+        p_target_user_id: targetResult.data.id,
+        p_role: role,
+        p_is_active: isActive,
+      });
+      if (error) {
+        const message = error.message || "";
+        if (message.includes("STUDIO_LAST_OWNER")) throw new HttpError(409, "最後のownerは停止・降格できません。先に別のownerを追加してください。");
+        if (message.includes("STUDIO_OWNER_REQUIRED")) throw new HttpError(403, "Shop Studioのowner権限が必要です。");
+        throw error;
+      }
+      return reply(200, { result: data, profile: targetResult.data });
+    }
     if (action === "studio_set_status") {
       const user = await resolveUser(req, true);
       await requireStudioMember(user!.id);
