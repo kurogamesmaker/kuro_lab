@@ -465,26 +465,28 @@ async function loadKuroGameRewards(gameId, db){const bar=document.getElementById
  const modal=$("kuroAccountModal"),form=$("kuroAccountForm"),identity=$("kuroAccountIdentity"),password=$("kuroAccountPassword");
  function showError(message){$("kuroAccountError").textContent=String(message||"");}
  let gameCosmeticUserId=null,gameCosmeticRequest=0;
+function kuroGameAvatarDisplayUrl(value){
+ const raw=String(value||"").trim();if(!raw)return "";
+ try{const url=new URL(raw,location.origin);if(url.origin==="https://cprvpphlfpmiegjiutjn.supabase.co"&&url.pathname.startsWith("/storage/v1/object/public/"))return location.origin+"/api/cloudflare-relay?resource="+encodeURIComponent(url.pathname+url.search);return url.href;}catch(_){return "";}
+}
  function renderGameCosmetics(data){
   const avatarHost=$("gameCosmeticAvatar"),effectsHost=$("gameCosmeticEffects"),header=document.querySelector("header.top");
   if(!avatarHost||!effectsHost||!header)return;
   const equipped=Array.isArray(data&&data.equipped)?data.equipped:[];
   const itemFor=slot=>{const row=equipped.find(item=>item.slot===slot);return row&&row.item?row.item:null;};
   const avatar=itemFor("avatar"),frame=itemFor("frame"),background=itemFor("background"),theme=itemFor("theme");
+  const profileImage=String(data&&data.profileAvatarUrl||"");
   avatarHost.replaceChildren();
-  avatarHost.hidden=!avatar&&!frame;
+  avatarHost.hidden=!profileImage&&!avatar&&!frame;
   avatarHost.dataset.frame=frame&&["common","rare","epic","legendary"].includes(frame.rarity)?frame.rarity:"";
-  if(avatar){
-   const image=typeof avatar.image_url==="string"?avatar.image_url:"";
-   let safeImage="";
-   try{const parsed=new URL(image,location.origin);if(parsed.protocol==="https:"||parsed.origin===location.origin)safeImage=parsed.href;}catch(_){}
-   if(safeImage){
-    const img=document.createElement("img");img.src=safeImage;img.alt="";img.loading="lazy";
-    img.onerror=()=>{img.remove();avatarHost.textContent=avatar.icon||"👤";};
-    avatarHost.appendChild(img);
-   }else avatarHost.textContent=avatar.icon||"👤";
-   avatarHost.title=[avatar.name,frame&&frame.name].filter(Boolean).join(" · ");
-  }else avatarHost.textContent="👤";
+  const image=profileImage||(avatar&&typeof avatar.image_url==="string"?avatar.image_url:"");
+  const safeImage=kuroGameAvatarDisplayUrl(image);
+  if(safeImage){
+   const img=document.createElement("img");img.src=safeImage;img.alt="";img.loading="lazy";
+   img.onerror=()=>{img.remove();avatarHost.textContent=avatar&&avatar.icon||"👤";};
+   avatarHost.appendChild(img);
+  }else avatarHost.textContent=avatar&&avatar.icon||"👤";
+  avatarHost.title=[profileImage?"プロフィール画像":"",avatar&&avatar.name,frame&&frame.name].filter(Boolean).join(" · ");
   effectsHost.replaceChildren();
   const labels=[background,theme].filter(Boolean);
   labels.forEach(item=>{const chip=document.createElement("span");chip.textContent=(item.icon||"✦")+" "+(item.name||"");effectsHost.appendChild(chip);});
@@ -511,11 +513,16 @@ async function loadKuroGameRewards(gameId, db){const bar=document.getElementById
   if(!userId||(!force&&gameCosmeticUserId===userId))return;
   const request=++gameCosmeticRequest;gameCosmeticUserId=userId;
   try{
-   const client=window.kuroGameAuthClient;if(!client)throw new Error("KURO認証クライアントを読み込めませんでした。");const {data,error}=await client.functions.invoke("kurogames-store",{body:{action:"catalog"}});
+   const client=window.kuroGameAuthClient;if(!client)throw new Error("KURO認証クライアントを読み込めませんでした。");
+   const [catalogResult,profileResult]=await Promise.all([
+    client.functions.invoke("kurogames-store",{body:{action:"catalog"}}),
+    client.from("profiles").select("avatar_url").eq("id",userId).maybeSingle()
+   ]);
    if(request!==gameCosmeticRequest)return;
-   if(error)throw error;
-   if(data&&data.error)throw new Error(data.error);
-   renderGameCosmetics(data||{});
+   if(catalogResult.error)throw catalogResult.error;
+   if(profileResult.error)console.warn("KURO account avatar could not be loaded for game header:",profileResult.error);
+   if(catalogResult.data&&catalogResult.data.error)throw new Error(catalogResult.data.error);
+   renderGameCosmetics(Object.assign({},catalogResult.data||{},{profileAvatarUrl:profileResult.data&&profileResult.data.avatar_url||""}));
   }catch(error){
    if(request===gameCosmeticRequest){
     gameCosmeticUserId=null;
