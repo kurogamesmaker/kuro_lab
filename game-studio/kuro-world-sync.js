@@ -115,7 +115,7 @@
         avatar,
         tag,
         name,
-        target: new THREE.Vector3(ctx.player.p.x, ctx.player.p.y, ctx.player.p.z),
+        target: ctx.makeVector(ctx.player.p.x, ctx.player.p.y, ctx.player.p.z),
         yaw: 0,
         dimension: ctx.dimension,
         hasPosition: false,
