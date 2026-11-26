@@ -1748,6 +1748,23 @@ img#profileAvatarPreview:not(.hidden) {
             const raw = String(value || '').trim();
             return raw ? kuroCloudflarePublicUrl(raw) : '';
         }
+
+        function kuroSnsHandleAvatarImageError(event) {
+            const image = event && event.target;
+            if (!(image instanceof HTMLImageElement) || image.dataset.kuroAvatarFallbackApplied === '1') return;
+            const isAvatar = image.classList.contains('rounded-full') ||
+                image.classList.contains('kuro-profile-avatar-image') ||
+                !!image.closest('.kuro-sns-avatar-frame-host, .kuro-profile-avatar');
+            if (!isAvatar || typeof image.onerror === 'function') return;
+            image.dataset.kuroAvatarFallbackApplied = '1';
+            const fallback = document.createElement('span');
+            fallback.className = Array.from(image.classList).filter(name => name !== 'object-cover').join(' ') + ' kuro-sns-avatar-fallback';
+            fallback.setAttribute('aria-label', 'プロフィール画像を読み込めませんでした');
+            fallback.textContent = '♙';
+            fallback.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;border-radius:50%;background:#1f2937;color:#d1d5db;overflow:hidden;';
+            image.replaceWith(fallback);
+        }
+        document.addEventListener('error', kuroSnsHandleAvatarImageError, true);
         async function checkKuroCloudflareBridge() {
             const panel = document.getElementById('kuroCloudflareStatusPanel');
             const label = document.getElementById('kuroCloudflareStatusText');
