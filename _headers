@@ -10,3 +10,7 @@
 /game-studio/code.html
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
   Pragma: no-cache
+
+/admin-center/*
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  Pragma: no-cache
