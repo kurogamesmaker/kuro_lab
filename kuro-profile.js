@@ -370,7 +370,7 @@
       var frameClass = frameRarity ? " kuro-profile-frame-" + frameRarity : "";
       var frameImage = safeImageUrl(equippedFrame && equippedFrame.imageUrl);
       var frameImageClass = frameImage ? " kuro-profile-frame-image" : "";
-      var frameImageStyle = frameImage ? ' style="--kuro-profile-frame-image:url(\\'' + escapeHtml(frameImage) + '\\')"' : "";
+      var frameImageStyle = frameImage ? ' style="--kuro-profile-frame-image:url(&quot;' + escapeHtml(frameImage) + '&quot;)"' : "";
       var backgroundImage = safeImageUrl(equippedBackground && equippedBackground.imageUrl);
       var backgroundIcon = equippedBackground && !backgroundImage ? String(equippedBackground.icon || "✦") : "";
       var backgroundStyle = backgroundImage
@@ -401,7 +401,7 @@
         : "";
       var bannerImage = safeImageUrl(equippedBanner && equippedBanner.imageUrl);
       var bannerStyle = bannerImage
-        ? ' style="background-image:linear-gradient(90deg,rgba(10,15,29,.78),rgba(10,15,29,.28)),url(\\'' + escapeHtml(bannerImage) + '\\')"'
+        ? ' style="background-image:linear-gradient(90deg,rgba(10,15,29,.78),rgba(10,15,29,.28)),url(&quot;' + escapeHtml(bannerImage) + '&quot;)"'
         : "";
       var extraBanner = equippedBanner
         ? '<div class="kuro-profile-extra-banner"' + bannerStyle + '><small>PROFILE BANNER</small><strong>' + escapeHtml(equippedBanner.name || "バナー") + '</strong></div>'
