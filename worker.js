@@ -68,7 +68,6 @@ const ALLOWED_FUNCTIONS = new Set([
   "/functions/v1/pro-access",
   "/functions/v1/send-chat-push",
   "/functions/v1/kurogames-online",
-  "/functions/v1/kurogames-matchmaking",
   "/functions/v1/kurogames-secret",
   "/functions/v1/username-auth",
   "/functions/v1/kurogames-activity",
