@@ -348,11 +348,10 @@
       var isSelf = !!viewerUser && viewerUser.id === id;
       var name = profile.display_name || profile.username || "KUROユーザー";
       var handle = profile.username ? "@" + profile.username : "KUROユーザー";
-      var equippedAvatar = cosmetics.avatar && typeof cosmetics.avatar === "object" ? cosmetics.avatar : null;
       var equippedFrame = cosmetics.frame && typeof cosmetics.frame === "object" ? cosmetics.frame : null;
       var equippedBackground = cosmetics.background && typeof cosmetics.background === "object" ? cosmetics.background : null;
       var equippedTheme = cosmetics.theme && typeof cosmetics.theme === "object" ? cosmetics.theme : null;
-      var avatarUrl = safeImageUrl(profile.avatar_url) || safeImageUrl(equippedAvatar && equippedAvatar.imageUrl);
+      var avatarUrl = safeImageUrl(profile.avatar_url);
       var avatar = avatarUrl
         ? '<img src="' + escapeHtml(avatarUrl) + '" alt="" class="kuro-profile-avatar-image">'
         : '<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg>';
