@@ -376,6 +376,10 @@
       var backgroundStyle = backgroundImage
         ? ' style="background-image:linear-gradient(90deg,rgba(10,15,29,.9),rgba(10,15,29,.52)),url(\'' + escapeHtml(backgroundImage) + '\')"'
         : "";
+      var profileWallpaperClass = backgroundImage ? " kuro-profile-has-wallpaper" : "";
+      var profileWallpaperStyle = backgroundImage
+        ? ' style="background-image:linear-gradient(125deg,rgba(8,14,28,.82),rgba(8,14,28,.88)),url(&quot;' + escapeHtml(backgroundImage) + '&quot;);background-size:cover;background-position:center"'
+        : "";
       var themeClass = equippedTheme && equippedTheme.itemKey === "neon-theme"
         ? " kuro-profile-theme-neon"
         : equippedTheme && equippedTheme.itemKey === "kuro-classic-theme"
@@ -422,7 +426,7 @@
         ? '<span class="kuro-profile-joined">KUROメンバー · ' + joined.toLocaleDateString("ja-JP") + ' 登録</span>'
         : "";
       content.innerHTML =
-        '<div class="kuro-profile-custom-theme' + themeClass + '">' +
+        '<div class="kuro-profile-custom-theme' + themeClass + profileWallpaperClass + '"' + profileWallpaperStyle + '>' +
         cosmeticBanner +
         extraBanner +
         (cosmeticChips ? '<section class="kuro-profile-cosmetic-strip" aria-label="装備中アイテム">' + cosmeticChips + '</section>' : '') +
