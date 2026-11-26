@@ -3132,7 +3132,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     const replyName = reply.username || reply.display_name || 'KUROユーザー';
                     const replyHandle = reply.username || 'user';
                     const replyAvatarContent = reply.avatar_url
-                        ? `<img src="${escapeHTML(kuroSnsAvatarUrl(reply.avatar_url))}" alt="" class="w-8 h-8 rounded-full object-cover border border-kuro-700">`
+                        ? `<img src="${escapeHTML(kuroCloudflarePublicUrl(reply.avatar_url))}" alt="" class="w-8 h-8 rounded-full object-cover border border-kuro-700">`
                         : `<span class="w-8 h-8 rounded-full bg-kuro-800 border border-kuro-700 flex items-center justify-center text-gray-300"><i class="fa-regular fa-user text-xs"></i></span>`;
                     const replyAvatar = kuroSnsAvatarHostMarkup(reply.user_id,replyAvatarContent,'w-8 h-8 flex-shrink-0 kuro-sns-avatar-small-frame');
                     return `<div class="mt-3 flex gap-2">${replyAvatar}<div class="min-w-0 flex-1 rounded-xl bg-kuro-950/70 px-3 py-2"><div class="text-xs text-gray-400">${escapeHTML(replyName)} <span class="text-gray-600">@${escapeHTML(replyHandle)} · ${escapeHTML(formatPostDate(reply.created_at))}</span></div><p class="mt-1 text-sm text-gray-300 whitespace-pre-wrap break-words">${renderMentionContent(reply.content || '')}</p></div></div>`;
@@ -3277,7 +3277,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 } catch(e) { console.warn('search people', e); }
             }
             const tagHtml = tags.map(t => `<button onclick="filterByHashtag('${socialEscape(t)}');document.getElementById('searchSuggestions').classList.add('hidden')" class="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-kuro-800"><span class="w-9 h-9 rounded-full bg-kuro-800 flex items-center justify-center"><i class="fa-solid fa-hashtag"></i></span><span><b>#${socialEscape(t)}</b><small class="block text-gray-500">ハッシュタグ</small></span></button>`).join('');
-            const peopleHtml = people.map(p => `<button type="button" onclick="document.getElementById('searchSuggestions')?.classList.add('hidden');openPublicProfile('${socialEscape(p.id)}')" class="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-kuro-800">${kuroSnsAvatarHostMarkup(p.id,p.avatar_url ? `<img src="${socialEscape(kuroSnsAvatarUrl(p.avatar_url))}" class="w-10 h-10 rounded-full object-cover" alt="">` : `<span class="w-10 h-10 rounded-full bg-kuro-800 flex items-center justify-center"><i class="fa-regular fa-user"></i></span>`,'w-10 h-10 kuro-sns-avatar-small-frame')}<span class="min-w-0"><b class="block truncate">${socialEscape(p.display_name||p.username||'KUROユーザー')}</b><small class="block text-gray-500">@${socialEscape(p.username||'user')}</small></span><span class="ml-auto text-xs text-gray-500">プロフィール</span></button>`).join('');
+            const peopleHtml = people.map(p => `<button type="button" onclick="document.getElementById('searchSuggestions')?.classList.add('hidden');openPublicProfile('${socialEscape(p.id)}')" class="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-kuro-800">${kuroSnsAvatarHostMarkup(p.id,p.avatar_url ? `<img src="${socialEscape(kuroCloudflarePublicUrl(p.avatar_url))}" class="w-10 h-10 rounded-full object-cover" alt="">` : `<span class="w-10 h-10 rounded-full bg-kuro-800 flex items-center justify-center"><i class="fa-regular fa-user"></i></span>`,'w-10 h-10 kuro-sns-avatar-small-frame')}<span class="min-w-0"><b class="block truncate">${socialEscape(p.display_name||p.username||'KUROユーザー')}</b><small class="block text-gray-500">@${socialEscape(p.username||'user')}</small></span><span class="ml-auto text-xs text-gray-500">プロフィール</span></button>`).join('');
             box.innerHTML = (tagHtml + peopleHtml) || `<div class="p-4 text-sm text-gray-500">「${socialEscape(raw)}」に一致する候補はないよ</div>`;
             box.classList.remove('hidden');
         }
@@ -3831,7 +3831,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 if (!ids.length) { box.innerHTML = `<p class="text-sm text-gray-500 text-center py-8">${kind === 'followers' ? 'フォロワーはまだいないよ' : 'まだ誰もフォローしていないよ'}</p>`; return; }
                 const {data: profiles, error: pe} = await supabaseClient.from('profiles').select('id, username, display_name, avatar_url').in('id', ids);
                 if (pe) throw pe;
-                box.innerHTML = (profiles || []).map(p => `<div class="flex items-center gap-3 p-2 rounded-xl hover:bg-kuro-900">${kuroSnsAvatarHostMarkup(p.id,p.avatar_url ? `<img src="${socialEscape(kuroSnsAvatarUrl(p.avatar_url))}" class="w-full h-full object-cover" alt="">` : '<i class="fa-regular fa-user text-gray-400"></i>','w-10 h-10 kuro-sns-avatar-small-frame')}<div class="min-w-0 flex-1"><p class="text-sm font-semibold truncate">${socialEscape(p.display_name || p.username || 'KUROユーザー')}</p><p class="text-xs text-gray-500 truncate">@${socialEscape(p.username || 'user')}</p></div>${p.id !== currentUser.id ? `<button type="button" onclick="toggleFollow('${socialEscape(p.id)}')" class="px-3 py-2 rounded-lg text-xs font-semibold ${followCache.following.has(p.id) ? 'border border-kuro-700 text-gray-300' : 'bg-white text-black'}">${followCache.following.has(p.id) ? 'フォロー中' : 'フォロー'}</button>` : ''}</div>`).join('');
+                box.innerHTML = (profiles || []).map(p => `<div class="flex items-center gap-3 p-2 rounded-xl hover:bg-kuro-900">${kuroSnsAvatarHostMarkup(p.id,p.avatar_url ? `<img src="${socialEscape(kuroCloudflarePublicUrl(p.avatar_url))}" class="w-full h-full object-cover" alt="">` : '<i class="fa-regular fa-user text-gray-400"></i>','w-10 h-10 kuro-sns-avatar-small-frame')}<div class="min-w-0 flex-1"><p class="text-sm font-semibold truncate">${socialEscape(p.display_name || p.username || 'KUROユーザー')}</p><p class="text-xs text-gray-500 truncate">@${socialEscape(p.username || 'user')}</p></div>${p.id !== currentUser.id ? `<button type="button" onclick="toggleFollow('${socialEscape(p.id)}')" class="px-3 py-2 rounded-lg text-xs font-semibold ${followCache.following.has(p.id) ? 'border border-kuro-700 text-gray-300' : 'bg-white text-black'}">${followCache.following.has(p.id) ? 'フォロー中' : 'フォロー'}</button>` : ''}</div>`).join('');
             } catch(e) { console.error(e); box.innerHTML = '<p class="text-sm text-red-300">一覧を読み込めませんでした。SQL設定を確認してね。</p>'; }
         }
         // Serialize notification refreshes so a stale request cannot redraw deleted rows.
@@ -4631,7 +4631,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 const {data,error}=await supabaseClient.from('profiles').select('id,username,display_name,avatar_url').neq('id',currentUser.id).order('display_name').limit(300);
                 if(error) throw error;
                 if(!data?.length){box.innerHTML='<p class="text-sm text-gray-500">選べるユーザーがいません</p>';return;}
-                box.innerHTML=data.map(p=>`<label data-group-user="${socialEscape((p.display_name||'')+' '+(p.username||''))}" class="flex items-center gap-3 rounded-xl p-3 hover:bg-kuro-900 cursor-pointer"><input type="checkbox" class="group-member-checkbox accent-violet-400 w-5 h-5" value="${socialEscape(p.id)}">${kuroSnsAvatarHostMarkup(p.id,p.avatar_url?`<img src="${socialEscape(kuroSnsAvatarUrl(p.avatar_url))}" alt="" class="w-full h-full object-cover">`:'<i class="fa-regular fa-user"></i>','w-9 h-9 kuro-sns-avatar-small-frame')}<span class="min-w-0"><b class="block text-sm truncate">${socialEscape(p.display_name||p.username||'ユーザー')}</b><span class="block text-xs text-gray-500">@${socialEscape(p.username||'')}</span></span></label>`).join('');
+                box.innerHTML=data.map(p=>`<label data-group-user="${socialEscape((p.display_name||'')+' '+(p.username||''))}" class="flex items-center gap-3 rounded-xl p-3 hover:bg-kuro-900 cursor-pointer"><input type="checkbox" class="group-member-checkbox accent-violet-400 w-5 h-5" value="${socialEscape(p.id)}">${kuroSnsAvatarHostMarkup(p.id,p.avatar_url?`<img src="${socialEscape(kuroCloudflarePublicUrl(p.avatar_url))}" alt="" class="w-full h-full object-cover">`:'<i class="fa-regular fa-user"></i>','w-9 h-9 kuro-sns-avatar-small-frame')}<span class="min-w-0"><b class="block text-sm truncate">${socialEscape(p.display_name||p.username||'ユーザー')}</b><span class="block text-xs text-gray-500">@${socialEscape(p.username||'')}</span></span></label>`).join('');
             } catch(e) {console.error(e);box.innerHTML='<p class="text-sm text-red-300">ユーザー一覧を読み込めませんでした</p>';}
         }
         function closeGroupCreate(){document.getElementById('groupCreateModal')?.classList.add('hidden');}
@@ -4767,7 +4767,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 if (seen.has(id)) return;
                 const mine = message.sender_id === currentUser.id;
                 const profile = profileMap[message.sender_id] || {};
-                const avatarUrl = profile.avatar_url ? (typeof kuroSnsAvatarUrl === 'function' ? kuroSnsAvatarUrl(profile.avatar_url) : profile.avatar_url) : '';
+                const avatarUrl = profile.avatar_url ? (typeof kuroSnsAvatarUrl === 'function' ? kuroCloudflarePublicUrl(profile.avatar_url) : profile.avatar_url) : '';
                 const avatarContent = avatarUrl
                     ? '<img src="' + socialEscape(avatarUrl) + '" alt="" class="w-8 h-8 rounded-full object-cover">'
                     : '<span class="w-8 h-8 rounded-full bg-kuro-700 text-gray-300 flex items-center justify-center">♙</span>';
@@ -4956,10 +4956,11 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             box.innerHTML = messages.map(message => {
                 const mine = message.sender_id === currentUser.id;
                 const profile = profileMap[message.sender_id] || {};
-                const avatarUrl = profile.avatar_url ? (typeof kuroSnsAvatarUrl === 'function' ? kuroSnsAvatarUrl(profile.avatar_url) : profile.avatar_url) : '';
-                const avatar = avatarUrl
-                    ? '<img src="' + socialEscape(avatarUrl) + '" alt="" class="w-8 h-8 rounded-full object-cover shrink-0">'
-                    : '<span class="w-8 h-8 rounded-full bg-kuro-700 text-gray-300 flex items-center justify-center shrink-0">♙</span>';
+                const avatarUrl = profile.avatar_url ? (typeof kuroSnsAvatarUrl === 'function' ? kuroCloudflarePublicUrl(profile.avatar_url) : profile.avatar_url) : '';
+                const avatarContent = avatarUrl
+                    ? '<img src="' + socialEscape(avatarUrl) + '" alt="" class="w-8 h-8 rounded-full object-cover">'
+                    : '<span class="w-8 h-8 rounded-full bg-kuro-700 text-gray-300 flex items-center justify-center">♙</span>';
+                const avatar = kuroSnsAvatarHostMarkup(message.sender_id,avatarContent,'w-8 h-8 shrink-0 kuro-sns-avatar-small-frame');
                 const identity = mine ? '' : '<div class="flex items-center gap-2 mb-1">' + avatar + '<span class="text-[10px] text-gray-400">' + socialEscape(names[message.sender_id] || 'メンバー') + '</span></div>';
                 const readCount = reads.filter(r => r.message_id === message.id && r.reader_id !== message.sender_id).length;
                 const receipt = mine && peerCount ? '<span class="text-[10px] text-gray-400 mt-1">' + (readCount ? '既読 ' + readCount : '未読') + '</span>' : '';
