@@ -895,8 +895,16 @@ test("UNON reverse sends a three-player game to the previous seat", () => {
         unonCard("p1-extra-a", "blue", "2"),
         unonCard("p1-extra-b", "green", "4"),
       ] },
-      { userId: "p2", name: "P2", hand: [unonCard("p2-a", "red", "3"), unonCard("p2-b", "blue", "4")] },
-      { userId: "p3", name: "P3", hand: [unonCard("p3-a", "red", "6"), unonCard("p3-b", "yellow", "4")] },
+      { userId: "p2", name: "P2", hand: [
+        unonCard("p2-a", "red", "3"),
+        unonCard("p2-b", "blue", "4"),
+        unonCard("p2-extra", "green", "8"),
+      ] },
+      { userId: "p3", name: "P3", hand: [
+        unonCard("p3-a", "red", "6"),
+        unonCard("p3-b", "yellow", "4"),
+        unonCard("p3-extra", "green", "9"),
+      ] },
     ],
     top: unonCard("top", "red", "5"),
   });
