@@ -1420,7 +1420,18 @@ header .lab{padding-left:10px!important;padding-right:10px!important}
  .kuro-level-ranking-foot{font-size:9px}
 }
 </style>
-<style id="kuro-games-profile-edit-style">#kuroAccountModal .kuro-games-profile-edit-avatar{display:grid;justify-items:center;gap:8px;margin:8px 0 14px}#kuroAccountModal #kuroGamesProfileEditAvatarPreview{width:84px;height:84px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:#e8eff8;font-size:30px;color:#557092}#kuroAccountModal #kuroGamesProfileEditAvatarPreview img{width:100%;height:100%;object-fit:cover}#kuroAccountModal .kuro-games-profile-edit-avatar label,#kuroAccountModal .kuro-games-profile-edit-avatar button{border:1px solid #dce5f0;border-radius:9px;padding:9px 12px;background:#f8fafc;color:#344963;font-size:12px;font-weight:800;cursor:pointer}#kuroAccountModal #kuroGamesProfileEditAvatarFile{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}#kuroAccountModal .kuro-games-profile-edit-avatar small{color:#64748b;font-size:11px}#kuroAccountModal #kuroGamesProfileEditUsername{width:100%;box-sizing:border-box;border:1px solid #dce5f0;border-radius:10px;background:#fbfcfe;color:#17243c;padding:10px 12px;margin:6px 0 10px;font:inherit;font-size:13px}#kuroAccountModal #kuroGamesProfileEditSave{margin:8px 0}</style></head>
+<style id="kuro-games-profile-edit-style">#kuroAccountModal .kuro-games-profile-edit-avatar{display:grid;justify-items:center;gap:8px;margin:8px 0 14px}#kuroAccountModal #kuroGamesProfileEditAvatarPreview{width:84px;height:84px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:#e8eff8;font-size:30px;color:#557092}#kuroAccountModal #kuroGamesProfileEditAvatarPreview img{width:100%;height:100%;object-fit:cover}#kuroAccountModal .kuro-games-profile-edit-avatar label,#kuroAccountModal .kuro-games-profile-edit-avatar button{border:1px solid #dce5f0;border-radius:9px;padding:9px 12px;background:#f8fafc;color:#344963;font-size:12px;font-weight:800;cursor:pointer}#kuroAccountModal #kuroGamesProfileEditAvatarFile{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}#kuroAccountModal .kuro-games-profile-edit-avatar small{color:#64748b;font-size:11px}#kuroAccountModal #kuroGamesProfileEditUsername{width:100%;box-sizing:border-box;border:1px solid #dce5f0;border-radius:10px;background:#fbfcfe;color:#17243c;padding:10px 12px;margin:6px 0 10px;font:inherit;font-size:13px}#kuroAccountModal #kuroGamesProfileEditSave{margin:8px 0}</style>
+<style id="kuro-games-top-profile-cosmetics">
+.kuro-games-top-profile-avatar.kuro-top-profile-has-frame{position:relative;overflow:visible!important;border-color:transparent!important;background:transparent!important}
+.kuro-games-top-profile-avatar.kuro-top-profile-has-frame::after{content:"";position:absolute;inset:-6px;z-index:3;pointer-events:none;background-image:var(--kuro-top-profile-frame);background-position:center;background-repeat:no-repeat;background-size:contain}
+.kuro-games-top-profile-avatar.kuro-top-profile-has-frame img{border-radius:50%}
+.kuro-games-top-profile-avatar.kuro-top-profile-frame-common{border:2px solid #aeb9ca;background:#eef2f8}
+.kuro-games-top-profile-avatar.kuro-top-profile-frame-rare{border:2px solid #65aaff;box-shadow:0 0 0 3px #65aaff22}
+.kuro-games-top-profile-avatar.kuro-top-profile-frame-epic{border:2px solid #bd80ff;box-shadow:0 0 0 3px #bd80ff25}
+.kuro-games-top-profile-avatar.kuro-top-profile-frame-legendary{border:2px solid #ffc45e;box-shadow:0 0 0 3px #ffc45e25}
+.kuro-top-profile-avatar-cosmetic{display:grid;place-items:center;width:100%;height:100%;font-size:19px;line-height:1}
+</style>
+</head>
 <body>
 <header><div class="wrap nav">
 <a class="brand" href="/games/"><img class="mark" src="/assets/brand/logo/kurolab_icon_toumei_160.png?v=20261121logosfix" width="38" height="38" alt=""><span>KURO <em>GAMES</em></span></a>
@@ -1640,14 +1651,29 @@ window.kuroGamesAvatarDisplayUrl=kuroGamesAvatarDisplayUrl;
  if(!openButton||!modal||!form)return;
  const coinWrap=document.getElementById("kuroGamesCoinWrap"),coinTopbar=document.getElementById("kuroGamesTopCoins"),coinTopbarValue=document.getElementById("kuroGamesTopCoinsValue"),coinPopover=document.getElementById("kuroGamesCoinPopover"),coinPopoverValue=document.getElementById("kuroGamesCoinPopoverValue"),coinPopoverClose=document.getElementById("kuroGamesCoinPopoverClose");
  let mode="login",currentUser=null,coinRequestSeq=0;
- function renderTopProfileAvatar(url){
+ function renderTopProfileAvatar(url,frameUrl,avatarIcon,frameRarity){
   if(!topProfileAvatar)return;
   const fallback="<svg viewBox=\"0 0 24 24\" width=\"19\" height=\"19\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"8\" r=\"3.2\"></circle><path d=\"M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2\"></path></svg>";
-  if(!url){topProfileAvatar.innerHTML=fallback;return;}
-  const image=document.createElement("img");
-  image.src=kuroGamesAvatarDisplayUrl(url);image.alt="";
-  image.onerror=()=>{if(image.parentNode===topProfileAvatar)topProfileAvatar.innerHTML=fallback;};
-  topProfileAvatar.replaceChildren(image);
+  const safeFrame=frameUrl?kuroGamesAvatarDisplayUrl(frameUrl):"";
+  topProfileAvatar.classList.toggle("kuro-top-profile-has-frame",!!safeFrame);
+  ["common","rare","epic","legendary"].forEach(rarity=>topProfileAvatar.classList.toggle("kuro-top-profile-frame-"+rarity,!safeFrame&&frameRarity===rarity));
+  if(safeFrame)topProfileAvatar.style.setProperty("--kuro-top-profile-frame",'url("'+safeFrame+'")');
+  else topProfileAvatar.style.removeProperty("--kuro-top-profile-frame");
+  if(url){
+   const image=document.createElement("img");
+   image.src=kuroGamesAvatarDisplayUrl(url);image.alt="";
+   image.onerror=()=>{
+    if(image.parentNode!==topProfileAvatar)return;
+    if(avatarIcon){
+     const icon=document.createElement("span");icon.className="kuro-top-profile-avatar-cosmetic";icon.textContent=avatarIcon;topProfileAvatar.replaceChildren(icon);
+    }else topProfileAvatar.innerHTML=fallback;
+   };
+   topProfileAvatar.replaceChildren(image);return;
+  }
+  if(avatarIcon){
+   const icon=document.createElement("span");icon.className="kuro-top-profile-avatar-cosmetic";icon.textContent=avatarIcon;topProfileAvatar.replaceChildren(icon);return;
+  }
+  topProfileAvatar.innerHTML=fallback;
  }
  function setCoinPopover(open){
   if(!coinPopover||!coinTopbar)return;
@@ -1717,14 +1743,23 @@ window.kuroGamesAvatarDisplayUrl=kuroGamesAvatarDisplayUrl;
   if(authPanel)authPanel.hidden=signedIn;if(profilePanel)profilePanel.hidden=!signedIn;if(guestPanel)guestPanel.hidden=signedIn;
   if(signedIn){if(profileName)profileName.textContent=fallbackName;if(profileHandle)profileHandle.textContent=fallbackHandle?"@"+fallbackHandle:"KURO共通アカウント";
    const userId=currentUser.id;
-   if(window.kuroGamesDB)window.kuroGamesDB.from("profiles").select("username,kuro_id,avatar_url,bio").eq("id",userId).maybeSingle().then(({data,error})=>{
+   if(window.kuroGamesDB)Promise.all([
+    window.kuroGamesDB.from("profiles").select("username,kuro_id,avatar_url,bio").eq("id",userId).maybeSingle(),
+    window.kuroGamesDB.rpc("kuro_get_public_store_cosmetics",{p_user_id:userId})
+   ]).then(([profileResult,cosmeticResult])=>{
+    const {data,error}=profileResult;
     if(error||!data||currentUser?.id!==userId)return;
+    const cosmetics=cosmeticResult&&!cosmeticResult.error&&cosmeticResult.data&&typeof cosmeticResult.data==="object"?cosmeticResult.data:{};
+    const avatarItem=cosmetics.avatar&&typeof cosmetics.avatar==="object"?cosmetics.avatar:null;
+    const frameItem=cosmetics.frame&&typeof cosmetics.frame==="object"?cosmetics.frame:null;
     const h=String(data.username||fallbackHandle),id=String(data.kuro_id||"");
     const av=String(data.avatar_url||"");
+    const cosmeticAvatarUrl=String(avatarItem&&avatarItem.imageUrl||"");
+    const frameImageUrl=String(frameItem&&frameItem.imageUrl||"");
     if(stateLabel)stateLabel.textContent=h?"@"+h:"ログイン中";if(buttonLabel)buttonLabel.textContent="アカウント";
     if(avatarSlot){avatarSlot.innerHTML="<svg viewBox=\"0 0 24 24\" width=\"100%\" height=\"100%\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"8\" r=\"3.2\"></circle><path d=\"M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2\"></path></svg>";if(av){const im=document.createElement("img");im.src=kuroGamesAvatarDisplayUrl(av);im.alt="";im.onerror=()=>{im.remove();};avatarSlot.appendChild(im);}}
     if(topProfileName){topProfileName.textContent=h?"@"+h:"KUROユーザー";topProfileName.style.display="inline-block";topProfileName.style.visibility="visible";}
-    renderTopProfileAvatar(av);
+    renderTopProfileAvatar(av||cosmeticAvatarUrl,frameImageUrl,String(avatarItem&&avatarItem.icon||""),String(frameItem&&frameItem.rarity||""));
     topProfile?.setAttribute("title",(h?"@"+h:"KUROアカウント")+(id?" · "+id:""));
     openButton.title=(h?"@"+h:"KUROアカウント")+(id?" ("+id+")":"");
     openButton.setAttribute("aria-label","ログイン中："+(h?"@"+h:"KUROアカウント")+(id?"、KURO ID："+id:""));
