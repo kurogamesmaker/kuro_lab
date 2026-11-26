@@ -2610,7 +2610,8 @@ async function handle(req: Request) {
       const roomData = room?.game_data && typeof room.game_data === "object"
         ? room.game_data as Record<string, unknown>
         : {};
-      if (roomError || !room || room.status !== "waiting" ||
+      const roomJoinable = room && (room.status === "waiting" || (isUnon && room.status === "playing"));
+      if (roomError || !roomJoinable ||
           (isUnon && roomData.ruleMode !== ruleMode)) {
         await admin.rpc(isUnon ? "kuro_unon_matchmaking_cancel" : "kuro_daifugo_matchmaking_cancel", { p_game_id: game.id, p_user_id: user.id });
         return reply(200, { status: "cancelled" });
