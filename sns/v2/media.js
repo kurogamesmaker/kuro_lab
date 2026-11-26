@@ -148,6 +148,7 @@
     '.kuro-sns-attach-menu.hidden{display:none!important}',
     '.kuro-sns-attach-menu button{display:flex;align-items:center;gap:10px;width:100%;min-height:42px;padding:9px 11px;border-radius:10px;color:#f4f4f5;text-align:left;font-size:13px}',
     '.kuro-sns-attach-menu button:hover{background:#27272a}',
+    '.kuro-sns-link{color:inherit!important;text-decoration:underline!important;text-decoration-thickness:1px;text-underline-offset:2px;overflow-wrap:anywhere;cursor:pointer}.kuro-sns-link:hover{opacity:.78}',
     '#chatModal #chatConversationPanel form[onsubmit="sendChatMessage(event)"] .kuro-sns-media-preview{flex:0 0 100%}',
     '.kuro-sns-media-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:12px;max-width:560px}.kuro-sns-media-grid.kuro-sns-media-count-1{grid-template-columns:minmax(0,1fr);max-width:460px}.kuro-sns-media-tile{display:block;min-width:0;overflow:hidden;padding:0!important;border:0;border-radius:14px;background:#18181b;aspect-ratio:1.2}.kuro-sns-media-count-1 .kuro-sns-media-tile{aspect-ratio:auto;max-height:520px}.kuro-sns-media-tile img{display:block;width:100%;height:100%;max-height:520px;object-fit:contain}.kuro-sns-media-count-1 .kuro-sns-media-tile img{object-fit:contain}',
     '.kuro-sns-chat-media{width:min(100%,640px);max-width:min(72vw,640px);margin-top:8px;gap:7px}.kuro-sns-chat-media.kuro-sns-media-count-1{width:100%;max-width:min(72vw,640px)}.kuro-sns-chat-media .kuro-sns-media-tile{aspect-ratio:1;max-height:none;border-radius:13px;background:transparent}.kuro-sns-chat-media.kuro-sns-media-count-1 .kuro-sns-media-tile{aspect-ratio:auto;width:100%;max-height:none}.kuro-sns-chat-media .kuro-sns-media-tile img{width:100%;height:100%;max-height:min(72vh,760px);object-fit:contain}.kuro-sns-chat-media.kuro-sns-media-count-1 .kuro-sns-media-tile img{width:100%;height:auto;max-height:min(72vh,760px);object-fit:contain}@media(max-width:640px){.kuro-sns-chat-media,.kuro-sns-chat-media.kuro-sns-media-count-1{max-width:min(76vw,520px)}.kuro-sns-chat-media.kuro-sns-media-count-1 .kuro-sns-media-tile img{max-height:68vh}}',
@@ -155,5 +156,33 @@
     '#publicChatForm #publicChatImagePreview{display:flex!important}#publicChatForm #publicChatImagePreview.hidden{display:none!important}#publicChatForm>div:not(#publicChatImagePreview){grid-template-columns:minmax(76px,160px) 42px minmax(0,1fr) auto!important;align-items:center!important;gap:8px!important}#publicChatForm #publicChatNickname{grid-column:1!important;grid-row:1!important;width:100%!important;min-width:0!important}#publicChatForm #publicChatInput{grid-column:3!important;grid-row:1!important;min-width:0!important}#publicChatForm .kuro-sns-attach-wrap{grid-column:2!important;grid-row:1!important}#publicChatForm #publicChatSendButton{grid-column:4!important;grid-row:1!important}#publicChatForm #publicChatImageInput{display:none!important}@media(max-width:640px){#publicChatForm>div:not(#publicChatImagePreview){grid-template-columns:minmax(76px,110px) 42px minmax(0,1fr) auto!important;gap:6px!important}}',
     '.kuro-sns-media-viewer{position:fixed;inset:0;z-index:10050;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.92)}.kuro-sns-media-viewer.hidden{display:none!important}.kuro-sns-media-viewer>img{max-width:min(96vw,1400px);max-height:90dvh;object-fit:contain}.kuro-sns-media-viewer-close{position:absolute;right:18px;top:14px;width:44px;height:44px;border-radius:50%;background:#fff;color:#111;font-size:28px;line-height:1}'
   ].join('\n');document.head.appendChild(css);
-  window.KuroSNSMedia={pick(type){document.getElementById(type==='publicChat'?'publicChatImageInput':type+'ImageInput')?.click()},toggleMenu,closeMenu,handlePick:onPick,clear,removeSelected,getSelected,upload,remove,renderPublic,renderPrivateBatch,renderPrivateOne};
+  function addLink(type){
+    closeMenu(type);
+    const inputId=type==='publicChat'?'publicChatInput':type==='post'?'postContent':'chatMessageInput';
+    const input=document.getElementById(inputId);
+    if(!input||input.disabled){say('先に送信先を開いてください');return}
+    const raw=window.prompt('送信するURLを入力してください（https:// または www. から始まるURL）');
+    if(raw==null||!raw.trim())return;
+    let candidate=raw.trim();
+    if(!/^https?:\/\//i.test(candidate))candidate='https://'+candidate;
+    let parsed;
+    try{parsed=new URL(candidate)}catch(_){say('URLの形式を確認してください');return}
+    if(!['http:','https:'].includes(parsed.protocol)||!parsed.hostname||parsed.username||parsed.password){
+      say('http または https のURLを入力してください');return;
+    }
+    const value=parsed.href;
+    const start=Number.isInteger(input.selectionStart)?input.selectionStart:input.value.length;
+    const end=Number.isInteger(input.selectionEnd)?input.selectionEnd:start;
+    const before=input.value.slice(0,start),after=input.value.slice(end);
+    let insert=value;
+    if(before&&!/\s$/.test(before))insert='\n'+insert;
+    if(after&&!/^\s/.test(after))insert+='\n';
+    const max=input.maxLength>0?input.maxLength:Infinity;
+    if(input.value.length-(end-start)+insert.length>max){say('入力欄の文字数上限を超えるため追加できません');return}
+    if(typeof input.setRangeText==='function')input.setRangeText(insert,start,end,'end');
+    else input.value=before+insert+after;
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+    input.focus();
+  }
+  window.KuroSNSMedia={pick(type){document.getElementById(type==='publicChat'?'publicChatImageInput':type+'ImageInput')?.click()},toggleMenu,closeMenu,addLink,handlePick:onPick,clear,removeSelected,getSelected,upload,remove,renderPublic,renderPrivateBatch,renderPrivateOne};
 })();
