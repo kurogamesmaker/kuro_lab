@@ -58,6 +58,8 @@ header{position:sticky;top:0;z-index:10;background:#100d1deF;backdrop-filter:blu
 .store-tryon-avatar{position:relative;isolation:isolate;width:86px;height:86px;flex:0 0 86px;display:grid;place-items:center;border:3px solid var(--tryon-accent);border-radius:50%;background:linear-gradient(145deg,#2a3c58,#1d2940);box-shadow:0 0 0 4px var(--tryon-soft),0 0 22px var(--tryon-soft);font-size:34px}
 .store-tryon-avatar>img{display:block;width:100%;height:100%;border-radius:50%;object-fit:cover}
 .store-tryon-frame-image{position:absolute;inset:-10px;z-index:2;background-position:center;background-repeat:no-repeat;background-size:contain;pointer-events:none}
+.store-tryon-avatar.frame-under .store-tryon-frame-image{z-index:0}
+.store-tryon-avatar.frame-under>img{position:relative;z-index:1}
 .store-tryon-name{min-width:0}
 .store-tryon-name strong{display:inline-flex;align-items:center;min-height:26px;padding:3px 8px;border:1px solid var(--tryon-accent);border-radius:7px;background:var(--tryon-soft);font-size:17px;overflow-wrap:anywhere}
 .store-tryon-name small{display:block;margin-top:5px;color:#9fb5d2;font-size:11px;overflow-wrap:anywhere}
@@ -229,7 +231,7 @@ function renderCatalog(){
 }
 function normalizeCosmetic(item){
  if(!item)return null;
- return {itemKey:item.itemKey||item.item_key||"",name:item.name||"",category:item.category||"",icon:item.icon||"",imageUrl:item.imageUrl||item.image_url||"",rarity:item.rarity||""};
+ return {itemKey:item.itemKey||item.item_key||"",name:item.name||"",category:item.category||"",icon:item.icon||"",imageUrl:item.imageUrl||item.image_url||"",rarity:item.rarity||"",frameLayerMode:item.frameLayerMode||item.frame_layer_mode||"over"};
 }
 function tryOnSlot(category){
  if(category==="icon_image")return "avatar";
@@ -252,6 +254,7 @@ function openStoreTryOn(item){
  const frameImage=safeStoreImage(frameItem&&frameItem.imageUrl);
  const frameRarity=String(frameItem&&frameItem.rarity||"");
  const frameClass=["common","rare","epic","legendary"].includes(frameRarity)?" frame-"+frameRarity:"";
+ const frameLayerClass=String(frameItem&&frameItem.frameLayerMode||"over")==="under"?" frame-under":"";
  const frameMarkup=frameImage?'<span class="store-tryon-frame-image" style="background-image:url(&quot;'+html(frameImage)+'&quot;)"></span>':"";
  const backgroundImage=safeStoreImage(backgroundItem&&backgroundItem.imageUrl);
  const bannerImage=safeStoreImage(bannerItem&&bannerItem.imageUrl);
@@ -271,7 +274,7 @@ function openStoreTryOn(item){
  const bio=String(profile.bio||"").trim();
  const profileBackground=backgroundItem?'<div class="store-tryon-banner"'+(backgroundImage?' style="background-image:linear-gradient(90deg,rgba(10,15,29,.78),rgba(10,15,29,.28)),url(&quot;'+html(backgroundImage)+'&quot;)"':"")+'><span>✦</span><div><small>PROFILE BACKGROUND</small><strong>'+html(backgroundItem.name||"背景")+'</strong></div></div>':"";
  const profileBanner=bannerItem?'<div class="store-tryon-banner"'+bannerStyle+'><div><small>PROFILE BANNER</small><strong>'+html(bannerItem.name||"バナー")+'</strong></div></div>':"";
- const profileHtml='<div class="store-tryon-profile'+themeClass+backgroundClass+'"'+backgroundStyle+'>'+profileBanner+profileBackground+(chips?'<div class="store-tryon-chips">'+chips+'</div>':"")+'<div class="store-tryon-identity"><div class="store-tryon-avatar'+frameClass+'">'+avatarMarkup+frameMarkup+'</div><div class="store-tryon-name">'+nameMarkup+'<small>'+html(username)+'</small><small>KURO ID：'+html(profile.kuro_id||"—")+'</small></div></div><div class="store-tryon-bio"><strong>自己紹介</strong><p>'+html(bio||"自己紹介はまだ設定されていません。")+'</p></div></div>';
+ const profileHtml='<div class="store-tryon-profile'+themeClass+backgroundClass+'"'+backgroundStyle+'>'+profileBanner+profileBackground+(chips?'<div class="store-tryon-chips">'+chips+'</div>':"")+'<div class="store-tryon-identity"><div class="store-tryon-avatar'+frameClass+frameLayerClass+'">'+avatarMarkup+frameMarkup+'</div><div class="store-tryon-name">'+nameMarkup+'<small>'+html(username)+'</small><small>KURO ID：'+html(profile.kuro_id||"—")+'</small></div></div><div class="store-tryon-bio"><strong>自己紹介</strong><p>'+html(bio||"自己紹介はまだ設定されていません。")+'</p></div></div>';
  $("storeTryOnProfile").innerHTML=profileHtml;
  const image=safeStoreImage(item.image_url);
  $("storeTryOnArt").innerHTML=image?'<img src="'+html(image)+'" alt="'+html(item.name||"商品画像")+'">':'<span style="font-size:64px">'+html(item.icon||"🎁")+'</span>';
