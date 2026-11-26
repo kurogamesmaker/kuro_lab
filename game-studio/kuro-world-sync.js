@@ -185,7 +185,7 @@
       );
     });
 
-    if (room && !ctx.titleOpen && now - lastPresenceAt >= 220) {
+    if (room && !ctx.titleOpen && now - lastPresenceAt >= 450) {
       const p = ctx.player;
       const current = {
         x: p.p.x, y: p.p.y, z: p.p.z,
@@ -266,7 +266,11 @@
   requestAnimationFrame(tick);
   void start();
   window.addEventListener("pagehide", () => {
-    if (pendingBlocks.size && ready) void flushBlocks();
-    if (room) void room.leave();
+    capturing = false;
+    if (flushTimer) { clearTimeout(flushTimer); flushTimer = 0; }
+    if (room) {
+      if (pendingBlocks.size && ready) void flushBlocks().finally(() => room && room.leave());
+      else void room.leave();
+    }
   });
 })();
