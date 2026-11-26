@@ -1917,7 +1917,8 @@ function initKuroRankingShowcase(){
    const body={action:"leaderboard",gameId:game.id,mode:game.mode,limit:5};
    if(lv!=="")body.level=Number(lv);if(cpu!=="")body.cpuDifficulty=cpu;
    const {data,error}=await window.kuroGamesDB.functions.invoke("kurogames-online",{body});if(error)throw error;
-   const numberGuessTime=game.id===NUMBER_GAME_ID&&/^number-time-/i.test(String(game.mode||""));\n   const rows=(Array.isArray(data?.scores)?data.scores:[]).slice(0,5).map((row,i)=>({...row,metric:numberGuessTime?"time_us":row.metric,rank:Number(row.rank)||i+1,score:Number(row.score)||0,user:row.user||{username:"プレイヤー",display_name:"プレイヤー"}}));
+   const numberGuessTime=game.id===NUMBER_GAME_ID&&/^number-time-/i.test(String(game.mode||""));
+   const rows=(Array.isArray(data?.scores)?data.scores:[]).slice(0,5).map((row,i)=>({...row,metric:numberGuessTime?"time_us":row.metric,rank:Number(row.rank)||i+1,score:Number(row.score)||0,user:row.user||{username:"プレイヤー",display_name:"プレイヤー"}}));
    cache.set(key,{rows,at:Date.now()});return rows;
   }catch(error){if(cached?.rows?.length)return cached.rows;throw error;}
  }
