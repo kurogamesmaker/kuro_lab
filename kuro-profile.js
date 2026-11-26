@@ -365,7 +365,7 @@
       var equippedNameplate = cosmetics.nameplate && typeof cosmetics.nameplate === "object" ? cosmetics.nameplate : null;
       var profileAvatarUrl = safeImageUrl(profile.avatar_url);
       var cosmeticAvatarUrl = safeImageUrl(equippedAvatar && equippedAvatar.imageUrl);
-      var avatarUrl = profileAvatarUrl || cosmeticAvatarUrl;
+      var avatarUrl = cosmeticAvatarUrl || (equippedAvatar && equippedAvatar.icon ? "" : profileAvatarUrl);
       var avatarFallbackLabel = String(equippedAvatar && equippedAvatar.icon || "♙");
       var avatar = avatarUrl
         ? '<img src="' + escapeHtml(avatarUrl) + '" alt="" class="kuro-profile-avatar-image">'
