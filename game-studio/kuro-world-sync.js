@@ -215,7 +215,7 @@
         throw new Error("共有ワールドへの参加にはKURO GAMESへのログインが必要です。");
       }
 
-      const profile = await KuroGames.profile.get();
+      const profile = await KuroGames.auth.getProfile();
       const authUser = await KuroGames.auth.getUser();
       const username = String(profile && profile.username || "").trim();
       if (!username || !authUser || !authUser.id) {
