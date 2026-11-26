@@ -408,13 +408,22 @@ async function handleRelay(request) {
 
   if (request.method === "GET") {
     const target = targetFor(url.searchParams.get("resource"));
-    if (!target.pathname.startsWith("/storage/v1/object/public/")) {
-      return json({ error: "Only public Storage objects may be fetched here" }, 403);
+    const isPublicObject = target.pathname.startsWith("/storage/v1/object/public/");
+    const isSignedPrivateMedia =
+      target.pathname.startsWith("/storage/v1/object/sign/kuro-sns-private-media/") &&
+      Boolean(target.searchParams.get("token"));
+    if (!isPublicObject && !isSignedPrivateMedia) {
+      return json({ error: "Only public objects or token-signed KURO SNS private media may be fetched here" }, 403);
     }
-    const upstream = await fetch(target.href, { headers: headersFor() });
+    const upstream = await fetch(target.href, {
+      headers: isPublicObject ? headersFor() : new Headers({ apikey: SUPABASE_KEY })
+    });
     const headers = new Headers();
     headers.set("Content-Type", upstream.headers.get("content-type") || "application/octet-stream");
-    headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
+    headers.set(
+      "Cache-Control",
+      isPublicObject ? "public, max-age=300, stale-while-revalidate=600" : "private, no-store"
+    );
     const etag = upstream.headers.get("etag");
     if (etag) headers.set("ETag", etag);
     return new Response(upstream.body, { status: upstream.status, headers });
