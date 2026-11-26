@@ -152,11 +152,16 @@ Deno.serve(async (req: Request) => {
     if (action === "studio_dashboard") {
       const user = await resolveUser(req, true);
       const studioMember = await requireStudioMember(user!.id);
+      const canViewSales = studioMember.role === "owner";
       const [itemsResult, salesSummaryResult, recentSalesResult, membersResult] = await Promise.all([
         admin.from("kuro_store_items").select("id,item_key,name,description,category,icon,image_url,rarity,price_kc,is_free,is_active,sort_order,created_at,updated_at").order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
-        admin.rpc("kuro_store_studio_sales_summary"),
-        admin.from("kuro_store_transactions").select("id,amount_kc,created_at,item:kuro_store_items(name,item_key)").eq("transaction_type", "shop_purchase").eq("status", "completed").order("created_at", { ascending: false }).limit(20),
-        studioMember.role === "owner"
+        canViewSales
+          ? admin.rpc("kuro_store_studio_sales_summary")
+          : Promise.resolve({ data: { purchaseCount: 0, totalKC: 0 }, error: null }),
+        canViewSales
+          ? admin.from("kuro_store_transactions").select("id,amount_kc,created_at,item:kuro_store_items(name,item_key)").eq("transaction_type", "shop_purchase").eq("status", "completed").order("created_at", { ascending: false }).limit(20)
+          : Promise.resolve({ data: [], error: null }),
+        canViewSales
           ? admin.from("kuro_store_studio_members").select("user_id,role,is_active,created_at").order("created_at", { ascending: true })
           : Promise.resolve({ data: [], error: null }),
       ]);
@@ -166,7 +171,7 @@ Deno.serve(async (req: Request) => {
       if (membersResult.error) throw membersResult.error;
       const items = itemsResult.data ?? [];
       let studioMembers: Record<string, unknown>[] = [];
-      if (studioMember.role === "owner") {
+      if (canViewSales) {
         const memberIds = (membersResult.data ?? []).map((member: any) => member.user_id);
         const profilesResult = memberIds.length
           ? await admin.from("profiles").select("id,username,display_name,kuro_id").in("id", memberIds)
@@ -181,14 +186,15 @@ Deno.serve(async (req: Request) => {
       const salesSummary = salesSummaryResult.data ?? {};
       return reply(200, {
         items,
-        recentSales: recentSalesResult.data ?? [],
+        recentSales: canViewSales ? recentSalesResult.data ?? [] : [],
         members: studioMembers,
+        canViewSales,
         member: { role: studioMember.role },
         stats: {
           totalItems: items.length,
           activeItems: items.filter((item: any) => item.is_active).length,
-          salesCount: Number(salesSummary.purchaseCount ?? 0),
-          salesTotalKC: Number(salesSummary.totalKC ?? 0),
+          salesCount: canViewSales ? Number(salesSummary.purchaseCount ?? 0) : null,
+          salesTotalKC: canViewSales ? Number(salesSummary.totalKC ?? 0) : null,
         },
       });
     }
