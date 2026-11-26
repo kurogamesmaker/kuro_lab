@@ -108,6 +108,7 @@
     let player = remotePlayers.get(id);
     if (!player) {
       const avatar = ctx.makeAvatar();
+      ctx.scene.add(avatar);
       const tag = ctx.makeNameTag(name);
       avatar.visible = false;
       tag.visible = false;
