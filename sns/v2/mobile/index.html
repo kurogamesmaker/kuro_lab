@@ -1048,7 +1048,7 @@ img#profileAvatarPreview:not(.hidden) {
             <div class="flex justify-between items-center px-5 sm:px-6 py-4 border-b border-kuro-800"><h3 class="font-bold text-lg flex items-center gap-2"><i class="fa-regular fa-pen-to-square"></i><span>ポストを作成</span></h3><button type="button" onclick="closeModal()" class="text-gray-400 hover:text-white w-9 h-9 rounded-lg bg-kuro-800"><i class="fa-solid fa-xmark"></i></button></div>
             <form id="submitForm" onsubmit="handlePostSubmit(event)" class="p-5 sm:p-6 space-y-4">
                 <div id="authorDisplay" class="text-sm text-gray-300"></div>
-                <div><label for="postContent" class="block text-xs text-gray-400 mb-2">いま何してる？</label><div class="flex items-start gap-2"><input id="postImageInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="KuroSNSMedia.handlePick('post',this)"><div class="kuro-sns-attach-wrap mt-1"><button id="postAttachToggle" type="button" class="kuro-sns-plus-button" aria-label="添付メニューを開く" aria-expanded="false" aria-controls="postAttachMenu" onclick="KuroSNSMedia.toggleMenu('post')"><span aria-hidden="true">+</span></button><div id="postAttachMenu" class="kuro-sns-attach-menu hidden" role="menu"><button type="button" role="menuitem" onclick="KuroSNSMedia.closeMenu('post');KuroSNSMedia.pick('post')">📷 写真・画像を追加</button></div></div><div class="min-w-0 flex-1"><textarea id="postContent" maxlength="130" rows="5" oninput="updatePostCounter()" placeholder="思ったことを気軽に書いてみよう… #KURO" class="w-full bg-kuro-950 border border-kuro-700 rounded-xl px-4 py-3 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-white resize-y"></textarea><div class="flex justify-between items-center mt-2"><p class="text-xs text-gray-500">最大130文字。#話題 のように書くとハッシュタグになるよ。</p><span id="postCounter" class="text-xs font-mono text-gray-400">0 / 130</span></div></div></div></div>
+                <div><label for="postContent" class="block text-xs text-gray-400 mb-2">いま何してる？</label><div class="flex items-start gap-2"><input id="postImageInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="KuroSNSMedia.handlePick('post',this)"><div class="kuro-sns-attach-wrap mt-1"><button id="postAttachToggle" type="button" class="kuro-sns-plus-button" aria-label="添付メニューを開く" aria-expanded="false" aria-controls="postAttachMenu" onclick="KuroSNSMedia.toggleMenu('post')"><span aria-hidden="true">+</span></button><div id="postAttachMenu" class="kuro-sns-attach-menu hidden" role="menu"><button type="button" role="menuitem" onclick="KuroSNSMedia.closeMenu('post');KuroSNSMedia.pick('post')">📷 写真・画像を追加</button><button type="button" role="menuitem" onclick="KuroSNSMedia.addLink('post')">🔗 リンクを追加</button></div></div><div class="min-w-0 flex-1"><textarea id="postContent" maxlength="130" rows="5" oninput="updatePostCounter()" placeholder="思ったことを気軽に書いてみよう… #KURO" class="w-full bg-kuro-950 border border-kuro-700 rounded-xl px-4 py-3 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-white resize-y"></textarea><div class="flex justify-between items-center mt-2"><p class="text-xs text-gray-500">最大130文字。#話題 のように書くとハッシュタグになるよ。</p><span id="postCounter" class="text-xs font-mono text-gray-400">0 / 130</span></div></div></div></div>
                 <div id="postImagePreview" class="kuro-sns-media-preview hidden"></div><p class="text-xs text-gray-500">ハッシュタグ例：#日常 #ゲーム #イラスト</p>
                 <button type="submit" class="w-full px-5 py-3 rounded-xl text-sm font-semibold bg-white text-black hover:bg-gray-200">ポストする</button>
             </form>
@@ -1419,7 +1419,7 @@ img#profileAvatarPreview:not(.hidden) {
               <p class="text-sm text-gray-500 text-center mt-8">左の一覧から相手を選ぶか、ユーザーを検索してチャットを始めてください。</p>
             </div>
             <form onsubmit="sendChatMessage(event)" class="relative shrink-0 border-t border-kuro-800 p-3 flex items-end gap-2">
-              <div id="groupMentionSuggestions" class="hidden absolute z-30 bottom-full left-3 right-3 max-h-52 overflow-y-auto rounded-xl border border-kuro-700 bg-kuro-950 shadow-2xl"></div><div id="chatImagePreview" class="kuro-sns-media-preview hidden"></div><input id="chatImageInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="KuroSNSMedia.handlePick('chat',this)"><div class="kuro-sns-attach-wrap"><button id="chatAttachToggle" type="button" class="kuro-sns-plus-button" aria-label="添付メニューを開く" aria-expanded="false" aria-controls="chatAttachMenu" onclick="KuroSNSMedia.toggleMenu('chat')"><span aria-hidden="true">+</span></button><div id="chatAttachMenu" class="kuro-sns-attach-menu hidden" role="menu"><button type="button" role="menuitem" onclick="KuroSNSMedia.closeMenu('chat');KuroSNSMedia.pick('chat')">📷 写真・画像を追加</button></div></div>
+              <div id="groupMentionSuggestions" class="hidden absolute z-30 bottom-full left-3 right-3 max-h-52 overflow-y-auto rounded-xl border border-kuro-700 bg-kuro-950 shadow-2xl"></div><div id="chatImagePreview" class="kuro-sns-media-preview hidden"></div><input id="chatImageInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="KuroSNSMedia.handlePick('chat',this)"><div class="kuro-sns-attach-wrap"><button id="chatAttachToggle" type="button" class="kuro-sns-plus-button" aria-label="添付メニューを開く" aria-expanded="false" aria-controls="chatAttachMenu" onclick="KuroSNSMedia.toggleMenu('chat')"><span aria-hidden="true">+</span></button><div id="chatAttachMenu" class="kuro-sns-attach-menu hidden" role="menu"><button type="button" role="menuitem" onclick="KuroSNSMedia.closeMenu('chat');KuroSNSMedia.pick('chat')">📷 写真・画像を追加</button><button type="button" role="menuitem" onclick="KuroSNSMedia.addLink('chat')">🔗 リンクを追加</button></div></div>
               <input id="chatMessageInput" type="text" maxlength="2000" autocomplete="off" oninput="handleGroupMentionInput()" placeholder="メッセージを書く…" disabled class="flex-1 min-w-0 bg-kuro-900 border border-kuro-700 rounded-xl px-3 py-3 text-sm disabled:opacity-50">
               <button id="chatSendButton" type="submit" disabled class="rounded-xl bg-white text-black px-5 py-3 text-sm font-bold disabled:opacity-40">送信</button>
             </form>
@@ -1435,7 +1435,7 @@ img#profileAvatarPreview:not(.hidden) {
             <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
               <div id="publicChatImagePreview" class="kuro-sns-media-preview hidden col-span-full"></div><input id="publicChatNickname" maxlength="20" placeholder="表示名（1〜20文字）" class="col-span-2 w-full bg-kuro-900 border border-kuro-700 rounded-xl px-3 py-2.5 text-sm">
               <input id="publicChatImageInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="KuroSNSMedia.handlePick('publicChat',this)">
-              <div class="kuro-sns-attach-wrap"><button id="publicChatAttachToggle" type="button" class="kuro-sns-plus-button" aria-label="添付メニューを開く" aria-expanded="false" aria-controls="publicChatAttachMenu" onclick="KuroSNSMedia.toggleMenu('publicChat')"><span aria-hidden="true">+</span></button><div id="publicChatAttachMenu" class="kuro-sns-attach-menu hidden" role="menu"><button type="button" role="menuitem" onclick="KuroSNSMedia.closeMenu('publicChat');KuroSNSMedia.pick('publicChat')">📷 写真・画像を追加</button></div></div>
+              <div class="kuro-sns-attach-wrap"><button id="publicChatAttachToggle" type="button" class="kuro-sns-plus-button" aria-label="添付メニューを開く" aria-expanded="false" aria-controls="publicChatAttachMenu" onclick="KuroSNSMedia.toggleMenu('publicChat')"><span aria-hidden="true">+</span></button><div id="publicChatAttachMenu" class="kuro-sns-attach-menu hidden" role="menu"><button type="button" role="menuitem" onclick="KuroSNSMedia.closeMenu('publicChat');KuroSNSMedia.pick('publicChat')">📷 写真・画像を追加</button><button type="button" role="menuitem" onclick="KuroSNSMedia.addLink('publicChat')">🔗 リンクを追加</button></div></div>
               <input id="publicChatInput" maxlength="300" placeholder="メッセージを書く…" class="min-w-0 w-full bg-kuro-900 border border-kuro-700 rounded-xl px-3 py-3 text-sm"><button id="publicChatSendButton" class="rounded-xl bg-white text-black px-5 py-2.5 text-sm font-bold">送信</button>
             </div>
             <p class="text-[10px] text-gray-500">公開チャットは誰でも閲覧できます。個人情報や連絡先は書かないでください。</p>
@@ -2784,9 +2784,52 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             return [...new Set((content.match(/#[\p{L}\p{N}_\p{M}]+/gu) || []).map(tag => tag.slice(1)))];
         }
 
+        function renderSocialText(content, options = {}) {
+            const source = String(content ?? '');
+            const pattern = /(?:https?:\/\/|www\.)[^\s<>"']+|(?:[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?\.)+[A-Z]{2,}(?::\d+)?(?:\/[^\s<>"']*)?/gi;
+            const mentionNames = Array.isArray(options.mentionUsernames)
+                ? options.mentionUsernames
+                : options.mentions
+                    ? [...new Set((source.match(/@([A-Za-z0-9_]{3,24})/g) || []).map(x => x.slice(1)))]
+                    : [];
+            const renderPlain = value => {
+                let html = escapeHTML(value);
+                mentionNames.forEach(username => {
+                    const re = new RegExp('(^|[^A-Za-z0-9_])(@' + username + ')(?=$|[^A-Za-z0-9_])', 'gi');
+                    html = html.replace(re, '$1<span class="text-sky-300 font-semibold">$2</span>');
+                });
+                if (options.hashtags) {
+                    html = html.replace(/(^|\s)#([\p{L}\p{N}_\p{M}]+)/gu, '$1<a href="#" class="text-sky-300 hover:text-white hover:underline" onclick="event.preventDefault();filterByHashtag(\'$2\')">#$2</a>');
+                }
+                return html;
+            };
+            let output = '', cursor = 0, match;
+            while ((match = pattern.exec(source)) !== null) {
+                let candidate = match[0], trailing = '';
+                while (candidate && /[\)\]\}>,.!?、。，！？；：」』】]$/.test(candidate)) {
+                    trailing = candidate.slice(-1) + trailing;
+                    candidate = candidate.slice(0, -1);
+                }
+                output += renderPlain(source.slice(cursor, match.index));
+                if (candidate) {
+                    let parsed = null;
+                    try { parsed = new URL(/^https?:\/\//i.test(candidate) ? candidate : 'https://' + candidate); } catch (_) {}
+                    if (parsed && ['http:', 'https:'].includes(parsed.protocol) && parsed.hostname && !parsed.username && !parsed.password) {
+                        output += '<a class="kuro-sns-link" href="' + escapeHTML(parsed.href) + '" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">' + escapeHTML(candidate) + '</a>' + renderPlain(trailing);
+                    } else {
+                        output += renderPlain(match[0]);
+                    }
+                } else {
+                    output += renderPlain(match[0]);
+                }
+                cursor = match.index + match[0].length;
+            }
+            output += renderPlain(source.slice(cursor));
+            return output;
+        }
+
         function renderPostContent(content) {
-            const safe = escapeHTML(content);
-            return safe.replace(/(^|\s)#([\p{L}\p{N}_\p{M}]+)/gu, '$1<a href="#" class="text-sky-300 hover:text-white hover:underline" onclick="event.preventDefault();filterByHashtag(\'$2\')">#$2</a>');
+            return renderSocialText(content, {hashtags:true});
         }
 
         function formatPostDate(value) {
@@ -2797,8 +2840,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
         }
 
         function renderMentionContent(content) {
-            // HTMLをエスケープした後、@handle表記を安全に表示する（プロフィール画面への遷移は別途実装が必要）。
-            return escapeHTML(content).replace(/(^|\s)@([A-Za-z0-9_]{3,24})/g, '$1<span class="text-sky-300 font-semibold">@$2</span>');
+            return renderSocialText(content, {mentions:true});
         }
 
         function renderPosts(list = textPosts) {
@@ -4005,7 +4047,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             const mine = !!ownName && ownName === message.nickname;
             return '<article class="kuro-chat-row '+(mine?'is-mine':'is-other')+'"><div class="kuro-chat-bubble-wrap">'+
               (mine ? '' : '<b class="kuro-chat-name">'+socialEscape(message.nickname)+'</b>')+
-              '<div class="kuro-chat-bubble">'+(message.content ? socialEscape(message.content) : '')+(window.KuroSNSMedia?.renderPublic(message.media, 'chat') || '')+'</div><time class="kuro-chat-time">'+time+'</time></div></article>';
+              '<div class="kuro-chat-bubble">'+(message.content ? renderSocialText(message.content) : '')+(window.KuroSNSMedia?.renderPublic(message.media, 'chat') || '')+'</div><time class="kuro-chat-time">'+time+'</time></div></article>';
         }
         function setPublicChatTheme(theme) {
             const modal = document.getElementById('chatModal');
@@ -4369,14 +4411,10 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             }
         }
         function renderGroupMentionText(content, members) {
-            let html = socialEscape(content);
             const usernames = [...new Set((members || []).map(p => p.username).filter(u => /^[A-Za-z0-9_]{3,24}$/.test(String(u || ''))))];
-            usernames.forEach(username => {
-                const pattern = new RegExp('(^|[^A-Za-z0-9_])(@' + username + ')(?=$|[^A-Za-z0-9_])', 'gi');
-                html = html.replace(pattern, '$1<span class="font-semibold text-violet-300 bg-violet-400/10 rounded px-0.5">$2</span>');
-            });
-            return html;
+            return renderSocialText(content, {mentionUsernames:usernames});
         }
+
         async function selectGroupChat(groupId, groupName, refreshOnly = false) {
             document.getElementById('chatModal')?.setAttribute('data-chat-mode','direct');
             document.getElementById('chatLayout')?.classList.remove('hidden');
@@ -4673,7 +4711,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 const mine = m.sender_id === currentUser.id;
                 const readLabel = mine && peerReadIds.has(m.id) ? '<span class="block text-[10px] text-gray-400">既読</span>' : '';
                 const timeLabel = `<span class="block text-[10px] leading-4 text-gray-500 whitespace-nowrap">${chatTime(m.created_at)}</span>`;
-                const messageTextHTML = m.content ? `<p class="text-sm whitespace-pre-wrap break-words">${socialEscape(m.content)}</p>` : '';
+                const messageTextHTML = m.content ? `<p class="text-sm whitespace-pre-wrap break-words">${renderSocialText(m.content)}</p>` : '';
             const bubble = `<div class="max-w-[78%] rounded-2xl px-3 py-2.5 ${mine ? 'bg-white text-black rounded-br-md' : 'bg-kuro-800 text-gray-100 rounded-bl-md'}">${messageTextHTML}${privateMediaHTML.get(String(m.id)) || ''}</div>`;
                 if (mine) {
                     rendered.push(`<div class="flex items-end justify-end gap-1.5"><div class="text-right pb-0.5">${readLabel}${timeLabel}</div>${bubble}</div>`);
@@ -5144,7 +5182,7 @@ body.kuro-page #postFeed article[data-post-card] {
 </script>
 <!-- Direct profile editing entry point from KURO Lab / KURO Games -->
 <script>(function(){if(new URLSearchParams(location.search).get("profile-edit")!=="1")return;function openEditor(){if(typeof window.openProfileModal==="function"){window.openProfileModal();return;}setTimeout(openEditor,350);}window.addEventListener("load",function(){setTimeout(openEditor,900);},{once:true});})();</script>
-<script defer src="/kuro-profile.js?v=20261126shopcosmetics4"></script><script src="/sns/v2/media.js?v=20261126photos7"></script>
+<script defer src="/kuro-profile.js?v=20261126shopcosmetics4"></script><script src="/sns/v2/media.js?v=20261126links1"></script>
 </body>
 </html>
 
