@@ -89,9 +89,9 @@
         innerDoc = frame.contentDocument;
       } catch (error) {
         console.warn("[KURO GAMES MOBILE] player document unavailable", error);
-        return;
+        return false;
       }
-      if (!innerDoc || !innerDoc.documentElement) return;
+      if (!innerDoc || !innerDoc.documentElement) return false;
 
       // This route is the dedicated mobile player. Apply its mobile shell even
       // when the browser reports a desktop UA (for example, responsive testing).
@@ -147,7 +147,9 @@
       if (state && /ゲームを開けませんでした/.test(state.textContent || "")) {
         stopWatching();
         showLoading("ゲームを開けませんでした", "ゲーム情報を取得できませんでした。通信状態を確認してください。", true);
+        return true;
       }
+      return false;
     }
 
     function loadPlayer() {
@@ -177,8 +179,8 @@
       // The outer player document has loaded. Reveal it immediately: the player
       // has its own loading/error UI while the nested sandboxed game starts.
       // The inner iframe's ready message remains an additional completion signal.
-      attachPlayerDocument();
-      markReady();
+      var playerHasError = attachPlayerDocument();
+      if (!playerHasError) markReady();
     });
     frame.addEventListener("error", function(){
       stopWatching();
