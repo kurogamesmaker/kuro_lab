@@ -41,6 +41,12 @@ function reply(status: number, data: Record<string, unknown>) {
   return new Response(JSON.stringify(data), { status, headers: CORS_HEADERS });
 }
 
+function serverEpochMicroseconds(): bigint {
+  const epochMs = Number(performance.timeOrigin) + Number(performance.now());
+  if (!Number.isFinite(epochMs) || epochMs <= 0) return BigInt(Date.now()) * 1000n;
+  return BigInt(Math.round(epochMs * 1000));
+}
+
 function safeMode(value: unknown) {
   const mode = typeof value === "string" ? value.trim() : "default";
   if (!/^[A-Za-z0-9_-]{1,40}$/.test(mode)) {
@@ -1862,9 +1868,11 @@ async function handle(req: Request) {
     if (expireError) throw new HttpError(500,"前の数字当てセッションを終了できませんでした。");
     const max = NUMBER_LEVELS[level];
     const answer = randomIntInclusive(max);
+    const sessionState: Record<string, unknown> = {playMode,level};
+    if (playMode === "time") sessionState.serverStartedAtUs = serverEpochMicroseconds().toString();
     const {data,error} = await admin.from("game_verification_sessions").insert({
       game_id:game.id,user_id:user.id,game_type:"number_guess",mode:playMode+":"+level,
-      secret_number:answer,range_max:max,attempts:0,state:{playMode,level},status:"active",
+      secret_number:answer,range_max:max,attempts:0,state:sessionState,status:"active",
     }).select("id,nonce,started_at").single();
     if (error?.code === "23505") throw new HttpError(409,"別のゲームが同時に開始されました。画面を再読み込みしてからお試しください。");
     if (error || !data) throw new HttpError(500,"ゲームを開始できませんでした。");
@@ -1872,6 +1880,7 @@ async function handle(req: Request) {
   }
 
   if (action === "number_guess") {
+    const requestReceivedAtUs = serverEpochMicroseconds();
     const user = await getUser(req);
     requirePublished(game);
     requireFeature(settings.features, "ranking");
@@ -1891,7 +1900,23 @@ async function handle(req: Request) {
     const correct = guess === Number(session.secret_number);
     const remaining = playMode === "classic" ? Math.max(0,5-attempts) : null;
     const lost = !correct && playMode === "classic" && attempts >= 5;
-    const elapsedMs = correct ? Math.max(0,Date.now()-Date.parse(session.started_at)) : null;
+    const preciseStartUsText = playMode === "time" ? String(session.state?.serverStartedAtUs || "") : "";
+    let elapsedUs: bigint | null = null;
+    let legacyStartUs = "";
+    if (correct && playMode === "time") {
+      if (/^\\d+$/.test(preciseStartUsText)) {
+        const deltaUs = requestReceivedAtUs - BigInt(preciseStartUsText);
+        elapsedUs = deltaUs >= 0n ? deltaUs : 0n;
+        legacyStartUs = preciseStartUsText;
+      } else {
+        const fallbackMs = Math.max(0,Date.now()-Date.parse(session.started_at));
+        elapsedUs = BigInt(Math.round(fallbackMs * 1000));
+        legacyStartUs = (requestReceivedAtUs - elapsedUs).toString();
+      }
+    }
+    const elapsedMs = correct
+      ? elapsedUs !== null ? Number(elapsedUs) / 1000 : Math.max(0,Date.now()-Date.parse(session.started_at))
+      : null;
     const completed = correct || lost;
     // The answer and difficulty are read from the server-owned session.
     // The session UUID is the idempotency key for this exact successful run.
@@ -1910,19 +1935,28 @@ async function handle(req: Request) {
         throw new HttpError(500,"数字当ての報酬を確定できませんでした。");
       }
     }
-    const nextNonce = await saveVerifiedSession(session,{
+    const sessionPatch: Record<string, unknown> = {
       attempts,
       status:completed ? "completed" : "active",
       result:correct ? "correct" : lost ? "failed" : null,
       completed_at:completed ? new Date().toISOString() : null,
-    });
+    };
+    if (correct && playMode === "time" && elapsedUs !== null) {
+      sessionPatch.state = {
+        ...(session.state || {}),
+        serverStartedAtUs: legacyStartUs,
+        serverFinishedAtUs: requestReceivedAtUs.toString(),
+      };
+    }
+    const nextNonce = await saveVerifiedSession(session,sessionPatch);
 
     let recordResult:Record<string,unknown> = {scoreRecorded:false,improved:false};
-    if (correct && playMode === "time" && elapsedMs !== null) {
-      if (elapsedMs >= 400) {
+    if (correct && playMode === "time" && elapsedUs !== null) {
+      if (elapsedUs >= 400_000n) {
         const mode = "number-time-" + level;
         const metadata = {
-          metric:"clear_time_ms",
+          metric:"clear_time_us",
+          elapsedUs:elapsedUs.toString(),
           difficulty:level,
           rangeMax:Number(session.range_max),
           attempts,
@@ -1953,7 +1987,9 @@ async function handle(req: Request) {
       ok:true,correct,attempts,remainingChances:remaining,lost,
       direction:correct ? "correct" : guess < Number(session.secret_number) ? "higher" : "lower",
       answer:lost ? Number(session.secret_number) : undefined,
-      completed,elapsedMs,nonce:completed ? null : nextNonce,
+      completed,elapsedMs:elapsedUs !== null ? Number(elapsedUs) / 1000 : elapsedMs,
+      elapsedUs:elapsedUs !== null ? Number(elapsedUs) : undefined,
+      nonce:completed ? null : nextNonce,
       ...recordResult,
     });
   }
