@@ -3469,6 +3469,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
         }
 
         // フォロー・通知・1対1チャット
+        let kuroChatSendInFlight = false;
         let activeChatId = null;
         let activeChatPeer = null;
         let activeChatHandle = 'user';
@@ -4785,7 +4786,8 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 const mine = m.sender_id === currentUser.id;
                 const readLabel = mine && peerReadIds.has(m.id) ? '<span class="block text-[10px] text-gray-400">既読</span>' : '';
                 const timeLabel = `<span class="block text-[10px] leading-4 text-gray-500 whitespace-nowrap">${chatTime(m.created_at)}</span>`;
-                const bubble = `<div class="max-w-[78%] rounded-2xl px-3 py-2.5 ${mine ? 'bg-white text-black rounded-br-md' : 'bg-kuro-800 text-gray-100 rounded-bl-md'}"><p class="text-sm whitespace-pre-wrap break-words">${socialEscape(m.content)}</p>${privateMediaHTML.get(String(m.id)) || ''}</div>`;
+                const messageTextHTML = m.content ? `<p class="text-sm whitespace-pre-wrap break-words">${socialEscape(m.content)}</p>` : '';
+            const bubble = `<div class="max-w-[78%] rounded-2xl px-3 py-2.5 ${mine ? 'bg-white text-black rounded-br-md' : 'bg-kuro-800 text-gray-100 rounded-bl-md'}">${messageTextHTML}${privateMediaHTML.get(String(m.id)) || ''}</div>`;
                 if (mine) {
                     rendered.push(`<div class="flex items-end justify-end gap-1.5"><div class="text-right pb-0.5">${readLabel}${timeLabel}</div>${bubble}</div>`);
                 } else {
@@ -4806,12 +4808,15 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             const content = input.value.trim();
             const selectedImages = window.KuroSNSMedia?.getSelected('chat') || [];
             if ((!content && !selectedImages.length) || !activeChatId || !currentUser?.id) return;
+            if (kuroChatSendInFlight) return;
+            kuroChatSendInFlight = true;
+            const sendButton = document.getElementById('chatSendButton');
+            if (sendButton) sendButton.disabled = true;
 
             const conversationId = activeChatId;
             const senderId = currentUser.id;
             if (activeChatType === 'group') {
                 const groupId = conversationId;
-                const sendButton = document.getElementById('chatSendButton');
                 let uploadedMedia = [];
                 if (sendButton) sendButton.disabled = true;
                 try {
@@ -4860,24 +4865,32 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     if (suggestionBox) { suggestionBox.classList.add('hidden'); suggestionBox.innerHTML=''; }
                     const {error:updateError}=await supabaseClient.from('group_conversations').update({updated_at:new Date().toISOString()}).eq('id',groupId);
                     if(updateError) console.warn(updateError);
-                    if(sendButton)sendButton.disabled=false;
                     await selectGroupChat(groupId,activeChatHandle);
                 } catch (error) {
                     console.warn('Group message send failed:',error);
                     if (uploadedMedia.length) await window.KuroSNSMedia.remove(supabaseClient, uploadedMedia);
                     showToast('送信に失敗しました');
-                    if(sendButton)sendButton.disabled=false;
+                } finally {
+                    if (sendButton) sendButton.disabled = false;
+                    kuroChatSendInFlight = false;
                 }
                 return;
             }
             const peerId = activeChatPeer;
             const handle = activeChatHandle || document.getElementById('chatWithLabel').textContent.replace(/^@/,'');
             const box = document.getElementById('chatMessages');
-            const sendButton = document.getElementById('chatSendButton');
             let uploadedMedia = [];
-            try { if (selectedImages.length) uploadedMedia = await window.KuroSNSMedia.upload(supabaseClient, 'dm', conversationId, selectedImages); }
-            catch (uploadError) { showToast(uploadError.message || '写真をアップロードできませんでした'); return; }
-            const localMediaHTML = uploadedMedia.length ? await window.KuroSNSMedia.renderPrivateOne(supabaseClient, uploadedMedia) : '';
+            let localMediaHTML = '';
+            try {
+                if (selectedImages.length) uploadedMedia = await window.KuroSNSMedia.upload(supabaseClient, 'dm', conversationId, selectedImages);
+                if (uploadedMedia.length) localMediaHTML = await window.KuroSNSMedia.renderPrivateOne(supabaseClient, uploadedMedia);
+            } catch (uploadError) {
+                if (uploadedMedia.length) await window.KuroSNSMedia.remove(supabaseClient, uploadedMedia);
+                showToast(uploadError.message || '写真を準備できませんでした。もう一度お試しください');
+                if (sendButton) sendButton.disabled = false;
+                kuroChatSendInFlight = false;
+                return;
+            }
             const localId = 'local-' + Date.now() + '-' + Math.random().toString(36).slice(2,8);
             const now = new Date();
             const dateLabel = `${now.getMonth()+1}/${now.getDate()}`;
@@ -4892,7 +4905,8 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             const optimistic = document.createElement('div');
             optimistic.dataset.localMessageId = localId;
             optimistic.className = 'flex items-end justify-end gap-1.5';
-            optimistic.innerHTML = `<div class="text-right pb-0.5"><span class="block text-[10px] text-gray-400">送信中…</span><span class="block text-[10px] leading-4 text-gray-500 whitespace-nowrap">${timeLabel}</span></div><div class="max-w-[78%] rounded-2xl px-3 py-2.5 bg-white text-black rounded-br-md"><p class="text-sm whitespace-pre-wrap break-words">${socialEscape(content)}</p>${localMediaHTML}</div>`;
+            const messageTextHTML = content ? `<p class="text-sm whitespace-pre-wrap break-words">${socialEscape(content)}</p>` : '';
+            optimistic.innerHTML = `<div class="text-right pb-0.5"><span class="block text-[10px] text-gray-400">送信中…</span><span class="block text-[10px] leading-4 text-gray-500 whitespace-nowrap">${timeLabel}</span></div><div class="max-w-[78%] rounded-2xl px-3 py-2.5 bg-white text-black rounded-br-md">${messageTextHTML}${localMediaHTML}</div>`;
             const pullIndicator = document.getElementById('chatPullIndicator');
             if (pullIndicator && pullIndicator.parentElement === box) box.insertBefore(optimistic, pullIndicator);
             else box.appendChild(optimistic);
@@ -4927,6 +4941,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             } catch (error) {
                 console.error('KURO message send error:', error);
                 if (uploadedMedia.length) await window.KuroSNSMedia.remove(supabaseClient, uploadedMedia);
+                if (!input.value) input.value = content;
                 optimistic.querySelector('.text-gray-400')?.remove();
                 optimistic.classList.add('opacity-60');
                 const status = document.createElement('span');
@@ -4937,6 +4952,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 showToast('送信に失敗しました。通信を確認してね');
             } finally {
                 if (sendButton) sendButton.disabled = false;
+                kuroChatSendInFlight = false;
             }
         }
         window.toggleFollow = toggleFollow;
@@ -5334,6 +5350,6 @@ body.kuro-page #postFeed article[data-post-card] {
 </script>
 <!-- Direct profile editing entry point from KURO Lab / KURO Games -->
 <script>(function(){if(new URLSearchParams(location.search).get("profile-edit")!=="1")return;function openEditor(){if(typeof window.openProfileModal==="function"){window.openProfileModal();return;}setTimeout(openEditor,350);}window.addEventListener("load",function(){setTimeout(openEditor,900);},{once:true});})();</script>
-<script defer src="/kuro-profile.js?v=20261124socialprofile5"></script><script src="/sns/v2/media.js?v=20261126photos3"></script>
+<script defer src="/kuro-profile.js?v=20261124socialprofile5"></script><script src="/sns/v2/media.js?v=20261126photos4"></script>
 </body>
 </html>
