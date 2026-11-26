@@ -93,7 +93,7 @@ async function connectRoomPolling(roomData, members, session) {
   const messageCallbacks = new Set(); const playerCallbacks = new Set(); const leftCallbacks = new Set(); const closeCallbacks = new Set();
   let active = true; let afterId = null; let timer = null; let busy = false; let cachedPlayers = [];
   function emitPlayers(next) {
-    const previous = cachedPlayers.slice(); cachedPlayers = (next || []).map((m) => ({ userId: m.userId, kuroId: m.user && m.user.kuroId || null, displayName: m.user && m.user.display_name || "プレイヤー", joinedAt: m.joinedAt }));
+    const previous = cachedPlayers.slice(); cachedPlayers = (next || []).map((m) => ({ userId: m.userId, kuroId: m.user && m.user.kuroId || null, displayName: m.user && (m.user.username || m.user.display_name) || "プレイヤー", joinedAt: m.joinedAt }));
     const currentIds = new Set(cachedPlayers.map(p => p.userId)); previous.filter(p => !currentIds.has(p.userId)).forEach(p => leftCallbacks.forEach(cb => { try { cb(p); } catch (e) { console.error(e); } }));
     playerCallbacks.forEach((cb) => { try { cb(cachedPlayers.slice()); } catch (e) { console.error(e); } });
   }
