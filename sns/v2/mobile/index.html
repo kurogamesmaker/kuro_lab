@@ -991,6 +991,8 @@ img#profileAvatarPreview:not(.hidden) {
 .kuro-sns-avatar-frame-host{position:relative!important;display:inline-flex!important;align-items:center;justify-content:center;overflow:visible!important;isolation:isolate;flex-shrink:0}
 .kuro-sns-avatar-frame-host>img{border-radius:50%}
 .kuro-sns-avatar-frame-host .kuro-sns-avatar-frame{position:absolute;inset:-5px;z-index:12;display:block;pointer-events:none;background-position:center;background-repeat:no-repeat;background-size:100% 100%}
+.kuro-sns-avatar-frame-host.kuro-sns-frame-under .kuro-sns-avatar-frame{z-index:1}
+.kuro-sns-avatar-frame-host.kuro-sns-frame-under img,.kuro-sns-avatar-frame-host.kuro-sns-frame-under>:not(.kuro-sns-avatar-frame){position:relative;z-index:2}
 .kuro-sns-avatar-frame-host.kuro-sns-avatar-small-frame .kuro-sns-avatar-frame{inset:-4px}
 .kuro-sns-avatar-frame-host.kuro-sns-avatar-large-frame .kuro-sns-avatar-frame{inset:-8px}
 #kuroBottomNav [data-tab] #kuroProfileTabAvatarHost{display:grid!important;position:relative!important}
@@ -1736,6 +1738,7 @@ function kuroRouteCloudflareRealtime(client) {
             if(!host.isConnected)return;
             const frame=cosmetics&&cosmetics.frame&&typeof cosmetics.frame==='object'?cosmetics.frame:null;
             const rawUrl=String(frame&&frame.imageUrl||'').trim();
+            host.classList.toggle('kuro-sns-frame-under',String(frame&&frame.frameLayerMode||'over')==='under');
             if(!rawUrl)return;
             let frameUrl='';
             try{
