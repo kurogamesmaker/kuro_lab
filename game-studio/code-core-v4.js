@@ -117,23 +117,19 @@ if(!project.mobileCode||typeof project.mobileCode!=="object")project.mobileCode=
  if(typeof project.mobileCode[k]!=="string")project.mobileCode[k]=project.code[k]||"";
 });
 function activeCode(){
- if(activeSurface!=="mobile")return project.code;
- return new Proxy(project.mobileCode,{
-  get(target,key){return key==="js"?project.code.js:target[key];},
-  set(target,key,value){if(key==="js"){project.code.js=value;return true;}target[key]=value;return true;}
- });
+ return activeSurface==="mobile"?project.mobileCode:project.code;
 }
 function setActiveCode(value){
- if(activeSurface==="mobile"){
-  project.mobileCode=project.mobileCode||{};
-  if(value&&typeof value.html==="string")project.mobileCode.html=value.html;
-  if(value&&typeof value.css==="string")project.mobileCode.css=value.css;
-  if(value&&typeof value.js==="string")project.code.js=value.js;
-  delete project.mobileCode.js;
- }else project.code=value;
+ const next=value&&typeof value==="object"?value:{};
+ const normalized={
+  html:typeof next.html==="string"?next.html:"",
+  css:typeof next.css==="string"?next.css:"",
+  js:typeof next.js==="string"?next.js:""
+ };
+ if(activeSurface==="mobile")project.mobileCode=normalized;
+ else project.code=normalized;
  return activeCode();
 }
-delete project.mobileCode.js;
 function setStatus(text,color){$("saveStatus").textContent=text;$("saveStatus").style.color=color||"var(--good)"}
 function toast(s){$("toast").textContent=s;$("toast").classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>$("toast").classList.remove("show"),2200)}
 function persist(silent){
@@ -164,7 +160,7 @@ function renderGutter(){
 function showTab(tab){
  activeTab=tab;
  document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
- $("fileTag").textContent=(tab==="js"?"shared/":(activeSurface==="mobile"?"mobile/":"pc/"))+({html:"index.html",css:"style.css",js:"game.js"}[tab]);
+ $("fileTag").textContent=(activeSurface==="mobile"?"mobile/":"pc/")+({html:"index.html",css:"style.css",js:"game.js"}[tab]);
  $("codeEditor").value=activeCode()[tab]||"";
  renderGutter();
 }
@@ -229,7 +225,11 @@ function safeScript(source){return String(source||"").replace(/<\/script/gi,"<\\
 function makeDocument(sourceCode,targetPlatform){
  const platform=targetPlatform||activeSurface;
  const source=sourceCode||activeCode();
- const code=platform==="mobile"?{html:source.html||"",css:source.css||"",js:project.code.js||""}:source;
+ const code={
+  html:typeof source.html==="string"?source.html:"",
+  css:typeof source.css==="string"?source.css:"",
+  js:typeof source.js==="string"?source.js:""
+ };
  let html=code.html||"";
  // HTMLタブ内のインラインscriptにもトップレベルawait対応を適用
  html=html.replace(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi,(whole,attrs,body)=>{
@@ -441,7 +441,9 @@ async function loadPublishedGameFromCloud(){
   const {data,error}=await publishDb.from("game_studio_games").select("id,slug,title,description,category,categories,icon,search_aliases,tag_text,tag_style,tag_color,html_content,mobile_html_content,updated_at").eq("id",id).eq("owner_id",session.user.id).maybeSingle();
   if(error)throw error;if(!data)throw new Error("作品が見つからないか、編集権限がありません");
   const cleanPublishedHtml=stripStudioInjectedRuntime(data.html_content||"");const parsed=splitMixedCode(cleanPublishedHtml);
-  const cleanMobilePublishedHtml=String(data.mobile_html_content||"").trim()?stripStudioInjectedRuntime(data.mobile_html_content):cleanPublishedHtml;
+  const mobileDocument=String(data.mobile_html_content||"").trim();
+  if(!mobileDocument)throw new Error("モバイル版コードが保存されていません。PC版コードで代用せず、モバイル版コードを登録してください。");
+  const cleanMobilePublishedHtml=stripStudioInjectedRuntime(mobileDocument);
   const mobileParsed=splitMixedCode(cleanMobilePublishedHtml);
   const draftKey="kuroGameStudio.publishedDraft."+data.id;let draft=null;try{draft=JSON.parse(localStorage.getItem(draftKey)||"null");}catch(_){}
   const remoteUpdated=Date.parse(data.updated_at||"")||0;
@@ -458,8 +460,9 @@ async function loadPublishedGameFromCloud(){
   const publishedHeight=publishedFrame?Math.max(160,Math.min(2160,Number(publishedFrame[2]))):540;
   const isKuroXoGame=data.id==="2dbd6773-2684-4f00-973e-c46acbc348e7";
   const loadedCode=useDraft&&draft.code?clone(draft.code):clone(parsed.parts);
-  const loadedMobileCode=useDraft&&draft.mobileCode?clone(draft.mobileCode):clone(mobileParsed.parts);
-  delete loadedMobileCode.js;
+  const loadedMobileCode=useDraft&&draft.mobileCode
+   ?Object.assign({},clone(mobileParsed.parts),clone(draft.mobileCode))
+   :clone(mobileParsed.parts);
   if(isKuroXoGame){
    // Force Studio to use the current published layout instead of stale 960x540 draft dimensions.
    savedSettings.gameFrameWidth=publishedWidth;
