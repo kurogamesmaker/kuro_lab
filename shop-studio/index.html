@@ -116,7 +116,7 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
    <input id="itemId" type="hidden"><input id="itemKey" type="hidden">
    <div class="fields">
     <div class="field"><label for="itemName">商品名 *</label><input id="itemName" required maxlength="60" placeholder="Neon Pulse"></div>
-    <div class="field"><label for="itemCategory">カテゴリー *</label><select id="itemCategory"><option value="frame">アイコンフレーム</option><option value="background">プロフィール壁紙</option><option value="avatar">アバター</option><option value="theme">プロフィールテーマ</option><option value="nameplate">ネーム装飾</option><option value="banner">プロフィールバナー</option><option value="other">その他</option></select></div>
+    <div class="field"><label for="itemCategory">カテゴリー *</label><select id="itemCategory"><option value="frame">アイコンフレーム</option><option value="background">プロフィール壁紙</option><option value="avatar">アバター</option><option value="icon_image">アイコン画像</option><option value="theme">プロフィールテーマ</option><option value="nameplate">ネーム装飾</option><option value="banner">プロフィールバナー</option><option value="other">その他</option></select></div>
     <div class="field wide"><label for="itemDescription">商品説明</label><textarea id="itemDescription" maxlength="500" placeholder="商品の特徴を説明します。"></textarea></div>
     <div class="field"><label for="itemPrice">価格（KC）※0は無料</label><input id="itemPrice" type="number" min="0" max="1000000" step="1" value="500" required></div>
     <div class="field"><label for="itemRarity">レアリティ</label><select id="itemRarity"><option value="common">COMMON</option><option value="rare">RARE</option><option value="epic">EPIC</option><option value="legendary">LEGENDARY</option></select></div>
@@ -259,7 +259,7 @@ async function shopStudioFetch(input,init){
 }
 const db=window.supabase.createClient(SUPABASE_URL,PUBLISHABLE_KEY,{global:{fetch:shopStudioFetch},auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}});
 const $=id=>document.getElementById(id),html=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const labels={avatar:"アバター",frame:"フレーム",background:"壁紙",theme:"テーマ",nameplate:"ネーム装飾",banner:"バナー",other:"その他"};
+const labels={avatar:"アバター",icon_image:"アイコン画像",frame:"フレーム",background:"壁紙",theme:"テーマ",nameplate:"ネーム装飾",banner:"バナー",other:"その他"};
 let items=[],currentImageUrl=null,previewObjectUrl=null;
 function note(message,type=""){const el=$("studioNotice");el.textContent=message;el.className="notice"+(type?" "+type:"");}
 function formNote(message,type=""){const el=$("formNotice");el.textContent=message;el.className="notice"+(type?" "+type:"");}
