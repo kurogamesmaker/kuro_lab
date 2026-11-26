@@ -169,6 +169,7 @@ function node(tag,className,value){
 function number(v){var n=Number(v);return Number.isFinite(n)?n:0;}
 function fmtCount(v){return Math.max(0,number(v)).toLocaleString("ja-JP");}
 function fmtTime(ms){var n=Math.max(0,number(ms));return (n/1000).toFixed(2)+"秒";}
+function fmtTimeUs(us){var n=Math.max(0,number(us));return (n/1000000).toFixed(6)+"秒";}
 function fmtDate(value){var d=new Date(value);return Number.isNaN(d.getTime())?"日時不明":new Intl.DateTimeFormat("ja-JP",{dateStyle:"medium",timeStyle:"short"}).format(d);}
 function modeLabel(mode){
  var labels={"default":"通常","normal":"通常","easy":"かんたん","hard":"むずかしい","wins-bot":"CPU戦","wins-online":"オンライン対戦","wins-solo":"ひとりで遊ぶ","official":"公式ルール","local":"ローカルルール","normal-bot":"通常・CPU戦","normal-online":"通常・オンライン"};
@@ -236,6 +237,8 @@ function bestRecord(stat,isNumberGuess){
  var metadata=stat&&stat.metadata&&typeof stat.metadata==="object"?stat.metadata:{};
  var metric=String(metadata.metric||"").toLowerCase();
  if(isNumberGuess){
+  var timeUs=stat.best_time_us;
+  if(timeUs!==null&&timeUs!==undefined)return {label:"最短タイム",value:fmtTimeUs(timeUs)};
   var time=stat.best_time_ms;
   return time===null||time===undefined?null:{label:"最短タイム",value:fmtTime(time)};
  }
@@ -281,7 +284,7 @@ function addGameStats(stats,gameMap){
    var counters=[];
    var plays=number(item.stat.plays),wins=number(item.stat.wins),losses=number(item.stat.losses),draws=number(item.stat.draws);
    if(plays>0)counters.push("プレイ "+fmtCount(plays)+"回");
-   else if((item.stat.best_score!==null&&item.stat.best_score!==undefined)||(item.stat.best_time_ms!==null&&item.stat.best_time_ms!==undefined))counters.push("過去のプレイ回数は未集計");
+   else if((item.stat.best_score!==null&&item.stat.best_score!==undefined)||(item.stat.best_time_ms!==null&&item.stat.best_time_ms!==undefined)||(item.stat.best_time_us!==null&&item.stat.best_time_us!==undefined))counters.push("過去のプレイ回数は未集計");
    if(wins>0)counters.push(fmtCount(wins)+"勝");
    if(losses>0)counters.push(fmtCount(losses)+"敗");
    if(draws>0)counters.push(fmtCount(draws)+"分");
@@ -332,7 +335,7 @@ async function loadForUser(user){
  var uid=fresh.data.user.id;
  var results=await Promise.all([
   db.from("profiles").select("username,kuro_id,avatar_url,bio").eq("id",uid).maybeSingle(),
-  db.from("kuro_game_user_stats").select("game_id,mode,plays,wins,losses,draws,best_score,best_time_ms,last_played_at,metadata,updated_at").eq("user_id",uid).order("updated_at",{ascending:false}).limit(250),
+  db.from("kuro_game_user_stats").select("game_id,mode,plays,wins,losses,draws,best_score,best_time_ms,best_time_us,last_played_at,metadata,updated_at").eq("user_id",uid).order("updated_at",{ascending:false}).limit(250),
   db.rpc("kuro_get_public_store_cosmetics",{p_user_id:uid})
  ]);
  if(token!==loadToken)return;
