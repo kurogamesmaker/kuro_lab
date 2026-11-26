@@ -6,7 +6,6 @@ alter table public.kuro_game_user_stats
 -- so append three zeroes rather than inventing additional precision.
 update public.kuro_game_user_stats
 set best_time_us = best_time_ms * 1000,
-    metric = 'time_us',
     metadata = coalesce(metadata, '{}'::jsonb) || jsonb_build_object(
       'metric', 'clear_time_us',
       'precision', 'legacy-millisecond',
@@ -163,11 +162,11 @@ begin
 
   insert into public.kuro_game_user_stats(
     user_id,game_id,mode,plays,wins,losses,draws,best_score,
-    best_time_ms,best_time_us,total_time_ms,metric,
+    best_time_ms,best_time_us,total_time_ms,
     last_played_at,metadata,updated_at,recent_submission_ids
   ) values (
     p_user_id,p_game_id,p_mode,0,0,0,0,null,
-    v_elapsed_ms,v_elapsed_us,0,'time_us',
+    v_elapsed_ms,v_elapsed_us,0,
     pg_catalog.now(),v_verified_metadata,pg_catalog.now(),array[]::uuid[]
   )
   on conflict(user_id,game_id,mode) do update set
@@ -180,7 +179,6 @@ begin
       excluded.best_time_us
     ),
     best_score = null,
-    metric = 'time_us',
     metadata = public.kuro_game_user_stats.metadata || excluded.metadata,
     updated_at = pg_catalog.now();
 
