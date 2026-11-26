@@ -821,3 +821,107 @@ test("UNON reverse sends a three-player game to the previous seat", () => {
   assert.equal(result.state.direction, -1);
   assert.equal(result.state.turn, 2);
 });
+
+
+test("UNON Durable Objects reject a fifth distinct socket even though shared rooms support more players", async () => {
+  const fixture = createRoom();
+  const { room } = fixture;
+  for (let i = 1; i <= 4; i++) {
+    room.sockets.set({ send() {} }, { id: "player-" + i, isHost: i === 1 });
+  }
+
+  const response = await room.fetch(new Request("https://example.test/room/test-room", {
+    headers: {
+      Upgrade: "websocket",
+      "x-kuro-user-id": "player-5",
+      "x-kuro-game-id": "faa155cb-2143-4361-9a96-dc759d334e46",
+      "x-kuro-room-id": "test-room",
+    },
+  }));
+
+  assert.equal(response.status, 409);
+  assert.equal((await response.json()).error, "room_full");
+});
+
+test("room host role refresh is verified against Supabase before granting host privileges", async () => {
+  const fixture = createRoom();
+  fixture.room.loaded = true;
+  fixture.room.env = {
+    SUPABASE_URL: "https://supabase.example",
+    SUPABASE_ANON_KEY: "anon-key",
+  };
+  const messages = [];
+  const socket = { send(payload) { messages.push(JSON.parse(payload)); } };
+  const player = { id: "new-host", gameId: "game-id", roomId: "test-room", isHost: false };
+  fixture.room.sockets.set(socket, player);
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    if (String(url).endsWith("/auth/v1/user")) {
+      return new Response(JSON.stringify({ id: "new-host", is_anonymous: false }), { status: 200 });
+    }
+    if (String(url).endsWith("/functions/v1/kurogames-online")) {
+      return new Response(JSON.stringify({
+        roomStatus: "waiting",
+        hostUserId: "new-host",
+        members: [{ userId: "new-host" }],
+      }), { status: 200 });
+    }
+    throw new Error("Unexpected URL: " + url);
+  };
+
+  try {
+    await fixture.room.onMessage(socket, player, JSON.stringify({
+      type: "refresh-role",
+      requestId: "refresh-host",
+      accessToken: "valid-test-token",
+    }));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  assert.equal(player.isHost, true);
+  assert.equal(messages[0].type, "state-result");
+  assert.deepEqual(messages[0].result, { ok: true, isHost: true, hostUserId: "new-host" });
+});
+
+test("room host role refresh cannot promote a member who is not the database host", async () => {
+  const fixture = createRoom();
+  fixture.room.loaded = true;
+  fixture.room.env = {
+    SUPABASE_URL: "https://supabase.example",
+    SUPABASE_ANON_KEY: "anon-key",
+  };
+  const messages = [];
+  const socket = { send(payload) { messages.push(JSON.parse(payload)); } };
+  const player = { id: "guest", gameId: "game-id", roomId: "test-room", isHost: false };
+  fixture.room.sockets.set(socket, player);
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    if (String(url).endsWith("/auth/v1/user")) {
+      return new Response(JSON.stringify({ id: "guest", is_anonymous: false }), { status: 200 });
+    }
+    if (String(url).endsWith("/functions/v1/kurogames-online")) {
+      return new Response(JSON.stringify({
+        roomStatus: "waiting",
+        hostUserId: "real-host",
+        members: [{ userId: "guest" }, { userId: "real-host" }],
+      }), { status: 200 });
+    }
+    throw new Error("Unexpected URL: " + url);
+  };
+
+  try {
+    await fixture.room.onMessage(socket, player, JSON.stringify({
+      type: "refresh-role",
+      requestId: "refresh-guest",
+      accessToken: "valid-test-token",
+    }));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  assert.equal(player.isHost, false);
+  assert.equal(messages[0].result.ok, true);
+  assert.equal(messages[0].result.isHost, false);
+  assert.equal(messages[0].result.hostUserId, "real-host");
+});
