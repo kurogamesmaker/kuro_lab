@@ -1435,6 +1435,41 @@ header .lab{padding-left:10px!important;padding-right:10px!important}
 .kuro-games-top-profile-avatar.kuro-top-profile-frame-legendary{border:2px solid #ffc45e;box-shadow:0 0 0 3px #ffc45e25}
 .kuro-top-profile-avatar-cosmetic{display:grid;place-items:center;width:100%;height:100%;font-size:19px;line-height:1}
 </style>
+
+<style id="kuro-account-viewport-layout-v1">
+/* Keep the shared KURO account window inside short and narrow viewports. */
+#kuroAccountModal.kuro-account-modal {
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  align-items: safe center;
+}
+#kuroAccountModal .kuro-account-dialog {
+  box-sizing: border-box;
+  width: min(460px, 100%);
+  max-height: calc(100vh - 20px);
+  max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 20px);
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+#kuroAccountModal .kuro-account-field,
+#kuroAccountModal .kuro-account-profile,
+#kuroAccountModal #kuroAccountForm { min-width: 0; }
+#kuroAccountModal input,
+#kuroAccountModal textarea { min-width: 0; max-width: 100%; }
+@media (max-height: 680px) {
+  #kuroAccountModal .kuro-account-dialog { padding: 18px 20px 16px; border-radius: 17px; }
+  #kuroAccountModal .kuro-account-intro { margin: 10px 0; }
+  #kuroAccountModal .kuro-account-field { margin-bottom: 9px; }
+}
+</style>
+
 </head>
 <body>
 <header><div class="wrap nav">
