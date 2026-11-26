@@ -152,16 +152,19 @@ Deno.serve(async (req: Request) => {
     if (action === "studio_dashboard") {
       const user = await resolveUser(req, true);
       const studioMember = await requireStudioMember(user!.id);
-      const [itemsResult, salesResult] = await Promise.all([
+      const [itemsResult, salesResult, recentSalesResult] = await Promise.all([
         admin.from("kuro_store_items").select("id,item_key,name,description,category,icon,image_url,rarity,price_kc,is_free,is_active,sort_order,created_at,updated_at").order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
         admin.from("kuro_store_transactions").select("id,amount_kc", { count: "exact" }).eq("transaction_type", "shop_purchase").eq("status", "completed"),
+        admin.from("kuro_store_transactions").select("id,amount_kc,created_at,item:kuro_store_items(name,item_key)").eq("transaction_type", "shop_purchase").eq("status", "completed").order("created_at", { ascending: false }).limit(20),
       ]);
       if (itemsResult.error) throw itemsResult.error;
       if (salesResult.error) throw salesResult.error;
+      if (recentSalesResult.error) throw recentSalesResult.error;
       const items = itemsResult.data ?? [];
       const sales = salesResult.data ?? [];
       return reply(200, {
         items,
+        recentSales: recentSalesResult.data ?? [],
         member: { role: studioMember.role },
         stats: {
           totalItems: items.length,
