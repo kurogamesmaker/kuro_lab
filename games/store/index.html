@@ -183,7 +183,7 @@ async function purchaseItem(itemId,button){
  if(!item)return;
  const price=Number(item.price_kc||0);
  if(!Number.isInteger(price)||price<=0){status("価格情報が正しくありません。ページを再読み込みしてください。","error");return;}
- if(!window.confirm("「"+item.name+"」を "+price.toLocaleString("ja-JP")+" KC で購入しますか？\n購入後はマイアイテムに永久保存されます。"))return;
+ if(!window.confirm("「"+item.name+"」を "+price.toLocaleString("ja-JP")+" KC で購入しますか？\n購入後はマイアイテムに追加され、不要になったら捨てることもできます。"))return;
  button.disabled=true;button.textContent="購入処理中…";
  try{
   const requestId=crypto.randomUUID();
