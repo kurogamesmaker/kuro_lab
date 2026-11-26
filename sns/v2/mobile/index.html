@@ -4384,7 +4384,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             const box=document.getElementById('chatMessages');
             const token=++kuroGroupRefreshToken;
             if (!refreshOnly) box.innerHTML='<p class="text-xs text-gray-500 text-center mt-8">メッセージを読み込み中…</p>';
-            const {data: messages,error}=await supabaseClient.from('group_chat_messages').select('id,sender_id,content,created_at').eq('group_id',groupId).order('created_at',{ascending:true}).limit(200);
+            const {data: messages,error}=await supabaseClient.from('group_chat_messages').select('id,sender_id,content,created_at,media').eq('group_id',groupId).order('created_at',{ascending:true}).limit(200);
             if (token !== kuroGroupRefreshToken || activeChatType !== 'group' || activeChatId !== groupId) return;
             if(error){if(!refreshOnly)box.innerHTML='<p class="text-sm text-red-300">グループメッセージを読み込めませんでした</p>';else console.warn('Group messages refresh failed:',error);return;}
             const ids=[...new Set((messages||[]).map(m=>m.sender_id))];
@@ -4400,11 +4400,12 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             }
             let groupMentionProfiles=[];try{groupMentionProfiles=await getGroupMentionMembers(groupId);}catch(mentionProfileError){console.warn('Group mention profile load failed:',mentionProfileError);}const {data:members}=await supabaseClient.from('group_chat_members').select('user_id').eq('group_id',groupId);const peerCount=(members||[]).filter(m=>m.user_id!==currentUser.id).length;
             const profileMap=Object.fromEntries((profiles||[]).map(p=>[p.id,p])),names=Object.fromEntries((profiles||[]).map(p=>[p.id,p.display_name||p.username||'ユーザー']));
+            const privateMediaHTML=window.KuroSNSMedia?await window.KuroSNSMedia.renderPrivateBatch(supabaseClient,messages):new Map();
             box.innerHTML=(messages||[]).map(m=>{const mine=m.sender_id===currentUser.id,profile=profileMap[m.sender_id];
                 const avatar=profile?.avatar_url?`<img src="${socialEscape(kuroSnsAvatarUrl(profile.avatar_url))}" alt="" class="w-8 h-8 rounded-full object-cover shrink-0">`:'<span class="w-8 h-8 rounded-full bg-kuro-700 text-gray-300 flex items-center justify-center shrink-0"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg></span>';
                 const identity=mine?'':`<div class="flex items-center gap-2 mb-1">${avatar}<span class="text-[10px] text-gray-400">${socialEscape(names[m.sender_id]||'メンバー')}</span></div>`;
                 const n=reads.filter(r=>r.message_id===m.id&&r.reader_id!==m.sender_id).length,receipt=mine&&peerCount?`<span class="text-[10px] text-gray-400 mt-1">${n?'既読 '+n:'未読'}</span>`:'';
-                return `<div data-group-message-id="${socialEscape(m.id)}" class="flex flex-col ${mine?'items-end':'items-start'}">${identity}<div class="max-w-[85%] rounded-2xl px-3 py-2.5 ${mine?'bg-white text-black':'bg-kuro-800 text-gray-100'}"><p class="text-sm whitespace-pre-wrap break-words">${renderGroupMentionText(m.content,groupMentionProfiles)}</p></div><span class="text-[10px] text-gray-500 mt-1">${new Date(m.created_at).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',hour12:false})}</span>${receipt}</div>`;}).join('')||'<p class="text-xs text-gray-600 text-center mt-8">最初のメッセージを送ってみよう</p>';
+                return `<div data-group-message-id="${socialEscape(m.id)}" class="flex flex-col ${mine?'items-end':'items-start'}">${identity}<div class="max-w-[85%] rounded-2xl px-3 py-2.5 ${mine?'bg-white text-black':'bg-kuro-800 text-gray-100'}"><p class="text-sm whitespace-pre-wrap break-words">${renderGroupMentionText(m.content,groupMentionProfiles)}</p>${privateMediaHTML.get(String(m.id)) || ''}</div><span class="text-[10px] text-gray-500 mt-1">${new Date(m.created_at).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',hour12:false})}</span>${receipt}</div>`;}).join('')||'<p class="text-xs text-gray-600 text-center mt-8">最初のメッセージを送ってみよう</p>';
             box.scrollTop=box.scrollHeight;
             loadGroupChats();
         }
@@ -4614,7 +4615,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 box.innerHTML = '<div class="flex justify-center py-3"><div class="flex items-center gap-2 text-xs text-gray-400"><i class="fa-solid fa-arrow-down animate-spin"></i><span>読み込み中…</span></div></div>';
             }
             const {data, error} = await supabaseClient.from('chat_messages')
-                .select('id,sender_id,content,created_at')
+                .select('id,sender_id,content,created_at,media')
                 .eq('conversation_id', conversationId).order('created_at', {ascending:true}).limit(200);
             if (error) {
                 box.innerHTML = '<p class="text-sm text-red-300">メッセージを読み込めませんでした</p>';
@@ -4622,6 +4623,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 return;
             }
             const messages = data || [];
+            const privateMediaHTML = window.KuroSNSMedia ? await window.KuroSNSMedia.renderPrivateBatch(supabaseClient, messages) : new Map();
             const incomingIds = messages.filter(m => m.sender_id !== currentUser.id).map(m => m.id);
             if (incomingIds.length) {
                 const {data: existingReads, error: readFetchError} = await supabaseClient
@@ -4662,7 +4664,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 const mine = m.sender_id === currentUser.id;
                 const readLabel = mine && peerReadIds.has(m.id) ? '<span class="block text-[10px] text-gray-400">既読</span>' : '';
                 const timeLabel = `<span class="block text-[10px] leading-4 text-gray-500 whitespace-nowrap">${chatTime(m.created_at)}</span>`;
-                const bubble = `<div class="max-w-[78%] rounded-2xl px-3 py-2.5 ${mine ? 'bg-white text-black rounded-br-md' : 'bg-kuro-800 text-gray-100 rounded-bl-md'}"><p class="text-sm whitespace-pre-wrap break-words">${socialEscape(m.content)}</p></div>`;
+                const bubble = `<div class="max-w-[78%] rounded-2xl px-3 py-2.5 ${mine ? 'bg-white text-black rounded-br-md' : 'bg-kuro-800 text-gray-100 rounded-bl-md'}"><p class="text-sm whitespace-pre-wrap break-words">${socialEscape(m.content)}</p>${privateMediaHTML.get(String(m.id)) || ''}</div>`;
                 if (mine) {
                     rendered.push(`<div class="flex items-end justify-end gap-1.5"><div class="text-right pb-0.5">${readLabel}${timeLabel}</div>${bubble}</div>`);
                 } else {
