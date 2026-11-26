@@ -196,7 +196,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   return String(raw||"").replace(/[_-]+/g," ");
  }
  function splitDifficultyMode(mode){
-  const match=String(mode||"").match(/^(.+?)[_-](beginner|novice|easy|normal|medium|intermediate|hard|advanced|expert|master|lv\d+|level\d+|\d+|初心者|初級|中級|上級)$/i);
+  const match=String(mode||"").match(/^(.+?)[_-](beginner|novice|easy|normal|medium|intermediate|hard|advanced|expert|master|legend|lv\d+|level\d+|\d+|初心者|初級|中級|上級)$/i);
   return match&&match[1]?{base:match[1],difficulty:difficultyLabel(match[2])}:null;
  }
  function buildModeGroups(modes){
