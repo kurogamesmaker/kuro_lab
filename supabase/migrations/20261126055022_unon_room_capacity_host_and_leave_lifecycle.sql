@@ -154,9 +154,6 @@ BEGIN
       AND room_id = p_room_id
       AND user_id = p_user_id;
 
-    DELETE FROM public.kuro_any_matchmaking_queue
-    WHERE room_id = p_room_id
-      AND user_id = p_user_id;
   END IF;
 
   SELECT count(*)::integer INTO v_remaining
