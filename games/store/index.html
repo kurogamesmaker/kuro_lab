@@ -23,7 +23,7 @@ header{position:sticky;top:0;z-index:10;background:#100d1deF;backdrop-filter:blu
 <body>
 <header><div class="wrap nav">
 <a class="brand" href="/games/"><img src="/assets/brand/logo/kurolab_icon_toumei_160.png?v=20261121logosfix" alt=""><span>KURO <em>STORE</em></span></a>
-<nav class="navlinks"><a href="/games/">ゲーム一覧</a><a href="/games/ranking/">ランキング</a><a href="/games/mypage/">マイページ</a></nav>
+<nav class="navlinks"><a href="/games/">ゲーム一覧</a><a href="/games/ranking/">ランキング</a><a href="/games/mypage/">マイページ</a><a href="/shop-studio/">Shop Studio</a></nav>
 <div class="spacer"></div><a class="account" id="storeAccount" href="/games/?account=1">ログイン / 登録</a>
 </div></header>
 <main class="wrap">
@@ -31,7 +31,7 @@ header{position:sticky;top:0;z-index:10;background:#100d1deF;backdrop-filter:blu
 <div class="eyebrow">KURO GAMES / OFFICIAL STORE</div>
 <h1>KURO <span>STORE</span></h1>
 <p>ゲームをもっと自分らしく。KURO GAMESのアイテムを取得して、あなたのコレクションに追加しよう。</p>
-<div class="hero-pills"><span class="pill">✦ 無料アイテム</span><span class="pill">◈ 共通アカウント連携</span><span class="pill">▣ マイアイテム</span></div>
+<div class="hero-pills"><span class="pill">✦ KCで購入・無料取得</span><span class="pill">◈ 共通アカウント連携</span><span class="pill">▣ マイアイテム</span><span class="pill" id="storeBalance">残高を確認中…</span></div>
 </section>
 <section class="section" id="catalogSection">
 <div class="section-head"><div><div class="section-kicker">DISCOVER ITEMS</div><h2>アイテム一覧</h2><p>取得したアイテムはアカウントの所持品に保存されます。</p></div><div id="storeItemCount" class="count">読み込み中…</div></div>
@@ -41,6 +41,8 @@ header{position:sticky;top:0;z-index:10;background:#100d1deF;backdrop-filter:blu
 <button class="filter" data-category="frame" type="button">フレーム</button>
 <button class="filter" data-category="background" type="button">背景</button>
 <button class="filter" data-category="theme" type="button">テーマ</button>
+<button class="filter" data-category="nameplate" type="button">ネーム装飾</button>
+<button class="filter" data-category="banner" type="button">バナー</button>
 <button class="filter" data-category="other" type="button">その他</button>
 </div>
 <p class="status" id="storeStatus" role="status" aria-live="polite">ストアを読み込んでいます…</p>
@@ -76,9 +78,9 @@ async function storeCloudflareFetch(input,init){
 const storeDb=window.supabase.createClient(STORE_SUPABASE_URL,STORE_PUBLISHABLE_KEY,{global:{fetch:storeCloudflareFetch},auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}});
 const $=id=>document.getElementById(id);
 const html=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const categoryLabels={avatar:"アバター",frame:"フレーム",background:"背景",theme:"テーマ",other:"その他"};
+const categoryLabels={avatar:"アバター",frame:"フレーム",background:"壁紙",theme:"テーマ",nameplate:"ネーム装飾",banner:"バナー",other:"その他"};
 const rarityLabels={common:"COMMON",rare:"RARE",epic:"EPIC",legendary:"LEGENDARY"};
-let storeItems=[],inventory=[],equipped=[],currentCategory="all",isLoggedIn=false;
+let storeItems=[],inventory=[],equipped=[],currentCategory="all",isLoggedIn=false,coinBalance=null;
 function itemArt(item,small=false){
  if(item.image_url)return '<img src="'+html(item.image_url)+'" alt="">';
  return '<span class="'+(small?"":"item-icon")+'">'+html(item.icon||"🎁")+'</span>';
@@ -94,8 +96,9 @@ function renderCatalog(){
  $("storeEmpty").hidden=visible.length>0;
  $("storeGrid").innerHTML=visible.map(item=>{
   const isOwned=owned.has(item.id);
-  const button=isOwned?'<button class="action owned" disabled>✓ 所持済み</button>':isLoggedIn?'<button class="action" data-claim="'+html(item.id)+'">無料で取得する</button>':'<a class="action" style="display:flex;align-items:center;justify-content:center" href="/games/?account=1">ログインして取得</a>';
-  return '<article class="item"><div class="item-art"><span class="rarity">'+html(rarityLabels[item.rarity]||"ITEM")+'</span>'+itemArt(item)+'</div><div class="item-body"><h3>'+html(item.name)+'</h3><p class="item-desc">'+html(item.description||"KURO STOREアイテム")+'</p><div class="item-meta"><span>'+html(categoryLabels[item.category]||"その他")+'</span><strong class="free">無料</strong></div>'+button+'</div></article>';
+  const price=Number(item.price_kc||0),free=item.is_free===true||price===0;
+  const button=isOwned?'<button class="action owned" disabled>✓ 所持済み</button>':!isLoggedIn?'<a class="action" style="display:flex;align-items:center;justify-content:center" href="/games/?account=1">ログインして購入</a>':free?'<button class="action" data-claim="'+html(item.id)+'">無料で取得する</button>':'<button class="action" data-purchase="'+html(item.id)+'">🪙 '+price.toLocaleString("ja-JP")+' KCで購入</button>';
+  return '<article class="item"><div class="item-art"><span class="rarity">'+html(rarityLabels[item.rarity]||"ITEM")+'</span>'+itemArt(item)+'</div><div class="item-body"><h3>'+html(item.name)+'</h3><p class="item-desc">'+html(item.description||"KURO STOREアイテム")+'</p><div class="item-meta"><span>'+html(categoryLabels[item.category]||"その他")+'</span><strong class="'+(free?"free":"")+'">'+(free?"無料":price.toLocaleString("ja-JP")+" KC")+'</strong></div>'+button+'</div></article>';
  }).join("");
 }
 function renderInventory(){
@@ -110,7 +113,7 @@ function renderInventory(){
  inventory.forEach(row=>{if(row.item&&row.item.id)itemMap.set(row.item.id,row.item);});
  const inventoryItems=inventory.map(row=>({row,item:itemMap.get(row.item_id)})).filter(x=>x.item);
  $("inventoryGrid").innerHTML=inventoryItems.map(({row,item})=>{
-  const slot=["avatar","frame","background","theme"].includes(item.category)?item.category:null;
+  const slot=["avatar","frame","background","theme","nameplate","banner"].includes(item.category)?item.category:null;
   const active=slot&&equippedFor(slot)?.item_id===item.id;
   let actions="";
   if(slot){
@@ -132,6 +135,8 @@ async function refreshStore(){
   equipped=Array.isArray(data.equipped)?data.equipped:[];
   isLoggedIn=data.isLoggedIn===true;
   const profile=data.profile||{};
+  coinBalance=data.coinBalance==null?null:Number(data.coinBalance);
+  $("storeBalance").textContent=isLoggedIn?(coinBalance.toLocaleString("ja-JP")+" KC"): "ログインすると残高を表示";
   $("storeAccount").textContent=isLoggedIn?(profile.display_name||profile.username||"アカウント"):"ログイン / 登録";
   $("storeAccount").href=isLoggedIn?"/games/mypage/":"/games/?account=1";
   $("storeAccount").title=isLoggedIn?(profile.kuro_id||"KUROアカウント"):"ログイン / 登録";
@@ -150,6 +155,28 @@ async function claimItem(itemId,button){
   status(data?.result?.alreadyOwned?"このアイテムはすでに所持しています。":"アイテムを取得しました。マイアイテムに追加しました。","success");
   await refreshStore();
  }catch(error){status("取得できませんでした："+(error.message||error),"error");button.disabled=false;button.textContent="無料で取得する";}
+}
+
+async function purchaseItem(itemId,button){
+ if(!isLoggedIn){location.href="/games/?account=1";return;}
+ const item=storeItems.find(row=>row.id===itemId);
+ if(!item)return;
+ const price=Number(item.price_kc||0);
+ if(!Number.isInteger(price)||price<=0){status("価格情報が正しくありません。ページを再読み込みしてください。","error");return;}
+ if(!window.confirm("「"+item.name+"」を "+price.toLocaleString("ja-JP")+" KC で購入しますか？\n購入後はマイアイテムに永久保存されます。"))return;
+ button.disabled=true;button.textContent="購入処理中…";
+ try{
+  const requestId=crypto.randomUUID();
+  const {data,error}=await storeDb.functions.invoke("kurogames-store",{body:{action:"purchase",itemId,requestId}});
+  if(error)throw error;if(data?.error)throw new Error(data.error);
+  const result=data?.result||{};
+  status(result.alreadyOwned?"このアイテムはすでに所持しています。":("購入しました。 "+price.toLocaleString("ja-JP")+" KCを使用しました。"),"success");
+  await refreshStore();
+ }catch(error){
+  const message=String(error?.message||error);
+  status(message.includes("不足")||message.includes("INSUFFICIENT")?"KURO COINが不足しています。":("購入できませんでした："+message),"error");
+  button.disabled=false;button.textContent=price.toLocaleString("ja-JP")+" KCで購入";
+ }
 }
 async function equipItem(slot,itemId,button){
  button.disabled=true;
@@ -174,7 +201,7 @@ $("storeFilters").addEventListener("click",event=>{
  renderCatalog();
 });
 $("storeGrid").addEventListener("click",event=>{
- const button=event.target.closest("[data-claim]");if(button)claimItem(button.dataset.claim,button);
+ const button=event.target.closest("[data-claim]"),purchase=event.target.closest("[data-purchase]");if(button)claimItem(button.dataset.claim,button);if(purchase)purchaseItem(purchase.dataset.purchase,purchase);
 });
 $("inventoryGrid").addEventListener("click",event=>{
  const equip=event.target.closest("[data-equip]"),unequip=event.target.closest("[data-unequip]");
