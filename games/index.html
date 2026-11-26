@@ -1947,7 +1947,7 @@ function initKuroRankingShowcase(){
   // Verified Number Guess leaderboard returns microseconds (time_us). Convert to seconds for the homepage.
   if((metric==="time_us"||(game.id===NUMBER_GAME_ID&&/^number-time-/i.test(String(mode||""))))&&Number.isFinite(numeric)&&numeric>=0){
    const seconds=numeric/1e6;
-   return seconds.toFixed(6)+"秒";
+   return seconds.toFixed(4)+"秒";
   }
   if(setting&&typeof setting.scoreSuffix==="string")return value+setting.scoreSuffix;
   if(metric==="wins")return value+"勝";
