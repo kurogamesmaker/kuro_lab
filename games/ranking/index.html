@@ -179,7 +179,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   listEl.append(box);
  }
  function modeName(mode){
-  const names={normal:"通常ルール・勝利数",vanish:"消えるルール・勝利数",gobble:"食べるルール・勝利数",reverse:"逆転ルール・勝利数","wins-bot":"CPU戦・勝利数","wins-online":"オンライン対戦・勝利数",werewolf_villager_wins:"村人陣営の勝利数",werewolf_wolf_wins:"人狼陣営の勝利数",normal_beginner:"ノーマル・初心者"};
+  const names={normal:"通常ルール・勝利数",vanish:"消えるルール・勝利数",gobble:"食べるルール・勝利数",reverse:"逆転ルール・勝利数","wins-bot":"CPU戦・勝利数","wins-online":"オンライン対戦・勝利数",werewolf_villager_wins:"村人陣営の勝利数",werewolf_wolf_wins:"人狼陣営の勝利数",normal_beginner:"ノーマル・初心者","number-time":"タイムアタック","number-classic":"通常モード"};
   return mode==="default"?"":(names[mode]||String(mode).replace(/[_-]+/g," "));
  }
  function cleanGroupLabel(mode){
@@ -188,7 +188,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
  }
  function difficultyLabel(raw){
   const value=String(raw||"").toLowerCase();
-  const names={beginner:"初心者",novice:"初心者",easy:"初級",normal:"標準",medium:"中級",intermediate:"中級",hard:"上級",advanced:"上級",expert:"Expert",master:"マスター"};
+  const names={beginner:"初心者",novice:"初心者",easy:"初級",normal:"標準",medium:"中級",intermediate:"中級",hard:"上級",advanced:"上級",expert:"エキスパート",master:"マスター",legend:"レジェンド"};
   if(names[value])return names[value];
   const match=value.match(/^(?:lv|level)(\d+)$/);
   if(match)return "Lv."+match[1];
