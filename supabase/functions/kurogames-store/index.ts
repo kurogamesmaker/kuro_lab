@@ -49,6 +49,14 @@ async function resolveUser(req: Request, required: boolean) {
   return data.user;
 }
 
+async function requireStudioMember(userId: string) {
+  const { data, error } = await admin.from("kuro_store_studio_members")
+    .select("user_id,role,is_active").eq("user_id", userId).eq("is_active", true).maybeSingle();
+  if (error) throw new HttpError(503, "Shop Studioの権限を確認できませんでした。");
+  if (!data) throw new HttpError(403, "このアカウントにはShop Studioの利用権限がありません。");
+  return data;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
   if (req.method !== "POST") return reply(405, { error: "POSTで呼び出してください。" });
@@ -67,20 +75,24 @@ Deno.serve(async (req: Request) => {
       let inventory: unknown[] = [];
       let equipped: unknown[] = [];
       let profile: Record<string, unknown> | null = null;
+      let coinBalance: number | null = null;
       if (user) {
-        const [inventoryResult, equippedResult, profileResult] = await Promise.all([
+        const [inventoryResult, equippedResult, profileResult, balanceResult] = await Promise.all([
           admin.from("kuro_store_user_inventory").select("id,item_id,source,acquired_at,item:kuro_store_items(id,item_key,name,description,category,icon,image_url,rarity,price_kc,is_free,sort_order)").eq("user_id", user.id).order("acquired_at", { ascending: false }),
           admin.from("kuro_store_equipped_items").select("slot,item_id,updated_at,item:kuro_store_items(item_key,name,category,icon,image_url,rarity)").eq("user_id", user.id),
           admin.from("profiles").select("username,display_name,kuro_id").eq("id", user.id).maybeSingle(),
+          admin.from("kuro_coin_balances").select("balance").eq("user_id", user.id).maybeSingle(),
         ]);
         if (inventoryResult.error) throw inventoryResult.error;
         if (equippedResult.error) throw equippedResult.error;
         if (profileResult.error) throw profileResult.error;
+        if (balanceResult.error) throw balanceResult.error;
         inventory = inventoryResult.data ?? [];
         equipped = equippedResult.data ?? [];
         profile = profileResult.data ?? null;
+        coinBalance = Number(balanceResult.data?.balance ?? 0);
       }
-      return reply(200, { items: items ?? [], inventory, equipped, profile, isLoggedIn: !!user });
+      return reply(200, { items: items ?? [], inventory, equipped, profile, isLoggedIn: !!user, coinBalance });
     }
 
     if (action === "claim_free") {
@@ -99,11 +111,30 @@ Deno.serve(async (req: Request) => {
       return reply(200, { result: data });
     }
 
+
+    if (action === "purchase") {
+      const user = await resolveUser(req, true);
+      const itemId = typeof body.itemId === "string" ? body.itemId : "";
+      const requestId = typeof body.requestId === "string" ? body.requestId : "";
+      if (!UUID_RE.test(itemId) || !UUID_RE.test(requestId)) throw new HttpError(400, "購入リクエストが正しくありません。");
+      const { data, error } = await admin.rpc("kuro_store_purchase_item", {
+        p_user_id: user!.id, p_item_id: itemId, p_request_id: requestId,
+      });
+      if (error) {
+        const message = error.message || "";
+        if (message.includes("STORE_ITEM_NOT_AVAILABLE")) throw new HttpError(404, "このアイテムは現在販売されていません。");
+        if (message.includes("STORE_ITEM_NOT_PAID")) throw new HttpError(400, "この商品は無料アイテムです。");
+        if (message.includes("STORE_INSUFFICIENT_KC")) throw new HttpError(409, "KURO COINが不足しています。");
+        if (message.includes("STORE_REQUEST_ID_REUSED")) throw new HttpError(409, "購入リクエストが重複しました。ページを再読み込みしてください。");
+        throw error;
+      }
+      return reply(200, { result: data });
+    }
     if (action === "equip") {
       const user = await resolveUser(req, true);
       const slot = typeof body.slot === "string" ? body.slot : "";
       const itemId = body.itemId === null || body.itemId === undefined ? null : String(body.itemId);
-      if (!["avatar", "frame", "background", "theme"].includes(slot)) throw new HttpError(400, "装備スロットが正しくありません。");
+      if (!["avatar", "frame", "background", "theme", "nameplate", "banner"].includes(slot)) throw new HttpError(400, "装備スロットが正しくありません。");
       if (itemId !== null && !UUID_RE.test(itemId)) throw new HttpError(400, "アイテムIDが正しくありません。");
       const { data, error } = await admin.rpc("kuro_store_set_equipped_item", {
         p_user_id: user!.id, p_slot: slot, p_item_id: itemId,
@@ -117,6 +148,89 @@ Deno.serve(async (req: Request) => {
       return reply(200, { result: data });
     }
 
+
+    if (action === "studio_dashboard") {
+      const user = await resolveUser(req, true);
+      const studioMember = await requireStudioMember(user!.id);
+      const [itemsResult, salesResult] = await Promise.all([
+        admin.from("kuro_store_items").select("id,item_key,name,description,category,icon,image_url,rarity,price_kc,is_free,is_active,sort_order,created_at,updated_at").order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
+        admin.from("kuro_store_transactions").select("id,amount_kc", { count: "exact" }).eq("transaction_type", "shop_purchase").eq("status", "completed"),
+      ]);
+      if (itemsResult.error) throw itemsResult.error;
+      if (salesResult.error) throw salesResult.error;
+      const items = itemsResult.data ?? [];
+      const sales = salesResult.data ?? [];
+      return reply(200, {
+        items,
+        member: { role: studioMember.role },
+        stats: {
+          totalItems: items.length,
+          activeItems: items.filter((item: any) => item.is_active).length,
+          salesCount: salesResult.count ?? sales.length,
+          salesTotalKC: sales.reduce((sum: number, row: any) => sum + Number(row.amount_kc || 0), 0),
+        },
+      });
+    }
+
+    if (action === "studio_save_item") {
+      const user = await resolveUser(req, true);
+      await requireStudioMember(user!.id);
+      const itemId = typeof body.itemId === "string" ? body.itemId : "";
+      if (itemId && !UUID_RE.test(itemId)) throw new HttpError(400, "商品IDが正しくありません。");
+      const name = typeof body.name === "string" ? body.name.trim() : "";
+      const description = typeof body.description === "string" ? body.description.trim() : "";
+      const category = typeof body.category === "string" ? body.category : "";
+      const rarity = typeof body.rarity === "string" ? body.rarity : "common";
+      const icon = typeof body.icon === "string" ? body.icon.trim() : "🎁";
+      const imageUrl = body.imageUrl == null || body.imageUrl === "" ? null : String(body.imageUrl).trim();
+      const priceKC = Number(body.priceKC);
+      const sortOrder = Number(body.sortOrder ?? 100);
+      if (name.length < 1 || name.length > 60) throw new HttpError(400, "商品名は1〜60文字で入力してください。");
+      if (description.length > 500) throw new HttpError(400, "説明は500文字以内にしてください。");
+      if (!["avatar","frame","background","theme","nameplate","banner","other"].includes(category)) throw new HttpError(400, "カテゴリーが正しくありません。");
+      if (!["common","rare","epic","legendary"].includes(rarity)) throw new HttpError(400, "レアリティが正しくありません。");
+      if (icon.length < 1 || icon.length > 12) throw new HttpError(400, "アイコンは1〜12文字で入力してください。");
+      if (!Number.isInteger(priceKC) || priceKC < 0 || priceKC > 1000000) throw new HttpError(400, "価格は0〜1,000,000 KCの整数にしてください。");
+      if (!Number.isInteger(sortOrder) || sortOrder < 0 || sortOrder > 9999) throw new HttpError(400, "表示順は0〜9999の整数にしてください。");
+      if (imageUrl && !((imageUrl.startsWith("/") && !imageUrl.startsWith("//")) || /^https:\/\//i.test(imageUrl))) throw new HttpError(400, "商品画像URLはHTTPSまたはサイト内パスを指定してください。");
+      let itemKey = typeof body.itemKey === "string" ? body.itemKey.trim().toLowerCase() : "";
+      if (!itemKey && itemId) {
+        const current = await admin.from("kuro_store_items").select("item_key").eq("id", itemId).maybeSingle();
+        if (current.error) throw current.error;
+        itemKey = current.data?.item_key ?? "";
+      }
+      if (!itemKey) itemKey = "item-" + crypto.randomUUID().slice(0, 8);
+      if (!/^[a-z0-9][a-z0-9_-]{1,47}$/.test(itemKey)) throw new HttpError(400, "商品キーは半角英数字・ハイフン・アンダーバーで2〜48文字にしてください。");
+      const values: Record<string, unknown> = {
+        item_key: itemKey, name, description, category, icon, image_url: imageUrl, rarity,
+        price_kc: priceKC, is_free: priceKC === 0, sort_order: sortOrder,
+        updated_at: new Date().toISOString(),
+      };
+      if (!itemId) values.created_by = user!.id;
+      const query = itemId
+        ? admin.from("kuro_store_items").update(values).eq("id", itemId)
+        : admin.from("kuro_store_items").insert(values);
+      const { data, error } = await query.select("id,item_key,name,description,category,icon,image_url,rarity,price_kc,is_free,is_active,sort_order,created_at,updated_at").single();
+      if (error) {
+        if (error.code === "23505") throw new HttpError(409, "この商品キーはすでに使われています。");
+        throw error;
+      }
+      return reply(200, { item: data });
+    }
+
+    if (action === "studio_set_status") {
+      const user = await resolveUser(req, true);
+      await requireStudioMember(user!.id);
+      const itemId = typeof body.itemId === "string" ? body.itemId : "";
+      const isActive = body.isActive === true;
+      if (!UUID_RE.test(itemId)) throw new HttpError(400, "商品IDが正しくありません。");
+      const { data, error } = await admin.from("kuro_store_items")
+        .update({ is_active: isActive, updated_at: new Date().toISOString() })
+        .eq("id", itemId).select("id,is_active").maybeSingle();
+      if (error) throw error;
+      if (!data) throw new HttpError(404, "商品が見つかりません。");
+      return reply(200, { item: data });
+    }
     throw new HttpError(400, "操作が正しくありません。");
   } catch (error) {
     const status = error instanceof HttpError ? error.status : 500;
