@@ -2810,9 +2810,6 @@ async function handle(req: Request) {
       const { error: matchCleanupError } = await admin.from("game_online_matchmaking")
         .delete().eq("game_id", game.id).eq("room_id", roomId);
       if (matchCleanupError) throw new HttpError(500, "マッチング情報を整理できませんでした。");
-      const { error: anyQueueCleanupError } = await admin.from("kuro_any_matchmaking_queue")
-        .delete().eq("room_id", roomId);
-      if (anyQueueCleanupError) throw new HttpError(500, "検索待ち情報を整理できませんでした。");
       // Keep member rows until clients poll the closed status; deleting them here
       // would make room_poll return 403 before it can notify connected clients.
       return reply(200, { ok: true, disbanded: true });
