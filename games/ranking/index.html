@@ -167,6 +167,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
  const levelWrap=document.getElementById("levelWrap"),levelSelect=document.getElementById("levelSelect");
  const refreshButton=document.getElementById("refreshButton");
  const TICTACTOE_GAME_ID="2dbd6773-2684-4f00-973e-c46acbc348e7";
+ const NUMBER_GAME_ID="bb466662-5423-48e6-bbcc-d19da50ba818";
  const TICTACTOE_RULES=["normal","vanish","gobble","reverse"];
  const medals=["🥇","🥈","🥉","4","5"];
  const cache=new Map();
@@ -282,7 +283,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   const useCpuFilter=isCpuMode(mode);
   const key=game.id+"::"+mode+"::"+level+"::"+(useCpuFilter?cpu:"");
   const cached=cache.get(key);
-  if(cached&&Date.now()-cached.at<30000)return cached.rows;
+  if(game.id!==NUMBER_GAME_ID&&cached&&Date.now()-cached.at<30000)return cached.rows;
   const body={action:"leaderboard",gameId:game.id,mode:mode,limit:5};
   if(level!=="")body.level=Number(level);
   if(useCpuFilter&&cpu!=="")body.cpuDifficulty=cpu;
