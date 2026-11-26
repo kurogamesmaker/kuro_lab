@@ -4683,15 +4683,18 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             if (!await requireSocialLogin()) return;
             const input = document.getElementById('chatMessageInput');
             const content = input.value.trim();
-            if (!content || !activeChatId || !currentUser?.id) return;
+            const selectedImages = window.KuroSNSMedia?.getSelected('chat') || [];
+            if ((!content && !selectedImages.length) || !activeChatId || !currentUser?.id) return;
 
             const conversationId = activeChatId;
             const senderId = currentUser.id;
             if (activeChatType === 'group') {
                 const groupId = conversationId;
                 const sendButton = document.getElementById('chatSendButton');
+                let uploadedMedia = [];
                 if (sendButton) sendButton.disabled = true;
                 try {
+                    if (selectedImages.length) uploadedMedia = await window.KuroSNSMedia.upload(supabaseClient, 'group', groupId, selectedImages);
                     let mentionTargets = [];
                     if (content.includes('@')) {
                         const {data: memberships, error: memberError} = await supabaseClient.from('group_chat_members').select('user_id').eq('group_id', groupId);
@@ -4711,7 +4714,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                             mentionTargets = [...found];
                         }
                     }
-                    const {data: sentGroupMessage,error: groupSendError} = await supabaseClient.from('group_chat_messages').insert({group_id:groupId,sender_id:senderId,content}).select('id').single();
+                    const {data: sentGroupMessage,error: groupSendError} = await supabaseClient.from('group_chat_messages').insert({group_id:groupId,sender_id:senderId,content,media:uploadedMedia}).select('id').single();
                     if (groupSendError) throw groupSendError;
                     // Send group chat push asynchronously; never block the message UI on notification delivery.
                     supabaseClient.functions.invoke('send-chat-push', {body:{groupMessageId:sentGroupMessage.id}})
@@ -4731,6 +4734,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                         }
                     }
                     input.value='';
+                    window.KuroSNSMedia?.clear('chat');
                     const suggestionBox = document.getElementById('groupMentionSuggestions');
                     if (suggestionBox) { suggestionBox.classList.add('hidden'); suggestionBox.innerHTML=''; }
                     const {error:updateError}=await supabaseClient.from('group_conversations').update({updated_at:new Date().toISOString()}).eq('id',groupId);
@@ -4739,6 +4743,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     await selectGroupChat(groupId,activeChatHandle);
                 } catch (error) {
                     console.warn('Group message send failed:',error);
+                    if (uploadedMedia.length) await window.KuroSNSMedia.remove(supabaseClient, uploadedMedia);
                     showToast('送信に失敗しました');
                     if(sendButton)sendButton.disabled=false;
                 }
