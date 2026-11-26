@@ -52,7 +52,7 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
 .design-tabs{display:flex;gap:6px;margin-bottom:13px}.design-tab{flex:1;min-height:34px;border:1px solid #403650;border-radius:8px;background:#0f0d18;color:#bdb1d2;font-size:10px;font-weight:900;cursor:pointer}.design-tab.active{border-color:#9270c4;background:#2a203c;color:#fff}
 .design-stage{min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;padding:22px;background:radial-gradient(ellipse at center,#252038 0, #12101b 65%)}
 .design-stage-label{display:flex;align-items:center;justify-content:space-between;gap:12px;width:min(100%,760px);color:#aea4c2;font-size:9px}
-.design-canvas-shell{width:min(100%,760px);max-height:calc(100% - 35px);display:flex;align-items:center;justify-content:center;padding:10px;border:1px solid #4a405f;border-radius:14px;background:#090811;box-shadow:0 22px 60px #0007}
+.design-canvas-shell{width:min(100%,760px);max-height:calc(100% - 35px);display:flex;align-items:center;justify-content:center;padding:10px;border:1px solid #4a405f;border-radius:14px;background-color:#11101a;background-image:linear-gradient(45deg,#292535 25%,transparent 25%),linear-gradient(-45deg,#292535 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#292535 75%),linear-gradient(-45deg,transparent 75%,#292535 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0;box-shadow:0 22px 60px #0007}
 #designCanvas{touch-action:none;cursor:grab;display:block;width:100%;max-height:calc(100dvh - 220px);height:auto;object-fit:contain;border-radius:7px}
 #designCanvas.is-square{width:auto;max-width:100%;height:auto;max-height:calc(100dvh - 220px);aspect-ratio:1}
 .design-hint{max-width:700px;color:#817890;font-size:9px;line-height:1.7;text-align:center}
@@ -142,7 +142,7 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
    <aside class="design-sidebar">
     <div class="design-section">
      <h3>編集するアイテム</h3>
-     <div class="design-tabs"><button class="design-tab active" type="button" data-design-category="background">プロフィール背景</button><button class="design-tab" type="button" data-design-category="frame">アイコン枠</button></div>
+     <div class="design-tabs"><button class="design-tab active" type="button" data-design-category="background">プロフィール背景</button><button class="design-tab" type="button" data-design-category="frame">アイコン装飾</button></div>
      <div class="design-field"><label for="designTemplate">テンプレート</label><select id="designTemplate"></select></div>
     </div>
     <div class="design-section design-drafts">
@@ -155,7 +155,7 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
      <h3>画像を挿入して加工</h3>
      <input id="designInsertImage" type="file" accept="image/jpeg,image/png,image/webp" hidden>
      <button class="button" type="button" id="insertImageButton" style="width:100%">＋ 画像を追加</button>
-     <small class="hint">JPEG / PNG / WebP・5MB以下。フレームでは画像もアイコン外周の縁部分にだけ合成され、中央は透明のままです。キャンバス上でドラッグすると移動できます。</small>
+     <small class="hint">JPEG / PNG / WebP・5MB以下。アイコン装飾は標準の枠を使わず、画像だけでも完成できます。画像は全体・外周・アイコン上から配置先を選べます。キャンバス上でドラッグして移動できます。</small>
      <div class="design-field" style="margin-top:10px"><label for="imageLayerSelect">画像レイヤー</label><select id="imageLayerSelect"><option value="">画像はまだありません</option></select></div>
      <div class="design-two">
       <button class="mini" type="button" id="duplicateImageLayer">複製</button>
@@ -165,7 +165,7 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
       <button class="mini" type="button" id="imageLayerUp">↑ 前面へ</button>
       <button class="mini" type="button" id="imageLayerDown">↓ 背面へ</button>
      </div>
-     <div class="design-field" style="margin-top:12px"><label for="imageLayerFit">画像の配置方法</label><select id="imageLayerFit"><option value="contain">全体を表示</option><option value="cover">枠いっぱいに切り抜く</option><option value="stretch">枠に合わせて伸縮</option></select></div><div class="design-field" id="frameImageTargetField" style="margin-top:10px" hidden><label for="imageLayerTarget">フレーム画像の表示場所</label><select id="imageLayerTarget"><option value="rim">外周の枠に重ねる</option><option value="avatar">アイコン画像の上に重ねる</option></select><small class="hint">アイコン上を選ぶと、中央の丸いアイコン部分に装飾が表示されます。</small></div>
+     <div class="design-field" style="margin-top:12px"><label for="imageLayerFit">画像の配置方法</label><select id="imageLayerFit"><option value="contain">全体を表示</option><option value="cover">枠いっぱいに切り抜く</option><option value="stretch">枠に合わせて伸縮</option></select></div><div class="design-field" id="frameImageTargetField" style="margin-top:10px" hidden><label for="imageLayerTarget">画像の表示場所</label><select id="imageLayerTarget"><option value="free">自由配置（画像全体）</option><option value="rim">外周の枠に重ねる</option><option value="avatar">アイコン画像の上に重ねる</option></select><small class="hint">自由配置なら円形に切り抜かず、透明キャンバス上に画像をそのまま配置できます。</small></div>
      <div class="design-two">
       <div class="design-field"><label for="imageLayerX">左右位置</label><input id="imageLayerX" type="range" min="0" max="100" value="50"><output id="imageLayerXValue">50%</output></div>
       <div class="design-field"><label for="imageLayerY">上下位置</label><input id="imageLayerY" type="range" min="0" max="100" value="50"><output id="imageLayerYValue">50%</output></div>
@@ -207,7 +207,9 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
      </div>
     </div>
     <div class="design-section" id="frameControls" hidden>
-     <h3>アイコンの外周フレーム</h3><p class="hint">中央はプロフィールアイコンが表示される場所です。PNGに書き出すと中央は透明になり、周囲の縁だけがアイコンの上に重なります。</p>
+     <h3>アイコン装飾・フレーム</h3><p class="hint">標準の円形フレームは使わなくても構いません。オフにすれば、追加した画像だけを透明背景のPNGとして書き出せます。</p>
+     <label class="design-check" style="margin:0 0 12px"><input id="frameBaseEnabled" type="checkbox"> 標準の円形フレームを表示する</label>
+     <div id="frameBuiltinControls">
      <div class="design-field"><label for="frameStyle">スタイル</label><select id="frameStyle"><option value="gradient">グラデーション</option><option value="solid">シンプル</option><option value="neon">ネオン</option><option value="gold">メタリック</option></select></div>
      <div class="design-two">
       <div class="design-field"><label for="frameColor1">メインカラー</label><input id="frameColor1" type="color" value="#a78bfa"></div>
@@ -217,6 +219,7 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
      <div class="design-field"><label for="frameThickness">縁の太さ</label><input id="frameThickness" type="range" min="12" max="68" value="42"><output id="frameThicknessValue">42px</output></div>
      <label class="design-check"><input id="frameGlow" type="checkbox" checked> 発光エフェクトを付ける</label>
      <div class="design-field" style="margin-top:11px"><label for="frameOrnament">ワンポイント装飾（絵文字・記号）</label><input id="frameOrnament" type="text" maxlength="4" value="✦"></div>
+     </div>
     </div>
    </aside>
    <main class="design-stage">
@@ -373,7 +376,7 @@ async function start(){
 
 const DESIGN_DEFAULTS={
  background:{version:1,sourceImageUrl:"",imageZoom:100,imageX:50,imageY:50,color1:"#5b21b6",color2:"#0e7490",angle:135,pattern:"grid",overlay:18,title:"KURO PROFILE",textColor:"#ffffff",textSize:38,textAlign:"left",textY:78,imageLayers:[]},
- frame:{version:1,style:"gradient",color1:"#a78bfa",color2:"#22d3ee",frameSize:100,thickness:42,glow:true,ornament:"✦",imageLayers:[]}
+ frame:{version:1,showBaseFrame:true,style:"gradient",color1:"#a78bfa",color2:"#22d3ee",frameSize:100,thickness:42,glow:true,ornament:"✦",imageLayers:[]}
 };
 const DESIGN_TEMPLATES={
  background:[
@@ -397,14 +400,15 @@ function designReadFields(){
  if(designCategory==="background"){
   designData={...designData,version:1,color1:$("bgColor1").value,color2:$("bgColor2").value,angle:Number($("bgAngle").value),pattern:$("bgPattern").value,overlay:Number($("bgOverlay").value),imageZoom:Number($("bgImageZoom").value),imageX:Number($("bgImageX").value),imageY:Number($("bgImageY").value),title:$("bgTitle").value,textColor:$("bgTextColor").value,textSize:Number($("bgTextSize").value),textAlign:$("bgTextAlign").value,textY:Number($("bgTextY").value)};
  }else{
-  designData={...designData,version:1,style:$("frameStyle").value,color1:$("frameColor1").value,color2:$("frameColor2").value,frameSize:Number($("frameSize").value),thickness:Number($("frameThickness").value),glow:$("frameGlow").checked,ornament:$("frameOrnament").value};
+  designData={...designData,version:1,showBaseFrame:$("frameBaseEnabled").checked,style:$("frameStyle").value,color1:$("frameColor1").value,color2:$("frameColor2").value,frameSize:Number($("frameSize").value),thickness:Number($("frameThickness").value),glow:$("frameGlow").checked,ornament:$("frameOrnament").value};
+   $("frameBuiltinControls").hidden=!designData.showBaseFrame;
  }
 }
 function designApplyFields(){
  if(designCategory==="background"){
   designField("bgColor1",designData.color1||"#5b21b6");designField("bgColor2",designData.color2||"#0e7490");designField("bgAngle",designData.angle??135);designField("bgPattern",designData.pattern||"grid");designField("bgOverlay",designData.overlay??18);designField("bgImageZoom",designData.imageZoom??100);designField("bgImageX",designData.imageX??50);designField("bgImageY",designData.imageY??50);designField("bgTitle",designData.title||"");designField("bgTextColor",designData.textColor||"#ffffff");designField("bgTextSize",designData.textSize??38);designField("bgTextAlign",designData.textAlign||"left");designField("bgTextY",designData.textY??78);
  }else{
-  designField("frameStyle",designData.style||"gradient");designField("frameColor1",designData.color1||"#a78bfa");designField("frameColor2",designData.color2||"#22d3ee");designField("frameSize",designData.frameSize??100);designField("frameThickness",designData.thickness??42);$("frameGlow").checked=designData.glow!==false;designField("frameOrnament",designData.ornament||"");
+  $("frameBaseEnabled").checked=designData.showBaseFrame!==false;$("frameBuiltinControls").hidden=!$("frameBaseEnabled").checked;designField("frameStyle",designData.style||"gradient");designField("frameColor1",designData.color1||"#a78bfa");designField("frameColor2",designData.color2||"#22d3ee");designField("frameSize",designData.frameSize??100);designField("frameThickness",designData.thickness??42);$("frameGlow").checked=designData.glow!==false;designField("frameOrnament",designData.ornament||"");
  }
  designUpdateOutputs();designUpdateLayerControls();
 }
@@ -413,12 +417,12 @@ function designUpdateOutputs(){
 }
 function designLoadTemplate(id){
  const found=DESIGN_TEMPLATES[designCategory].find(row=>row.id===id);if(!found)return;
- designData={...DESIGN_DEFAULTS[designCategory],...found.data,sourceImageUrl:designData.sourceImageUrl||"",imageLayers:designClone(designData.imageLayers||[])};
+ designData={...DESIGN_DEFAULTS[designCategory],...found.data,showBaseFrame:designData.showBaseFrame!==false,sourceImageUrl:designData.sourceImageUrl||"",imageLayers:designClone(designData.imageLayers||[])};
  designApplyFields();designRender();designPushHistory();designScheduleSave();
 }
 function designSetCategory(category){
  if(!["background","frame"].includes(category))return;
- if(designCategory!==category){designCategory=category;designDraftId=null;selectedImageLayerId=null;designData=designClone(DESIGN_DEFAULTS[category]);$("designDraftName").value="新しい"+(category==="frame"?"フレーム":"背景");}
+ if(designCategory!==category){designCategory=category;designDraftId=null;selectedImageLayerId=null;designData=designClone(DESIGN_DEFAULTS[category]);if(category==="frame")designData.showBaseFrame=false;$("designDraftName").value="新しい"+(category==="frame"?"フレーム":"背景");}
  document.querySelectorAll("[data-design-category]").forEach(node=>node.classList.toggle("active",node.dataset.designCategory===category));
  $("backgroundControls").hidden=category!=="background";$("frameControls").hidden=category!=="frame";
  $("designCanvasLabel").textContent=category==="background"?"背景プレビュー · 16:9":"アイコン枠プレビュー · 1:1";
@@ -493,7 +497,7 @@ function designUpdateLayerControls(){
  }
  $("imageLayerSelect").disabled=false;
  const pairs={
-  imageLayerFit:selected.fit||"contain",imageLayerTarget:selected.target||"rim",imageLayerX:selected.x??50,imageLayerY:selected.y??50,
+  imageLayerFit:selected.fit||"contain",imageLayerTarget:selected.target||(designData.showBaseFrame===false?"free":"rim"),imageLayerX:selected.x??50,imageLayerY:selected.y??50,
   imageLayerWidth:selected.width??35,imageLayerHeight:selected.height??35,
   imageLayerRotation:selected.rotation??0,imageLayerOpacity:selected.opacity??100,
   imageLayerBrightness:selected.brightness??100,imageLayerContrast:selected.contrast??100,
@@ -605,7 +609,7 @@ function designBindLayerControls(){
   const file=event.target.files&&event.target.files[0];event.target.value="";if(!file)return;
   try{
    designSetState("画像をアップロード中…");
-   const imageUrl=await uploadImage(file),layer={id:crypto.randomUUID(),name:file.name.replace(/\.[^.]+$/,"").slice(0,40)||"画像",imageUrl,target:"rim",x:50,y:50,width:35,height:35,rotation:0,opacity:100,brightness:100,contrast:100,saturation:100,blur:0,grayscale:0,flipX:false,flipY:false,fit:"contain"};
+   const imageUrl=await uploadImage(file),target=designData.showBaseFrame===false?"free":"rim",size=target==="free"?85:35,layer={id:crypto.randomUUID(),name:file.name.replace(/\.[^.]+$/,"").slice(0,40)||"画像",imageUrl,target,x:50,y:50,width:size,height:size,rotation:0,opacity:100,brightness:100,contrast:100,saturation:100,blur:0,grayscale:0,flipX:false,flipY:false,fit:"contain"};
    designImageLayers().push(layer);selectedImageLayerId=layer.id;designUpdateLayerControls();await designRender();designPushHistory();designScheduleSave();
    designSetState("画像を追加しました");
   }catch(error){designSetState("画像を追加できませんでした: "+error.message);}
@@ -682,7 +686,7 @@ async function designRender(showSelection=true){
    const ringScale=Math.max(.6,Math.min(1.05,Number(designData.frameSize??100)/100));
    const ringRadius=340*ringScale;
    const ringThickness=Math.max(12,Math.min(68,Number(designData.thickness)||42));
-   const avatarRadius=Math.max(120,ringRadius-ringThickness/2-5);
+   const avatarRadius=designData.showBaseFrame===false?318:Math.max(120,ringRadius-ringThickness/2-5);
    ctx.save();ctx.beginPath();ctx.arc(400,400,avatarRadius,0,Math.PI*2);ctx.clip();
    const sample=ctx.createLinearGradient(150,120,650,680);sample.addColorStop(0,"#475569");sample.addColorStop(.55,"#293449");sample.addColorStop(1,"#111827");
    ctx.fillStyle=sample;ctx.fillRect(0,0,800,800);
@@ -690,16 +694,18 @@ async function designRender(showSelection=true){
    ctx.beginPath();ctx.ellipse(400,400+avatarRadius*.8,avatarRadius*.56,avatarRadius*.53,0,Math.PI,Math.PI*2);ctx.fill();
    ctx.restore();
   }
-  const style=designData.style||"gradient",c1=designData.color1||"#a78bfa",c2=designData.color2||"#22d3ee",thickness=Math.max(12,Math.min(68,Number(designData.thickness)||42));
-  const ringScale=Math.max(.6,Math.min(1.05,Number(designData.frameSize??100)/100));
-  const ringRadius=340*ringScale;
-  let edge=ctx.createLinearGradient(150,150,650,650);edge.addColorStop(0,c1);edge.addColorStop(1,c2);
-  if(style==="solid")edge=c1;
-  if(style==="gold"){edge=ctx.createLinearGradient(100,100,700,700);edge.addColorStop(0,"#fff1a8");edge.addColorStop(.45,c1);edge.addColorStop(1,"#78350f");}
-  ctx.save();ctx.lineWidth=thickness;ctx.strokeStyle=edge;ctx.shadowColor=designData.glow===false?"transparent":c1;ctx.shadowBlur=designData.glow===false?0:27;ctx.beginPath();ctx.arc(400,400,ringRadius,0,Math.PI*2);ctx.stroke();ctx.restore();
-  if(style==="neon"){ctx.save();ctx.globalAlpha=.65;ctx.strokeStyle=c2;ctx.lineWidth=Math.max(2,thickness/4);ctx.beginPath();ctx.arc(400,400,Math.min(388,ringRadius+thickness*.78),0,Math.PI*2);ctx.stroke();ctx.restore();}
-  const ornament=String(designData.ornament||"").slice(0,4);
-  if(ornament){ctx.save();ctx.font="bold 54px system-ui,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle=c1;ctx.shadowColor=c1;ctx.shadowBlur=14;ctx.fillText(ornament,400,38);ctx.restore();}
+  if(designData.showBaseFrame!==false){
+   const style=designData.style||"gradient",c1=designData.color1||"#a78bfa",c2=designData.color2||"#22d3ee",thickness=Math.max(12,Math.min(68,Number(designData.thickness)||42));
+   const ringScale=Math.max(.6,Math.min(1.05,Number(designData.frameSize??100)/100));
+   const ringRadius=340*ringScale;
+   let edge=ctx.createLinearGradient(150,150,650,650);edge.addColorStop(0,c1);edge.addColorStop(1,c2);
+   if(style==="solid")edge=c1;
+   if(style==="gold"){edge=ctx.createLinearGradient(100,100,700,700);edge.addColorStop(0,"#fff1a8");edge.addColorStop(.45,c1);edge.addColorStop(1,"#78350f");}
+   ctx.save();ctx.lineWidth=thickness;ctx.strokeStyle=edge;ctx.shadowColor=designData.glow===false?"transparent":c1;ctx.shadowBlur=designData.glow===false?0:27;ctx.beginPath();ctx.arc(400,400,ringRadius,0,Math.PI*2);ctx.stroke();ctx.restore();
+   if(style==="neon"){ctx.save();ctx.globalAlpha=.65;ctx.strokeStyle=c2;ctx.lineWidth=Math.max(2,thickness/4);ctx.beginPath();ctx.arc(400,400,Math.min(388,ringRadius+thickness*.78),0,Math.PI*2);ctx.stroke();ctx.restore();}
+   const ornament=String(designData.ornament||"").slice(0,4);
+   if(ornament){ctx.save();ctx.font="bold 54px system-ui,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle=c1;ctx.shadowColor=c1;ctx.shadowBlur=14;ctx.fillText(ornament,400,38);ctx.restore();}
+  }
   await designDrawImageLayers(ctx,800,800,showSelection);
  }
  designUpdateMiniPreview();
@@ -713,9 +719,10 @@ function designUpdateMiniPreview(){
  }else{
   back.style.background="linear-gradient(135deg,#28213a,#111827)";
   const c1=designData.color1||"#a78bfa",c2=designData.color2||"#22d3ee";
-  avatar.style.border=Number(designData.thickness||42)/5+"px solid "+c1;
+  const baseFrame=designData.showBaseFrame!==false;
+  avatar.style.border=baseFrame?Number(designData.thickness||42)/5+"px solid "+c1:"0 solid transparent";
   avatar.style.transform="scale("+Math.max(.6,Math.min(1.05,Number(designData.frameSize??100)/100))+")";
-  avatar.style.boxShadow=designData.glow===false?"none":"0 0 18px "+c1+"99,0 0 26px "+c2+"55";
+  avatar.style.boxShadow=!baseFrame||designData.glow===false?"none":"0 0 18px "+c1+"99,0 0 26px "+c2+"55";
  }
 }
 function designScheduleSave(){
@@ -747,7 +754,7 @@ async function designLoadDraftList(refresh=true){
 async function designStart(category){
  if(designSaveTimer){clearTimeout(designSaveTimer);designSaveTimer=0;}
  if(designSaveDirty)await designPersistDraft();
- designSession++;designDraftId=null;selectedImageLayerId=null;designCategory=category;designData=designClone(DESIGN_DEFAULTS[category]);$("designDraftName").value="新しい"+(category==="frame"?"フレーム":"背景");
+ designSession++;designDraftId=null;selectedImageLayerId=null;designCategory=category;designData=designClone(DESIGN_DEFAULTS[category]);if(category==="frame")designData.showBaseFrame=false;$("designDraftName").value="新しい"+(category==="frame"?"フレーム":"背景");
  $("designOverlay").hidden=false;designSetCategory(category);designResetHistory();designSetState("未保存");designScheduleSave();
 }
 async function designLoadSelectedDraft(){
@@ -764,7 +771,7 @@ async function designDeleteSelectedDraft(){
  if(designSaveTimer){clearTimeout(designSaveTimer);designSaveTimer=0;}
  if(designDraftId===id&&designSaveDirty){designSaveDirty=false;}else if(designSaveDirty){await designPersistDraft();}
  await api("studio_delete_draft",{draftId:id});
- if(id===designDraftId){designDraftId=null;designData=designClone(DESIGN_DEFAULTS[designCategory]);designApplyFields();designRender();designSetState("未保存");}
+ if(id===designDraftId){designDraftId=null;designData=designClone(DESIGN_DEFAULTS[designCategory]);if(designCategory==="frame")designData.showBaseFrame=false;designApplyFields();designRender();designSetState("未保存");}
  await designLoadDraftList();
 }
 async function designExportImage(){
@@ -799,7 +806,7 @@ function designBindInput(id){
  });
 }
 document.querySelectorAll("[data-design-category]").forEach(node=>node.addEventListener("click",async()=>{const next=node.dataset.designCategory,changed=next!==designCategory;if(changed){if(designSaveTimer){clearTimeout(designSaveTimer);designSaveTimer=0;}if(designSaveDirty)await designPersistDraft();}designSetCategory(next);if(changed){designResetHistory();designScheduleSave();}}));
-["bgColor1","bgColor2","bgAngle","bgPattern","bgOverlay","bgImageZoom","bgImageX","bgImageY","bgTitle","bgTextColor","bgTextSize","bgTextAlign","bgTextY","frameStyle","frameColor1","frameColor2","frameSize","frameThickness","frameGlow","frameOrnament"].forEach(designBindInput);
+["bgColor1","bgColor2","bgAngle","bgPattern","bgOverlay","bgImageZoom","bgImageX","bgImageY","bgTitle","bgTextColor","bgTextSize","bgTextAlign","bgTextY","frameBaseEnabled","frameStyle","frameColor1","frameColor2","frameSize","frameThickness","frameGlow","frameOrnament"].forEach(designBindInput);
 $("designUndo").addEventListener("click",()=>designRestoreHistory(designHistoryIndex-1));
 $("designRedo").addEventListener("click",()=>designRestoreHistory(designHistoryIndex+1));
 $("designStudioButton").addEventListener("click",()=>designStart("background").catch(error=>designSetState("保存エラー: "+error.message)));
