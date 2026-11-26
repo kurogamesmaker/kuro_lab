@@ -88,6 +88,7 @@ header{position:sticky;top:0;z-index:10;background:#100d1deF;backdrop-filter:blu
 <div class="filters" id="storeFilters">
 <button class="filter active" data-category="all" type="button">すべて</button>
 <button class="filter" data-category="avatar" type="button">アバター</button>
+<button class="filter" data-category="icon_image" type="button">アイコン画像</button>
 <button class="filter" data-category="frame" type="button">フレーム</button>
 <button class="filter" data-category="background" type="button">背景</button>
 <button class="filter" data-category="theme" type="button">テーマ</button>
@@ -139,7 +140,7 @@ const storeDb=window.supabase.createClient(STORE_SUPABASE_URL,STORE_PUBLISHABLE_
 window.kuroGamesDB=storeDb;
 const $=id=>document.getElementById(id);
 const html=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const categoryLabels={avatar:"アバター",frame:"フレーム",background:"壁紙",theme:"テーマ",nameplate:"ネーム装飾",banner:"バナー",other:"その他"};
+const categoryLabels={avatar:"アバター",icon_image:"アイコン画像",frame:"フレーム",background:"壁紙",theme:"テーマ",nameplate:"ネーム装飾",banner:"バナー",other:"その他"};
 let storeItems=[],inventory=[],equipped=[],currentCategory="all",isLoggedIn=false,coinBalance=null,storeProfile=null,storeCosmetics={},storeLoadSerial=0;
 function safeStoreImage(value){
  if(!value)return "";
@@ -186,6 +187,7 @@ function normalizeCosmetic(item){
  return {itemKey:item.itemKey||item.item_key||"",name:item.name||"",category:item.category||"",icon:item.icon||"",imageUrl:item.imageUrl||item.image_url||"",rarity:item.rarity||""};
 }
 function tryOnSlot(category){
+ if(category==="icon_image")return "avatar";
  return ["avatar","frame","background","theme","nameplate","banner"].includes(category)?category:null;
 }
 function openStoreTryOn(item){
@@ -254,7 +256,7 @@ function renderInventory(){
  inventory.forEach(row=>{if(row.item&&row.item.id)itemMap.set(row.item.id,row.item);});
  const inventoryItems=inventory.map(row=>({row,item:itemMap.get(row.item_id)})).filter(x=>x.item);
  $("inventoryGrid").innerHTML=inventoryItems.map(({row,item})=>{
-  const slot=["avatar","frame","background","theme","nameplate","banner"].includes(item.category)?item.category:null;
+  const slot=item.category==="icon_image"?"avatar":(["avatar","frame","background","theme","nameplate","banner"].includes(item.category)?item.category:null);
   const active=slot&&equippedFor(slot)?.item_id===item.id;
   let actions="";
   if(slot){
