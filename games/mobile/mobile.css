@@ -21,7 +21,8 @@ button, input { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 a { color: inherit; text-decoration: none; }
 [hidden] { display: none !important; }
-.app-shell { width: min(100%, 760px); min-height: 100dvh; margin: 0 auto; padding-bottom: calc(84px + env(safe-area-inset-bottom)); }\nbody.account-open { overflow: hidden; }
+.app-shell { width: min(100%, 760px); min-height: 100dvh; margin: 0 auto; padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+body.account-open { overflow: hidden; }
 .app-header {
   position: sticky; top: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 10px;
   min-height: calc(62px + env(safe-area-inset-top)); padding: calc(8px + env(safe-area-inset-top)) 18px 8px;
@@ -161,4 +162,33 @@ a { color: inherit; text-decoration: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+/* Mobile-only usability fixes: preserve compact account status and enlarge touch targets. */
+.category-chip { min-height: 40px; }
+.favorite-button { display: grid; place-items: center; width: 40px; height: 40px; }
+.account-button { min-height: 42px; }
+.icon-button { width: 40px; min-height: 40px; }
+.ranking-banner > a, .profile-banner > a { width: 40px; height: 40px; flex-basis: 40px; }
+
+@media (max-width: 380px) {
+  .app-header { gap: 7px; padding-left: 12px; padding-right: 12px; }
+  .brand { gap: 7px; font-size: 14px; }
+  .brand img { width: 28px; height: 28px; flex: 0 0 28px; }
+  .header-actions { gap: 5px; }
+  .account-state { display: block; max-width: 48px; font-size: 9px; }
+  .network-state {
+    width: 24px; max-width: 24px; height: 24px; flex: 0 0 24px;
+    justify-content: center; overflow: hidden; padding: 0;
+  }
+  .network-state span {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+  .install-button { width: 34px; min-height: 38px; }
+  .account-button { min-height: 40px; padding: 0 8px; font-size: 10px; }
+}
+@media (max-width: 340px) {
+  .network-state { display: none; }
+  .install-button { width: 32px; }
 }
