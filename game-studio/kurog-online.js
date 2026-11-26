@@ -869,7 +869,7 @@ const KuroGames = {
       const blocks = [];
       let offset = 0;
       let pages = 0;
-      while (pages++ < 100) {
+      while (pages++ < 200) {
         const result = await invoke("world_blocks_get", { limit: limit, offset: offset });
         if (Array.isArray(result.blocks)) blocks.push(...result.blocks);
         if (result.nextOffset === null || result.nextOffset === undefined) return blocks;
