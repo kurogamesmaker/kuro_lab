@@ -542,7 +542,8 @@ async function designDrawImageLayers(ctx,width,height,showSelection=true){
     const outer=Math.min(397,radius+thick/2+12),inner=Math.max(0,radius-thick/2-8);
     ctx.beginPath();ctx.arc(400,400,outer,0,Math.PI*2);ctx.arc(400,400,inner,0,Math.PI*2,true);ctx.clip("evenodd");
    }
-  }\n  ctx.translate(cx,cy);ctx.rotate((Number(layer.rotation)||0)*Math.PI/180);
+  }
+  ctx.translate(cx,cy);ctx.rotate((Number(layer.rotation)||0)*Math.PI/180);
   ctx.scale(layer.flipX===true?-1:1,layer.flipY===true?-1:1);
   ctx.globalAlpha=Math.max(0,Math.min(100,Number(layer.opacity??100)))/100;
   const brightness=Math.max(0,Math.min(200,Number(layer.brightness??100)));
