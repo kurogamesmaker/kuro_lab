@@ -168,7 +168,6 @@ BEGIN
 
     DELETE FROM public.game_online_room_members WHERE room_id = p_room_id;
     DELETE FROM public.game_online_matchmaking WHERE room_id = p_room_id;
-    DELETE FROM public.kuro_any_matchmaking_queue WHERE room_id = p_room_id;
     DELETE FROM public.game_sevens_room_votes WHERE room_id = p_room_id;
   ELSIF v_random_match AND v_room.status = 'waiting' THEN
     UPDATE public.game_online_rooms
@@ -178,7 +177,6 @@ BEGIN
 
     DELETE FROM public.game_online_room_members WHERE room_id = p_room_id;
     DELETE FROM public.game_online_matchmaking WHERE room_id = p_room_id;
-    DELETE FROM public.kuro_any_matchmaking_queue WHERE room_id = p_room_id;
     DELETE FROM public.game_sevens_room_votes WHERE room_id = p_room_id;
   ELSIF v_room.status = 'waiting' THEN
     DELETE FROM public.game_sevens_room_votes WHERE room_id = p_room_id;
