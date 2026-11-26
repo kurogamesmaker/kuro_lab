@@ -167,7 +167,21 @@
       return;
     }
 
-    frame.addEventListener("load", attachPlayerDocument);
+    frame.addEventListener("load", function(){
+      // The same-origin player shell is sufficient to make the screen visible.
+      // Do not leave an opaque loader above it while waiting for the nested
+      // sandboxed game iframe's optional ready notification.
+      try {
+        var loadedUrl = new URL(frame.contentWindow.location.href);
+        var loadedPath = loadedUrl.pathname.replace(/\/+$/, "");
+        if (loadedUrl.origin === window.location.origin && loadedPath === "/games/play") {
+          markReady();
+        }
+      } catch (error) {
+        console.warn("[KURO GAMES MOBILE] player frame readiness check skipped", error);
+      }
+      attachPlayerDocument();
+    });
     frame.addEventListener("error", function(){
       stopWatching();
       showLoading("ゲームを読み込めませんでした", "通信状態を確認して、もう一度お試しください。", true);
