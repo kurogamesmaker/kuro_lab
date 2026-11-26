@@ -484,7 +484,7 @@ function designUpdateLayerControls(){
   :'<option value="">画像はまだありません</option>';
  $("imageLayerSelect").value=selected?selected.id:"";
  const ids=designLayerControlIds();
- ids.forEach(id=>$(id).disabled=!selected);\n $("frameImageTargetField").hidden=designCategory!=="frame";
+ ids.forEach(id=>$(id).disabled=!selected);\n  $("frameImageTargetField").hidden=designCategory!=="frame";
  ["duplicateImageLayer","deleteImageLayer","imageLayerUp","imageLayerDown"].forEach(id=>$(id).disabled=!selected);
  if(!selected){
   $("imageLayerSelect").disabled=true;
