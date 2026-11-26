@@ -49,7 +49,9 @@
     var ready = false;
     var observer = null;
     var timeout = null;
+    var pollTimer = null;
     var attached = new WeakSet();
+    var attachedPlayerDocument = null;
     var GAME_LOAD_TIMEOUT_MS = 40000;
 
     function showLoading(titleText, messageText, canRetry) {
@@ -62,6 +64,8 @@
     function stopWatching() {
       if (timeout) window.clearTimeout(timeout);
       timeout = null;
+      if (pollTimer) window.clearInterval(pollTimer);
+      pollTimer = null;
       if (observer) observer.disconnect();
       observer = null;
     }
@@ -92,6 +96,16 @@
         return false;
       }
       if (!innerDoc || !innerDoc.documentElement) return false;
+      if (attachedPlayerDocument === innerDoc) {
+        var existingState = innerDoc.getElementById("state");
+        if (existingState && /ゲームを開けませんでした/.test(existingState.textContent || "")) {
+          stopWatching();
+          showLoading("ゲームを開けませんでした", "ゲーム情報を取得できませんでした。通信状態を確認してください。", true);
+          return true;
+        }
+        return false;
+      }
+      attachedPlayerDocument = innerDoc;
 
       // This route is the dedicated mobile player. Apply its mobile shell even
       // when the browser reports a desktop UA (for example, responsive testing).
@@ -156,9 +170,11 @@
       ready = false;
       stopWatching();
       attached = new WeakSet();
+      attachedPlayerDocument = null;
       showLoading("ゲームを起動しています", "ゲームデータと通信しています。", false);
       timeout = window.setTimeout(function(){
         if (ready) return;
+        stopWatching();
         showLoading(
           "読み込みに時間がかかっています",
           navigator.onLine === false
@@ -167,7 +183,18 @@
           true
         );
       }, GAME_LOAD_TIMEOUT_MS);
+      pollTimer = window.setInterval(function(){
+        if (ready) return;
+        var doc = null;
+        try { doc = frame.contentDocument; } catch (_) {}
+        if (!doc || !doc.documentElement || !doc.body) return;
+        var hasError = attachPlayerDocument();
+        if (hasError) return;
+        // The player page has its own loading/error UI while its game iframe loads.
+        markReady();
+      }, 100);
       frame.src = "/games/play/?id=" + encodeURIComponent(id) + "&mobileReload=" + Date.now();
+      loading.hidden = true;
     }
 
     if (!/^[0-9a-f-]{36}$/i.test(id)) {
