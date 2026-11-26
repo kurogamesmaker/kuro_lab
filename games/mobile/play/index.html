@@ -168,19 +168,11 @@
     }
 
     frame.addEventListener("load", function(){
-      // The same-origin player shell is sufficient to make the screen visible.
-      // Do not leave an opaque loader above it while waiting for the nested
-      // sandboxed game iframe's optional ready notification.
-      try {
-        var loadedUrl = new URL(frame.contentWindow.location.href);
-        var loadedPath = loadedUrl.pathname.replace(/\/+$/, "");
-        if (loadedUrl.origin === window.location.origin && loadedPath === "/games/play") {
-          markReady();
-        }
-      } catch (error) {
-        console.warn("[KURO GAMES MOBILE] player frame readiness check skipped", error);
-      }
+      // The outer player document has loaded. Reveal it immediately: the player
+      // has its own loading/error UI while the nested sandboxed game starts.
+      // The inner iframe's ready message remains an additional completion signal.
       attachPlayerDocument();
+      markReady();
     });
     frame.addEventListener("error", function(){
       stopWatching();
