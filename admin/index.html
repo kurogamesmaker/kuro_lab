@@ -722,6 +722,12 @@
    <div class="ops-form-actions" style="padding:0 16px 16px"><button class="btn primary" type="button" id="opsLevelThresholdSave">必要XPを保存</button><span id="opsLevelThresholdStatus" class="sns-muted" role="status"></span></div>
   </section>
   <section class="panel ops-level-panel">
+   <div class="toolbar"><div><strong>レベル到達ポイント報酬</strong><div class="sns-muted">設定したレベルに初めて到達するとKURO COINを自動付与します。既に到達済みのレベルへは遡及付与しません。</div></div><button class="btn" type="button" id="opsLevelCoinRewardAdd">報酬を追加</button></div>
+   <div id="opsLevelCoinRewardsList" class="ops-level-thresholds"></div>
+   <div class="ops-form-actions" style="padding:0 16px 16px"><button class="btn primary" type="button" id="opsLevelCoinRewardSave">到達報酬を保存</button><span id="opsLevelCoinRewardStatus" class="sns-muted" role="status"></span></div>
+   <div class="sns-muted" style="padding:0 16px 16px">レベルを一度に複数上げた場合は途中の対象レベルも判定します。同じユーザー・同じレベルの報酬は1回限りです。</div>
+  </section>
+  <section class="panel ops-level-panel">
    <div class="toolbar"><div><strong>プレイヤーのレベル</strong><div class="sns-muted">経験値上位50人を表示します。ユーザーを選ぶと手動補正フォームに反映します。</div></div><span id="opsLevelUserCount" class="sns-muted">—</span></div>
    <div class="ops-tablewrap" id="opsLevelUsersList"><div class="empty">読み込み中…</div></div>
    <form id="opsLevelAdjustForm" class="ops-form">
@@ -1887,6 +1893,44 @@ function renderOpsLevelThresholds(rows){
   '<label>累計必要XP<input type="number" min="0" max="1000000000000" step="1" data-level-required-xp value="'+esc(row.required_xp)+'"></label>'+
   '<button class="btn" type="button" data-level-threshold-remove>削除</button></div>').join("");
 }
+function renderOpsLevelCoinRewards(rows){
+ const host=$("#opsLevelCoinRewardsList");if(!host)return;
+ const items=Array.isArray(rows)?rows:[];
+ if(!items.length){host.innerHTML='<div class="empty">到達報酬はまだ設定されていません。</div>';return;}
+ host.innerHTML=items.map(row=>'<div class="ops-level-threshold-row" data-level-coin-reward-row>'+
+  '<label>到達レベル<input type="number" min="2" max="10000" step="1" data-level-coin-level value="'+esc(row.level)+'"></label>'+
+  '<label>付与KURO COIN<input type="number" min="0" max="1000000" step="1" data-level-coin-amount value="'+esc(row.reward_amount)+'"></label>'+
+  '<label class="ops-check"><input type="checkbox" data-level-coin-enabled '+(row.enabled===true?'checked':'')+'> 有効</label>'+
+  '<button class="btn" type="button" data-level-coin-remove>削除</button></div>').join("");
+}
+function addOpsLevelCoinReward(){
+ const host=$("#opsLevelCoinRewardsList");
+ const rows=Array.from(host.querySelectorAll("[data-level-coin-reward-row]"));
+ const last=rows.reduce((max,row)=>Math.max(max,Number(row.querySelector("[data-level-coin-level]").value)||0),0);
+ const nextLevel=last?last+5:5;
+ if(nextLevel>10000){alert("報酬レベルはLv.10,000まで設定できます。");return;}
+ if(!rows.length)host.innerHTML="";
+ host.insertAdjacentHTML("beforeend",'<div class="ops-level-threshold-row" data-level-coin-reward-row>'+
+  '<label>到達レベル<input type="number" min="2" max="10000" step="1" data-level-coin-level value="'+nextLevel+'"></label>'+
+  '<label>付与KURO COIN<input type="number" min="0" max="1000000" step="1" data-level-coin-amount value="100"></label>'+
+  '<label class="ops-check"><input type="checkbox" data-level-coin-enabled checked> 有効</label>'+
+  '<button class="btn" type="button" data-level-coin-remove>削除</button></div>');
+}
+async function saveOpsLevelCoinRewards(){
+ const button=$("#opsLevelCoinRewardSave"),status=$("#opsLevelCoinRewardStatus");
+ const rewards=Array.from($("#opsLevelCoinRewardsList").querySelectorAll("[data-level-coin-reward-row]")).map(row=>({
+  level:Number(row.querySelector("[data-level-coin-level]").value),
+  rewardAmount:Number(row.querySelector("[data-level-coin-amount]").value),
+  enabled:row.querySelector("[data-level-coin-enabled]").checked
+ }));
+ button.disabled=true;status.textContent="保存中…";
+ try{
+  const result=await opsInvoke({action:"save_level_coin_rewards",rewards});
+  status.textContent="保存しました。"+levelFormat(result.count||0)+"件の報酬設定を登録しました。";
+  await loadOpsLevels();
+ }catch(error){status.textContent="保存できませんでした："+(error.message||error);}
+ finally{button.disabled=false;}
+}
 function renderOpsLevelGameRewards(data){
  const host=$("#opsLevelGameRewards");if(!host)return;
  const rewards=new Map((data.rewards||[]).map(row=>[row.game_id,row]));
@@ -1933,6 +1977,7 @@ async function loadOpsLevels(){
   $("#opsLevelEnabled").checked=data.settings?.enabled!==false;
   $("#opsLevelDefaultXp").value=Number(data.settings?.default_win_xp??100);
   renderOpsLevelGameRewards(data);renderOpsLevelThresholds(data.thresholds||[]);
+  renderOpsLevelCoinRewards(data.coinRewards||[]);
   renderOpsLevelUsers(data);renderOpsLevelLedger(data);
   $("#opsLevelsUpdated").textContent="更新 "+new Date().toLocaleTimeString("ja-JP");
   if(status)status.textContent="読み込み完了";
@@ -2935,6 +2980,9 @@ $("#opsLevelSettingsForm").addEventListener("submit",saveOpsLevelSettings);
 $("#opsLevelThresholdAdd").addEventListener("click",addOpsLevelThreshold);
 $("#opsLevelThresholdSave").addEventListener("click",saveOpsLevelThresholds);
 $("#opsLevelThresholdsList").addEventListener("click",e=>{const b=e.target.closest("[data-level-threshold-remove]");if(b){const row=b.closest("[data-level-threshold-row]");if(row&&Number(row.querySelector("[data-level-number]").value)!==1)row.remove();else alert("Lv.1は削除できません。");}});
+$("#opsLevelCoinRewardAdd").addEventListener("click",addOpsLevelCoinReward);
+$("#opsLevelCoinRewardSave").addEventListener("click",saveOpsLevelCoinRewards);
+$("#opsLevelCoinRewardsList").addEventListener("click",e=>{const b=e.target.closest("[data-level-coin-remove]");if(b){const row=b.closest("[data-level-coin-reward-row]");if(row)row.remove();}});
 $("#opsLevelGameRewards").addEventListener("click",e=>{const b=e.target.closest("[data-level-game-save]");if(b){const row=b.closest("[data-level-game-row]");if(row)saveOpsLevelGameReward(row,b);}});
 $("#opsLevelUsersList").addEventListener("click",e=>{const b=e.target.closest("[data-level-pick]");if(b)$("#opsLevelAdjustUserId").value=b.dataset.levelPick;});
 $("#opsLevelAdjustForm").addEventListener("submit",adjustOpsLevelXp);
