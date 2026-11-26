@@ -1942,8 +1942,13 @@ function initKuroRankingShowcase(){
  }
  function scoreText(game,row,mode){
   const numeric=Number(row.score||0),value=numeric.toLocaleString("ja-JP"),setting=game.showcaseConfig?.modes?.[mode];
-  if(setting&&typeof setting.scoreSuffix==="string")return value+setting.scoreSuffix;
   const metric=String(row.metric||game.modeMetrics?.[mode]||(game.id===TICTACTOE_GAME_ID||/wins|_wins/.test(mode)?"wins":/(^|[_-])(time|duration|elapsed|ms|clear_time)([_-]|$)/i.test(mode)?"time":"score"));
+  // Verified Number Guess leaderboard returns microseconds (time_us). Convert to seconds for the homepage.
+  if(metric==="time_us"&&Number.isFinite(numeric)&&numeric>=0){
+   const seconds=numeric/1e6;
+   return seconds.toFixed(6)+"秒";
+  }
+  if(setting&&typeof setting.scoreSuffix==="string")return value+setting.scoreSuffix;
   if(metric==="wins")return value+"勝";
   if(metric==="time"&&Number.isFinite(numeric)&&numeric>=0){
    const total=numeric/1000,minutes=Math.floor(total/60),seconds=(total%60).toFixed(2);
