@@ -155,7 +155,7 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
      <h3>画像を挿入して加工</h3>
      <input id="designInsertImage" type="file" accept="image/jpeg,image/png,image/webp" hidden>
      <button class="button" type="button" id="insertImageButton" style="width:100%">＋ 画像を追加</button>
-     <small class="hint">JPEG / PNG / WebP・5MB以下。アイコン装飾は標準の枠を使わず、画像だけでも完成できます。画像は全体・外周・アイコン上から配置先を選べます。キャンバス上でドラッグして移動できます。</small>
+     <small class="hint">JPEG / PNG / WebP・5MB以下。アイコン装飾は標準の枠を使わず、画像だけでも完成できます。画像は全体・外周・アイコン上から配置先を選べます。画像を選択して四隅のハンドルをドラッグすると縦横比を保って拡大・縮小、中央付近をドラッグすると移動できます。</small>
      <div class="design-field" style="margin-top:10px"><label for="imageLayerSelect">画像レイヤー</label><select id="imageLayerSelect"><option value="">画像はまだありません</option></select></div>
      <div class="design-two">
       <button class="mini" type="button" id="duplicateImageLayer">複製</button>
@@ -225,7 +225,7 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
    <main class="design-stage">
     <div class="design-stage-label"><strong id="designCanvasLabel">背景プレビュー · 16:9</strong><span>変更は自動的に下書きへ保存されます</span></div>
     <div class="design-canvas-shell"><canvas id="designCanvas" width="960" height="540"></canvas></div>
-    <p class="design-hint">中央のプレビューを確認しながら調整できます。保存したデザインは商品画像として書き出せます。</p>
+    <p class="design-hint">画像を選択して四隅の白いハンドルをドラッグすると拡大・縮小できます。画像の中央付近をドラッグすると移動できます。保存したデザインは商品画像として書き出せます。</p>
    </main>
    <aside class="design-sidebar right">
     <div class="design-section"><h3>プロフィール合成プレビュー</h3><div class="design-profile-card">
@@ -576,8 +576,8 @@ async function designDrawImageLayers(ctx,width,height,showSelection=true){
   if(showSelection&&layer.id===selectedImageLayerId){
    if("filter" in ctx)ctx.filter="none";
    ctx.globalAlpha=1;ctx.lineWidth=Math.max(2,width/480);ctx.strokeStyle="#ffffff";ctx.setLineDash([8,5]);ctx.strokeRect(-w/2,-h/2,w,h);ctx.setLineDash([]);
-   const handle=Math.max(10,width/64);ctx.fillStyle="#ffffff";
-   [[-w/2,-h/2],[w/2,-h/2],[-w/2,h/2],[w/2,h/2]].forEach(([x,y])=>ctx.fillRect(x-handle/2,y-handle/2,handle,handle));
+   const handle=Math.max(24,width/28);ctx.fillStyle="#ffffff";ctx.strokeStyle="#7c3aed";ctx.lineWidth=Math.max(2,width/400);
+   [[-w/2,-h/2],[w/2,-h/2],[-w/2,h/2],[w/2,h/2]].forEach(([x,y])=>{ctx.fillRect(x-handle/2,y-handle/2,handle,handle);ctx.strokeRect(x-handle/2,y-handle/2,handle,handle);});
   }
   ctx.restore();
  }
@@ -593,6 +593,18 @@ function designLayerHit(layer,point,width,height){
  const rx=dx*Math.cos(angle)-dy*Math.sin(angle),ry=dx*Math.sin(angle)+dy*Math.cos(angle);
  const w=width*Number(layer.width??35)/100,h=height*Number(layer.height??35)/100;
  return Math.abs(rx)<=w/2&&Math.abs(ry)<=h/2;
+}
+function designLayerHandleHit(layer,point,width,height){
+ const cx=width*Number(layer.x??50)/100,cy=height*Number(layer.y??50)/100;
+ const dx=point.x-cx,dy=point.y-cy,angle=(Number(layer.rotation)||0)*Math.PI/180;
+ const localX=dx*Math.cos(angle)+dy*Math.sin(angle),localY=-dx*Math.sin(angle)+dy*Math.cos(angle);
+ const w=width*Math.max(.02,Math.min(3,Number(layer.width??35)/100));
+ const h=height*Math.max(.02,Math.min(3,Number(layer.height??35)/100));
+ const radius=Math.max(30,width/30);
+ for(const corner of [{sx:-1,sy:-1},{sx:1,sy:-1},{sx:-1,sy:1},{sx:1,sy:1}]){
+  if(Math.abs(localX-corner.sx*w/2)<=radius&&Math.abs(localY-corner.sy*h/2)<=radius)return corner;
+ }
+ return null;
 }
 function designBindLayerControls(){
  $("imageLayerSelect").addEventListener("change",()=>{
@@ -643,24 +655,64 @@ function designBindLayerControls(){
  const canvas=$("designCanvas");
  canvas.addEventListener("pointerdown",event=>{
   const point=designCanvasPoint(event),layers=designImageLayers(),width=canvas.width,height=canvas.height;
+  const selected=designSelectedImageLayer();
+  const handle=selected?designLayerHandleHit(selected,point,width,height):null;
+  if(handle){
+   const startWidth=width*Math.max(.02,Math.min(3,Number(selected.width??35)/100));
+   const startHeight=height*Math.max(.02,Math.min(3,Number(selected.height??35)/100));
+   imageDrag={id:selected.id,mode:"resize",cx:width*Number(selected.x??50)/100,cy:height*Number(selected.y??50)/100,startWidth,startHeight,startWidthPct:Number(selected.width??35),startHeightPct:Number(selected.height??35),rotation:Number(selected.rotation)||0,sx:handle.sx,sy:handle.sy};
+   canvas.style.cursor=handle.sx===handle.sy?"nwse-resize":"nesw-resize";
+   canvas.setPointerCapture(event.pointerId);event.preventDefault();return;
+  }
   let hit=null;
   for(let i=layers.length-1;i>=0;i--){if(designLayerHit(layers[i],point,width,height)){hit=layers[i];break;}}
-  if(!hit){selectedImageLayerId=null;imageDrag=null;designUpdateLayerControls();designRender();return;}
-  selectedImageLayerId=hit.id;imageDrag={id:hit.id,offsetX:point.x-width*Number(hit.x??50)/100,offsetY:point.y-height*Number(hit.y??50)/100};
+  if(!hit){selectedImageLayerId=null;imageDrag=null;canvas.style.cursor="grab";designUpdateLayerControls();designRender();return;}
+  selectedImageLayerId=hit.id;
+  imageDrag={id:hit.id,mode:"move",offsetX:point.x-width*Number(hit.x??50)/100,offsetY:point.y-height*Number(hit.y??50)/100};
+  canvas.style.cursor="grabbing";
   canvas.setPointerCapture(event.pointerId);designUpdateLayerControls();designRender();event.preventDefault();
  });
  canvas.addEventListener("pointermove",event=>{
-  if(!imageDrag)return;
-  const point=designCanvasPoint(event),layer=designSelectedImageLayer();if(!layer)return;
-  layer.x=Math.max(-40,Math.min(140,(point.x-imageDrag.offsetX)/canvas.width*100));
-  layer.y=Math.max(-40,Math.min(140,(point.y-imageDrag.offsetY)/canvas.height*100));
+  const point=designCanvasPoint(event),width=canvas.width,height=canvas.height;
+  if(!imageDrag){
+   const selected=designSelectedImageLayer(),handle=selected?designLayerHandleHit(selected,point,width,height):null;
+   canvas.style.cursor=handle?(handle.sx===handle.sy?"nwse-resize":"nesw-resize"):"grab";
+   return;
+  }
+  const layer=designSelectedImageLayer();if(!layer)return;
+  if(imageDrag.mode==="resize"){
+   const angle=imageDrag.rotation*Math.PI/180,dx=point.x-imageDrag.cx,dy=point.y-imageDrag.cy;
+   const localX=dx*Math.cos(angle)+dy*Math.sin(angle),localY=-dx*Math.sin(angle)+dy*Math.cos(angle);
+   const anchorX=-imageDrag.sx*imageDrag.startWidth/2,anchorY=-imageDrag.sy*imageDrag.startHeight/2;
+   const vx=localX-anchorX,vy=localY-anchorY;
+   const rawScale=(vx*(imageDrag.sx*imageDrag.startWidth)+vy*(imageDrag.sy*imageDrag.startHeight))/(imageDrag.startWidth*imageDrag.startWidth+imageDrag.startHeight*imageDrag.startHeight);
+   const minScale=Math.max(2/imageDrag.startWidthPct,2/imageDrag.startHeightPct);
+   const maxScale=Math.min(300/imageDrag.startWidthPct,300/imageDrag.startHeightPct);
+   const scale=Math.max(minScale,Math.min(maxScale,Number.isFinite(rawScale)?rawScale:minScale));
+   const nextWidth=imageDrag.startWidth*scale,nextHeight=imageDrag.startHeight*scale;
+   const shiftLocalX=imageDrag.sx*(nextWidth-imageDrag.startWidth)/2;
+   const shiftLocalY=imageDrag.sy*(nextHeight-imageDrag.startHeight)/2;
+   const shiftX=shiftLocalX*Math.cos(angle)-shiftLocalY*Math.sin(angle);
+   const shiftY=shiftLocalX*Math.sin(angle)+shiftLocalY*Math.cos(angle);
+   layer.width=Math.max(2,Math.min(300,imageDrag.startWidthPct*scale));
+   layer.height=Math.max(2,Math.min(300,imageDrag.startHeightPct*scale));
+   layer.x=Math.max(0,Math.min(100,(imageDrag.cx+shiftX)/width*100));
+   layer.y=Math.max(0,Math.min(100,(imageDrag.cy+shiftY)/height*100));
+   $("imageLayerWidth").value=layer.width;$("imageLayerWidthNumber").value=layer.width;
+   $("imageLayerHeight").value=layer.height;$("imageLayerHeightNumber").value=layer.height;
+   canvas.style.cursor=imageDrag.sx===imageDrag.sy?"nwse-resize":"nesw-resize";
+  }else{
+   layer.x=Math.max(-40,Math.min(140,(point.x-imageDrag.offsetX)/width*100));
+   layer.y=Math.max(-40,Math.min(140,(point.y-imageDrag.offsetY)/height*100));
+   canvas.style.cursor="grabbing";
+  }
   designUpdateLayerOutputs();designRender();
  });
  const finishDrag=()=>{
-  if(!imageDrag)return;imageDrag=null;designPushHistory();designScheduleSave();designUpdateLayerControls();
+  if(!imageDrag)return;imageDrag=null;canvas.style.cursor="grab";designPushHistory();designScheduleSave();designUpdateLayerControls();
  };
  canvas.addEventListener("pointerup",finishDrag);canvas.addEventListener("pointercancel",finishDrag);
- // Pointer capture keeps dragging active until pointerup or pointercancel.
+ // A selected layer's corner handles resize it; dragging elsewhere moves it.
 }
 async function designRender(showSelection=true){
  const {canvas,ctx}=designCanvasContext();
