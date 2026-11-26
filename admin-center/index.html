@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="theme-color" content="#0b0d16">
+<link rel="icon" type="image/png" sizes="48x48" href="/assets/brand/logo/kurolab_icon_maru_48.png?v=20261122marufavicon2">
+<title>KURO Admin Center</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{color-scheme:dark;--bg:#090b13;--panel:#111522;--panel2:#171d2d;--line:#283149;--text:#f2f5fc;--muted:#98a4ba;--purple:#a78bfa;--blue:#76b7ff;--green:#6cddb5;--gold:#f2ce83;--red:#fda4af}
+*{box-sizing:border-box}
+html{min-height:100%;background:var(--bg)}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 13% -12%,#282044 0,transparent 42%),radial-gradient(ellipse at 100% 18%,#142846 0,transparent 34%),var(--bg);color:var(--text);font:14px/1.65 Inter,"Noto Sans JP",system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input{font:inherit}
+button,a{-webkit-tap-highlight-color:transparent}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer}
+[hidden]{display:none!important}
+.wrap{width:min(1240px,calc(100% - 38px));margin:0 auto}
+.topbar{height:72px;position:sticky;top:0;z-index:20;border-bottom:1px solid #283149cc;background:#0b0e18eF;backdrop-filter:blur(18px)}
+.top-inner{height:100%;display:flex;align-items:center;gap:14px}
+.brand{display:flex;align-items:center;gap:11px;font-size:16px;font-weight:1000;letter-spacing:.02em}
+.brand img{width:35px;height:35px;object-fit:contain}
+.brand em{font-style:normal;color:#b5a3ff}
+.brand small{display:block;margin-top:-2px;color:#77859d;font-size:9px;letter-spacing:.2em}
+.top-spacer{flex:1}
+.account-label{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#aab5c8;font-size:11px}
+.top-link,.logout{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:0 12px;border:1px solid var(--line);border-radius:9px;background:#151b2a;color:#dce5f5;font-size:10px;font-weight:850}
+.logout{background:#201b2f;border-color:#49406a;color:#ddd4ff}
+main{padding:32px 0 60px}
+.hero{position:relative;overflow:hidden;display:flex;align-items:flex-end;justify-content:space-between;gap:28px;padding:28px 30px;border:1px solid #403b60;border-radius:22px;background:linear-gradient(115deg,#1c1b32ed,#111a2aeb 72%);box-shadow:0 22px 65px #0003}
+.hero:after{content:"";position:absolute;width:290px;height:290px;right:10%;top:-210px;border:1px solid #a78bfa26;border-radius:50%;box-shadow:0 0 0 28px #a78bfa08,0 0 0 62px #a78bfa05;pointer-events:none}
+.hero-copy{position:relative;z-index:1;min-width:0}
+.eyebrow{color:#b9a8ff;font-size:10px;font-weight:1000;letter-spacing:.22em}
+.hero h1{margin:8px 0 8px;font-size:clamp(27px,4vw,40px);line-height:1.2;letter-spacing:-.045em}
+.hero p{margin:0;max-width:650px;color:#aab4c8;font-size:12px;line-height:1.9}
+.hero-mark{position:relative;z-index:1;flex:0 0 auto;width:88px;height:88px;display:grid;place-items:center;border:1px solid #665b9a;border-radius:25px;background:linear-gradient(145deg,#342d54,#17253b);color:#c8baff;font-size:42px;box-shadow:inset 0 1px #ffffff18,0 13px 35px #0004}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;margin:16px 0 22px}
+.metric{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;border:1px solid var(--line);border-radius:13px;background:#111725d9}
+.metric span{color:var(--muted);font-size:10px;font-weight:750}
+.metric strong{font-size:21px;font-weight:1000;font-variant-numeric:tabular-nums}
+.workspace{display:grid;grid-template-columns:205px minmax(0,1fr);gap:19px;align-items:start}
+.sidebar{position:sticky;top:91px;display:grid;gap:12px}
+.side-panel{padding:13px;border:1px solid var(--line);border-radius:15px;background:#101624eF}
+.side-title{margin:2px 7px 9px;color:#7f8ba2;font-size:9px;font-weight:950;letter-spacing:.16em}
+.filter-list{display:grid;gap:4px}
+.filter-btn{width:100%;display:flex;align-items:center;gap:10px;padding:10px;border:1px solid transparent;border-radius:9px;background:transparent;color:#9eabc1;text-align:left;font-size:11px;font-weight:800}
+.filter-btn:hover{background:#ffffff08;color:#e8edf7}
+.filter-btn.active{border-color:#554c82;background:#292442;color:#f1edff}
+.filter-icon{width:21px;text-align:center;font-size:14px}
+.side-note{padding:12px;color:#77849b;font-size:10px;line-height:1.8}
+.catalog-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:13px}
+.catalog-head h2{margin:0;font-size:17px;letter-spacing:-.02em}
+.catalog-head p{margin:3px 0 0;color:var(--muted);font-size:10px}
+.search-wrap{position:relative;width:min(330px,48%)}
+.search-wrap span{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#8290a9;font-size:15px}
+.search{width:100%;height:42px;padding:0 13px 0 37px;border:1px solid #34415b;border-radius:11px;outline:none;background:#101725;color:var(--text);font-size:11px}
+.search:focus{border-color:#9682e4;box-shadow:0 0 0 3px #9682e41c}
+.tool-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.tool-card{position:relative;min-width:0;overflow:hidden;padding:17px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(145deg,#171d2c,#101623);transition:transform .16s,border-color .16s,box-shadow .16s}
+.tool-card:hover{transform:translateY(-2px);border-color:#5a5680;box-shadow:0 14px 35px #0003}
+.tool-card.featured{background:linear-gradient(145deg,#211e38,#121c2d);border-color:#4c456f}
+.card-top{display:flex;align-items:flex-start;gap:12px}
+.tool-icon{width:48px;height:48px;flex:0 0 48px;display:grid;place-items:center;border:1px solid #4c4768;border-radius:13px;background:linear-gradient(145deg,#312b50,#1b2b42);font-size:23px}
+.tool-card.shop .tool-icon{border-color:#6b5942;background:linear-gradient(145deg,#453725,#28243a)}
+.tool-card.admin .tool-icon{border-color:#3b6286;background:linear-gradient(145deg,#203e5b,#25213e)}
+.card-title{min-width:0;flex:1}
+.card-kicker{color:#a99bda;font-size:8px;font-weight:1000;letter-spacing:.16em}
+.card-title h3{margin:2px 0 0;font-size:16px;letter-spacing:-.025em}
+.card-title p{margin:8px 0 0;min-height:42px;color:#9ba8bd;font-size:10px;line-height:1.8}
+.favorite-btn{width:32px;height:32px;flex:0 0 32px;border:1px solid #3a4357;border-radius:9px;background:#0e1421;color:#75839b;font-size:16px}
+.favorite-btn.active{border-color:#8c7040;background:#33291d;color:#f4d18a}
+.card-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px}
+.launch{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:0 13px;border:1px solid #7466a5;border-radius:9px;background:linear-gradient(105deg,#6d5bab,#4b528e);color:#fff;font-size:10px;font-weight:950}
+.launch:hover{filter:brightness(1.12)}
+.tool-card.admin .launch{border-color:#47779e;background:linear-gradient(105deg,#28628b,#4c5194)}
+.tool-card.shop .launch{border-color:#806948;background:linear-gradient(105deg,#735337,#5c4e8d)}
+.card-meta{color:#7e8ba1;font-size:9px}
+.quick-links{display:flex;flex-wrap:wrap;gap:6px;margin-top:13px;padding-top:12px;border-top:1px solid #ffffff10}
+.quick-link{display:inline-flex;align-items:center;gap:5px;min-height:29px;padding:0 9px;border:1px solid #354057;border-radius:8px;background:#0d1420;color:#b9c4d8;font-size:9px;font-weight:800}
+.quick-link:hover{border-color:#696091;background:#201e32;color:#f0ebff}
+.no-results{grid-column:1/-1;padding:40px 18px;border:1px dashed #3a455d;border-radius:14px;color:#94a1b6;text-align:center;font-size:11px}
+.lower-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:17px}
+.list-panel{min-width:0;padding:15px;border:1px solid var(--line);border-radius:15px;background:#111725d9}
+.list-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.list-head h3{margin:0;font-size:12px}
+.list-head small{color:#8491a8;font-size:9px}
+.shortcut-list{display:grid;gap:7px}
+.shortcut-row{display:flex;align-items:center;gap:10px;min-width:0;padding:9px;border:1px solid #2a3449;border-radius:10px;background:#0d1420}
+.shortcut-row:hover{border-color:#5e5887;background:#17192a}
+.shortcut-symbol{width:30px;height:30px;flex:0 0 30px;display:grid;place-items:center;border-radius:8px;background:#25223b;font-size:14px}
+.shortcut-name{min-width:0;flex:1}
+.shortcut-name strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}
+.shortcut-name small{display:block;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#8290a7;font-size:8px}
+.shortcut-arrow{color:#8997af;font-size:14px}
+.list-empty{padding:15px 8px;color:#7e8ba1;font-size:10px;text-align:center}
+.footer{padding:22px 0 6px;color:#6f7b91;font-size:9px;text-align:center}
+.login-shell{width:min(440px,calc(100% - 28px));margin:10vh auto 0;padding:27px;border:1px solid #3d3c5d;border-radius:20px;background:linear-gradient(145deg,#171a2b,#101624);box-shadow:0 28px 90px #0007}
+.login-brand{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+.login-brand img{width:38px;height:38px;object-fit:contain}
+.login-brand strong{display:block;font-size:14px}
+.login-brand small{display:block;color:#8490a7;font-size:9px;letter-spacing:.16em}
+.login-shell h1{margin:0 0 7px;font-size:22px}
+.login-shell>p{margin:0 0 20px;color:var(--muted);font-size:11px;line-height:1.8}
+.field{display:grid;gap:6px;margin:13px 0}
+.field label{color:#aebbd0;font-size:10px;font-weight:800}
+.field input{width:100%;height:43px;padding:0 12px;border:1px solid #35415a;border-radius:10px;outline:none;background:#0b121e;color:#f4f6fc;font-size:12px}
+.field input:focus{border-color:#9682e4;box-shadow:0 0 0 3px #9682e41c}
+.login-submit{width:100%;height:43px;margin-top:6px;border:1px solid #7163a8;border-radius:10px;background:linear-gradient(110deg,#6d5bab,#4d528d);color:white;font-size:11px;font-weight:950}
+.login-submit:disabled{opacity:.55;cursor:wait}
+.login-error{min-height:19px;margin:8px 0 0;color:#ff9fa9;font-size:10px}
+.login-hint{margin-top:16px;padding-top:13px;border-top:1px solid #2c3548;color:#77849a;font-size:9px;line-height:1.8}
+@media(max-width:850px){.workspace{grid-template-columns:1fr}.sidebar{position:static}.filter-list{display:flex;overflow:auto}.filter-btn{width:auto;flex:0 0 auto;white-space:nowrap}.side-note{display:none}.tool-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.wrap{width:calc(100% - 22px)}.topbar{height:61px}.brand{font-size:13px;gap:7px}.brand img{width:29px;height:29px}.account-label{display:none}.top-link,.logout{min-height:32px;padding:0 9px;font-size:9px}.top-inner{gap:7px}.hero{padding:20px;border-radius:17px;align-items:center}.hero h1{font-size:25px}.hero p{font-size:10px}.hero-mark{width:57px;height:57px;border-radius:16px;font-size:27px}.metrics{gap:7px;margin:11px 0 15px}.metric{padding:10px}.metric span{font-size:8px}.metric strong{font-size:18px}.workspace{gap:12px}.side-panel{padding:9px}.side-title{display:none}.filter-btn{padding:8px 10px;font-size:9px}.catalog-head{align-items:stretch;flex-direction:column}.search-wrap{width:100%}.tool-grid{grid-template-columns:1fr}.tool-card{padding:14px}.card-title p{min-height:0}.lower-grid{grid-template-columns:1fr}.login-shell{margin-top:7vh;padding:22px}}
+</style>
+</head>
+<body>
+<section id="loginView" class="login-shell" hidden>
+ <div class="login-brand"><img src="/assets/brand/logo/kurolab_icon_toumei_160.png?v=20261121logosfix" alt=""><div><strong>KURO ADMIN CENTER</strong><small>SECURE MANAGEMENT PORTAL</small></div></div>
+ <div class="eyebrow">ADMINISTRATOR ACCESS</div>
+ <h1>管理者ログイン</h1>
+ <p>KUROGamesの管理者アカウントでログインしてください。管理者権限を確認してから管理ハブを開きます。</p>
+ <form id="loginForm">
+  <div class="field"><label for="email">メールアドレス</label><input id="email" type="email" autocomplete="username" required></div>
+  <div class="field"><label for="password">パスワード</label><input id="password" type="password" autocomplete="current-password" required></div>
+  <button class="login-submit" id="loginButton" type="submit">ログイン</button>
+  <div class="login-error" id="loginError" role="alert"></div>
+ </form>
+ <div class="login-hint">このページは管理者専用です。一般アカウントには管理者権限が付与されません。</div>
+</section>
+
+<div id="appView" hidden>
+<header class="topbar"><div class="wrap top-inner">
+ <a class="brand" href="/admin-center/"><img src="/assets/brand/logo/kurolab_icon_toumei_160.png?v=20261121logosfix" alt=""><span>KURO <em>ADMIN CENTER</em><small>MANAGEMENT WORKSPACE</small></span></a>
+ <span class="top-spacer"></span><span class="account-label" id="account"></span>
+ <a class="top-link" href="/admin/">メイン管理画面 ↗</a>
+ <button class="logout" id="logoutButton" type="button">ログアウト</button>
+</div></header>
+<main class="wrap">
+ <section class="hero">
+  <div class="hero-copy"><div class="eyebrow">ONE PORTAL / ALL MANAGEMENT TOOLS</div><h1>管理者コントロールセンター</h1><p>ゲーム制作、ショップ運営、ユーザー・システム管理。KUROGamesの管理ツールを、この画面からまとめて開けます。</p></div>
+  <div class="hero-mark" aria-hidden="true">✦</div>
+ </section>
+ <section class="metrics" aria-label="管理ツールの概要">
+  <div class="metric"><span>登録ツール</span><strong id="toolCount">6</strong></div>
+  <div class="metric"><span>お気に入り</span><strong id="favoriteCount">0</strong></div>
+  <div class="metric"><span>最近使用</span><strong id="recentCount">0</strong></div>
+ </section>
+ <div class="workspace">
+  <aside class="sidebar">
+   <section class="side-panel">
+    <div class="side-title">WORKSPACE</div>
+    <nav class="filter-list" aria-label="管理ツールのカテゴリ">
+     <button class="filter-btn active" type="button" data-filter="all"><span class="filter-icon">▦</span>すべてのツール</button>
+     <button class="filter-btn" type="button" data-filter="admin"><span class="filter-icon">◈</span>運営管理</button>
+     <button class="filter-btn" type="button" data-filter="studio"><span class="filter-icon">⌘</span>制作スタジオ</button>
+     <button class="filter-btn" type="button" data-filter="shop"><span class="filter-icon">◇</span>ショップ管理</button>
+     <button class="filter-btn" type="button" data-filter="favorites"><span class="filter-icon">☆</span>お気に入り</button>
+     <button class="filter-btn" type="button" data-filter="recent"><span class="filter-icon">◷</span>最近使ったツール</button>
+    </nav>
+   </section>
+   <section class="side-panel side-note">新しい管理ツールが増えた場合も、この管理ハブに入口を追加して整理できます。既存の各ツールや保存データはそのまま維持します。</section>
+  </aside>
+
+  <section class="catalog">
+   <div class="catalog-head"><div><h2>管理ツール一覧</h2><p id="catalogDescription">利用する管理機能を選択してください。</p></div><label class="search-wrap"><span aria-hidden="true">⌕</span><input class="search" id="searchInput" type="search" placeholder="ツール名・機能で検索…" autocomplete="off"></label></div>
+   <div class="tool-grid" id="toolGrid">
+    <article class="tool-card admin featured" data-group="admin" data-search="管理画面 admin console ユーザー アカウント ポイント 残高 レベル xp 報酬 通知 ランキング 統計 sns lab 運営 設定">
+     <div class="card-top"><div class="tool-icon" aria-hidden="true">◈</div><div class="card-title"><div class="card-kicker">CORE MANAGEMENT</div><h3>KURO Admin</h3></div><button class="favorite-btn" type="button" data-favorite="admin" aria-label="KURO Adminをお気に入りに登録">☆</button></div>
+     <div class="card-title"><p>ユーザー管理、レベル・XP、ポイント、報酬、通知、ランキングや各サービスの運営管理を行います。</p></div>
+     <div class="card-footer"><a class="launch tool-link" data-tool-id="admin" href="/admin/">管理画面を開く <span>↗</span></a><span class="card-meta">ADMIN CONSOLE</span></div>
+    </article>
+
+    <article class="tool-card" data-group="studio" data-search="game studio ゲームスタジオ 制作 プロジェクト コード エディター html css javascript オンライン ランキング ルーム マニュアル">
+     <div class="card-top"><div class="tool-icon" aria-hidden="true">⌘</div><div class="card-title"><div class="card-kicker">GAME DEVELOPMENT</div><h3>Game Studio</h3></div><button class="favorite-btn" type="button" data-favorite="game-studio" aria-label="Game Studioをお気に入りに登録">☆</button></div>
+     <div class="card-title"><p>ゲームの新規制作・編集、プロジェクト管理、オンライン機能の設定、制作マニュアルをまとめています。</p></div>
+     <div class="card-footer"><a class="launch tool-link" data-tool-id="game-projects" href="/game-studio/projects.html">プロジェクト一覧 <span>↗</span></a><span class="card-meta">GAME WORKSPACE</span></div>
+     <div class="quick-links">
+      <a class="quick-link tool-link" data-tool-id="game-editor" href="/game-studio/code.html">✎ コードエディター ↗</a>
+      <a class="quick-link tool-link" data-tool-id="game-online" href="/game-studio/online.html">◎ オンライン設定 ↗</a>
+      <a class="quick-link tool-link" data-tool-id="game-manual" href="/game-studio/manual.html">▤ 制作マニュアル ↗</a>
+     </div>
+    </article>
+
+    <article class="tool-card shop" data-group="shop" data-search="shop studio ショップスタジオ 商品 カタログ アイテム 追加 編集 削除 価格 アイコン フレーム プロフィール 壁紙 販売">
+     <div class="card-top"><div class="tool-icon" aria-hidden="true">◇</div><div class="card-title"><div class="card-kicker">STORE MANAGEMENT</div><h3>Shop Studio</h3></div><button class="favorite-btn" type="button" data-favorite="shop-studio" aria-label="Shop Studioをお気に入りに登録">☆</button></div>
+     <div class="card-title"><p>ショップ商品の追加・編集・削除、価格、アイコン枠、プロフィール背景などの販売アイテムを管理します。</p></div>
+     <div class="card-footer"><a class="launch tool-link" data-tool-id="shop-studio" href="/shop-studio/">Shop Studioを開く <span>↗</span></a><span class="card-meta">COMMERCE WORKSPACE</span></div>
+    </article>
+   </div>
+   <div class="lower-grid">
+    <section class="list-panel"><div class="list-head"><h3>☆ お気に入り</h3><small>よく使うツール</small></div><div class="shortcut-list" id="favoritesList"><div class="list-empty">カード右上の☆から登録できます。</div></div></section>
+    <section class="list-panel"><div class="list-head"><h3>◷ 最近使ったツール</h3><small>このブラウザに保存</small></div><div class="shortcut-list" id="recentList"><div class="list-empty">ツールを開くと、ここに履歴が表示されます。</div></div></section>
+   </div>
+   <div class="footer">KURO GAMES · ADMIN CENTER · 管理者専用</div>
+  </section>
+ </div>
+</main>
+</div>
+
+<script>
+"use strict";
+const SUPABASE_URL="https://cprvpphlfpmiegjiutjn.supabase.co";
+const PUBLISHABLE_KEY="sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
+const $=s=>document.querySelector(s);
+async function cloudflareFetch(input,init={}){
+ const request=new Request(input,init);
+ const target=new URL(request.url);
+ if(target.origin!==SUPABASE_URL)return fetch(request);
+ const bodyBuffer=["GET","HEAD"].includes(request.method)?new ArrayBuffer(0):await request.clone().arrayBuffer();
+ const bytes=new Uint8Array(bodyBuffer);
+ let binary="";
+ for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode(...bytes.subarray(i,i+0x8000));
+ const bodyBase64=bytes.length?btoa(binary):"";
+ const headers=Object.fromEntries(request.headers.entries());
+ const proxyResponse=await fetch("/api/cloudflare-relay",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:target.pathname+target.search,method:request.method,headers,bodyBase64,clientId:"admin-console"})});
+ let result;
+ try{result=await proxyResponse.json();}catch{throw new Error("CloudflareプロキシからJSON以外の応答が返されました。");}
+ if(!proxyResponse.ok||!result||typeof result.status!=="number")throw new Error(result?.error||"Cloudflare経由の通信に失敗しました。");
+ let responseBody=result.bodyText??"";
+ if(result.isBinary&&result.bodyBase64){const raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);responseBody=out;}
+ return new Response([204,205,304].includes(result.status)?null:responseBody,{status:result.status,headers:result.headers||{}});
+}
+const db=window.supabase.createClient(SUPABASE_URL,PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},global:{fetch:cloudflareFetch}});
+const FAVORITES_KEY="kuro-admin-center-favorites-v1";
+const RECENT_KEY="kuro-admin-center-recent-v1";
+const toolInfo={
+ admin:{name:"KURO Admin",url:"/admin/",icon:"◈",group:"admin"},
+ "game-projects":{name:"Game Studio プロジェクト",url:"/game-studio/projects.html",icon:"⌘",group:"studio"},
+ "game-editor":{name:"Game Studio コードエディター",url:"/game-studio/code.html",icon:"✎",group:"studio"},
+ "game-online":{name:"Game Studio オンライン設定",url:"/game-studio/online.html",icon:"◎",group:"studio"},
+ "game-manual":{name:"Game Studio 制作マニュアル",url:"/game-studio/manual.html",icon:"▤",group:"studio"},
+ "shop-studio":{name:"Shop Studio",url:"/shop-studio/",icon:"◇",group:"shop"}
+};
+const cardFavoriteMap={"admin":"admin","studio":"game-studio","shop":"shop-studio"};
+let activeFilter="all";
+function safeRead(key,fallback){try{const value=JSON.parse(localStorage.getItem(key)||"null");return Array.isArray(value)?value:fallback;}catch(_){return fallback;}}
+function saveArray(key,value){try{localStorage.setItem(key,JSON.stringify(value));}catch(_){}}
+let favorites=safeRead(FAVORITES_KEY,[]).filter(x=>["admin","game-studio","shop-studio"].includes(x));
+let recent=safeRead(RECENT_KEY,[]).filter(x=>typeof x==="string"&&toolInfo[x]);
+function esc(value){return String(value??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function showLogin(message){
+ $("#appView").hidden=true;$("#loginView").hidden=false;
+ if(message)$("#loginError").textContent=message;
+}
+function showApp(user){
+ $("#loginView").hidden=true;$("#appView").hidden=false;
+ $("#account").textContent=user.email||user.user_metadata?.username||"管理者";
+ $("#loginError").textContent="";
+ renderHub();
+}
+async function checkAdmin(user){
+ const {data,error}=await db.from("admin_users").select("user_id,role").eq("user_id",user.id).maybeSingle();
+ if(error)throw error;
+ if(!data)throw new Error("このアカウントには管理者権限がありません。");
+}
+async function enter(user){
+ try{await checkAdmin(user);showApp(user);}
+ catch(error){await db.auth.signOut();showLogin(error?.message||"管理者認証に失敗しました。");}
+}
+function recordRecent(id){
+ if(!toolInfo[id])return;
+ recent=[id,...recent.filter(value=>value!==id)].slice(0,8);
+ saveArray(RECENT_KEY,recent);renderHub();
+}
+function shortcutRow(id){
+ const item=toolInfo[id];if(!item)return "";
+ return '<a class="shortcut-row" href="'+esc(item.url)+'" data-tool-id="'+esc(id)+'"><span class="shortcut-symbol">'+esc(item.icon)+'</span><span class="shortcut-name"><strong>'+esc(item.name)+'</strong><small>'+esc(item.url)+'</small></span><span class="shortcut-arrow">↗</span></a>';
+}
+function renderHub(){
+ $("#toolCount").textContent=Object.keys(toolInfo).length.toLocaleString("ja-JP");
+ $("#favoriteCount").textContent=favorites.length.toLocaleString("ja-JP");
+ $("#recentCount").textContent=recent.length.toLocaleString("ja-JP");
+ $("#favoritesList").innerHTML=favorites.length?favorites.map(id=>shortcutRow(id==="game-studio"?"game-projects":id)).join(""):'<div class="list-empty">カード右上の☆から登録できます。</div>';
+ $("#recentList").innerHTML=recent.length?recent.map(shortcutRow).join(""):'<div class="list-empty">ツールを開くと、ここに履歴が表示されます。</div>';
+ document.querySelectorAll("[data-favorite]").forEach(button=>{
+  const active=favorites.includes(button.dataset.favorite);
+  button.classList.toggle("active",active);button.textContent=active?"★":"☆";
+  button.setAttribute("aria-pressed",String(active));
+  button.setAttribute("aria-label",active?"お気に入りから削除":"お気に入りに登録");
+ });
+ applyFilter();
+}
+function applyFilter(){
+ const q=$("#searchInput").value.trim().toLocaleLowerCase();
+ let visible=0;
+ document.querySelectorAll(".tool-card").forEach(card=>{
+  const group=card.dataset.group;
+  const favoriteId=cardFavoriteMap[group];
+  const ids=group==="admin"?["admin"]:group==="studio"?["game-projects","game-editor","game-online","game-manual"]:["shop-studio"];
+  const matchQuery=!q||(card.innerText+" "+card.dataset.search).toLocaleLowerCase().includes(q);
+  let matchFilter=activeFilter==="all"||activeFilter===group;
+  if(activeFilter==="favorites")matchFilter=favorites.includes(favoriteId);
+  if(activeFilter==="recent")matchFilter=recent.some(id=>ids.includes(id));
+  const show=matchQuery&&matchFilter;
+  card.hidden=!show;if(show)visible++;
+ });
+ $("#noResults")?.remove();
+ if(!visible){
+  const empty=document.createElement("div");empty.className="no-results";empty.id="noResults";empty.textContent="該当する管理ツールがありません。検索語やカテゴリを変更してください。";
+  $("#toolGrid").appendChild(empty);
+ }
+ const descriptions={all:"利用する管理機能を選択してください。",admin:"ユーザー・サービスの運営管理ツールです。",studio:"ゲーム制作に関するツールです。",shop:"ショップ商品を管理するツールです。",favorites:"お気に入りに登録した管理ツールです。",recent:"最近開いた管理ツールです。"};
+ $("#catalogDescription").textContent=descriptions[activeFilter]||descriptions.all;
+}
+document.querySelectorAll("[data-filter]").forEach(button=>button.addEventListener("click",()=>{
+ activeFilter=button.dataset.filter;
+ document.querySelectorAll("[data-filter]").forEach(item=>item.classList.toggle("active",item===button));
+ applyFilter();
+}));
+$("#searchInput").addEventListener("input",applyFilter);
+document.addEventListener("click",event=>{
+ const fav=event.target.closest("[data-favorite]");
+ if(fav){
+  const id=fav.dataset.favorite;
+  favorites=favorites.includes(id)?favorites.filter(value=>value!==id):[id,...favorites];
+  saveArray(FAVORITES_KEY,favorites);renderHub();return;
+ }
+ const link=event.target.closest("[data-tool-id]");
+ if(link){recordRecent(link.dataset.toolId);}
+});
+$("#loginForm").addEventListener("submit",async event=>{
+ event.preventDefault();const button=$("#loginButton");button.disabled=true;button.textContent="確認中…";$("#loginError").textContent="";
+ try{const {data,error}=await db.auth.signInWithPassword({email:$("#email").value.trim(),password:$("#password").value});if(error)throw error;await enter(data.user);}
+ catch(error){$("#loginError").textContent=error?.message||"ログインできませんでした。";}
+ finally{button.disabled=false;button.textContent="ログイン";}
+});
+$("#logoutButton").addEventListener("click",async()=>{await db.auth.signOut();showLogin("");});
+db.auth.getSession().then(({data,error})=>{
+ if(error){showLogin("ログイン状態を確認できませんでした。"+error.message);return;}
+ if(data.session?.user)enter(data.session.user);else showLogin("");
+}).catch(error=>showLogin(error?.message||"認証状態を確認できませんでした。"));
+db.auth.onAuthStateChange((event,session)=>{
+ if(event==="SIGNED_OUT")showLogin("");
+});
+</script>
+</body>
+</html>
