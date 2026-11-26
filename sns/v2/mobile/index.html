@@ -3455,8 +3455,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
         async function syncDirectChatNewMessages(conversationId, peerId) {
             if (!conversationId || !supabaseClient || activeChatType !== 'direct' || activeChatId !== conversationId) return;
             if (kuroDirectSyncPromises.has(conversationId)) return kuroDirectSyncPromises.get(conversationId);
-            const since = kuroDirectMessageLatestAt.get(conversationId) || '';
-            if (!since) return;
+            const since = kuroDirectMessageLatestAt.get(conversationId) || new Date(0).toISOString();
             const task = (async () => {
                 const modal = document.getElementById('chatModal');
                 if (modal?.classList.contains('hidden')) return;
@@ -4201,7 +4200,10 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             if (publicMode) {
                 stopChatRealtime();
                 stopGroupChatRealtime();
-                loadPublicChat().then(setupPublicChatRealtime).catch(error => console.warn('KURO public chat open failed:', error));
+                loadPublicChat().then(() => {
+                    const currentModal = document.getElementById('chatModal');
+                    if (currentModal && !currentModal.classList.contains('hidden') && currentModal.dataset.chatMode === 'public') setupPublicChatRealtime();
+                }).catch(error => console.warn('KURO public chat open failed:', error));
             } else {
                 stopPublicChatRealtime();
                 stopChatRealtime();
@@ -4502,8 +4504,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
         async function syncGroupChatNewMessages(groupId) {
             if (!groupId || !supabaseClient || activeChatType !== 'group' || activeChatId !== groupId) return;
             if (kuroGroupSyncPromises.has(groupId)) return kuroGroupSyncPromises.get(groupId);
-            const since = kuroGroupMessageLatestAt.get(groupId) || '';
-            if (!since) return;
+            const since = kuroGroupMessageLatestAt.get(groupId) || new Date(0).toISOString();
             const task = (async () => {
                 const modal = document.getElementById('chatModal');
                 if (modal?.classList.contains('hidden')) return;
@@ -4702,7 +4703,6 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             if (!refreshOnly) box.innerHTML = '<p class="text-xs text-gray-500 text-center mt-8">メッセージを読み込み中…</p>';
             document.getElementById('chatMessageInput').disabled = false;
             document.getElementById('chatSendButton').disabled = false;
-            setupGroupChatRealtime(groupId, groupName);
             const result = await supabaseClient.from('group_chat_messages')
                 .select('id,group_id,sender_id,content,created_at,media')
                 .eq('group_id', groupId).order('created_at', {ascending:false}).limit(50);
@@ -4765,8 +4765,10 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 return '<div data-group-message-id="' + socialEscape(message.id) + '" class="flex flex-col ' + (mine ? 'items-end' : 'items-start') + '">' + identity + '<div class="max-w-[85%] rounded-2xl px-3 py-2.5 ' + (mine ? 'bg-white text-black' : 'bg-kuro-800 text-gray-100') + '">' + textHTML + (mediaHTML.get(String(message.id)) || '') + '</div><span class="text-[10px] text-gray-500 mt-1">' + new Date(message.created_at).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',hour12:false}) + '</span>' + receipt + '</div>';
             }).join('') || '<p class="text-xs text-gray-600 text-center mt-8">最初のメッセージを送ってみよう</p>';
             kuroGroupMessageSeen.set(groupId, new Set(messages.map(m => String(m.id))));
-            kuroGroupMessageLatestAt.set(groupId, messages.reduce((latest,m) => m.created_at > latest ? m.created_at : latest, ''));
+            const groupLatestAt = messages.reduce((latest,m) => m.created_at > latest ? m.created_at : latest, '');
+            kuroGroupMessageLatestAt.set(groupId, groupLatestAt || new Date(0).toISOString());
             box.scrollTop = box.scrollHeight;
+            setupGroupChatRealtime(groupId, activeChatHandle);
             loadGroupChats();
             await syncGroupChatNewMessages(groupId);
         }
@@ -4976,7 +4978,6 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             kuroDirectMessageLatestAt.set(conversationId, '');
             const cachedMessages = readChatCache('messages', conversationId);
             box.innerHTML = cachedMessages?.value || '<div class="flex justify-center py-3"><div class="flex items-center gap-2 text-xs text-gray-400"><i class="fa-solid fa-arrow-down animate-spin"></i><span>読み込み中…</span></div></div>';
-            setupChatRealtime(conversationId);
             const result = await supabaseClient.from('chat_messages')
                 .select('id,sender_id,content,created_at,media').eq('conversation_id', conversationId)
                 .order('created_at', {ascending:false}).limit(50);
@@ -5033,6 +5034,8 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             advanceDirectChatCursor(conversationId, messages);
             writeChatCache('messages', conversationId, box.innerHTML);
             box.scrollTop = box.scrollHeight;
+            if (!kuroDirectMessageLatestAt.get(conversationId)) kuroDirectMessageLatestAt.set(conversationId, new Date(0).toISOString());
+            setupChatRealtime(conversationId);
             await syncDirectChatNewMessages(conversationId, peerId);
             await loadChatConversations();
         }
