@@ -1561,7 +1561,7 @@ async function runOpsUserAction(button){
 
 function coinFormat(value){return Math.max(0,Number(value)||0).toLocaleString("ja-JP");}
 function coinTransactionLabel(type){
- const labels={game_win_reward:"ゲーム勝利報酬",admin_adjustment:"管理者補正",shop_purchase:"ショップ購入",shop_refund:"ショップ返金"};
+ const labels={game_win_reward:"ゲーム勝利報酬",level_reward:"レベル到達報酬",admin_adjustment:"管理者補正",shop_purchase:"ショップ購入",shop_refund:"ショップ返金"};
  return labels[type]||String(type||"取引");
 }
 const COIN_PRIME_GAME_ID="79c9921a-d57a-45b1-8271-1ee7042801dc";
@@ -1821,7 +1821,7 @@ async function searchOpsCoinUsers(){
 function renderOpsCoinAdjustHistory(rows){
  const host=$("#opsCoinAdjustHistory");
  if(!Array.isArray(rows)||!rows.length){host.innerHTML='<div class="empty">このユーザーの取引履歴はありません。</div>';return;}
- const labels={game_win_reward:"ゲーム報酬",admin_adjustment:"管理者補正",shop_purchase:"ショップ購入",shop_refund:"ショップ返金"};
+ const labels={game_win_reward:"ゲーム報酬",level_reward:"レベル到達報酬",admin_adjustment:"管理者補正",shop_purchase:"ショップ購入",shop_refund:"ショップ返金"};
  host.innerHTML='<table class="ops-table"><thead><tr><th>日時</th><th>取引</th><th>理由・内容</th><th>増減</th><th>取引後残高</th></tr></thead><tbody>'+
  rows.map(row=>{
   const amount=Number(row.amount)||0,signed=opsCoinSignedFormat(amount);
