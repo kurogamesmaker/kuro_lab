@@ -360,12 +360,17 @@
       var equippedFrame = cosmetics.frame && typeof cosmetics.frame === "object" ? cosmetics.frame : null;
       var equippedBackground = cosmetics.background && typeof cosmetics.background === "object" ? cosmetics.background : null;
       var equippedTheme = cosmetics.theme && typeof cosmetics.theme === "object" ? cosmetics.theme : null;
+      var equippedBanner = cosmetics.banner && typeof cosmetics.banner === "object" ? cosmetics.banner : null;
+      var equippedNameplate = cosmetics.nameplate && typeof cosmetics.nameplate === "object" ? cosmetics.nameplate : null;
       var avatarUrl = safeImageUrl(profile.avatar_url);
       var avatar = avatarUrl
         ? '<img src="' + escapeHtml(avatarUrl) + '" alt="" class="kuro-profile-avatar-image">'
         : '<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg>';
       var frameRarity = equippedFrame && ["common","rare","epic","legendary"].includes(String(equippedFrame.rarity)) ? String(equippedFrame.rarity) : "";
       var frameClass = frameRarity ? " kuro-profile-frame-" + frameRarity : "";
+      var frameImage = safeImageUrl(equippedFrame && equippedFrame.imageUrl);
+      var frameImageClass = frameImage ? " kuro-profile-frame-image" : "";
+      var frameImageStyle = frameImage ? ' style="--kuro-profile-frame-image:url(\\'' + escapeHtml(frameImage) + '\\')"' : "";
       var backgroundImage = safeImageUrl(equippedBackground && equippedBackground.imageUrl);
       var backgroundIcon = equippedBackground && !backgroundImage ? String(equippedBackground.icon || "✦") : "";
       var backgroundStyle = backgroundImage
@@ -385,7 +390,7 @@
           : equippedBackground && ["rare","epic","legendary"].includes(String(equippedBackground.rarity))
             ? " kuro-profile-background-" + String(equippedBackground.rarity)
             : "";
-      var cosmeticChips = ["avatar","frame","background","theme"].map(function (slot) {
+      var cosmeticChips = ["avatar","frame","background","theme","banner","nameplate"].map(function (slot) {
         var item = cosmetics[slot];
         return item && item.name
           ? '<span class="kuro-profile-cosmetic-chip"><span>' + escapeHtml(item.icon || "✦") + '</span>' + escapeHtml(item.name) + '</span>'
@@ -394,6 +399,16 @@
       var cosmeticBanner = equippedBackground
         ? '<div class="kuro-profile-cosmetic-banner' + backgroundClass + '"' + backgroundStyle + '><span class="kuro-profile-cosmetic-banner-icon">' + escapeHtml(backgroundIcon || (backgroundImage ? "" : "✦")) + '</span><span><small>PROFILE BACKGROUND</small><strong>' + escapeHtml(equippedBackground.name || "背景") + '</strong></span></div>'
         : "";
+      var bannerImage = safeImageUrl(equippedBanner && equippedBanner.imageUrl);
+      var bannerStyle = bannerImage
+        ? ' style="background-image:linear-gradient(90deg,rgba(10,15,29,.78),rgba(10,15,29,.28)),url(\\'' + escapeHtml(bannerImage) + '\\')"'
+        : "";
+      var extraBanner = equippedBanner
+        ? '<div class="kuro-profile-extra-banner"' + bannerStyle + '><small>PROFILE BANNER</small><strong>' + escapeHtml(equippedBanner.name || "バナー") + '</strong></div>'
+        : "";
+      var nameplateHtml = equippedNameplate
+        ? '<span class="kuro-profile-nameplate" title="' + escapeHtml(equippedNameplate.name || "ネーム装飾") + '">' + escapeHtml(name) + '</span>'
+        : '<span>' + escapeHtml(name) + '</span>';
       var bio = String(profile.bio || "").trim();
       var bioHtml = bio
         ? escapeHtml(bio).replace(/\r\n|\r|\n/g, "<br>")
@@ -409,10 +424,11 @@
       content.innerHTML =
         '<div class="kuro-profile-custom-theme' + themeClass + '">' +
         cosmeticBanner +
+        extraBanner +
         (cosmeticChips ? '<section class="kuro-profile-cosmetic-strip" aria-label="装備中アイテム">' + cosmeticChips + '</section>' : '') +
         '<section class="kuro-profile-identity">' +
-          '<div class="kuro-profile-identity-main"><div class="kuro-profile-avatar' + frameClass + '">' + avatar + '</div>' +
-          '<div class="kuro-profile-names"><h3 class="kuro-profile-name-line"><span>' + escapeHtml(name) + '</span><span class="kuro-profile-level-badge">Lv.' + currentLevel.toLocaleString("ja-JP") + '</span></h3><p>' + escapeHtml(handle) + '</p>' +
+          '<div class="kuro-profile-identity-main"><div class="kuro-profile-avatar' + frameClass + frameImageClass + '"' + frameImageStyle + '>' + avatar + '</div>' +
+          '<div class="kuro-profile-names"><h3 class="kuro-profile-name-line">' + nameplateHtml + '<span class="kuro-profile-level-badge">Lv.' + currentLevel.toLocaleString("ja-JP") + '</span></h3><p>' + escapeHtml(handle) + '</p>' +
           '<div class="kuro-profile-level-progress" aria-label="レベル経験値"><div><span>' + totalXp.toLocaleString("ja-JP") + ' / ' + nextLevelXp.toLocaleString("ja-JP") + ' XP</span><small>次のレベルまで ' + Math.max(0,nextLevelXp-totalXp).toLocaleString("ja-JP") + ' XP</small></div><i><b style="width:' + levelProgress.toFixed(1) + '%"></b></i></div>' +
           '<small>KURO ID：' + escapeHtml(profile.kuro_id || "未設定") + '</small>' + joinedLabel + '</div></div>' +
           renderSocial(profile, results[2], isSelf, !!viewerUser) +
