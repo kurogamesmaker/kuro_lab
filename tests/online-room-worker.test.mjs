@@ -779,10 +779,12 @@ test("UNON three-player turns advance to all three seats and return to the start
       { userId: "p2", name: "P2", hand: [
         unonCard("p2-red-4", "red", "4"),
         unonCard("p2-green-2", "green", "2"),
+        unonCard("p2-blue-8", "blue", "8"),
       ] },
       { userId: "p3", name: "P3", hand: [
         unonCard("p3-red-6", "red", "6"),
         unonCard("p3-yellow-2", "yellow", "2"),
+        unonCard("p3-green-8", "green", "8"),
       ] },
     ],
     top: unonCard("top", "red", "5"),
@@ -799,6 +801,12 @@ test("UNON three-player turns advance to all three seats and return to the start
   const p3 = UNON_RULES.applyAction(p2.state, "p3", { type: "play", cardIds: ["p3-red-6"] });
   assert.equal(p3.ok, true);
   assert.equal(p3.state.turn, 0);
+  assert.equal(p3.state.unoPending, null);
+
+  const p1Again = UNON_RULES.applyAction(p3.state, "p1", { type: "play", cardIds: ["p1-red-7"] });
+  assert.equal(p1Again.ok, true);
+  assert.equal(p1Again.state.turn, 1);
+  assert.equal(p1Again.state.unoPending, "p1");
 });
 
 test("UNON reverse sends a three-player game to the previous seat", () => {
