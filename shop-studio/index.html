@@ -178,7 +178,7 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
       <div class="design-field"><label for="frameColor1">メインカラー</label><input id="frameColor1" type="color" value="#a78bfa"></div>
       <div class="design-field"><label for="frameColor2">サブカラー</label><input id="frameColor2" type="color" value="#22d3ee"></div>
      </div>
-     <div class="design-field"><label for="frameThickness">枠の太さ</label><input id="frameThickness" type="range" min="6" max="34" value="17"><output id="frameThicknessValue">17px</output></div>
+     <div class="design-field"><label for="frameThickness">枠の太さ</label><input id="frameThickness" type="range" min="12" max="68" value="42"><output id="frameThicknessValue">42px</output></div>
      <label class="design-check"><input id="frameGlow" type="checkbox" checked> 発光エフェクトを付ける</label>
      <div class="design-field" style="margin-top:11px"><label for="frameOrnament">ワンポイント装飾（絵文字・記号）</label><input id="frameOrnament" type="text" maxlength="4" value="✦"></div>
     </div>
@@ -337,7 +337,7 @@ async function start(){
 
 const DESIGN_DEFAULTS={
  background:{version:1,sourceImageUrl:"",imageZoom:100,imageX:50,imageY:50,color1:"#5b21b6",color2:"#0e7490",angle:135,pattern:"grid",overlay:18,title:"KURO PROFILE",textColor:"#ffffff",textSize:38,textAlign:"left",textY:78},
- frame:{version:1,style:"gradient",color1:"#a78bfa",color2:"#22d3ee",thickness:17,glow:true,ornament:"✦"}
+ frame:{version:1,style:"gradient",color1:"#a78bfa",color2:"#22d3ee",thickness:42,glow:true,ornament:"✦"}
 };
 const DESIGN_TEMPLATES={
  background:[
@@ -347,10 +347,10 @@ const DESIGN_TEMPLATES={
   {id:"minimal",name:"MINIMAL",data:{color1:"#334155",color2:"#0f172a",angle:180,pattern:"none",overlay:20,title:"",textColor:"#ffffff"}}
  ],
  frame:[
-  {id:"neon",name:"NEON PULSE",data:{style:"neon",color1:"#a78bfa",color2:"#22d3ee",thickness:17,glow:true,ornament:"✦"}},
-  {id:"gold",name:"GOLD ELITE",data:{style:"gold",color1:"#fbbf24",color2:"#92400e",thickness:20,glow:true,ornament:"♛"}},
-  {id:"ice",name:"ICE CRYSTAL",data:{style:"gradient",color1:"#e0f2fe",color2:"#38bdf8",thickness:14,glow:true,ornament:"❄"}},
-  {id:"simple",name:"SIMPLE",data:{style:"solid",color1:"#c4b5fd",color2:"#c4b5fd",thickness:10,glow:false,ornament:""}}
+  {id:"neon",name:"NEON PULSE",data:{style:"neon",color1:"#a78bfa",color2:"#22d3ee",thickness:42,glow:true,ornament:"✦"}},
+  {id:"gold",name:"GOLD ELITE",data:{style:"gold",color1:"#fbbf24",color2:"#92400e",thickness:52,glow:true,ornament:"♛"}},
+  {id:"ice",name:"ICE CRYSTAL",data:{style:"gradient",color1:"#e0f2fe",color2:"#38bdf8",thickness:34,glow:true,ornament:"❄"}},
+  {id:"simple",name:"SIMPLE",data:{style:"solid",color1:"#c4b5fd",color2:"#c4b5fd",thickness:22,glow:false,ornament:""}}
  ]
 };
 let designCategory="background",designData={...DESIGN_DEFAULTS.background},designDraftId=null,designSaveTimer=0,designSaveBusy=false,designSaveDirty=false,designSession=0,designImageCache={},designHistory=[],designHistoryIndex=-1;
@@ -377,7 +377,7 @@ function designUpdateOutputs(){
 }
 function designLoadTemplate(id){
  const found=DESIGN_TEMPLATES[designCategory].find(row=>row.id===id);if(!found)return;
- designData={...DESIGN_DEFAULTS[designCategory],...found.data};
+ designData={...DESIGN_DEFAULTS[designCategory],...found.data,sourceImageUrl:designData.sourceImageUrl||""};
  designApplyFields();designRender();designPushHistory();designScheduleSave();
 }
 function designSetCategory(category){
@@ -456,14 +456,14 @@ async function designRender(){
  }else{
   canvas.width=640;canvas.height=640;ctx.clearRect(0,0,640,640);
   // The frame asset must stay transparent inside the ring so it overlays the buyer's real avatar.
-  const style=designData.style||"gradient",c1=designData.color1||"#a78bfa",c2=designData.color2||"#22d3ee",thickness=Math.max(6,Math.min(34,Number(designData.thickness)||17));
+  const style=designData.style||"gradient",c1=designData.color1||"#a78bfa",c2=designData.color2||"#22d3ee",thickness=Math.max(12,Math.min(68,Number(designData.thickness)||42));
   let edge=ctx.createLinearGradient(100,100,540,540);edge.addColorStop(0,c1);edge.addColorStop(1,c2);
   if(style==="solid")edge=c1;
   if(style==="gold"){edge=ctx.createLinearGradient(80,80,560,560);edge.addColorStop(0,"#fff1a8");edge.addColorStop(.45,c1);edge.addColorStop(1,"#78350f");}
-  ctx.save();ctx.lineWidth=thickness;ctx.strokeStyle=edge;ctx.shadowColor=designData.glow===false?"transparent":c1;ctx.shadowBlur=designData.glow===false?0:27;ctx.beginPath();ctx.arc(320,320,246,0,Math.PI*2);ctx.stroke();ctx.restore();
-  if(style==="neon"){ctx.save();ctx.globalAlpha=.65;ctx.strokeStyle=c2;ctx.lineWidth=Math.max(2,thickness/4);ctx.beginPath();ctx.arc(320,320,260,0,Math.PI*2);ctx.stroke();ctx.restore();}
+  ctx.save();ctx.lineWidth=thickness;ctx.strokeStyle=edge;ctx.shadowColor=designData.glow===false?"transparent":c1;ctx.shadowBlur=designData.glow===false?0:27;ctx.beginPath();ctx.arc(320,320,276,0,Math.PI*2);ctx.stroke();ctx.restore();
+  if(style==="neon"){ctx.save();ctx.globalAlpha=.65;ctx.strokeStyle=c2;ctx.lineWidth=Math.max(2,thickness/4);ctx.beginPath();ctx.arc(320,320,307,0,Math.PI*2);ctx.stroke();ctx.restore();}
   const ornament=String(designData.ornament||"").slice(0,4);
-  if(ornament){ctx.save();ctx.font="bold 54px system-ui,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle=c1;ctx.shadowColor=c1;ctx.shadowBlur=14;ctx.fillText(ornament,320,62);ctx.restore();}
+  if(ornament){ctx.save();ctx.font="bold 54px system-ui,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle=c1;ctx.shadowColor=c1;ctx.shadowBlur=14;ctx.fillText(ornament,320,30);ctx.restore();}
  }
  designUpdateMiniPreview();
 }
@@ -476,7 +476,7 @@ function designUpdateMiniPreview(){
  }else{
   back.style.background="linear-gradient(135deg,#28213a,#111827)";
   const c1=designData.color1||"#a78bfa",c2=designData.color2||"#22d3ee";
-  avatar.style.border=Number(designData.thickness||17)/3+"px solid "+c1;
+  avatar.style.border=Number(designData.thickness||42)/5+"px solid "+c1;
   avatar.style.boxShadow=designData.glow===false?"none":"0 0 18px "+c1+"99,0 0 26px "+c2+"55";
  }
 }
@@ -569,7 +569,7 @@ $("designExport").addEventListener("click",async event=>{const button=event.curr
 $("designMakeItem").addEventListener("click",designCreateItem);
 $("bgImage").addEventListener("change",async()=>{
  const file=$("bgImage").files&&$("bgImage").files[0];if(!file)return;
- try{designSetState("背景画像をアップロード中…");const url=await uploadImage(file);designData.sourceImageUrl=url;designRender();designScheduleSave();}catch(error){designSetState("画像エラー: "+error.message);}
+ try{designSetState("背景画像をアップロード中…");const url=await uploadImage(file);designData.sourceImageUrl=url;designRender();designPushHistory();designScheduleSave();}catch(error){designSetState("画像エラー: "+error.message);}
 });
 document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!$("designOverlay").hidden)$("closeDesign").click();});
 
