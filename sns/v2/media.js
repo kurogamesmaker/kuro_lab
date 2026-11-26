@@ -57,6 +57,24 @@
   function clear(type){if(!selected[type])return;revoke(selected[type]);selected[type]=[];preview(type)}
   function removeSelected(type,i){if(!selected[type]?.[i])return;revoke([selected[type].splice(i,1)[0]]);preview(type)}
   function getSelected(type){return(selected[type]||[]).map(x=>x.file)}
+  function closeMenu(type){
+    const id=type==='publicChat'?'publicChatAttachMenu':type==='post'?'postAttachMenu':'chatAttachMenu';
+    const menu=document.getElementById(id);if(menu)menu.classList.add('hidden');
+    document.querySelector('[aria-controls="'+id+'"]')?.setAttribute('aria-expanded','false');
+  }
+  function toggleMenu(type){
+    const id=type==='publicChat'?'publicChatAttachMenu':type==='post'?'postAttachMenu':'chatAttachMenu';
+    const menu=document.getElementById(id);if(!menu)return;
+    ['chat','publicChat','post'].forEach(other=>{if(other!==type)closeMenu(other)});
+    const opening=menu.classList.contains('hidden');menu.classList.toggle('hidden',!opening);
+    document.querySelector('[aria-controls="'+id+'"]')?.setAttribute('aria-expanded',String(opening));
+  }
+  document.addEventListener('click',event=>{
+    if(!event.target.closest('.kuro-sns-attach-wrap'))['chat','publicChat','post'].forEach(closeMenu);
+  });
+  document.addEventListener('keydown',event=>{
+    if(event.key==='Escape')['chat','publicChat','post'].forEach(closeMenu);
+  });
   async function upload(client,scope,entityId,files){
     const list=Array.from(files||[]);if(!list.length)return[];
     const auth=await client.auth.getUser(),user=auth.data?.user;if(auth.error||!user)throw Error('写真を送るにはログインしてください。');
@@ -103,7 +121,14 @@
   const css=document.createElement('style');css.id='kuro-sns-media-style';css.textContent=[
     '.kuro-sns-media-preview{display:flex;gap:8px;flex-wrap:wrap;width:100%;padding:4px 0}.kuro-sns-media-preview.hidden{display:none!important}',
     '.kuro-sns-preview-item{position:relative;width:76px;height:76px;border-radius:12px;overflow:hidden;border:1px solid #52525b;background:#18181b}.kuro-sns-preview-item img{width:100%;height:100%;object-fit:cover}.kuro-sns-preview-item button{position:absolute;right:4px;top:4px;width:24px;height:24px;min-height:24px!important;border-radius:50%;background:#111c;color:#fff;font-size:18px;line-height:1}',
-    '.kuro-sns-photo-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:44px;min-height:44px;border:1px solid rgba(148,163,184,.3);border-radius:12px;padding:0 12px;background:rgba(255,255,255,.04);color:inherit}',
+    '.kuro-sns-attach-wrap{position:relative;display:inline-flex;flex:0 0 auto;align-items:center}',
+    '.kuro-sns-plus-button{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;min-width:42px;min-height:42px;border:1px solid rgba(148,163,184,.34);border-radius:14px;background:rgba(255,255,255,.055);color:inherit;font-size:26px;font-weight:400;line-height:1;transition:background .15s,border-color .15s}',
+    '.kuro-sns-plus-button:hover,.kuro-sns-plus-button[aria-expanded=true]{background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.55)}',
+    '.kuro-sns-attach-menu{position:absolute;z-index:80;left:0;bottom:calc(100% + 8px);width:190px;padding:6px;border:1px solid #3f3f46;border-radius:14px;background:#18181b;box-shadow:0 12px 36px rgba(0,0,0,.38)}',
+    '.kuro-sns-attach-menu.hidden{display:none!important}',
+    '.kuro-sns-attach-menu button{display:flex;align-items:center;gap:10px;width:100%;min-height:42px;padding:9px 11px;border-radius:10px;color:#f4f4f5;text-align:left;font-size:13px}',
+    '.kuro-sns-attach-menu button:hover{background:#27272a}',
+    '#chatModal #chatConversationPanel form[onsubmit="sendChatMessage(event)"] .kuro-sns-media-preview{flex:0 0 100%}',
     '.kuro-sns-media-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:12px;max-width:560px}.kuro-sns-media-grid.kuro-sns-media-count-1{grid-template-columns:minmax(0,1fr);max-width:460px}.kuro-sns-media-tile{display:block;min-width:0;overflow:hidden;padding:0!important;border:0;border-radius:14px;background:#18181b;aspect-ratio:1.2}.kuro-sns-media-count-1 .kuro-sns-media-tile{aspect-ratio:auto;max-height:520px}.kuro-sns-media-tile img{display:block;width:100%;height:100%;max-height:520px;object-fit:cover}.kuro-sns-media-count-1 .kuro-sns-media-tile img{object-fit:contain}',
     '#submitForm{flex-wrap:wrap}#chatModal #chatConversationPanel form[onsubmit="sendChatMessage(event)"]{flex-wrap:wrap}#chatModal #chatConversationPanel form[onsubmit="sendChatMessage(event)"] #chatMessageInput{flex:1 1 120px}',
     '#publicChatForm #publicChatImagePreview{display:flex!important}#publicChatForm #publicChatImagePreview.hidden{display:none!important}#publicChatForm>div:not(#publicChatImagePreview){grid-template-columns:minmax(0,1fr) auto auto!important;align-items:center}#publicChatForm #publicChatNickname{grid-column:1/-1!important;width:100%!important}#publicChatForm #publicChatInput{grid-column:1!important;min-width:0}#publicChatForm .kuro-sns-photo-button{grid-column:2!important}#publicChatForm #publicChatSendButton{grid-column:3!important}',
