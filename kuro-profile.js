@@ -363,7 +363,10 @@
       var equippedTheme = cosmetics.theme && typeof cosmetics.theme === "object" ? cosmetics.theme : null;
       var equippedBanner = cosmetics.banner && typeof cosmetics.banner === "object" ? cosmetics.banner : null;
       var equippedNameplate = cosmetics.nameplate && typeof cosmetics.nameplate === "object" ? cosmetics.nameplate : null;
-      var avatarUrl = safeImageUrl(profile.avatar_url) || safeImageUrl(equippedAvatar && equippedAvatar.imageUrl);
+      var profileAvatarUrl = safeImageUrl(profile.avatar_url);
+      var cosmeticAvatarUrl = safeImageUrl(equippedAvatar && equippedAvatar.imageUrl);
+      var avatarUrl = profileAvatarUrl || cosmeticAvatarUrl;
+      var avatarFallbackLabel = String(equippedAvatar && equippedAvatar.icon || "♙");
       var avatar = avatarUrl
         ? '<img src="' + escapeHtml(avatarUrl) + '" alt="" class="kuro-profile-avatar-image">'
         : equippedAvatar && equippedAvatar.icon
@@ -452,6 +455,19 @@
             : renderStats(statsResult.data || [])) +
         '</section>' +
         '</div>';
+      var profileAvatarImage = content.querySelector(".kuro-profile-avatar-image");
+      if (profileAvatarImage) {
+        profileAvatarImage.addEventListener("error", function () {
+          if (cosmeticAvatarUrl && profileAvatarImage.src !== cosmeticAvatarUrl) {
+            profileAvatarImage.src = cosmeticAvatarUrl;
+            return;
+          }
+          var fallbackAvatar = document.createElement("span");
+          fallbackAvatar.className = "kuro-profile-avatar-item";
+          fallbackAvatar.textContent = avatarFallbackLabel;
+          profileAvatarImage.replaceWith(fallbackAvatar);
+        });
+      }
     } catch (error) {
       if (thisRequest !== requestId) return;
       console.error("KURO common profile load failed:", error);
