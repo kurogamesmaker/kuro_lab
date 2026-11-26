@@ -863,13 +863,9 @@ export class Room {
         this.data.updatedAt = Math.max(Date.now(), (Number(this.data.updatedAt) || 0) + 1);
         await this.save();
         this.broadcast({ type: "state", state: this.data.state, updatedAt: this.data.updatedAt, from: player.id });
-        const allVoted = roster.length >= 2 && roster.length <= 4 &&
-          roster.every(item => item && item.ready === true && item.start === true);
-        const keysReady = allVoted && roster.every(item =>
-          item.pub && item.pub.kty === "EC" && item.pub.crv === "P-256" &&
-          typeof item.pub.x === "string" && typeof item.pub.y === "string"
-        );
-        if (keysReady) await this.startUnonGame(ws, player, { ruleMode: this.data.state.ruleMode }, true);
+        // Start only through the host SDK after it locks the Supabase lobby.
+        // Otherwise a started Durable Object can remain "waiting" in Postgres and
+        // the matchmaking RPC may attach a late third/fourth player to a live game.
         return;
       }
       if (eventType === "unon-vote") {
@@ -904,15 +900,8 @@ export class Room {
           updatedAt: this.data.updatedAt,
           from: player.id,
         }, player.id);
-        const allVoted = nextPlayers.length >= 2 && nextPlayers.length <= 4 &&
-          nextPlayers.every(item => item && item.ready === true && item.start === true);
-        const keysReady = allVoted && nextPlayers.every(item =>
-          item.pub && item.pub.kty === "EC" && item.pub.crv === "P-256" &&
-          typeof item.pub.x === "string" && typeof item.pub.y === "string"
-        );
-        if (keysReady) {
-          await this.startUnonGame(ws, player, { ruleMode: nextState.ruleMode }, true);
-        }
+        // The host client observes this state broadcast and starts via
+        // startUnoGame(), which locks the matchmaking room before the DO start.
         return;
       }
       const item = {
