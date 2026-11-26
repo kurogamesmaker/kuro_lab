@@ -431,9 +431,7 @@ async function designRender(){
   ctx.fillText(title,tx,ty,820);ctx.restore();
  }else{
   canvas.width=640;canvas.height=640;ctx.clearRect(0,0,640,640);
-  ctx.save();ctx.beginPath();ctx.arc(320,320,226,0,Math.PI*2);ctx.clip();
-  const avatarGrad=ctx.createLinearGradient(100,100,540,540);avatarGrad.addColorStop(0,"#667085");avatarGrad.addColorStop(1,"#22263a");ctx.fillStyle=avatarGrad;ctx.fillRect(0,0,640,640);
-  ctx.fillStyle="#ffffff";ctx.font="900 150px system-ui,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("K",320,325);ctx.restore();
+  // The frame asset must stay transparent inside the ring so it overlays the buyer's real avatar.
   const style=designData.style||"gradient",c1=designData.color1||"#a78bfa",c2=designData.color2||"#22d3ee",thickness=Math.max(6,Math.min(34,Number(designData.thickness)||17));
   let edge=ctx.createLinearGradient(100,100,540,540);edge.addColorStop(0,c1);edge.addColorStop(1,c2);
   if(style==="solid")edge=c1;
@@ -541,7 +539,7 @@ $("designSaveNow").addEventListener("click",async()=>{if(designSaveTimer)clearTi
 $("loadDesignDraft").addEventListener("click",()=>designLoadSelectedDraft().catch(error=>designSetState(error.message)));
 $("deleteDesignDraft").addEventListener("click",()=>designDeleteSelectedDraft().catch(error=>designSetState(error.message)));
 $("newDesignDraft").addEventListener("click",()=>designStart(designCategory));
-$("designExport").addEventListener("click",async event=>{const button=event.currentTarget;button.disabled=true;try{const url=await designExportImage();designSetState("画像を保存しました");window.open(safeAssetUrl(url),"_blank","noopener");}catch(error){designSetState("書き出しエラー: "+error.message);}finally{button.disabled=false;}});
+$("designExport").addEventListener("click",async event=>{const button=event.currentTarget;button.disabled=true;try{await designPersistDraft();const blob=await new Promise(resolve=>$("designCanvas").toBlob(resolve,"image/png"));if(!blob)throw new Error("画像を書き出せませんでした。");const link=document.createElement("a"),url=URL.createObjectURL(blob);link.href=url;link.download="kuro-"+designCategory+"-"+Date.now()+".png";document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);designSetState("画像を書き出しました");}catch(error){designSetState("書き出しエラー: "+error.message);}finally{button.disabled=false;}});
 $("designMakeItem").addEventListener("click",designCreateItem);
 $("bgImage").addEventListener("change",async()=>{
  const file=$("bgImage").files&&$("bgImage").files[0];if(!file)return;
