@@ -498,12 +498,12 @@ Deno.serve(async (req: Request) => {
         const { data: userData, error: userError } = await admin.auth.admin.getUserById(query);
         if (userError || !userData?.user) return reply({ users: [] }, 200, origin);
         const { data: profile, error: profileError } = await admin.from("profiles")
-          .select("id,username,display_name,kuro_id").eq("id", query).maybeSingle();
+          .select("id,username,display_name,kuro_id,avatar_url").eq("id", query).maybeSingle();
         if (profileError) throw profileError;
         const user = userData.user;
         return reply({ users: [{
           id: user.id, email: user.email || "", username: profile?.username || "",
-          display_name: profile?.display_name || "", kuro_id: profile?.kuro_id || ""
+          display_name: profile?.display_name || "", kuro_id: profile?.kuro_id || "", avatar_url: profile?.avatar_url || null
         }] }, 200, origin);
       }
 
@@ -511,9 +511,9 @@ Deno.serve(async (req: Request) => {
       if (!safeQuery) return reply({ users: [] }, 200, origin);
       const pattern = `%${safeQuery}%`;
       const [usernameResult, displayNameResult, kuroIdResult, authUsersResult] = await Promise.all([
-        admin.from("profiles").select("id,username,display_name,kuro_id").ilike("username", pattern).limit(20),
-        admin.from("profiles").select("id,username,display_name,kuro_id").ilike("display_name", pattern).limit(20),
-        admin.from("profiles").select("id,username,display_name,kuro_id").ilike("kuro_id", pattern).limit(20),
+        admin.from("profiles").select("id,username,display_name,kuro_id,avatar_url").ilike("username", pattern).limit(20),
+        admin.from("profiles").select("id,username,display_name,kuro_id,avatar_url").ilike("display_name", pattern).limit(20),
+        admin.from("profiles").select("id,username,display_name,kuro_id,avatar_url").ilike("kuro_id", pattern).limit(20),
         admin.auth.admin.listUsers({ page: 1, perPage: 1000 })
       ]);
       for (const result of [usernameResult, displayNameResult, kuroIdResult]) {
@@ -530,16 +530,16 @@ Deno.serve(async (req: Request) => {
       for (const user of emailMatches) {
         if (uniqueProfiles.has(user.id)) continue;
         const { data: profile, error: profileError } = await admin.from("profiles")
-          .select("id,username,display_name,kuro_id").eq("id", user.id).maybeSingle();
+          .select("id,username,display_name,kuro_id,avatar_url").eq("id", user.id).maybeSingle();
         if (profileError) throw profileError;
         uniqueProfiles.set(user.id, {
           id: user.id, username: profile?.username || "",
-          display_name: profile?.display_name || "", kuro_id: profile?.kuro_id || ""
+          display_name: profile?.display_name || "", kuro_id: profile?.kuro_id || "", avatar_url: profile?.avatar_url || null
         });
       }
       return reply({ users: Array.from(uniqueProfiles.values()).slice(0, 20).map((profile) => ({
         id: profile.id, email: emailMatches.find(user => user.id === profile.id)?.email || "",
-        username: profile.username || "", display_name: profile.display_name || "", kuro_id: profile.kuro_id || ""
+        username: profile.username || "", display_name: profile.display_name || "", kuro_id: profile.kuro_id || "", avatar_url: profile.avatar_url || null
       })) }, 200, origin);
     }
 
@@ -551,7 +551,7 @@ Deno.serve(async (req: Request) => {
       const { data: userData, error: userError } = await admin.auth.admin.getUserById(userId);
       if (userError || !userData?.user) return reply({ error: "対象のKUROアカウントが見つかりません。" }, 404, origin);
       const [profileResult, balanceResult, ledgerResult] = await Promise.all([
-        admin.from("profiles").select("id,username,display_name,kuro_id").eq("id", userId).maybeSingle(),
+        admin.from("profiles").select("id,username,display_name,kuro_id,avatar_url").eq("id", userId).maybeSingle(),
         admin.from("kuro_coin_balances").select("balance,updated_at").eq("user_id", userId).maybeSingle(),
         admin.from("kuro_coin_ledger")
           .select("id,amount,balance_after,transaction_type,description,created_at,created_by_user_id")
@@ -565,7 +565,7 @@ Deno.serve(async (req: Request) => {
       return reply({
         user: {
           id: user.id, email: user.email || "", username: profile.username || "",
-          display_name: profile.display_name || "", kuro_id: profile.kuro_id || ""
+          display_name: profile.display_name || "", kuro_id: profile.kuro_id || "", avatar_url: profile.avatar_url || null
         },
         balance: Number(balanceResult.data?.balance || 0),
         balanceUpdatedAt: balanceResult.data?.updated_at || null,
