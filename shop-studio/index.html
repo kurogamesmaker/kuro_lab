@@ -135,7 +135,7 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
   <header class="design-head">
    <div class="design-head-copy"><strong id="designTitle">プロフィールデザイン</strong><small>KURO SHOP DESIGN LAB</small></div>
    <input id="designDraftName" type="text" maxlength="60" value="新しいデザイン" aria-label="デザイン名">
-   <span class="design-state" id="designSaveState" role="status">未保存</span>
+   <button class="button secondary" type="button" id="designUndo" disabled>↶ 戻す</button><button class="button secondary" type="button" id="designRedo" disabled>↷ やり直す</button><span class="design-state" id="designSaveState" role="status">未保存</span>
    <div class="design-head-actions"><button class="button secondary" type="button" id="designSaveNow">下書き保存</button><button class="button secondary" type="button" id="closeDesign">閉じる</button></div>
   </header>
   <div class="design-layout">
@@ -160,7 +160,7 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
      <div class="design-field"><label for="bgAngle">グラデーション角度</label><input id="bgAngle" type="range" min="0" max="360" value="135"><output id="bgAngleValue">135°</output></div>
      <div class="design-field"><label for="bgPattern">パターン</label><select id="bgPattern"><option value="none">なし</option><option value="grid">グリッド</option><option value="dots">ドット</option><option value="diagonal">斜線</option></select></div>
      <div class="design-field"><label for="bgOverlay">暗めのオーバーレイ</label><input id="bgOverlay" type="range" min="0" max="70" value="18"><output id="bgOverlayValue">18%</output></div>
-     <div class="design-field"><label for="bgImage">背景画像をアップロード</label><input id="bgImage" type="file" accept="image/jpeg,image/png,image/webp"><small class="hint">JPEG / PNG / WebP・5MB以下</small></div>
+     <div class="design-field"><label for="bgImage">背景画像をアップロード</label><input id="bgImage" type="file" accept="image/jpeg,image/png,image/webp"><small class="hint">JPEG / PNG / WebP・5MB以下</small></div><div class="design-field"><label for="bgImageZoom">画像の拡大</label><input id="bgImageZoom" type="range" min="50" max="250" value="100"><output id="bgImageZoomValue">100%</output></div><div class="design-two"><div class="design-field"><label for="bgImageX">左右位置</label><input id="bgImageX" type="range" min="0" max="100" value="50"><output id="bgImageXValue">50%</output></div><div class="design-field"><label for="bgImageY">上下位置</label><input id="bgImageY" type="range" min="0" max="100" value="50"><output id="bgImageYValue">50%</output></div></div>
      <div class="design-field"><label for="bgTitle">背景に表示する文字</label><input id="bgTitle" type="text" maxlength="28" value="KURO PROFILE"></div>
      <div class="design-two">
       <div class="design-field"><label for="bgTextColor">文字色</label><input id="bgTextColor" type="color" value="#ffffff"></div>
@@ -336,7 +336,7 @@ async function start(){
 }
 
 const DESIGN_DEFAULTS={
- background:{version:1,sourceImageUrl:"",color1:"#5b21b6",color2:"#0e7490",angle:135,pattern:"grid",overlay:18,title:"KURO PROFILE",textColor:"#ffffff",textSize:38,textAlign:"left",textY:78},
+ background:{version:1,sourceImageUrl:"",imageZoom:100,imageX:50,imageY:50,color1:"#5b21b6",color2:"#0e7490",angle:135,pattern:"grid",overlay:18,title:"KURO PROFILE",textColor:"#ffffff",textSize:38,textAlign:"left",textY:78},
  frame:{version:1,style:"gradient",color1:"#a78bfa",color2:"#22d3ee",thickness:17,glow:true,ornament:"✦"}
 };
 const DESIGN_TEMPLATES={
@@ -353,32 +353,32 @@ const DESIGN_TEMPLATES={
   {id:"simple",name:"SIMPLE",data:{style:"solid",color1:"#c4b5fd",color2:"#c4b5fd",thickness:10,glow:false,ornament:""}}
  ]
 };
-let designCategory="background",designData={...DESIGN_DEFAULTS.background},designDraftId=null,designSaveTimer=0,designSaveBusy=false,designSaveDirty=false,designSession=0,designImageCache={};
+let designCategory="background",designData={...DESIGN_DEFAULTS.background},designDraftId=null,designSaveTimer=0,designSaveBusy=false,designSaveDirty=false,designSession=0,designImageCache={},designHistory=[],designHistoryIndex=-1;
 function designSetState(message){$("designSaveState").textContent=message;}
 function designClone(value){return JSON.parse(JSON.stringify(value));}
 function designField(id,value){const node=$(id);if(node)node.value=value;}
 function designReadFields(){
  if(designCategory==="background"){
-  designData={...designData,version:1,color1:$("bgColor1").value,color2:$("bgColor2").value,angle:Number($("bgAngle").value),pattern:$("bgPattern").value,overlay:Number($("bgOverlay").value),title:$("bgTitle").value,textColor:$("bgTextColor").value,textSize:Number($("bgTextSize").value),textAlign:$("bgTextAlign").value,textY:Number($("bgTextY").value)};
+  designData={...designData,version:1,color1:$("bgColor1").value,color2:$("bgColor2").value,angle:Number($("bgAngle").value),pattern:$("bgPattern").value,overlay:Number($("bgOverlay").value),imageZoom:Number($("bgImageZoom").value),imageX:Number($("bgImageX").value),imageY:Number($("bgImageY").value),title:$("bgTitle").value,textColor:$("bgTextColor").value,textSize:Number($("bgTextSize").value),textAlign:$("bgTextAlign").value,textY:Number($("bgTextY").value)};
  }else{
   designData={...designData,version:1,style:$("frameStyle").value,color1:$("frameColor1").value,color2:$("frameColor2").value,thickness:Number($("frameThickness").value),glow:$("frameGlow").checked,ornament:$("frameOrnament").value};
  }
 }
 function designApplyFields(){
  if(designCategory==="background"){
-  designField("bgColor1",designData.color1||"#5b21b6");designField("bgColor2",designData.color2||"#0e7490");designField("bgAngle",designData.angle??135);designField("bgPattern",designData.pattern||"grid");designField("bgOverlay",designData.overlay??18);designField("bgTitle",designData.title||"");designField("bgTextColor",designData.textColor||"#ffffff");designField("bgTextSize",designData.textSize??38);designField("bgTextAlign",designData.textAlign||"left");designField("bgTextY",designData.textY??78);
+  designField("bgColor1",designData.color1||"#5b21b6");designField("bgColor2",designData.color2||"#0e7490");designField("bgAngle",designData.angle??135);designField("bgPattern",designData.pattern||"grid");designField("bgOverlay",designData.overlay??18);designField("bgImageZoom",designData.imageZoom??100);designField("bgImageX",designData.imageX??50);designField("bgImageY",designData.imageY??50);designField("bgTitle",designData.title||"");designField("bgTextColor",designData.textColor||"#ffffff");designField("bgTextSize",designData.textSize??38);designField("bgTextAlign",designData.textAlign||"left");designField("bgTextY",designData.textY??78);
  }else{
   designField("frameStyle",designData.style||"gradient");designField("frameColor1",designData.color1||"#a78bfa");designField("frameColor2",designData.color2||"#22d3ee");designField("frameThickness",designData.thickness??17);$("frameGlow").checked=designData.glow!==false;designField("frameOrnament",designData.ornament||"");
  }
  designUpdateOutputs();
 }
 function designUpdateOutputs(){
- $("bgAngleValue").textContent=$("bgAngle").value+"°";$("bgOverlayValue").textContent=$("bgOverlay").value+"%";$("bgTextSizeValue").textContent=$("bgTextSize").value+"px";$("bgTextYValue").textContent=$("bgTextY").value+"%";$("frameThicknessValue").textContent=$("frameThickness").value+"px";
+ $("bgAngleValue").textContent=$("bgAngle").value+"°";$("bgOverlayValue").textContent=$("bgOverlay").value+"%";$("bgImageZoomValue").textContent=$("bgImageZoom").value+"%";$("bgImageXValue").textContent=$("bgImageX").value+"%";$("bgImageYValue").textContent=$("bgImageY").value+"%";$("bgTextSizeValue").textContent=$("bgTextSize").value+"px";$("bgTextYValue").textContent=$("bgTextY").value+"%";$("frameThicknessValue").textContent=$("frameThickness").value+"px";
 }
 function designLoadTemplate(id){
  const found=DESIGN_TEMPLATES[designCategory].find(row=>row.id===id);if(!found)return;
  designData={...DESIGN_DEFAULTS[designCategory],...found.data};
- designApplyFields();designRender();designScheduleSave();
+ designApplyFields();designRender();designPushHistory();designScheduleSave();
 }
 function designSetCategory(category){
  if(!["background","frame"].includes(category))return;
@@ -391,6 +391,30 @@ function designSetCategory(category){
  const templates=DESIGN_TEMPLATES[category];$("designTemplate").innerHTML=templates.map(t=>'<option value="'+html(t.id)+'">'+html(t.name)+'</option>').join("");
  $("designDraftName").value=$("designDraftName").value||"新しい"+(category==="frame"?"フレーム":"背景");
  designApplyFields();designRender();designLoadDraftList();
+}
+function designPushHistory(){
+ const snap=JSON.stringify({category:designCategory,data:designData});
+ if(designHistory[designHistoryIndex]===snap)return;
+ designHistory=designHistory.slice(0,designHistoryIndex+1);designHistory.push(snap);
+ if(designHistory.length>40)designHistory.shift();
+ designHistoryIndex=designHistory.length-1;designUpdateHistoryButtons();
+}
+function designUpdateHistoryButtons(){
+ $("designUndo").disabled=designHistoryIndex<=0;
+ $("designRedo").disabled=designHistoryIndex<0||designHistoryIndex>=designHistory.length-1;
+}
+function designResetHistory(){designHistory=[];designHistoryIndex=-1;designPushHistory();}
+function designRestoreHistory(nextIndex){
+ if(nextIndex<0||nextIndex>=designHistory.length)return;
+ designHistoryIndex=nextIndex;
+ const snapshot=JSON.parse(designHistory[designHistoryIndex]);
+ designCategory=snapshot.category;designData=snapshot.data;
+ document.querySelectorAll("[data-design-category]").forEach(node=>node.classList.toggle("active",node.dataset.designCategory===designCategory));
+ $("backgroundControls").hidden=designCategory!=="background";$("frameControls").hidden=designCategory!=="frame";
+ $("designCanvasLabel").textContent=designCategory==="background"?"背景プレビュー · 16:9":"アイコン枠プレビュー · 1:1";
+ $("designCanvas").classList.toggle("is-square",designCategory==="frame");
+ $("designTitle").textContent=designCategory==="background"?"プロフィール背景エディター":"アイコンフレームエディター";
+ designApplyFields();designRender();designUpdateHistoryButtons();designScheduleSave();
 }
 function designCanvasContext(){
  const canvas=$("designCanvas"),ctx=canvas.getContext("2d");
@@ -416,7 +440,7 @@ async function designRender(){
   grad.addColorStop(0,designData.color1||"#5b21b6");grad.addColorStop(1,designData.color2||"#0e7490");
   ctx.fillStyle=grad;ctx.fillRect(0,0,960,540);
   const img=await designGetImage(designData.sourceImageUrl);
-  if(img){const scale=Math.max(960/img.width,540/img.height),w=img.width*scale,h=img.height*scale;ctx.drawImage(img,(960-w)/2,(540-h)/2,w,h);}
+  if(img){const scale=Math.max(960/img.width,540/img.height)*Math.max(.5,Math.min(2.5,Number(designData.imageZoom||100)/100)),w=img.width*scale,h=img.height*scale,x=(960-w)*Math.max(0,Math.min(100,Number(designData.imageX??50)))/100,y=(540-h)*Math.max(0,Math.min(100,Number(designData.imageY??50)))/100;ctx.drawImage(img,x,y,w,h);}
   const pattern=designData.pattern||"none";
   ctx.save();ctx.strokeStyle="#ffffff";ctx.fillStyle="#ffffff";ctx.globalAlpha=.12;
   if(pattern==="grid"){for(let x=0;x<=960;x+=48){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,540);ctx.stroke();}for(let y=0;y<=540;y+=48){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(960,y);ctx.stroke();}}
@@ -484,13 +508,13 @@ async function designLoadDraftList(refresh=true){
 }
 function designStart(category){
  designSession++;designDraftId=null;designCategory=category;designData=designClone(DESIGN_DEFAULTS[category]);$("designDraftName").value="新しい"+(category==="frame"?"フレーム":"背景");
- $("designOverlay").hidden=false;designSetCategory(category);designSetState("未保存");designScheduleSave();
+ $("designOverlay").hidden=false;designSetCategory(category);designResetHistory();designSetState("未保存");designScheduleSave();
 }
 async function designLoadSelectedDraft(){
  const id=$("designDraftSelect").value;if(!id)return;
  const result=await api("studio_list_drafts"),draft=(result.drafts||[]).find(row=>row.id===id);if(!draft)return;
  designSession++;designDraftId=draft.id;designCategory=draft.category;designData={...DESIGN_DEFAULTS[designCategory],...(draft.design_data||{})};$("designDraftName").value=draft.draft_name;
- $("designOverlay").hidden=false;designSetCategory(designCategory);designApplyFields();designRender();designSetState("保存済み");$("designDraftSelect").value=draft.id;
+ $("designOverlay").hidden=false;designSetCategory(designCategory);designApplyFields();designRender();designResetHistory();designSetState("保存済み");$("designDraftSelect").value=draft.id;
 }
 async function designDeleteSelectedDraft(){
  const id=$("designDraftSelect").value;if(!id)return;
@@ -525,11 +549,13 @@ function designBindInput(id){
   designReadFields();designUpdateOutputs();designRender();designScheduleSave();
  });
  node.addEventListener("change",()=>{
-  designReadFields();designUpdateOutputs();designRender();designScheduleSave();
+  designReadFields();designUpdateOutputs();designRender();designPushHistory();designScheduleSave();
  });
 }
 document.querySelectorAll("[data-design-category]").forEach(node=>node.addEventListener("click",()=>designSetCategory(node.dataset.designCategory)));
-["bgColor1","bgColor2","bgAngle","bgPattern","bgOverlay","bgTitle","bgTextColor","bgTextSize","bgTextAlign","bgTextY","frameStyle","frameColor1","frameColor2","frameThickness","frameGlow","frameOrnament"].forEach(designBindInput);
+["bgColor1","bgColor2","bgAngle","bgPattern","bgOverlay","bgImageZoom","bgImageX","bgImageY","bgTitle","bgTextColor","bgTextSize","bgTextAlign","bgTextY","frameStyle","frameColor1","frameColor2","frameThickness","frameGlow","frameOrnament"].forEach(designBindInput);
+$("designUndo").addEventListener("click",()=>designRestoreHistory(designHistoryIndex-1));
+$("designRedo").addEventListener("click",()=>designRestoreHistory(designHistoryIndex+1));
 $("designStudioButton").addEventListener("click",()=>designStart("background"));
 $("closeDesign").addEventListener("click",()=>{$("designOverlay").hidden=true;if(designSaveDirty)designPersistDraft().catch(error=>designSetState("保存エラー: "+error.message));});
 $("designOverlay").addEventListener("click",event=>{if(event.target===$("designOverlay"))$("closeDesign").click();});
