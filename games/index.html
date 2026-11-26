@@ -1841,7 +1841,7 @@ function initKuroRankingShowcase(){
  const levelSelect=document.getElementById("kuroRankLevel"),cpuSelect=document.getElementById("kuroRankCpu"),levelWrap=document.getElementById("kuroRankLevelWrap"),cpuWrap=document.getElementById("kuroRankCpuWrap");
  if(!panel||!listEl||!titleEl||!linkEl)return;
  let games=[],index=0,rotationItems=[],rotationIndex=0,timer=null,pausedUntil=0,busy=false,cache=new Map(),pendingSteps=0,pendingTarget=null,pendingRefresh=false,swipeStart=null;
- const medals=["🥇","🥈","🥉","4","5"],TICTACTOE_GAME_ID="2dbd6773-2684-4f00-973e-c46acbc348e7",TICTACTOE_RULES=["normal","vanish","gobble","reverse"],RANK_CACHE_MS=30000;
+ const medals=["🥇","🥈","🥉","4","5"],TICTACTOE_GAME_ID="2dbd6773-2684-4f00-973e-c46acbc348e7",NUMBER_GAME_ID="bb466662-5423-48e6-bbcc-d19da50ba818",TICTACTOE_RULES=["normal","vanish","gobble","reverse"],RANK_CACHE_MS=30000;
  function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
  function renderDots(){if(dotsEl)dotsEl.innerHTML=games.map((_,i)=>'<i class="rank-dot '+(i===index?'active':'')+'"></i>').join("");}
  function showMessage(msg){listEl.innerHTML='<div class="rank-message">'+esc(msg)+'</div>';}
@@ -1917,7 +1917,7 @@ function initKuroRankingShowcase(){
    const body={action:"leaderboard",gameId:game.id,mode:game.mode,limit:5};
    if(lv!=="")body.level=Number(lv);if(cpu!=="")body.cpuDifficulty=cpu;
    const {data,error}=await window.kuroGamesDB.functions.invoke("kurogames-online",{body});if(error)throw error;
-   const rows=(Array.isArray(data?.scores)?data.scores:[]).slice(0,5).map((row,i)=>({...row,rank:Number(row.rank)||i+1,score:Number(row.score)||0,user:row.user||{username:"プレイヤー",display_name:"プレイヤー"}}));
+   const numberGuessTime=game.id===NUMBER_GAME_ID&&/^number-time-/i.test(String(game.mode||""));\n   const rows=(Array.isArray(data?.scores)?data.scores:[]).slice(0,5).map((row,i)=>({...row,metric:numberGuessTime?"time_us":row.metric,rank:Number(row.rank)||i+1,score:Number(row.score)||0,user:row.user||{username:"プレイヤー",display_name:"プレイヤー"}}));
    cache.set(key,{rows,at:Date.now()});return rows;
   }catch(error){if(cached?.rows?.length)return cached.rows;throw error;}
  }
@@ -1944,7 +1944,7 @@ function initKuroRankingShowcase(){
   const numeric=Number(row.score||0),value=numeric.toLocaleString("ja-JP"),setting=game.showcaseConfig?.modes?.[mode];
   const metric=String(row.metric||game.modeMetrics?.[mode]||(game.id===TICTACTOE_GAME_ID||/wins|_wins/.test(mode)?"wins":/(^|[_-])(time|duration|elapsed|ms|clear_time)([_-]|$)/i.test(mode)?"time":"score"));
   // Verified Number Guess leaderboard returns microseconds (time_us). Convert to seconds for the homepage.
-  if(metric==="time_us"&&Number.isFinite(numeric)&&numeric>=0){
+  if((metric==="time_us"||(game.id===NUMBER_GAME_ID&&/^number-time-/i.test(String(mode||""))))&&Number.isFinite(numeric)&&numeric>=0){
    const seconds=numeric/1e6;
    return seconds.toFixed(6)+"秒";
   }
