@@ -256,3 +256,11 @@
 @keyframes kuroLevelSpark{0%,100%{transform:scale(.94) rotate(-8deg)}50%{transform:scale(1.12) rotate(8deg)}}
 @media(max-width:600px){.kuro-level-xp-toast{right:12px;bottom:14px}.kuro-level-up-card{padding:26px 18px 20px}}
 @media(prefers-reduced-motion:reduce){.kuro-level-xp-toast,.kuro-level-up-overlay,.kuro-level-up-card{transition:none}.kuro-level-up-spark{animation:none}}
+
+/* Store Studio cosmetics: actual product artwork and extra profile slots */
+.kuro-profile-avatar.kuro-profile-frame-image{position:relative;overflow:visible;border-color:transparent;box-shadow:none}
+.kuro-profile-avatar.kuro-profile-frame-image::after{content:"";position:absolute;inset:-8px;z-index:3;pointer-events:none;background-image:var(--kuro-profile-frame-image);background-repeat:no-repeat;background-position:center;background-size:contain}
+.kuro-profile-extra-banner{min-height:62px;margin:0 0 12px;padding:12px 15px;display:flex;flex-direction:column;justify-content:center;gap:4px;overflow:hidden;border:1px solid rgba(148,163,184,.24);border-radius:14px;background:linear-gradient(110deg,#2d2448,#1d2d49);background-position:center;background-size:cover}
+.kuro-profile-extra-banner small{color:#d6c5f4;font-size:8px;font-weight:950;letter-spacing:1.4px}
+.kuro-profile-extra-banner strong{color:#fff;font-size:12px;font-weight:900;text-shadow:0 2px 8px #0007}
+.kuro-profile-nameplate{display:inline-flex;align-items:center;min-height:27px;padding:3px 9px;border:1px solid var(--kuro-profile-accent,#a78bfa);border-radius:8px;background:linear-gradient(100deg,var(--kuro-profile-accent-soft,rgba(167,139,250,.24)),rgba(255,255,255,.07));box-shadow:0 3px 12px rgba(0,0,0,.15)}
