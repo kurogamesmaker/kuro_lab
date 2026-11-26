@@ -69,6 +69,11 @@ header{position:sticky;top:0;z-index:10;background:#100d1deF;backdrop-filter:blu
 .store-tryon-foot button{min-width:110px;padding:10px 15px;border:1px solid #705a9a;border-radius:10px;background:#29203e;color:#eee7ff;font-size:11px;font-weight:900;cursor:pointer}
 @media(max-width:700px){.store-tryon-overlay{align-items:flex-end;padding:0}.store-tryon-dialog{max-height:94dvh;border-radius:20px 20px 0 0;border-bottom:0}.store-tryon-layout{grid-template-columns:1fr;gap:12px;padding:12px}.store-tryon-art{height:180px}.store-tryon-result{order:1}.store-tryon-product{order:2}.store-tryon-foot{padding:0 12px 14px}.store-tryon-identity{gap:11px}.store-tryon-avatar{width:72px;height:72px;flex-basis:72px}}
 
+.item-rarity{display:inline-flex;align-items:center;width:max-content;max-width:100%;margin:0 0 7px;padding:4px 8px;border:1px solid #d0d5dd;border-radius:999px;background:#f9fafb;color:#475467;font-size:9px;font-weight:950;letter-spacing:.06em;line-height:1.2}
+.item-rarity.rare{border-color:#bfdbfe;background:#eff6ff;color:#1d4ed8}
+.item-rarity.epic{border-color:#e9d5ff;background:#faf5ff;color:#7e22ce}
+.item-rarity.legendary{border-color:#fde68a;background:#fffbeb;color:#a16207}
+.item-rarity.common{border-color:#d0d5dd;background:#f9fafb;color:#475467}
 /* KURO STORE clean white surface */
 :root{color-scheme:light;--bg:#ffffff;--panel:#ffffff;--panel2:#f8fafc;--line:#e5e7eb;--text:#171923;--muted:#667085;--purple:#7650b8;--pink:#c05bd8;--green:#16834a}
 html,body{background:#fff!important;color:#171923!important}
@@ -177,6 +182,9 @@ const storeDb=window.supabase.createClient(STORE_SUPABASE_URL,STORE_PUBLISHABLE_
 window.kuroGamesDB=storeDb;
 const $=id=>document.getElementById(id);
 const html=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const rarityLabels={common:"通常",rare:"レア",epic:"エピック",legendary:"レジェンダリー"};
+const rarityClass=value=>["common","rare","epic","legendary"].includes(String(value||"").toLowerCase())?String(value).toLowerCase():"common";
+const rarityLabel=value=>rarityLabels[String(value||"").toLowerCase()]||"通常";
 const categoryLabels={avatar:"アバター",icon_image:"アイコン画像",frame:"フレーム",background:"壁紙",theme:"テーマ",nameplate:"ネーム装飾",banner:"バナー",other:"その他"};
 let storeItems=[],inventory=[],equipped=[],currentCategory="all",isLoggedIn=false,coinBalance=null,storeProfile=null,storeCosmetics={},storeLoadSerial=0;
 function safeStoreImage(value){
@@ -216,7 +224,7 @@ function renderCatalog(){
   const isOwned=owned.has(item.id);
   const price=Number(item.price_kc||0),free=item.is_free===true||price===0;
   const button=isOwned?'<button class="action owned" disabled>✓ 所持済み</button>':!isLoggedIn?'<a class="action" style="display:flex;align-items:center;justify-content:center" href="/games/?account=1">ログインして購入</a>':free?'<button class="action" data-claim="'+html(item.id)+'">無料で取得する</button>':'<button class="action" data-purchase="'+html(item.id)+'">🪙 '+price.toLocaleString("ja-JP")+' KCで購入</button>';
-  return '<article class="item" data-preview-id="'+html(item.id)+'" tabindex="0" aria-label="'+html(item.name)+'の試着プレビューを開く"><div class="item-art">'+itemArt(item)+'</div><div class="item-body"><p class="item-desc">'+html(item.description||"KURO STOREアイテム")+'</p><div class="item-price '+(free?"free":"")+'">'+(free?"無料":price.toLocaleString("ja-JP")+" KC")+'</div>'+button+'</div></article>';
+  return '<article class="item" data-preview-id="'+html(item.id)+'" tabindex="0" aria-label="'+html(item.name)+'の試着プレビューを開く"><div class="item-art">'+itemArt(item)+'</div><div class="item-body"><span class="item-rarity '+rarityClass(item.rarity)+'">珍しさ：'+html(rarityLabel(item.rarity))+'</span><p class="item-desc">'+html(item.description||"KURO STOREアイテム")+'</p><div class="item-price '+(free?"free":"")+'">'+(free?"無料":price.toLocaleString("ja-JP")+" KC")+'</div>'+button+'</div></article>';
  }).join("");
 }
 function normalizeCosmetic(item){
