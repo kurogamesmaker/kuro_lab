@@ -271,3 +271,6 @@
 
 .kuro-profile-avatar.kuro-profile-frame-image .kuro-profile-avatar-image{border-radius:50%}
 .kuro-profile-avatar.kuro-profile-frame-image>svg{border-radius:50%}
+.kuro-profile-avatar.kuro-profile-frame-under{overflow:visible;isolation:isolate}
+.kuro-profile-avatar.kuro-profile-frame-under::after{z-index:0}
+.kuro-profile-avatar.kuro-profile-frame-under .kuro-profile-avatar-image,.kuro-profile-avatar.kuro-profile-frame-under .kuro-profile-avatar-item,.kuro-profile-avatar.kuro-profile-frame-under>svg{position:relative;z-index:1}
