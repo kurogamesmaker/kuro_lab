@@ -376,6 +376,7 @@
       var frameClass = frameRarity ? " kuro-profile-frame-" + frameRarity : "";
       var frameImage = safeImageUrl(equippedFrame && equippedFrame.imageUrl);
       var frameImageClass = frameImage ? " kuro-profile-frame-image" : "";
+      var frameLayerClass = frameImage && String(equippedFrame.frameLayerMode || "over") === "under" ? " kuro-profile-frame-under" : "";
       var frameImageStyle = frameImage ? ' style="--kuro-profile-frame-image:url(&quot;' + escapeHtml(frameImage) + '&quot;)"' : "";
       var backgroundImage = safeImageUrl(equippedBackground && equippedBackground.imageUrl);
       var backgroundIcon = equippedBackground && !backgroundImage ? String(equippedBackground.icon || "✦") : "";
@@ -437,7 +438,7 @@
         extraBanner +
         (cosmeticChips ? '<section class="kuro-profile-cosmetic-strip" aria-label="装備中アイテム">' + cosmeticChips + '</section>' : '') +
         '<section class="kuro-profile-identity">' +
-          '<div class="kuro-profile-identity-main"><div class="kuro-profile-avatar' + frameClass + frameImageClass + '"' + frameImageStyle + '>' + avatar + '</div>' +
+          '<div class="kuro-profile-identity-main"><div class="kuro-profile-avatar' + frameClass + frameImageClass + frameLayerClass + '"' + frameImageStyle + '>' + avatar + '</div>' +
           '<div class="kuro-profile-names"><h3 class="kuro-profile-name-line">' + nameplateHtml + '<span class="kuro-profile-level-badge">Lv.' + currentLevel.toLocaleString("ja-JP") + '</span></h3><p>' + escapeHtml(handle) + '</p>' +
           '<div class="kuro-profile-level-progress" aria-label="レベル経験値"><div><span>' + totalXp.toLocaleString("ja-JP") + ' / ' + nextLevelXp.toLocaleString("ja-JP") + ' XP</span><small>次のレベルまで ' + Math.max(0,nextLevelXp-totalXp).toLocaleString("ja-JP") + ' XP</small></div><i><b style="width:' + levelProgress.toFixed(1) + '%"></b></i></div>' +
           '<small>KURO ID：' + escapeHtml(profile.kuro_id || "未設定") + '</small>' + joinedLabel + '</div></div>' +
