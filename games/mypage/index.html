@@ -185,12 +185,12 @@ function addProfile(profile,user,cosmetics){
  cosmetics=cosmetics&&typeof cosmetics==="object"?cosmetics:{};
  var avatarItem=cosmetics.avatar||null,frame=cosmetics.frame||null,background=cosmetics.background||null,theme=cosmetics.theme||null;
  var avatar=$("myProfileAvatar");avatar.replaceChildren();avatar.dataset.frame=frame&&["common","rare","epic","legendary"].includes(frame.rarity)?frame.rarity:"";
- var url=avatarItem&&avatarItem.imageUrl?String(avatarItem.imageUrl):profile&&profile.avatar_url?String(profile.avatar_url):"";
+ var url=profile&&profile.avatar_url?String(profile.avatar_url):avatarItem&&avatarItem.imageUrl?String(avatarItem.imageUrl):"";
  if(url){
   try{
    var parsed=new URL(url,location.origin);
    if(parsed.protocol==="https:"||parsed.origin===location.origin){
-    var img=document.createElement("img");img.src=parsed.href;img.alt="";img.loading="lazy";
+    var img=document.createElement("img");img.src=parsed.origin==="https://cprvpphlfpmiegjiutjn.supabase.co"&&parsed.pathname.startsWith("/storage/v1/object/public/")?location.origin+"/api/cloudflare-relay?resource="+encodeURIComponent(parsed.pathname+parsed.search):parsed.href;img.alt="";img.loading="lazy";
     img.onerror=function(){img.remove();if(!avatar.childNodes.length)avatar.textContent=avatarItem&&avatarItem.icon||"👤";};
     avatar.appendChild(img);
    }
