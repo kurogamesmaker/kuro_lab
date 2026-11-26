@@ -3517,20 +3517,168 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
         let activeChatHandle = 'user';
         let kuroChatRealtimeChannel = null;
         let kuroChatRealtimeConversationId = null;
-        let kuroCloudflareChatPollTimer = null;
+        let kuroDirectMessageSeen = new Map();
+        let kuroDirectMessageLatestAt = new Map();
+        let kuroDirectSyncPromises = new Map();
+        let kuroDirectSelectToken = 0;
+        function removeKuroRealtimeChannel(channel, label) {
+            if (!channel || !supabaseClient || typeof supabaseClient.removeChannel !== 'function') return;
+            try {
+                const removed = supabaseClient.removeChannel(channel);
+                if (removed && typeof removed.catch === 'function') removed.catch(error => console.warn(label || 'KURO Realtime channel removal failed:', error));
+            } catch (error) { console.warn(label || 'KURO Realtime channel removal failed:', error); }
+        }
+        function stopChatRealtime() {
+            const channel = kuroChatRealtimeChannel;
+            kuroChatRealtimeChannel = null;
+            kuroChatRealtimeConversationId = null;
+            removeKuroRealtimeChannel(channel, 'KURO direct chat channel removal failed:');
+        }
+        function updateConversationPreview(conversationId, message) {
+            const row = document.querySelector('[data-chat-row="' + String(conversationId).replace(/"/g, '') + '"]');
+            if (!row || !message) return;
+            const preview = row.querySelector('[data-chat-preview]');
+            const date = row.querySelector('[data-chat-date]');
+            if (preview) preview.textContent = (message.sender_id === currentUser?.id ? '自分: ' : '') + (message.content || (message.media && message.media.length ? '写真' : ''));
+            if (date) date.textContent = formatPostDate(message.created_at);
+        }
+        function advanceDirectChatCursor(conversationId, messages) {
+            const current = kuroDirectMessageLatestAt.get(conversationId) || '';
+            let latest = current;
+            (messages || []).forEach(message => {
+                if (message?.created_at && message.created_at > latest) latest = message.created_at;
+            });
+            if (latest) kuroDirectMessageLatestAt.set(conversationId, latest);
+        }
         function setupChatRealtime(conversationId) {
             if (!conversationId || !supabaseClient) return;
-            if (kuroChatRealtimeConversationId === conversationId && kuroCloudflareChatPollTimer) return;
-            if (kuroCloudflareChatPollTimer) clearInterval(kuroCloudflareChatPollTimer);
-            kuroChatRealtimeChannel = null;
+            if (kuroChatRealtimeChannel && kuroChatRealtimeConversationId === conversationId) return;
+            stopChatRealtime();
             kuroChatRealtimeConversationId = conversationId;
-            kuroCloudflareChatPollTimer = window.setInterval(async () => {
-                if (document.visibilityState !== 'visible' || activeChatId !== conversationId) return;
+            const channel = supabaseClient.channel('kuro-dm-' + conversationId)
+                .on('postgres_changes', {
+                    event: 'INSERT', schema: 'public', table: 'chat_messages',
+                    filter: 'conversation_id=eq.' + conversationId
+                }, payload => {
+                    if (activeChatType !== 'direct' || activeChatId !== conversationId) return;
+                    const modal = document.getElementById('chatModal');
+                    if (modal?.classList.contains('hidden')) return;
+                    if (payload?.new) appendDirectChatMessages(conversationId, activeChatPeer, [payload.new])
+                        .catch(error => console.warn('KURO direct chat event render failed:', error));
+                })
+                .subscribe(status => {
+                    if (status === 'SUBSCRIBED' && activeChatType === 'direct' && activeChatId === conversationId) {
+                        syncDirectChatNewMessages(conversationId, activeChatPeer).catch(error => console.warn('KURO direct chat reconnect sync failed:', error));
+                    } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') console.warn('KURO direct chat Realtime status:', status);
+                });
+            kuroChatRealtimeChannel = channel;
+        }
+        async function syncDirectChatNewMessages(conversationId, peerId) {
+            if (!conversationId || !supabaseClient || activeChatType !== 'direct' || activeChatId !== conversationId) return;
+            if (kuroDirectSyncPromises.has(conversationId)) return kuroDirectSyncPromises.get(conversationId);
+            const since = kuroDirectMessageLatestAt.get(conversationId) || '';
+            if (!since) return;
+            const task = (async () => {
                 const modal = document.getElementById('chatModal');
                 if (modal?.classList.contains('hidden')) return;
-                try { await selectChat(conversationId, activeChatPeer, activeChatHandle); }
-                catch (error) { console.warn('KURO Cloudflare chat refresh:', error); }
-            }, 8000);
+                const result = await supabaseClient.from('chat_messages')
+                    .select('id,conversation_id,sender_id,content,created_at,media')
+                    .eq('conversation_id', conversationId).gte('created_at', since)
+                    .order('created_at', {ascending:true}).limit(500);
+                if (result.error) throw result.error;
+                if (result.data?.length) await appendDirectChatMessages(conversationId, peerId, result.data);
+            })();
+            kuroDirectSyncPromises.set(conversationId, task);
+            try { await task; }
+            finally { kuroDirectSyncPromises.delete(conversationId); }
+        }
+        async function appendDirectChatMessages(conversationId, peerId, incomingMessages) {
+            if (activeChatType !== 'direct' || activeChatId !== conversationId || !currentUser?.id) return;
+            const box = document.getElementById('chatMessages');
+            const modal = document.getElementById('chatModal');
+            if (!box || modal?.classList.contains('hidden')) return;
+            const seen = kuroDirectMessageSeen.get(conversationId) || new Set();
+            kuroDirectMessageSeen.set(conversationId, seen);
+            const existingDomIds = new Set();
+            box.querySelectorAll('[data-chat-message-id],[data-server-message-id]').forEach(el => {
+                if (el.dataset.chatMessageId) existingDomIds.add(el.dataset.chatMessageId);
+                if (el.dataset.serverMessageId) existingDomIds.add(el.dataset.serverMessageId);
+            });
+            const rows = (incomingMessages || []).filter(message => message?.id && !seen.has(String(message.id)) && !existingDomIds.has(String(message.id)));
+            if (!rows.length) { advanceDirectChatCursor(conversationId, incomingMessages); return; }
+
+            const incomingIds = rows.filter(m => m.sender_id !== currentUser.id).map(m => m.id);
+            let existingReads = [];
+            if (incomingIds.length) {
+                const readResult = await supabaseClient.from('chat_message_reads').select('message_id')
+                    .eq('reader_id', currentUser.id).in('message_id', incomingIds);
+                if (readResult.error) console.warn('KURO direct read receipt lookup failed:', readResult.error);
+                existingReads = readResult.data || [];
+                const alreadyRead = new Set(existingReads.map(r => r.message_id));
+                const unreadIds = incomingIds.filter(id => !alreadyRead.has(id));
+                if (unreadIds.length) {
+                    const marked = await supabaseClient.from('chat_message_reads')
+                        .upsert(unreadIds.map(message_id => ({message_id,reader_id:currentUser.id})), {onConflict:'message_id,reader_id',ignoreDuplicates:true});
+                    if (marked.error) console.warn('KURO direct read receipt update failed:', marked.error);
+                }
+            }
+            const outgoingIds = rows.filter(m => m.sender_id === currentUser.id).map(m => m.id);
+            let peerReadIds = new Set();
+            if (outgoingIds.length && peerId) {
+                const peerReads = await supabaseClient.from('chat_message_reads').select('message_id')
+                    .eq('reader_id', peerId).in('message_id', outgoingIds);
+                if (peerReads.error) console.warn('KURO peer read receipt lookup failed:', peerReads.error);
+                peerReadIds = new Set((peerReads.data || []).map(r => r.message_id));
+            }
+            const privateMediaHTML = window.KuroSNSMedia ? await window.KuroSNSMedia.renderPrivateBatch(supabaseClient, rows) : new Map();
+            const wasNearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 110;
+            const dividers = Array.from(box.querySelectorAll('[data-chat-date-divider]'));
+            let lastDate = dividers.length ? dividers[dividers.length - 1].dataset.chatDateDivider : '';
+            const pullIndicator = document.getElementById('chatPullIndicator');
+            rows.forEach(message => {
+                const id = String(message.id);
+                if (seen.has(id)) return;
+                if (message.sender_id === currentUser.id) {
+                    const pending = box.querySelector('[data-local-message-id]:not([data-server-message-id])');
+                    if (pending) {
+                        pending.dataset.serverMessageId = id;
+                        pending.dataset.chatMessageId = id;
+                        pending.querySelector('.text-gray-400')?.remove();
+                        seen.add(id);
+                        updateConversationPreview(conversationId, message);
+                        return;
+                    }
+                }
+                const date = new Date(message.created_at);
+                const dateLabel = (date.getMonth() + 1) + '/' + date.getDate();
+                if (dateLabel !== lastDate) {
+                    const divider = document.createElement('div');
+                    divider.dataset.chatDateDivider = dateLabel;
+                    divider.className = 'flex justify-center py-2';
+                    divider.innerHTML = '<span class="rounded-full bg-kuro-800/80 px-3 py-1 text-[11px] text-gray-400">' + dateLabel + '</span>';
+                    if (pullIndicator?.parentElement === box) box.insertBefore(divider, pullIndicator);
+                    else box.appendChild(divider);
+                    lastDate = dateLabel;
+                }
+                const mine = message.sender_id === currentUser.id;
+                const timeLabel = date.toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit', hour12:false});
+                const readLabel = mine && peerReadIds.has(message.id) ? '<span class="block text-[10px] text-gray-400">既読</span>' : '';
+                const textHTML = message.content ? '<p class="text-sm whitespace-pre-wrap break-words">' + renderSocialText(message.content) + '</p>' : '';
+                const bubble = '<div class="max-w-[78%] rounded-2xl px-3 py-2.5 ' + (mine ? 'bg-white text-black rounded-br-md' : 'bg-kuro-800 text-gray-100 rounded-bl-md') + '">' + textHTML + (privateMediaHTML.get(String(message.id)) || '') + '</div>';
+                const item = document.createElement('div');
+                item.dataset.chatMessageId = id;
+                item.className = 'flex items-end ' + (mine ? 'justify-end' : 'justify-start') + ' gap-1.5';
+                item.innerHTML = mine
+                    ? '<div class="text-right pb-0.5">' + readLabel + '<span class="block text-[10px] leading-4 text-gray-500 whitespace-nowrap">' + timeLabel + '</span></div>' + bubble
+                    : bubble + '<span class="block text-[10px] leading-4 text-gray-500 whitespace-nowrap">' + timeLabel + '</span>';
+                if (pullIndicator?.parentElement === box) box.insertBefore(item, pullIndicator);
+                else box.appendChild(item);
+                seen.add(id);
+                updateConversationPreview(conversationId, message);
+            });
+            advanceDirectChatCursor(conversationId, rows);
+            writeChatCache('messages', conversationId, box.innerHTML);
+            if (wasNearBottom) box.scrollTop = box.scrollHeight;
         }
         
         let followCache = { following: new Set(), followers: new Set() };
@@ -4095,7 +4243,8 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 if (key) sessionStorage.setItem(key, JSON.stringify({savedAt:Date.now(), value}));
             } catch (error) { console.warn('KURO chat cache unavailable:', error); }
         }
-        let kuroPublicChatPollTimer = null;
+        let kuroPublicChatRealtimeChannel = null;
+        let kuroPublicChatSyncPromise = null;
         let kuroPublicChatLoading = false;
         let kuroPublicChatLastSentAt = 0;
         let kuroPublicChatSeenIds = new Set();
@@ -4126,26 +4275,42 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             }).join('') || '<p data-chat-empty class="text-xs text-gray-500 text-center py-8">まだ投稿はありません。最初のメッセージを送ってみよう！</p>';
         }
         
-        async function pollPublicChatUpdates() {
+        async function syncPublicChatNewMessages() {
             const modal = document.getElementById('chatModal');
-            if (kuroPublicChatLoading || !kuroPublicChatLatestAt || !modal || modal.classList.contains('hidden')) return;
-            kuroPublicChatLoading = true;
-            try {
-                // 直近2秒を重ねて取得し、同時刻投稿の取りこぼしを避ける（IDで重複排除）。
-                const since = new Date(Math.max(0, Date.parse(kuroPublicChatLatestAt) - 2000)).toISOString();
-                const {data,error} = await supabaseClient.from('public_chat_messages')
-                    .select('id,nickname,content,created_at,media')
-                    .gte('created_at', since)
-                    .order('created_at',{ascending:true}).limit(50);
-                if (error) throw error;
-                (data || []).forEach(appendPublicChatMessage);
-            } catch (error) { console.warn('KURO Cloudflare public chat update failed:', error); }
-            finally { kuroPublicChatLoading = false; }
+            if (!supabaseClient || !kuroPublicChatLatestAt || !modal || modal.classList.contains('hidden') || modal.dataset.chatMode !== 'public') return;
+            if (kuroPublicChatSyncPromise) return kuroPublicChatSyncPromise;
+            const since = kuroPublicChatLatestAt;
+            kuroPublicChatSyncPromise = (async () => {
+                const result = await supabaseClient.from('public_chat_messages')
+                    .select('id,nickname,content,created_at,media').gte('created_at', since)
+                    .order('created_at',{ascending:true}).limit(500);
+                if (result.error) throw result.error;
+                (result.data || []).forEach(appendPublicChatMessage);
+            })();
+            try { await kuroPublicChatSyncPromise; }
+            catch (error) { console.warn('KURO public chat reconnect sync failed:', error); }
+            finally { kuroPublicChatSyncPromise = null; }
+        }
+        function stopPublicChatRealtime() {
+            const channel = kuroPublicChatRealtimeChannel;
+            kuroPublicChatRealtimeChannel = null;
+            removeKuroRealtimeChannel(channel, 'KURO public chat channel removal failed:');
         }
         function setupPublicChatRealtime() {
-            if (kuroPublicChatPollTimer) return;
-            kuroPublicChatPollTimer = setInterval(pollPublicChatUpdates, 3000);
+            if (!supabaseClient || kuroPublicChatRealtimeChannel) return;
+            const channel = supabaseClient.channel('kuro-public-chat-live')
+                .on('postgres_changes', {event:'INSERT',schema:'public',table:'public_chat_messages'}, payload => {
+                    const modal = document.getElementById('chatModal');
+                    if (!payload?.new || !modal || modal.classList.contains('hidden') || modal.dataset.chatMode !== 'public') return;
+                    appendPublicChatMessage(payload.new);
+                })
+                .subscribe(status => {
+                    if (status === 'SUBSCRIBED') syncPublicChatNewMessages();
+                    else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') console.warn('KURO public chat Realtime status:', status);
+                });
+            kuroPublicChatRealtimeChannel = channel;
         }
+        
         function switchChatMode(mode) {
             const modal = document.getElementById('chatModal');
             const publicMode = mode === 'public';
@@ -4155,12 +4320,20 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             document.getElementById('chatLayout')?.classList.toggle('hidden', publicMode);
             document.getElementById('publicChatPane')?.classList.toggle('hidden', !publicMode);
             if (publicMode) {
-                loadPublicChat();
-                setupPublicChatRealtime();
+                stopChatRealtime();
+                stopGroupChatRealtime();
+                loadPublicChat().then(setupPublicChatRealtime).catch(error => console.warn('KURO public chat open failed:', error));
             } else {
+                stopPublicChatRealtime();
+                stopChatRealtime();
+                stopGroupChatRealtime();
+                activeChatType = 'direct';
+                activeChatId = null;
+                activeChatPeer = null;
                 loadChatConversations();
             }
         }
+        
         function formatPublicChatMessage(message) {
             const time = new Date(message.created_at).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',hour12:false});
             let ownName = '';
@@ -4245,6 +4418,10 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             }
         }
         function closeChat() {
+            stopChatRealtime();
+            stopGroupChatRealtime();
+            stopPublicChatRealtime();
+            activeChatId = null;
             document.getElementById('chatModal')?.classList.add('hidden');
             document.body.classList.remove('kuro-keyboard-open');
             document.getElementById('publicChatInput')?.blur();
@@ -4434,27 +4611,125 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
         let kuroGroupRealtimeChannel = null;
         let kuroGroupRealtimeId = null;
         let kuroGroupRefreshToken = 0;
+        let kuroGroupRealtimeChannel = null;
+        let kuroGroupRealtimeId = null;
+        let kuroGroupRefreshToken = 0;
+        let kuroGroupMessageSeen = new Map();
+        let kuroGroupMessageLatestAt = new Map();
+        let kuroGroupSyncPromises = new Map();
         function stopGroupChatRealtime() {
-            if (kuroCloudflareGroupPollTimer) clearInterval(kuroCloudflareGroupPollTimer);
-            kuroCloudflareGroupPollTimer = null;
+            const channel = kuroGroupRealtimeChannel;
             kuroGroupRealtimeChannel = null;
             kuroGroupRealtimeId = null;
+            removeKuroRealtimeChannel(channel, 'KURO group chat channel removal failed:');
         }
-        let kuroCloudflareGroupPollTimer = null;
-        function setupGroupChatRealtime(groupId, groupName) {
-            if (kuroCloudflareGroupPollTimer && kuroGroupRealtimeId === groupId) return;
-            stopGroupChatRealtime();
-            kuroGroupRealtimeId = groupId;
-            kuroCloudflareGroupPollTimer = window.setInterval(async () => {
-                if (document.visibilityState !== 'visible' || activeChatType !== 'group' || activeChatId !== groupId) return;
+        async function syncGroupChatNewMessages(groupId) {
+            if (!groupId || !supabaseClient || activeChatType !== 'group' || activeChatId !== groupId) return;
+            if (kuroGroupSyncPromises.has(groupId)) return kuroGroupSyncPromises.get(groupId);
+            const since = kuroGroupMessageLatestAt.get(groupId) || '';
+            if (!since) return;
+            const task = (async () => {
                 const modal = document.getElementById('chatModal');
                 if (modal?.classList.contains('hidden')) return;
-                try { await selectGroupChat(groupId, groupName, true); }
-                catch (error) { console.warn('KURO Cloudflare group-chat refresh:', error); }
-            }, 8000);
+                const result = await supabaseClient.from('group_chat_messages')
+                    .select('id,group_id,sender_id,content,created_at,media')
+                    .eq('group_id', groupId).gte('created_at', since)
+                    .order('created_at',{ascending:true}).limit(500);
+                if (result.error) throw result.error;
+                if (result.data?.length) await appendGroupChatMessages(groupId, result.data);
+            })();
+            kuroGroupSyncPromises.set(groupId, task);
+            try { await task; }
+            finally { kuroGroupSyncPromises.delete(groupId); }
+        }
+        async function appendGroupChatMessages(groupId, incomingMessages) {
+            if (activeChatType !== 'group' || activeChatId !== groupId || !currentUser?.id) return;
+            const box = document.getElementById('chatMessages');
+            const modal = document.getElementById('chatModal');
+            if (!box || modal?.classList.contains('hidden')) return;
+            const seen = kuroGroupMessageSeen.get(groupId) || new Set();
+            kuroGroupMessageSeen.set(groupId, seen);
+            const rows = (incomingMessages || []).filter(m => m?.id && !seen.has(String(m.id)));
+            if (!rows.length) {
+                (incomingMessages || []).forEach(m => {
+                    const old = kuroGroupMessageLatestAt.get(groupId) || '';
+                    if (m?.created_at && m.created_at > old) kuroGroupMessageLatestAt.set(groupId, m.created_at);
+                });
+                return;
+            }
+            const senderIds = [...new Set(rows.map(m => m.sender_id))];
+            const messageIds = rows.map(m => m.id);
+            const [profileResult, readResult, membersResult] = await Promise.all([
+                supabaseClient.from('profiles').select('id,username,display_name,avatar_url').in('id', senderIds),
+                supabaseClient.from('group_chat_message_reads').select('message_id,reader_id').in('message_id', messageIds),
+                supabaseClient.from('group_chat_members').select('user_id').eq('group_id', groupId)
+            ]);
+            if (profileResult.error) console.warn('KURO group sender profiles failed:', profileResult.error);
+            if (readResult.error) console.warn('KURO group read receipts failed:', readResult.error);
+            if (membersResult.error) console.warn('KURO group members failed:', membersResult.error);
+            let reads = readResult.data || [];
+            const alreadyRead = new Set(reads.filter(r => r.reader_id === currentUser.id).map(r => r.message_id));
+            const unread = rows.filter(m => m.sender_id !== currentUser.id && !alreadyRead.has(m.id));
+            if (unread.length) {
+                const marked = await supabaseClient.from('group_chat_message_reads')
+                    .upsert(unread.map(m => ({message_id:m.id,group_id:groupId,reader_id:currentUser.id})), {onConflict:'message_id,reader_id',ignoreDuplicates:true});
+                if (marked.error) console.warn('KURO group mark-read failed:', marked.error);
+                else reads = reads.concat(unread.map(m => ({message_id:m.id,reader_id:currentUser.id})));
+            }
+            let mentionProfiles = [];
+            try { mentionProfiles = await getGroupMentionMembers(groupId); }
+            catch (error) { console.warn('KURO group mention profile lookup failed:', error); }
+            const profileMap = Object.fromEntries((profileResult.data || []).map(p => [p.id,p]));
+            const names = Object.fromEntries((profileResult.data || []).map(p => [p.id,p.display_name || p.username || 'メンバー']));
+            const peerCount = (membersResult.data || []).filter(m => m.user_id !== currentUser.id).length;
+            const mediaHTML = window.KuroSNSMedia ? await window.KuroSNSMedia.renderPrivateBatch(supabaseClient, rows) : new Map();
+            const wasNearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 110;
+            rows.forEach(message => {
+                const id = String(message.id);
+                if (seen.has(id)) return;
+                const mine = message.sender_id === currentUser.id;
+                const profile = profileMap[message.sender_id] || {};
+                const avatarUrl = profile.avatar_url ? (typeof kuroSnsAvatarUrl === 'function' ? kuroSnsAvatarUrl(profile.avatar_url) : profile.avatar_url) : '';
+                const avatar = avatarUrl
+                    ? '<img src="' + socialEscape(avatarUrl) + '" alt="" class="w-8 h-8 rounded-full object-cover shrink-0">'
+                    : '<span class="w-8 h-8 rounded-full bg-kuro-700 text-gray-300 flex items-center justify-center shrink-0">♙</span>';
+                const identity = mine ? '' : '<div class="flex items-center gap-2 mb-1">' + avatar + '<span class="text-[10px] text-gray-400">' + socialEscape(names[message.sender_id] || 'メンバー') + '</span></div>';
+                const readCount = reads.filter(r => r.message_id === message.id && r.reader_id !== message.sender_id).length;
+                const receipt = mine && peerCount ? '<span class="text-[10px] text-gray-400 mt-1">' + (readCount ? '既読 ' + readCount : '未読') + '</span>' : '';
+                const textHTML = message.content ? '<p class="text-sm whitespace-pre-wrap break-words">' + renderGroupMentionText(message.content, mentionProfiles) + '</p>' : '';
+                const item = document.createElement('div');
+                item.dataset.groupMessageId = id;
+                item.className = 'flex flex-col ' + (mine ? 'items-end' : 'items-start');
+                item.innerHTML = identity + '<div class="max-w-[85%] rounded-2xl px-3 py-2.5 ' + (mine ? 'bg-white text-black' : 'bg-kuro-800 text-gray-100') + '">' + textHTML + (mediaHTML.get(id) || '') + '</div><span class="text-[10px] text-gray-500 mt-1">' + new Date(message.created_at).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',hour12:false}) + '</span>' + receipt;
+                box.appendChild(item);
+                seen.add(id);
+            });
+            rows.forEach(message => {
+                const old = kuroGroupMessageLatestAt.get(groupId) || '';
+                if (message.created_at && message.created_at > old) kuroGroupMessageLatestAt.set(groupId, message.created_at);
+            });
+            if (wasNearBottom) box.scrollTop = box.scrollHeight;
+        }
+        function setupGroupChatRealtime(groupId, groupName) {
+            if (!groupId || !supabaseClient) return;
+            if (kuroGroupRealtimeChannel && kuroGroupRealtimeId === groupId) return;
+            stopGroupChatRealtime();
+            kuroGroupRealtimeId = groupId;
+            const channel = supabaseClient.channel('kuro-group-chat-' + groupId)
+                .on('postgres_changes', {
+                    event:'INSERT', schema:'public', table:'group_chat_messages', filter:'group_id=eq.' + groupId
+                }, payload => {
+                    if (activeChatType !== 'group' || activeChatId !== groupId || !payload?.new) return;
+                    appendGroupChatMessages(groupId, [payload.new]).catch(error => console.warn('KURO group chat event render failed:', error));
+                })
+                .subscribe(status => {
+                    if (status === 'SUBSCRIBED' && activeChatType === 'group' && activeChatId === groupId) {
+                        syncGroupChatNewMessages(groupId).catch(error => console.warn('KURO group chat reconnect sync failed:', error));
+                    } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') console.warn('KURO group chat Realtime status:', status);
+                });
+            kuroGroupRealtimeChannel = channel;
         }
         
-        let kuroGroupMentionCache = { groupId: null, members: [] };
         function hideGroupMentionSuggestions() {
             const box = document.getElementById('groupMentionSuggestions');
             if (box) { box.classList.add('hidden'); box.innerHTML = ''; }
@@ -4537,46 +4812,89 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
         }
 
         async function selectGroupChat(groupId, groupName, refreshOnly = false) {
+            stopChatRealtime();
+            stopPublicChatRealtime();
             document.getElementById('chatModal')?.setAttribute('data-chat-mode','direct');
             document.getElementById('chatLayout')?.classList.remove('hidden');
             document.getElementById('publicChatPane')?.classList.add('hidden');
-            activeChatType='group'; activeChatId=groupId; activeChatPeer=null; activeChatHandle=groupName;
+            activeChatType = 'group'; activeChatId = groupId; activeChatPeer = null; activeChatHandle = groupName;
             document.getElementById('chatPeerProfileButton')?.classList.add('hidden');
             if (!refreshOnly) document.getElementById('chatModal')?.classList.add('mobile-chat-open');
             document.getElementById('groupChatSettingsButton')?.classList.remove('hidden');
-            const initialLabel=document.getElementById('chatWithLabel');initialLabel.innerHTML=renderGroupIcon(window.kuroActiveGroupIcon||'👥','w-7 h-7')+'<span>'+socialEscape(groupName)+'</span>';initialLabel.classList.add('flex','items-center','gap-2');
-            document.getElementById('chatMessageInput').disabled=false;
-            document.getElementById('chatSendButton').disabled=false;
+            const box = document.getElementById('chatMessages');
+            const token = ++kuroGroupRefreshToken;
+            if (!refreshOnly) box.innerHTML = '<p class="text-xs text-gray-500 text-center mt-8">メッセージを読み込み中…</p>';
+            document.getElementById('chatMessageInput').disabled = false;
+            document.getElementById('chatSendButton').disabled = false;
             setupGroupChatRealtime(groupId, groupName);
-            const box=document.getElementById('chatMessages');
-            const token=++kuroGroupRefreshToken;
-            if (!refreshOnly) box.innerHTML='<p class="text-xs text-gray-500 text-center mt-8">メッセージを読み込み中…</p>';
-            const {data: messages,error}=await supabaseClient.from('group_chat_messages').select('id,sender_id,content,created_at,media').eq('group_id',groupId).order('created_at',{ascending:true}).limit(200);
+            const result = await supabaseClient.from('group_chat_messages')
+                .select('id,group_id,sender_id,content,created_at,media')
+                .eq('group_id', groupId).order('created_at', {ascending:false}).limit(50);
             if (token !== kuroGroupRefreshToken || activeChatType !== 'group' || activeChatId !== groupId) return;
-            if(error){if(!refreshOnly)box.innerHTML='<p class="text-sm text-red-300">グループメッセージを読み込めませんでした</p>';else console.warn('Group messages refresh failed:',error);return;}
-            const ids=[...new Set((messages||[]).map(m=>m.sender_id))];
-            const [{data:profiles,error:profileError},{data:groupInfo}]=await Promise.all([
-                ids.length?supabaseClient.from('profiles').select('id,username,display_name,avatar_url').in('id',ids):Promise.resolve({data:[],error:null}),
-                supabaseClient.from('group_conversations').select('name,icon').eq('id',groupId).maybeSingle()]);
-            if(token!==kuroGroupRefreshToken||activeChatType!=='group'||activeChatId!==groupId)return;
-            if(profileError)console.warn(profileError);window.kuroActiveGroupIcon=groupInfo?.icon||'👥';activeChatHandle=groupInfo?.name||groupName;const groupLabel=document.getElementById('chatWithLabel');groupLabel.innerHTML=renderGroupIcon(window.kuroActiveGroupIcon,'w-7 h-7')+'<span>'+socialEscape(activeChatHandle)+'</span>';groupLabel.classList.add('flex','items-center','gap-2');
-            const mids=(messages||[]).map(m=>m.id);let reads=[];
-            if(mids.length){const {data,error}=await supabaseClient.from('group_chat_message_reads').select('message_id,reader_id').in('message_id',mids);if(error)console.warn(error);reads=data||[];
-                const seen=new Set(reads.filter(r=>r.reader_id===currentUser.id).map(r=>r.message_id));const incoming=(messages||[]).filter(m=>m.sender_id!==currentUser.id&&!seen.has(m.id));
-                if(incoming.length){const {error:markError}=await supabaseClient.from('group_chat_message_reads').upsert(incoming.map(m=>({message_id:m.id,group_id:groupId,reader_id:currentUser.id})),{onConflict:'message_id,reader_id',ignoreDuplicates:true});if(markError)console.warn(markError);else reads.push(...incoming.map(m=>({message_id:m.id,reader_id:currentUser.id})));}
+            if (result.error) {
+                if (!refreshOnly) box.innerHTML = '<p class="text-sm text-red-300">グループメッセージを読み込めませんでした</p>';
+                else console.warn('Group messages refresh failed:', result.error);
+                return;
             }
-            let groupMentionProfiles=[];try{groupMentionProfiles=await getGroupMentionMembers(groupId);}catch(mentionProfileError){console.warn('Group mention profile load failed:',mentionProfileError);}const {data:members}=await supabaseClient.from('group_chat_members').select('user_id').eq('group_id',groupId);const peerCount=(members||[]).filter(m=>m.user_id!==currentUser.id).length;
-            const profileMap=Object.fromEntries((profiles||[]).map(p=>[p.id,p])),names=Object.fromEntries((profiles||[]).map(p=>[p.id,p.display_name||p.username||'ユーザー']));
-            const privateMediaHTML=window.KuroSNSMedia?await window.KuroSNSMedia.renderPrivateBatch(supabaseClient,messages):new Map();
-            box.innerHTML=(messages||[]).map(m=>{const mine=m.sender_id===currentUser.id,profile=profileMap[m.sender_id];
-                const avatar=profile?.avatar_url?`<img src="${socialEscape(profile.avatar_url)}" alt="" class="w-8 h-8 rounded-full object-cover shrink-0">`:'<span class="w-8 h-8 rounded-full bg-kuro-700 text-gray-300 flex items-center justify-center shrink-0"><i class="fa-regular fa-user text-xs"></i></span>';
-                const identity=mine?'':`<div class="flex items-center gap-2 mb-1">${avatar}<span class="text-[10px] text-gray-400">${socialEscape(names[m.sender_id]||'メンバー')}</span></div>`;
-                const n=reads.filter(r=>r.message_id===m.id&&r.reader_id!==m.sender_id).length,receipt=mine&&peerCount?`<span class="text-[10px] text-gray-400 mt-1">${n?'既読 '+n:'未読'}</span>`:'';
-                const groupTextHTML=m.content?`<p class="text-sm whitespace-pre-wrap break-words">${renderGroupMentionText(m.content,groupMentionProfiles)}</p>`:'';
-                return `<div data-group-message-id="${socialEscape(m.id)}" class="flex flex-col ${mine?'items-end':'items-start'}">${identity}<div class="max-w-[85%] rounded-2xl px-3 py-2.5 ${mine?'bg-white text-black':'bg-kuro-800 text-gray-100'}">${groupTextHTML}${privateMediaHTML.get(String(m.id)) || ''}</div><span class="text-[10px] text-gray-500 mt-1">${new Date(m.created_at).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',hour12:false})}</span>${receipt}</div>`;}).join('')||'<p class="text-xs text-gray-600 text-center mt-8">最初のメッセージを送ってみよう</p>';
-            box.scrollTop=box.scrollHeight;
+            const messages = (result.data || []).reverse();
+            const senderIds = [...new Set(messages.map(m => m.sender_id))];
+            const [profileResult, groupResult] = await Promise.all([
+                senderIds.length ? supabaseClient.from('profiles').select('id,username,display_name,avatar_url').in('id', senderIds) : Promise.resolve({data:[],error:null}),
+                supabaseClient.from('group_conversations').select('name,icon').eq('id', groupId).maybeSingle()
+            ]);
+            if (token !== kuroGroupRefreshToken || activeChatType !== 'group' || activeChatId !== groupId) return;
+            if (profileResult.error) console.warn(profileResult.error);
+            window.kuroActiveGroupIcon = groupResult.data?.icon || '👥';
+            activeChatHandle = groupResult.data?.name || groupName;
+            const groupLabel = document.getElementById('chatWithLabel');
+            groupLabel.innerHTML = renderGroupIcon(window.kuroActiveGroupIcon, 'w-7 h-7') + '<span>' + socialEscape(activeChatHandle) + '</span>';
+            groupLabel.classList.add('flex','items-center','gap-2');
+
+            const messageIds = messages.map(m => m.id);
+            let reads = [];
+            if (messageIds.length) {
+                const readResult = await supabaseClient.from('group_chat_message_reads').select('message_id,reader_id').in('message_id', messageIds);
+                if (readResult.error) console.warn(readResult.error);
+                reads = readResult.data || [];
+                const alreadyRead = new Set(reads.filter(r => r.reader_id === currentUser.id).map(r => r.message_id));
+                const unread = messages.filter(m => m.sender_id !== currentUser.id && !alreadyRead.has(m.id));
+                if (unread.length) {
+                    const marked = await supabaseClient.from('group_chat_message_reads')
+                        .upsert(unread.map(m => ({message_id:m.id,group_id:groupId,reader_id:currentUser.id})), {onConflict:'message_id,reader_id',ignoreDuplicates:true});
+                    if (marked.error) console.warn(marked.error);
+                    else reads = reads.concat(unread.map(m => ({message_id:m.id,reader_id:currentUser.id})));
+                }
+            }
+            let mentionProfiles = [];
+            try { mentionProfiles = await getGroupMentionMembers(groupId); }
+            catch (error) { console.warn('Group mention profile load failed:', error); }
+            const {data:members, error:membersError} = await supabaseClient.from('group_chat_members').select('user_id').eq('group_id', groupId);
+            if (membersError) console.warn(membersError);
+            const peerCount = (members || []).filter(m => m.user_id !== currentUser.id).length;
+            const profileMap = Object.fromEntries((profileResult.data || []).map(p => [p.id,p]));
+            const names = Object.fromEntries((profileResult.data || []).map(p => [p.id,p.display_name || p.username || 'メンバー']));
+            const mediaHTML = window.KuroSNSMedia ? await window.KuroSNSMedia.renderPrivateBatch(supabaseClient, messages) : new Map();
+            if (token !== kuroGroupRefreshToken || activeChatType !== 'group' || activeChatId !== groupId) return;
+            box.innerHTML = messages.map(message => {
+                const mine = message.sender_id === currentUser.id;
+                const profile = profileMap[message.sender_id] || {};
+                const avatarUrl = profile.avatar_url ? (typeof kuroSnsAvatarUrl === 'function' ? kuroSnsAvatarUrl(profile.avatar_url) : profile.avatar_url) : '';
+                const avatar = avatarUrl
+                    ? '<img src="' + socialEscape(avatarUrl) + '" alt="" class="w-8 h-8 rounded-full object-cover shrink-0">'
+                    : '<span class="w-8 h-8 rounded-full bg-kuro-700 text-gray-300 flex items-center justify-center shrink-0">♙</span>';
+                const identity = mine ? '' : '<div class="flex items-center gap-2 mb-1">' + avatar + '<span class="text-[10px] text-gray-400">' + socialEscape(names[message.sender_id] || 'メンバー') + '</span></div>';
+                const readCount = reads.filter(r => r.message_id === message.id && r.reader_id !== message.sender_id).length;
+                const receipt = mine && peerCount ? '<span class="text-[10px] text-gray-400 mt-1">' + (readCount ? '既読 ' + readCount : '未読') + '</span>' : '';
+                const textHTML = message.content ? '<p class="text-sm whitespace-pre-wrap break-words">' + renderGroupMentionText(message.content, mentionProfiles) + '</p>' : '';
+                return '<div data-group-message-id="' + socialEscape(message.id) + '" class="flex flex-col ' + (mine ? 'items-end' : 'items-start') + '">' + identity + '<div class="max-w-[85%] rounded-2xl px-3 py-2.5 ' + (mine ? 'bg-white text-black' : 'bg-kuro-800 text-gray-100') + '">' + textHTML + (mediaHTML.get(String(message.id)) || '') + '</div><span class="text-[10px] text-gray-500 mt-1">' + new Date(message.created_at).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',hour12:false}) + '</span>' + receipt + '</div>';
+            }).join('') || '<p class="text-xs text-gray-600 text-center mt-8">最初のメッセージを送ってみよう</p>';
+            kuroGroupMessageSeen.set(groupId, new Set(messages.map(m => String(m.id))));
+            kuroGroupMessageLatestAt.set(groupId, messages.reduce((latest,m) => m.created_at > latest ? m.created_at : latest, ''));
+            box.scrollTop = box.scrollHeight;
             loadGroupChats();
+            await syncGroupChatNewMessages(groupId);
         }
+        
         let kuroEditingGroupMembers = [];
         async function openGroupEditModal(){
             if(activeChatType!=='group'||!activeChatId)return;
@@ -4762,6 +5080,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
         }
         async function selectChat(conversationId, peerId, handle) {
             stopGroupChatRealtime();
+            stopPublicChatRealtime();
             document.getElementById('groupChatSettingsButton')?.classList.add('hidden');
             document.getElementById('chatModal')?.setAttribute('data-chat-mode','direct');
             document.getElementById('chatLayout')?.classList.remove('hidden');
@@ -4772,81 +5091,76 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             activeChatPeer = peerId;
             activeChatHandle = handle || 'user';
             document.getElementById('chatModal')?.classList.add('mobile-chat-open');
-            document.getElementById('chatWithLabel').textContent = '@' + handle;
+            document.getElementById('chatWithLabel').textContent = '@' + (handle || 'user');
             document.getElementById('chatMessageInput').disabled = false;
             document.getElementById('chatSendButton').disabled = false;
             const box = document.getElementById('chatMessages');
+            const token = ++kuroDirectSelectToken;
+            kuroDirectMessageSeen.set(conversationId, new Set());
+            kuroDirectMessageLatestAt.set(conversationId, '');
             const cachedMessages = readChatCache('messages', conversationId);
-            if (cachedMessages?.value) {
-                box.innerHTML = cachedMessages.value;
-            } else {
-                box.innerHTML = '<div class="flex justify-center py-3"><div class="flex items-center gap-2 text-xs text-gray-400"><i class="fa-solid fa-arrow-down animate-spin"></i><span>読み込み中…</span></div></div>';
-            }
-            const {data, error} = await supabaseClient.from('chat_messages')
-                .select('id,sender_id,content,created_at,media')
-                .eq('conversation_id', conversationId).order('created_at', {ascending:true}).limit(200);
-            if (error) {
+            box.innerHTML = cachedMessages?.value || '<div class="flex justify-center py-3"><div class="flex items-center gap-2 text-xs text-gray-400"><i class="fa-solid fa-arrow-down animate-spin"></i><span>読み込み中…</span></div></div>';
+            setupChatRealtime(conversationId);
+            const result = await supabaseClient.from('chat_messages')
+                .select('id,sender_id,content,created_at,media').eq('conversation_id', conversationId)
+                .order('created_at', {ascending:false}).limit(50);
+            if (token !== kuroDirectSelectToken || activeChatType !== 'direct' || activeChatId !== conversationId) return;
+            if (result.error) {
                 box.innerHTML = '<p class="text-sm text-red-300">メッセージを読み込めませんでした</p>';
-                console.warn(error);
+                console.warn(result.error);
                 return;
             }
-            const messages = data || [];
-            const privateMediaHTML = window.KuroSNSMedia ? await window.KuroSNSMedia.renderPrivateBatch(supabaseClient, messages) : new Map();
+            const messages = (result.data || []).reverse();
             const incomingIds = messages.filter(m => m.sender_id !== currentUser.id).map(m => m.id);
             if (incomingIds.length) {
-                const {data: existingReads, error: readFetchError} = await supabaseClient
-                    .from('chat_message_reads').select('message_id').eq('reader_id', currentUser.id).in('message_id', incomingIds);
-                if (readFetchError) console.warn('既読情報の取得に失敗:', readFetchError);
-                const seen = new Set((existingReads || []).map(r => r.message_id));
-                const unreadIds = incomingIds.filter(id => !seen.has(id));
+                const readResult = await supabaseClient.from('chat_message_reads').select('message_id').eq('reader_id', currentUser.id).in('message_id', incomingIds);
+                if (readResult.error) console.warn('既読情報の取得に失敗:', readResult.error);
+                const alreadyRead = new Set((readResult.data || []).map(r => r.message_id));
+                const unreadIds = incomingIds.filter(id => !alreadyRead.has(id));
                 if (unreadIds.length) {
-                    const {error: markError} = await supabaseClient.from('chat_message_reads')
-                        .insert(unreadIds.map(message_id => ({message_id, reader_id: currentUser.id})));
-                    if (markError) console.warn('既読の記録に失敗:', markError);
+                    const marked = await supabaseClient.from('chat_message_reads')
+                        .upsert(unreadIds.map(message_id => ({message_id,reader_id:currentUser.id})), {onConflict:'message_id,reader_id',ignoreDuplicates:true});
+                    if (marked.error) console.warn('既読の記録に失敗:', marked.error);
                 }
             }
             let peerReadIds = new Set();
             const outgoingIds = messages.filter(m => m.sender_id === currentUser.id).map(m => m.id);
             if (outgoingIds.length && peerId) {
-                const {data: peerReads, error: peerReadError} = await supabaseClient
-                    .from('chat_message_reads').select('message_id').eq('reader_id', peerId).in('message_id', outgoingIds);
-                if (peerReadError) console.warn('相手の既読情報の取得に失敗:', peerReadError);
-                peerReadIds = new Set((peerReads || []).map(r => r.message_id));
+                const peerReads = await supabaseClient.from('chat_message_reads').select('message_id')
+                    .eq('reader_id', peerId).in('message_id', outgoingIds);
+                if (peerReads.error) console.warn('相手の既読情報の取得に失敗:', peerReads.error);
+                peerReadIds = new Set((peerReads.data || []).map(r => r.message_id));
             }
-            const chatTime = value => {
-                const d = new Date(value);
-                return d.toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit', hour12:false});
-            };
-            const chatDate = value => {
-                const d = new Date(value);
-                return `${d.getMonth()+1}/${d.getDate()}`;
-            };
-            let lastDate = '';
+            const privateMediaHTML = window.KuroSNSMedia ? await window.KuroSNSMedia.renderPrivateBatch(supabaseClient, messages) : new Map();
+            if (token !== kuroDirectSelectToken || activeChatType !== 'direct' || activeChatId !== conversationId) return;
             const rendered = [];
-            messages.forEach(m => {
-                const dateLabel = chatDate(m.created_at);
+            let lastDate = '';
+            messages.forEach(message => {
+                const date = new Date(message.created_at);
+                const dateLabel = (date.getMonth() + 1) + '/' + date.getDate();
                 if (dateLabel !== lastDate) {
-                    rendered.push(`<div class="flex justify-center py-2"><span class="rounded-full bg-kuro-800/80 px-3 py-1 text-[11px] text-gray-400">${dateLabel}</span></div>`);
+                    rendered.push('<div data-chat-date-divider="' + dateLabel + '" class="flex justify-center py-2"><span class="rounded-full bg-kuro-800/80 px-3 py-1 text-[11px] text-gray-400">' + dateLabel + '</span></div>');
                     lastDate = dateLabel;
                 }
-                const mine = m.sender_id === currentUser.id;
-                const readLabel = mine && peerReadIds.has(m.id) ? '<span class="block text-[10px] text-gray-400">既読</span>' : '';
-                const timeLabel = `<span class="block text-[10px] leading-4 text-gray-500 whitespace-nowrap">${chatTime(m.created_at)}</span>`;
-                const messageTextHTML = m.content ? `<p class="text-sm whitespace-pre-wrap break-words">${renderSocialText(m.content)}</p>` : '';
-            const bubble = `<div class="max-w-[78%] rounded-2xl px-3 py-2.5 ${mine ? 'bg-white text-black rounded-br-md' : 'bg-kuro-800 text-gray-100 rounded-bl-md'}">${messageTextHTML}${privateMediaHTML.get(String(m.id)) || ''}</div>`;
-                if (mine) {
-                    rendered.push(`<div class="flex items-end justify-end gap-1.5"><div class="text-right pb-0.5">${readLabel}${timeLabel}</div>${bubble}</div>`);
-                } else {
-                    rendered.push(`<div class="flex items-end justify-start gap-1.5">${bubble}${timeLabel}</div>`);
-                }
+                const mine = message.sender_id === currentUser.id;
+                const readLabel = mine && peerReadIds.has(message.id) ? '<span class="block text-[10px] text-gray-400">既読</span>' : '';
+                const timeLabel = date.toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit',hour12:false});
+                const textHTML = message.content ? '<p class="text-sm whitespace-pre-wrap break-words">' + renderSocialText(message.content) + '</p>' : '';
+                const bubble = '<div class="max-w-[78%] rounded-2xl px-3 py-2.5 ' + (mine ? 'bg-white text-black rounded-br-md' : 'bg-kuro-800 text-gray-100 rounded-bl-md') + '">' + textHTML + (privateMediaHTML.get(String(message.id)) || '') + '</div>';
+                rendered.push('<div data-chat-message-id="' + socialEscape(message.id) + '" class="flex items-end ' + (mine ? 'justify-end' : 'justify-start') + ' gap-1.5">' +
+                    (mine ? '<div class="text-right pb-0.5">' + readLabel + '<span class="block text-[10px] leading-4 text-gray-500 whitespace-nowrap">' + timeLabel + '</span></div>' + bubble
+                        : bubble + '<span class="block text-[10px] leading-4 text-gray-500 whitespace-nowrap">' + timeLabel + '</span>') + '</div>');
             });
-            box.innerHTML = (rendered.join('') || '<p class="text-xs text-gray-600 text-center mt-8">最初のメッセージを送ってみよう</p>') + '<div id="chatPullIndicator" class="kuro-pull-indicator" aria-live="polite"><i class="fa-solid fa-arrow-down"></i><span>一番下から上に引っ張って更新</span></div>';
+            box.innerHTML = (rendered.join('') || '<p data-chat-empty class="text-xs text-gray-600 text-center mt-8">最初のメッセージを送ってみよう</p>') +
+                '<div id="chatPullIndicator" class="kuro-pull-indicator" aria-live="polite"><i class="fa-solid fa-arrow-down"></i><span>一番下から上に引っ張って更新</span></div>';
+            kuroDirectMessageSeen.set(conversationId, new Set(messages.map(m => String(m.id))));
+            advanceDirectChatCursor(conversationId, messages);
             writeChatCache('messages', conversationId, box.innerHTML);
             box.scrollTop = box.scrollHeight;
-            setupChatRealtime(conversationId);
+            await syncDirectChatNewMessages(conversationId, peerId);
             await loadChatConversations();
         }
-        function showChatListOnMobile() { document.getElementById('chatModal')?.classList.remove('mobile-chat-open'); }
+        
         async function sendChatMessage(event) {
             event.preventDefault();
             if (!await requireSocialLogin()) return;
@@ -4886,7 +5200,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                             mentionTargets = [...found];
                         }
                     }
-                    const {data: sentGroupMessage,error: groupSendError} = await supabaseClient.from('group_chat_messages').insert({group_id:groupId,sender_id:senderId,content,media:uploadedMedia}).select('id').single();
+                    const {data: sentGroupMessage,error: groupSendError} = await supabaseClient.from('group_chat_messages').insert({group_id:groupId,sender_id:senderId,content,media:uploadedMedia}).select('id,group_id,sender_id,content,created_at,media').single();
                     if (groupSendError) throw groupSendError;
                     // Send group chat push asynchronously; never block the message UI on notification delivery.
                     supabaseClient.functions.invoke('send-chat-push', {body:{groupMessageId:sentGroupMessage.id}})
@@ -4911,7 +5225,8 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     if (suggestionBox) { suggestionBox.classList.add('hidden'); suggestionBox.innerHTML=''; }
                     const {error:updateError}=await supabaseClient.from('group_conversations').update({updated_at:new Date().toISOString()}).eq('id',groupId);
                     if(updateError) console.warn(updateError);
-                    await selectGroupChat(groupId,activeChatHandle);
+                    await appendGroupChatMessages(groupId, [sentGroupMessage]);
+                    loadGroupChats();
                 } catch (error) {
                     console.warn('Group message send failed:',error);
                     if (uploadedMedia.length) await window.KuroSNSMedia.remove(supabaseClient, uploadedMedia);
@@ -4965,11 +5280,17 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             try {
                 const {data: sentMessage, error} = await supabaseClient.from('chat_messages')
                     .insert({conversation_id:conversationId,sender_id:senderId,content,media:uploadedMedia})
-                    .select('id').single();
+                    .select('id,conversation_id,sender_id,content,created_at,media').single();
                 if (error) throw error;
 
                 optimistic.querySelector('.text-gray-400')?.remove();
                 optimistic.dataset.serverMessageId = sentMessage.id;
+                optimistic.dataset.chatMessageId = sentMessage.id;
+                const sentSeen = kuroDirectMessageSeen.get(conversationId) || new Set();
+                sentSeen.add(String(sentMessage.id));
+                kuroDirectMessageSeen.set(conversationId, sentSeen);
+                advanceDirectChatCursor(conversationId, [sentMessage]);
+                updateConversationPreview(conversationId, sentMessage);
                 window.KuroSNSMedia?.clear('chat');
                 await supabaseClient.from('chat_conversations').update({updated_at:new Date().toISOString()}).eq('id',conversationId);
                 writeChatCache('messages', conversationId, box.innerHTML);
@@ -4979,11 +5300,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     .then(({error: pushError}) => { if (pushError) console.warn('KURO push not sent:', pushError); })
                     .catch(pushError => console.warn('KURO push invoke failed:', pushError));
 
-                loadChatConversations(true);
-                // サーバー上の正式ID・既読状態と同期するのは表示後に行う。
-                if (activeChatId === conversationId) {
-                    selectChat(conversationId, peerId, handle).catch(error => console.warn('KURO chat refresh failed:', error));
-                }
+                // 送信直後の全履歴再取得はせず、確定IDを既存の表示に結び付ける。
             } catch (error) {
                 console.error('KURO message send error:', error);
                 if (uploadedMedia.length) await window.KuroSNSMedia.remove(supabaseClient, uploadedMedia);
