@@ -140,7 +140,7 @@ window.kuroGamesDB=storeDb;
 const $=id=>document.getElementById(id);
 const html=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const categoryLabels={avatar:"アバター",frame:"フレーム",background:"壁紙",theme:"テーマ",nameplate:"ネーム装飾",banner:"バナー",other:"その他"};
-let storeItems=[],inventory=[],equipped=[],currentCategory="all",isLoggedIn=false,coinBalance=null,storeProfile=null,storeCosmetics={};
+let storeItems=[],inventory=[],equipped=[],currentCategory="all",isLoggedIn=false,coinBalance=null,storeProfile=null,storeCosmetics={},storeLoadSerial=0;
 function safeStoreImage(value){
  if(!value)return "";
  try{
@@ -268,9 +268,17 @@ function renderInventory(){
  $("inventoryEquipped").textContent=equipped.length?"装備設定："+equippedLabels.join(" / "):"";
 }
 async function refreshStore(){
+ const request=++storeLoadSerial;
  status("ストアを読み込んでいます…");
  try{
-  const {data,error}=await storeDb.functions.invoke("kurogames-store",{body:{action:"catalog"}});
+  let response;
+  for(let attempt=0;attempt<2;attempt++){
+   response=await storeDb.functions.invoke("kurogames-store",{body:{action:"catalog"}});
+   if(!response.error)break;
+   if(attempt===0)await new Promise(resolve=>setTimeout(resolve,350));
+  }
+  if(request!==storeLoadSerial)return;
+  const {data,error}=response;
   if(error)throw error;if(data?.error)throw new Error(data.error);
   storeItems=Array.isArray(data.items)?data.items:[];
   inventory=Array.isArray(data.inventory)?data.inventory:[];
@@ -287,6 +295,7 @@ async function refreshStore(){
       storeDb.from("profiles").select("id,username,display_name,kuro_id,avatar_url,bio,created_at").eq("id",user.id).maybeSingle(),
       storeDb.rpc("kuro_get_public_store_cosmetics",{p_user_id:user.id})
      ]);
+     if(request!==storeLoadSerial)return;
      if(!profileResult.error&&profileResult.data)storeProfile=profileResult.data;
      if(!cosmeticResult.error&&cosmeticResult.data&&typeof cosmeticResult.data==="object")storeCosmetics=cosmeticResult.data;
     }
@@ -301,6 +310,7 @@ async function refreshStore(){
   $("storeAccount").title=isLoggedIn?(profile.kuro_id||"KUROアカウント"):"ログイン / 登録";
   renderCatalog();renderInventory();status("アイテムを表示しています。取得したアイテムはアカウントに保存されます。","success");
  }catch(error){
+  if(request!==storeLoadSerial)return;
   status("ストアを読み込めませんでした："+(error.message||error),"error");
   $("storeGrid").innerHTML='<div class="state" style="grid-column:1/-1">通信状態を確認して、ページを再読み込みしてください。</div>';
  }
@@ -387,8 +397,17 @@ $("inventoryGrid").addEventListener("click",event=>{
  if(unequip)unequipItem(unequip.dataset.unequip,unequip);
  if(discard)discardInventoryItem(discard.dataset.discard,discard.dataset.name||"このアイテム",discard);
 });
-storeDb.auth.onAuthStateChange(()=>{refreshStore();});
-refreshStore();
+let storeInitialLoadStarted=false;
+storeDb.auth.onAuthStateChange((event)=>{
+ if(event==="INITIAL_SESSION"&&!storeInitialLoadStarted){
+  storeInitialLoadStarted=true;
+  window.setTimeout(()=>refreshStore(),0);
+  return;
+ }
+ if(event==="SIGNED_IN"||event==="SIGNED_OUT"){
+  window.setTimeout(()=>refreshStore(),0);
+ }
+});
 </script>
 <script defer src="/kuro-profile.js?v=20261126storetryon1"></script>
 </body>
