@@ -23,6 +23,9 @@ main{padding:28px 0 60px}.eyebrow{color:#c4b5fd;font-size:9px;font-weight:1000;l
 form{padding:19px 20px 21px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:13px}.field{display:grid;gap:6px}.field.wide{grid-column:1/-1}.field label{color:#c6bdd8;font-size:10px;font-weight:900}.field input,.field select,.field textarea{width:100%;min-height:40px;padding:9px 11px;border:1px solid #3b344c;border-radius:10px;outline:none;background:#0f0d18;color:var(--text);font-size:11px}.field textarea{min-height:85px;resize:vertical;line-height:1.7}.field input:focus,.field select:focus,.field textarea:focus{border-color:#9772d5;box-shadow:0 0 0 3px #9772d51c}
 .upload-box{display:flex;align-items:center;gap:14px;padding:12px;border:1px dashed #51436b;border-radius:12px;background:#100e19}.preview{width:92px;height:72px;flex:0 0 92px;display:grid;place-items:center;overflow:hidden;border-radius:9px;background:#28203b;font-size:25px}.preview img{width:100%;height:100%;object-fit:cover}.upload-box input{max-width:100%;padding:0;border:0;background:transparent}.hint{color:#8f86a6;font-size:9px;line-height:1.6}.form-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
 footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-size:10px}.foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.member-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.member-actions select{height:31px;padding:0 8px;border:1px solid #403650;border-radius:8px;background:#161321;color:#e9e1f6;font-size:9px}
+.member-identity strong{display:block;font-size:11px}.member-identity small{display:block;margin-top:4px;color:#9188a3;font-size:9px}
 @media(max-width:760px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.page-head{align-items:flex-start;flex-direction:column}.panel-head{align-items:flex-start;flex-direction:column}.toolbar{width:100%}.toolbar input{width:100%;flex:1}}
 @media(max-width:540px){.wrap{width:calc(100% - 22px)}header{height:59px}.brand{font-size:14px}.brand img{width:28px;height:28px}.nav{gap:8px}.nav a.link{padding:8px 9px;font-size:9px}.page-head h1{font-size:30px}.stat{padding:13px}.stat strong{font-size:22px}.fields{grid-template-columns:1fr}.field.wide{grid-column:auto}.overlay{padding:0;align-items:flex-end}.dialog{max-height:94dvh;border-radius:20px 20px 0 0;border-bottom:0}.dialog-head{padding:14px}.form-actions .button{flex:1}}
 </style>
@@ -51,6 +54,18 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
  <div class="panel-head"><div><h2>最近の購入</h2><p>直近20件の有料購入。商品名・金額・購入時刻を確認できます。</p></div></div>
  <div class="table-wrap"><table style="min-width:520px"><thead><tr><th>商品</th><th>購入金額</th><th>日時</th></tr></thead><tbody id="recentSalesBody"></tbody></table></div>
  <div class="empty" id="recentSalesEmpty" hidden>まだ購入履歴はありません。商品を公開すると、ここに購入履歴が表示されます。</div>
+</section>
+<section class="panel" id="membersPanel" style="margin-top:18px" hidden>
+ <div class="panel-head"><div><h2>Shop Studio メンバー管理</h2><p>KURO Adminとは別の権限です。KURO IDを指定して、このStudioへのアクセスだけを付与・停止します。</p></div></div>
+ <form id="memberForm" style="padding:16px 18px;border-bottom:1px solid var(--line)">
+  <div class="toolbar">
+   <input id="memberKuroId" type="text" maxlength="40" placeholder="KURO ID（例：KURO-XXXXXXXX）" autocomplete="off" required>
+   <select id="memberRole"><option value="editor">編集者（商品管理）</option><option value="owner">owner（商品・メンバー管理）</option></select>
+   <button class="button" id="addMember" type="submit">メンバーを追加・更新</button>
+  </div>
+ </form>
+ <div class="table-wrap"><table style="min-width:650px"><thead><tr><th>アカウント</th><th>権限</th><th>状態</th><th>操作</th></tr></thead><tbody id="membersBody"></tbody></table></div>
+ <div class="empty" id="membersEmpty" hidden>メンバーはまだ登録されていません。</div>
 </section>
 <p class="notice" id="studioNotice" role="status" aria-live="polite"></p>
 </main>
@@ -109,6 +124,18 @@ async function api(action,payload={}){
  }
  if(data?.error)throw new Error(data.error);
  return data||{};
+}
+function renderMembers(members){
+ const rows=Array.isArray(members)?members:[];
+ $("membersPanel").hidden=false;
+ $("membersEmpty").hidden=rows.length>0;
+ $("membersBody").innerHTML=rows.map(member=>{
+  const profile=member.profile||{};
+  const name=profile.display_name||profile.username||"KUROユーザー";
+  const kuroId=profile.kuro_id||"KURO ID未取得";
+  const active=member.is_active===true;
+  return '<tr><td><div class="member-identity"><strong>'+html(name)+'</strong><small>'+html(kuroId)+'</small></div></td><td><select aria-label="'+html(kuroId)+'の権限" data-role-for="'+html(member.user_id)+'"><option value="editor"'+(member.role==="editor"?" selected":"")+'>編集者</option><option value="owner"'+(member.role==="owner"?" selected":"")+'>owner</option></select></td><td><span class="tag '+(active?"":"off")+'">'+(active?"利用可能":"停止中")+'</span></td><td><div class="member-actions"><button class="mini" data-save-member="'+html(member.user_id)+'" data-kuro-id="'+html(kuroId)+'" data-active="'+active+'">保存</button><button class="mini" data-toggle-member="'+html(member.user_id)+'" data-kuro-id="'+html(kuroId)+'" data-role="'+html(member.role)+'" data-active="'+active+'">'+(active?"停止":"再開")+'</button></div></td></tr>';
+ }).join("");
 }
 function renderRecentSales(rows){
  const sales=Array.isArray(rows)?rows:[];
@@ -175,7 +202,7 @@ async function refresh(){
  $("statActive").textContent=Number(stats.activeItems||0).toLocaleString("ja-JP");
  $("statSales").textContent=Number(stats.salesCount||0).toLocaleString("ja-JP");
  $("statRevenue").textContent=Number(stats.salesTotalKC||0).toLocaleString("ja-JP");
- $("studioApp").hidden=false;$("accessPanel").hidden=true;render();renderRecentSales(data.recentSales);note("商品カタログを最新の状態に更新しました。","success");
+ $("studioApp").hidden=false;$("accessPanel").hidden=true;render();renderRecentSales(data.recentSales);if(data.member?.role==="owner")renderMembers(data.members);else $("membersPanel").hidden=true;note("商品カタログを最新の状態に更新しました。","success");
 }
 async function start(){
  $("accessPanel").hidden=false;
@@ -223,6 +250,37 @@ $("itemsBody").addEventListener("click",async event=>{
   toggle.disabled=true;
   try{await api("studio_set_status",{itemId:toggle.dataset.toggle,isActive:toggle.dataset.active==="true"});await refresh();note(toggle.dataset.active==="true"?"商品を再公開しました。":"商品を非公開にしました。","success");}
   catch(error){note(error.message||"状態を変更できませんでした。","error");toggle.disabled=false;}
+ }
+});
+
+$("memberForm").addEventListener("submit",async event=>{
+ event.preventDefault();const button=$("addMember");button.disabled=true;button.textContent="保存中…";
+ try{
+  const kuroId=$("memberKuroId").value.trim().toUpperCase();
+  await api("studio_set_member",{kuroId,role:$("memberRole").value,isActive:true});
+  $("memberKuroId").value="";await refresh();note(kuroId+" にShop Studio権限を付与しました。","success");
+ }catch(error){note(error.message||"メンバーを追加できませんでした。","error");}
+ finally{button.disabled=false;button.textContent="メンバーを追加・更新";}
+});
+$("membersBody").addEventListener("click",async event=>{
+ const save=event.target.closest("[data-save-member]"),toggle=event.target.closest("[data-toggle-member]");
+ if(save){
+  save.disabled=true;
+  try{
+   const userId=save.dataset.saveMember,role=$("membersBody").querySelector('[data-role-for="'+CSS.escape(userId)+'"]')?.value||"editor";
+   await api("studio_set_member",{kuroId:save.dataset.kuroId,role,isActive:save.dataset.active==="true"});
+   await refresh();note("メンバー権限を更新しました。","success");
+  }catch(error){note(error.message||"権限を更新できませんでした。","error");save.disabled=false;}
+  return;
+ }
+ if(toggle){
+  toggle.disabled=true;
+  try{
+   const active=toggle.dataset.active!=="true";
+   const role=toggle.dataset.role||"editor";
+   await api("studio_set_member",{kuroId:toggle.dataset.kuroId,role,isActive:active});
+   await refresh();note(active?"メンバーを再開しました。":"メンバーを停止しました。","success");
+  }catch(error){note(error.message||"メンバー状態を変更できませんでした。","error");toggle.disabled=false;}
  }
 });
 $("searchItems").addEventListener("input",render);$("statusFilter").addEventListener("change",render);
