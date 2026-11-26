@@ -68,6 +68,49 @@ header{position:sticky;top:0;z-index:10;background:#100d1deF;backdrop-filter:blu
 .store-tryon-foot{padding:0 18px 18px;text-align:right}
 .store-tryon-foot button{min-width:110px;padding:10px 15px;border:1px solid #705a9a;border-radius:10px;background:#29203e;color:#eee7ff;font-size:11px;font-weight:900;cursor:pointer}
 @media(max-width:700px){.store-tryon-overlay{align-items:flex-end;padding:0}.store-tryon-dialog{max-height:94dvh;border-radius:20px 20px 0 0;border-bottom:0}.store-tryon-layout{grid-template-columns:1fr;gap:12px;padding:12px}.store-tryon-art{height:180px}.store-tryon-result{order:1}.store-tryon-product{order:2}.store-tryon-foot{padding:0 12px 14px}.store-tryon-identity{gap:11px}.store-tryon-avatar{width:72px;height:72px;flex-basis:72px}}
+
+/* KURO STORE clean white surface */
+:root{color-scheme:light;--bg:#ffffff;--panel:#ffffff;--panel2:#f8fafc;--line:#e5e7eb;--text:#171923;--muted:#667085;--purple:#7650b8;--pink:#c05bd8;--green:#16834a}
+html,body{background:#fff!important;color:#171923!important}
+body{background:#fff!important}
+header{background:rgba(255,255,255,.96)!important;border-bottom:1px solid #e5e7eb!important;box-shadow:0 2px 12px rgba(16,24,40,.04)}
+.brand{color:#171923!important}.brand em{color:#7650b8!important}
+.navlinks{color:#667085!important}.navlinks a:hover{color:#171923!important}
+.account,.store-profile-button{background:#fff!important;border:1px solid #d6d9e0!important;color:#252936!important;box-shadow:none!important}
+.section{background:#fff!important}
+.section-head h2{color:#171923!important}
+.section-head p,.section-kicker{color:#667085!important}
+.count{color:#475467!important}
+.filter{background:#fff!important;border-color:#d6d9e0!important;color:#475467!important;box-shadow:none!important}
+.filter.active{background:#262238!important;border-color:#262238!important;color:#fff!important}
+.item{background:#fff!important;border:1px solid #e5e7eb!important;box-shadow:0 2px 10px rgba(16,24,40,.045)!important}
+.item:hover{border-color:#c8b5e8!important;box-shadow:0 8px 24px rgba(16,24,40,.08)!important}
+.item-art{background:#fff!important}
+.item-icon{filter:none!important}
+.item-desc{color:#667085!important}
+.item-price{color:#171923!important}
+.item-price.free{color:#16834a!important}
+.action{background:#262238!important;border-color:#262238!important;color:#fff!important}
+.action.owned{background:#f0fdf4!important;border-color:#bbf7d0!important;color:#16834a!important}
+.inventory-card{background:#fff!important;border-color:#e5e7eb!important;color:#171923!important}
+.inventory-icon{background:#f2f4f7!important}
+.mini{background:#fff!important;border-color:#d0d5dd!important;color:#344054!important}
+.mini.danger{background:#fff7f7!important;border-color:#fecaca!important;color:#b42318!important}
+.empty,.state{background:#fff!important;border-color:#d0d5dd!important;color:#667085!important}
+.status{color:#475467!important}.status.success{color:#16834a!important}.status.error{color:#b42318!important}
+footer{background:#fff!important;border-top:1px solid #e5e7eb!important;color:#667085!important}
+.store-tryon-dialog{background:#fff!important;border-color:#e5e7eb!important;color:#171923!important}
+.store-tryon-head{background:rgba(255,255,255,.96)!important;border-bottom-color:#e5e7eb!important}
+.store-tryon-head small,.store-tryon-label{color:#7650b8!important}
+.store-tryon-close{background:#fff!important;border-color:#d0d5dd!important;color:#344054!important}
+.store-tryon-product,.store-tryon-result{background:#fff!important;border-color:#e5e7eb!important;color:#171923!important}
+.store-tryon-art{background:#fff!important;border:1px solid #eaecf0}
+.store-tryon-product h3{color:#171923!important}
+.store-tryon-product p,.store-tryon-note{color:#667085!important}
+.store-tryon-price{color:#171923!important}
+.store-tryon-foot button{background:#262238!important;border-color:#262238!important;color:#fff!important}
+@media(max-width:650px){.navlinks{color:#667085!important}}
+
 </style>
 </head>
 <body>
@@ -77,12 +120,6 @@ header{position:sticky;top:0;z-index:10;background:#100d1deF;backdrop-filter:blu
 <div class="spacer"></div><button class="account store-profile-button" id="storeProfileButton" type="button" data-kuro-profile-self hidden>プロフィール</button><a class="account" id="storeAccount" href="/games/?account=1">ログイン / 登録</a>
 </div></header>
 <main class="wrap">
-<section class="hero">
-<div class="eyebrow">KURO GAMES / OFFICIAL STORE</div>
-<h1>KURO <span>STORE</span></h1>
-<p>ゲームをもっと自分らしく。KURO GAMESのアイテムを取得して、あなたのコレクションに追加しよう。</p>
-<div class="hero-pills"><span class="pill">✦ KCで購入・無料取得</span><span class="pill">◈ 共通アカウント連携</span><span class="pill">▣ マイアイテム</span><span class="pill" id="storeBalance">残高を確認中…</span></div>
-</section>
 <section class="section" id="catalogSection">
 <div class="section-head"><div><div class="section-kicker">DISCOVER ITEMS</div><h2>アイテム一覧</h2><p>取得したアイテムはアカウントの所持品に保存されます。</p></div><div id="storeItemCount" class="count">読み込み中…</div></div>
 <div class="filters" id="storeFilters">
@@ -306,7 +343,6 @@ async function refreshStore(){
   if(!storeProfile)storeProfile=profile;
   $("storeProfileButton").hidden=!isLoggedIn;
   coinBalance=data.coinBalance==null?null:Number(data.coinBalance);
-  $("storeBalance").textContent=isLoggedIn?(coinBalance.toLocaleString("ja-JP")+" KC"): "ログインすると残高を表示";
   $("storeAccount").textContent=isLoggedIn?(profile.display_name||profile.username||"アカウント"):"ログイン / 登録";
   $("storeAccount").href=isLoggedIn?"/games/mypage/":"/games/?account=1";
   $("storeAccount").title=isLoggedIn?(profile.kuro_id||"KUROアカウント"):"ログイン / 登録";
