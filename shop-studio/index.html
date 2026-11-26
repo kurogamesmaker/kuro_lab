@@ -13,7 +13,7 @@
 header{height:68px;position:sticky;top:0;z-index:10;background:#100e1deF;backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}.nav{height:100%;display:flex;align-items:center;gap:14px}.brand{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:1000}.brand img{width:32px;height:32px;object-fit:contain}.brand em{font-style:normal;color:var(--purple)}.spacer{flex:1}.nav a.link,.nav button{padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:#1b1728;color:#e8defb;font-size:11px;font-weight:850}
 main{padding:28px 0 60px}.eyebrow{color:#c4b5fd;font-size:9px;font-weight:1000;letter-spacing:.22em}.page-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:22px}.page-head h1{margin:7px 0 5px;font-size:clamp(28px,4vw,42px);letter-spacing:-.04em}.page-head p{margin:0;color:var(--muted);font-size:12px;line-height:1.8}
 .button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:40px;padding:0 14px;border:1px solid #8061bb;border-radius:11px;background:linear-gradient(110deg,#7956b9,#584c9c);color:white;font-size:11px;font-weight:950;cursor:pointer}.button.secondary{border-color:#493f60;background:#211c30;color:#ddd2f4}.button.danger{border-color:#74414c;background:#321a24;color:#fecdd3}.button:disabled{opacity:.5;cursor:wait}
-.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:22px}.stat{padding:16px 17px;border:1px solid var(--line);border-radius:15px;background:linear-gradient(145deg,#1a1728,#13111e)}.stat span{display:block;color:var(--muted);font-size:10px;font-weight:850}.stat strong{display:block;margin-top:7px;font-size:25px;font-weight:1000;font-variant-numeric:tabular-nums}.stat small{color:#9c8dbb;font-size:9px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:22px}.stats.stats-editor{grid-template-columns:repeat(2,minmax(0,1fr))}.stat{padding:16px 17px;border:1px solid var(--line);border-radius:15px;background:linear-gradient(145deg,#1a1728,#13111e)}.stat span{display:block;color:var(--muted);font-size:10px;font-weight:850}.stat strong{display:block;margin-top:7px;font-size:25px;font-weight:1000;font-variant-numeric:tabular-nums}.stat small{color:#9c8dbb;font-size:9px}
 .panel{border:1px solid var(--line);border-radius:18px;background:#13111fdd;box-shadow:0 14px 40px #0002}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 19px;border-bottom:1px solid var(--line)}.panel-head h2{margin:0;font-size:16px}.panel-head p{margin:4px 0 0;color:var(--muted);font-size:10px}
 .toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.toolbar input,.toolbar select{height:38px;padding:0 11px;border:1px solid #39324e;border-radius:10px;background:#0f0d18;color:var(--text);font-size:11px}.toolbar input{width:min(270px,56vw)}
 .table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:760px}th,td{padding:12px 14px;border-bottom:1px solid #2a2538;text-align:left;font-size:11px;vertical-align:middle}th{color:#a99fc0;font-size:9px;letter-spacing:.1em;font-weight:950}tr:last-child td{border-bottom:0}.product{display:flex;align-items:center;gap:10px;min-width:190px}.art{width:48px;height:48px;flex:0 0 48px;display:grid;place-items:center;overflow:hidden;border:1px solid #45395d;border-radius:11px;background:linear-gradient(145deg,#36264f,#1b1a30);font-size:22px}.art img{width:100%;height:100%;object-fit:cover}.product strong{display:block;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}.product small{display:block;margin-top:4px;color:#8f85a9;font-size:9px}.tag{display:inline-flex;padding:5px 8px;border:1px solid #514169;border-radius:99px;color:#d5c5f2;font-size:9px;font-weight:850}.tag.off{border-color:#56404a;color:#f4a7b5}.price{font-weight:950;color:#f5dc9c;white-space:nowrap}.row-actions{display:flex;gap:6px}.mini{min-height:31px;padding:0 9px;border:1px solid #51456b;border-radius:8px;background:#211b30;color:#e5dafa;font-size:9px;font-weight:900;cursor:pointer}
@@ -37,11 +37,11 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
 </div></header>
 <main class="wrap" id="studioApp" hidden>
 <section class="page-head"><div><div class="eyebrow">KURO GAMES / COMMERCE WORKSPACE</div><h1>Shop Studio</h1><p>KUROGamesのショップ商品を作成・編集します。KURO Adminとは独立した専用ワークスペースです。</p></div><button class="button" id="newItem">＋ 商品を追加</button></section>
-<div class="stats">
+<div class="stats" id="statsGrid">
  <article class="stat"><span>登録商品数</span><strong id="statTotal">—</strong><small>全アイテム</small></article>
  <article class="stat"><span>販売中</span><strong id="statActive">—</strong><small>ショップに表示中</small></article>
- <article class="stat"><span>購入件数</span><strong id="statSales">—</strong><small>完了した有料購入</small></article>
- <article class="stat"><span>購入総額</span><strong id="statRevenue">—</strong><small>KC（返金処理前の累計）</small></article>
+ <article class="stat" id="salesCountStat"><span>購入件数</span><strong id="statSales">—</strong><small>完了した有料購入</small></article>
+ <article class="stat" id="salesRevenueStat"><span>購入総額</span><strong id="statRevenue">—</strong><small>KC（返金処理前の累計）</small></article>
 </div>
 <section class="panel">
  <div class="panel-head"><div><h2>商品カタログ</h2><p>商品を編集したり、販売を一時停止できます。削除ではなく非公開にするため購入履歴は保持されます。</p></div>
@@ -50,7 +50,7 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
  <div class="table-wrap"><table><thead><tr><th>商品</th><th>カテゴリー</th><th>価格</th><th>レアリティ</th><th>状態</th><th>操作</th></tr></thead><tbody id="itemsBody"></tbody></table></div>
  <div class="empty" id="itemsEmpty" hidden>商品がありません。「商品を追加」から最初の商品を作成してください。</div>
 </section>
-<section class="panel" style="margin-top:18px">
+<section class="panel" id="recentSalesPanel" style="margin-top:18px">
  <div class="panel-head"><div><h2>最近の購入</h2><p>直近20件の有料購入。商品名・金額・購入時刻を確認できます。</p></div></div>
  <div class="table-wrap"><table style="min-width:520px"><thead><tr><th>商品</th><th>購入金額</th><th>日時</th></tr></thead><tbody id="recentSalesBody"></tbody></table></div>
  <div class="empty" id="recentSalesEmpty" hidden>まだ購入履歴はありません。商品を公開すると、ここに購入履歴が表示されます。</div>
@@ -200,9 +200,18 @@ async function refresh(){
  const stats=data.stats||{};
  $("statTotal").textContent=Number(stats.totalItems||0).toLocaleString("ja-JP");
  $("statActive").textContent=Number(stats.activeItems||0).toLocaleString("ja-JP");
- $("statSales").textContent=Number(stats.salesCount||0).toLocaleString("ja-JP");
- $("statRevenue").textContent=Number(stats.salesTotalKC||0).toLocaleString("ja-JP");
- $("studioApp").hidden=false;$("accessPanel").hidden=true;render();renderRecentSales(data.recentSales);if(data.member?.role==="owner")renderMembers(data.members);else $("membersPanel").hidden=true;note("商品カタログを最新の状態に更新しました。","success");
+ const canViewSales=data.canViewSales===true;
+ $("salesCountStat").hidden=!canViewSales;$("salesRevenueStat").hidden=!canViewSales;
+ $("recentSalesPanel").hidden=!canViewSales;
+ $("statsGrid").classList.toggle("stats-editor",!canViewSales);
+ if(canViewSales){
+  $("statSales").textContent=Number(stats.salesCount||0).toLocaleString("ja-JP");
+  $("statRevenue").textContent=Number(stats.salesTotalKC||0).toLocaleString("ja-JP");
+ }
+ $("studioApp").hidden=false;$("accessPanel").hidden=true;render();
+ if(canViewSales){renderRecentSales(data.recentSales);renderMembers(data.members);}
+ else{$("membersPanel").hidden=true;}
+ note("商品カタログを最新の状態に更新しました。","success");
 }
 async function start(){
  $("accessPanel").hidden=false;
