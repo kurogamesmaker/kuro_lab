@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b0a13">
+<meta name="description" content="KURO Store Studio — KUROGames専用ショップ商品管理">
+<link rel="icon" type="image/png" sizes="48x48" href="/assets/brand/logo/kurolab_icon_maru_48.png?v=20261122marufavicon2">
+<title>Shop Studio｜KURO GAMES</title>
+<style>
+:root{color-scheme:dark;--bg:#0b0a13;--panel:#151321;--panel2:#1e1a2d;--line:#302a42;--text:#f4f0ff;--muted:#a69dbb;--purple:#a78bfa;--green:#86efac;--red:#fda4af}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 10% 0%,#281944 0,transparent 35%),radial-gradient(circle at 100% 20%,#172746 0,transparent 30%),var(--bg);color:var(--text);font-family:Inter,"Noto Sans JP",system-ui,sans-serif}a{color:inherit;text-decoration:none}button,input,select,textarea{font:inherit}.wrap{width:min(1240px,calc(100% - 32px));margin:auto}
+header{height:68px;position:sticky;top:0;z-index:10;background:#100e1deF;backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}.nav{height:100%;display:flex;align-items:center;gap:14px}.brand{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:1000}.brand img{width:32px;height:32px;object-fit:contain}.brand em{font-style:normal;color:var(--purple)}.spacer{flex:1}.nav a.link,.nav button{padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:#1b1728;color:#e8defb;font-size:11px;font-weight:850}
+main{padding:28px 0 60px}.eyebrow{color:#c4b5fd;font-size:9px;font-weight:1000;letter-spacing:.22em}.page-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:22px}.page-head h1{margin:7px 0 5px;font-size:clamp(28px,4vw,42px);letter-spacing:-.04em}.page-head p{margin:0;color:var(--muted);font-size:12px;line-height:1.8}
+.button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:40px;padding:0 14px;border:1px solid #8061bb;border-radius:11px;background:linear-gradient(110deg,#7956b9,#584c9c);color:white;font-size:11px;font-weight:950;cursor:pointer}.button.secondary{border-color:#493f60;background:#211c30;color:#ddd2f4}.button.danger{border-color:#74414c;background:#321a24;color:#fecdd3}.button:disabled{opacity:.5;cursor:wait}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:22px}.stat{padding:16px 17px;border:1px solid var(--line);border-radius:15px;background:linear-gradient(145deg,#1a1728,#13111e)}.stat span{display:block;color:var(--muted);font-size:10px;font-weight:850}.stat strong{display:block;margin-top:7px;font-size:25px;font-weight:1000;font-variant-numeric:tabular-nums}.stat small{color:#9c8dbb;font-size:9px}
+.panel{border:1px solid var(--line);border-radius:18px;background:#13111fdd;box-shadow:0 14px 40px #0002}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 19px;border-bottom:1px solid var(--line)}.panel-head h2{margin:0;font-size:16px}.panel-head p{margin:4px 0 0;color:var(--muted);font-size:10px}
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.toolbar input,.toolbar select{height:38px;padding:0 11px;border:1px solid #39324e;border-radius:10px;background:#0f0d18;color:var(--text);font-size:11px}.toolbar input{width:min(270px,56vw)}
+.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:760px}th,td{padding:12px 14px;border-bottom:1px solid #2a2538;text-align:left;font-size:11px;vertical-align:middle}th{color:#a99fc0;font-size:9px;letter-spacing:.1em;font-weight:950}tr:last-child td{border-bottom:0}.product{display:flex;align-items:center;gap:10px;min-width:190px}.art{width:48px;height:48px;flex:0 0 48px;display:grid;place-items:center;overflow:hidden;border:1px solid #45395d;border-radius:11px;background:linear-gradient(145deg,#36264f,#1b1a30);font-size:22px}.art img{width:100%;height:100%;object-fit:cover}.product strong{display:block;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}.product small{display:block;margin-top:4px;color:#8f85a9;font-size:9px}.tag{display:inline-flex;padding:5px 8px;border:1px solid #514169;border-radius:99px;color:#d5c5f2;font-size:9px;font-weight:850}.tag.off{border-color:#56404a;color:#f4a7b5}.price{font-weight:950;color:#f5dc9c;white-space:nowrap}.row-actions{display:flex;gap:6px}.mini{min-height:31px;padding:0 9px;border:1px solid #51456b;border-radius:8px;background:#211b30;color:#e5dafa;font-size:9px;font-weight:900;cursor:pointer}
+.notice{min-height:24px;margin:0 0 14px;color:#c8bce0;font-size:11px}.notice.error{color:#fda4af}.notice.success{color:var(--green)}.empty{padding:44px 20px;text-align:center;color:var(--muted);font-size:12px;line-height:1.9}
+.access{max-width:620px;margin:9vh auto;padding:35px;text-align:center}.access .symbol{font-size:42px}.access h1{margin:15px 0 9px;font-size:25px}.access p{color:var(--muted);font-size:12px;line-height:1.9}
+.overlay{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:18px;background:#05040ccc;backdrop-filter:blur(12px)}.overlay[hidden]{display:none!important}.dialog{width:min(760px,100%);max-height:92dvh;overflow:auto;border:1px solid #4a3e62;border-radius:20px;background:#151321;box-shadow:0 30px 100px #0008}.dialog-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:17px 20px;border-bottom:1px solid var(--line);background:#151321ed;backdrop-filter:blur(12px)}.dialog-head h2{margin:0;font-size:17px}.close{width:34px;height:34px;border:1px solid var(--line);border-radius:9px;background:#201b2d;color:white;font-size:20px;cursor:pointer}
+form{padding:19px 20px 21px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:13px}.field{display:grid;gap:6px}.field.wide{grid-column:1/-1}.field label{color:#c6bdd8;font-size:10px;font-weight:900}.field input,.field select,.field textarea{width:100%;min-height:40px;padding:9px 11px;border:1px solid #3b344c;border-radius:10px;outline:none;background:#0f0d18;color:var(--text);font-size:11px}.field textarea{min-height:85px;resize:vertical;line-height:1.7}.field input:focus,.field select:focus,.field textarea:focus{border-color:#9772d5;box-shadow:0 0 0 3px #9772d51c}
+.upload-box{display:flex;align-items:center;gap:14px;padding:12px;border:1px dashed #51436b;border-radius:12px;background:#100e19}.preview{width:92px;height:72px;flex:0 0 92px;display:grid;place-items:center;overflow:hidden;border-radius:9px;background:#28203b;font-size:25px}.preview img{width:100%;height:100%;object-fit:cover}.upload-box input{max-width:100%;padding:0;border:0;background:transparent}.hint{color:#8f86a6;font-size:9px;line-height:1.6}.form-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-size:10px}.foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+@media(max-width:760px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.page-head{align-items:flex-start;flex-direction:column}.panel-head{align-items:flex-start;flex-direction:column}.toolbar{width:100%}.toolbar input{width:100%;flex:1}}
+@media(max-width:540px){.wrap{width:calc(100% - 22px)}header{height:59px}.brand{font-size:14px}.brand img{width:28px;height:28px}.nav{gap:8px}.nav a.link{padding:8px 9px;font-size:9px}.page-head h1{font-size:30px}.stat{padding:13px}.stat strong{font-size:22px}.fields{grid-template-columns:1fr}.field.wide{grid-column:auto}.overlay{padding:0;align-items:flex-end}.dialog{max-height:94dvh;border-radius:20px 20px 0 0;border-bottom:0}.dialog-head{padding:14px}.form-actions .button{flex:1}}
+</style>
+</head>
+<body>
+<header><div class="wrap nav">
+<a class="brand" href="/games/"><img src="/assets/brand/logo/kurolab_icon_toumei_160.png?v=20261121logosfix" alt=""><span>KURO <em>SHOP STUDIO</em></span></a>
+<div class="spacer"></div><a class="link" href="/games/store/">ショップを表示 ↗</a>
+</div></header>
+<main class="wrap" id="studioApp" hidden>
+<section class="page-head"><div><div class="eyebrow">KURO GAMES / COMMERCE WORKSPACE</div><h1>Shop Studio</h1><p>KUROGamesのショップ商品を作成・編集します。KURO Adminとは独立した専用ワークスペースです。</p></div><button class="button" id="newItem">＋ 商品を追加</button></section>
+<div class="stats">
+ <article class="stat"><span>登録商品数</span><strong id="statTotal">—</strong><small>全アイテム</small></article>
+ <article class="stat"><span>販売中</span><strong id="statActive">—</strong><small>ショップに表示中</small></article>
+ <article class="stat"><span>購入件数</span><strong id="statSales">—</strong><small>完了した有料購入</small></article>
+ <article class="stat"><span>購入総額</span><strong id="statRevenue">—</strong><small>KC（返金処理前の累計）</small></article>
+</div>
+<section class="panel">
+ <div class="panel-head"><div><h2>商品カタログ</h2><p>商品を編集したり、販売を一時停止できます。削除ではなく非公開にするため購入履歴は保持されます。</p></div>
+  <div class="toolbar"><input id="searchItems" type="search" placeholder="商品名・商品キーで検索"><select id="statusFilter"><option value="all">すべて</option><option value="active">販売中</option><option value="inactive">非公開</option></select></div>
+ </div>
+ <div class="table-wrap"><table><thead><tr><th>商品</th><th>カテゴリー</th><th>価格</th><th>レアリティ</th><th>状態</th><th>操作</th></tr></thead><tbody id="itemsBody"></tbody></table></div>
+ <div class="empty" id="itemsEmpty" hidden>商品がありません。「商品を追加」から最初の商品を作成してください。</div>
+</section>
+<p class="notice" id="studioNotice" role="status" aria-live="polite"></p>
+</main>
+<section class="wrap panel access" id="accessPanel" hidden><div class="symbol" id="accessSymbol">🔐</div><h1 id="accessTitle">Shop Studioへのアクセスを確認しています</h1><p id="accessMessage">KUROアカウントの専用権限を確認しています。</p><a class="button" href="/games/?account=1" id="loginButton" hidden>KUROGamesでログイン</a><a class="button secondary" href="/games/store/">ショップへ戻る</a></section>
+<div class="overlay" id="editorOverlay" hidden>
+ <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
+  <div class="dialog-head"><h2 id="editorTitle">商品を追加</h2><button class="close" id="closeEditor" type="button" aria-label="閉じる">×</button></div>
+  <form id="itemForm">
+   <input id="itemId" type="hidden"><input id="itemKey" type="hidden">
+   <div class="fields">
+    <div class="field"><label for="itemName">商品名 *</label><input id="itemName" required maxlength="60" placeholder="Neon Pulse"></div>
+    <div class="field"><label for="itemCategory">カテゴリー *</label><select id="itemCategory"><option value="frame">アイコンフレーム</option><option value="background">プロフィール壁紙</option><option value="avatar">アバター</option><option value="theme">プロフィールテーマ</option><option value="nameplate">ネーム装飾</option><option value="banner">プロフィールバナー</option><option value="other">その他</option></select></div>
+    <div class="field wide"><label for="itemDescription">商品説明</label><textarea id="itemDescription" maxlength="500" placeholder="商品の特徴を説明します。"></textarea></div>
+    <div class="field"><label for="itemPrice">価格（KC）※0は無料</label><input id="itemPrice" type="number" min="0" max="1000000" step="1" value="500" required></div>
+    <div class="field"><label for="itemRarity">レアリティ</label><select id="itemRarity"><option value="common">COMMON</option><option value="rare">RARE</option><option value="epic">EPIC</option><option value="legendary">LEGENDARY</option></select></div>
+    <div class="field"><label for="itemIcon">アイコン（画像がない場合）</label><input id="itemIcon" maxlength="12" value="✦" placeholder="💠"></div>
+    <div class="field"><label for="itemSort">表示順（小さいほど先）</label><input id="itemSort" type="number" min="0" max="9999" step="1" value="100"></div>
+    <div class="field wide"><label>商品画像（JPEG / PNG / WebP・5MB以下）</label><div class="upload-box"><div class="preview" id="imagePreview">✦</div><div><input id="itemImage" type="file" accept="image/jpeg,image/png,image/webp"><div class="hint">商品画像はShop Studio専用の公開ストレージに保存されます。<br><label><input id="removeImage" type="checkbox"> 既存画像を外す</label></div></div></div></div>
+   </div>
+   <p class="notice" id="formNotice" role="status"></p>
+   <div class="form-actions"><button class="button secondary" type="button" id="cancelEditor">キャンセル</button><button class="button" type="submit" id="saveItem">保存する</button></div>
+  </form>
+ </section>
+</div>
+<footer><div class="wrap foot"><span>KURO GAMES · SHOP STUDIO</span><span>専用権限 / 商品管理 / 購入履歴を保持</span></div></footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+"use strict";
+const SUPABASE_URL="https://cprvpphlfpmiegjiutjn.supabase.co";
+const PUBLISHABLE_KEY="sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
+const RELAY_URL="https://kurolab.cc.cd/api/cloudflare-relay";
+async function shopStudioFetch(input,init){
+ const req=new Request(input,init),url=new URL(req.url);
+ if(url.origin!==SUPABASE_URL)return fetch(req);
+ const bytes=new Uint8Array(await req.arrayBuffer());let binary="";
+ for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
+ const headers={};req.headers.forEach((v,k)=>{headers[k]=v;});
+ const proxy=await fetch(RELAY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:"shop-studio"})});
+ let result;try{result=await proxy.json();}catch{throw new Error("Cloudflare中継サーバーの応答を読み取れませんでした。");}
+ if(!proxy.ok||!result||typeof result.status!=="number")throw new Error(result?.error||"Cloudflare中継通信に失敗しました。");
+ let body=null;if(result.isBinary&&result.bodyBase64){const raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);body=out;}else if(result.bodyText!==undefined&&![204,205,304].includes(result.status))body=result.bodyText;
+ return new Response(body,{status:result.status,headers:result.headers||{"Content-Type":"application/json"}});
+}
+const db=window.supabase.createClient(SUPABASE_URL,PUBLISHABLE_KEY,{global:{fetch:shopStudioFetch},auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}});
+const $=id=>document.getElementById(id),html=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const labels={avatar:"アバター",frame:"フレーム",background:"壁紙",theme:"テーマ",nameplate:"ネーム装飾",banner:"バナー",other:"その他"};
+let items=[],currentImageUrl=null,previewObjectUrl=null;
+function note(message,type=""){const el=$("studioNotice");el.textContent=message;el.className="notice"+(type?" "+type:"");}
+function formNote(message,type=""){const el=$("formNotice");el.textContent=message;el.className="notice"+(type?" "+type:"");}
+async function api(action,payload={}){
+ const {data,error}=await db.functions.invoke("kurogames-store",{body:{action,...payload}});
+ if(error){
+  let message=error.message||"リクエストに失敗しました。";
+  try{const response=error.context;if(response&&typeof response.clone==="function"){const body=await response.clone().json();if(body?.error)message=body.error;}}catch(_){}
+  throw new Error(message);
+ }
+ if(data?.error)throw new Error(data.error);
+ return data||{};
+}
+function setAccess(title,message,needLogin=false){
+ $("studioApp").hidden=true;$("accessPanel").hidden=false;$("accessTitle").textContent=title;$("accessMessage").textContent=message;$("loginButton").hidden=!needLogin;
+}
+function art(item){return item.image_url?'<img src="'+html(item.image_url)+'" alt="">':html(item.icon||"✦");}
+function render(){
+ const search=$("searchItems").value.trim().toLocaleLowerCase(),filter=$("statusFilter").value;
+ const rows=items.filter(item=>(!search||[item.name,item.item_key].some(v=>String(v||"").toLocaleLowerCase().includes(search)))&&(filter==="all"||(filter==="active"?item.is_active:!item.is_active)));
+ $("itemsBody").innerHTML=rows.map(item=>'<tr><td><div class="product"><div class="art">'+art(item)+'</div><div><strong>'+html(item.name)+'</strong><small>'+html(item.item_key)+'</small></div></div></td><td>'+html(labels[item.category]||item.category)+'</td><td class="price">'+(item.is_free?"無料":Number(item.price_kc).toLocaleString("ja-JP")+" KC")+'</td><td><span class="tag">'+html(String(item.rarity||"common").toUpperCase())+'</span></td><td><span class="tag '+(item.is_active?"":"off")+'">'+(item.is_active?"販売中":"非公開")+'</span></td><td><div class="row-actions"><button class="mini" data-edit="'+html(item.id)+'">編集</button><button class="mini" data-toggle="'+html(item.id)+'" data-active="'+(!item.is_active)+'">'+(item.is_active?"非公開":"再公開")+'</button></div></td></tr>').join("");
+ $("itemsEmpty").hidden=rows.length>0;
+}
+function showPreview(url,emoji){
+ $("imagePreview").replaceChildren();
+ if(url){const img=new Image();img.src=url;img.alt="";$("imagePreview").appendChild(img);}
+ else $("imagePreview").textContent=emoji||"✦";
+}
+function openEditor(item=null){
+ $("itemForm").reset();$("itemId").value=item?.id||"";$("itemKey").value=item?.item_key||"";
+ $("editorTitle").textContent=item?"商品を編集":"商品を追加";
+ $("itemName").value=item?.name||"";$("itemDescription").value=item?.description||"";
+ $("itemCategory").value=item?.category||"frame";$("itemPrice").value=item?.price_kc??500;
+ $("itemRarity").value=item?.rarity||"common";$("itemIcon").value=item?.icon||"✦";$("itemSort").value=item?.sort_order??100;
+ $("itemImage").value="";$("removeImage").checked=false;currentImageUrl=item?.image_url||null;formNote("");
+ showPreview(currentImageUrl,$("itemIcon").value);$("editorOverlay").hidden=false;
+}
+function closeEditor(){ $("editorOverlay").hidden=true;if(previewObjectUrl){URL.revokeObjectURL(previewObjectUrl);previewObjectUrl=null;} }
+async function uploadImage(file){
+ const allowed=["image/jpeg","image/png","image/webp"];
+ if(!allowed.includes(file.type))throw new Error("JPEG・PNG・WebP画像を選択してください。");
+ if(file.size>5*1024*1024)throw new Error("画像は5MB以下にしてください。");
+ const ext=({ "image/jpeg":"jpg","image/png":"png","image/webp":"webp" })[file.type];
+ const path="items/"+crypto.randomUUID()+"."+ext;
+ const {data,error}=await db.storage.from("kuro-store-assets").upload(path,file,{upsert:false,contentType:file.type,cacheControl:"31536000"});
+ if(error)throw error;
+ return db.storage.from("kuro-store-assets").getPublicUrl(data.path).data.publicUrl;
+}
+async function refresh(){
+ note("商品データを読み込んでいます…");
+ const data=await api("studio_dashboard");
+ items=Array.isArray(data.items)?data.items:[];
+ const stats=data.stats||{};
+ $("statTotal").textContent=Number(stats.totalItems||0).toLocaleString("ja-JP");
+ $("statActive").textContent=Number(stats.activeItems||0).toLocaleString("ja-JP");
+ $("statSales").textContent=Number(stats.salesCount||0).toLocaleString("ja-JP");
+ $("statRevenue").textContent=Number(stats.salesTotalKC||0).toLocaleString("ja-JP");
+ $("studioApp").hidden=false;$("accessPanel").hidden=true;render();note("商品カタログを最新の状態に更新しました。","success");
+}
+async function start(){
+ $("accessPanel").hidden=false;
+ try{
+  const {data}=await db.auth.getSession();
+  if(!data.session?.access_token){setAccess("KUROアカウントでログインしてください","Shop Studioは専用権限を持つKUROアカウントだけが利用できます。",true);return;}
+  await refresh();
+ }catch(error){
+  const message=String(error?.message||error);
+  if(message.includes("権限")||message.includes("利用権限"))setAccess("Shop Studioの利用権限がありません",message,false);
+  else setAccess("Shop Studioを開けませんでした",message,false);
+ }
+}
+$("newItem").addEventListener("click",()=>openEditor());
+$("closeEditor").addEventListener("click",closeEditor);$("cancelEditor").addEventListener("click",closeEditor);
+$("editorOverlay").addEventListener("click",event=>{if(event.target===$("editorOverlay"))closeEditor();});
+$("itemIcon").addEventListener("input",()=>{if(!$("itemImage").files?.[0]&&!currentImageUrl)showPreview(null,$("itemIcon").value);});
+$("itemImage").addEventListener("change",()=>{
+ const file=$("itemImage").files?.[0];if(!file)return;
+ if(previewObjectUrl)URL.revokeObjectURL(previewObjectUrl);
+ previewObjectUrl=URL.createObjectURL(file);showPreview(previewObjectUrl,$("itemIcon").value);$("removeImage").checked=false;
+});
+$("removeImage").addEventListener("change",()=>{if($("removeImage").checked){currentImageUrl=null;showPreview(null,$("itemIcon").value);}});
+$("itemForm").addEventListener("submit",async event=>{
+ event.preventDefault();const button=$("saveItem");button.disabled=true;button.textContent="保存中…";formNote("商品情報を保存しています…");
+ try{
+  const file=$("itemImage").files?.[0];let imageUrl=currentImageUrl;
+  if($("removeImage").checked)imageUrl=null;
+  if(file){formNote("商品画像をアップロードしています…");imageUrl=await uploadImage(file);}
+  const payload={
+   itemId:$("itemId").value||undefined,itemKey:$("itemKey").value||undefined,
+   name:$("itemName").value.trim(),description:$("itemDescription").value.trim(),
+   category:$("itemCategory").value,priceKC:Number($("itemPrice").value),
+   rarity:$("itemRarity").value,icon:$("itemIcon").value.trim()||"✦",
+   sortOrder:Number($("itemSort").value),imageUrl
+  };
+  await api("studio_save_item",payload);closeEditor();await refresh();note("商品を保存しました。ショップに反映されます。","success");
+ }catch(error){formNote(error.message||"保存に失敗しました。","error");}
+ finally{button.disabled=false;button.textContent="保存する";}
+});
+$("itemsBody").addEventListener("click",async event=>{
+ const edit=event.target.closest("[data-edit]"),toggle=event.target.closest("[data-toggle]");
+ if(edit){const item=items.find(row=>row.id===edit.dataset.edit);if(item)openEditor(item);return;}
+ if(toggle){
+  toggle.disabled=true;
+  try{await api("studio_set_status",{itemId:toggle.dataset.toggle,isActive:toggle.dataset.active==="true"});await refresh();note(toggle.dataset.active==="true"?"商品を再公開しました。":"商品を非公開にしました。","success");}
+  catch(error){note(error.message||"状態を変更できませんでした。","error");toggle.disabled=false;}
+ }
+});
+$("searchItems").addEventListener("input",render);$("statusFilter").addEventListener("change",render);
+document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!$("editorOverlay").hidden)closeEditor();});
+start();
+</script>
+</body>
+</html>
