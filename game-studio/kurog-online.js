@@ -862,6 +862,30 @@ const KuroGames = {
     async list(options) { return KuroGames.save.list(options); },
   },
 
+  world: {
+    async getBlocks(options) {
+      options = options || {};
+      const limit = Math.max(500, Math.min(5000, Math.floor(Number(options.limit) || 5000)));
+      const blocks = [];
+      let offset = 0;
+      let pages = 0;
+      while (pages++ < 100) {
+        const result = await invoke("world_blocks_get", { limit: limit, offset: offset });
+        if (Array.isArray(result.blocks)) blocks.push(...result.blocks);
+        if (result.nextOffset === null || result.nextOffset === undefined) return blocks;
+        offset = Number(result.nextOffset);
+        if (!Number.isSafeInteger(offset) || offset < 0) throw new Error("共有ワールドの保存データを読み取れませんでした。");
+      }
+      throw new Error("共有ワールドの保存データが多いため、一度に読み込めませんでした。");
+    },
+    async saveBlocks(changes) {
+      if (!Array.isArray(changes) || changes.length < 1 || changes.length > 200) {
+        throw new TypeError("地形変更は1回につき200件以内で指定してください。");
+      }
+      return invoke("world_blocks_save", { changes: changes });
+    },
+  },
+
   multiplayer: {
     async setDaifugoReady(roomId, ready) {
       return invoke("daifugo_ready_set", { roomId: roomId, ready: !!ready });
@@ -902,6 +926,10 @@ const KuroGames = {
     async cancelUnoRandomMatch(ruleMode) {
       const mode = ruleMode === "local" ? "local" : "official";
       return invoke("unon_matchmaking_cancel", { ruleMode: mode });
+    },
+    async joinSharedWorld() {
+      const result = await invoke("world_join");
+      return connectRoom(result.room, result.members || []);
     },
     async listRooms() {
       const result = await invoke("room_list");
