@@ -93,6 +93,12 @@
       }
       if (!innerDoc || !innerDoc.documentElement) return;
 
+      // This route is the dedicated mobile player. Apply its mobile shell even
+      // when the browser reports a desktop UA (for example, responsive testing).
+      if (innerDoc.body) innerDoc.body.classList.add("mobile-game-mode");
+      var mobileControls = innerDoc.getElementById("mobileGameControls");
+      if (mobileControls) mobileControls.hidden = false;
+
       if (!innerDoc.documentElement.dataset.kuroMobileAppBackBound) {
         innerDoc.documentElement.dataset.kuroMobileAppBackBound = "1";
         innerDoc.addEventListener("click", function(event){
