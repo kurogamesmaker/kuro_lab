@@ -253,6 +253,7 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
   const wsUrl = wsBase + "/room/" + encodeURIComponent(String(roomData.id)) + "?ticket=" + encodeURIComponent(ticketData.ticket);
   const callbacks = new Set(), playerCallbacks = new Set(), leftCallbacks = new Set(), closeCallbacks = new Set(), pending = new Map();
   let active = true, cachedPlayers = [], socket = null, heartbeat = null, statusWatch = null, requestSeq = 0;
+  let currentHostId = String(roomData && roomData.host_user_id || "");
 
   function emitPlayers(list) {
     const previous = cachedPlayers.slice(); cachedPlayers = (list || []).map(p => ({ userId: p.id, kuroId: null, displayName: p.name || "プレイヤー", joinedAt: p.joinedAt }));
@@ -404,7 +405,28 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
       try { socket.send(JSON.stringify({ type: "ping" })); } catch (_) {}
     }
   }, 25000);
-  statusWatch = setInterval(async () => { if (!active) return; try { const status = await invoke("room_poll", { roomId: roomData.id, afterId: null }); if (status.roomStatus === "closed") { active = false; clearInterval(heartbeat); clearInterval(statusWatch); closeCallbacks.forEach(cb => { try { cb({ reason: "disbanded" }); } catch (e) { console.error(e); } }); try { if (socket) socket.close(1000, "room closed"); } catch (_) {} } } catch (e) { console.warn("room status check failed", e); } }, 30000);
+  statusWatch = setInterval(async () => {
+    if (!active) return;
+    try {
+      const status = await invoke("room_poll", { roomId: roomData.id, afterId: null });
+      if (status.roomStatus === "closed") {
+        active = false;
+        clearInterval(heartbeat);
+        clearInterval(statusWatch);
+        closeCallbacks.forEach(cb => { try { cb({ reason: "disbanded" }); } catch (e) { console.error(e); } });
+        try { if (socket) socket.close(1000, "room closed"); } catch (_) {}
+        return;
+      }
+      if (status.hostUserId && status.hostUserId !== currentHostId) {
+        // The room's host may have left while this WebSocket stayed connected.
+        // Refresh the signed-in member's role against the current database record.
+        const role = await sendRequest("refresh-role", { accessToken: session.accessToken });
+        if (role && role.ok === true) currentHostId = String(status.hostUserId);
+      }
+    } catch (e) {
+      console.warn("room status/host check failed", e);
+    }
+  }, 30000);
 
   return {
     room: roomData,
@@ -562,11 +584,17 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
     },
     async leave() {
       if (!active) return;
+      // Remove the Supabase membership immediately as well as closing the
+      // Durable Object socket. The DB path transfers host and clears match tickets.
+      const dbLeave = invoke("room_leave", { roomId: roomData.id })
+        .catch(error => { console.warn("KUROGAMES room DB leave failed; stale-member cleanup will recover:", error); });
       active = false;
       if (heartbeat) clearInterval(heartbeat);
+      if (statusWatch) clearInterval(statusWatch);
       rejectPending(new Error("ルームから退出しました。"));
       try { if (socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: "leave" })); } catch (_) {}
       try { if (socket) socket.close(1000, "left"); } catch (_) {}
+      await dbLeave;
     },
   };
 }
@@ -880,7 +908,8 @@ const KuroGames = {
     },
     async createRoom(options) {
       options = options || {};
-      const result = await invoke("room_create", { maxPlayers: Math.max(2, Math.min(35, Math.floor(Number(options.maxPlayers) || 4))) });
+      const maxAllowed = gameId === "faa155cb-2143-4361-9a96-dc759d334e46" ? 4 : 35;
+      const result = await invoke("room_create", { maxPlayers: Math.max(2, Math.min(maxAllowed, Math.floor(Number(options.maxPlayers) || 4))) });
       return connectRoom(result.room, result.members);
     },
     async joinRoom(roomCode) {
