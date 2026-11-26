@@ -30,6 +30,12 @@
 header{height:74px;position:sticky;top:0;z-index:20;background:#ffffffed;backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}.nav{height:100%;display:flex;align-items:center;gap:28px}.brand{display:flex;align-items:center;gap:10px;font-size:22px;font-weight:1000;letter-spacing:-.8px;white-space:nowrap}.mark{width:38px;height:38px;object-fit:contain;display:block;flex:0 0 38px;border-radius:12px}.brand em{font-style:normal;color:var(--blue)}.navlinks{display:flex;gap:22px;color:#68758c;font-size:13px;font-weight:850}.navlinks a:hover{color:var(--blue)}.spacer{flex:1}.search{height:43px;width:min(330px,31vw);display:flex;align-items:center;gap:10px;padding:0 13px;border:1px solid #e7edf5;border-radius:12px;background:#f4f6fa}.search:focus-within{background:white;border-color:#a9caff;box-shadow:0 0 0 4px #ddebff}.search input{width:100%;border:0;outline:0;background:transparent;font-size:13px;color:var(--ink)}.search span{font-size:20px;color:#8793a6}.lab{padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-size:12px;font-weight:900;color:#5a6880;white-space:nowrap}
 .activity-link{height:43px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 13px;border:1px solid #ccebd9;border-radius:11px;background:linear-gradient(135deg,#f0fbf4,#e7f8ed);color:#197a4b;font-size:12px;font-weight:950;white-space:nowrap;box-shadow:0 3px 10px #1e9b5910;transition:.16s}
 .activity-link:hover{border-color:#8fd6ad;background:#e2f7e9;transform:translateY(-1px)}
+
+.any-match-link{height:43px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 13px;border:1px solid #d6d9ff;border-radius:11px;background:linear-gradient(135deg,#f0f1ff,#e9ebff);color:#4d55b8;font-size:12px;font-weight:950;white-space:nowrap;box-shadow:0 3px 10px #5159bd12;transition:.16s}
+.any-match-link:hover{border-color:#aeb4ff;background:#e4e6ff;transform:translateY(-1px)}
+.any-match-orbit{display:inline-grid;place-items:center;width:19px;height:19px;border-radius:50%;background:#d9dcff;color:#4d55b8;font-size:13px}
+@media(max-width:760px){.any-match-link{gap:5px;padding:0 9px;font-size:11px}}
+
 .kuro-notification-link{width:42px;height:42px;padding:0;cursor:pointer;font:inherit;display:inline-flex;align-items:center;justify-content:center;position:relative;flex:0 0 auto;border:1px solid #dfe5ef;border-radius:12px;background:#fff;color:#41506a;box-shadow:0 3px 10px #1e31500b;transition:.16s}
 .kuro-notification-link:hover{border-color:#b9c6dc;background:#f7f9fc;transform:translateY(-1px)}
 .kuro-notification-link svg{width:19px;height:19px}
@@ -1433,6 +1439,9 @@ header .lab{padding-left:10px!important;padding-right:10px!important}
  </span>
 </div>
 <a class="activity-link" href="/games/activity/" aria-label="プレイ状況"><svg class="activity-glyph" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h3l2-6 4 12 2-6h7"/></svg><i class="activity-live" aria-hidden="true"></i><span class="activity-text">プレイ状況</span></a>
+<a class="any-match-link" href="/games/match/" aria-label="おまかせ対戦">
+  <span class="any-match-orbit" aria-hidden="true">✦</span><span>おまかせ対戦</span>
+</a>
 <a class="lab ranking-page-link kuro-compact-nav" href="/games/ranking/?v=20261124design1" aria-label="プレイランキング" title="プレイランキング"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4v2a4 4 0 0 0 4 4M17 6h3v2a4 4 0 0 1-4 4"/></svg></a>
 <a class="lab kuro-store-nav kuro-compact-nav" href="/games/store/" aria-label="ショップ" title="ショップ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 13H6L5 8Z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/></svg></a>
 <a class="kuro-sns-nav lab kuro-compact-nav" href="/sns/" aria-label="KURO SNS" title="KURO SNS"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3H13a8 8 0 0 1 8 8v.5Z"/></svg></a><a class="lab" href="https://kurolab.cc.cd/">KURO Lab ↗</a>
