@@ -1,11 +1,11 @@
-const CACHE_NAME = "kurogames-mobile-shell-v4";
+const CACHE_NAME = "kurogames-mobile-shell-v5";
 const SHELL_URLS = [
   "/games/mobile/",
-  "/games/mobile/mobile.css?v=20261125app3",
-  "/games/mobile/mobile.js?v=20261125app4",
-  "/games/mobile/manifest.webmanifest?v=20261125app2",
-  "/games/mobile/subpage.css?v=20261125app3",
-  "/games/mobile/subpage.js?v=20261125app3"
+  "/games/mobile/mobile.css?v=20261126mobilefix1",
+  "/games/mobile/mobile.js?v=20261126mobilefix1",
+  "/games/mobile/manifest.webmanifest?v=20261126mobilefix1",
+  "/games/mobile/subpage.css?v=20261126mobilefix1",
+  "/games/mobile/subpage.js?v=20261126mobilefix1"
 ];
 
 self.addEventListener("install", event => {
