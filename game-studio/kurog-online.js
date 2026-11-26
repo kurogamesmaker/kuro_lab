@@ -405,6 +405,7 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
       try { socket.send(JSON.stringify({ type: "ping" })); } catch (_) {}
     }
   }, 25000);
+  const roomStatusPollInterval = gameId === "faa155cb-2143-4361-9a96-dc759d334e46" ? 15000 : 30000;
   statusWatch = setInterval(async () => {
     if (!active) return;
     try {
@@ -426,7 +427,7 @@ async function connectRoomDurable(roomData, members, session, endpoint) {
     } catch (e) {
       console.warn("room status/host check failed", e);
     }
-  }, 30000);
+  }, roomStatusPollInterval);
 
   return {
     room: roomData,
