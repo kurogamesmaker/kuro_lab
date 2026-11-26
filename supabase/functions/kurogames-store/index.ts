@@ -69,7 +69,7 @@ Deno.serve(async (req: Request) => {
       const user = await resolveUser(req, false);
       const { data: items, error: itemError } = await admin.from("kuro_store_items")
         .select("id,item_key,name,description,category,icon,image_url,rarity,price_kc,is_free,sort_order")
-        .eq("is_active", true).order("sort_order", { ascending: true }).order("created_at", { ascending: false });
+        .is("deleted_at", null).eq("is_active", true).order("sort_order", { ascending: true }).order("created_at", { ascending: false });
       if (itemError) throw itemError;
 
       let inventory: unknown[] = [];
@@ -154,7 +154,7 @@ Deno.serve(async (req: Request) => {
       const studioMember = await requireStudioMember(user!.id);
       const canViewSales = studioMember.role === "owner";
       const [itemsResult, salesSummaryResult, recentSalesResult, membersResult] = await Promise.all([
-        admin.from("kuro_store_items").select("id,item_key,name,description,category,icon,image_url,rarity,price_kc,is_free,is_active,sort_order,created_at,updated_at").order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
+        admin.from("kuro_store_items").select("id,item_key,name,description,category,icon,image_url,rarity,price_kc,is_free,is_active,sort_order,created_at,updated_at,deleted_at").order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
         canViewSales
           ? admin.rpc("kuro_store_studio_sales_summary")
           : Promise.resolve({ data: { purchaseCount: 0, totalKC: 0 }, error: null }),
@@ -191,8 +191,8 @@ Deno.serve(async (req: Request) => {
         canViewSales,
         member: { role: studioMember.role },
         stats: {
-          totalItems: items.length,
-          activeItems: items.filter((item: any) => item.is_active).length,
+          totalItems: items.filter((item: any) => !item.deleted_at).length,
+          activeItems: items.filter((item: any) => !item.deleted_at && item.is_active).length,
           salesCount: canViewSales ? Number(salesSummary.purchaseCount ?? 0) : null,
           salesTotalKC: canViewSales ? Number(salesSummary.totalKC ?? 0) : null,
         },
@@ -273,6 +273,30 @@ Deno.serve(async (req: Request) => {
       }
       return reply(200, { result: data, profile: targetResult.data });
     }
+    if (action === "studio_delete_item") {
+      const user = await resolveUser(req, true);
+      await requireStudioMember(user!.id);
+      const itemId = typeof body.itemId === "string" ? body.itemId : "";
+      if (!UUID_RE.test(itemId)) throw new HttpError(400, "商品IDが正しくありません。");
+      const { data, error } = await admin.from("kuro_store_items")
+        .update({ is_active: false, deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq("id", itemId).is("deleted_at", null).select("id,name,deleted_at").maybeSingle();
+      if (error) throw error;
+      if (!data) throw new HttpError(404, "商品が見つからないか、すでに削除されています。");
+      return reply(200, { item: data });
+    }
+    if (action === "studio_restore_item") {
+      const user = await resolveUser(req, true);
+      await requireStudioMember(user!.id);
+      const itemId = typeof body.itemId === "string" ? body.itemId : "";
+      if (!UUID_RE.test(itemId)) throw new HttpError(400, "商品IDが正しくありません。");
+      const { data, error } = await admin.from("kuro_store_items")
+        .update({ is_active: false, deleted_at: null, updated_at: new Date().toISOString() })
+        .eq("id", itemId).not("deleted_at", "is", null).select("id,name,deleted_at,is_active").maybeSingle();
+      if (error) throw error;
+      if (!data) throw new HttpError(404, "削除済み商品が見つかりません。");
+      return reply(200, { item: data });
+    }
     if (action === "studio_set_status") {
       const user = await resolveUser(req, true);
       await requireStudioMember(user!.id);
@@ -281,9 +305,9 @@ Deno.serve(async (req: Request) => {
       if (!UUID_RE.test(itemId)) throw new HttpError(400, "商品IDが正しくありません。");
       const { data, error } = await admin.from("kuro_store_items")
         .update({ is_active: isActive, updated_at: new Date().toISOString() })
-        .eq("id", itemId).select("id,is_active").maybeSingle();
+        .eq("id", itemId).is("deleted_at", null).select("id,is_active").maybeSingle();
       if (error) throw error;
-      if (!data) throw new HttpError(404, "商品が見つかりません。");
+      if (!data) throw new HttpError(404, "商品が見つからないか、削除済みです。先に復元してください。");
       return reply(200, { item: data });
     }
     throw new HttpError(400, "操作が正しくありません。");
