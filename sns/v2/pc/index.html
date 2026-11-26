@@ -1882,6 +1882,53 @@ function kuroRouteCloudflareRealtime(client) {
             }
             const cosmetics=await kuroSnsFrameCosmeticsCache.get(id);
             if(!host.isConnected)return;
+            const equippedAvatar=cosmetics&&cosmetics.avatar&&typeof cosmetics.avatar==='object'?cosmetics.avatar:null;
+            if(equippedAvatar){
+                const rawAvatarUrl=String(equippedAvatar.imageUrl||'').trim();
+                let avatarUrl='';
+                if(rawAvatarUrl){
+                    try{
+                        const resolved=typeof kuroSnsAvatarUrl==='function'?kuroSnsAvatarUrl(rawAvatarUrl):rawAvatarUrl;
+                        const url=new URL(resolved,window.location.origin);
+                        if(url.protocol==='https:'||(url.protocol==='http:'&&url.origin===window.location.origin))avatarUrl=url.href;
+                    }catch(_){}
+                }
+                if(avatarUrl){
+                    let image=host.querySelector('img');
+                    if(!image){
+                        const placeholder=host.querySelector('svg,i,.kuro-sns-avatar-fallback');
+                        image=document.createElement('img');
+                        image.className='w-full h-full object-cover';
+                        image.alt='';
+                        if(placeholder)placeholder.replaceWith(image);else host.prepend(image);
+                    }else if(!host.dataset.kuroSnsOriginalAvatarSrc){
+                        const oldSrc=image.getAttribute('src');
+                        if(oldSrc)host.dataset.kuroSnsOriginalAvatarSrc=oldSrc;
+                    }
+                    image.classList.remove('hidden');
+                    image.style.width='100%';image.style.height='100%';image.style.objectFit='cover';image.style.borderRadius='50%';
+                    image.onerror=()=>{
+                        const fallback=host.dataset.kuroSnsOriginalAvatarSrc;
+                        if(fallback&&image.isConnected){image.onerror=null;image.src=fallback;}
+                        else image.classList.add('hidden');
+                    };
+                    image.src=avatarUrl;
+                    host.querySelectorAll('svg,i,.kuro-sns-avatar-fallback,[id$="Placeholder"]').forEach(node=>node.classList.add('hidden'));
+                    host.querySelectorAll('.kuro-sns-avatar-equipped-icon').forEach(node=>node.remove());
+                }else if(equippedAvatar.icon){
+                    const image=host.querySelector('img');
+                    if(image)image.classList.add('hidden');
+                    let icon=host.querySelector('.kuro-sns-avatar-equipped-icon');
+                    if(!icon){
+                        icon=document.createElement('span');
+                        icon.className='kuro-sns-avatar-equipped-icon';
+                        icon.style.cssText='display:grid;place-items:center;width:100%;height:100%;font-size:inherit;line-height:1';
+                        const placeholder=host.querySelector('svg,i,.kuro-sns-avatar-fallback');
+                        if(placeholder)placeholder.replaceWith(icon);else host.prepend(icon);
+                    }
+                    icon.textContent=String(equippedAvatar.icon);
+                }
+            }
             const frame=cosmetics&&cosmetics.frame&&typeof cosmetics.frame==='object'?cosmetics.frame:null;
             const rawUrl=String(frame&&frame.imageUrl||'').trim();
             host.classList.toggle('kuro-sns-frame-under',String(frame&&frame.frameLayerMode||'over')==='under');
