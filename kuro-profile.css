@@ -264,3 +264,7 @@
 .kuro-profile-extra-banner small{color:#d6c5f4;font-size:8px;font-weight:950;letter-spacing:1.4px}
 .kuro-profile-extra-banner strong{color:#fff;font-size:12px;font-weight:900;text-shadow:0 2px 8px #0007}
 .kuro-profile-nameplate{display:inline-flex;align-items:center;min-height:27px;padding:3px 9px;border:1px solid var(--kuro-profile-accent,#a78bfa);border-radius:8px;background:linear-gradient(100deg,var(--kuro-profile-accent-soft,rgba(167,139,250,.24)),rgba(255,255,255,.07));box-shadow:0 3px 12px rgba(0,0,0,.15)}
+
+.kuro-profile-custom-theme.kuro-profile-has-wallpaper{padding:12px;border:1px solid rgba(148,163,184,.22);border-radius:18px}
+.kuro-profile-custom-theme.kuro-profile-has-wallpaper .kuro-profile-identity{padding-top:8px}
+.kuro-profile-custom-theme.kuro-profile-has-wallpaper .kuro-profile-cosmetic-strip{padding-top:2px}
