@@ -16,7 +16,7 @@ main{padding:28px 0 60px}.eyebrow{color:#c4b5fd;font-size:9px;font-weight:1000;l
 .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:22px}.stats.stats-editor{grid-template-columns:repeat(2,minmax(0,1fr))}.stat{padding:16px 17px;border:1px solid var(--line);border-radius:15px;background:linear-gradient(145deg,#1a1728,#13111e)}.stat span{display:block;color:var(--muted);font-size:10px;font-weight:850}.stat strong{display:block;margin-top:7px;font-size:25px;font-weight:1000;font-variant-numeric:tabular-nums}.stat small{color:#9c8dbb;font-size:9px}
 .panel{border:1px solid var(--line);border-radius:18px;background:#13111fdd;box-shadow:0 14px 40px #0002}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 19px;border-bottom:1px solid var(--line)}.panel-head h2{margin:0;font-size:16px}.panel-head p{margin:4px 0 0;color:var(--muted);font-size:10px}
 .toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.toolbar input,.toolbar select{height:38px;padding:0 11px;border:1px solid #39324e;border-radius:10px;background:#0f0d18;color:var(--text);font-size:11px}.toolbar input{width:min(270px,56vw)}
-.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:760px}th,td{padding:12px 14px;border-bottom:1px solid #2a2538;text-align:left;font-size:11px;vertical-align:middle}th{color:#a99fc0;font-size:9px;letter-spacing:.1em;font-weight:950}tr:last-child td{border-bottom:0}.product{display:flex;align-items:center;gap:10px;min-width:190px}.art{width:48px;height:48px;flex:0 0 48px;display:grid;place-items:center;overflow:hidden;border:1px solid #45395d;border-radius:11px;background:linear-gradient(145deg,#36264f,#1b1a30);font-size:22px}.art img{width:100%;height:100%;object-fit:cover}.product strong{display:block;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}.product small{display:block;margin-top:4px;color:#8f85a9;font-size:9px}.tag{display:inline-flex;padding:5px 8px;border:1px solid #514169;border-radius:99px;color:#d5c5f2;font-size:9px;font-weight:850}.tag.off{border-color:#56404a;color:#f4a7b5}.price{font-weight:950;color:#f5dc9c;white-space:nowrap}.row-actions{display:flex;gap:6px}.mini{min-height:31px;padding:0 9px;border:1px solid #51456b;border-radius:8px;background:#211b30;color:#e5dafa;font-size:9px;font-weight:900;cursor:pointer}
+.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:760px}th,td{padding:12px 14px;border-bottom:1px solid #2a2538;text-align:left;font-size:11px;vertical-align:middle}th{color:#a99fc0;font-size:9px;letter-spacing:.1em;font-weight:950}tr:last-child td{border-bottom:0}.product{display:flex;align-items:center;gap:10px;min-width:190px}.art{width:48px;height:48px;flex:0 0 48px;display:grid;place-items:center;overflow:hidden;border:1px solid #45395d;border-radius:11px;background:linear-gradient(145deg,#36264f,#1b1a30);font-size:22px}.art img{width:100%;height:100%;object-fit:cover}.product strong{display:block;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}.product small{display:block;margin-top:4px;color:#8f85a9;font-size:9px}.tag{display:inline-flex;padding:5px 8px;border:1px solid #514169;border-radius:99px;color:#d5c5f2;font-size:9px;font-weight:850}.tag.off{border-color:#56404a;color:#f4a7b5}.price{font-weight:950;color:#f5dc9c;white-space:nowrap}.row-actions{display:flex;gap:6px}.mini{min-height:31px;padding:0 9px;border:1px solid #51456b;border-radius:8px;background:#211b30;color:#e5dafa;font-size:9px;font-weight:900;cursor:pointer}.mini.danger{border-color:#74414c;background:#321a24;color:#fecdd3}
 .notice{min-height:24px;margin:0 0 14px;color:#c8bce0;font-size:11px}.notice.error{color:#fda4af}.notice.success{color:var(--green)}.empty{padding:44px 20px;text-align:center;color:var(--muted);font-size:12px;line-height:1.9}
 .access{max-width:620px;margin:9vh auto;padding:35px;text-align:center}.access .symbol{font-size:42px}.access h1{margin:15px 0 9px;font-size:25px}.access p{color:var(--muted);font-size:12px;line-height:1.9}
 .overlay{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:18px;background:#05040ccc;backdrop-filter:blur(12px)}.overlay[hidden]{display:none!important}.dialog{width:min(760px,100%);max-height:92dvh;overflow:auto;border:1px solid #4a3e62;border-radius:20px;background:#151321;box-shadow:0 30px 100px #0008}.dialog-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:17px 20px;border-bottom:1px solid var(--line);background:#151321ed;backdrop-filter:blur(12px)}.dialog-head h2{margin:0;font-size:17px}.close{width:34px;height:34px;border:1px solid var(--line);border-radius:9px;background:#201b2d;color:white;font-size:20px;cursor:pointer}
@@ -44,8 +44,8 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
  <article class="stat" id="salesRevenueStat"><span>購入総額</span><strong id="statRevenue">—</strong><small>KC（返金処理前の累計）</small></article>
 </div>
 <section class="panel">
- <div class="panel-head"><div><h2>商品カタログ</h2><p>商品を編集したり、販売を一時停止できます。削除ではなく非公開にするため購入履歴は保持されます。</p></div>
-  <div class="toolbar"><input id="searchItems" type="search" placeholder="商品名・商品キーで検索"><select id="statusFilter"><option value="all">すべて</option><option value="active">販売中</option><option value="inactive">非公開</option></select></div>
+ <div class="panel-head"><div><h2>商品カタログ</h2><p>商品を編集・非公開・削除できます。削除しても購入済みアイテムと購入履歴は保持されます。</p></div>
+  <div class="toolbar"><input id="searchItems" type="search" placeholder="商品名・商品キーで検索"><select id="statusFilter"><option value="all">すべて</option><option value="active">販売中</option><option value="inactive">非公開</option><option value="deleted">削除済み</option></select></div>
  </div>
  <div class="table-wrap"><table><thead><tr><th>商品</th><th>カテゴリー</th><th>価格</th><th>レアリティ</th><th>状態</th><th>操作</th></tr></thead><tbody id="itemsBody"></tbody></table></div>
  <div class="empty" id="itemsEmpty" hidden>商品がありません。「商品を追加」から最初の商品を作成してください。</div>
@@ -163,8 +163,8 @@ function safeAssetUrl(value){
 function art(item){const src=safeAssetUrl(item.image_url);return src?'<img src="'+html(src)+'" alt="" loading="lazy">':html(item.icon||"✦");}
 function render(){
  const search=$("searchItems").value.trim().toLocaleLowerCase(),filter=$("statusFilter").value;
- const rows=items.filter(item=>(!search||[item.name,item.item_key].some(v=>String(v||"").toLocaleLowerCase().includes(search)))&&(filter==="all"||(filter==="active"?item.is_active:!item.is_active)));
- $("itemsBody").innerHTML=rows.map(item=>'<tr><td><div class="product"><div class="art">'+art(item)+'</div><div><strong>'+html(item.name)+'</strong><small>'+html(item.item_key)+'</small></div></div></td><td>'+html(labels[item.category]||item.category)+'</td><td class="price">'+(item.is_free?"無料":Number(item.price_kc).toLocaleString("ja-JP")+" KC")+'</td><td><span class="tag">'+html(String(item.rarity||"common").toUpperCase())+'</span></td><td><span class="tag '+(item.is_active?"":"off")+'">'+(item.is_active?"販売中":"非公開")+'</span></td><td><div class="row-actions"><button class="mini" data-edit="'+html(item.id)+'">編集</button><button class="mini" data-toggle="'+html(item.id)+'" data-active="'+(!item.is_active)+'">'+(item.is_active?"非公開":"再公開")+'</button></div></td></tr>').join("");
+ const rows=items.filter(item=>(!search||[item.name,item.item_key].some(v=>String(v||"").toLocaleLowerCase().includes(search)))&&(filter==="deleted"?!!item.deleted_at:!item.deleted_at&&(filter==="all"||(filter==="active"?item.is_active:!item.is_active))));
+ $("itemsBody").innerHTML=rows.map(item=>'<tr><td><div class="product"><div class="art">'+art(item)+'</div><div><strong>'+html(item.name)+'</strong><small>'+html(item.item_key)+'</small></div></div></td><td>'+html(labels[item.category]||item.category)+'</td><td class="price">'+(item.is_free?"無料":Number(item.price_kc).toLocaleString("ja-JP")+" KC")+'</td><td><span class="tag">'+html(String(item.rarity||"common").toUpperCase())+'</span></td><td><span class="tag '+(item.deleted_at||!item.is_active?"off":"")+'">'+(item.deleted_at?"削除済み":item.is_active?"販売中":"非公開")+'</span></td><td><div class="row-actions">'+(item.deleted_at?'<button class="mini" data-restore="'+html(item.id)+'">復元</button>':'<button class="mini" data-edit="'+html(item.id)+'">編集</button><button class="mini" data-toggle="'+html(item.id)+'" data-active="'+(!item.is_active)+'">'+(item.is_active?"非公開":"再公開")+'</button><button class="mini danger" data-delete="'+html(item.id)+'" data-name="'+html(item.name)+'">削除</button>')+'</div></td></tr>').join("");
  $("itemsEmpty").hidden=rows.length>0;
 }
 function showPreview(url,emoji){
@@ -253,12 +253,27 @@ $("itemForm").addEventListener("submit",async event=>{
  finally{button.disabled=false;button.textContent="保存する";}
 });
 $("itemsBody").addEventListener("click",async event=>{
- const edit=event.target.closest("[data-edit]"),toggle=event.target.closest("[data-toggle]");
- if(edit){const item=items.find(row=>row.id===edit.dataset.edit);if(item)openEditor(item);return;}
+ const edit=event.target.closest("[data-edit]"),toggle=event.target.closest("[data-toggle]"),remove=event.target.closest("[data-delete]"),restore=event.target.closest("[data-restore]");
+ if(edit){const item=items.find(row=>row.id===edit.dataset.edit);if(item&&!item.deleted_at)openEditor(item);return;}
  if(toggle){
   toggle.disabled=true;
   try{await api("studio_set_status",{itemId:toggle.dataset.toggle,isActive:toggle.dataset.active==="true"});await refresh();note(toggle.dataset.active==="true"?"商品を再公開しました。":"商品を非公開にしました。","success");}
   catch(error){note(error.message||"状態を変更できませんでした。","error");toggle.disabled=false;}
+  return;
+ }
+ if(remove){
+  const name=remove.dataset.name||"この商品";
+  if(!confirm("「"+name+"」を削除しますか？\\nショップでの販売・表示を終了します。購入済みユーザーの所持アイテムと購入履歴は残ります。"))return;
+  remove.disabled=true;
+  try{await api("studio_delete_item",{itemId:remove.dataset.delete});await refresh();note("商品を削除しました。購入済みアイテムと履歴は保持されています。","success");}
+  catch(error){note(error.message||"商品を削除できませんでした。","error");remove.disabled=false;}
+  return;
+ }
+ if(restore){
+  if(!confirm("この商品を復元しますか？\\n復元後は非公開状態になり、再公開するまでショップには表示されません。"))return;
+  restore.disabled=true;
+  try{await api("studio_restore_item",{itemId:restore.dataset.restore});$("statusFilter").value="inactive";await refresh();note("商品を復元しました。現在は非公開です。","success");}
+  catch(error){note(error.message||"商品を復元できませんでした。","error");restore.disabled=false;}
  }
 });
 
