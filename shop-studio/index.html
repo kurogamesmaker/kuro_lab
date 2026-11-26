@@ -165,7 +165,7 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
       <button class="mini" type="button" id="imageLayerUp">↑ 前面へ</button>
       <button class="mini" type="button" id="imageLayerDown">↓ 背面へ</button>
      </div>
-     <div class="design-field" style="margin-top:12px"><label for="imageLayerFit">画像の配置方法</label><select id="imageLayerFit"><option value="contain">全体を表示</option><option value="cover">枠いっぱいに切り抜く</option><option value="stretch">枠に合わせて伸縮</option></select></div>
+     <div class="design-field" style="margin-top:12px"><label for="imageLayerFit">画像の配置方法</label><select id="imageLayerFit"><option value="contain">全体を表示</option><option value="cover">枠いっぱいに切り抜く</option><option value="stretch">枠に合わせて伸縮</option></select></div><div class="design-field" id="frameImageTargetField" style="margin-top:10px" hidden><label for="imageLayerTarget">フレーム画像の表示場所</label><select id="imageLayerTarget"><option value="rim">外周の枠に重ねる</option><option value="avatar">アイコン画像の上に重ねる</option></select><small class="hint">アイコン上を選ぶと、中央の丸いアイコン部分に装飾が表示されます。</small></div>
      <div class="design-two">
       <div class="design-field"><label for="imageLayerX">左右位置</label><input id="imageLayerX" type="range" min="0" max="100" value="50"><output id="imageLayerXValue">50%</output></div>
       <div class="design-field"><label for="imageLayerY">上下位置</label><input id="imageLayerY" type="range" min="0" max="100" value="50"><output id="imageLayerYValue">50%</output></div>
@@ -475,7 +475,7 @@ function designSelectedImageLayer(){
  return designImageLayers().find(layer=>layer.id===selectedImageLayerId)||null;
 }
 function designLayerControlIds(){
- return ["imageLayerFit","imageLayerX","imageLayerY","imageLayerWidth","imageLayerHeight","imageLayerRotation","imageLayerOpacity","imageLayerBrightness","imageLayerContrast","imageLayerSaturation","imageLayerBlur","imageLayerGrayscale","imageLayerFlipX","imageLayerFlipY"];
+ return ["imageLayerFit","imageLayerTarget","imageLayerX","imageLayerY","imageLayerWidth","imageLayerHeight","imageLayerRotation","imageLayerOpacity","imageLayerBrightness","imageLayerContrast","imageLayerSaturation","imageLayerBlur","imageLayerGrayscale","imageLayerFlipX","imageLayerFlipY"];
 }
 function designUpdateLayerControls(){
  const layers=designImageLayers(),selected=designSelectedImageLayer();
@@ -484,7 +484,7 @@ function designUpdateLayerControls(){
   :'<option value="">画像はまだありません</option>';
  $("imageLayerSelect").value=selected?selected.id:"";
  const ids=designLayerControlIds();
- ids.forEach(id=>$(id).disabled=!selected);
+ ids.forEach(id=>$(id).disabled=!selected);\n $("frameImageTargetField").hidden=designCategory!=="frame";
  ["duplicateImageLayer","deleteImageLayer","imageLayerUp","imageLayerDown"].forEach(id=>$(id).disabled=!selected);
  if(!selected){
   $("imageLayerSelect").disabled=true;
@@ -492,7 +492,7 @@ function designUpdateLayerControls(){
  }
  $("imageLayerSelect").disabled=false;
  const pairs={
-  imageLayerFit:selected.fit||"contain",imageLayerX:selected.x??50,imageLayerY:selected.y??50,
+  imageLayerFit:selected.fit||"contain",imageLayerTarget:selected.target||"rim",imageLayerX:selected.x??50,imageLayerY:selected.y??50,
   imageLayerWidth:selected.width??35,imageLayerHeight:selected.height??35,
   imageLayerRotation:selected.rotation??0,imageLayerOpacity:selected.opacity??100,
   imageLayerBrightness:selected.brightness??100,imageLayerContrast:selected.contrast??100,
@@ -530,14 +530,7 @@ async function designDrawImageLayers(ctx,width,height,showSelection=true){
   const cx=width*Math.max(0,Math.min(100,Number(layer.x??50)))/100;
   const cy=height*Math.max(0,Math.min(100,Number(layer.y??50)))/100;
   ctx.save();
-  if(designCategory==="frame"){
-   // Clip image artwork to the scaled ring band, preserving the avatar opening.
-   const scale=Math.max(.6,Math.min(1.05,Number(designData.frameSize??100)/100));
-   const radius=340*scale,thick=Math.max(12,Math.min(68,Number(designData.thickness)||42));
-   const outer=Math.min(397,radius+thick/2+12),inner=Math.max(0,radius-thick/2-8);
-   ctx.beginPath();ctx.arc(400,400,outer,0,Math.PI*2);ctx.arc(400,400,inner,0,Math.PI*2,true);ctx.clip("evenodd");
-  }
-  ctx.translate(cx,cy);ctx.rotate((Number(layer.rotation)||0)*Math.PI/180);
+  if(designCategory==="frame"){\n   // Image artwork can be clipped to the rim or the circular avatar area.\n   const scale=Math.max(.6,Math.min(1.05,Number(designData.frameSize??100)/100));\n   const radius=340*scale,thick=Math.max(12,Math.min(68,Number(designData.thickness)||42));\n   if(layer.target==="avatar"){\n    const avatarRadius=Math.max(0,radius-thick/2-5);\n    ctx.beginPath();ctx.arc(400,400,avatarRadius,0,Math.PI*2);ctx.clip();\n   }else{\n    const outer=Math.min(397,radius+thick/2+12),inner=Math.max(0,radius-thick/2-8);\n    ctx.beginPath();ctx.arc(400,400,outer,0,Math.PI*2);ctx.arc(400,400,inner,0,Math.PI*2,true);ctx.clip("evenodd");\n   }\n  }\n  ctx.translate(cx,cy);ctx.rotate((Number(layer.rotation)||0)*Math.PI/180);
   ctx.scale(layer.flipX===true?-1:1,layer.flipY===true?-1:1);
   ctx.globalAlpha=Math.max(0,Math.min(100,Number(layer.opacity??100)))/100;
   const brightness=Math.max(0,Math.min(200,Number(layer.brightness??100)));
@@ -586,7 +579,7 @@ function designBindLayerControls(){
   imageLayerX:["x",Number],imageLayerY:["y",Number],imageLayerWidth:["width",Number],imageLayerHeight:["height",Number],
   imageLayerRotation:["rotation",Number],imageLayerOpacity:["opacity",Number],imageLayerBrightness:["brightness",Number],
   imageLayerContrast:["contrast",Number],imageLayerSaturation:["saturation",Number],imageLayerBlur:["blur",Number],
-  imageLayerGrayscale:["grayscale",Number],imageLayerFit:["fit",String]
+  imageLayerGrayscale:["grayscale",Number],imageLayerFit:["fit",String],imageLayerTarget:["target",String]
  };
  Object.entries(rangeMap).forEach(([id,[key,cast]])=>{
   $(id).addEventListener("input",event=>designChangeSelectedLayer(key,cast(event.target.value)));
@@ -599,7 +592,7 @@ function designBindLayerControls(){
   const file=event.target.files&&event.target.files[0];event.target.value="";if(!file)return;
   try{
    designSetState("画像をアップロード中…");
-   const imageUrl=await uploadImage(file),layer={id:crypto.randomUUID(),name:file.name.replace(/\.[^.]+$/,"").slice(0,40)||"画像",imageUrl,x:50,y:50,width:35,height:35,rotation:0,opacity:100,brightness:100,contrast:100,saturation:100,blur:0,grayscale:0,flipX:false,flipY:false,fit:"contain"};
+   const imageUrl=await uploadImage(file),layer={id:crypto.randomUUID(),name:file.name.replace(/\.[^.]+$/,"").slice(0,40)||"画像",imageUrl,target:"rim",x:50,y:50,width:35,height:35,rotation:0,opacity:100,brightness:100,contrast:100,saturation:100,blur:0,grayscale:0,flipX:false,flipY:false,fit:"contain"};
    designImageLayers().push(layer);selectedImageLayerId=layer.id;designUpdateLayerControls();await designRender();designPushHistory();designScheduleSave();
    designSetState("画像を追加しました");
   }catch(error){designSetState("画像を追加できませんでした: "+error.message);}
