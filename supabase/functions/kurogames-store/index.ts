@@ -216,6 +216,60 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    if (action === "studio_list_drafts") {
+      const user = await resolveUser(req, true);
+      await requireStudioMember(user!.id);
+      const { data, error } = await admin.from("kuro_store_design_drafts")
+        .select("id,draft_name,category,design_data,created_at,updated_at")
+        .eq("created_by", user!.id)
+        .order("updated_at", { ascending: false }).limit(50);
+      if (error) throw error;
+      return reply(200, { drafts: data ?? [] });
+    }
+
+    if (action === "studio_save_draft") {
+      const user = await resolveUser(req, true);
+      await requireStudioMember(user!.id);
+      const draftId = typeof body.draftId === "string" ? body.draftId : "";
+      const category = typeof body.category === "string" ? body.category : "";
+      const draftName = typeof body.draftName === "string" ? body.draftName.trim() : "";
+      const designData = body.designData;
+      if (draftId && !UUID_RE.test(draftId)) throw new HttpError(400, "下書きIDが正しくありません。");
+      if (!["background", "frame"].includes(category)) throw new HttpError(400, "デザインの種類が正しくありません。");
+      if (draftName.length < 1 || draftName.length > 60) throw new HttpError(400, "デザイン名は1〜60文字にしてください。");
+      if (!designData || typeof designData !== "object" || Array.isArray(designData)) throw new HttpError(400, "デザインデータが正しくありません。");
+      let serialized = "";
+      try { serialized = JSON.stringify(designData); } catch { throw new HttpError(400, "デザインデータを読み取れません。"); }
+      if (serialized.length > 100000) throw new HttpError(413, "デザインデータが大きすぎます。画像はファイルとしてアップロードしてください。");
+      const values = {
+        draft_name: draftName,
+        category,
+        design_data: designData,
+        updated_at: new Date().toISOString(),
+      };
+      const query = draftId
+        ? admin.from("kuro_store_design_drafts").update(values).eq("id", draftId).eq("created_by", user!.id)
+        : admin.from("kuro_store_design_drafts").insert({ ...values, created_by: user!.id });
+      const { data, error } = await query
+        .select("id,draft_name,category,design_data,created_at,updated_at").maybeSingle();
+      if (error) throw error;
+      if (!data) throw new HttpError(404, "下書きが見つかりません。再読み込みしてください。");
+      return reply(200, { draft: data });
+    }
+
+    if (action === "studio_delete_draft") {
+      const user = await resolveUser(req, true);
+      await requireStudioMember(user!.id);
+      const draftId = typeof body.draftId === "string" ? body.draftId : "";
+      if (!UUID_RE.test(draftId)) throw new HttpError(400, "下書きIDが正しくありません。");
+      const { data, error } = await admin.from("kuro_store_design_drafts")
+        .delete().eq("id", draftId).eq("created_by", user!.id)
+        .select("id").maybeSingle();
+      if (error) throw error;
+      if (!data) throw new HttpError(404, "下書きが見つかりません。");
+      return reply(200, { deleted: true });
+    }
+
     if (action === "studio_save_item") {
       const user = await resolveUser(req, true);
       await requireStudioMember(user!.id);
