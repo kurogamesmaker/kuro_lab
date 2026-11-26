@@ -6,6 +6,16 @@
   const TYPES=new Set(['image/jpeg','image/png','image/webp']);
   const selected={post:[],chat:[],publicChat:[]};
   const db=()=>window.kuroSNSDB||window.kuroGamesDB||null;
+  const STORAGE_ORIGIN='https://cprvpphlfpmiegjiutjn.supabase.co';
+  function relayAssetUrl(value){
+    if(!value)return'';
+    try{
+      const url=new URL(String(value),STORAGE_ORIGIN);
+      if(url.origin!==STORAGE_ORIGIN)return url.href;
+      const resource=url.pathname+url.search;
+      return window.location.origin+'/api/cloudflare-relay?resource='+encodeURIComponent(resource);
+    }catch(_){return String(value)}
+  }
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const say=s=>typeof window.showToast==='function'?window.showToast(s):console.warn(s);
   const uid=()=>{try{return crypto.randomUUID()}catch(_){return Date.now().toString(36)+Math.random().toString(36).slice(2)}};
@@ -99,7 +109,8 @@
     const valid=(Array.isArray(items)?items:[]).filter(x=>x&&typeof x.path==='string'&&x.bucket===(isPublic?PUB:PRIV)).slice(0,MAX);
     if(!valid.length)return'';
     const cells=valid.map(x=>{
-      const url=isPublic?db().storage.from(PUB).getPublicUrl(x.path).data.publicUrl:urls.get(x.path);
+      const source=isPublic?db().storage.from(PUB).getPublicUrl(x.path).data.publicUrl:urls.get(x.path);
+      const url=relayAssetUrl(source);
       return url?'<button type="button" class="kuro-sns-media-tile" data-kuro-media-open="'+esc(url)+'" aria-label="写真を拡大"><img loading="lazy" decoding="async" src="'+esc(url)+'" alt="写真"></button>':'';
     }).join('');
     const contextClass=context==='chat'?' kuro-sns-chat-media':'';
@@ -108,7 +119,7 @@
   function renderPublic(media,context){try{return render(media,new Map(),true,context)}catch(e){console.warn(e);return''}}
   async function renderPrivateBatch(client,messages){
     const paths=[...new Set((messages||[]).flatMap(m=>(Array.isArray(m.media)?m.media:[]).filter(x=>x?.bucket===PRIV&&typeof x.path==='string').map(x=>x.path)))],urls=new Map();
-    for(let offset=0;offset<paths.length;offset+=50){const chunk=paths.slice(offset,offset+50);const r=await client.storage.from(PRIV).createSignedUrls(chunk,3600);if(r.error){console.warn('KURO SNS private photo URL failed',r.error);continue}(r.data||[]).forEach(x=>{const u=x.signedUrl||x.signedURL;if(x.path&&u)urls.set(x.path,u)})}
+    for(let offset=0;offset<paths.length;offset+=50){const chunk=paths.slice(offset,offset+50);const r=await client.storage.from(PRIV).createSignedUrls(chunk,3600);if(r.error){console.warn('KURO SNS private photo URL failed',r.error);continue}(r.data||[]).forEach((x,index)=>{const u=relayAssetUrl(x.signedUrl||x.signedURL||x.signed_url);if(!u)return;const requestedPath=chunk[index];if(requestedPath)urls.set(requestedPath,u);if(x.path)urls.set(x.path,u)})}
     const byId=new Map();(messages||[]).forEach(m=>byId.set(String(m.id),render(m.media,urls,false,'chat')));return byId;
   }
   async function renderPrivateOne(client,media){const m=await renderPrivateBatch(client,[{id:'preview',media}]);return m.get('preview')||''}
