@@ -179,7 +179,7 @@ async function markRead(item){
  let result={error:null};
  if(item.kind==="admin"){
   result=await db.from("admin_message_reads").upsert({message_id:item.id,user_id:user.id,read_at:now},{onConflict:"message_id,user_id"});
- }else if(item.kind==="social"){
+ }else if(item.kind==="social"||item.kind==="points"){
   result=await db.from("notifications").update({read_at:now}).eq("id",item.id).eq("recipient_id",user.id);
  }else if(item.kind==="reply"){
   result=await db.from("portal_request_notifications").update({read_at:now}).eq("id",item.id).eq("user_id",user.id);
@@ -196,7 +196,7 @@ async function markAllNotificationsRead(){
  if(!user)return;markAll.disabled=true;
  try{
   const now=new Date().toISOString();
-  const admin=items.filter(x=>x.kind==="admin"&&!x.read),social=items.filter(x=>x.kind==="social"&&!x.read),replies=items.filter(x=>x.kind==="reply"&&!x.read),anns=items.filter(x=>x.kind==="announcement"&&!x.read);
+  const admin=items.filter(x=>x.kind==="admin"&&!x.read),social=items.filter(x=>(x.kind==="social"||x.kind==="points")&&!x.read),replies=items.filter(x=>x.kind==="reply"&&!x.read),anns=items.filter(x=>x.kind==="announcement"&&!x.read);
   const operations=[];
   if(admin.length)operations.push(db.from("admin_message_reads").upsert(admin.map(x=>({message_id:x.id,user_id:user.id,read_at:now})),{onConflict:"message_id,user_id"}));
   if(social.length)operations.push(db.from("notifications").update({read_at:now}).eq("recipient_id",user.id).in("id",social.map(x=>x.id)));
