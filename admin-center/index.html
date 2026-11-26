@@ -263,8 +263,10 @@ async function enter(user){
 function recordRecent(id){
  if(!toolInfo[id])return;
  recent=[id,...recent.filter(value=>value!==id)].slice(0,8);
- saveArray(RECENT_KEY,recent);renderHub();
+ saveArray(RECENT_KEY,recent);
+ $("#recentCount").textContent=recent.length.toLocaleString("ja-JP");
 }
+window.addEventListener("pageshow",()=>{if(!$("#appView").hidden)renderHub();});
 function shortcutRow(id){
  const item=toolInfo[id];if(!item)return "";
  return '<a class="shortcut-row" href="'+esc(item.url)+'" data-tool-id="'+esc(id)+'"><span class="shortcut-symbol">'+esc(item.icon)+'</span><span class="shortcut-name"><strong>'+esc(item.name)+'</strong><small>'+esc(item.url)+'</small></span><span class="shortcut-arrow">↗</span></a>';
