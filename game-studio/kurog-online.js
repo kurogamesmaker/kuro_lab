@@ -688,11 +688,11 @@ const KuroGames = {
       const avatar = cosmetics.avatar && typeof cosmetics.avatar === "object" ? cosmetics.avatar : null;
       const frame = cosmetics.frame && typeof cosmetics.frame === "object" ? cosmetics.frame : null;
       const profileImage = profile && (profile.avatarUrl || profile.avatar_url) || "";
-      const image = avatar && typeof avatar.imageUrl === "string" && avatar.imageUrl ? avatar.imageUrl : String(profileImage || "");
+      const image = String(profileImage || "") || (avatar && typeof avatar.imageUrl === "string" ? avatar.imageUrl : "");
       element.replaceChildren();
       if (image && (/^https:\/\//i.test(image) || (image.startsWith("/") && !image.startsWith("//")))) {
         const img = document.createElement("img");
-        img.src = image;
+        img.src = (() => { try { const url = new URL(image, window.location.origin); return url.origin === DEFAULT_URL && url.pathname.startsWith("/storage/v1/object/public/") ? "https://kurolab.cc.cd/api/cloudflare-relay?resource=" + encodeURIComponent(url.pathname + url.search) : url.href; } catch (_) { return image; } })();
         img.alt = "";
         img.loading = "lazy";
         img.style.width = "100%";
