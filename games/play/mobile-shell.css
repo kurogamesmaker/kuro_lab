@@ -28,13 +28,14 @@
  }
  .mobile-game-controls[hidden] {display:none!important}
  .mobile-game-controls {
-  position:fixed;z-index:40;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;gap:9px;min-height:54px;
+  position:fixed;z-index:40;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;gap:9px;min-height:58px;
   padding:7px 12px calc(7px + env(safe-area-inset-bottom));background:linear-gradient(180deg,transparent,#070b13b8 28%,#070b13e8);pointer-events:none;
  }
  .mobile-game-controls button {
-  min-height:38px;padding:0 15px;border:1px solid #ffffff35;border-radius:999px;background:#182336d9;color:#f3f7ff;
+  min-width:44px;min-height:44px;padding:0 15px;border:1px solid #ffffff35;border-radius:999px;background:#182336d9;color:#f3f7ff;
   font:800 12px/1 system-ui,-apple-system,"Noto Sans JP",sans-serif;box-shadow:0 5px 18px #0005;backdrop-filter:blur(12px);
   pointer-events:auto;-webkit-tap-highlight-color:transparent;
  }
  .mobile-game-controls button:active {transform:scale(.97);background:#2a3d5c}
+ .mobile-game-controls button:focus-visible {outline:2px solid #9fc0ff;outline-offset:3px}
 }
