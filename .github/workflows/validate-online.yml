@@ -8,6 +8,7 @@ on:
       - game-studio/code.html
       - games/play/index.html
       - games/index.html
+      - games/match/index.html
       - games/mypage/index.html
       - supabase/functions/kurogames-online/index.ts
       - supabase/migrations/**
@@ -20,6 +21,7 @@ on:
       - game-studio/code.html
       - games/play/index.html
       - games/index.html
+      - games/match/index.html
       - games/mypage/index.html
       - supabase/functions/kurogames-online/index.ts
       - supabase/migrations/**
@@ -40,7 +42,7 @@ jobs:
         run: |
           node <<'NODE'
           const fs = require('node:fs');
-          for (const file of ['games/play/index.html', 'games/index.html', 'games/mypage/index.html', 'game-studio/code.html']) {
+          for (const file of ['games/play/index.html', 'games/index.html', 'games/match/index.html', 'games/mypage/index.html', 'game-studio/code.html']) {
             const html = fs.readFileSync(file, 'utf8');
             const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)];
             let checked = 0;
@@ -53,4 +55,9 @@ jobs:
             if (!checked) throw new Error('No inline scripts checked in ' + file);
             console.log(file + ': ' + checked + ' inline script(s) passed');
           }
+          const matchPage = fs.readFileSync('games/match/index.html', 'utf8');
+          if (!/\bcreateClient\(\s*SUPABASE_URL\s*,/.test(matchPage) || /\bcreateClient\(\s*URL\s*,/.test(matchPage)) {
+            throw new Error('Universal matchmaking page must initialize Supabase with SUPABASE_URL');
+          }
+          console.log('games/match/index.html: Supabase URL binding passed');
           NODE
