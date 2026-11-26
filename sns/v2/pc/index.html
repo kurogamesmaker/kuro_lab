@@ -4091,7 +4091,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 // 直近2秒を重ねて取得し、同時刻投稿の取りこぼしを避ける（IDで重複排除）。
                 const since = new Date(Math.max(0, Date.parse(kuroPublicChatLatestAt) - 2000)).toISOString();
                 const {data,error} = await supabaseClient.from('public_chat_messages')
-                    .select('id,nickname,content,created_at')
+                    .select('id,nickname,content,created_at,media')
                     .gte('created_at', since)
                     .order('created_at',{ascending:true}).limit(50);
                 if (error) throw error;
@@ -4125,7 +4125,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             const mine = !!ownName && ownName === message.nickname;
             return '<article class="kuro-chat-row '+(mine?'is-mine':'is-other')+'"><div class="kuro-chat-bubble-wrap">'+
               (mine ? '' : '<b class="kuro-chat-name">'+socialEscape(message.nickname)+'</b>')+
-              '<div class="kuro-chat-bubble">'+socialEscape(message.content)+'</div><time class="kuro-chat-time">'+time+'</time></div></article>';
+              '<div class="kuro-chat-bubble">'+(message.content ? socialEscape(message.content) : '')+(window.KuroSNSMedia?.renderPublic(message.media) || '')+'</div><time class="kuro-chat-time">'+time+'</time></div></article>';
         }
         function setPublicChatTheme(theme) {
             const modal = document.getElementById('chatModal');
@@ -4145,7 +4145,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             if (!box || kuroPublicChatLoading) return;
             kuroPublicChatLoading = true;
             try {
-                const {data,error} = await supabaseClient.from('public_chat_messages').select('id,nickname,content,created_at').order('created_at',{ascending:false}).limit(100);
+                const {data,error} = await supabaseClient.from('public_chat_messages').select('id,nickname,content,created_at,media').order('created_at',{ascending:false}).limit(100);
                 if (error) throw error;
                 const messages = (data||[]).reverse();
                 const wasNearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 90;
@@ -4165,9 +4165,11 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             const nickname = (nicknameInput?.value||'').trim().slice(0,20);
             const content = (input?.value||'').trim().slice(0,300);
             if (!nickname) { showToast('表示名を入力してください'); nicknameInput?.focus(); return; }
-            if (!content || !box) return;
+            const imageFiles = window.KuroSNSMedia?.getSelected('publicChat') || [];
+            if ((!content && !imageFiles.length) || !box) return;
             try { localStorage.setItem('kuro-public-chat-nickname',nickname); } catch (_) {}
             input.value = '';
+            let uploadedMedia = [];
             const pending = document.createElement('div');
             pending.dataset.optimisticId = String(Date.now()) + Math.random().toString(36).slice(2);
             pending.innerHTML = formatPublicChatMessage({nickname,content,created_at:new Date().toISOString()});
@@ -4177,12 +4179,16 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             box.appendChild(pending);
             box.scrollTop = box.scrollHeight;
             try {
-                const result = await supabaseClient.from('public_chat_messages').insert({nickname,content}).select('id,nickname,content,created_at').single();
+                if (imageFiles.length) uploadedMedia = await window.KuroSNSMedia.upload(supabaseClient, 'open-chat', null, imageFiles);
+                pending.innerHTML = formatPublicChatMessage({nickname,content,media:uploadedMedia,created_at:new Date().toISOString()});
+                const result = await supabaseClient.from('public_chat_messages').insert({nickname,content,media:uploadedMedia}).select('id,nickname,content,created_at,media').single();
                 if (result.error) throw result.error;
                 pending.remove();
+                window.KuroSNSMedia?.clear('publicChat');
                 if (result.data) appendPublicChatMessage(result.data);
             } catch (error) {
                 console.error('Public chat send failed:',error);
+                if (uploadedMedia.length) await window.KuroSNSMedia.remove(supabaseClient, uploadedMedia);
                 pending.remove();
                 if (!input.value) input.value = content;
                 showToast('送信できませんでした。入力内容を戻しました');
