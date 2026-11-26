@@ -524,7 +524,7 @@ async function designDeleteSelectedDraft(){
  const id=$("designDraftSelect").value;if(!id)return;
  if(!confirm("このデザイン下書きを削除しますか？"))return;
  if(designSaveTimer){clearTimeout(designSaveTimer);designSaveTimer=0;}
- if(designDraftId===id&&designSaveDirty){designSaveDirty=false;}
+ if(designDraftId===id&&designSaveDirty){designSaveDirty=false;}else if(designSaveDirty){await designPersistDraft();}
  await api("studio_delete_draft",{draftId:id});
  if(id===designDraftId){designDraftId=null;designData=designClone(DESIGN_DEFAULTS[designCategory]);designApplyFields();designRender();designSetState("未保存");}
  await designLoadDraftList();
@@ -558,7 +558,7 @@ function designBindInput(id){
   designReadFields();designUpdateOutputs();designRender();designPushHistory();designScheduleSave();
  });
 }
-document.querySelectorAll("[data-design-category]").forEach(node=>node.addEventListener("click",async()=>{const next=node.dataset.designCategory;if(next!==designCategory){if(designSaveTimer){clearTimeout(designSaveTimer);designSaveTimer=0;}if(designSaveDirty)await designPersistDraft();designResetHistory();}designSetCategory(next);}));
+document.querySelectorAll("[data-design-category]").forEach(node=>node.addEventListener("click",async()=>{const next=node.dataset.designCategory,changed=next!==designCategory;if(changed){if(designSaveTimer){clearTimeout(designSaveTimer);designSaveTimer=0;}if(designSaveDirty)await designPersistDraft();}designSetCategory(next);if(changed){designResetHistory();designScheduleSave();}}));
 ["bgColor1","bgColor2","bgAngle","bgPattern","bgOverlay","bgImageZoom","bgImageX","bgImageY","bgTitle","bgTextColor","bgTextSize","bgTextAlign","bgTextY","frameStyle","frameColor1","frameColor2","frameThickness","frameGlow","frameOrnament"].forEach(designBindInput);
 $("designUndo").addEventListener("click",()=>designRestoreHistory(designHistoryIndex-1));
 $("designRedo").addEventListener("click",()=>designRestoreHistory(designHistoryIndex+1));
