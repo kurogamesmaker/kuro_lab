@@ -1211,7 +1211,7 @@ async function handle(req: Request) {
       throw new HttpError(400, "UNONのランキングは勝利回数のみです。");
     }
     const limit = Math.max(1, Math.min(100, Number.isFinite(Number(body.limit)) ? Math.floor(Number(body.limit)) : 20));
-    // Time rankings use lower scores (milliseconds) as better results.
+    // Time rankings use lower measured values as better results.
     const isTimeRanking = /(^|[_-])(time|duration|elapsed|seconds?|milliseconds?|ms|fastest|clear_time)([_-]|$)/i.test(mode);
     if (game.id === NUMBER_GAME_ID) {
       if (!(KNOWN_RANKING_MODES[game.id] ?? []).includes(mode)) {
@@ -1324,20 +1324,20 @@ async function handle(req: Request) {
     if (game.id === NUMBER_GAME_ID) {
       // Number Guess time rankings read only server-verified best times from the common aggregate.
       const { data: verifiedScores, error: verifiedError } = await admin.from("kuro_game_user_stats")
-        .select("user_id, mode, best_time_ms, last_played_at, updated_at")
+        .select("user_id, mode, best_time_us, last_played_at, updated_at")
         .eq("game_id", game.id)
         .eq("mode", mode)
         .contains("metadata", { verifiedRanking: "number-guess-v1" })
-        .gte("best_time_ms", 400)
-        .lte("best_time_ms", 3600000)
-        .order("best_time_ms", { ascending: true })
+        .gte("best_time_us", 400000)
+        .lte("best_time_us", 3600000000)
+        .order("best_time_us", { ascending: true })
         .limit(limit);
       if (verifiedError) throw new HttpError(500, "検証済みランキングを取得できませんでした。");
       scores = (verifiedScores ?? []).map((row) => ({
         user_id: row.user_id,
-        score: Number(row.best_time_ms),
+        score: Number(row.best_time_us),
         mode: row.mode,
-        metric: "time",
+        metric: "time_us",
         created_at: row.last_played_at || row.updated_at,
         recordType: "verified",
       }));
