@@ -151,6 +151,41 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
      <div class="design-two"><button class="mini" type="button" id="loadDesignDraft">読み込む</button><button class="mini danger" type="button" id="deleteDesignDraft">削除</button></div>
      <button class="mini" type="button" id="newDesignDraft">＋ 新しいデザイン</button>
     </div>
+    <div class="design-section" id="imageLayerControls">
+     <h3>画像を挿入して加工</h3>
+     <input id="designInsertImage" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+     <button class="button" type="button" id="insertImageButton" style="width:100%">＋ 画像を追加</button>
+     <small class="hint">JPEG / PNG / WebP・5MB以下。追加した画像は個別に編集できます。</small>
+     <div class="design-field" style="margin-top:10px"><label for="imageLayerSelect">画像レイヤー</label><select id="imageLayerSelect"><option value="">画像はまだありません</option></select></div>
+     <div class="design-two">
+      <button class="mini" type="button" id="duplicateImageLayer">複製</button>
+      <button class="mini danger" type="button" id="deleteImageLayer">削除</button>
+     </div>
+     <div class="design-two" style="margin-top:7px">
+      <button class="mini" type="button" id="imageLayerUp">↑ 前面へ</button>
+      <button class="mini" type="button" id="imageLayerDown">↓ 背面へ</button>
+     </div>
+     <div class="design-field" style="margin-top:12px"><label for="imageLayerFit">画像の配置方法</label><select id="imageLayerFit"><option value="contain">全体を表示</option><option value="cover">枠いっぱいに切り抜く</option><option value="stretch">枠に合わせて伸縮</option></select></div>
+     <div class="design-two">
+      <div class="design-field"><label for="imageLayerX">左右位置</label><input id="imageLayerX" type="range" min="0" max="100" value="50"><output id="imageLayerXValue">50%</output></div>
+      <div class="design-field"><label for="imageLayerY">上下位置</label><input id="imageLayerY" type="range" min="0" max="100" value="50"><output id="imageLayerYValue">50%</output></div>
+     </div>
+     <div class="design-two">
+      <div class="design-field"><label for="imageLayerWidth">横幅</label><input id="imageLayerWidth" type="range" min="2" max="160" value="35"><output id="imageLayerWidthValue">35%</output></div>
+      <div class="design-field"><label for="imageLayerHeight">高さ</label><input id="imageLayerHeight" type="range" min="2" max="160" value="35"><output id="imageLayerHeightValue">35%</output></div>
+     </div>
+     <div class="design-field"><label for="imageLayerRotation">回転</label><input id="imageLayerRotation" type="range" min="-180" max="180" value="0"><output id="imageLayerRotationValue">0°</output></div>
+     <div class="design-field"><label for="imageLayerOpacity">透明度</label><input id="imageLayerOpacity" type="range" min="0" max="100" value="100"><output id="imageLayerOpacityValue">100%</output></div>
+     <div class="design-field"><label for="imageLayerBrightness">明るさ</label><input id="imageLayerBrightness" type="range" min="0" max="200" value="100"><output id="imageLayerBrightnessValue">100%</output></div>
+     <div class="design-field"><label for="imageLayerContrast">コントラスト</label><input id="imageLayerContrast" type="range" min="0" max="200" value="100"><output id="imageLayerContrastValue">100%</output></div>
+     <div class="design-field"><label for="imageLayerSaturation">彩度</label><input id="imageLayerSaturation" type="range" min="0" max="200" value="100"><output id="imageLayerSaturationValue">100%</output></div>
+     <div class="design-field"><label for="imageLayerBlur">ぼかし</label><input id="imageLayerBlur" type="range" min="0" max="20" value="0"><output id="imageLayerBlurValue">0px</output></div>
+     <div class="design-field"><label for="imageLayerGrayscale">白黒化</label><input id="imageLayerGrayscale" type="range" min="0" max="100" value="0"><output id="imageLayerGrayscaleValue">0%</output></div>
+     <div class="design-two">
+      <label class="design-check"><input id="imageLayerFlipX" type="checkbox"> 左右反転</label>
+      <label class="design-check"><input id="imageLayerFlipY" type="checkbox"> 上下反転</label>
+     </div>
+    </div>
     <div class="design-section" id="backgroundControls">
      <h3>背景の見た目</h3>
      <div class="design-two">
@@ -336,8 +371,8 @@ async function start(){
 }
 
 const DESIGN_DEFAULTS={
- background:{version:1,sourceImageUrl:"",imageZoom:100,imageX:50,imageY:50,color1:"#5b21b6",color2:"#0e7490",angle:135,pattern:"grid",overlay:18,title:"KURO PROFILE",textColor:"#ffffff",textSize:38,textAlign:"left",textY:78},
- frame:{version:1,style:"gradient",color1:"#a78bfa",color2:"#22d3ee",thickness:42,glow:true,ornament:"✦"}
+ background:{version:1,sourceImageUrl:"",imageZoom:100,imageX:50,imageY:50,color1:"#5b21b6",color2:"#0e7490",angle:135,pattern:"grid",overlay:18,title:"KURO PROFILE",textColor:"#ffffff",textSize:38,textAlign:"left",textY:78,imageLayers:[]},
+ frame:{version:1,style:"gradient",color1:"#a78bfa",color2:"#22d3ee",thickness:42,glow:true,ornament:"✦",imageLayers:[]}
 };
 const DESIGN_TEMPLATES={
  background:[
@@ -353,7 +388,7 @@ const DESIGN_TEMPLATES={
   {id:"simple",name:"SIMPLE",data:{style:"solid",color1:"#c4b5fd",color2:"#c4b5fd",thickness:22,glow:false,ornament:""}}
  ]
 };
-let designCategory="background",designData={...DESIGN_DEFAULTS.background},designDraftId=null,designSaveTimer=0,designSaveBusy=false,designSaveDirty=false,designSession=0,designImageCache={},designHistory=[],designHistoryIndex=-1;
+let designCategory="background",designData={...DESIGN_DEFAULTS.background},designDraftId=null,designSaveTimer=0,designSaveBusy=false,designSaveDirty=false,designSession=0,designImageCache={},designHistory=[],designHistoryIndex=-1,selectedImageLayerId=null,imageDrag=null;
 function designSetState(message){$("designSaveState").textContent=message;}
 function designClone(value){return JSON.parse(JSON.stringify(value));}
 function designField(id,value){const node=$(id);if(node)node.value=value;}
@@ -377,7 +412,7 @@ function designUpdateOutputs(){
 }
 function designLoadTemplate(id){
  const found=DESIGN_TEMPLATES[designCategory].find(row=>row.id===id);if(!found)return;
- designData={...DESIGN_DEFAULTS[designCategory],...found.data,sourceImageUrl:designData.sourceImageUrl||""};
+ designData={...DESIGN_DEFAULTS[designCategory],...found.data,sourceImageUrl:designData.sourceImageUrl||"",imageLayers:designClone(designData.imageLayers||[])};
  designApplyFields();designRender();designPushHistory();designScheduleSave();
 }
 function designSetCategory(category){
@@ -571,7 +606,7 @@ $("designSaveNow").addEventListener("click",async()=>{if(designSaveTimer)clearTi
 $("loadDesignDraft").addEventListener("click",()=>designLoadSelectedDraft().catch(error=>designSetState(error.message)));
 $("deleteDesignDraft").addEventListener("click",()=>designDeleteSelectedDraft().catch(error=>designSetState(error.message)));
 $("newDesignDraft").addEventListener("click",()=>designStart(designCategory).catch(error=>designSetState("保存エラー: "+error.message)));
-$("designExport").addEventListener("click",async event=>{const button=event.currentTarget;button.disabled=true;try{await designPersistDraft();const blob=await new Promise(resolve=>$("designCanvas").toBlob(resolve,"image/png"));if(!blob)throw new Error("画像を書き出せませんでした。");const link=document.createElement("a"),url=URL.createObjectURL(blob);link.href=url;link.download="kuro-"+designCategory+"-"+Date.now()+".png";document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);designSetState("画像を書き出しました");}catch(error){designSetState("書き出しエラー: "+error.message);}finally{button.disabled=false;}});
+$("designExport").addEventListener("click",async event=>{const button=event.currentTarget;button.disabled=true;try{await designPersistDraft();await designRender(false);const blob=await new Promise(resolve=>$("designCanvas").toBlob(resolve,"image/png"));designRender();if(!blob)throw new Error("画像を書き出せませんでした。");const link=document.createElement("a"),url=URL.createObjectURL(blob);link.href=url;link.download="kuro-"+designCategory+"-"+Date.now()+".png";document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);designSetState("画像を書き出しました");}catch(error){designSetState("書き出しエラー: "+error.message);}finally{button.disabled=false;}});
 $("designMakeItem").addEventListener("click",designCreateItem);
 $("bgImage").addEventListener("change",async()=>{
  const file=$("bgImage").files&&$("bgImage").files[0];if(!file)return;
