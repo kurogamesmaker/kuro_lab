@@ -481,6 +481,83 @@ test("UNON actions go directly to the server, reject wrong turns and send only c
   assert.equal(fixture.room.data.unonGame.players[1].hand.length, 7);
 });
 
+test("UNON three-player online actions rotate through every Durable Object socket", async () => {
+  const fixture = createRoom();
+  fixture.room.loaded = true;
+  const ids = ["p1", "p2", "p3"];
+  const names = ["Player 1", "Player 2", "Player 3"];
+  const keys = await Promise.all(ids.map(() => makePlayerKeys()));
+  const sent = ids.map(() => []);
+  const sockets = ids.map((id, index) => {
+    const socket = { send(payload) { sent[index].push(JSON.parse(payload)); } };
+    fixture.room.sockets.set(socket, { id, isHost: index === 0 });
+    return socket;
+  });
+
+  fixture.room.data.state = {
+    phase: "playing",
+    matchId: "three-player-online-match",
+    game: null,
+    players: ids.map((id, index) => ({
+      id,
+      name: names[index],
+      pub: keys[index].pub,
+      ready: true,
+      start: true,
+    })),
+  };
+  fixture.room.data.unonGame = localUnonState({
+    ruleMode: "official",
+    players: [
+      { userId: "p1", name: names[0], hand: [
+        unonCard("p1-red-3", "red", "3"),
+        unonCard("p1-red-7", "red", "7"),
+        unonCard("p1-blue-2", "blue", "2"),
+      ] },
+      { userId: "p2", name: names[1], hand: [
+        unonCard("p2-red-4", "red", "4"),
+        unonCard("p2-green-2", "green", "2"),
+        unonCard("p2-blue-8", "blue", "8"),
+      ] },
+      { userId: "p3", name: names[2], hand: [
+        unonCard("p3-red-6", "red", "6"),
+        unonCard("p3-yellow-2", "yellow", "2"),
+        unonCard("p3-green-8", "green", "8"),
+      ] },
+    ],
+    top: unonCard("top", "red", "5"),
+  });
+  fixture.room.data.unonGame.matchId = "three-player-online-match";
+
+  const turns = [
+    { player: 0, cardId: "p1-red-3", next: "p2" },
+    { player: 1, cardId: "p2-red-4", next: "p3" },
+    { player: 2, cardId: "p3-red-6", next: "p1" },
+    { player: 0, cardId: "p1-red-7", next: "p2" },
+  ];
+
+  for (let index = 0; index < turns.length; index++) {
+    const turn = turns[index];
+    const socket = sockets[turn.player];
+    const player = fixture.room.sockets.get(socket);
+    await fixture.room.onMessage(socket, player, JSON.stringify({
+      type: "unon-action",
+      requestId: "three-player-action-" + index,
+      actionId: "three-player-action-" + index,
+      action: { type: "play", cardIds: [turn.cardId] },
+    }));
+
+    const response = sent[turn.player].filter(item => item.type === "unon-result").at(-1);
+    assert.ok(response, "player " + (turn.player + 1) + " receives an action result");
+    assert.equal(response.result.ok, true);
+    assert.equal(response.result.patch.publicDelta.turn, turn.next);
+    assert.equal(fixture.room.data.unonGame.players[fixture.room.data.unonGame.turn].userId, turn.next);
+  }
+
+  assert.equal(fixture.room.data.unonGame.version, 4);
+  assert.equal(UNON_RULES.split(fixture.room.data.unonGame).public.turn, "p2");
+});
+
 test("UNON action IDs are idempotent when a client retries after a delayed acknowledgement", async () => {
   const fixture = createRoom();
   fixture.room.loaded = true;
@@ -819,7 +896,7 @@ test("UNON reverse sends a three-player game to the previous seat", () => {
         unonCard("p1-extra-b", "green", "4"),
       ] },
       { userId: "p2", name: "P2", hand: [unonCard("p2-a", "red", "3"), unonCard("p2-b", "blue", "4")] },
-      { userId: "p3", name: "P3", hand: [unonCard("p3-a", "green", "3"), unonCard("p3-b", "yellow", "4")] },
+      { userId: "p3", name: "P3", hand: [unonCard("p3-a", "red", "6"), unonCard("p3-b", "yellow", "4")] },
     ],
     top: unonCard("top", "red", "5"),
   });
@@ -828,6 +905,118 @@ test("UNON reverse sends a three-player game to the previous seat", () => {
   assert.equal(result.ok, true);
   assert.equal(result.state.direction, -1);
   assert.equal(result.state.turn, 2);
+
+  const p3 = UNON_RULES.applyAction(result.state, "p3", {
+    type: "play",
+    cardIds: ["p3-a"],
+  });
+  assert.equal(p3.ok, true);
+  assert.equal(p3.state.turn, 1);
+
+  const p2 = UNON_RULES.applyAction(p3.state, "p2", {
+    type: "play",
+    cardIds: ["p2-a"],
+  });
+  assert.equal(p2.ok, true);
+  assert.equal(p2.state.turn, 0);
+});
+
+
+test("UNON three-player skip advances over exactly one seat", () => {
+  const state = localUnonState({
+    ruleMode: "official",
+    players: [
+      { userId: "p1", name: "P1", hand: [
+        unonCard("p1-skip", "red", "SKIP"),
+        unonCard("p1-extra-a", "blue", "2"),
+        unonCard("p1-extra-b", "green", "4"),
+      ] },
+      { userId: "p2", name: "P2", hand: [unonCard("p2-card", "red", "3"), unonCard("p2-extra", "blue", "4")] },
+      { userId: "p3", name: "P3", hand: [unonCard("p3-card", "red", "6"), unonCard("p3-extra", "yellow", "4")] },
+    ],
+    top: unonCard("top", "red", "5"),
+  });
+
+  const skipped = UNON_RULES.applyAction(state, "p1", {
+    type: "play",
+    cardIds: ["p1-skip"],
+  });
+  assert.equal(skipped.ok, true);
+  assert.equal(skipped.state.turn, 2);
+  assert.equal(skipped.state.players[skipped.state.turn].userId, "p3");
+
+  const p3 = UNON_RULES.applyAction(skipped.state, "p3", {
+    type: "play",
+    cardIds: ["p3-card"],
+  });
+  assert.equal(p3.ok, true);
+  assert.equal(p3.state.turn, 0);
+});
+
+
+test("UNON UNO declaration window blocks opponents until the declaration is resolved", () => {
+  const state = localUnonState({
+    ruleMode: "official",
+    players: [
+      { userId: "p1", name: "P1", hand: [
+        unonCard("p1-last-two", "red", "3"),
+        unonCard("p1-spare", "blue", "2"),
+      ] },
+      { userId: "p2", name: "P2", hand: [
+        unonCard("p2-red-4", "red", "4"),
+        unonCard("p2-spare", "green", "2"),
+      ] },
+      { userId: "p3", name: "P3", hand: [
+        unonCard("p3-red-6", "red", "6"),
+        unonCard("p3-spare", "yellow", "2"),
+      ] },
+    ],
+    top: unonCard("top", "red", "5"),
+  });
+
+  const p1 = UNON_RULES.applyAction(state, "p1", {
+    type: "play",
+    cardIds: ["p1-last-two"],
+  });
+  assert.equal(p1.ok, true);
+  assert.equal(p1.state.turn, 1);
+  assert.equal(p1.state.unoPending, "p1");
+
+  const blocked = UNON_RULES.applyAction(p1.state, "p2", { type: "play", cardIds: ["p2-red-4"] });
+  assert.equal(blocked.ok, false);
+  assert.equal(blocked.code, "UNO_WINDOW");
+
+  const declared = UNON_RULES.applyAction(p1.state, "p1", { type: "uno" });
+  assert.equal(declared.ok, true);
+  assert.equal(declared.state.unoPending, null);
+  assert.equal(declared.state.turn, 1);
+
+  const p2 = UNON_RULES.applyAction(declared.state, "p2", {
+    type: "play",
+    cardIds: ["p2-red-4"],
+  });
+  assert.equal(p2.ok, true);
+  assert.equal(p2.state.turn, 2);
+});
+
+
+test("UNON leaving current player preserves the next seat in forward and reverse three-player games", () => {
+  const players = [
+    { userId: "p1", name: "P1", hand: [unonCard("leave-p1", "red", "3")] },
+    { userId: "p2", name: "P2", hand: [unonCard("leave-p2", "blue", "4")] },
+    { userId: "p3", name: "P3", hand: [unonCard("leave-p3", "green", "5")] },
+  ];
+
+  const forward = localUnonState({ players, turn: 1 });
+  const forwardLeave = UNON_RULES.onLeave(forward, "p2");
+  assert.equal(forwardLeave.ok, true);
+  assert.equal(forwardLeave.state.players[forwardLeave.state.turn].userId, "p3");
+
+  const reverse = localUnonState({ players, turn: 1 });
+  reverse.direction = -1;
+  const reverseLeave = UNON_RULES.onLeave(reverse, "p2");
+  assert.equal(reverseLeave.ok, true);
+  assert.equal(reverseLeave.state.players[reverseLeave.state.turn].userId, "p1");
 });
 
 
