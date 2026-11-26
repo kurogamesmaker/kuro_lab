@@ -162,7 +162,8 @@ header.top.kuro-game-background-legendary{background:linear-gradient(100deg,#4b2
 <script>
 (function(){
  const back=document.getElementById("mobileGameBack"),account=document.getElementById("mobileGameAccount"),fullscreen=document.getElementById("mobileGameFullscreen");
- if(back)back.addEventListener("click",()=>{location.href="/games/";});
+ const mobileApp=new URLSearchParams(location.search).get("mobileApp")==="1";
+ if(back)back.addEventListener("click",()=>{location.href=mobileApp?"/games/mobile/":"/games/";});
  if(account)account.addEventListener("click",()=>document.getElementById("gameAccountButton")?.click());
  if(fullscreen)fullscreen.addEventListener("click",async()=>{
   try{if(document.fullscreenElement)await document.exitFullscreen();else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen({navigationUI:"hide"});else fullscreen.textContent="全画面表示中";}
