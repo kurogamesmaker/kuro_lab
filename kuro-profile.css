@@ -268,3 +268,6 @@
 .kuro-profile-custom-theme.kuro-profile-has-wallpaper{padding:12px;border:1px solid rgba(148,163,184,.22);border-radius:18px}
 .kuro-profile-custom-theme.kuro-profile-has-wallpaper .kuro-profile-identity{padding-top:8px}
 .kuro-profile-custom-theme.kuro-profile-has-wallpaper .kuro-profile-cosmetic-strip{padding-top:2px}
+
+.kuro-profile-avatar.kuro-profile-frame-image .kuro-profile-avatar-image{border-radius:50%}
+.kuro-profile-avatar.kuro-profile-frame-image>svg{border-radius:50%}
