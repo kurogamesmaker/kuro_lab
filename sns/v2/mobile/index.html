@@ -1584,19 +1584,23 @@ img#profileAvatarPreview:not(.hidden) {
             });
         }
         function kuroCloudflarePublicUrl(publicUrl) {
+            const raw = String(publicUrl || '').trim();
+            if (!raw) return '';
             try {
-                const url = new URL(publicUrl);
-                if (url.origin !== SUPABASE_URL) return publicUrl;
-                const resource = url.pathname + url.search;
-                return window.location.origin + KURO_CLOUDFLARE_PROXY_ENDPOINT + '?resource=' + encodeURIComponent(resource);
+                // Support absolute URLs, same-origin relay URLs, relative paths and local blob previews.
+                const url = new URL(raw, window.location.origin);
+                if (url.origin === SUPABASE_URL && url.pathname.startsWith('/storage/v1/object/public/')) {
+                    const resource = url.pathname + url.search;
+                    return window.location.origin + KURO_CLOUDFLARE_PROXY_ENDPOINT + '?resource=' + encodeURIComponent(resource);
+                }
+                return url.href;
             } catch (_) {
-                return publicUrl;
+                return raw;
             }
         }
         function kuroSnsAvatarUrl(value) {
             const raw = String(value || '').trim();
-            if (!raw) return '';
-            return kuroCloudflarePublicUrl(raw);
+            return raw ? kuroCloudflarePublicUrl(raw) : '';
         }
         async function checkKuroCloudflareBridge() {
             const panel = document.getElementById('kuroCloudflareStatusPanel');
