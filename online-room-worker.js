@@ -559,7 +559,8 @@ export class Room {
       await this.scheduleAlarm();
 
       const distinct = new Set(Array.from(this.sockets.values(), p => p.id));
-      if (!distinct.has(userId) && distinct.size >= MAX_PLAYERS) {
+      const roomLimit = gameId === UNON_GAME_ID ? 4 : MAX_PLAYERS;
+      if (!distinct.has(userId) && distinct.size >= roomLimit) {
         return json({ error: "room_full" }, 409);
       }
       const pair = new WebSocketPair();
