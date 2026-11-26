@@ -1048,8 +1048,8 @@ img#profileAvatarPreview:not(.hidden) {
             <div class="flex justify-between items-center px-5 sm:px-6 py-4 border-b border-kuro-800"><h3 class="font-bold text-lg flex items-center gap-2"><i class="fa-regular fa-pen-to-square"></i><span>ポストを作成</span></h3><button type="button" onclick="closeModal()" class="text-gray-400 hover:text-white w-9 h-9 rounded-lg bg-kuro-800"><i class="fa-solid fa-xmark"></i></button></div>
             <form id="submitForm" onsubmit="handlePostSubmit(event)" class="p-5 sm:p-6 space-y-4">
                 <div id="authorDisplay" class="text-sm text-gray-300"></div>
-                <div><label for="postContent" class="block text-xs text-gray-400 mb-2">いま何してる？</label><textarea id="postContent" required maxlength="130" rows="5" oninput="updatePostCounter()" placeholder="思ったことを気軽に書いてみよう… #KURO" class="w-full bg-kuro-950 border border-kuro-700 rounded-xl px-4 py-3 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-white resize-y"></textarea><div class="flex justify-between items-center mt-2"><p class="text-xs text-gray-500">最大130文字。#話題 のように書くとハッシュタグになるよ。</p><span id="postCounter" class="text-xs font-mono text-gray-400">0 / 130</span></div></div>
-                <p class="text-xs text-gray-500">ハッシュタグ例：#日常 #ゲーム #イラスト</p>
+                <div><label for="postContent" class="block text-xs text-gray-400 mb-2">いま何してる？</label><textarea id="postContent" maxlength="130" rows="5" oninput="updatePostCounter()" placeholder="思ったことを気軽に書いてみよう… #KURO" class="w-full bg-kuro-950 border border-kuro-700 rounded-xl px-4 py-3 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-white resize-y"></textarea><div class="flex justify-between items-center mt-2"><p class="text-xs text-gray-500">最大130文字。#話題 のように書くとハッシュタグになるよ。</p><span id="postCounter" class="text-xs font-mono text-gray-400">0 / 130</span></div></div>
+                <div class="flex items-center gap-2 flex-wrap"><input id="postImageInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="KuroSNSMedia.handlePick('post',this)"><button type="button" class="kuro-sns-photo-button" onclick="KuroSNSMedia.pick('post')"><i class="fa-regular fa-image"></i>写真を追加</button><span class="text-xs text-gray-500">最大4枚</span></div><div id="postImagePreview" class="kuro-sns-media-preview hidden"></div><p class="text-xs text-gray-500">ハッシュタグ例：#日常 #ゲーム #イラスト</p>
                 <button type="submit" class="w-full px-5 py-3 rounded-xl text-sm font-semibold bg-white text-black hover:bg-gray-200">ポストする</button>
             </form>
         </div>
@@ -1419,7 +1419,7 @@ img#profileAvatarPreview:not(.hidden) {
               <p class="text-sm text-gray-500 text-center mt-8">左の一覧から相手を選ぶか、ユーザーを検索してチャットを始めてください。</p>
             </div>
             <form onsubmit="sendChatMessage(event)" class="relative shrink-0 border-t border-kuro-800 p-3 flex items-end gap-2">
-              <div id="groupMentionSuggestions" class="hidden absolute z-30 bottom-full left-3 right-3 max-h-52 overflow-y-auto rounded-xl border border-kuro-700 bg-kuro-950 shadow-2xl"></div>
+              <div id="groupMentionSuggestions" class="hidden absolute z-30 bottom-full left-3 right-3 max-h-52 overflow-y-auto rounded-xl border border-kuro-700 bg-kuro-950 shadow-2xl"></div><div id="chatImagePreview" class="kuro-sns-media-preview hidden"></div><input id="chatImageInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="KuroSNSMedia.handlePick('chat',this)"><button type="button" class="kuro-sns-photo-button" onclick="KuroSNSMedia.pick('chat')" aria-label="写真を添付"><i class="fa-regular fa-image"></i></button>
               <input id="chatMessageInput" type="text" maxlength="2000" autocomplete="off" oninput="handleGroupMentionInput()" placeholder="メッセージを書く…" disabled class="flex-1 min-w-0 bg-kuro-900 border border-kuro-700 rounded-xl px-3 py-3 text-sm disabled:opacity-50">
               <button id="chatSendButton" type="submit" disabled class="rounded-xl bg-white text-black px-5 py-3 text-sm font-bold disabled:opacity-40">送信</button>
             </form>
@@ -1433,9 +1433,10 @@ img#profileAvatarPreview:not(.hidden) {
           <div id="publicChatMessages" aria-live="polite" class="flex-1 min-h-0 overflow-y-auto rounded-xl border border-kuro-800 bg-kuro-900/60 p-3 sm:p-5 space-y-3"><p class="text-xs text-gray-500 text-center py-8">メッセージを読み込み中…</p></div>
           <form id="publicChatForm" onsubmit="sendPublicChatMessage(event)" class="shrink-0 mt-3 border-t border-kuro-800 pt-3 flex flex-col gap-2">
             <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
-              <input id="publicChatNickname" maxlength="20" placeholder="表示名（1〜20文字）" class="col-span-2 w-full bg-kuro-900 border border-kuro-700 rounded-xl px-3 py-2.5 text-sm">
+              <div id="publicChatImagePreview" class="kuro-sns-media-preview hidden col-span-full"></div><input id="publicChatNickname" maxlength="20" placeholder="表示名（1〜20文字）" class="col-span-2 w-full bg-kuro-900 border border-kuro-700 rounded-xl px-3 py-2.5 text-sm">
+              <input id="publicChatImageInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="KuroSNSMedia.handlePick('publicChat',this)">
               <input id="publicChatInput" maxlength="300" placeholder="メッセージを書く…" class="min-w-0 w-full bg-kuro-900 border border-kuro-700 rounded-xl px-3 py-3 text-sm">
-              <button id="publicChatSendButton" class="rounded-xl bg-white text-black px-5 py-2.5 text-sm font-bold">送信</button>
+              <button type="button" class="kuro-sns-photo-button" onclick="KuroSNSMedia.pick('publicChat')" aria-label="写真を添付"><i class="fa-regular fa-image"></i></button><button id="publicChatSendButton" class="rounded-xl bg-white text-black px-5 py-2.5 text-sm font-bold">送信</button>
             </div>
             <p class="text-[10px] text-gray-500">公開チャットは誰でも閲覧できます。個人情報や連絡先は書かないでください。</p>
           </form>
@@ -3080,7 +3081,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             }
             const authorDisplay = document.getElementById('authorDisplay');
             authorDisplay.textContent = `${currentUser.name || 'KUROユーザー'} (@${currentUser.handle || 'user'}) として投稿`;
-            document.getElementById('postContent').value = '';
+            document.getElementById('postContent').value = ''; window.KuroSNSMedia?.clear('post');
             updatePostCounter();
             document.getElementById('submitModal').classList.remove('hidden');
             document.body.classList.add('overflow-hidden');
@@ -3113,7 +3114,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             try {
                 const { data, error } = await supabaseClient
                     .from('posts')
-                    .select('id, user_id, content, hashtags, created_at')
+                    .select('id, user_id, content, hashtags, created_at, media')
                     .order('created_at', { ascending: false })
                     .limit(100);
                 if (error) throw error;
@@ -3213,7 +3214,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 // 最新DBに対象IDがあるか照合してから削除する。
                 const { data: dbPost, error: readError } = await supabaseClient
                     .from('posts')
-                    .select('id, user_id')
+                    .select('id, user_id, media')
                     .eq('id', requestedPostId)
                     .maybeSingle();
                 if (readError) throw readError;
@@ -3315,7 +3316,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                         content,
                         hashtags
                     })
-                    .select('id, user_id, content, hashtags, created_at')
+                    .select('id, user_id, content, hashtags, created_at, media')
                     .single();
                 if (error) throw error;
 
@@ -3668,7 +3669,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 followButton.textContent = followCache.following.has(profile.id) ? 'フォロー中' : 'フォロー';
 
                 const [postsResult, followersResult, followingResult] = await Promise.all([
-                    supabaseClient.from('posts').select('id, user_id, content, created_at').eq('user_id', profile.id).order('created_at', {ascending:false}).limit(30),
+                    supabaseClient.from('posts').select('id, user_id, content, created_at, media').eq('user_id', profile.id).order('created_at', {ascending:false}).limit(30),
                     supabaseClient.from('follows').select('follower_id', {count:'exact', head:true}).eq('following_id', profile.id),
                     supabaseClient.from('follows').select('following_id', {count:'exact', head:true}).eq('follower_id', profile.id)
                 ]);
@@ -5094,6 +5095,7 @@ body.kuro-page #postFeed article[data-post-card] {
 </script>
 <!-- Direct profile editing entry point from KURO Lab / KURO Games -->
 <script>(function(){if(new URLSearchParams(location.search).get("profile-edit")!=="1")return;function openEditor(){if(typeof window.openProfileModal==="function"){window.openProfileModal();return;}setTimeout(openEditor,350);}window.addEventListener("load",function(){setTimeout(openEditor,900);},{once:true});})();</script>
-<script defer src="/kuro-profile.js?v=20261126shopcosmetics4"></script></body>
+<script defer src="/kuro-profile.js?v=20261126shopcosmetics4"></script><script src="/sns/v2/media.js?v=20261126photos1"></script>
+</body>
 </html>
 
