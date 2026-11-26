@@ -121,7 +121,7 @@ async function verifyRoomMembership(env, accessToken, gameId, roomId, userId) {
   if (!data || data.error || data.roomStatus === "closed" || !Array.isArray(data.members) ||
       typeof data.hostUserId !== "string" || !data.hostUserId) return null;
   const member = data.members.find(member => member && String(member.userId || member.user_id || "") === userId);
-  return member ? { ...member, isHost: data.hostUserId === userId } : null;
+  return member ? { ...member, isHost: data.hostUserId === userId, hostUserId: data.hostUserId } : null;
 }
 async function createTicket(request, env) {
   const headers = corsHeaders(request, env);
@@ -662,6 +662,37 @@ export class Room {
     }
     if (message.type === "get-state") {
       this.send(ws, { type: "state-result", requestId: String(message.requestId || ""), result: { state: this.data.state, updatedAt: this.data.updatedAt, roomStatus: "waiting" } });
+      return;
+    }
+    if (message.type === "refresh-role") {
+      const requestId = String(message.requestId || "");
+      const accessToken = typeof message.accessToken === "string" ? message.accessToken : "";
+      if (!accessToken || accessToken.length > 8192) {
+        this.send(ws, { type: "state-result", requestId, result: { ok: false, forbidden: true } });
+        return;
+      }
+      try {
+        const authUser = await getSupabaseUser(this.env, accessToken);
+        if (!authUser || authUser.id !== player.id) {
+          this.send(ws, { type: "state-result", requestId, result: { ok: false, forbidden: true } });
+          return;
+        }
+        const membership = await verifyRoomMembership(this.env, accessToken, player.gameId, player.roomId, player.id);
+        if (!membership) {
+          this.send(ws, { type: "state-result", requestId, result: { ok: false, forbidden: true } });
+          return;
+        }
+        // The membership is re-read from Supabase; clients cannot grant themselves host.
+        player.isHost = membership.isHost === true;
+        this.send(ws, {
+          type: "state-result",
+          requestId,
+          result: { ok: true, isHost: player.isHost, hostUserId: membership.hostUserId },
+        });
+      } catch (error) {
+        console.error("[kuro-online-room] host role refresh failed:", error);
+        this.send(ws, { type: "state-result", requestId, result: { ok: false, error: "role_refresh_failed" } });
+      }
       return;
     }
     if (message.type === "unon-start") return this.startUnonGame(ws, player, message);
