@@ -477,16 +477,15 @@ function kuroGameAvatarDisplayUrl(value){
   const avatar=itemFor("avatar"),frame=itemFor("frame"),background=itemFor("background"),theme=itemFor("theme");
   const profileImage=String(data&&data.profileAvatarUrl||"");
   avatarHost.replaceChildren();
-  avatarHost.hidden=!profileImage&&!avatar&&!frame;
+  avatarHost.hidden=!data?.accountAvatarEnabled&&!frame;
   avatarHost.dataset.frame=frame&&["common","rare","epic","legendary"].includes(frame.rarity)?frame.rarity:"";
-  const image=profileImage||(avatar&&typeof avatar.image_url==="string"?avatar.image_url:"");
-  const safeImage=kuroGameAvatarDisplayUrl(image);
+  const safeImage=kuroGameAvatarDisplayUrl(profileImage);
   if(safeImage){
    const img=document.createElement("img");img.src=safeImage;img.alt="";img.loading="lazy";
-   img.onerror=()=>{img.remove();avatarHost.textContent=avatar&&avatar.icon||"👤";};
+   img.onerror=()=>{img.remove();avatarHost.innerHTML='<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg>';};
    avatarHost.appendChild(img);
-  }else avatarHost.textContent=avatar&&avatar.icon||"👤";
-  avatarHost.title=[profileImage?"プロフィール画像":"",avatar&&avatar.name,frame&&frame.name].filter(Boolean).join(" · ");
+  }else if(data?.accountAvatarEnabled){avatarHost.innerHTML='<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg>';}
+  avatarHost.title=[profileImage?"プロフィール画像":"共通アカウント",frame&&frame.name].filter(Boolean).join(" · ");
   effectsHost.replaceChildren();
   const labels=[background,theme].filter(Boolean);
   labels.forEach(item=>{const chip=document.createElement("span");chip.textContent=(item.icon||"✦")+" "+(item.name||"");effectsHost.appendChild(chip);});
@@ -522,7 +521,7 @@ function kuroGameAvatarDisplayUrl(value){
    if(catalogResult.error)console.warn("KURO Store cosmetics could not be loaded for game header:",catalogResult.error);
    if(profileResult.error)console.warn("KURO account avatar could not be loaded for game header:",profileResult.error);
    if(catalogResult.data&&catalogResult.data.error)console.warn("KURO Store cosmetics response:",catalogResult.data.error);
-   renderGameCosmetics(Object.assign({},catalogResult.data||{equipped:[]},{profileAvatarUrl:profileResult.data&&profileResult.data.avatar_url||""}));
+   renderGameCosmetics(Object.assign({},catalogResult.data||{equipped:[]},{profileAvatarUrl:profileResult.data&&profileResult.data.avatar_url||"",accountAvatarEnabled:true}));
   }catch(error){
    if(request===gameCosmeticRequest){
     gameCosmeticUserId=null;
