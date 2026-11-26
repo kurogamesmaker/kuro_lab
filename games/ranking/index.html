@@ -352,7 +352,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   image.addEventListener("error",()=>{image.remove();appendRankAvatarPlaceholder(avatar);},{once:true});
   avatar.append(image);
  }
- async function loadRankCosmetics(userId,avatar,allowAvatarFallback){
+ async function loadRankCosmetics(userId,avatar){
   if(!userId||!db)return;
   if(!rankCosmeticsCache.has(userId))rankCosmeticsCache.set(userId,(async()=>{
    try{
@@ -363,7 +363,8 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   })());
   const cosmetics=await rankCosmeticsCache.get(userId);
   const equippedAvatar=cosmetics&&cosmetics.avatar&&typeof cosmetics.avatar==="object"?cosmetics.avatar:null;
-  if(allowAvatarFallback&&equippedAvatar){
+  if(equippedAvatar){
+   avatar.querySelectorAll(".rank-avatar-image,.rank-avatar-item").forEach(item=>item.remove());
    const equippedImage=safeRankingImageUrl(equippedAvatar.imageUrl);
    if(equippedImage)appendRankAvatarImage(avatar,equippedImage);
    else if(equippedAvatar.icon){
@@ -393,7 +394,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   const avatarSrc=safeRankingImageUrl(row.user&&row.user.avatar_url);
   if(avatarSrc)appendRankAvatarImage(avatar,avatarSrc);
   const name=document.createElement("span");name.className="rank-name";name.textContent=userName;
-  profile.append(avatar,name);loadRankCosmetics(userId,avatar,!avatarSrc);
+  profile.append(avatar,name);loadRankCosmetics(userId,avatar);
   return profile;
  }
  function createRankRow(game,row,index,mode){
@@ -515,5 +516,5 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
  initialize();
 })();
 </script>
-<script defer src="/kuro-profile.js?v=20261126framelayer1"></script>\n</body>
+<script defer src="/kuro-profile.js?v=20261126avataroverride1"></script>\n</body>
 </html>
