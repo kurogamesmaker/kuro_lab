@@ -1201,8 +1201,8 @@ img#profileAvatarPreview:not(.hidden) {
             <div class="flex justify-between items-center px-5 sm:px-6 py-4 border-b border-kuro-800"><h3 class="font-bold text-lg flex items-center gap-2"><i class="fa-regular fa-pen-to-square"></i><span>ポストを作成</span></h3><button type="button" onclick="closeModal()" class="text-gray-400 hover:text-white w-9 h-9 rounded-lg bg-kuro-800"><i class="fa-solid fa-xmark"></i></button></div>
             <form id="submitForm" onsubmit="handlePostSubmit(event)" class="p-5 sm:p-6 space-y-4">
                 <div id="authorDisplay" class="text-sm text-gray-300"></div>
-                <div><label for="postContent" class="block text-xs text-gray-400 mb-2">いま何してる？</label><textarea id="postContent" required maxlength="130" rows="5" oninput="updatePostCounter()" placeholder="思ったことを気軽に書いてみよう… #KURO" class="w-full bg-kuro-950 border border-kuro-700 rounded-xl px-4 py-3 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-white resize-y"></textarea><div class="flex justify-between items-center mt-2"><p class="text-xs text-gray-500">最大130文字。#話題 のように書くとハッシュタグになるよ。</p><span id="postCounter" class="text-xs font-mono text-gray-400">0 / 130</span></div></div>
-                <p class="text-xs text-gray-500">ハッシュタグ例：#日常 #ゲーム #イラスト</p>
+                <div><label for="postContent" class="block text-xs text-gray-400 mb-2">いま何してる？</label><textarea id="postContent" maxlength="130" rows="5" oninput="updatePostCounter()" placeholder="思ったことを気軽に書いてみよう… #KURO" class="w-full bg-kuro-950 border border-kuro-700 rounded-xl px-4 py-3 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-white resize-y"></textarea><div class="flex justify-between items-center mt-2"><p class="text-xs text-gray-500">最大130文字。#話題 のように書くとハッシュタグになるよ。</p><span id="postCounter" class="text-xs font-mono text-gray-400">0 / 130</span></div></div>
+                <div class="flex items-center gap-2 flex-wrap"><input id="postImageInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="KuroSNSMedia.handlePick('post',this)"><button type="button" class="kuro-sns-photo-button" onclick="KuroSNSMedia.pick('post')"><i class="fa-regular fa-image"></i>写真を追加</button><span class="text-xs text-gray-500">最大4枚</span></div><div id="postImagePreview" class="kuro-sns-media-preview hidden"></div><p class="text-xs text-gray-500">ハッシュタグ例：#日常 #ゲーム #イラスト</p>
                 <button type="submit" class="w-full px-5 py-3 rounded-xl text-sm font-semibold bg-white text-black hover:bg-gray-200">ポストする</button>
             </form>
         </div>
@@ -1572,7 +1572,7 @@ img#profileAvatarPreview:not(.hidden) {
               <p class="text-sm text-gray-500 text-center mt-8">左の一覧から相手を選ぶか、ユーザーを検索してチャットを始めてください。</p>
             </div>
             <form onsubmit="sendChatMessage(event)" class="relative shrink-0 border-t border-kuro-800 p-3 flex items-end gap-2">
-              <div id="groupMentionSuggestions" class="hidden absolute z-30 bottom-full left-3 right-3 max-h-52 overflow-y-auto rounded-xl border border-kuro-700 bg-kuro-950 shadow-2xl"></div>
+              <div id="groupMentionSuggestions" class="hidden absolute z-30 bottom-full left-3 right-3 max-h-52 overflow-y-auto rounded-xl border border-kuro-700 bg-kuro-950 shadow-2xl"></div><div id="chatImagePreview" class="kuro-sns-media-preview hidden"></div><input id="chatImageInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="KuroSNSMedia.handlePick('chat',this)"><button type="button" class="kuro-sns-photo-button" onclick="KuroSNSMedia.pick('chat')" aria-label="写真を添付"><i class="fa-regular fa-image"></i></button>
               <input id="chatMessageInput" type="text" maxlength="2000" autocomplete="off" oninput="handleGroupMentionInput()" placeholder="メッセージを書く…" disabled class="flex-1 min-w-0 bg-kuro-900 border border-kuro-700 rounded-xl px-3 py-3 text-sm disabled:opacity-50">
               <button id="chatSendButton" type="submit" disabled class="rounded-xl bg-white text-black px-5 py-3 text-sm font-bold disabled:opacity-40">送信</button>
             </form>
@@ -1586,9 +1586,10 @@ img#profileAvatarPreview:not(.hidden) {
           <div id="publicChatMessages" aria-live="polite" class="flex-1 min-h-0 overflow-y-auto rounded-xl border border-kuro-800 bg-kuro-900/60 p-3 sm:p-5 space-y-3"><p class="text-xs text-gray-500 text-center py-8">メッセージを読み込み中…</p></div>
           <form id="publicChatForm" onsubmit="sendPublicChatMessage(event)" class="shrink-0 mt-3 border-t border-kuro-800 pt-3 flex flex-col gap-2">
             <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
-              <input id="publicChatNickname" maxlength="20" placeholder="表示名（1〜20文字）" class="col-span-2 w-full bg-kuro-900 border border-kuro-700 rounded-xl px-3 py-2.5 text-sm">
+              <div id="publicChatImagePreview" class="kuro-sns-media-preview hidden col-span-full"></div><input id="publicChatNickname" maxlength="20" placeholder="表示名（1〜20文字）" class="col-span-2 w-full bg-kuro-900 border border-kuro-700 rounded-xl px-3 py-2.5 text-sm">
+              <input id="publicChatImageInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="KuroSNSMedia.handlePick('publicChat',this)">
               <input id="publicChatInput" maxlength="300" placeholder="メッセージを書く…" class="min-w-0 w-full bg-kuro-900 border border-kuro-700 rounded-xl px-3 py-3 text-sm">
-              <button id="publicChatSendButton" class="rounded-xl bg-white text-black px-5 py-2.5 text-sm font-bold">送信</button>
+              <button type="button" class="kuro-sns-photo-button" onclick="KuroSNSMedia.pick('publicChat')" aria-label="写真を添付"><i class="fa-regular fa-image"></i></button><button id="publicChatSendButton" class="rounded-xl bg-white text-black px-5 py-2.5 text-sm font-bold">送信</button>
             </div>
             <p class="text-[10px] text-gray-500">公開チャットは誰でも閲覧できます。個人情報や連絡先は書かないでください。</p>
           </form>
@@ -3015,7 +3016,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                         : `<div class="w-8 h-8 rounded-full bg-kuro-800 border border-kuro-700 flex items-center justify-center text-gray-300 flex-shrink-0"><i class="fa-regular fa-user text-xs"></i></div>`;
                     return `<div class="mt-3 flex gap-2">${replyAvatar}<div class="min-w-0 flex-1 rounded-xl bg-kuro-950/70 px-3 py-2"><div class="text-xs text-gray-400">${escapeHTML(replyName)} <span class="text-gray-600">@${escapeHTML(replyHandle)} · ${escapeHTML(formatPostDate(reply.created_at))}</span></div><p class="mt-1 text-sm text-gray-300 whitespace-pre-wrap break-words">${renderMentionContent(reply.content || '')}</p></div></div>`;
                 }).join('');
-                return `<article class="bg-kuro-900/80 border border-kuro-800 hover:border-kuro-700 rounded-2xl p-4 sm:p-5" data-post-card="${escapeHTML(post.id)}"><div class="flex gap-3">${avatar}<div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-x-2 gap-y-1">${post.user_id ? `<button type="button" onclick="openPublicProfile('${escapeHTML(post.user_id)}')" class="font-semibold text-white hover:underline text-left">${escapeHTML(name)}</button>` : `<span class="font-semibold text-white">${escapeHTML(name)}</span>`}<button type="button" ${post.user_id ? `onclick="openPublicProfile('${escapeHTML(post.user_id)}')"` : 'disabled'} class="text-xs text-gray-500 hover:text-gray-300 disabled:cursor-default">@${escapeHTML(handle)}</button>${currentUser && post.user_id && post.user_id !== currentUser.id ? `<button type="button" data-follow-user-id="${escapeHTML(post.user_id)}" class="text-[11px] border border-kuro-700 rounded-full px-2 py-1 ${followCache.following.has(post.user_id) ? 'text-gray-400' : 'text-white hover:bg-kuro-800'}">${followCache.following.has(post.user_id) ? 'フォロー中' : 'フォロー'}</button>` : ''}<span class="text-xs text-gray-600">· ${escapeHTML(formatPostDate(post.created_at))}</span><span class="ml-auto">${deleteButton}</span></div><p class="mt-3 text-[15px] leading-7 text-gray-200 whitespace-pre-wrap break-words">${renderPostContent(post.content)}</p><div class="mt-4 flex items-center gap-4 border-t border-kuro-800 pt-3"><button type="button" data-like-post-id="${escapeHTML(post.id)}" aria-pressed="${liked}" class="text-sm ${liked ? 'text-pink-400' : 'text-gray-400'} hover:text-pink-300"><i class="${liked ? 'fa-solid' : 'fa-regular'} fa-heart mr-1"></i><span>${Number(post.like_count || 0)}</span><span class="ml-1">いいね</span></button><button type="button" data-reply-post-id="${escapeHTML(post.id)}" aria-expanded="false" class="text-sm text-gray-400 hover:text-white"><i class="fa-regular fa-comment mr-1"></i>${(post.replies || []).length} 返信</button></div><div data-replies-panel class="hidden mt-3 space-y-3"><div class="space-y-1">${replies}</div><div class="space-y-2"><textarea data-reply-input="${escapeHTML(post.id)}" maxlength="130" rows="2" placeholder="返信を書く…（メンションなしでもOK）" class="w-full bg-kuro-950 border border-kuro-800 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-gray-500"></textarea><div class="flex justify-end"><button type="button" data-send-reply-post-id="${escapeHTML(post.id)}" class="px-3 py-1.5 rounded-lg bg-white text-black text-xs font-semibold hover:bg-gray-200">返信する</button></div></div></div></div></div></article>`;
+                return `<article class="bg-kuro-900/80 border border-kuro-800 hover:border-kuro-700 rounded-2xl p-4 sm:p-5" data-post-card="${escapeHTML(post.id)}"><div class="flex gap-3">${avatar}<div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-x-2 gap-y-1">${post.user_id ? `<button type="button" onclick="openPublicProfile('${escapeHTML(post.user_id)}')" class="font-semibold text-white hover:underline text-left">${escapeHTML(name)}</button>` : `<span class="font-semibold text-white">${escapeHTML(name)}</span>`}<button type="button" ${post.user_id ? `onclick="openPublicProfile('${escapeHTML(post.user_id)}')"` : 'disabled'} class="text-xs text-gray-500 hover:text-gray-300 disabled:cursor-default">@${escapeHTML(handle)}</button>${currentUser && post.user_id && post.user_id !== currentUser.id ? `<button type="button" data-follow-user-id="${escapeHTML(post.user_id)}" class="text-[11px] border border-kuro-700 rounded-full px-2 py-1 ${followCache.following.has(post.user_id) ? 'text-gray-400' : 'text-white hover:bg-kuro-800'}">${followCache.following.has(post.user_id) ? 'フォロー中' : 'フォロー'}</button>` : ''}<span class="text-xs text-gray-600">· ${escapeHTML(formatPostDate(post.created_at))}</span><span class="ml-auto">${deleteButton}</span></div><p class="mt-3 text-[15px] leading-7 text-gray-200 whitespace-pre-wrap break-words">${renderPostContent(post.content)}</p>${window.KuroSNSMedia?.renderPublic(post.media) || ''}<div class="mt-4 flex items-center gap-4 border-t border-kuro-800 pt-3"><button type="button" data-like-post-id="${escapeHTML(post.id)}" aria-pressed="${liked}" class="text-sm ${liked ? 'text-pink-400' : 'text-gray-400'} hover:text-pink-300"><i class="${liked ? 'fa-solid' : 'fa-regular'} fa-heart mr-1"></i><span>${Number(post.like_count || 0)}</span><span class="ml-1">いいね</span></button><button type="button" data-reply-post-id="${escapeHTML(post.id)}" aria-expanded="false" class="text-sm text-gray-400 hover:text-white"><i class="fa-regular fa-comment mr-1"></i>${(post.replies || []).length} 返信</button></div><div data-replies-panel class="hidden mt-3 space-y-3"><div class="space-y-1">${replies}</div><div class="space-y-2"><textarea data-reply-input="${escapeHTML(post.id)}" maxlength="130" rows="2" placeholder="返信を書く…（メンションなしでもOK）" class="w-full bg-kuro-950 border border-kuro-800 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-gray-500"></textarea><div class="flex justify-end"><button type="button" data-send-reply-post-id="${escapeHTML(post.id)}" class="px-3 py-1.5 rounded-lg bg-white text-black text-xs font-semibold hover:bg-gray-200">返信する</button></div></div></div></div></div></article>`;
             }).join('');
             empty.classList.toggle('hidden', list.length !== 0);
             if (!document.getElementById('myProfileView')?.classList.contains('hidden')) renderMyProfile();
@@ -3201,7 +3202,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             }
             const authorDisplay = document.getElementById('authorDisplay');
             authorDisplay.textContent = `${currentUser.name || 'KUROユーザー'} (@${currentUser.handle || 'user'}) として投稿`;
-            document.getElementById('postContent').value = '';
+            document.getElementById('postContent').value = ''; window.KuroSNSMedia?.clear('post');
             updatePostCounter();
             document.getElementById('submitModal').classList.remove('hidden');
             document.body.classList.add('overflow-hidden');
@@ -3211,7 +3212,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
         function closeModal() {
             document.getElementById('submitModal').classList.add('hidden');
             document.body.classList.remove('overflow-hidden');
-            document.getElementById('submitForm').reset();
+            document.getElementById('submitForm').reset(); window.KuroSNSMedia?.clear('post');
             updatePostCounter();
         }
 
@@ -3234,7 +3235,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             try {
                 const { data, error } = await supabaseClient
                     .from('posts')
-                    .select('id, user_id, content, hashtags, created_at')
+                    .select('id, user_id, content, hashtags, created_at, media')
                     .order('created_at', { ascending: false })
                     .limit(100);
                 if (error) throw error;
@@ -3334,7 +3335,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 // 最新DBに対象IDがあるか照合してから削除する。
                 const { data: dbPost, error: readError } = await supabaseClient
                     .from('posts')
-                    .select('id, user_id')
+                    .select('id, user_id, media')
                     .eq('id', requestedPostId)
                     .maybeSingle();
                 if (readError) throw readError;
@@ -3384,6 +3385,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     throw new Error('投稿は検索できましたが、削除結果は0件でした。DELETEのRLSポリシーと投稿者IDを確認してください。');
                 }
 
+                await window.KuroSNSMedia?.remove(supabaseClient, dbPost.media || []);
                 textPosts = textPosts.filter(item => String(item.id) !== String(dbPost.id));
                 filterPosts();
                 showToast('ポストを取り消しました');
@@ -3415,14 +3417,17 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             }
             const textarea = document.getElementById('postContent');
             const content = textarea.value.trim();
-            if (!content) { showToast('文章を入力してね'); return; }
+            const imageFiles = window.KuroSNSMedia?.getSelected('post') || [];
+            if (!content && !imageFiles.length) { showToast('文章か写真を追加してください'); return; }
             if ([...content].length > 130) { showToast('ポストは130文字以内にしてね'); return; }
             const button = document.querySelector('#submitForm button[type="submit"]');
             button.disabled = true;
             button.textContent = '投稿中…';
+            let uploadedMedia = [];
             try {
                 const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
                 if (userError || !user) throw new Error('ログイン状態を確認できません。再ログインしてください。');
+                uploadedMedia = await window.KuroSNSMedia.upload(supabaseClient, 'post', null, imageFiles);
                 const hashtags = extractHashtags(content);
 
                 // IDは必ず別々に扱う：
@@ -3434,9 +3439,10 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     .insert({
                         user_id: user.id,
                         content,
-                        hashtags
+                        hashtags,
+                        media: uploadedMedia
                     })
-                    .select('id, user_id, content, hashtags, created_at')
+                    .select('id, user_id, content, hashtags, created_at, media')
                     .single();
                 if (error) throw error;
 
@@ -3454,6 +3460,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 showToast('ポストを投稿したよ！');
             } catch (error) {
                 console.error('KURO save post error:', error);
+                if (uploadedMedia.length) await window.KuroSNSMedia.remove(supabaseClient, uploadedMedia);
                 showToast(error.message || '投稿に失敗しました。postsテーブルとRLS設定を確認してね。');
             } finally {
                 button.disabled = false;
@@ -3789,7 +3796,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 followButton.textContent = followCache.following.has(profile.id) ? 'フォロー中' : 'フォロー';
 
                 const [postsResult, followersResult, followingResult] = await Promise.all([
-                    supabaseClient.from('posts').select('id, user_id, content, created_at').eq('user_id', profile.id).order('created_at', {ascending:false}).limit(30),
+                    supabaseClient.from('posts').select('id, user_id, content, created_at, media').eq('user_id', profile.id).order('created_at', {ascending:false}).limit(30),
                     supabaseClient.from('follows').select('follower_id', {count:'exact', head:true}).eq('following_id', profile.id),
                     supabaseClient.from('follows').select('following_id', {count:'exact', head:true}).eq('follower_id', profile.id)
                 ]);
@@ -4084,7 +4091,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 // 直近2秒を重ねて取得し、同時刻投稿の取りこぼしを避ける（IDで重複排除）。
                 const since = new Date(Math.max(0, Date.parse(kuroPublicChatLatestAt) - 2000)).toISOString();
                 const {data,error} = await supabaseClient.from('public_chat_messages')
-                    .select('id,nickname,content,created_at')
+                    .select('id,nickname,content,created_at,media')
                     .gte('created_at', since)
                     .order('created_at',{ascending:true}).limit(50);
                 if (error) throw error;
@@ -4118,7 +4125,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             const mine = !!ownName && ownName === message.nickname;
             return '<article class="kuro-chat-row '+(mine?'is-mine':'is-other')+'"><div class="kuro-chat-bubble-wrap">'+
               (mine ? '' : '<b class="kuro-chat-name">'+socialEscape(message.nickname)+'</b>')+
-              '<div class="kuro-chat-bubble">'+socialEscape(message.content)+'</div><time class="kuro-chat-time">'+time+'</time></div></article>';
+              '<div class="kuro-chat-bubble">'+(message.content ? socialEscape(message.content) : '')+(window.KuroSNSMedia?.renderPublic(message.media) || '')+'</div><time class="kuro-chat-time">'+time+'</time></div></article>';
         }
         function setPublicChatTheme(theme) {
             const modal = document.getElementById('chatModal');
@@ -4138,7 +4145,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             if (!box || kuroPublicChatLoading) return;
             kuroPublicChatLoading = true;
             try {
-                const {data,error} = await supabaseClient.from('public_chat_messages').select('id,nickname,content,created_at').order('created_at',{ascending:false}).limit(100);
+                const {data,error} = await supabaseClient.from('public_chat_messages').select('id,nickname,content,created_at,media').order('created_at',{ascending:false}).limit(100);
                 if (error) throw error;
                 const messages = (data||[]).reverse();
                 const wasNearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 90;
@@ -4158,9 +4165,11 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             const nickname = (nicknameInput?.value||'').trim().slice(0,20);
             const content = (input?.value||'').trim().slice(0,300);
             if (!nickname) { showToast('表示名を入力してください'); nicknameInput?.focus(); return; }
-            if (!content || !box) return;
+            const imageFiles = window.KuroSNSMedia?.getSelected('publicChat') || [];
+            if ((!content && !imageFiles.length) || !box) return;
             try { localStorage.setItem('kuro-public-chat-nickname',nickname); } catch (_) {}
             input.value = '';
+            let uploadedMedia = [];
             const pending = document.createElement('div');
             pending.dataset.optimisticId = String(Date.now()) + Math.random().toString(36).slice(2);
             pending.innerHTML = formatPublicChatMessage({nickname,content,created_at:new Date().toISOString()});
@@ -4170,12 +4179,16 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             box.appendChild(pending);
             box.scrollTop = box.scrollHeight;
             try {
-                const result = await supabaseClient.from('public_chat_messages').insert({nickname,content}).select('id,nickname,content,created_at').single();
+                if (imageFiles.length) uploadedMedia = await window.KuroSNSMedia.upload(supabaseClient, 'open-chat', null, imageFiles);
+                pending.innerHTML = formatPublicChatMessage({nickname,content,media:uploadedMedia,created_at:new Date().toISOString()});
+                const result = await supabaseClient.from('public_chat_messages').insert({nickname,content,media:uploadedMedia}).select('id,nickname,content,created_at,media').single();
                 if (result.error) throw result.error;
                 pending.remove();
+                window.KuroSNSMedia?.clear('publicChat');
                 if (result.data) appendPublicChatMessage(result.data);
             } catch (error) {
                 console.error('Public chat send failed:',error);
+                if (uploadedMedia.length) await window.KuroSNSMedia.remove(supabaseClient, uploadedMedia);
                 pending.remove();
                 if (!input.value) input.value = content;
                 showToast('送信できませんでした。入力内容を戻しました');
@@ -4492,7 +4505,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             const box=document.getElementById('chatMessages');
             const token=++kuroGroupRefreshToken;
             if (!refreshOnly) box.innerHTML='<p class="text-xs text-gray-500 text-center mt-8">メッセージを読み込み中…</p>';
-            const {data: messages,error}=await supabaseClient.from('group_chat_messages').select('id,sender_id,content,created_at').eq('group_id',groupId).order('created_at',{ascending:true}).limit(200);
+            const {data: messages,error}=await supabaseClient.from('group_chat_messages').select('id,sender_id,content,created_at,media').eq('group_id',groupId).order('created_at',{ascending:true}).limit(200);
             if (token !== kuroGroupRefreshToken || activeChatType !== 'group' || activeChatId !== groupId) return;
             if(error){if(!refreshOnly)box.innerHTML='<p class="text-sm text-red-300">グループメッセージを読み込めませんでした</p>';else console.warn('Group messages refresh failed:',error);return;}
             const ids=[...new Set((messages||[]).map(m=>m.sender_id))];
@@ -4508,11 +4521,12 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             }
             let groupMentionProfiles=[];try{groupMentionProfiles=await getGroupMentionMembers(groupId);}catch(mentionProfileError){console.warn('Group mention profile load failed:',mentionProfileError);}const {data:members}=await supabaseClient.from('group_chat_members').select('user_id').eq('group_id',groupId);const peerCount=(members||[]).filter(m=>m.user_id!==currentUser.id).length;
             const profileMap=Object.fromEntries((profiles||[]).map(p=>[p.id,p])),names=Object.fromEntries((profiles||[]).map(p=>[p.id,p.display_name||p.username||'ユーザー']));
+            const privateMediaHTML=window.KuroSNSMedia?await window.KuroSNSMedia.renderPrivateBatch(supabaseClient,messages):new Map();
             box.innerHTML=(messages||[]).map(m=>{const mine=m.sender_id===currentUser.id,profile=profileMap[m.sender_id];
                 const avatar=profile?.avatar_url?`<img src="${socialEscape(profile.avatar_url)}" alt="" class="w-8 h-8 rounded-full object-cover shrink-0">`:'<span class="w-8 h-8 rounded-full bg-kuro-700 text-gray-300 flex items-center justify-center shrink-0"><i class="fa-regular fa-user text-xs"></i></span>';
                 const identity=mine?'':`<div class="flex items-center gap-2 mb-1">${avatar}<span class="text-[10px] text-gray-400">${socialEscape(names[m.sender_id]||'メンバー')}</span></div>`;
                 const n=reads.filter(r=>r.message_id===m.id&&r.reader_id!==m.sender_id).length,receipt=mine&&peerCount?`<span class="text-[10px] text-gray-400 mt-1">${n?'既読 '+n:'未読'}</span>`:'';
-                return `<div data-group-message-id="${socialEscape(m.id)}" class="flex flex-col ${mine?'items-end':'items-start'}">${identity}<div class="max-w-[85%] rounded-2xl px-3 py-2.5 ${mine?'bg-white text-black':'bg-kuro-800 text-gray-100'}"><p class="text-sm whitespace-pre-wrap break-words">${renderGroupMentionText(m.content,groupMentionProfiles)}</p></div><span class="text-[10px] text-gray-500 mt-1">${new Date(m.created_at).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',hour12:false})}</span>${receipt}</div>`;}).join('')||'<p class="text-xs text-gray-600 text-center mt-8">最初のメッセージを送ってみよう</p>';
+                return `<div data-group-message-id="${socialEscape(m.id)}" class="flex flex-col ${mine?'items-end':'items-start'}">${identity}<div class="max-w-[85%] rounded-2xl px-3 py-2.5 ${mine?'bg-white text-black':'bg-kuro-800 text-gray-100'}"><p class="text-sm whitespace-pre-wrap break-words">${renderGroupMentionText(m.content,groupMentionProfiles)}</p>${privateMediaHTML.get(String(m.id)) || ''}</div><span class="text-[10px] text-gray-500 mt-1">${new Date(m.created_at).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',hour12:false})}</span>${receipt}</div>`;}).join('')||'<p class="text-xs text-gray-600 text-center mt-8">最初のメッセージを送ってみよう</p>';
             box.scrollTop=box.scrollHeight;
             loadGroupChats();
         }
@@ -4722,7 +4736,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 box.innerHTML = '<div class="flex justify-center py-3"><div class="flex items-center gap-2 text-xs text-gray-400"><i class="fa-solid fa-arrow-down animate-spin"></i><span>読み込み中…</span></div></div>';
             }
             const {data, error} = await supabaseClient.from('chat_messages')
-                .select('id,sender_id,content,created_at')
+                .select('id,sender_id,content,created_at,media')
                 .eq('conversation_id', conversationId).order('created_at', {ascending:true}).limit(200);
             if (error) {
                 box.innerHTML = '<p class="text-sm text-red-300">メッセージを読み込めませんでした</p>';
@@ -4730,6 +4744,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 return;
             }
             const messages = data || [];
+            const privateMediaHTML = window.KuroSNSMedia ? await window.KuroSNSMedia.renderPrivateBatch(supabaseClient, messages) : new Map();
             const incomingIds = messages.filter(m => m.sender_id !== currentUser.id).map(m => m.id);
             if (incomingIds.length) {
                 const {data: existingReads, error: readFetchError} = await supabaseClient
@@ -4770,7 +4785,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 const mine = m.sender_id === currentUser.id;
                 const readLabel = mine && peerReadIds.has(m.id) ? '<span class="block text-[10px] text-gray-400">既読</span>' : '';
                 const timeLabel = `<span class="block text-[10px] leading-4 text-gray-500 whitespace-nowrap">${chatTime(m.created_at)}</span>`;
-                const bubble = `<div class="max-w-[78%] rounded-2xl px-3 py-2.5 ${mine ? 'bg-white text-black rounded-br-md' : 'bg-kuro-800 text-gray-100 rounded-bl-md'}"><p class="text-sm whitespace-pre-wrap break-words">${socialEscape(m.content)}</p></div>`;
+                const bubble = `<div class="max-w-[78%] rounded-2xl px-3 py-2.5 ${mine ? 'bg-white text-black rounded-br-md' : 'bg-kuro-800 text-gray-100 rounded-bl-md'}"><p class="text-sm whitespace-pre-wrap break-words">${socialEscape(m.content)}</p>${privateMediaHTML.get(String(m.id)) || ''}</div>`;
                 if (mine) {
                     rendered.push(`<div class="flex items-end justify-end gap-1.5"><div class="text-right pb-0.5">${readLabel}${timeLabel}</div>${bubble}</div>`);
                 } else {
@@ -4789,15 +4804,18 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             if (!await requireSocialLogin()) return;
             const input = document.getElementById('chatMessageInput');
             const content = input.value.trim();
-            if (!content || !activeChatId || !currentUser?.id) return;
+            const selectedImages = window.KuroSNSMedia?.getSelected('chat') || [];
+            if ((!content && !selectedImages.length) || !activeChatId || !currentUser?.id) return;
 
             const conversationId = activeChatId;
             const senderId = currentUser.id;
             if (activeChatType === 'group') {
                 const groupId = conversationId;
                 const sendButton = document.getElementById('chatSendButton');
+                let uploadedMedia = [];
                 if (sendButton) sendButton.disabled = true;
                 try {
+                    if (selectedImages.length) uploadedMedia = await window.KuroSNSMedia.upload(supabaseClient, 'group', groupId, selectedImages);
                     let mentionTargets = [];
                     if (content.includes('@')) {
                         const {data: memberships, error: memberError} = await supabaseClient.from('group_chat_members').select('user_id').eq('group_id', groupId);
@@ -4817,7 +4835,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                             mentionTargets = [...found];
                         }
                     }
-                    const {data: sentGroupMessage,error: groupSendError} = await supabaseClient.from('group_chat_messages').insert({group_id:groupId,sender_id:senderId,content}).select('id').single();
+                    const {data: sentGroupMessage,error: groupSendError} = await supabaseClient.from('group_chat_messages').insert({group_id:groupId,sender_id:senderId,content,media:uploadedMedia}).select('id').single();
                     if (groupSendError) throw groupSendError;
                     // Send group chat push asynchronously; never block the message UI on notification delivery.
                     supabaseClient.functions.invoke('send-chat-push', {body:{groupMessageId:sentGroupMessage.id}})
@@ -4837,6 +4855,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                         }
                     }
                     input.value='';
+                    window.KuroSNSMedia?.clear('chat');
                     const suggestionBox = document.getElementById('groupMentionSuggestions');
                     if (suggestionBox) { suggestionBox.classList.add('hidden'); suggestionBox.innerHTML=''; }
                     const {error:updateError}=await supabaseClient.from('group_conversations').update({updated_at:new Date().toISOString()}).eq('id',groupId);
@@ -4845,6 +4864,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     await selectGroupChat(groupId,activeChatHandle);
                 } catch (error) {
                     console.warn('Group message send failed:',error);
+                    if (uploadedMedia.length) await window.KuroSNSMedia.remove(supabaseClient, uploadedMedia);
                     showToast('送信に失敗しました');
                     if(sendButton)sendButton.disabled=false;
                 }
@@ -4854,6 +4874,10 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             const handle = activeChatHandle || document.getElementById('chatWithLabel').textContent.replace(/^@/,'');
             const box = document.getElementById('chatMessages');
             const sendButton = document.getElementById('chatSendButton');
+            let uploadedMedia = [];
+            try { if (selectedImages.length) uploadedMedia = await window.KuroSNSMedia.upload(supabaseClient, 'dm', conversationId, selectedImages); }
+            catch (uploadError) { showToast(uploadError.message || '写真をアップロードできませんでした'); return; }
+            const localMediaHTML = uploadedMedia.length ? await window.KuroSNSMedia.renderPrivateOne(supabaseClient, uploadedMedia) : '';
             const localId = 'local-' + Date.now() + '-' + Math.random().toString(36).slice(2,8);
             const now = new Date();
             const dateLabel = `${now.getMonth()+1}/${now.getDate()}`;
@@ -4868,7 +4892,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             const optimistic = document.createElement('div');
             optimistic.dataset.localMessageId = localId;
             optimistic.className = 'flex items-end justify-end gap-1.5';
-            optimistic.innerHTML = `<div class="text-right pb-0.5"><span class="block text-[10px] text-gray-400">送信中…</span><span class="block text-[10px] leading-4 text-gray-500 whitespace-nowrap">${timeLabel}</span></div><div class="max-w-[78%] rounded-2xl px-3 py-2.5 bg-white text-black rounded-br-md"><p class="text-sm whitespace-pre-wrap break-words">${socialEscape(content)}</p></div>`;
+            optimistic.innerHTML = `<div class="text-right pb-0.5"><span class="block text-[10px] text-gray-400">送信中…</span><span class="block text-[10px] leading-4 text-gray-500 whitespace-nowrap">${timeLabel}</span></div><div class="max-w-[78%] rounded-2xl px-3 py-2.5 bg-white text-black rounded-br-md"><p class="text-sm whitespace-pre-wrap break-words">${socialEscape(content)}</p>${localMediaHTML}</div>`;
             const pullIndicator = document.getElementById('chatPullIndicator');
             if (pullIndicator && pullIndicator.parentElement === box) box.insertBefore(optimistic, pullIndicator);
             else box.appendChild(optimistic);
@@ -4880,12 +4904,13 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
 
             try {
                 const {data: sentMessage, error} = await supabaseClient.from('chat_messages')
-                    .insert({conversation_id:conversationId,sender_id:senderId,content})
+                    .insert({conversation_id:conversationId,sender_id:senderId,content,media:uploadedMedia})
                     .select('id').single();
                 if (error) throw error;
 
                 optimistic.querySelector('.text-gray-400')?.remove();
                 optimistic.dataset.serverMessageId = sentMessage.id;
+                window.KuroSNSMedia?.clear('chat');
                 await supabaseClient.from('chat_conversations').update({updated_at:new Date().toISOString()}).eq('id',conversationId);
                 writeChatCache('messages', conversationId, box.innerHTML);
 
@@ -4901,6 +4926,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 }
             } catch (error) {
                 console.error('KURO message send error:', error);
+                if (uploadedMedia.length) await window.KuroSNSMedia.remove(supabaseClient, uploadedMedia);
                 optimistic.querySelector('.text-gray-400')?.remove();
                 optimistic.classList.add('opacity-60');
                 const status = document.createElement('span');
@@ -5308,5 +5334,6 @@ body.kuro-page #postFeed article[data-post-card] {
 </script>
 <!-- Direct profile editing entry point from KURO Lab / KURO Games -->
 <script>(function(){if(new URLSearchParams(location.search).get("profile-edit")!=="1")return;function openEditor(){if(typeof window.openProfileModal==="function"){window.openProfileModal();return;}setTimeout(openEditor,350);}window.addEventListener("load",function(){setTimeout(openEditor,900);},{once:true});})();</script>
-<script defer src="/kuro-profile.js?v=20261124socialprofile5"></script></body>
+<script defer src="/kuro-profile.js?v=20261124socialprofile5"></script><script src="/sns/v2/media.js?v=20261126photos1"></script>
+</body>
 </html>
