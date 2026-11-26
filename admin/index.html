@@ -107,7 +107,7 @@
 .ops-coin-user-hit-copy{min-width:0;display:grid;gap:2px;flex:1}
 .ops-coin-user-hit-copy strong{font-size:13px}
 .ops-coin-user-hit-copy small{color:var(--muted);font-size:11px;overflow-wrap:anywhere}
-.ops-coin-avatar{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:#1c3b59;color:#dff3ff;font-weight:800;flex:0 0 40px}
+.ops-coin-avatar{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;overflow:hidden;background:#1c3b59;color:#dff3ff;font-weight:800;flex:0 0 40px}.ops-coin-avatar img{display:block;width:100%;height:100%;object-fit:cover}
 .ops-coin-selected{border:1px solid var(--line);border-radius:13px;padding:14px;background:rgba(7,15,27,.28);display:grid;gap:14px}
 .ops-coin-selected-head{display:flex;align-items:center;gap:10px;min-width:0}
 .ops-coin-selected-copy{display:grid;gap:2px;min-width:0;flex:1}
@@ -1822,6 +1822,7 @@ function renderOpsCoinAdjustHistory(rows){
   return '<tr><td>'+esc(row.created_at?date(row.created_at):"—")+'</td><td>'+esc(labels[row.transaction_type]||row.transaction_type||"取引")+'</td><td>'+esc(row.description||"—")+'</td><td style="font-weight:850;color:'+(amount>=0?"#46c69a":"#ef7777")+'">'+signed+' P</td><td>'+coinFormat(row.balance_after)+' P</td></tr>';
  }).join("")+'</tbody></table>';
 }
+function opsAvatarImageUrl(value){try{const url=new URL(String(value||""),location.origin);if(url.origin==="https://cprvpphlfpmiegjiutjn.supabase.co"&&url.pathname.indexOf("/storage/v1/object/public/")===0)return location.origin+"/api/cloudflare-relay?resource="+encodeURIComponent(url.pathname+url.search);return url.href;}catch(_){return "";}}
 async function loadOpsCoinAdjustUser(userId,quiet=false){
  const requestId=++opsCoinAdjustSelectionRequest;
  const selected=$("#opsCoinAdjustSelected"),status=$("#opsCoinAdjustStatus");
@@ -1834,7 +1835,7 @@ async function loadOpsCoinAdjustUser(userId,quiet=false){
   if(!data?.user?.id||data.user.id!==userId)throw new Error("選択したユーザーと取得したユーザーが一致しません。");
   opsCoinAdjustSelectedUser=data.user;opsCoinAdjustBalance=Number(data.balance)||0;
   $("#opsCoinAdjustUser").value=data.user.id;
-  $("#opsCoinAdjustAvatar").textContent=String(data.user.display_name||data.user.username||"K").slice(0,1);
+  const avatarHost=$("#opsCoinAdjustAvatar");avatarHost.replaceChildren();if(data.user.avatar_url){const avatarImage=document.createElement("img");avatarImage.src=opsAvatarImageUrl(data.user.avatar_url);avatarImage.alt="";avatarImage.onerror=()=>{avatarHost.textContent=String(data.user.display_name||data.user.username||"K").slice(0,1);};avatarHost.appendChild(avatarImage);}else avatarHost.textContent=String(data.user.display_name||data.user.username||"K").slice(0,1);
   $("#opsCoinAdjustName").textContent=data.user.display_name||data.user.username||"名称未設定";
   $("#opsCoinAdjustIdentity").textContent=[data.user.username?"@"+data.user.username:"",data.user.kuro_id?"KURO ID："+data.user.kuro_id:"",data.user.email||""].filter(Boolean).join(" · ");
   $("#opsCoinAdjustUuid").textContent="ユーザーID："+data.user.id;
