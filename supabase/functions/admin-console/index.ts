@@ -219,15 +219,16 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "get_level_system") {
-      const [settingsResult, rewardsResult, thresholdsResult, gamesResult, usersResult, ledgerResult] = await Promise.all([
+      const [settingsResult, rewardsResult, thresholdsResult, coinRewardsResult, gamesResult, usersResult, ledgerResult] = await Promise.all([
         admin.from("kuro_level_system_settings").select("enabled,default_win_xp,updated_at").eq("singleton", true).maybeSingle(),
         admin.from("kuro_level_game_rewards").select("game_id,xp_per_win,enabled,updated_at").order("updated_at", { ascending: false }),
         admin.from("kuro_level_thresholds").select("level,required_xp").order("level", { ascending: true }),
+        admin.from("kuro_level_coin_rewards").select("level,reward_amount,enabled,updated_at").order("level", { ascending: true }),
         admin.from("game_studio_games").select("id,title,slug,icon,status").order("title", { ascending: true }),
         admin.from("kuro_level_users").select("user_id,total_xp,current_level,updated_at", { count: "exact" }).order("total_xp", { ascending: false }).limit(50),
         admin.from("kuro_level_ledger").select("id,user_id,xp_amount,total_xp_after,source_game_id,source_mode,reason,created_at").order("created_at", { ascending: false }).limit(40)
       ]);
-      for (const result of [settingsResult,rewardsResult,thresholdsResult,gamesResult,usersResult,ledgerResult]) {
+      for (const result of [settingsResult,rewardsResult,thresholdsResult,coinRewardsResult,gamesResult,usersResult,ledgerResult]) {
         if (result.error) throw result.error;
       }
       const userIds = Array.from(new Set([
@@ -244,6 +245,7 @@ Deno.serve(async (req: Request) => {
         settings: settingsResult.data || { enabled: true, default_win_xp: 100 },
         rewards: (rewardsResult.data || []).map((row) => ({ ...row, game: gameMap.get(row.game_id) || null })),
         thresholds: thresholdsResult.data || [],
+        coinRewards: coinRewardsResult.data || [],
         games: gamesResult.data || [],
         user_count: usersResult.count || 0,
         users: (usersResult.data || []).map((row) => ({ ...row, profile: profileMap.get(row.user_id) || null })),
@@ -330,6 +332,47 @@ Deno.serve(async (req: Request) => {
       });
       if (auditError) throw auditError;
       return reply({ thresholds, recalculated }, 200, origin);
+    }
+
+    if (action === "save_level_coin_rewards") {
+      const input = Array.isArray(body.rewards) ? body.rewards : [];
+      if (input.length > 100) {
+        return reply({ error: "報酬設定は100件以内にしてください。" }, 400, origin);
+      }
+      const rewards: Array<{ level: number; rewardAmount: number; enabled: boolean }> = [];
+      const seenLevels = new Set<number>();
+      for (const item of input) {
+        const level = Number(item?.level);
+        const rewardAmount = Number(item?.rewardAmount);
+        const enabled = item?.enabled === true;
+        if (!Number.isSafeInteger(level) || level < 2 || level > 10000) {
+          return reply({ error: "報酬レベルはLv.2〜Lv.10,000で指定してください。" }, 400, origin);
+        }
+        if (!Number.isSafeInteger(rewardAmount) || rewardAmount < 0 || rewardAmount > 1000000) {
+          return reply({ error: "報酬ポイントは0〜1,000,000の整数で指定してください。" }, 400, origin);
+        }
+        if (enabled && rewardAmount <= 0) {
+          return reply({ error: "有効な報酬には1以上のポイントを設定してください。" }, 400, origin);
+        }
+        if (seenLevels.has(level)) {
+          return reply({ error: "同じレベルの報酬が重複しています。レベルを確認してください。" }, 400, origin);
+        }
+        seenLevels.add(level);
+        rewards.push({ level, rewardAmount, enabled });
+      }
+      rewards.sort((a, b) => a.level - b.level);
+      const { data: savedCount, error: saveError } = await admin.rpc("kuro_level_coin_rewards_replace", {
+        p_rewards: rewards,
+        p_actor_user_id: caller.id
+      });
+      if (saveError) throw saveError;
+      const { error: auditError } = await admin.from("admin_audit_logs").insert({
+        actor_user_id: caller.id,
+        action: "kurogames_level.coin_rewards",
+        metadata: { count: Number(savedCount) || 0, rewards }
+      });
+      if (auditError) throw auditError;
+      return reply({ ok: true, count: Number(savedCount) || 0 }, 200, origin);
     }
 
     if (action === "adjust_level_xp") {
