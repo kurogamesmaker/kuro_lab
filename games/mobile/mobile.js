@@ -421,7 +421,7 @@
         description: String(game.description || "").slice(0, 500),
         category: game.category || "other",
         categories: getCategories(game).slice(0, 8),
-        icon: /^data:image\\//i.test(String(game.icon || "")) ? "🎮" : String(game.icon || "🎮").slice(0, 500),
+        icon: /^data:image\//i.test(String(game.icon || "")) ? "🎮" : String(game.icon || "🎮").slice(0, 500),
         search_aliases: Array.isArray(game.search_aliases) ? game.search_aliases.slice(0, 40) : [],
         published_at: game.published_at || null
       }));
