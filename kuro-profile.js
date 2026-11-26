@@ -61,6 +61,13 @@
     return minutes + ":" + String(seconds).padStart(2, "0") + "." + String(millis).padStart(3, "0");
   }
 
+  function formatTimeUs(us) {
+    var value = Math.max(0, Number(us) || 0);
+    var minutes = Math.floor(value / 60000000);
+    var seconds = ((value % 60000000) / 1000000).toFixed(6);
+    return minutes + ":" + seconds.padStart(9, "0");
+  }
+
   function formatMessageTime(value) {
     var date = new Date(value);
     if (Number.isNaN(date.getTime())) return "";
@@ -201,8 +208,10 @@
         var wins = Number(row.wins) || 0;
         var losses = Number(row.losses) || 0;
         var draws = Number(row.draws) || 0;
-        var best = row.best_time_ms != null
-          ? formatTime(row.best_time_ms)
+        var best = row.best_time_us != null
+          ? formatTimeUs(row.best_time_us)
+          : row.best_time_ms != null
+            ? formatTime(row.best_time_ms)
           : row.best_score != null
             ? Number(row.best_score).toLocaleString("ja-JP")
             : "—";
@@ -302,7 +311,7 @@
     try {
       var results = await Promise.all([
         db.from("profiles").select("id,username,display_name,kuro_id,avatar_url,bio,created_at").eq("id", id).maybeSingle(),
-        safeRpc(db, "kuro_get_public_profile_game_stats", { p_user_id: id }, []),
+        safeRpc(db, "kuro_get_public_profile_game_stats_precise", { p_user_id: id }, []),
         getFollowCounts(db, id),
         getSignedInUser(db),
         db.functions.invoke("kuro-public-coin-balance", { body: { userId: id } }).catch(function (error) { return { data: null, error: error }; }),
