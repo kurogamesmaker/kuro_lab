@@ -289,7 +289,7 @@ h1{margin:17px 0 12px;font-size:clamp(30px,5vw,48px);line-height:1.18;letter-spa
  $("backToGames").addEventListener("click",()=>location.href="/games/");
  async function init(){
   if(!window.supabase||!window.supabase.createClient){status("認証ライブラリを読み込めませんでした。",true);return;}
-  db=window.supabase.createClient(URL,KEY,{
+  db=window.supabase.createClient(SUPABASE_URL,KEY,{
    auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true},
    global:{fetch:cloudflareFetch}
   });
