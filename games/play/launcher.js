@@ -24,7 +24,7 @@ let kuroGameFrame = null;
 let kuroGameFrameGameId = null;
 let kuroGameFrameLayout = null;
 let kuroGameGuestMode = false;
-const kuroGameIsMobileDevice=!!(navigator.userAgentData&&navigator.userAgentData.mobile)||/Android|iPhone|iPod|Mobile|IEMobile|Opera Mini/i.test(navigator.userAgent)||/iPad/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+const kuroGameIsMobileDevice=new URLSearchParams(location.search).get("mobileApp")==="1"||!!(navigator.userAgentData&&navigator.userAgentData.mobile)||/Android|iPhone|iPod|Mobile|IEMobile|Opera Mini/i.test(navigator.userAgent)||/iPad/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
 window.addEventListener("resize",()=>{if(kuroGameFrameLayout)kuroGameFrameLayout();});
 function kuroRouteCloudflareRealtime(client) {
 const realtime = client && client.realtime;
