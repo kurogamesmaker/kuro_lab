@@ -2698,7 +2698,7 @@ async function handle(req: Request) {
     return reply(200, data || { ok: true });
   }
 
-  if (action === "room_list" || action === "room_create" || action === "room_join" || action === "room_leave" || action === "room_heartbeat" || action === "room_send" || action === "room_poll" || action === "room_state_get" || action === "room_state_update") {
+  if (action === "room_list" || action === "room_create" || action === "room_join" || action === "room_disband" || action === "room_leave" || action === "room_heartbeat" || action === "room_send" || action === "room_poll" || action === "room_state_get" || action === "room_state_update") {
     const user = await getUser(req);
     requirePublished(game);
     requireMultiplayer(settings.features);
@@ -2712,11 +2712,17 @@ async function handle(req: Request) {
         .order("created_at", { ascending: false })
         .limit(20);
       if (error) throw new HttpError(500, "ルーム一覧を取得できませんでした。");
-      return reply(200, { rooms: data ?? [] });
+      const maxAllowed = game.id === "faa155cb-2143-4361-9a96-dc759d334e46" ? 4 : 35;
+      const availableRooms = (data ?? []).filter((room) => {
+        const capacity = Math.min(maxAllowed, Math.max(2, Number(room.max_players) || 4));
+        return Number(room.player_count) < capacity;
+      });
+      return reply(200, { rooms: availableRooms });
     }
 
     if (action === "room_create") {
-      const maxPlayers = Math.max(2, Math.min(35, Math.floor(Number(body.maxPlayers) || 4)));
+      const maxAllowed = game.id === "faa155cb-2143-4361-9a96-dc759d334e46" ? 4 : 35;
+      const maxPlayers = Math.max(2, Math.min(maxAllowed, Math.floor(Number(body.maxPlayers) || 4)));
       let room: Record<string, unknown> | null = null;
       for (let attempt = 0; attempt < 6 && !room; attempt++) {
         const bytes = crypto.getRandomValues(new Uint8Array(6));
@@ -2785,6 +2791,32 @@ async function handle(req: Request) {
 
     const roomId = typeof body.roomId === "string" && UUID_RE.test(body.roomId) ? body.roomId : "";
     if (!roomId) throw new HttpError(400, "roomIdが正しくありません。");
+
+    if (action === "room_disband") {
+      const { data: room, error: roomError } = await admin.from("game_online_rooms")
+        .select("id, host_user_id, status")
+        .eq("id", roomId).eq("game_id", game.id).maybeSingle();
+      if (roomError) throw new HttpError(500, "ルーム情報を確認できませんでした。");
+      if (!room) throw new HttpError(404, "ルームが見つかりません。");
+      if (room.host_user_id !== user.id) throw new HttpError(403, "ルームを解散できるのはホストだけです。");
+      if (room.status !== "closed") {
+        const { data: closed, error: closeError } = await admin.from("game_online_rooms")
+          .update({ status: "closed", player_count: 0 })
+          .eq("id", roomId).eq("game_id", game.id).eq("host_user_id", user.id)
+          .select("id").maybeSingle();
+        if (closeError) throw new HttpError(500, "ルームを解散できませんでした。");
+        if (!closed) throw new HttpError(409, "ルームの状態が変わりました。再読み込みしてください。");
+      }
+      const { error: matchCleanupError } = await admin.from("game_online_matchmaking")
+        .delete().eq("game_id", game.id).eq("room_id", roomId);
+      if (matchCleanupError) throw new HttpError(500, "マッチング情報を整理できませんでした。");
+      const { error: anyQueueCleanupError } = await admin.from("kuro_any_matchmaking_queue")
+        .delete().eq("room_id", roomId);
+      if (anyQueueCleanupError) throw new HttpError(500, "検索待ち情報を整理できませんでした。");
+      // Keep member rows until clients poll the closed status; deleting them here
+      // would make room_poll return 403 before it can notify connected clients.
+      return reply(200, { ok: true, disbanded: true });
+    }
 
     if (action === "room_state_get" || action === "room_state_update") {
       const { data: member, error: memberError } = await admin.from("game_online_room_members")
