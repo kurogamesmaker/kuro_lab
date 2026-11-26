@@ -410,8 +410,13 @@ async function loadKuroGameRewards(gameId, db){const bar=document.getElementById
  if(!window.supabase||!window.supabase.createClient){fail("通信ライブラリを読み込めませんでした。");return;}
  try{const db=kuroGameAuthClient;
   const {data,error}=await db.from("game_studio_games").select("title,description,icon,html_content,mobile_html_content").eq("id",id).eq("status","published").maybeSingle();if(error)throw error;if(!data){fail("公開が終了したか、URLが正しくありません。");return;}
-  const mobileHtml=String(data.mobile_html_content||"").trim();
-  let selectedGameHtml=kuroGameIsMobileDevice&&mobileHtml?data.mobile_html_content:data.html_content;
+  const selectedGameHtml=String((kuroGameIsMobileDevice?data.mobile_html_content:data.html_content)||"").trim();
+  if(!selectedGameHtml){
+   fail(kuroGameIsMobileDevice
+    ?"このゲームのモバイル版はまだ公開されていません。PC版の画面は代わりに開かず、モバイル版の準備ができるまでお待ちください。"
+    :"このゲームのPC版コードが登録されていません。");
+   return;
+  }
   if(kuroGameIsMobileDevice&&!/<meta\b(?=[^>]*\bname=["']viewport["'])[^>]*>/i.test(selectedGameHtml)){
    const mobileViewport='<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">';
    if(/<head\b[^>]*>/i.test(selectedGameHtml))selectedGameHtml=selectedGameHtml.replace(/<head\b[^>]*>/i,match=>match+mobileViewport);
