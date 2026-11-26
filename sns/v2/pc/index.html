@@ -1753,7 +1753,7 @@ img#profileAvatarPreview:not(.hidden) {
             const image = event && event.target;
             if (!(image instanceof HTMLImageElement) || image.dataset.kuroAvatarFallbackApplied === '1') return;
             const isAvatar = image.classList.contains('rounded-full') ||
-                image.classList.contains('kuro-profile-avatar-image') ||
+                image.classList.contains('kuro-profile-list-avatar') ||
                 !!image.closest('.kuro-sns-avatar-frame-host, .kuro-profile-avatar');
             if (!isAvatar || typeof image.onerror === 'function') return;
             image.dataset.kuroAvatarFallbackApplied = '1';
