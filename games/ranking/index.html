@@ -74,8 +74,8 @@ button,select{font:inherit}
 .rank-medal{display:grid;place-items:center;width:34px;flex:0 0 34px;font-size:22px}
 .rank-number{display:none}
 .rank-profile{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
-.rank-avatar{position:relative;display:grid;place-items:center;width:42px;height:42px;flex:0 0 42px;overflow:visible;border:1px solid #e3eaf4;border-radius:50%;background:#f0f5fb;color:#60758f;}font-size:15px;font-weight:950}
-.rank-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%}
+.rank-avatar{position:relative;display:grid;place-items:center;width:42px;height:42px;flex:0 0 42px;overflow:visible;border:1px solid #e3eaf4;border-radius:50%;background:#f0f5fb;color:#60758f;font-size:15px;font-weight:950}
+.rank-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;z-index:1}.rank-avatar .rank-avatar-placeholder{position:relative;z-index:0}.rank-avatar .rank-avatar-item{position:relative;z-index:1;font-size:22px;line-height:1}
 .rank-avatar .rank-avatar-frame{position:absolute;inset:-5px;z-index:4;pointer-events:none;background-position:center;background-repeat:no-repeat;background-size:100% 100%;}
 .rank-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#3b4e68;font-size:13px;font-weight:900}
 .rank-profile:hover .rank-name{color:#2675d0;text-decoration:underline;text-underline-offset:3px}
@@ -316,16 +316,66 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   if(metric==="score")return value+"点";
   return value;
  }
- const rankFrameCache=new Map();
- async function loadRankFrame(userId,avatar){
+ const rankCosmeticsCache=new Map();
+ function safeRankingImageUrl(value){
+  if(!value)return "";
+  try{
+   const url=new URL(String(value),location.origin);
+   if(url.origin==="https://cprvpphlfpmiegjiutjn.supabase.co"&&url.pathname.startsWith("/storage/v1/object/public/")){
+    return location.origin+"/api/cloudflare-relay?resource="+encodeURIComponent(url.pathname+url.search);
+   }
+   if(url.protocol==="https:"||(url.protocol==="http:"&&url.origin===location.origin))return url.href;
+  }catch(_){}
+  return "";
+ }
+ function appendRankAvatarPlaceholder(avatar){
+  if(avatar.querySelector(".rank-avatar-placeholder"))return;
+  const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("viewBox","0 0 24 24");svg.setAttribute("width","22");svg.setAttribute("height","22");
+  svg.setAttribute("fill","none");svg.setAttribute("stroke","currentColor");svg.setAttribute("stroke-width","1.7");
+  svg.setAttribute("stroke-linecap","round");svg.setAttribute("stroke-linejoin","round");svg.setAttribute("aria-hidden","true");
+  svg.classList.add("rank-avatar-placeholder");
+  const head=document.createElementNS("http://www.w3.org/2000/svg","circle");
+  head.setAttribute("cx","12");head.setAttribute("cy","8");head.setAttribute("r","3.2");
+  const body=document.createElementNS("http://www.w3.org/2000/svg","path");
+  body.setAttribute("d","M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2");
+  svg.append(head,body);avatar.append(svg);
+ }
+ function appendRankAvatarImage(avatar,src){
+  if(!src)return;
+  const image=document.createElement("img");
+  image.className="rank-avatar-image";image.src=src;image.alt="";image.loading="lazy";
+  image.decoding="async";image.referrerPolicy="no-referrer";
+  image.addEventListener("load",()=>{const placeholder=avatar.querySelector(".rank-avatar-placeholder");if(placeholder)placeholder.remove();},{once:true});
+  image.addEventListener("error",()=>{image.remove();appendRankAvatarPlaceholder(avatar);},{once:true});
+  avatar.append(image);
+ }
+ async function loadRankCosmetics(userId,avatar,allowAvatarFallback){
   if(!userId||!db)return;
-  if(!rankFrameCache.has(userId))rankFrameCache.set(userId,(async()=>{
-   try{const {data,error}=await db.rpc("kuro_get_public_store_cosmetics",{p_user_id:userId});if(error)throw error;return data&&data.frame&&data.frame.imageUrl?String(data.frame.imageUrl):"";}catch(error){console.debug("Ranking avatar frame unavailable",error);return "";}
+  if(!rankCosmeticsCache.has(userId))rankCosmeticsCache.set(userId,(async()=>{
+   try{
+    const {data,error}=await db.rpc("kuro_get_public_store_cosmetics",{p_user_id:userId});
+    if(error)throw error;
+    return data&&typeof data==="object"?data:{};
+   }catch(error){console.debug("Ranking public cosmetics unavailable",error);return {};}
   })());
-  const frameUrl=await rankFrameCache.get(userId);
-  if(!frameUrl||!avatar.isConnected)return;
+  const cosmetics=await rankCosmeticsCache.get(userId);
+  const equippedAvatar=cosmetics&&cosmetics.avatar&&typeof cosmetics.avatar==="object"?cosmetics.avatar:null;
+  if(allowAvatarFallback&&equippedAvatar){
+   const equippedImage=safeRankingImageUrl(equippedAvatar.imageUrl);
+   if(equippedImage)appendRankAvatarImage(avatar,equippedImage);
+   else if(equippedAvatar.icon){
+    const item=document.createElement("span");item.className="rank-avatar-item";item.textContent=String(equippedAvatar.icon);
+    const placeholder=avatar.querySelector(".rank-avatar-placeholder");if(placeholder)placeholder.remove();
+    avatar.append(item);
+   }
+  }
+  const frame=cosmetics&&cosmetics.frame&&typeof cosmetics.frame==="object"?cosmetics.frame:null;
+  const frameUrl=safeRankingImageUrl(frame&&frame.imageUrl);
+  if(!frameUrl)return;
   const layer=document.createElement("span");layer.className="rank-avatar-frame";layer.setAttribute("aria-hidden","true");
-  try{const url=new URL(frameUrl,location.origin);if(url.protocol!=="https:"&&url.origin!==location.origin)return;layer.style.backgroundImage="url("+JSON.stringify(url.href)+")";avatar.append(layer);}catch(_){}
+  layer.style.backgroundImage="url("+JSON.stringify(frameUrl)+")";
+  avatar.append(layer);
  }
   function makeProfile(row){
   const userName=String(row.user&& (row.user.username||row.user.display_name)||"プレイヤー");
@@ -336,26 +386,11 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   profile.className="rank-profile";
   
   const avatar=document.createElement("span");avatar.className="rank-avatar";
-  const rawAvatar=String(row.user&&row.user.avatar_url||"");
-  let avatarSrc="";
-  if(rawAvatar){
-   try{
-    const avatarUrl=new URL(rawAvatar,location.origin);
-    if(avatarUrl.protocol==="https:"||avatarUrl.origin===location.origin){
-     avatarSrc=avatarUrl.origin==="https://cprvpphlfpmiegjiutjn.supabase.co"&&avatarUrl.pathname.startsWith("/storage/v1/object/public/")
-      ?location.origin+"/api/cloudflare-relay?resource="+encodeURIComponent(avatarUrl.pathname+avatarUrl.search)
-      :avatarUrl.href;
-    }
-   }catch(_){}
-  }
-  if(avatarSrc){
-   const image=document.createElement("img");image.src=avatarSrc;image.alt="";image.loading="lazy";image.decoding="async";image.referrerPolicy="no-referrer";
-   image.addEventListener("error",()=>{image.remove();avatar.innerHTML='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg>';},{once:true});avatar.append(image);
-  }else{
-   avatar.innerHTML='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg>';
-  }
+  appendRankAvatarPlaceholder(avatar);
+  const avatarSrc=safeRankingImageUrl(row.user&&row.user.avatar_url);
+  if(avatarSrc)appendRankAvatarImage(avatar,avatarSrc);
   const name=document.createElement("span");name.className="rank-name";name.textContent=userName;
-  profile.append(avatar,name);loadRankFrame(userId,avatar);
+  profile.append(avatar,name);loadRankCosmetics(userId,avatar,!avatarSrc);
   return profile;
  }
  function createRankRow(game,row,index,mode){
