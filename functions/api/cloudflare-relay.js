@@ -96,9 +96,14 @@ export async function onRequest(context) {
     if(request.method==="GET"&&url.searchParams.get("health")==="1")return json({ready:true,service:"KURO Cloudflare Supabase Proxy",transport:"cloudflare-worker",realtimeProxy:true});
     if(request.method==="GET") {
       const target=validatePath(url.searchParams.get("resource"));
-      if(!target.pathname.startsWith("/storage/v1/object/public/"))return json({error:"Only public Storage objects may be fetched here"},403);
-      const upstream=await fetch(target.href,{headers:safeHeaders({})});
-      return new Response(await upstream.arrayBuffer(),{status:upstream.status,headers:{"Content-Type":upstream.headers.get("content-type")||"application/octet-stream","Cache-Control":"public, max-age=300, stale-while-revalidate=600"}});
+      const isPublicObject=target.pathname.startsWith("/storage/v1/object/public/");
+      const isSignedPrivateMedia=target.pathname.startsWith("/storage/v1/object/sign/kuro-sns-private-media/")&&Boolean(target.searchParams.get("token"));
+      if(!isPublicObject&&!isSignedPrivateMedia)return json({error:"Only public objects or token-signed KURO SNS private media may be fetched here"},403);
+      const upstream=await fetch(target.href,{headers:isPublicObject?safeHeaders({}):new Headers({apikey:SUPABASE_KEY})});
+      return new Response(await upstream.arrayBuffer(),{status:upstream.status,headers:{
+        "Content-Type":upstream.headers.get("content-type")||"application/octet-stream",
+        "Cache-Control":isPublicObject?"public, max-age=300, stale-while-revalidate=600":"private, no-store"
+      }});
     }
     if(request.method!=="POST")return json({error:"Method not allowed"},405);
     return json(await proxy(await request.json()));
