@@ -725,7 +725,7 @@ async function reconcilePendingVerifiedSessions(userId:string,gameId:string) {
         const completedAt=Date.parse(String(session.completed_at || ""));
         const elapsedMs=completedAt-startedAt;
         if(!Number.isFinite(startedAt) || !Number.isFinite(completedAt) ||
-          !Number.isSafeInteger(elapsedMs) || elapsedMs<500 || elapsedMs>3600000) {
+          !Number.isSafeInteger(elapsedMs) || elapsedMs<400 || elapsedMs>3600000) {
           await setVerifiedSessionRecoveryStatus(session,userId,gameId,"not_rankable");
           continue;
         }
@@ -1919,7 +1919,7 @@ async function handle(req: Request) {
 
     let recordResult:Record<string,unknown> = {scoreRecorded:false,improved:false};
     if (correct && playMode === "time" && elapsedMs !== null) {
-      if (elapsedMs >= 500) {
+      if (elapsedMs >= 400) {
         const mode = "number-time-" + level;
         const metadata = {
           metric:"clear_time_ms",
