@@ -966,8 +966,13 @@ img#profileAvatarPreview:not(.hidden) {
     gap:3px !important; width:100% !important; min-width:0 !important; height:54px !important; min-height:54px !important;
     margin:0 !important; padding:0 !important; color:#e7e9ea !important; background:transparent !important;
   }
-  #kuroBottomNav [data-tab="profile"] .kuro-profile-tab-icon {
+  #kuroBottomNav [data-tab="profile"] .kuro-profile-tab-icon,
+  #kuroBottomNav [data-tab="profile"] .kuro-profile-tab-avatar-image {
     display:block !important; width:20px !important; height:20px !important; flex:none !important;
+  }
+  #kuroBottomNav [data-tab="profile"] .kuro-profile-tab-avatar-image { border-radius:50%; object-fit:cover; overflow:hidden; }
+  #kuroBottomNav [data-tab="profile"] .kuro-profile-tab-avatar-image.hidden { display:none !important; }
+  #kuroBottomNav [data-tab="profile"] .kuro-profile-tab-icon {
     fill:none !important; stroke:currentColor !important; stroke-width:1.8 !important;
     stroke-linecap:round !important; stroke-linejoin:round !important;
   }
@@ -1464,7 +1469,8 @@ img#profileAvatarPreview:not(.hidden) {
         
         
       <button type="button" data-tab="profile" aria-label="マイページ" title="マイページ" onclick="switchTab('profile')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900">
-          <svg class="kuro-profile-tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="3.25"></circle><path d="M5 20c.9-3.4 3.1-5 7-5s6.1 1.6 7 5"></path></svg>
+          <img id="kuroProfileTabAvatar" class="kuro-profile-tab-avatar-image hidden" alt="" aria-hidden="true">
+          <svg id="kuroProfileTabAvatarFallback" class="kuro-profile-tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="3.25"></circle><path d="M5 20c.9-3.4 3.1-5 7-5s6.1 1.6 7 5"></path></svg>
           <span class="kuro-tab-label">マイページ</span>
         </button>
       </div>
@@ -1624,10 +1630,33 @@ function kuroRouteCloudflareRealtime(client) {
             });
         }
 
+        function updateKuroProfileTabAvatar() {
+            const image = document.getElementById('kuroProfileTabAvatar');
+            const fallback = document.getElementById('kuroProfileTabAvatarFallback');
+            if (!image || !fallback) return;
+            const url = currentUser && currentUser.avatarUrl ? kuroSnsAvatarUrl(currentUser.avatarUrl) : '';
+            if (!url) {
+                image.classList.add('hidden');
+                image.removeAttribute('src');
+                fallback.classList.remove('hidden');
+                return;
+            }
+            image.onerror = () => {
+                image.classList.add('hidden');
+                fallback.classList.remove('hidden');
+            };
+            image.onload = () => {
+                image.classList.remove('hidden');
+                fallback.classList.add('hidden');
+            };
+            image.src = url;
+        }
+
         function updateKuroHeaderAvatar() {
             const button = document.getElementById('kuroHeaderAvatarButton');
             const image = document.getElementById('kuroHeaderAvatar');
             const placeholder = document.getElementById('kuroHeaderAvatarPlaceholder');
+            updateKuroProfileTabAvatar();
             if (!button || !image || !placeholder) return;
             if (!currentUser) {
                 image.classList.add('hidden'); image.removeAttribute('src');
