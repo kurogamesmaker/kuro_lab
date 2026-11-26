@@ -765,3 +765,59 @@ test("UNON three-player lobby waits for the host start lock after every vote", a
   assert.equal(fixture.room.data.unonGame.players.length, 3);
   assert.deepEqual(fixture.room.data.unonGame.players.map(player => player.hand.length), [7, 7, 7]);
 });
+
+
+test("UNON three-player turns advance to all three seats and return to the starter", () => {
+  const state = localUnonState({
+    ruleMode: "official",
+    players: [
+      { userId: "p1", name: "P1", hand: [
+        unonCard("p1-red-3", "red", "3"),
+        unonCard("p1-red-7", "red", "7"),
+        unonCard("p1-blue-2", "blue", "2"),
+      ] },
+      { userId: "p2", name: "P2", hand: [
+        unonCard("p2-red-4", "red", "4"),
+        unonCard("p2-green-2", "green", "2"),
+      ] },
+      { userId: "p3", name: "P3", hand: [
+        unonCard("p3-red-6", "red", "6"),
+        unonCard("p3-yellow-2", "yellow", "2"),
+      ] },
+    ],
+    top: unonCard("top", "red", "5"),
+  });
+
+  const p1 = UNON_RULES.applyAction(state, "p1", { type: "play", cardIds: ["p1-red-3"] });
+  assert.equal(p1.ok, true);
+  assert.equal(p1.state.turn, 1);
+
+  const p2 = UNON_RULES.applyAction(p1.state, "p2", { type: "play", cardIds: ["p2-red-4"] });
+  assert.equal(p2.ok, true);
+  assert.equal(p2.state.turn, 2);
+
+  const p3 = UNON_RULES.applyAction(p2.state, "p3", { type: "play", cardIds: ["p3-red-6"] });
+  assert.equal(p3.ok, true);
+  assert.equal(p3.state.turn, 0);
+});
+
+test("UNON reverse sends a three-player game to the previous seat", () => {
+  const state = localUnonState({
+    ruleMode: "official",
+    players: [
+      { userId: "p1", name: "P1", hand: [
+        unonCard("p1-rev", "red", "REV"),
+        unonCard("p1-extra-a", "blue", "2"),
+        unonCard("p1-extra-b", "green", "4"),
+      ] },
+      { userId: "p2", name: "P2", hand: [unonCard("p2-a", "red", "3"), unonCard("p2-b", "blue", "4")] },
+      { userId: "p3", name: "P3", hand: [unonCard("p3-a", "green", "3"), unonCard("p3-b", "yellow", "4")] },
+    ],
+    top: unonCard("top", "red", "5"),
+  });
+
+  const result = UNON_RULES.applyAction(state, "p1", { type: "play", cardIds: ["p1-rev"] });
+  assert.equal(result.ok, true);
+  assert.equal(result.state.direction, -1);
+  assert.equal(result.state.turn, 2);
+});
