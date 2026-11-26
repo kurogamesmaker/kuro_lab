@@ -89,7 +89,7 @@
   function renderPublic(media){try{return render(media,new Map(),true)}catch(e){console.warn(e);return''}}
   async function renderPrivateBatch(client,messages){
     const paths=[...new Set((messages||[]).flatMap(m=>(Array.isArray(m.media)?m.media:[]).filter(x=>x?.bucket===PRIV&&typeof x.path==='string').map(x=>x.path)))],urls=new Map();
-    if(paths.length){const r=await client.storage.from(PRIV).createSignedUrls(paths,3600);if(r.error)console.warn('KURO SNS private photo URL failed',r.error);else(r.data||[]).forEach(x=>{const u=x.signedUrl||x.signedURL;if(x.path&&u)urls.set(x.path,u)})}
+    for(let offset=0;offset<paths.length;offset+=50){const chunk=paths.slice(offset,offset+50);const r=await client.storage.from(PRIV).createSignedUrls(chunk,3600);if(r.error){console.warn('KURO SNS private photo URL failed',r.error);continue}(r.data||[]).forEach(x=>{const u=x.signedUrl||x.signedURL;if(x.path&&u)urls.set(x.path,u)})}
     const byId=new Map();(messages||[]).forEach(m=>byId.set(String(m.id),render(m.media,urls,false)));return byId;
   }
   async function renderPrivateOne(client,media){const m=await renderPrivateBatch(client,[{id:'preview',media}]);return m.get('preview')||''}
