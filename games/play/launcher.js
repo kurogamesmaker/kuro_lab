@@ -519,10 +519,10 @@ function kuroGameAvatarDisplayUrl(value){
     client.from("profiles").select("avatar_url").eq("id",userId).maybeSingle()
    ]);
    if(request!==gameCosmeticRequest)return;
-   if(catalogResult.error)throw catalogResult.error;
+   if(catalogResult.error)console.warn("KURO Store cosmetics could not be loaded for game header:",catalogResult.error);
    if(profileResult.error)console.warn("KURO account avatar could not be loaded for game header:",profileResult.error);
-   if(catalogResult.data&&catalogResult.data.error)throw new Error(catalogResult.data.error);
-   renderGameCosmetics(Object.assign({},catalogResult.data||{},{profileAvatarUrl:profileResult.data&&profileResult.data.avatar_url||""}));
+   if(catalogResult.data&&catalogResult.data.error)console.warn("KURO Store cosmetics response:",catalogResult.data.error);
+   renderGameCosmetics(Object.assign({},catalogResult.data||{equipped:[]},{profileAvatarUrl:profileResult.data&&profileResult.data.avatar_url||""}));
   }catch(error){
    if(request===gameCosmeticRequest){
     gameCosmeticUserId=null;
