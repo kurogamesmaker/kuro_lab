@@ -139,7 +139,7 @@ h1{margin:17px 0 12px;font-size:clamp(30px,5vw,48px);line-height:1.18;letter-spa
 <script>
 (function(){
  "use strict";
- const URL="https://cprvpphlfpmiegjiutjn.supabase.co";
+ const SUPABASE_URL="https://cprvpphlfpmiegjiutjn.supabase.co";
  const KEY="sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
  const RELAY="/api/cloudflare-relay";
  const CLIENT_KEY="kuro_cloudflare_client_id_matchmaking_v1";
@@ -151,7 +151,7 @@ h1{margin:17px 0 12px;font-size:clamp(30px,5vw,48px);line-height:1.18;letter-spa
  }
  async function cloudflareFetch(input,init){
   const req=new Request(input,init),url=new URL(req.url);
-  if(url.origin!==URL)return fetch(req);
+  if(url.origin!==SUPABASE_URL)return fetch(req);
   const bytes=new Uint8Array(await req.arrayBuffer());let binary="";
   for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(bytes.length,i+0x8000)));
   const headers={};req.headers.forEach((v,k)=>{headers[k]=v;});
