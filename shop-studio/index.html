@@ -53,7 +53,7 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
 .design-stage{min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;padding:22px;background:radial-gradient(ellipse at center,#252038 0, #12101b 65%)}
 .design-stage-label{display:flex;align-items:center;justify-content:space-between;gap:12px;width:min(100%,760px);color:#aea4c2;font-size:9px}
 .design-canvas-shell{width:min(100%,760px);max-height:calc(100% - 35px);display:flex;align-items:center;justify-content:center;padding:10px;border:1px solid #4a405f;border-radius:14px;background:#090811;box-shadow:0 22px 60px #0007}
-#designCanvas{display:block;width:100%;max-height:calc(100dvh - 220px);height:auto;object-fit:contain;border-radius:7px}
+#designCanvas{touch-action:none;cursor:grab;display:block;width:100%;max-height:calc(100dvh - 220px);height:auto;object-fit:contain;border-radius:7px}
 #designCanvas.is-square{width:auto;max-width:100%;height:auto;max-height:calc(100dvh - 220px);aspect-ratio:1}
 .design-hint{max-width:700px;color:#817890;font-size:9px;line-height:1.7;text-align:center}
 .design-profile-card{overflow:hidden;padding:12px;border:1px solid #423850;border-radius:15px;background:#191625}
@@ -405,7 +405,7 @@ function designApplyFields(){
  }else{
   designField("frameStyle",designData.style||"gradient");designField("frameColor1",designData.color1||"#a78bfa");designField("frameColor2",designData.color2||"#22d3ee");designField("frameThickness",designData.thickness??17);$("frameGlow").checked=designData.glow!==false;designField("frameOrnament",designData.ornament||"");
  }
- designUpdateOutputs();
+ designUpdateOutputs();designUpdateLayerControls();
 }
 function designUpdateOutputs(){
  $("bgAngleValue").textContent=$("bgAngle").value+"°";$("bgOverlayValue").textContent=$("bgOverlay").value+"%";$("bgImageZoomValue").textContent=$("bgImageZoom").value+"%";$("bgImageXValue").textContent=$("bgImageX").value+"%";$("bgImageYValue").textContent=$("bgImageY").value+"%";$("bgTextSizeValue").textContent=$("bgTextSize").value+"px";$("bgTextYValue").textContent=$("bgTextY").value+"%";$("frameThicknessValue").textContent=$("frameThickness").value+"px";
@@ -417,7 +417,7 @@ function designLoadTemplate(id){
 }
 function designSetCategory(category){
  if(!["background","frame"].includes(category))return;
- if(designCategory!==category){designCategory=category;designDraftId=null;designData=designClone(DESIGN_DEFAULTS[category]);$("designDraftName").value="新しい"+(category==="frame"?"フレーム":"背景");}
+ if(designCategory!==category){designCategory=category;designDraftId=null;selectedImageLayerId=null;designData=designClone(DESIGN_DEFAULTS[category]);$("designDraftName").value="新しい"+(category==="frame"?"フレーム":"背景");}
  document.querySelectorAll("[data-design-category]").forEach(node=>node.classList.toggle("active",node.dataset.designCategory===category));
  $("backgroundControls").hidden=category!=="background";$("frameControls").hidden=category!=="frame";
  $("designCanvasLabel").textContent=category==="background"?"背景プレビュー · 16:9":"アイコン枠プレビュー · 1:1";
@@ -634,9 +634,9 @@ function designBindLayerControls(){
   if(!imageDrag)return;imageDrag=null;designPushHistory();designScheduleSave();designUpdateLayerControls();
  };
  canvas.addEventListener("pointerup",finishDrag);canvas.addEventListener("pointercancel",finishDrag);
- canvas.addEventListener("pointerleave",()=>{if(imageDrag&&!canvas.hasPointerCapture?.(event.pointerId))finishDrag();});
+ // Pointer capture keeps dragging active until pointerup or pointercancel.
 }
-async function designRender(){
+async function designRender(showSelection=true){
  const {canvas,ctx}=designCanvasContext();
  if(!ctx)return;
  if(designCategory==="background"){
@@ -655,6 +655,7 @@ async function designRender(){
   ctx.restore();
   const overlay=Math.max(0,Math.min(70,Number(designData.overlay)||0))/100;
   if(overlay){ctx.fillStyle="rgba(4,3,12,"+overlay+")";ctx.fillRect(0,0,960,540);}
+  await designDrawImageLayers(ctx,960,540,showSelection);
   const title=String(designData.title||"").slice(0,28),align=designData.textAlign||"left";
   ctx.save();ctx.fillStyle=designData.textColor||"#ffffff";ctx.textAlign=align;ctx.textBaseline="middle";ctx.font="900 "+Math.max(14,Math.min(84,Number(designData.textSize)||38))+"px system-ui,sans-serif";ctx.shadowColor="#0009";ctx.shadowBlur=13;
   const tx=align==="left"?66:align==="right"?894:480,ty=540*Math.max(.1,Math.min(.95,Number(designData.textY||78)/100));
@@ -670,6 +671,7 @@ async function designRender(){
   if(style==="neon"){ctx.save();ctx.globalAlpha=.65;ctx.strokeStyle=c2;ctx.lineWidth=Math.max(2,thickness/4);ctx.beginPath();ctx.arc(320,320,307,0,Math.PI*2);ctx.stroke();ctx.restore();}
   const ornament=String(designData.ornament||"").slice(0,4);
   if(ornament){ctx.save();ctx.font="bold 54px system-ui,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle=c1;ctx.shadowColor=c1;ctx.shadowBlur=14;ctx.fillText(ornament,320,30);ctx.restore();}
+  await designDrawImageLayers(ctx,640,640,showSelection);
  }
  designUpdateMiniPreview();
 }
@@ -715,7 +717,7 @@ async function designLoadDraftList(refresh=true){
 async function designStart(category){
  if(designSaveTimer){clearTimeout(designSaveTimer);designSaveTimer=0;}
  if(designSaveDirty)await designPersistDraft();
- designSession++;designDraftId=null;designCategory=category;designData=designClone(DESIGN_DEFAULTS[category]);$("designDraftName").value="新しい"+(category==="frame"?"フレーム":"背景");
+ designSession++;designDraftId=null;selectedImageLayerId=null;designCategory=category;designData=designClone(DESIGN_DEFAULTS[category]);$("designDraftName").value="新しい"+(category==="frame"?"フレーム":"背景");
  $("designOverlay").hidden=false;designSetCategory(category);designResetHistory();designSetState("未保存");designScheduleSave();
 }
 async function designLoadSelectedDraft(){
@@ -723,7 +725,7 @@ async function designLoadSelectedDraft(){
  if(designSaveTimer){clearTimeout(designSaveTimer);designSaveTimer=0;}
  if(designSaveDirty)await designPersistDraft();
  const result=await api("studio_list_drafts"),draft=(result.drafts||[]).find(row=>row.id===id);if(!draft)return;
- designSession++;designDraftId=draft.id;designCategory=draft.category;designData={...DESIGN_DEFAULTS[designCategory],...(draft.design_data||{})};$("designDraftName").value=draft.draft_name;
+ designSession++;designDraftId=draft.id;designCategory=draft.category;selectedImageLayerId=null;designData={...DESIGN_DEFAULTS[designCategory],...(draft.design_data||{})};$("designDraftName").value=draft.draft_name;
  $("designOverlay").hidden=false;designSetCategory(designCategory);designApplyFields();designRender();designResetHistory();designSetState("保存済み");$("designDraftSelect").value=draft.id;
 }
 async function designDeleteSelectedDraft(){
@@ -738,7 +740,9 @@ async function designDeleteSelectedDraft(){
 async function designExportImage(){
  await designPersistDraft();
  const canvas=$("designCanvas");
+ await designRender(false);
  const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));
+ designRender();
  if(!blob)throw new Error("画像を書き出せませんでした。");
  const type=designCategory==="frame"?"frame":"background";
  const file=new File([blob],"kuro-"+type+"-"+Date.now()+".png",{type:"image/png"});
@@ -779,6 +783,7 @@ $("deleteDesignDraft").addEventListener("click",()=>designDeleteSelectedDraft().
 $("newDesignDraft").addEventListener("click",()=>designStart(designCategory).catch(error=>designSetState("保存エラー: "+error.message)));
 $("designExport").addEventListener("click",async event=>{const button=event.currentTarget;button.disabled=true;try{await designPersistDraft();await designRender(false);const blob=await new Promise(resolve=>$("designCanvas").toBlob(resolve,"image/png"));designRender();if(!blob)throw new Error("画像を書き出せませんでした。");const link=document.createElement("a"),url=URL.createObjectURL(blob);link.href=url;link.download="kuro-"+designCategory+"-"+Date.now()+".png";document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);designSetState("画像を書き出しました");}catch(error){designSetState("書き出しエラー: "+error.message);}finally{button.disabled=false;}});
 $("designMakeItem").addEventListener("click",designCreateItem);
+designBindLayerControls();
 $("bgImage").addEventListener("change",async()=>{
  const file=$("bgImage").files&&$("bgImage").files[0];if(!file)return;
  try{designSetState("背景画像をアップロード中…");const url=await uploadImage(file);designData.sourceImageUrl=url;designRender();designPushHistory();designScheduleSave();}catch(error){designSetState("画像エラー: "+error.message);}
