@@ -526,6 +526,7 @@ function designUpdateLayerOutputs(){
 function designChangeSelectedLayer(key,value){
  const selected=designSelectedImageLayer();if(!selected)return;
  selected[key]=value;
+ if(key==="target")$("imageLayerOverflowField").hidden=designCategory!=="frame"||value!=="rim";
  designUpdateLayerOutputs();designRender();designScheduleSave();
 }
 async function designDrawImageLayers(ctx,width,height,showSelection=true){
