@@ -506,12 +506,16 @@ async function designLoadDraftList(refresh=true){
   if(refresh&&rows.length===0)$("designDraftSelect").innerHTML='<option value="">下書きはまだありません</option>';
  }catch(error){$("designDraftSelect").innerHTML='<option value="">下書きを取得できませんでした</option>';designSetState(error.message);}
 }
-function designStart(category){
+async function designStart(category){
+ if(designSaveTimer){clearTimeout(designSaveTimer);designSaveTimer=0;}
+ if(designSaveDirty)await designPersistDraft();
  designSession++;designDraftId=null;designCategory=category;designData=designClone(DESIGN_DEFAULTS[category]);$("designDraftName").value="新しい"+(category==="frame"?"フレーム":"背景");
  $("designOverlay").hidden=false;designSetCategory(category);designResetHistory();designSetState("未保存");designScheduleSave();
 }
 async function designLoadSelectedDraft(){
  const id=$("designDraftSelect").value;if(!id)return;
+ if(designSaveTimer){clearTimeout(designSaveTimer);designSaveTimer=0;}
+ if(designSaveDirty)await designPersistDraft();
  const result=await api("studio_list_drafts"),draft=(result.drafts||[]).find(row=>row.id===id);if(!draft)return;
  designSession++;designDraftId=draft.id;designCategory=draft.category;designData={...DESIGN_DEFAULTS[designCategory],...(draft.design_data||{})};$("designDraftName").value=draft.draft_name;
  $("designOverlay").hidden=false;designSetCategory(designCategory);designApplyFields();designRender();designResetHistory();designSetState("保存済み");$("designDraftSelect").value=draft.id;
@@ -519,6 +523,8 @@ async function designLoadSelectedDraft(){
 async function designDeleteSelectedDraft(){
  const id=$("designDraftSelect").value;if(!id)return;
  if(!confirm("このデザイン下書きを削除しますか？"))return;
+ if(designSaveTimer){clearTimeout(designSaveTimer);designSaveTimer=0;}
+ if(designDraftId===id&&designSaveDirty){designSaveDirty=false;}
  await api("studio_delete_draft",{draftId:id});
  if(id===designDraftId){designDraftId=null;designData=designClone(DESIGN_DEFAULTS[designCategory]);designApplyFields();designRender();designSetState("未保存");}
  await designLoadDraftList();
@@ -552,11 +558,11 @@ function designBindInput(id){
   designReadFields();designUpdateOutputs();designRender();designPushHistory();designScheduleSave();
  });
 }
-document.querySelectorAll("[data-design-category]").forEach(node=>node.addEventListener("click",()=>designSetCategory(node.dataset.designCategory)));
+document.querySelectorAll("[data-design-category]").forEach(node=>node.addEventListener("click",async()=>{const next=node.dataset.designCategory;if(next!==designCategory){if(designSaveTimer){clearTimeout(designSaveTimer);designSaveTimer=0;}if(designSaveDirty)await designPersistDraft();designResetHistory();}designSetCategory(next);}));
 ["bgColor1","bgColor2","bgAngle","bgPattern","bgOverlay","bgImageZoom","bgImageX","bgImageY","bgTitle","bgTextColor","bgTextSize","bgTextAlign","bgTextY","frameStyle","frameColor1","frameColor2","frameThickness","frameGlow","frameOrnament"].forEach(designBindInput);
 $("designUndo").addEventListener("click",()=>designRestoreHistory(designHistoryIndex-1));
 $("designRedo").addEventListener("click",()=>designRestoreHistory(designHistoryIndex+1));
-$("designStudioButton").addEventListener("click",()=>designStart("background"));
+$("designStudioButton").addEventListener("click",()=>designStart("background").catch(error=>designSetState("保存エラー: "+error.message)));
 $("closeDesign").addEventListener("click",()=>{$("designOverlay").hidden=true;if(designSaveDirty)designPersistDraft().catch(error=>designSetState("保存エラー: "+error.message));});
 $("designOverlay").addEventListener("click",event=>{if(event.target===$("designOverlay"))$("closeDesign").click();});
 $("designTemplate").addEventListener("change",()=>designLoadTemplate($("designTemplate").value));
@@ -564,7 +570,7 @@ $("designDraftName").addEventListener("input",designScheduleSave);
 $("designSaveNow").addEventListener("click",async()=>{if(designSaveTimer)clearTimeout(designSaveTimer);designSaveDirty=true;try{await designPersistDraft();designSetState("下書きを保存しました");}catch(error){designSetState("保存エラー: "+error.message);}});
 $("loadDesignDraft").addEventListener("click",()=>designLoadSelectedDraft().catch(error=>designSetState(error.message)));
 $("deleteDesignDraft").addEventListener("click",()=>designDeleteSelectedDraft().catch(error=>designSetState(error.message)));
-$("newDesignDraft").addEventListener("click",()=>designStart(designCategory));
+$("newDesignDraft").addEventListener("click",()=>designStart(designCategory).catch(error=>designSetState("保存エラー: "+error.message)));
 $("designExport").addEventListener("click",async event=>{const button=event.currentTarget;button.disabled=true;try{await designPersistDraft();const blob=await new Promise(resolve=>$("designCanvas").toBlob(resolve,"image/png"));if(!blob)throw new Error("画像を書き出せませんでした。");const link=document.createElement("a"),url=URL.createObjectURL(blob);link.href=url;link.download="kuro-"+designCategory+"-"+Date.now()+".png";document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);designSetState("画像を書き出しました");}catch(error){designSetState("書き出しエラー: "+error.message);}finally{button.disabled=false;}});
 $("designMakeItem").addEventListener("click",designCreateItem);
 $("bgImage").addEventListener("change",async()=>{
