@@ -1322,7 +1322,7 @@ async function handle(req: Request) {
         .eq("game_id", game.id)
         .eq("mode", mode)
         .contains("metadata", { verifiedRanking: "number-guess-v1" })
-        .gte("best_time_ms", 500)
+        .gte("best_time_ms", 400)
         .lte("best_time_ms", 3600000)
         .order("best_time_ms", { ascending: true })
         .limit(limit);
