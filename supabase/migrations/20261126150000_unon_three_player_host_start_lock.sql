@@ -1,15 +1,17 @@
--- Ensure UNON's Durable Object lobby consensus goes through the host SDK.
--- The host SDK locks game_online_rooms.status='playing' before sending unon-start.
--- Without this, late matchmaking entrants can be attached to a game that has started
--- in the Durable Object while its Supabase room row remains 'waiting'.
+-- Route UNON lobby consensus through the host SDK.
+-- The host SDK marks game_online_rooms.status='playing' before it sends unon-start.
+-- This prevents matchmaking from attaching a late third/fourth player to a game
+-- that has already started inside the Durable Object.
 DO $unon_three_player_lock$
 DECLARE
   v_html text;
+  v_changed boolean := false;
 BEGIN
   SELECT html_content INTO v_html
   FROM public.game_studio_games
   WHERE id='faa155cb-2143-4361-9a96-dc759d334e46'::uuid
   FOR UPDATE;
+
   IF v_html IS NULL THEN RAISE EXCEPTION 'UNON game not found'; END IF;
 
   IF position($old_state$   members=uiMembers(conn.getPlayers());updateMembers(members,votes);
@@ -37,6 +39,9 @@ $old_state$,
     if(mode==="match")$("mstat").textContent=notice;else $("rmsg").textContent=notice;
    }
 $new_state$);
+    v_changed := true;
+  ELSIF position($new_state$   // The DO records votes and broadcasts lobby state. Only the host starts,$new_state$ in v_html)=0 THEN
+    RAISE EXCEPTION 'UNON room-state handler anchor not found';
   END IF;
 
   IF position($old_vote$  else{(mode==="match"?$("mstat"):$("rmsg")).textContent=kind==="ready"?"準備OKを送りました。みんなを待っています。":"開始を送りました。全員の操作を待っています。"}
@@ -55,10 +60,15 @@ $old_vote$,
    }
   }
 $new_vote$);
+    v_changed := true;
+  ELSIF position($new_vote$   // The final vote may have been sent by the host itself,$new_vote$ in v_html)=0 THEN
+    RAISE EXCEPTION 'UNON submitVote anchor not found';
   END IF;
 
-  UPDATE public.game_studio_games
-  SET html_content=v_html,updated_at=now()
-  WHERE id='faa155cb-2143-4361-9a96-dc759d334e46'::uuid;
+  IF v_changed THEN
+    UPDATE public.game_studio_games
+    SET html_content=v_html,updated_at=now()
+    WHERE id='faa155cb-2143-4361-9a96-dc759d334e46'::uuid;
+  END IF;
 END
 $unon_three_player_lock$;
