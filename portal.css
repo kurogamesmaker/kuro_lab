@@ -3557,3 +3557,67 @@ body.kuro-portal[data-theme] .portal-header-inner .portal-notification-button sv
 body.kuro-portal[data-pro-theme="on"] .portal-header-inner .portal-notification-button svg {
   stroke:#111111!important;
 }
+
+
+/* KURO shared account modal layout: fit every viewport and keep the dialog scrollable. */
+body.kuro-portal .portal-modal-backdrop {
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: max(12px, env(safe-area-inset-top)) 18px max(12px, env(safe-area-inset-bottom));
+  place-items: safe center;
+}
+body.kuro-portal .portal-modal {
+  box-sizing: border-box;
+  width: min(440px, calc(100vw - 24px));
+  max-width: 100%;
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px);
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+body.kuro-portal .portal-modal-head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  flex: 0 0 auto;
+  gap: 12px;
+  padding: 4px 0 12px;
+  margin: -4px 0 10px;
+  background: var(--surface);
+}
+body.kuro-portal .portal-modal-head h2 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: clamp(18px, 4vw, 22px);
+}
+body.kuro-portal #portal-login-modal .portal-field,
+body.kuro-portal #portal-recovery-form .portal-field {
+  min-width: 0;
+}
+body.kuro-portal #portal-login-modal input,
+body.kuro-portal #portal-recovery-form input {
+  min-width: 0;
+}
+@media (max-height: 680px) {
+  body.kuro-portal .portal-modal { padding: 16px; border-radius: 16px; }
+  body.kuro-portal .portal-modal-head { padding-bottom: 8px; margin-bottom: 6px; }
+  body.kuro-portal .portal-modal .portal-field { margin: 9px 0; }
+  body.kuro-portal .portal-modal .portal-oauth { margin-top: 9px; }
+}
+@media (max-width: 520px) {
+  body.kuro-portal .portal-modal-backdrop {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  body.kuro-portal .portal-modal {
+    width: 100%;
+    padding: 19px 17px;
+    border-radius: 17px;
+  }
+}
