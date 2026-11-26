@@ -125,7 +125,45 @@ header.top.kuro-game-background-legendary{background:linear-gradient(100deg,#4b2
 .kuro-play-topbar-xp i{display:block;height:3px;width:54px;background:#e3e8f1;border-radius:99px;overflow:hidden}
 .kuro-play-topbar-xp em{display:block;width:0;height:100%;background:linear-gradient(90deg,#7c5cff,#49b8ff);border-radius:99px}
 @media(max-width:600px){.kuro-play-topbar-level{gap:4px;padding:3px 5px;font-size:9px}.kuro-play-topbar-level>b{font-size:10px}.kuro-play-topbar-xp{min-width:38px}.kuro-play-topbar-xp i{width:38px}.kuro-play-topbar-xp small{font-size:7px}}
-</style></head>
+</style>
+<style id="kuro-gameplay-account-viewport-layout-v1">
+/* Account window remains reachable while the mobile game shell is height-constrained. */
+.kuro-account-backdrop {
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  align-items: safe center;
+}
+.kuro-account-card {
+  box-sizing: border-box;
+  width: min(450px, 100%);
+  max-height: calc(100vh - 20px);
+  max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 20px);
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+.kuro-account-card form,
+.kuro-account-card .kuro-account-field { min-width: 0; }
+.kuro-account-card input { min-width: 0; max-width: 100%; }
+@media (max-height: 680px) {
+  .kuro-account-card { padding: 17px 18px 15px; border-radius: 16px; }
+  .kuro-account-intro { margin-bottom: 10px; }
+  .kuro-account-field { margin-bottom: 9px; }
+  .kuro-account-foot { margin-top: 8px; }
+}
+@media (max-width: 600px) {
+  .kuro-account-backdrop { padding-left: 10px; padding-right: 10px; }
+  .kuro-account-card { width: 100%; }
+}
+</style>
+
+</head>
 <body><header class="top"><a class="brand" href="/games/">KURO GAMES</a><span class="game-cosmetic-avatar" id="gameCosmeticAvatar" hidden aria-label="装備中アバター"></span><span class="game-cosmetic-effects" id="gameCosmeticEffects" hidden></span><span class="kuro-play-topbar-level" id="kuroPlayTopLevel" hidden aria-label="プレイヤーレベル"><b id="kuroPlayTopLevelBadge">Lv.1</b><span class="kuro-play-topbar-xp"><small id="kuroPlayTopLevelXp">0 XP</small><i><em id="kuroPlayTopLevelProgress"></em></i></span></span><button class="back game-account-button" id="gameAccountButton" type="button">ログイン / 登録</button><a class="back" href="/games/">← ゲーム一覧へ</a></header>
 <div class="online-auth-backdrop" id="onlineAuthPrompt" hidden>
  <section class="online-auth-card" role="dialog" aria-modal="true" aria-labelledby="onlineAuthTitle">
