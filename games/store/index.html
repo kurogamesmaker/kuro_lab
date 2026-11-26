@@ -248,8 +248,8 @@ function openStoreTryOn(item){
   if(slot)cosmetics[slot]=normalizeCosmetic(item);
  }
  const avatarItem=cosmetics.avatar,frameItem=cosmetics.frame,backgroundItem=cosmetics.background,themeItem=cosmetics.theme,bannerItem=cosmetics.banner,nameplateItem=cosmetics.nameplate;
- const accountAvatar=slot==="avatar"?"":safeStoreImage(storeProfile&&storeProfile.avatar_url);
- const avatarImage=slot==="avatar"?safeStoreImage(avatarItem&&avatarItem.imageUrl):(accountAvatar||safeStoreImage(avatarItem&&avatarItem.imageUrl));
+ const accountAvatar=safeStoreImage(storeProfile&&storeProfile.avatar_url);
+ const avatarImage=safeStoreImage(avatarItem&&avatarItem.imageUrl)||((avatarItem&&avatarItem.icon)?"":accountAvatar);
  const avatarMarkup=avatarImage?'<img src="'+html(avatarImage)+'" alt="">':html((avatarItem&&avatarItem.icon)||"👤");
  const frameImage=safeStoreImage(frameItem&&frameItem.imageUrl);
  const frameRarity=String(frameItem&&frameItem.rarity||"");
