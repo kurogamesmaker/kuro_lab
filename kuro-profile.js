@@ -352,7 +352,7 @@
       var equippedFrame = cosmetics.frame && typeof cosmetics.frame === "object" ? cosmetics.frame : null;
       var equippedBackground = cosmetics.background && typeof cosmetics.background === "object" ? cosmetics.background : null;
       var equippedTheme = cosmetics.theme && typeof cosmetics.theme === "object" ? cosmetics.theme : null;
-      var avatarUrl = safeImageUrl(equippedAvatar && equippedAvatar.imageUrl) || safeImageUrl(profile.avatar_url);
+      var avatarUrl = safeImageUrl(profile.avatar_url) || safeImageUrl(equippedAvatar && equippedAvatar.imageUrl);
       var avatar = avatarUrl
         ? '<img src="' + escapeHtml(avatarUrl) + '" alt="" class="kuro-profile-avatar-image">'
         : equippedAvatar && equippedAvatar.icon
