@@ -263,14 +263,14 @@ $("itemsBody").addEventListener("click",async event=>{
  }
  if(remove){
   const name=remove.dataset.name||"この商品";
-  if(!confirm("「"+name+"」を削除しますか？\\nショップでの販売・表示を終了します。購入済みユーザーの所持アイテムと購入履歴は残ります。"))return;
+  if(!confirm("「"+name+"」を削除しますか？\nショップでの販売・表示を終了します。購入済みユーザーの所持アイテムと購入履歴は残ります。"))return;
   remove.disabled=true;
   try{await api("studio_delete_item",{itemId:remove.dataset.delete});await refresh();note("商品を削除しました。購入済みアイテムと履歴は保持されています。","success");}
   catch(error){note(error.message||"商品を削除できませんでした。","error");remove.disabled=false;}
   return;
  }
  if(restore){
-  if(!confirm("この商品を復元しますか？\\n復元後は非公開状態になり、再公開するまでショップには表示されません。"))return;
+  if(!confirm("この商品を復元しますか？\n復元後は非公開状態になり、再公開するまでショップには表示されません。"))return;
   restore.disabled=true;
   try{await api("studio_restore_item",{itemId:restore.dataset.restore});$("statusFilter").value="inactive";await refresh();note("商品を復元しました。現在は非公開です。","success");}
   catch(error){note(error.message||"商品を復元できませんでした。","error");restore.disabled=false;}
