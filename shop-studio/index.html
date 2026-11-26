@@ -165,7 +165,7 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
       <button class="mini" type="button" id="imageLayerUp">↑ 前面へ</button>
       <button class="mini" type="button" id="imageLayerDown">↓ 背面へ</button>
      </div>
-     <div class="design-field" style="margin-top:12px"><label for="imageLayerFit">画像の配置方法</label><select id="imageLayerFit"><option value="contain">全体を表示</option><option value="cover">枠いっぱいに切り抜く</option><option value="stretch">枠に合わせて伸縮</option></select></div><div class="design-field" id="frameImageTargetField" style="margin-top:10px" hidden><label for="imageLayerTarget">画像の表示場所</label><select id="imageLayerTarget"><option value="free">自由配置（画像全体）</option><option value="rim">外周の枠に重ねる</option><option value="avatar">アイコン画像の上に重ねる</option></select><label class="design-check" id="imageLayerOverflowField" style="margin-top:9px"><input id="imageLayerOverflow" type="checkbox" checked> アイコンの外にはみ出して表示する</label><small class="hint">外周の画像はアイコンの円からはみ出して配置できます。チェックを外すと従来どおり外周の帯の中に収まります。</small></div>
+     <div class="design-field" style="margin-top:12px"><label for="imageLayerFit">画像の配置方法</label><select id="imageLayerFit"><option value="contain">全体を表示</option><option value="cover">枠いっぱいに切り抜く</option><option value="stretch">枠に合わせて伸縮</option></select></div><div class="design-field" id="frameImageTargetField" style="margin-top:10px" hidden><label for="imageLayerTarget">画像の表示場所</label><select id="imageLayerTarget"><option value="free">自由配置（画像全体）</option><option value="rim">外周の枠に重ねる</option><option value="avatar">アイコン画像の上に重ねる</option></select><label class="design-check" id="imageLayerOverflowField" style="margin-top:9px"><input id="imageLayerOverflow" type="checkbox" checked> アイコンの外にはみ出して表示する</label><small class="hint">「外周」「アイコンの上」のどちらでも、チェックを入れると円形の範囲を越えて画像を表示できます。外すと選択した範囲内に収まります。</small></div>
      <div class="design-two">
       <div class="design-field"><label for="imageLayerX">左右位置</label><input id="imageLayerX" type="range" min="0" max="100" value="50"><output id="imageLayerXValue">50%</output></div>
       <div class="design-field"><label for="imageLayerY">上下位置</label><input id="imageLayerY" type="range" min="0" max="100" value="50"><output id="imageLayerYValue">50%</output></div>
@@ -490,7 +490,7 @@ function designUpdateLayerControls(){
  const ids=designLayerControlIds();
  ids.forEach(id=>$(id).disabled=!selected);
   $("frameImageTargetField").hidden=designCategory!=="frame";
- $("imageLayerOverflowField").hidden=designCategory!=="frame"||!selected||selected.target!=="rim";
+ $("imageLayerOverflowField").hidden=designCategory!=="frame"||!selected||!["rim","avatar"].includes(selected.target||"rim");
  ["duplicateImageLayer","deleteImageLayer","imageLayerUp","imageLayerDown"].forEach(id=>$(id).disabled=!selected);
  if(!selected){
   $("imageLayerSelect").disabled=true;
@@ -526,7 +526,7 @@ function designUpdateLayerOutputs(){
 function designChangeSelectedLayer(key,value){
  const selected=designSelectedImageLayer();if(!selected)return;
  selected[key]=value;
- if(key==="target")$("imageLayerOverflowField").hidden=designCategory!=="frame"||value!=="rim";
+ if(key==="target")$("imageLayerOverflowField").hidden=designCategory!=="frame"||!["rim","avatar"].includes(value);
  designUpdateLayerOutputs();designRender();designScheduleSave();
 }
 async function designDrawImageLayers(ctx,width,height,showSelection=true){
@@ -542,7 +542,7 @@ async function designDrawImageLayers(ctx,width,height,showSelection=true){
    // Image artwork can be clipped to the rim or the circular avatar area.
    const scale=Math.max(.6,Math.min(1.05,Number(designData.frameSize??100)/100));
    const radius=340*scale,thick=Math.max(12,Math.min(68,Number(designData.thickness)||42));
-   if(layer.target==="avatar"){
+   if(layer.target==="avatar"&&layer.allowOverflow===false){
     const avatarRadius=Math.max(0,radius-thick/2-5);
     ctx.beginPath();ctx.arc(400,400,avatarRadius,0,Math.PI*2);ctx.clip();
    }else if(layer.target==="rim"&&layer.allowOverflow===false){
