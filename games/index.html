@@ -1392,8 +1392,10 @@ header .lab{padding-left:10px!important;padding-right:10px!important}
 .kuro-level-ranking-row[data-rank="3"]{border-color:#ead9ca;background:linear-gradient(100deg,#fff9f5,#fff)}
 .kuro-level-ranking-position{width:31px;flex:0 0 31px;text-align:center;color:#7f89a0;font-size:14px;font-weight:1000}
 .kuro-level-ranking-position.medal{font-size:20px}
-.kuro-level-ranking-avatar{width:36px;height:36px;flex:0 0 36px;display:grid;place-items:center;overflow:hidden;border-radius:50%;background:linear-gradient(145deg,#eee8ff,#e5f0ff);color:#6751a5;font-size:14px;font-weight:950}
-.kuro-level-ranking-avatar img{width:100%;height:100%;object-fit:cover}
+.kuro-level-ranking-avatar{position:relative;width:36px;height:36px;flex:0 0 36px;display:grid;place-items:center;overflow:visible;border-radius:50%;background:linear-gradient(145deg,#eee8ff,#e5f0ff);color:#6751a5;font-size:14px;font-weight:950}
+.kuro-level-ranking-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;z-index:1}
+.kuro-level-ranking-avatar .kuro-level-ranking-frame{position:absolute;inset:-5px;z-index:4;pointer-events:none;background-position:center;background-repeat:no-repeat;background-size:100% 100%}
+.kuro-level-ranking-avatar .kuro-level-ranking-cosmetic-icon{position:relative;z-index:1;font-size:20px;line-height:1}
 .kuro-level-ranking-user{display:grid;gap:2px;flex:1;min-width:0}
 .kuro-level-ranking-user strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#34425b;font-size:12px;font-weight:900}
 .kuro-level-ranking-user small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#8a94a7;font-size:10px}
@@ -1414,7 +1416,7 @@ header .lab{padding-left:10px!important;padding-right:10px!important}
  .kuro-level-ranking-row{gap:8px;padding:9px}
  .kuro-level-ranking-position{width:24px;flex-basis:24px;font-size:12px}
  .kuro-level-ranking-position.medal{font-size:18px}
- .kuro-level-ranking-avatar{width:32px;height:32px;flex-basis:32px}
+ .kuro-level-ranking-avatar{width:32px;height:32px;flex-basis:32px}.kuro-level-ranking-avatar .kuro-level-ranking-frame{inset:-4px}
  .kuro-level-ranking-user strong{font-size:11px}
  .kuro-level-ranking-user small{font-size:9px}
  .kuro-level-ranking-level{min-width:47px;padding:5px 6px;font-size:10px}
@@ -2118,6 +2120,41 @@ initKuroRankingShowcase();
  const db=window.kuroGamesDB;
  if(!panel||!list||!count||!refresh)return;
  let busy=false,hasRendered=false;
+ const levelCosmeticsCache=new Map();
+ const safeLevelCosmeticUrl=value=>{
+  const shown=kuroGamesAvatarDisplayUrl(value);
+  if(!shown)return "";
+  try{const url=new URL(shown,window.location.origin);return url.protocol==="https:"||(url.protocol==="http:"&&url.origin===window.location.origin)?url.href:"";}catch(_){return "";}
+ };
+ async function decorateLevelRankingFrames(){
+  const avatars=Array.from(list.querySelectorAll(".kuro-level-ranking-row[data-user-id] .kuro-level-ranking-avatar"));
+  await Promise.all(avatars.map(async avatar=>{
+   const row=avatar.closest(".kuro-level-ranking-row"),userId=row&&row.getAttribute("data-user-id");
+   if(!userId)return;
+   if(!levelCosmeticsCache.has(userId))levelCosmeticsCache.set(userId,(async()=>{
+    try{const result=await db.rpc("kuro_get_public_store_cosmetics",{p_user_id:userId});if(result.error)throw result.error;return result.data&&typeof result.data==="object"?result.data:{};}
+    catch(error){console.debug("Level ranking cosmetics unavailable:",userId,error);return {};}
+   })());
+   const cosmetics=await levelCosmeticsCache.get(userId);
+   if(!avatar.isConnected)return;
+   const equippedAvatar=cosmetics.avatar&&typeof cosmetics.avatar==="object"?cosmetics.avatar:null;
+   if(avatar.dataset.hasProfileImage!=="1"&&equippedAvatar){
+    const equippedImage=safeLevelCosmeticUrl(equippedAvatar.imageUrl);
+    if(equippedImage){
+     const image=document.createElement("img");image.src=equippedImage;image.alt="";image.loading="lazy";image.decoding="async";
+     image.addEventListener("error",()=>image.remove(),{once:true});avatar.append(image);
+    }else if(equippedAvatar.icon){
+     const icon=document.createElement("span");icon.className="kuro-level-ranking-cosmetic-icon";icon.textContent=String(equippedAvatar.icon);avatar.append(icon);
+    }
+   }
+   const frame=cosmetics.frame&&typeof cosmetics.frame==="object"?cosmetics.frame:null;
+   const frameUrl=safeLevelCosmeticUrl(frame&&frame.imageUrl);
+   if(frameUrl&&!avatar.querySelector(".kuro-level-ranking-frame")){
+    const layer=document.createElement("span");layer.className="kuro-level-ranking-frame";layer.setAttribute("aria-hidden","true");
+    layer.style.backgroundImage="url("+JSON.stringify(frameUrl)+")";avatar.append(layer);
+   }
+  }));
+ }
  const escapeHtml=value=>String(value==null?"":value).replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[char]);
  const safeAvatar=value=>{
   if(!value)return "";
@@ -2156,7 +2193,7 @@ initKuroRankingShowcase();
    const position=medals[index]&&rank===index+1?medals[index]:String(rank);
    return '<button class="kuro-level-ranking-row" type="button" data-user-id="'+escapeHtml(row.user_id)+'" data-rank="'+rank+'" aria-label="プロフィールを見る：'+escapeHtml(name)+'">'+
     '<span class="kuro-level-ranking-position'+(index<3?' medal':'')+'">'+position+'</span>'+
-    '<span class="kuro-level-ranking-avatar">'+avatar+'</span>'+
+    '<span class="kuro-level-ranking-avatar" data-has-profile-image="'+(avatarUrl?"1":"0")+'">'+avatar+'</span>'+
     '<span class="kuro-level-ranking-user"><strong>'+escapeHtml(name)+'</strong><small>'+escapeHtml(username)+'</small></span>'+
     '<span class="kuro-level-ranking-level">Lv.'+level.toLocaleString("ja-JP")+'</span>'+
     '<span class="kuro-level-ranking-xp">'+totalXp.toLocaleString("ja-JP")+' XP</span>'+
@@ -2164,6 +2201,7 @@ initKuroRankingShowcase();
   }).join("");
   count.textContent=rows.length.toLocaleString("ja-JP")+" 人";
   hasRendered=true;
+  void decorateLevelRankingFrames();
  };
  async function loadRanking(){
   if(busy||document.visibilityState==="hidden")return;
