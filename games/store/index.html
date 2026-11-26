@@ -81,12 +81,32 @@ const html=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt
 const categoryLabels={avatar:"アバター",frame:"フレーム",background:"壁紙",theme:"テーマ",nameplate:"ネーム装飾",banner:"バナー",other:"その他"};
 const rarityLabels={common:"COMMON",rare:"RARE",epic:"EPIC",legendary:"LEGENDARY"};
 let storeItems=[],inventory=[],equipped=[],currentCategory="all",isLoggedIn=false,coinBalance=null;
+function safeStoreImage(value){
+ if(!value)return "";
+ try{
+  const url=new URL(String(value),location.origin);
+  if(url.origin==="https://cprvpphlfpmiegjiutjn.supabase.co"&&url.pathname.startsWith("/storage/v1/object/public/"))return location.origin+"/api/cloudflare-relay?resource="+encodeURIComponent(url.pathname+url.search);
+  if(url.protocol==="https:"||url.origin===location.origin)return url.href;
+ }catch(_){}
+ return "";
+}
 function itemArt(item,small=false){
- if(item.image_url)return '<img src="'+html(item.image_url)+'" alt="">';
+ const image=safeStoreImage(item.image_url);
+ if(image)return '<img src="'+html(image)+'" alt="" loading="lazy">';
  return '<span class="'+(small?"":"item-icon")+'">'+html(item.icon||"🎁")+'</span>';
 }
 function status(message,type=""){
  $("storeStatus").textContent=message;$("storeStatus").className="status"+(type?" "+type:"");
+}
+async function invokeStore(body){
+ const {data,error}=await storeDb.functions.invoke("kurogames-store",{body});
+ if(error){
+  let message=error.message||"ストア処理に失敗しました。";
+  try{const response=error.context;if(response&&typeof response.clone==="function"){const result=await response.clone().json();if(result?.error)message=result.error;}}catch(_){}
+  throw new Error(message);
+ }
+ if(data?.error)throw new Error(data.error);
+ return data||{};
 }
 function ownedIds(){return new Set(inventory.map(row=>row.item_id));}
 function equippedFor(slot){return equipped.find(row=>row.slot===slot)||null;}
@@ -150,8 +170,7 @@ async function claimItem(itemId,button){
  if(!isLoggedIn){location.href="/games/?account=1";return;}
  button.disabled=true;button.textContent="取得中…";
  try{
-  const {data,error}=await storeDb.functions.invoke("kurogames-store",{body:{action:"claim_free",itemId}});
-  if(error)throw error;if(data?.error)throw new Error(data.error);
+  const data=await invokeStore({action:"claim_free",itemId});
   status(data?.result?.alreadyOwned?"このアイテムはすでに所持しています。":"アイテムを取得しました。マイアイテムに追加しました。","success");
   await refreshStore();
  }catch(error){status("取得できませんでした："+(error.message||error),"error");button.disabled=false;button.textContent="無料で取得する";}
@@ -167,8 +186,7 @@ async function purchaseItem(itemId,button){
  button.disabled=true;button.textContent="購入処理中…";
  try{
   const requestId=crypto.randomUUID();
-  const {data,error}=await storeDb.functions.invoke("kurogames-store",{body:{action:"purchase",itemId,requestId}});
-  if(error)throw error;if(data?.error)throw new Error(data.error);
+  const data=await invokeStore({action:"purchase",itemId,requestId});
   const result=data?.result||{};
   status(result.alreadyOwned?"このアイテムはすでに所持しています。":("購入しました。 "+price.toLocaleString("ja-JP")+" KCを使用しました。"),"success");
   await refreshStore();
@@ -181,16 +199,14 @@ async function purchaseItem(itemId,button){
 async function equipItem(slot,itemId,button){
  button.disabled=true;
  try{
-  const {data,error}=await storeDb.functions.invoke("kurogames-store",{body:{action:"equip",slot,itemId}});
-  if(error)throw error;if(data?.error)throw new Error(data.error);
+  const data=await invokeStore({action:"equip",slot,itemId});
   status(categoryLabels[slot]+"を装備しました。","success");await refreshStore();
  }catch(error){status("装備を変更できませんでした："+(error.message||error),"error");button.disabled=false;}
 }
 async function unequipItem(slot,button){
  button.disabled=true;
  try{
-  const {data,error}=await storeDb.functions.invoke("kurogames-store",{body:{action:"equip",slot,itemId:null}});
-  if(error)throw error;if(data?.error)throw new Error(data.error);
+  const data=await invokeStore({action:"equip",slot,itemId:null});
   status(categoryLabels[slot]+"を解除しました。","success");await refreshStore();
  }catch(error){status("装備を解除できませんでした："+(error.message||error),"error");button.disabled=false;}
 }
