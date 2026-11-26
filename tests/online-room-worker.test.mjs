@@ -706,3 +706,62 @@ test("UNON online action endpoint accepts a five-card local-rule play", async ()
   assert.equal(fixture.room.data.unonGame.pendingDraw, 10);
   assert.equal(fixture.room.data.unonGame.players[0].hand.length, 2);
 });
+
+
+test("UNON three-player lobby waits for the host start lock after every vote", async () => {
+  const fixture = createRoom();
+  fixture.room.loaded = true;
+  const players = [];
+  const sockets = [];
+  const messages = [];
+  for (const [index, id] of ["host-3p", "guest-3p-a", "guest-3p-b"].entries()) {
+    const keys = await makePlayerKeys();
+    players.push({
+      id,
+      name: "Player " + (index + 1),
+      pub: keys.pub,
+      ready: false,
+      start: false,
+    });
+    const sent = [];
+    const socket = { send(payload) { sent.push(JSON.parse(payload)); } };
+    sockets.push(socket);
+    messages.push(sent);
+    fixture.room.sockets.set(socket, { id, isHost: index === 0 });
+  }
+  fixture.room.data.state = {
+    phase: "lobby",
+    ruleMode: "official",
+    players,
+  };
+
+  for (let i = 0; i < players.length; i++) {
+    await fixture.room.onMessage(sockets[i], fixture.room.sockets.get(sockets[i]), JSON.stringify({
+      type: "message",
+      messageType: "unon-vote",
+      data: { vote: "ready" },
+    }));
+    await fixture.room.onMessage(sockets[i], fixture.room.sockets.get(sockets[i]), JSON.stringify({
+      type: "message",
+      messageType: "unon-vote",
+      data: { vote: "start" },
+    }));
+  }
+
+  assert.equal(fixture.room.data.state.phase, "lobby");
+  assert.equal(fixture.room.data.state.players.length, 3);
+  assert.ok(fixture.room.data.state.players.every(player => player.ready && player.start));
+  assert.equal(fixture.room.data.unonGame, null);
+
+  await fixture.room.onMessage(sockets[0], fixture.room.sockets.get(sockets[0]), JSON.stringify({
+    type: "unon-start",
+    requestId: "start-three-player",
+    ruleMode: "official",
+  }));
+
+  const result = messages[0].filter(item => item.type === "unon-result").at(-1).result;
+  assert.equal(result.ok, true);
+  assert.equal(fixture.room.data.state.phase, "playing");
+  assert.equal(fixture.room.data.unonGame.players.length, 3);
+  assert.deepEqual(fixture.room.data.unonGame.players.map(player => player.hand.length), [7, 7, 7]);
+});
