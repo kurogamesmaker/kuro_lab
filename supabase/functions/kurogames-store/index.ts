@@ -130,6 +130,23 @@ Deno.serve(async (req: Request) => {
       }
       return reply(200, { result: data });
     }
+    if (action === "discard_item") {
+      const user = await resolveUser(req, true);
+      const inventoryId = typeof body.inventoryId === "string" ? body.inventoryId : "";
+      if (!UUID_RE.test(inventoryId)) throw new HttpError(400, "所持アイテムIDが正しくありません。");
+      const { data, error } = await admin.rpc("kuro_store_discard_inventory_item", {
+        p_user_id: user!.id,
+        p_inventory_id: inventoryId,
+      });
+      if (error) {
+        const message = error.message || "";
+        if (message.includes("STORE_INVENTORY_ITEM_NOT_FOUND")) throw new HttpError(404, "このアイテムは所持品に見つかりません。ページを再読み込みしてください。");
+        if (message.includes("STORE_INVALID_DISCARD_REQUEST")) throw new HttpError(400, "削除リクエストが正しくありません。");
+        throw error;
+      }
+      return reply(200, { result: data });
+    }
+
     if (action === "equip") {
       const user = await resolveUser(req, true);
       const slot = typeof body.slot === "string" ? body.slot : "";
