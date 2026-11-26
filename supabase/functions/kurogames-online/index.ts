@@ -1214,7 +1214,7 @@ async function handle(req: Request) {
       const rankingViewer = await getOptionalUser(req);
       if (rankingViewer) await reconcilePendingVerifiedSessions(rankingViewer.id, game.id);
     }
-    if (game.id === TICTACTOE_GAME_ID) {
+    if (game.id === TICTACTOE_GAME_ID || game.id === PRIME_GAME_ID) {
       const rankingViewer = await getOptionalUser(req);
       if (rankingViewer) await reconcilePendingVerifiedSessions(rankingViewer.id, game.id);
     }
@@ -1777,16 +1777,46 @@ async function handle(req: Request) {
     requirePublished(game);
     requireFeature(settings.features,"ranking");
     if (game.id !== PRIME_GAME_ID) throw new HttpError(404,"素因数分解の認証先ではありません。");
-    const session = await loadVerifiedSession(user.id,body.sessionId,body.nonce,game.id,"prime_factor");
+    const sessionId = typeof body.sessionId === "string" && UUID_RE.test(body.sessionId)
+      ? body.sessionId : "";
+    if (!sessionId) throw new HttpError(400,"ゲームセッションIDが正しくありません。");
+
+    // A previous finish request can complete the session successfully and then
+    // fail while writing the aggregate. Allow the same authenticated owner to
+    // retry that completed session; the submission id makes score writes idempotent.
+    const {data:existingSession,error:existingError} = await admin.from("game_verification_sessions")
+      .select("*")
+      .eq("id",sessionId)
+      .eq("game_id",game.id)
+      .eq("user_id",user.id)
+      .eq("game_type","prime_factor")
+      .maybeSingle();
+    if (existingError) throw new HttpError(500,"素因数分解の完了状態を確認できませんでした。");
+    if (!existingSession) throw new HttpError(404,"ゲームセッションが見つかりません。");
+
+    if (existingSession.status === "completed" && existingSession.result === "completed") {
+      const completedState = cloneGameState(existingSession.state as Record<string,any>);
+      const saved = existingSession.score_recorded
+        ? {scoreRecorded:Number(completedState.score||0)>0,score:Math.max(0,Math.floor(Number(completedState.score)||0))}
+        : await primeRecordCompletedRun(user.id,existingSession);
+      return reply(200,{
+        ok:true,completed:true,recorded:saved.scoreRecorded,score:saved.score,
+        solvedCount:Number(completedState.solvedCount)||0,maxCombo:Number(completedState.maxCombo)||0,
+        recovered:true,
+      });
+    }
+
+    if (existingSession.status !== "active") {
+      throw new HttpError(409,"このゲームセッションは終了しています。");
+    }
+    const session = await loadVerifiedSession(user.id,sessionId,body.nonce,game.id,"prime_factor");
     const state = cloneGameState(session.state as Record<string,any>);
     const timeLeft = primeGetTimeLeft(session,state);
-    // The client only calls finishPrimeSession after the 90-second game timer ends.
-    // Enforce that on the server too, so a caller cannot end a live run early for a payout.
+    // The client only calls finishPrimeSession after the timer ends. Enforce
+    // this server-side so a live run cannot be finalized early.
     if (timeLeft > 1.0) {
       throw new HttpError(409,"素因数分解は制限時間が終了してから結果を確定できます。");
     }
-    // The prime-factor verifier owns the target, accepted factors and score.
-    // Pay only for a completed run with at least one server-verified solution.
     if ((Number(state.solvedCount) || 0) > 0 && (Number(state.score) || 0) > 0) {
       const {error:coinEventError} = await admin.from("kuro_coin_verified_game_events").insert({
         game_id: PRIME_GAME_ID,
@@ -1801,10 +1831,20 @@ async function handle(req: Request) {
         throw new HttpError(500,"素因数分解の報酬を確定できませんでした。");
       }
     }
-    const patch = {state:{...state,timeLeftAtFinish:timeLeft},status:"completed",result:"completed",completed_at:new Date().toISOString(),score_recorded:false};
+    const patch = {
+      state:{...state,timeLeftAtFinish:timeLeft},
+      status:"completed",
+      result:"completed",
+      completed_at:new Date().toISOString(),
+      score_recorded:false,
+      score_recovery_status:"pending",
+    };
     await saveVerifiedSession(session,patch);
     const saved = await primeRecordCompletedRun(user.id,{...session,...patch});
-    return reply(200,{ok:true,completed:true,recorded:saved.scoreRecorded,score:saved.score,solvedCount:Number(state.solvedCount)||0,maxCombo:Number(state.maxCombo)||0});
+    return reply(200,{
+      ok:true,completed:true,recorded:saved.scoreRecorded,score:saved.score,
+      solvedCount:Number(state.solvedCount)||0,maxCombo:Number(state.maxCombo)||0,
+    });
   }
 
   if (action === "number_start") {
