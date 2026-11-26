@@ -760,7 +760,12 @@ const KuroGames = {
         mode: options.mode || "default",
         limit: options.limit || 20,
       });
-      return result.scores || [];
+      if (result && typeof result.unavailableReason === "string" && result.unavailableReason.trim()) {
+        const error = new Error(result.unavailableReason);
+        error.code = "RANKING_UNAVAILABLE";
+        throw error;
+      }
+      return Array.isArray(result && result.scores) ? result.scores : [];
     },
   },
 
