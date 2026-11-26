@@ -96,6 +96,11 @@ footer{border-top:1px solid var(--line);background:white;padding:20px 0;color:#8
 .my-profile-background-rare{background:linear-gradient(100deg,#19385f,#3a6494);color:#fff}
 .my-profile-background-epic{background:linear-gradient(100deg,#421f62,#72438c);color:#fff}
 .my-profile-background-legendary{background:linear-gradient(100deg,#573719,#88612b);color:#fff}
+
+.my-profile-frame-image{position:relative;overflow:visible!important;border-color:transparent!important;background:transparent!important;box-shadow:none!important}
+.my-profile-frame-image::after{content:"";position:absolute;inset:-7px;z-index:3;pointer-events:none;background-image:var(--my-profile-frame-image);background-position:center;background-repeat:no-repeat;background-size:contain}
+.profile-name.my-profile-nameplate{display:inline-block;padding:3px 9px;border:1px solid #c2a1f0;border-radius:9px;background:linear-gradient(100deg,#f6eaff,#edf3ff);box-shadow:0 3px 12px #9270c422}
+.profile-name.my-profile-nameplate::after{content:attr(data-nameplate);display:inline-block;margin-left:8px;color:#7253a5;font-size:10px;font-weight:850}
 </style>
 </head>
 <body>
@@ -104,6 +109,7 @@ footer{border-top:1px solid var(--line);background:white;padding:20px 0;color:#8
 <div class="nav-spacer"></div>
 <a class="nav-link" href="/games/">ゲーム一覧</a>
 <a class="nav-link" href="/games/ranking/">ランキング</a>
+<a class="nav-link" href="/games/store/">ショップ</a>
 </div></header>
 <main class="wrap">
 <div class="page-head"><div><div class="eyebrow">KURO GAMES / MY PAGE</div><h1>マイページ</h1><p class="sub">KURO共通プロフィールと、各ゲームの最高記録を確認できます。</p></div></div>
@@ -116,7 +122,7 @@ footer{border-top:1px solid var(--line);background:white;padding:20px 0;color:#8
 <div class="my-profile-cosmetics" id="myProfileCosmetics" hidden aria-label="装備中アイテム"></div>
 <div class="my-profile-background" id="myProfileCosmeticBackground" hidden></div>
 <div class="profile-copy"><div class="profile-name" id="myProfileName" data-kuro-profile-self role="button" tabindex="0" aria-label="自分の共通プロフィールを見る">KUROユーザー</div><div class="profile-meta" id="myProfileMeta">KURO共通アカウント</div><p class="profile-bio" id="myProfileBio">プロフィール紹介はまだ設定されていません。</p></div>
-<div class="profile-actions"><button class="action" type="button" data-kuro-profile-self>共通プロフィールを見る</button><a class="action" href="/account/">アカウント設定</a></div>
+<div class="profile-actions"><a class="action" href="/games/store/">ショップ・カスタマイズ</a><button class="action" type="button" data-kuro-profile-self>共通プロフィールを見る</button><a class="action" href="/account/">アカウント設定</a></div>
 </section>
 <section class="panel coin-summary" aria-label="KURO COIN残高">
  <div class="coin-summary-copy">
@@ -184,8 +190,21 @@ function addProfile(profile,user,cosmetics){
  $("myProfileMeta").textContent=(profile&&profile.kuro_id)||"KURO共通アカウント";
  $("myProfileBio").textContent=profile&&profile.bio||"プロフィール紹介はまだ設定されていません。";
  cosmetics=cosmetics&&typeof cosmetics==="object"?cosmetics:{};
- var avatarItem=cosmetics.avatar||null,frame=cosmetics.frame||null,background=cosmetics.background||null,theme=cosmetics.theme||null;
+ var avatarItem=cosmetics.avatar||null,frame=cosmetics.frame||null,background=cosmetics.background||null,theme=cosmetics.theme||null,banner=cosmetics.banner||null,nameplate=cosmetics.nameplate||null;
  var avatar=$("myProfileAvatar");avatar.replaceChildren();avatar.dataset.frame=frame&&["common","rare","epic","legendary"].includes(frame.rarity)?frame.rarity:"";
+ function cosmeticImageUrl(value){
+  if(!value)return "";
+  try{
+   var parsed=new URL(String(value),location.origin);
+   if(parsed.origin==="https://cprvpphlfpmiegjiutjn.supabase.co"&&parsed.pathname.startsWith("/storage/v1/object/public/"))return location.origin+"/api/cloudflare-relay?resource="+encodeURIComponent(parsed.pathname+parsed.search);
+   if(parsed.protocol==="https:"||parsed.origin===location.origin)return parsed.href;
+  }catch(_){}
+  return "";
+ }
+ var frameImage=cosmeticImageUrl(frame&&frame.imageUrl);
+ avatar.classList.toggle("my-profile-frame-image",!!frameImage);
+ if(frameImage)avatar.style.setProperty("--my-profile-frame-image",'url("'+frameImage.replace(/["\\]/g,"\\ var avatarItem=cosmetics.avatar||null,frame=cosmetics.frame||null,background=cosmetics.background||null,theme=cosmetics.theme||null;
+ var avatar=$("myProfileAvatar");avatar.replaceChildren();avatar.dataset.frame=frame&&["common","rare","epic","legendary"].includes(frame.rarity)?frame.rarity:"";")+'")');else avatar.style.removeProperty("--my-profile-frame-image");
  var avatarFallback="<svg viewBox=\"0 0 24 24\" width=\"100%\" height=\"100%\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"8\" r=\"3.2\"></circle><path d=\"M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2\"></path></svg>";
  var url=profile&&profile.avatar_url?String(profile.avatar_url):"";
  if(url){
@@ -199,13 +218,24 @@ function addProfile(profile,user,cosmetics){
   }catch(_){}
  }
  if(!avatar.childNodes.length)avatar.innerHTML=avatarFallback;
- var slots=[["avatar",avatarItem],["frame",frame],["background",background],["theme",theme]];
+ var slots=[["avatar",avatarItem],["frame",frame],["background",background],["theme",theme],["banner",banner],["nameplate",nameplate]];
  var chips=$("myProfileCosmetics");chips.replaceChildren();
  slots.forEach(function(pair){var slot=pair[0],item=pair[1];if(!item||!item.name)return;var chip=document.createElement("span");chip.textContent=(item.icon||"✦")+" "+item.name;chips.appendChild(chip);});
  chips.hidden=!chips.childNodes.length;
  var bg=$("myProfileCosmeticBackground");
- bg.hidden=!background;
- bg.textContent=background?(background.icon||"✦")+" "+(background.name||"プロフィール背景"):"";
+ var wallpaper=background||banner;
+ bg.hidden=!wallpaper;
+ bg.textContent=wallpaper?(wallpaper.icon||"✦")+" "+(wallpaper.name||"プロフィール背景"):"";
+ var wallpaperUrl=cosmeticImageUrl(background&&background.imageUrl||banner&&banner.imageUrl);
+ var profileCard=document.querySelector("#myPageContent .profile");
+ if(profileCard){
+  profileCard.style.backgroundImage=wallpaperUrl?'linear-gradient(100deg,rgba(255,255,255,.96),rgba(255,255,255,.86)),url("'+wallpaperUrl.replace(/["\\]/g,"\\ bg.hidden=!background;
+ bg.textContent=background?(background.icon||"✦")+" "+(background.name||"プロフィール背景"):"";")+'")':"";
+  profileCard.style.backgroundSize=wallpaperUrl?"cover":"";
+  profileCard.style.backgroundPosition=wallpaperUrl?"center":"";
+ }
+ $("myProfileName").classList.toggle("my-profile-nameplate",!!nameplate);
+ $("myProfileName").dataset.nameplate=nameplate?nameplate.name||"":"";
  $("myPageContent").classList.remove("my-profile-theme-neon","my-profile-theme-classic","my-profile-theme-rare","my-profile-theme-epic","my-profile-theme-legendary");
  if(theme&&theme.itemKey==="neon-theme")$("myPageContent").classList.add("my-profile-theme-neon");
  else if(theme&&theme.itemKey==="kuro-classic-theme")$("myPageContent").classList.add("my-profile-theme-classic");
