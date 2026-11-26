@@ -171,8 +171,8 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
       <div class="design-field"><label for="imageLayerY">上下位置</label><input id="imageLayerY" type="range" min="0" max="100" value="50"><output id="imageLayerYValue">50%</output></div>
      </div>
      <div class="design-two">
-      <div class="design-field"><label for="imageLayerWidth">横幅</label><input id="imageLayerWidth" type="range" min="2" max="160" value="35"><output id="imageLayerWidthValue">35%</output></div>
-      <div class="design-field"><label for="imageLayerHeight">高さ</label><input id="imageLayerHeight" type="range" min="2" max="160" value="35"><output id="imageLayerHeightValue">35%</output></div>
+      <div class="design-field"><label for="imageLayerWidth">横幅</label><input id="imageLayerWidth" type="range" min="2" max="300" value="35"><output id="imageLayerWidthValue">35%</output><input id="imageLayerWidthNumber" type="number" min="2" max="300" step="1" value="35" aria-label="横幅（%）"></div>
+      <div class="design-field"><label for="imageLayerHeight">高さ</label><input id="imageLayerHeight" type="range" min="2" max="300" value="35"><output id="imageLayerHeightValue">35%</output><input id="imageLayerHeightNumber" type="number" min="2" max="300" step="1" value="35" aria-label="高さ（%）"></div>
      </div>
      <div class="design-field"><label for="imageLayerRotation">回転</label><input id="imageLayerRotation" type="range" min="-180" max="180" value="0"><output id="imageLayerRotationValue">0°</output></div>
      <div class="design-field"><label for="imageLayerOpacity">透明度</label><input id="imageLayerOpacity" type="range" min="0" max="100" value="100"><output id="imageLayerOpacityValue">100%</output></div>
@@ -479,7 +479,7 @@ function designSelectedImageLayer(){
  return designImageLayers().find(layer=>layer.id===selectedImageLayerId)||null;
 }
 function designLayerControlIds(){
- return ["imageLayerFit","imageLayerTarget","imageLayerOverflow","imageLayerX","imageLayerY","imageLayerWidth","imageLayerHeight","imageLayerRotation","imageLayerOpacity","imageLayerBrightness","imageLayerContrast","imageLayerSaturation","imageLayerBlur","imageLayerGrayscale","imageLayerFlipX","imageLayerFlipY"];
+ return ["imageLayerFit","imageLayerTarget","imageLayerOverflow","imageLayerX","imageLayerY","imageLayerWidth","imageLayerHeight","imageLayerWidthNumber","imageLayerHeightNumber","imageLayerRotation","imageLayerOpacity","imageLayerBrightness","imageLayerContrast","imageLayerSaturation","imageLayerBlur","imageLayerGrayscale","imageLayerFlipX","imageLayerFlipY"];
 }
 function designUpdateLayerControls(){
  const layers=designImageLayers(),selected=designSelectedImageLayer();
@@ -499,7 +499,7 @@ function designUpdateLayerControls(){
  $("imageLayerSelect").disabled=false;
  const pairs={
   imageLayerFit:selected.fit||"contain",imageLayerTarget:selected.target||(designData.showBaseFrame===false?"free":"rim"),imageLayerX:selected.x??50,imageLayerY:selected.y??50,
-  imageLayerWidth:selected.width??35,imageLayerHeight:selected.height??35,
+  imageLayerWidth:selected.width??35,imageLayerHeight:selected.height??35,imageLayerWidthNumber:selected.width??35,imageLayerHeightNumber:selected.height??35,
   imageLayerRotation:selected.rotation??0,imageLayerOpacity:selected.opacity??100,
   imageLayerBrightness:selected.brightness??100,imageLayerContrast:selected.contrast??100,
   imageLayerSaturation:selected.saturation??100,imageLayerBlur:selected.blur??0,
@@ -525,16 +525,19 @@ function designUpdateLayerOutputs(){
 }
 function designChangeSelectedLayer(key,value){
  const selected=designSelectedImageLayer();if(!selected)return;
+ if((key==="width"||key==="height")&&Number.isFinite(Number(value)))value=Math.max(2,Math.min(300,Number(value)));
  selected[key]=value;
  if(key==="target")$("imageLayerOverflowField").hidden=designCategory!=="frame"||!["rim","avatar"].includes(value);
+ if(key==="width"){$("imageLayerWidth").value=value;$("imageLayerWidthNumber").value=value;}
+ if(key==="height"){$("imageLayerHeight").value=value;$("imageLayerHeightNumber").value=value;}
  designUpdateLayerOutputs();designRender();designScheduleSave();
 }
 async function designDrawImageLayers(ctx,width,height,showSelection=true){
  const layers=designImageLayers();
  for(const layer of layers){
   const img=await designGetImage(layer.imageUrl);if(!img)continue;
-  const w=width*Math.max(.02,Math.min(1.6,Number(layer.width||35)/100));
-  const h=height*Math.max(.02,Math.min(1.6,Number(layer.height||35)/100));
+  const w=width*Math.max(.02,Math.min(3,Number(layer.width||35)/100));
+  const h=height*Math.max(.02,Math.min(3,Number(layer.height||35)/100));
   const cx=width*Math.max(0,Math.min(100,Number(layer.x??50)))/100;
   const cy=height*Math.max(0,Math.min(100,Number(layer.y??50)))/100;
   ctx.save();
@@ -596,7 +599,7 @@ function designBindLayerControls(){
   selectedImageLayerId=$("imageLayerSelect").value||null;designUpdateLayerControls();designRender();
  });
  const rangeMap={
-  imageLayerX:["x",Number],imageLayerY:["y",Number],imageLayerWidth:["width",Number],imageLayerHeight:["height",Number],
+  imageLayerX:["x",Number],imageLayerY:["y",Number],imageLayerWidth:["width",Number],imageLayerHeight:["height",Number],imageLayerWidthNumber:["width",Number],imageLayerHeightNumber:["height",Number],
   imageLayerRotation:["rotation",Number],imageLayerOpacity:["opacity",Number],imageLayerBrightness:["brightness",Number],
   imageLayerContrast:["contrast",Number],imageLayerSaturation:["saturation",Number],imageLayerBlur:["blur",Number],
   imageLayerGrayscale:["grayscale",Number],imageLayerFit:["fit",String],imageLayerTarget:["target",String]
