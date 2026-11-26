@@ -28,6 +28,45 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
 .member-identity strong{display:block;font-size:11px}.member-identity small{display:block;margin-top:4px;color:#9188a3;font-size:9px}
 @media(max-width:760px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.page-head{align-items:flex-start;flex-direction:column}.panel-head{align-items:flex-start;flex-direction:column}.toolbar{width:100%}.toolbar input{width:100%;flex:1}}
 @media(max-width:540px){.wrap{width:calc(100% - 22px)}header{height:59px}.brand{font-size:14px}.brand img{width:28px;height:28px}.nav{gap:8px}.nav a.link{padding:8px 9px;font-size:9px}.page-head h1{font-size:30px}.stat{padding:13px}.stat strong{font-size:22px}.fields{grid-template-columns:1fr}.field.wide{grid-column:auto}.overlay{padding:0;align-items:flex-end}.dialog{max-height:94dvh;border-radius:20px 20px 0 0;border-bottom:0}.dialog-head{padding:14px}.form-actions .button{flex:1}}
+
+/* Shop Studio design workspace */
+.design-overlay{position:fixed;inset:0;z-index:50;display:flex;align-items:stretch;justify-content:center;padding:14px;background:#05040cf2;backdrop-filter:blur(15px)}
+.design-overlay[hidden]{display:none!important}
+.design-window{width:min(1540px,100%);height:100%;max-height:calc(100dvh - 28px);display:flex;flex-direction:column;overflow:hidden;border:1px solid #4b3e64;border-radius:20px;background:#100e1a;box-shadow:0 30px 100px #000a}
+.design-head{display:flex;align-items:center;gap:12px;min-height:66px;padding:12px 16px;border-bottom:1px solid #312a43;background:#171423}
+.design-head-copy{min-width:135px}.design-head-copy strong{display:block;font-size:14px}.design-head-copy small{display:block;margin-top:3px;color:#968ba9;font-size:9px}
+.design-head input{width:min(260px,30vw);height:38px;padding:0 11px;border:1px solid #433856;border-radius:9px;background:#0e0c16;color:white;font-size:11px}
+.design-state{color:#a9a0b8;font-size:9px;white-space:nowrap}.design-head-actions{display:flex;gap:7px;margin-left:auto}
+.design-layout{min-height:0;flex:1;display:grid;grid-template-columns:285px minmax(0,1fr) 260px}
+.design-sidebar{min-height:0;overflow:auto;padding:15px;border-right:1px solid #2d273d;background:#151321}
+.design-sidebar.right{border-right:0;border-left:1px solid #2d273d}
+.design-section{padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid #2d273d}
+.design-section:last-child{border-bottom:0}.design-section h3{margin:0 0 10px;color:#d9cff0;font-size:10px;font-weight:950;letter-spacing:.08em}
+.design-field{display:grid;gap:6px;margin:0 0 11px}.design-field label{color:#aba1bd;font-size:9px;font-weight:850}
+.design-field input[type=text],.design-field input[type=number],.design-field select{width:100%;height:34px;padding:0 9px;border:1px solid #403650;border-radius:8px;background:#0d0b15;color:#f4efff;font-size:10px}
+.design-field input[type=color]{width:100%;height:34px;padding:3px;border:1px solid #403650;border-radius:8px;background:#0d0b15}
+.design-field input[type=range]{width:100%;accent-color:#a78bfa}.design-field input[type=file]{width:100%;font-size:9px;color:#bfb5d0}
+.design-field output{color:#d8c7f7;font-size:9px;text-align:right;font-variant-numeric:tabular-nums}
+.design-two{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.design-check{display:flex;align-items:center;gap:8px;color:#c9bfda;font-size:10px}
+.design-tabs{display:flex;gap:6px;margin-bottom:13px}.design-tab{flex:1;min-height:34px;border:1px solid #403650;border-radius:8px;background:#0f0d18;color:#bdb1d2;font-size:10px;font-weight:900;cursor:pointer}.design-tab.active{border-color:#9270c4;background:#2a203c;color:#fff}
+.design-stage{min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;padding:22px;background:radial-gradient(ellipse at center,#252038 0, #12101b 65%)}
+.design-stage-label{display:flex;align-items:center;justify-content:space-between;gap:12px;width:min(100%,760px);color:#aea4c2;font-size:9px}
+.design-canvas-shell{width:min(100%,760px);max-height:calc(100% - 35px);display:flex;align-items:center;justify-content:center;padding:10px;border:1px solid #4a405f;border-radius:14px;background:#090811;box-shadow:0 22px 60px #0007}
+#designCanvas{display:block;width:100%;max-height:calc(100dvh - 220px);height:auto;object-fit:contain;border-radius:7px}
+#designCanvas.is-square{width:auto;max-width:100%;height:auto;max-height:calc(100dvh - 220px);aspect-ratio:1}
+.design-hint{max-width:700px;color:#817890;font-size:9px;line-height:1.7;text-align:center}
+.design-profile-card{overflow:hidden;padding:12px;border:1px solid #423850;border-radius:15px;background:#191625}
+.design-profile-backdrop{position:relative;min-height:105px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:10px;background:linear-gradient(135deg,#3b246b,#164e63)}
+.design-profile-backdrop:before{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#080710b0,transparent)}
+.design-mini-avatar{position:relative;z-index:1;width:62px;height:62px;display:grid;place-items:center;border:7px solid #b79bff;border-radius:50%;background:linear-gradient(145deg,#49556f,#25283a);box-shadow:0 0 18px #a78bfa88;color:white;font-size:22px}
+.design-profile-info{padding:10px 2px 2px}.design-profile-info strong{display:block;font-size:11px}.design-profile-info small{display:block;margin-top:4px;color:#9389a6;font-size:8px}
+.design-drafts{display:grid;gap:7px}.design-drafts select{width:100%;height:34px;padding:0 9px;border:1px solid #403650;border-radius:8px;background:#0d0b15;color:#f4efff;font-size:10px}
+.design-empty{padding:8px;border:1px dashed #403650;border-radius:8px;color:#8d829f;font-size:9px;line-height:1.6}
+.design-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:54px;padding:9px 15px;border-top:1px solid #302940;background:#171423}
+.design-foot small{color:#9d93ad;font-size:9px}.design-foot-actions{display:flex;gap:7px}
+@media(max-width:1050px){.design-layout{grid-template-columns:250px minmax(0,1fr)}.design-sidebar.right{display:none}}
+@media(max-width:700px){.design-overlay{padding:0}.design-window{max-height:100dvh;border:0;border-radius:0}.design-head{min-height:58px;flex-wrap:wrap;padding:9px 11px;gap:8px}.design-head-copy{min-width:90px}.design-head-copy strong{font-size:12px}.design-head input{flex:1;min-width:120px;width:auto}.design-state{display:none}.design-head-actions .button{min-height:34px;padding:0 9px;font-size:9px}.design-layout{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}.design-sidebar{order:2;max-height:42dvh;border-top:1px solid #2d273d;border-right:0;padding:12px}.design-stage{order:1;min-height:0;padding:10px}.design-canvas-shell{width:100%;max-height:100%;padding:5px}.design-foot{min-height:48px;padding:7px 9px}.design-foot .button{min-height:34px;padding:0 9px;font-size:9px}#designCanvas{max-height:calc(58dvh - 150px)}#designCanvas.is-square{max-height:calc(58dvh - 150px)}}
 </style>
 </head>
 <body>
@@ -36,7 +75,7 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
 <div class="spacer"></div><a class="link" href="/games/store/">ショップを表示 ↗</a>
 </div></header>
 <main class="wrap" id="studioApp" hidden>
-<section class="page-head"><div><div class="eyebrow">KURO GAMES / COMMERCE WORKSPACE</div><h1>Shop Studio</h1><p>KUROGamesのショップ商品を作成・編集します。KURO Adminとは独立した専用ワークスペースです。</p></div><button class="button" id="newItem">＋ 商品を追加</button></section>
+<section class="page-head"><div><div class="eyebrow">KURO GAMES / COMMERCE WORKSPACE</div><h1>Shop Studio</h1><p>KUROGamesのショップ商品を作成・編集します。KURO Adminとは独立した専用ワークスペースです。</p></div><button class="button" id="newItem">＋ 商品を追加</button><button class="button secondary" id="designStudioButton" type="button">✦ デザインスタジオ</button></section>
 <div class="stats" id="statsGrid">
  <article class="stat"><span>登録商品数</span><strong id="statTotal">—</strong><small>全アイテム</small></article>
  <article class="stat"><span>販売中</span><strong id="statActive">—</strong><small>ショップに表示中</small></article>
@@ -88,6 +127,76 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
    <p class="notice" id="formNotice" role="status"></p>
    <div class="form-actions"><button class="button secondary" type="button" id="cancelEditor">キャンセル</button><button class="button" type="submit" id="saveItem">保存する</button></div>
   </form>
+ </section>
+</div>
+
+<div class="design-overlay" id="designOverlay" hidden>
+ <section class="design-window" role="dialog" aria-modal="true" aria-labelledby="designTitle">
+  <header class="design-head">
+   <div class="design-head-copy"><strong id="designTitle">プロフィールデザイン</strong><small>KURO SHOP DESIGN LAB</small></div>
+   <input id="designDraftName" type="text" maxlength="60" value="新しいデザイン" aria-label="デザイン名">
+   <span class="design-state" id="designSaveState" role="status">未保存</span>
+   <div class="design-head-actions"><button class="button secondary" type="button" id="designSaveNow">下書き保存</button><button class="button secondary" type="button" id="closeDesign">閉じる</button></div>
+  </header>
+  <div class="design-layout">
+   <aside class="design-sidebar">
+    <div class="design-section">
+     <h3>編集するアイテム</h3>
+     <div class="design-tabs"><button class="design-tab active" type="button" data-design-category="background">プロフィール背景</button><button class="design-tab" type="button" data-design-category="frame">アイコン枠</button></div>
+     <div class="design-field"><label for="designTemplate">テンプレート</label><select id="designTemplate"></select></div>
+    </div>
+    <div class="design-section design-drafts">
+     <h3>保存した下書き</h3>
+     <select id="designDraftSelect"><option value="">下書きを読み込み…</option></select>
+     <div class="design-two"><button class="mini" type="button" id="loadDesignDraft">読み込む</button><button class="mini danger" type="button" id="deleteDesignDraft">削除</button></div>
+     <button class="mini" type="button" id="newDesignDraft">＋ 新しいデザイン</button>
+    </div>
+    <div class="design-section" id="backgroundControls">
+     <h3>背景の見た目</h3>
+     <div class="design-two">
+      <div class="design-field"><label for="bgColor1">メインカラー</label><input id="bgColor1" type="color" value="#5b21b6"></div>
+      <div class="design-field"><label for="bgColor2">サブカラー</label><input id="bgColor2" type="color" value="#0e7490"></div>
+     </div>
+     <div class="design-field"><label for="bgAngle">グラデーション角度</label><input id="bgAngle" type="range" min="0" max="360" value="135"><output id="bgAngleValue">135°</output></div>
+     <div class="design-field"><label for="bgPattern">パターン</label><select id="bgPattern"><option value="none">なし</option><option value="grid">グリッド</option><option value="dots">ドット</option><option value="diagonal">斜線</option></select></div>
+     <div class="design-field"><label for="bgOverlay">暗めのオーバーレイ</label><input id="bgOverlay" type="range" min="0" max="70" value="18"><output id="bgOverlayValue">18%</output></div>
+     <div class="design-field"><label for="bgImage">背景画像をアップロード</label><input id="bgImage" type="file" accept="image/jpeg,image/png,image/webp"><small class="hint">JPEG / PNG / WebP・5MB以下</small></div>
+     <div class="design-field"><label for="bgTitle">背景に表示する文字</label><input id="bgTitle" type="text" maxlength="28" value="KURO PROFILE"></div>
+     <div class="design-two">
+      <div class="design-field"><label for="bgTextColor">文字色</label><input id="bgTextColor" type="color" value="#ffffff"></div>
+      <div class="design-field"><label for="bgTextSize">文字サイズ</label><input id="bgTextSize" type="range" min="14" max="84" value="38"><output id="bgTextSizeValue">38px</output></div>
+     </div>
+     <div class="design-two">
+      <div class="design-field"><label for="bgTextAlign">文字位置</label><select id="bgTextAlign"><option value="left">左</option><option value="center">中央</option><option value="right">右</option></select></div>
+      <div class="design-field"><label for="bgTextY">上下位置</label><input id="bgTextY" type="range" min="10" max="95" value="78"><output id="bgTextYValue">78%</output></div>
+     </div>
+    </div>
+    <div class="design-section" id="frameControls" hidden>
+     <h3>フレームの見た目</h3>
+     <div class="design-field"><label for="frameStyle">スタイル</label><select id="frameStyle"><option value="gradient">グラデーション</option><option value="solid">シンプル</option><option value="neon">ネオン</option><option value="gold">メタリック</option></select></div>
+     <div class="design-two">
+      <div class="design-field"><label for="frameColor1">メインカラー</label><input id="frameColor1" type="color" value="#a78bfa"></div>
+      <div class="design-field"><label for="frameColor2">サブカラー</label><input id="frameColor2" type="color" value="#22d3ee"></div>
+     </div>
+     <div class="design-field"><label for="frameThickness">枠の太さ</label><input id="frameThickness" type="range" min="6" max="34" value="17"><output id="frameThicknessValue">17px</output></div>
+     <label class="design-check"><input id="frameGlow" type="checkbox" checked> 発光エフェクトを付ける</label>
+     <div class="design-field" style="margin-top:11px"><label for="frameOrnament">ワンポイント装飾（絵文字・記号）</label><input id="frameOrnament" type="text" maxlength="4" value="✦"></div>
+    </div>
+   </aside>
+   <main class="design-stage">
+    <div class="design-stage-label"><strong id="designCanvasLabel">背景プレビュー · 16:9</strong><span>変更は自動的に下書きへ保存されます</span></div>
+    <div class="design-canvas-shell"><canvas id="designCanvas" width="960" height="540"></canvas></div>
+    <p class="design-hint">中央のプレビューを確認しながら調整できます。保存したデザインは商品画像として書き出せます。</p>
+   </main>
+   <aside class="design-sidebar right">
+    <div class="design-section"><h3>プロフィール合成プレビュー</h3><div class="design-profile-card">
+     <div class="design-profile-backdrop" id="miniProfileBackdrop"><div class="design-mini-avatar" id="miniProfileAvatar">K</div></div>
+     <div class="design-profile-info"><strong>KURO USER</strong><small>PROFILE PREVIEW · LEVEL 12</small></div>
+    </div></div>
+    <div class="design-section"><h3>制作のヒント</h3><p class="hint">背景は16:9、アイコン枠は正方形・透明背景で書き出します。画像を書き出してから商品登録フォームへ進めます。公開中の商品へは、商品フォームで保存するまで反映されません。</p></div>
+   </aside>
+  </div>
+  <footer class="design-foot"><small id="designDraftHelp">編集中の内容は下書きとして保存できます。</small><div class="design-foot-actions"><button class="button secondary" type="button" id="designExport">商品画像を書き出す</button><button class="button" type="button" id="designMakeItem">商品登録フォームへ</button></div></footer>
  </section>
 </div>
 <footer><div class="wrap foot"><span>KURO GAMES · SHOP STUDIO</span><span>専用権限 / 商品管理 / 購入履歴を保持</span></div></footer>
@@ -225,6 +334,221 @@ async function start(){
   else setAccess("Shop Studioを開けませんでした",message,false);
  }
 }
+
+const DESIGN_DEFAULTS={
+ background:{version:1,sourceImageUrl:"",color1:"#5b21b6",color2:"#0e7490",angle:135,pattern:"grid",overlay:18,title:"KURO PROFILE",textColor:"#ffffff",textSize:38,textAlign:"left",textY:78},
+ frame:{version:1,style:"gradient",color1:"#a78bfa",color2:"#22d3ee",thickness:17,glow:true,ornament:"✦"}
+};
+const DESIGN_TEMPLATES={
+ background:[
+  {id:"aurora",name:"AURORA",data:{color1:"#5b21b6",color2:"#0e7490",angle:135,pattern:"grid",overlay:18,title:"KURO PROFILE",textColor:"#ffffff"}},
+  {id:"cyber",name:"CYBER",data:{color1:"#111827",color2:"#7e22ce",angle:45,pattern:"diagonal",overlay:8,title:"CYBER SPACE",textColor:"#67e8f9"}},
+  {id:"sunset",name:"SUNSET",data:{color1:"#be123c",color2:"#7c2d12",angle:125,pattern:"dots",overlay:12,title:"MY PROFILE",textColor:"#fff7ed"}},
+  {id:"minimal",name:"MINIMAL",data:{color1:"#334155",color2:"#0f172a",angle:180,pattern:"none",overlay:20,title:"",textColor:"#ffffff"}}
+ ],
+ frame:[
+  {id:"neon",name:"NEON PULSE",data:{style:"neon",color1:"#a78bfa",color2:"#22d3ee",thickness:17,glow:true,ornament:"✦"}},
+  {id:"gold",name:"GOLD ELITE",data:{style:"gold",color1:"#fbbf24",color2:"#92400e",thickness:20,glow:true,ornament:"♛"}},
+  {id:"ice",name:"ICE CRYSTAL",data:{style:"gradient",color1:"#e0f2fe",color2:"#38bdf8",thickness:14,glow:true,ornament:"❄"}},
+  {id:"simple",name:"SIMPLE",data:{style:"solid",color1:"#c4b5fd",color2:"#c4b5fd",thickness:10,glow:false,ornament:""}}
+ ]
+};
+let designCategory="background",designData={...DESIGN_DEFAULTS.background},designDraftId=null,designSaveTimer=0,designSaveBusy=false,designSaveDirty=false,designSession=0,designImageCache={};
+function designSetState(message){$("designSaveState").textContent=message;}
+function designClone(value){return JSON.parse(JSON.stringify(value));}
+function designField(id,value){const node=$(id);if(node)node.value=value;}
+function designReadFields(){
+ if(designCategory==="background"){
+  designData={...designData,version:1,color1:$("bgColor1").value,color2:$("bgColor2").value,angle:Number($("bgAngle").value),pattern:$("bgPattern").value,overlay:Number($("bgOverlay").value),title:$("bgTitle").value,textColor:$("bgTextColor").value,textSize:Number($("bgTextSize").value),textAlign:$("bgTextAlign").value,textY:Number($("bgTextY").value)};
+ }else{
+  designData={...designData,version:1,style:$("frameStyle").value,color1:$("frameColor1").value,color2:$("frameColor2").value,thickness:Number($("frameThickness").value),glow:$("frameGlow").checked,ornament:$("frameOrnament").value};
+ }
+}
+function designApplyFields(){
+ if(designCategory==="background"){
+  designField("bgColor1",designData.color1||"#5b21b6");designField("bgColor2",designData.color2||"#0e7490");designField("bgAngle",designData.angle??135);designField("bgPattern",designData.pattern||"grid");designField("bgOverlay",designData.overlay??18);designField("bgTitle",designData.title||"");designField("bgTextColor",designData.textColor||"#ffffff");designField("bgTextSize",designData.textSize??38);designField("bgTextAlign",designData.textAlign||"left");designField("bgTextY",designData.textY??78);
+ }else{
+  designField("frameStyle",designData.style||"gradient");designField("frameColor1",designData.color1||"#a78bfa");designField("frameColor2",designData.color2||"#22d3ee");designField("frameThickness",designData.thickness??17);$("frameGlow").checked=designData.glow!==false;designField("frameOrnament",designData.ornament||"");
+ }
+ designUpdateOutputs();
+}
+function designUpdateOutputs(){
+ $("bgAngleValue").textContent=$("bgAngle").value+"°";$("bgOverlayValue").textContent=$("bgOverlay").value+"%";$("bgTextSizeValue").textContent=$("bgTextSize").value+"px";$("bgTextYValue").textContent=$("bgTextY").value+"%";$("frameThicknessValue").textContent=$("frameThickness").value+"px";
+}
+function designLoadTemplate(id){
+ const found=DESIGN_TEMPLATES[designCategory].find(row=>row.id===id);if(!found)return;
+ designData={...DESIGN_DEFAULTS[designCategory],...found.data};
+ designApplyFields();designRender();designScheduleSave();
+}
+function designSetCategory(category){
+ if(!["background","frame"].includes(category))return;
+ if(designCategory!==category){designCategory=category;designDraftId=null;designData=designClone(DESIGN_DEFAULTS[category]);$("designDraftName").value="新しい"+(category==="frame"?"フレーム":"背景");}
+ document.querySelectorAll("[data-design-category]").forEach(node=>node.classList.toggle("active",node.dataset.designCategory===category));
+ $("backgroundControls").hidden=category!=="background";$("frameControls").hidden=category!=="frame";
+ $("designCanvasLabel").textContent=category==="background"?"背景プレビュー · 16:9":"アイコン枠プレビュー · 1:1";
+ $("designCanvas").classList.toggle("is-square",category==="frame");
+ $("designTitle").textContent=category==="background"?"プロフィール背景エディター":"アイコンフレームエディター";
+ const templates=DESIGN_TEMPLATES[category];$("designTemplate").innerHTML=templates.map(t=>'<option value="'+html(t.id)+'">'+html(t.name)+'</option>').join("");
+ $("designDraftName").value=$("designDraftName").value||"新しい"+(category==="frame"?"フレーム":"背景");
+ designApplyFields();designRender();designLoadDraftList();
+}
+function designCanvasContext(){
+ const canvas=$("designCanvas"),ctx=canvas.getContext("2d");
+ return {canvas,ctx};
+}
+function designGetImage(url){
+ if(!url)return Promise.resolve(null);
+ if(designImageCache[url])return Promise.resolve(designImageCache[url]);
+ return new Promise(resolve=>{
+  const img=new Image();img.crossOrigin="anonymous";
+  img.onload=()=>{designImageCache[url]=img;resolve(img);};
+  img.onerror=()=>resolve(null);
+  img.src=safeAssetUrl(url);
+ });
+}
+async function designRender(){
+ const {canvas,ctx}=designCanvasContext();
+ if(!ctx)return;
+ if(designCategory==="background"){
+  canvas.width=960;canvas.height=540;
+  const rad=Number(designData.angle||0)*Math.PI/180,dx=Math.cos(rad)*960,dy=Math.sin(rad)*540;
+  const grad=ctx.createLinearGradient(480-dx/2,270-dy/2,480+dx/2,270+dy/2);
+  grad.addColorStop(0,designData.color1||"#5b21b6");grad.addColorStop(1,designData.color2||"#0e7490");
+  ctx.fillStyle=grad;ctx.fillRect(0,0,960,540);
+  const img=await designGetImage(designData.sourceImageUrl);
+  if(img){const scale=Math.max(960/img.width,540/img.height),w=img.width*scale,h=img.height*scale;ctx.drawImage(img,(960-w)/2,(540-h)/2,w,h);}
+  const pattern=designData.pattern||"none";
+  ctx.save();ctx.strokeStyle="#ffffff";ctx.fillStyle="#ffffff";ctx.globalAlpha=.12;
+  if(pattern==="grid"){for(let x=0;x<=960;x+=48){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,540);ctx.stroke();}for(let y=0;y<=540;y+=48){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(960,y);ctx.stroke();}}
+  if(pattern==="dots"){for(let x=20;x<960;x+=34)for(let y=20;y<540;y+=34){ctx.beginPath();ctx.arc(x,y,2,0,Math.PI*2);ctx.fill();}}
+  if(pattern==="diagonal"){for(let x=-540;x<1500;x+=42){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x+540,540);ctx.stroke();}}
+  ctx.restore();
+  const overlay=Math.max(0,Math.min(70,Number(designData.overlay)||0))/100;
+  if(overlay){ctx.fillStyle="rgba(4,3,12,"+overlay+")";ctx.fillRect(0,0,960,540);}
+  const title=String(designData.title||"").slice(0,28),align=designData.textAlign||"left";
+  ctx.save();ctx.fillStyle=designData.textColor||"#ffffff";ctx.textAlign=align;ctx.textBaseline="middle";ctx.font="900 "+Math.max(14,Math.min(84,Number(designData.textSize)||38))+"px system-ui,sans-serif";ctx.shadowColor="#0009";ctx.shadowBlur=13;
+  const tx=align==="left"?66:align==="right"?894:480,ty=540*Math.max(.1,Math.min(.95,Number(designData.textY||78)/100));
+  ctx.fillText(title,tx,ty,820);ctx.restore();
+ }else{
+  canvas.width=640;canvas.height=640;ctx.clearRect(0,0,640,640);
+  ctx.save();ctx.beginPath();ctx.arc(320,320,226,0,Math.PI*2);ctx.clip();
+  const avatarGrad=ctx.createLinearGradient(100,100,540,540);avatarGrad.addColorStop(0,"#667085");avatarGrad.addColorStop(1,"#22263a");ctx.fillStyle=avatarGrad;ctx.fillRect(0,0,640,640);
+  ctx.fillStyle="#ffffff";ctx.font="900 150px system-ui,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("K",320,325);ctx.restore();
+  const style=designData.style||"gradient",c1=designData.color1||"#a78bfa",c2=designData.color2||"#22d3ee",thickness=Math.max(6,Math.min(34,Number(designData.thickness)||17));
+  let edge=ctx.createLinearGradient(100,100,540,540);edge.addColorStop(0,c1);edge.addColorStop(1,c2);
+  if(style==="solid")edge=c1;
+  if(style==="gold"){edge=ctx.createLinearGradient(80,80,560,560);edge.addColorStop(0,"#fff1a8");edge.addColorStop(.45,c1);edge.addColorStop(1,"#78350f");}
+  ctx.save();ctx.lineWidth=thickness;ctx.strokeStyle=edge;ctx.shadowColor=designData.glow===false?"transparent":c1;ctx.shadowBlur=designData.glow===false?0:27;ctx.beginPath();ctx.arc(320,320,246,0,Math.PI*2);ctx.stroke();ctx.restore();
+  if(style==="neon"){ctx.save();ctx.globalAlpha=.65;ctx.strokeStyle=c2;ctx.lineWidth=Math.max(2,thickness/4);ctx.beginPath();ctx.arc(320,320,260,0,Math.PI*2);ctx.stroke();ctx.restore();}
+  const ornament=String(designData.ornament||"").slice(0,4);
+  if(ornament){ctx.save();ctx.font="bold 54px system-ui,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle=c1;ctx.shadowColor=c1;ctx.shadowBlur=14;ctx.fillText(ornament,320,62);ctx.restore();}
+ }
+ designUpdateMiniPreview();
+}
+function designUpdateMiniPreview(){
+ const back=$("miniProfileBackdrop"),avatar=$("miniProfileAvatar");
+ if(designCategory==="background"){
+  const image=designData.sourceImageUrl?safeAssetUrl(designData.sourceImageUrl):"";
+  back.style.background=image?'linear-gradient(0deg,#08071055,#08071022),url("'+image.replace(/["\\]/g,"")+'") center/cover':"linear-gradient("+Number(designData.angle||135)+"deg,"+(designData.color1||"#5b21b6")+","+(designData.color2||"#0e7490")+")";
+  avatar.style.border="7px solid #b79bff";avatar.style.boxShadow="0 0 18px #a78bfa88";
+ }else{
+  back.style.background="linear-gradient(135deg,#28213a,#111827)";
+  const c1=designData.color1||"#a78bfa",c2=designData.color2||"#22d3ee";
+  avatar.style.border=Number(designData.thickness||17)/3+"px solid "+c1;
+  avatar.style.boxShadow=designData.glow===false?"none":"0 0 18px "+c1+"99,0 0 26px "+c2+"55";
+ }
+}
+function designScheduleSave(){
+ designSetState("変更あり · 保存待ち");designSaveDirty=true;
+ if(designSaveTimer)clearTimeout(designSaveTimer);
+ designSaveTimer=setTimeout(()=>designPersistDraft().catch(error=>designSetState("保存エラー: "+error.message)),800);
+}
+async function designPersistDraft(){
+ if(designSaveBusy){designSaveDirty=true;return;}
+ designSaveBusy=true;
+ try{
+  while(designSaveDirty){
+   designSaveDirty=false;
+   const session=designSession;
+   const payload={draftId:designDraftId||undefined,draftName:$("designDraftName").value.trim()||"新しいデザイン",category:designCategory,designData:designClone(designData)};
+   const result=await api("studio_save_draft",payload);
+   if(session===designSession){designDraftId=result.draft.id;designSetState("保存済み · "+new Date(result.draft.updated_at).toLocaleTimeString("ja-JP"));await designLoadDraftList(false);}
+  }
+ }finally{designSaveBusy=false;}
+}
+async function designLoadDraftList(refresh=true){
+ try{
+  const result=await api("studio_list_drafts"),rows=Array.isArray(result.drafts)?result.drafts:[];
+  const selected=designDraftId||"";
+  $("designDraftSelect").innerHTML='<option value="">保存した下書きを選択</option>'+rows.map(row=>'<option value="'+html(row.id)+'"'+(row.id===selected?" selected":"")+'>'+html(row.draft_name)+" · "+(row.category==="frame"?"フレーム":"背景")+'</option>').join("");
+  if(refresh&&rows.length===0)$("designDraftSelect").innerHTML='<option value="">下書きはまだありません</option>';
+ }catch(error){$("designDraftSelect").innerHTML='<option value="">下書きを取得できませんでした</option>';designSetState(error.message);}
+}
+function designStart(category){
+ designSession++;designDraftId=null;designCategory=category;designData=designClone(DESIGN_DEFAULTS[category]);$("designDraftName").value="新しい"+(category==="frame"?"フレーム":"背景");
+ $("designOverlay").hidden=false;designSetCategory(category);designSetState("未保存");designScheduleSave();
+}
+async function designLoadSelectedDraft(){
+ const id=$("designDraftSelect").value;if(!id)return;
+ const result=await api("studio_list_drafts"),draft=(result.drafts||[]).find(row=>row.id===id);if(!draft)return;
+ designSession++;designDraftId=draft.id;designCategory=draft.category;designData={...DESIGN_DEFAULTS[designCategory],...(draft.design_data||{})};$("designDraftName").value=draft.draft_name;
+ $("designOverlay").hidden=false;designSetCategory(designCategory);designApplyFields();designRender();designSetState("保存済み");$("designDraftSelect").value=draft.id;
+}
+async function designDeleteSelectedDraft(){
+ const id=$("designDraftSelect").value;if(!id)return;
+ if(!confirm("このデザイン下書きを削除しますか？"))return;
+ await api("studio_delete_draft",{draftId:id});
+ if(id===designDraftId){designDraftId=null;designData=designClone(DESIGN_DEFAULTS[designCategory]);designApplyFields();designRender();designSetState("未保存");}
+ await designLoadDraftList();
+}
+async function designExportImage(){
+ await designPersistDraft();
+ const canvas=$("designCanvas");
+ const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));
+ if(!blob)throw new Error("画像を書き出せませんでした。");
+ const type=designCategory==="frame"?"frame":"background";
+ const file=new File([blob],"kuro-"+type+"-"+Date.now()+".png",{type:"image/png"});
+ return await uploadImage(file);
+}
+async function designCreateItem(){
+ const button=$("designMakeItem");button.disabled=true;button.textContent="画像を作成中…";
+ try{
+  await designPersistDraft();const imageUrl=await designExportImage();
+  $("designOverlay").hidden=true;openEditor(null);
+  currentImageUrl=imageUrl;$("itemCategory").value=designCategory;$("itemName").value=$("designDraftName").value.trim()||"新しい"+(designCategory==="frame"?"フレーム":"背景");
+  $("itemDescription").value=designCategory==="frame"?"プロフィールアイコンに重ねて表示するオリジナルフレームです。":"プロフィールを彩るオリジナル背景です。";
+  showPreview(imageUrl,"✦");formNote("デザイン画像をセットしました。価格・説明を確認して商品を保存してください。","success");
+ }catch(error){designSetState("書き出しエラー: "+error.message);}
+ finally{button.disabled=false;button.textContent="商品登録フォームへ";}
+}
+function designBindInput(id){
+ const node=$(id);if(!node)return;
+ node.addEventListener("input",()=>{
+  designReadFields();designUpdateOutputs();designRender();designScheduleSave();
+ });
+ node.addEventListener("change",()=>{
+  designReadFields();designUpdateOutputs();designRender();designScheduleSave();
+ });
+}
+document.querySelectorAll("[data-design-category]").forEach(node=>node.addEventListener("click",()=>designSetCategory(node.dataset.designCategory)));
+["bgColor1","bgColor2","bgAngle","bgPattern","bgOverlay","bgTitle","bgTextColor","bgTextSize","bgTextAlign","bgTextY","frameStyle","frameColor1","frameColor2","frameThickness","frameGlow","frameOrnament"].forEach(designBindInput);
+$("designStudioButton").addEventListener("click",()=>designStart("background"));
+$("closeDesign").addEventListener("click",()=>{$("designOverlay").hidden=true;if(designSaveDirty)designPersistDraft().catch(error=>designSetState("保存エラー: "+error.message));});
+$("designOverlay").addEventListener("click",event=>{if(event.target===$("designOverlay"))$("closeDesign").click();});
+$("designTemplate").addEventListener("change",()=>designLoadTemplate($("designTemplate").value));
+$("designDraftName").addEventListener("input",designScheduleSave);
+$("designSaveNow").addEventListener("click",async()=>{if(designSaveTimer)clearTimeout(designSaveTimer);designSaveDirty=true;try{await designPersistDraft();designSetState("下書きを保存しました");}catch(error){designSetState("保存エラー: "+error.message);}});
+$("loadDesignDraft").addEventListener("click",()=>designLoadSelectedDraft().catch(error=>designSetState(error.message)));
+$("deleteDesignDraft").addEventListener("click",()=>designDeleteSelectedDraft().catch(error=>designSetState(error.message)));
+$("newDesignDraft").addEventListener("click",()=>designStart(designCategory));
+$("designExport").addEventListener("click",async event=>{const button=event.currentTarget;button.disabled=true;try{const url=await designExportImage();designSetState("画像を保存しました");window.open(safeAssetUrl(url),"_blank","noopener");}catch(error){designSetState("書き出しエラー: "+error.message);}finally{button.disabled=false;}});
+$("designMakeItem").addEventListener("click",designCreateItem);
+$("bgImage").addEventListener("change",async()=>{
+ const file=$("bgImage").files&&$("bgImage").files[0];if(!file)return;
+ try{designSetState("背景画像をアップロード中…");const url=await uploadImage(file);designData.sourceImageUrl=url;designRender();designScheduleSave();}catch(error){designSetState("画像エラー: "+error.message);}
+});
+document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!$("designOverlay").hidden)$("closeDesign").click();});
+
 $("newItem").addEventListener("click",()=>openEditor());
 $("closeEditor").addEventListener("click",closeEditor);$("cancelEditor").addEventListener("click",closeEditor);
 $("editorOverlay").addEventListener("click",event=>{if(event.target===$("editorOverlay"))closeEditor();});
