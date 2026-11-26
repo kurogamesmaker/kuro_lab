@@ -5,224 +5,33 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#070b13">
   <meta name="robots" content="noindex,nofollow">
-  <link rel="manifest" href="/games/mobile/manifest.webmanifest?v=20261125app2">
-  <title>ゲームプレイ | KURO GAMES MOBILE</title>
+  <title>ゲームを起動中 | KURO GAMES MOBILE</title>
   <style>
     *{box-sizing:border-box}
-    html,body{width:100%;height:100%;min-height:100%;margin:0;overflow:hidden;background:#070b13}
-    body{position:fixed;inset:0;padding:0;font-family:system-ui,sans-serif}
-    #gameFrame{display:block;width:100%;height:100%;border:0;background:#070b13}
-    #loading{position:absolute;z-index:5;inset:0;display:grid;align-content:center;justify-items:center;gap:11px;padding:24px;color:#edf4ff;text-align:center;background:#070b13;font-size:12px}
-    #loading strong{font-size:16px}
-    #loading span{color:#9aaac2;line-height:1.7}
-    #loading[hidden],#loadingActions[hidden]{display:none}
-    .loading-orbit{width:27px;height:27px;border:2px solid #34465f;border-top-color:#8eb5ff;border-radius:50%;animation:mobile-spin .8s linear infinite}
-    @keyframes mobile-spin{to{transform:rotate(360deg)}}
-    #loadingActions{display:flex;align-items:center;justify-content:center;gap:9px;margin-top:8px}
-    #loadingActions button,#loadingActions a{min-height:39px;display:inline-flex;align-items:center;justify-content:center;padding:0 13px;border:1px solid #516b94;border-radius:10px;background:#1a2a43;color:#f0f5ff;font:800 11px system-ui;text-decoration:none;cursor:pointer}
-    #loadingActions a{border-color:#34445c;background:#111b2a;color:#b8c6db}
-    @media(prefers-reduced-motion:reduce){.loading-orbit{animation:none}}
+    html,body{width:100%;height:100%;margin:0;background:#070b13;color:#edf4ff;font-family:system-ui,sans-serif}
+    body{display:grid;place-items:center;padding:24px;text-align:center}
+    main{max-width:360px}
+    p{color:#9aaac2;font-size:13px;line-height:1.8}
+    a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;margin-top:10px;padding:0 18px;border:1px solid #516b94;border-radius:12px;background:#1a2a43;color:#f0f5ff;font-weight:800;text-decoration:none}
   </style>
 </head>
 <body>
-  <div id="loading" role="status" aria-live="polite">
-    <div class="loading-orbit" aria-hidden="true"></div>
-    <strong id="loadingTitle">ゲームを起動しています</strong>
-    <span id="loadingMessage">ゲームデータと通信しています。</span>
-    <div id="loadingActions" hidden>
-      <button id="retryGame" type="button">もう一度読み込む</button>
-      <a href="/games/mobile/">ホームへ戻る</a>
-    </div>
-  </div>
-  <iframe id="gameFrame" title="KURO GAMES モバイルゲーム" allow="autoplay; fullscreen; clipboard-read; clipboard-write"></iframe>
+  <main>
+    <strong>ゲームを起動しています</strong>
+    <p>ゲーム画面へ直接移動します。</p>
+    <a id="gameLink" href="/games/mobile/">ゲームを開く</a>
+  </main>
   <script>
   (function(){
     "use strict";
-    var params = new URLSearchParams(location.search);
-    var id = params.get("id") || "";
-    var loading = document.getElementById("loading");
-    var title = document.getElementById("loadingTitle");
-    var message = document.getElementById("loadingMessage");
-    var actions = document.getElementById("loadingActions");
-    var retry = document.getElementById("retryGame");
-    var frame = document.getElementById("gameFrame");
-    var ready = false;
-    var observer = null;
-    var timeout = null;
-    var pollTimer = null;
-    var attached = new WeakSet();
-    var attachedPlayerDocument = null;
-    var GAME_LOAD_TIMEOUT_MS = 40000;
-
-    function showLoading(titleText, messageText, canRetry) {
-      loading.hidden = false;
-      title.textContent = titleText;
-      message.textContent = messageText;
-      actions.hidden = !canRetry;
-    }
-
-    function stopWatching() {
-      if (timeout) window.clearTimeout(timeout);
-      timeout = null;
-      if (pollTimer) window.clearInterval(pollTimer);
-      pollTimer = null;
-      if (observer) observer.disconnect();
-      observer = null;
-    }
-
-    function markReady() {
-      if (ready) return;
-      ready = true;
-      stopWatching();
-      loading.hidden = true;
-    }
-
-    // The nested game iframe is sandboxed without allow-same-origin, so
-    // contentDocument may be null and its load event can race the observer.
-    // Accept an explicit ready signal from the same-origin player page.
-    window.addEventListener("message", function(event) {
-      var data = event.data;
-      if (event.source !== frame.contentWindow || event.origin !== window.location.origin) return;
-      if (!data || data.type !== "kuro-mobile-game-frame-ready" || data.gameId !== id) return;
-      markReady();
-    });
-
-    function attachPlayerDocument() {
-      var innerDoc;
-      try {
-        innerDoc = frame.contentDocument;
-      } catch (error) {
-        console.warn("[KURO GAMES MOBILE] player document unavailable", error);
-        return false;
-      }
-      if (!innerDoc || !innerDoc.documentElement) return false;
-      if (attachedPlayerDocument === innerDoc) {
-        var existingState = innerDoc.getElementById("state");
-        if (existingState && /ゲームを開けませんでした/.test(existingState.textContent || "")) {
-          stopWatching();
-          showLoading("ゲームを開けませんでした", "ゲーム情報を取得できませんでした。通信状態を確認してください。", true);
-          return true;
-        }
-        return false;
-      }
-      attachedPlayerDocument = innerDoc;
-
-      // This route is the dedicated mobile player. Apply its mobile shell even
-      // when the browser reports a desktop UA (for example, responsive testing).
-      if (innerDoc.body) innerDoc.body.classList.add("mobile-game-mode");
-      var mobileControls = innerDoc.getElementById("mobileGameControls");
-      if (mobileControls) mobileControls.hidden = false;
-
-      if (!innerDoc.documentElement.dataset.kuroMobileAppBackBound) {
-        innerDoc.documentElement.dataset.kuroMobileAppBackBound = "1";
-        innerDoc.addEventListener("click", function(event){
-          var target = event.target && event.target.closest
-            ? event.target.closest("#mobileGameBack")
-            : null;
-          if (!target) return;
-          event.preventDefault();
-          event.stopPropagation();
-          event.stopImmediatePropagation();
-          location.replace("/games/mobile/");
-        }, true);
-      }
-
-      function watchForGameFrame() {
-        var game = innerDoc.querySelector("#frameWrap iframe.game-frame");
-        if (!game || attached.has(game)) return;
-        attached.add(game);
-        // A fast game can finish loading before MutationObserver sees the iframe.
-        // Check its state before waiting for a load event that may already have fired.
-        try {
-          if (game.contentDocument && game.contentDocument.readyState === "complete") {
-            markReady();
-            return;
-          }
-        } catch (_) {}
-        game.addEventListener("load", markReady, { once: true });
-      }
-
-      // The player document loads before it finishes fetching the published game.
-      // Keep the app loader visible until the actual sandboxed game frame loads.
-      innerDoc.addEventListener("load", function(event) {
-        var target = event.target;
-        if (target && target.matches && target.matches("#frameWrap iframe.game-frame")) {
-          markReady();
-        }
-      }, true);
-
-      watchForGameFrame();
-      if (innerDoc.body && typeof MutationObserver === "function") {
-        observer = new MutationObserver(watchForGameFrame);
-        observer.observe(innerDoc.body, { childList: true, subtree: true });
-      }
-
-      var state = innerDoc.getElementById("state");
-      if (state && /ゲームを開けませんでした/.test(state.textContent || "")) {
-        stopWatching();
-        showLoading("ゲームを開けませんでした", "ゲーム情報を取得できませんでした。通信状態を確認してください。", true);
-        return true;
-      }
-      return false;
-    }
-
-    function loadPlayer() {
-      ready = false;
-      stopWatching();
-      attached = new WeakSet();
-      attachedPlayerDocument = null;
-      showLoading("ゲームを起動しています", "ゲームデータと通信しています。", false);
-      timeout = window.setTimeout(function(){
-        if (ready) return;
-        stopWatching();
-        showLoading(
-          "読み込みに時間がかかっています",
-          navigator.onLine === false
-            ? "インターネット接続を確認してから、もう一度お試しください。"
-            : "通信が混み合っている可能性があります。再読み込みできます。",
-          true
-        );
-      }, GAME_LOAD_TIMEOUT_MS);
-      pollTimer = window.setInterval(function(){
-        if (ready) return;
-        var doc = null;
-        try { doc = frame.contentDocument; } catch (_) {}
-        if (!doc || !doc.documentElement || !doc.body) return;
-        var hasError = attachPlayerDocument();
-        if (hasError) return;
-        // The player page has its own loading/error UI while its game iframe loads.
-        markReady();
-      }, 100);
-      frame.src = "/games/play/?id=" + encodeURIComponent(id) + "&mobileReload=" + Date.now();
-      loading.hidden = true;
-    }
-
-    if (!/^[0-9a-f-]{36}$/i.test(id)) {
-      showLoading("ゲームを開けませんでした", "ゲームIDが正しくありません。", false);
+    var id=new URLSearchParams(location.search).get("id")||"";
+    if(!/^[0-9a-f-]{36}$/i.test(id)){
+      location.replace("/games/mobile/");
       return;
     }
-
-    frame.addEventListener("load", function(){
-      // The outer player document has loaded. Reveal it immediately: the player
-      // has its own loading/error UI while the nested sandboxed game starts.
-      // The inner iframe's ready message remains an additional completion signal.
-      var playerHasError = attachPlayerDocument();
-      if (!playerHasError) markReady();
-    });
-    frame.addEventListener("error", function(){
-      stopWatching();
-      showLoading("ゲームを読み込めませんでした", "通信状態を確認して、もう一度お試しください。", true);
-    });
-
-    retry.addEventListener("click", loadPlayer);
-    window.addEventListener("offline", function(){
-      if (!ready) showLoading("接続が切れました", "ネットワークに再接続してから、もう一度お試しください。", true);
-    });
-    window.addEventListener("online", function(){
-      if (!ready) showLoading("接続が戻りました", "ゲームを再読み込みできます。", true);
-    });
-
-    loadPlayer();
+    var target="/games/play/?id="+encodeURIComponent(id)+"&mobileApp=1";
+    document.getElementById("gameLink").href=target;
+    location.replace(target);
   })();
   </script>
 </body>
