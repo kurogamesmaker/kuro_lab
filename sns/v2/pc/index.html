@@ -4158,6 +4158,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             } finally { kuroPublicChatLoading = false; }
             box.dataset.loaded = 'true';
         }
+        let kuroPublicChatSendInFlight = false;
         async function sendPublicChatMessage(event) {
             event.preventDefault();
             const nicknameInput = document.getElementById('publicChatNickname');
@@ -4167,7 +4168,10 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             const content = (input?.value||'').trim().slice(0,300);
             if (!nickname) { showToast('表示名を入力してください'); nicknameInput?.focus(); return; }
             const imageFiles = window.KuroSNSMedia?.getSelected('publicChat') || [];
-            if ((!content && !imageFiles.length) || !box) return;
+            if ((!content && !imageFiles.length) || !box || kuroPublicChatSendInFlight) return;
+            kuroPublicChatSendInFlight = true;
+            const sendButton = document.getElementById('publicChatSendButton');
+            if (sendButton) sendButton.disabled = true;
             try { localStorage.setItem('kuro-public-chat-nickname',nickname); } catch (_) {}
             input.value = '';
             let uploadedMedia = [];
@@ -4193,6 +4197,9 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 pending.remove();
                 if (!input.value) input.value = content;
                 showToast('送信できませんでした。入力内容を戻しました');
+            } finally {
+                if (sendButton) sendButton.disabled = false;
+                kuroPublicChatSendInFlight = false;
             }
         }
         function closeChat() {
@@ -4527,7 +4534,8 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 const avatar=profile?.avatar_url?`<img src="${socialEscape(profile.avatar_url)}" alt="" class="w-8 h-8 rounded-full object-cover shrink-0">`:'<span class="w-8 h-8 rounded-full bg-kuro-700 text-gray-300 flex items-center justify-center shrink-0"><i class="fa-regular fa-user text-xs"></i></span>';
                 const identity=mine?'':`<div class="flex items-center gap-2 mb-1">${avatar}<span class="text-[10px] text-gray-400">${socialEscape(names[m.sender_id]||'メンバー')}</span></div>`;
                 const n=reads.filter(r=>r.message_id===m.id&&r.reader_id!==m.sender_id).length,receipt=mine&&peerCount?`<span class="text-[10px] text-gray-400 mt-1">${n?'既読 '+n:'未読'}</span>`:'';
-                return `<div data-group-message-id="${socialEscape(m.id)}" class="flex flex-col ${mine?'items-end':'items-start'}">${identity}<div class="max-w-[85%] rounded-2xl px-3 py-2.5 ${mine?'bg-white text-black':'bg-kuro-800 text-gray-100'}"><p class="text-sm whitespace-pre-wrap break-words">${renderGroupMentionText(m.content,groupMentionProfiles)}</p>${privateMediaHTML.get(String(m.id)) || ''}</div><span class="text-[10px] text-gray-500 mt-1">${new Date(m.created_at).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',hour12:false})}</span>${receipt}</div>`;}).join('')||'<p class="text-xs text-gray-600 text-center mt-8">最初のメッセージを送ってみよう</p>';
+                const groupTextHTML=m.content?`<p class="text-sm whitespace-pre-wrap break-words">${renderGroupMentionText(m.content,groupMentionProfiles)}</p>`:'';
+                return `<div data-group-message-id="${socialEscape(m.id)}" class="flex flex-col ${mine?'items-end':'items-start'}">${identity}<div class="max-w-[85%] rounded-2xl px-3 py-2.5 ${mine?'bg-white text-black':'bg-kuro-800 text-gray-100'}">${groupTextHTML}${privateMediaHTML.get(String(m.id)) || ''}</div><span class="text-[10px] text-gray-500 mt-1">${new Date(m.created_at).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',hour12:false})}</span>${receipt}</div>`;}).join('')||'<p class="text-xs text-gray-600 text-center mt-8">最初のメッセージを送ってみよう</p>';
             box.scrollTop=box.scrollHeight;
             loadGroupChats();
         }
