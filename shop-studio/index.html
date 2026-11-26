@@ -47,6 +47,11 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
  <div class="table-wrap"><table><thead><tr><th>商品</th><th>カテゴリー</th><th>価格</th><th>レアリティ</th><th>状態</th><th>操作</th></tr></thead><tbody id="itemsBody"></tbody></table></div>
  <div class="empty" id="itemsEmpty" hidden>商品がありません。「商品を追加」から最初の商品を作成してください。</div>
 </section>
+<section class="panel" style="margin-top:18px">
+ <div class="panel-head"><div><h2>最近の購入</h2><p>直近20件の有料購入。商品名・金額・購入時刻を確認できます。</p></div></div>
+ <div class="table-wrap"><table style="min-width:520px"><thead><tr><th>商品</th><th>購入金額</th><th>日時</th></tr></thead><tbody id="recentSalesBody"></tbody></table></div>
+ <div class="empty" id="recentSalesEmpty" hidden>まだ購入履歴はありません。商品を公開すると、ここに購入履歴が表示されます。</div>
+</section>
 <p class="notice" id="studioNotice" role="status" aria-live="polite"></p>
 </main>
 <section class="wrap panel access" id="accessPanel" hidden><div class="symbol" id="accessSymbol">🔐</div><h1 id="accessTitle">Shop Studioへのアクセスを確認しています</h1><p id="accessMessage">KUROアカウントの専用権限を確認しています。</p><a class="button" href="/games/?account=1" id="loginButton" hidden>KUROGamesでログイン</a><a class="button secondary" href="/games/store/">ショップへ戻る</a></section>
@@ -105,6 +110,16 @@ async function api(action,payload={}){
  if(data?.error)throw new Error(data.error);
  return data||{};
 }
+function renderRecentSales(rows){
+ const sales=Array.isArray(rows)?rows:[];
+ $("recentSalesEmpty").hidden=sales.length>0;
+ $("recentSalesBody").innerHTML=sales.map(row=>{
+  const date=row.created_at?new Date(row.created_at):null;
+  const when=date&&!Number.isNaN(date.getTime())?date.toLocaleString("ja-JP"):"日時不明";
+  const item=row.item&&typeof row.item==="object"?row.item:{};
+  return '<tr><td><strong>'+html(item.name||"商品情報なし")+'</strong><br><small style="color:#8f85a9">'+html(item.item_key||"")+'</small></td><td class="price">'+Number(row.amount_kc||0).toLocaleString("ja-JP")+' KC</td><td>'+html(when)+'</td></tr>';
+ }).join("");
+}
 function setAccess(title,message,needLogin=false){
  $("studioApp").hidden=true;$("accessPanel").hidden=false;$("accessTitle").textContent=title;$("accessMessage").textContent=message;$("loginButton").hidden=!needLogin;
 }
@@ -160,7 +175,7 @@ async function refresh(){
  $("statActive").textContent=Number(stats.activeItems||0).toLocaleString("ja-JP");
  $("statSales").textContent=Number(stats.salesCount||0).toLocaleString("ja-JP");
  $("statRevenue").textContent=Number(stats.salesTotalKC||0).toLocaleString("ja-JP");
- $("studioApp").hidden=false;$("accessPanel").hidden=true;render();note("商品カタログを最新の状態に更新しました。","success");
+ $("studioApp").hidden=false;$("accessPanel").hidden=true;render();renderRecentSales(data.recentSales);note("商品カタログを最新の状態に更新しました。","success");
 }
 async function start(){
  $("accessPanel").hidden=false;
