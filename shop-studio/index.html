@@ -155,7 +155,7 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
      <h3>画像を挿入して加工</h3>
      <input id="designInsertImage" type="file" accept="image/jpeg,image/png,image/webp" hidden>
      <button class="button" type="button" id="insertImageButton" style="width:100%">＋ 画像を追加</button>
-     <small class="hint">JPEG / PNG / WebP・5MB以下。追加した画像は個別に編集できます。キャンバス上でドラッグすると移動できます。</small>
+     <small class="hint">JPEG / PNG / WebP・5MB以下。フレームでは画像もアイコン外周の縁部分にだけ合成され、中央は透明のままです。キャンバス上でドラッグすると移動できます。</small>
      <div class="design-field" style="margin-top:10px"><label for="imageLayerSelect">画像レイヤー</label><select id="imageLayerSelect"><option value="">画像はまだありません</option></select></div>
      <div class="design-two">
       <button class="mini" type="button" id="duplicateImageLayer">複製</button>
@@ -207,7 +207,7 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
      </div>
     </div>
     <div class="design-section" id="frameControls" hidden>
-     <h3>フレームの見た目</h3>
+     <h3>アイコンの外周フレーム</h3><p class="hint">中央はプロフィールアイコンが表示される場所です。PNGに書き出すと中央は透明になり、周囲の縁だけがアイコンの上に重なります。</p>
      <div class="design-field"><label for="frameStyle">スタイル</label><select id="frameStyle"><option value="gradient">グラデーション</option><option value="solid">シンプル</option><option value="neon">ネオン</option><option value="gold">メタリック</option></select></div>
      <div class="design-two">
       <div class="design-field"><label for="frameColor1">メインカラー</label><input id="frameColor1" type="color" value="#a78bfa"></div>
@@ -528,7 +528,12 @@ async function designDrawImageLayers(ctx,width,height,showSelection=true){
   const h=height*Math.max(.02,Math.min(1.6,Number(layer.height||35)/100));
   const cx=width*Math.max(0,Math.min(100,Number(layer.x??50)))/100;
   const cy=height*Math.max(0,Math.min(100,Number(layer.y??50)))/100;
-  ctx.save();ctx.translate(cx,cy);ctx.rotate((Number(layer.rotation)||0)*Math.PI/180);
+  ctx.save();
+  if(designCategory==="frame"){
+   // A frame is only the circular rim. Keep all inserted artwork out of the avatar's transparent center.
+   ctx.beginPath();ctx.arc(320,320,318,0,Math.PI*2);ctx.arc(320,320,238,0,Math.PI*2,true);ctx.clip("evenodd");
+  }
+  ctx.translate(cx,cy);ctx.rotate((Number(layer.rotation)||0)*Math.PI/180);
   ctx.scale(layer.flipX===true?-1:1,layer.flipY===true?-1:1);
   ctx.globalAlpha=Math.max(0,Math.min(100,Number(layer.opacity??100)))/100;
   const brightness=Math.max(0,Math.min(200,Number(layer.brightness??100)));
@@ -662,7 +667,15 @@ async function designRender(showSelection=true){
   ctx.fillText(title,tx,ty,820);ctx.restore();
  }else{
   canvas.width=640;canvas.height=640;ctx.clearRect(0,0,640,640);
-  // The frame asset must stay transparent inside the ring so it overlays the buyer's real avatar.
+  // The editor previews an avatar beneath the rim; the PNG export omits this sample, leaving the center transparent.
+  if(showSelection){
+   ctx.save();ctx.beginPath();ctx.arc(320,320,254,0,Math.PI*2);ctx.clip();
+   const sample=ctx.createLinearGradient(120,100,520,550);sample.addColorStop(0,"#475569");sample.addColorStop(.55,"#293449");sample.addColorStop(1,"#111827");
+   ctx.fillStyle=sample;ctx.fillRect(60,60,520,520);
+   ctx.fillStyle="#dbeafe";ctx.beginPath();ctx.arc(320,246,66,0,Math.PI*2);ctx.fill();
+   ctx.beginPath();ctx.ellipse(320,432,139,112,0,Math.PI,Math.PI*2);ctx.fill();
+   ctx.restore();
+  }
   const style=designData.style||"gradient",c1=designData.color1||"#a78bfa",c2=designData.color2||"#22d3ee",thickness=Math.max(12,Math.min(68,Number(designData.thickness)||42));
   let edge=ctx.createLinearGradient(100,100,540,540);edge.addColorStop(0,c1);edge.addColorStop(1,c2);
   if(style==="solid")edge=c1;
