@@ -689,7 +689,7 @@ const KuroGames = {
       const avatar = cosmetics.avatar && typeof cosmetics.avatar === "object" ? cosmetics.avatar : null;
       const frame = cosmetics.frame && typeof cosmetics.frame === "object" ? cosmetics.frame : null;
       const profileImage = profile && (profile.avatarUrl || profile.avatar_url) || "";
-      const image = String(profileImage || "") || (avatar && typeof avatar.imageUrl === "string" ? avatar.imageUrl : "");
+      const image = String(profileImage || "");
       element.replaceChildren();
       if (image && (/^https:\/\//i.test(image) || (image.startsWith("/") && !image.startsWith("//")))) {
         const img = document.createElement("img");
@@ -701,7 +701,7 @@ const KuroGames = {
         img.style.objectFit = "cover";
         element.appendChild(img);
       } else {
-        element.textContent = avatar && avatar.icon ? String(avatar.icon) : String(options.fallback || "👤");
+        element.innerHTML = '<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg>';
       }
       const frameRarity = frame && ["common","rare","epic","legendary"].includes(frame.rarity) ? frame.rarity : "";
       const frameColors = { common: "#cbd5e1", rare: "#58a3ff", epic: "#b67aff", legendary: "#f2bc57" };
