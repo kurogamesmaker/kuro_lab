@@ -355,9 +355,7 @@
       var avatarUrl = safeImageUrl(profile.avatar_url) || safeImageUrl(equippedAvatar && equippedAvatar.imageUrl);
       var avatar = avatarUrl
         ? '<img src="' + escapeHtml(avatarUrl) + '" alt="" class="kuro-profile-avatar-image">'
-        : equippedAvatar && equippedAvatar.icon
-          ? '<span class="kuro-profile-avatar-fallback kuro-profile-avatar-item">' + escapeHtml(equippedAvatar.icon) + '</span>'
-          : '<span class="kuro-profile-avatar-fallback">' + escapeHtml(Array.from(name)[0] || "👤") + '</span>';
+        : '<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg>';
       var frameRarity = equippedFrame && ["common","rare","epic","legendary"].includes(String(equippedFrame.rarity)) ? String(equippedFrame.rarity) : "";
       var frameClass = frameRarity ? " kuro-profile-frame-" + frameRarity : "";
       var backgroundImage = safeImageUrl(equippedBackground && equippedBackground.imageUrl);
@@ -527,7 +525,7 @@
         var avatarUrl = safeImageUrl(profile.avatar_url);
         var avatar = avatarUrl
           ? '<img src="' + escapeHtml(avatarUrl) + '" alt="" class="kuro-profile-list-avatar">'
-          : '<span class="kuro-profile-list-avatar kuro-profile-list-fallback">' + escapeHtml(Array.from(profile.display_name || profile.username || "👤")[0] || "👤") + '</span>';
+          : '<span class="kuro-profile-list-avatar kuro-profile-list-fallback"><svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg></span>';
         return '<button type="button" class="kuro-profile-list-user" data-kuro-profile-list-user="' + escapeHtml(profile.id) + '">' + avatar +
           '<span><strong>' + escapeHtml(profile.display_name || profile.username || "KUROユーザー") + '</strong><small>@' + escapeHtml(profile.username || "user") + '</small></span><span class="kuro-profile-list-arrow">›</span></button>';
       }).join("") + '</div>';
