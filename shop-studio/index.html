@@ -116,7 +116,7 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
    <input id="itemId" type="hidden"><input id="itemKey" type="hidden">
    <div class="fields">
     <div class="field"><label for="itemName">商品名 *</label><input id="itemName" required maxlength="60" placeholder="Neon Pulse"></div>
-    <div class="field"><label for="itemCategory">カテゴリー *</label><select id="itemCategory"><option value="frame">アイコンフレーム</option><option value="background">プロフィール壁紙</option><option value="avatar">アバター</option><option value="icon_image">アイコン画像</option><option value="theme">プロフィールテーマ</option><option value="nameplate">ネーム装飾</option><option value="banner">プロフィールバナー</option><option value="other">その他</option></select></div>
+    <div class="field"><label for="itemCategory">カテゴリー *</label><select id="itemCategory"><option value="frame">アイコンフレーム</option><option value="background">プロフィール壁紙</option><option value="avatar">アバター</option><option value="icon_image">アイコン画像</option><option value="theme">プロフィールテーマ</option><option value="nameplate">ネーム装飾</option><option value="banner">プロフィールバナー</option><option value="other">その他</option></select></div><div class="field" id="itemFrameLayerModeField"><label for="itemFrameLayerMode">フレームの重ね順</label><select id="itemFrameLayerMode"><option value="over">アイコンの上に重ねる</option><option value="under">アイコンの下に重ねる</option></select><small class="hint">「下」を選ぶと、アイコン画像がフレームより手前に表示されます。</small></div>
     <div class="field wide"><label for="itemDescription">商品説明</label><textarea id="itemDescription" maxlength="500" placeholder="商品の特徴を説明します。"></textarea></div>
     <div class="field"><label for="itemPrice">価格（KC）※0は無料</label><input id="itemPrice" type="number" min="0" max="1000000" step="1" value="500" required></div>
     <div class="field"><label for="itemRarity">レアリティ</label><select id="itemRarity"><option value="common">COMMON</option><option value="rare">RARE</option><option value="epic">EPIC</option><option value="legendary">LEGENDARY</option></select></div>
@@ -142,8 +142,8 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
    <aside class="design-sidebar">
     <div class="design-section">
      <h3>編集するアイテム</h3>
-     <div class="design-tabs"><button class="design-tab active" type="button" data-design-category="background">プロフィール背景</button><button class="design-tab" type="button" data-design-category="frame">アイコン装飾</button></div>
-     <div class="design-field"><label for="designTemplate">テンプレート</label><select id="designTemplate"></select></div>
+     <div class="design-tabs"><button class="design-tab active" type="button" data-design-category="background">プロフィール背景</button><button class="design-tab" type="button" data-design-category="frame">アイコン装飾</button><button class="design-tab" type="button" data-design-category="icon_image">アイコン画像</button></div>
+     <div class="design-field" id="designTemplateField"><label for="designTemplate">テンプレート</label><select id="designTemplate"></select></div>
     </div>
     <div class="design-section design-drafts">
      <h3>保存した下書き</h3>
@@ -206,8 +206,21 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
       <div class="design-field"><label for="bgTextY">上下位置</label><input id="bgTextY" type="range" min="10" max="95" value="78"><output id="bgTextYValue">78%</output></div>
      </div>
     </div>
+    <div class="design-section" id="iconImageControls" hidden>
+     <h3>アイコン画像・丸型切り抜き</h3>
+     <div class="design-field"><label for="iconImageFile">アイコン画像をアップロード</label><input id="iconImageFile" type="file" accept="image/jpeg,image/png,image/webp"><small class="hint">JPEG / PNG / WebP・5MB以下。画像全体を丸い枠に合わせて自動で切り抜きます。</small></div>
+     <label class="design-check" style="margin:0 0 10px"><input id="iconImageCircle" type="checkbox" checked> 円形に切り抜く</label>
+     <div class="design-field"><label for="iconImageZoom">拡大・縮小</label><input id="iconImageZoom" type="range" min="100" max="400" value="100"><output id="iconImageZoomValue">100%</output></div>
+     <div class="design-two">
+      <div class="design-field"><label for="iconImageX">左右の切り抜き位置</label><input id="iconImageX" type="range" min="0" max="100" value="50"><output id="iconImageXValue">50%</output></div>
+      <div class="design-field"><label for="iconImageY">上下の切り抜き位置</label><input id="iconImageY" type="range" min="0" max="100" value="50"><output id="iconImageYValue">50%</output></div>
+     </div>
+     <small class="hint">プレビュー画像をドラッグして切り抜く位置を調整できます。四角い元画像でも、円形の外側は透明なPNGとして書き出されます。</small>
+     <button class="mini" type="button" id="resetIconImageCrop" style="margin-top:10px">切り抜き位置をリセット</button>
+    </div>
     <div class="design-section" id="frameControls" hidden>
      <h3>アイコン装飾・フレーム</h3><p class="hint">標準の円形フレームは使わなくても構いません。オフにすれば、追加した画像だけを透明背景のPNGとして書き出せます。</p>
+     <div class="design-field"><label for="frameLayerMode">フレームの重ね順</label><select id="frameLayerMode"><option value="over">アイコンの上に重ねる</option><option value="under">アイコンの下に重ねる</option></select><small class="hint">下に重ねると、アイコン画像がフレームより手前に表示されます。</small></div>
      <label class="design-check" style="margin:0 0 12px"><input id="frameBaseEnabled" type="checkbox"> 標準の円形フレームを表示する</label>
      <div id="frameBuiltinControls">
      <div class="design-field"><label for="frameStyle">スタイル</label><select id="frameStyle"><option value="gradient">グラデーション</option><option value="solid">シンプル</option><option value="neon">ネオン</option><option value="gold">メタリック</option></select></div>
@@ -321,11 +334,12 @@ function showPreview(url,emoji){
  if(safeUrl){const img=new Image();img.src=safeUrl;img.alt="";$("imagePreview").appendChild(img);}
  else $("imagePreview").textContent=emoji||"✦";
 }
+function updateItemFrameLayerModeVisibility(){$("itemFrameLayerModeField").hidden=$("itemCategory").value!=="frame";}
 function openEditor(item=null){
  $("itemForm").reset();$("itemId").value=item?.id||"";$("itemKey").value=item?.item_key||"";
  $("editorTitle").textContent=item?"商品を編集":"商品を追加";
  $("itemName").value=item?.name||"";$("itemDescription").value=item?.description||"";
- $("itemCategory").value=item?.category||"frame";$("itemPrice").value=item?.price_kc??500;
+ $("itemCategory").value=item?.category||"frame";$("itemFrameLayerMode").value=item?.frame_layer_mode||"over";updateItemFrameLayerModeVisibility();$("itemPrice").value=item?.price_kc??500;
  $("itemRarity").value=item?.rarity||"common";$("itemIcon").value=item?.icon||"✦";$("itemSort").value=item?.sort_order??100;
  $("itemImage").value="";$("removeImage").checked=false;currentImageUrl=item?.image_url||null;formNote("");
  showPreview(currentImageUrl,$("itemIcon").value);$("editorOverlay").hidden=false;
@@ -376,7 +390,8 @@ async function start(){
 
 const DESIGN_DEFAULTS={
  background:{version:1,sourceImageUrl:"",imageZoom:100,imageX:50,imageY:50,color1:"#5b21b6",color2:"#0e7490",angle:135,pattern:"grid",overlay:18,title:"KURO PROFILE",textColor:"#ffffff",textSize:38,textAlign:"left",textY:78,imageLayers:[]},
- frame:{version:1,showBaseFrame:true,style:"gradient",color1:"#a78bfa",color2:"#22d3ee",frameSize:100,thickness:42,glow:true,ornament:"✦",imageLayers:[]}
+ frame:{version:1,showBaseFrame:true,style:"gradient",color1:"#a78bfa",color2:"#22d3ee",frameSize:100,thickness:42,glow:true,ornament:"✦",frameLayerMode:"over",imageLayers:[]},
+ icon_image:{version:1,sourceImageUrl:"",circleCrop:true,imageZoom:100,imageX:50,imageY:50,imageLayers:[]}
 };
 const DESIGN_TEMPLATES={
  background:[
@@ -392,44 +407,55 @@ const DESIGN_TEMPLATES={
   {id:"simple",name:"SIMPLE",data:{style:"solid",color1:"#c4b5fd",color2:"#c4b5fd",thickness:22,glow:false,ornament:""}}
  ]
 };
-let designCategory="background",designData={...DESIGN_DEFAULTS.background},designDraftId=null,designSaveTimer=0,designSaveBusy=false,designSaveDirty=false,designSession=0,designImageCache={},designHistory=[],designHistoryIndex=-1,selectedImageLayerId=null,imageDrag=null;
+let designCategory="background",designData={...DESIGN_DEFAULTS.background},designDraftId=null,designSaveTimer=0,designSaveBusy=false,designSaveDirty=false,designSession=0,designImageCache={},designHistory=[],designHistoryIndex=-1,selectedImageLayerId=null,imageDrag=null,iconCropDrag=null;
 function designSetState(message){$("designSaveState").textContent=message;}
 function designClone(value){return JSON.parse(JSON.stringify(value));}
 function designField(id,value){const node=$(id);if(node)node.value=value;}
 function designReadFields(){
  if(designCategory==="background"){
   designData={...designData,version:1,color1:$("bgColor1").value,color2:$("bgColor2").value,angle:Number($("bgAngle").value),pattern:$("bgPattern").value,overlay:Number($("bgOverlay").value),imageZoom:Number($("bgImageZoom").value),imageX:Number($("bgImageX").value),imageY:Number($("bgImageY").value),title:$("bgTitle").value,textColor:$("bgTextColor").value,textSize:Number($("bgTextSize").value),textAlign:$("bgTextAlign").value,textY:Number($("bgTextY").value)};
+ }else if(designCategory==="icon_image"){
+  designData={...designData,version:1,circleCrop:$("iconImageCircle").checked,imageZoom:Number($("iconImageZoom").value),imageX:Number($("iconImageX").value),imageY:Number($("iconImageY").value)};
  }else{
-  designData={...designData,version:1,showBaseFrame:$("frameBaseEnabled").checked,style:$("frameStyle").value,color1:$("frameColor1").value,color2:$("frameColor2").value,frameSize:Number($("frameSize").value),thickness:Number($("frameThickness").value),glow:$("frameGlow").checked,ornament:$("frameOrnament").value};
-   $("frameBuiltinControls").hidden=!designData.showBaseFrame;
+  designData={...designData,version:1,showBaseFrame:$("frameBaseEnabled").checked,style:$("frameStyle").value,color1:$("frameColor1").value,color2:$("frameColor2").value,frameSize:Number($("frameSize").value),thickness:Number($("frameThickness").value),glow:$("frameGlow").checked,ornament:$("frameOrnament").value,frameLayerMode:$("frameLayerMode").value};
+  $("frameBuiltinControls").hidden=!designData.showBaseFrame;
  }
 }
 function designApplyFields(){
  if(designCategory==="background"){
   designField("bgColor1",designData.color1||"#5b21b6");designField("bgColor2",designData.color2||"#0e7490");designField("bgAngle",designData.angle??135);designField("bgPattern",designData.pattern||"grid");designField("bgOverlay",designData.overlay??18);designField("bgImageZoom",designData.imageZoom??100);designField("bgImageX",designData.imageX??50);designField("bgImageY",designData.imageY??50);designField("bgTitle",designData.title||"");designField("bgTextColor",designData.textColor||"#ffffff");designField("bgTextSize",designData.textSize??38);designField("bgTextAlign",designData.textAlign||"left");designField("bgTextY",designData.textY??78);
+ }else if(designCategory==="icon_image"){
+  $("iconImageCircle").checked=designData.circleCrop!==false;designField("iconImageZoom",designData.imageZoom??100);designField("iconImageX",designData.imageX??50);designField("iconImageY",designData.imageY??50);
  }else{
-  $("frameBaseEnabled").checked=designData.showBaseFrame!==false;$("frameBuiltinControls").hidden=!$("frameBaseEnabled").checked;designField("frameStyle",designData.style||"gradient");designField("frameColor1",designData.color1||"#a78bfa");designField("frameColor2",designData.color2||"#22d3ee");designField("frameSize",designData.frameSize??100);designField("frameThickness",designData.thickness??42);$("frameGlow").checked=designData.glow!==false;designField("frameOrnament",designData.ornament||"");
+  $("frameBaseEnabled").checked=designData.showBaseFrame!==false;$("frameBuiltinControls").hidden=!$("frameBaseEnabled").checked;designField("frameLayerMode",designData.frameLayerMode||"over");designField("frameStyle",designData.style||"gradient");designField("frameColor1",designData.color1||"#a78bfa");designField("frameColor2",designData.color2||"#22d3ee");designField("frameSize",designData.frameSize??100);designField("frameThickness",designData.thickness??42);$("frameGlow").checked=designData.glow!==false;designField("frameOrnament",designData.ornament||"");
  }
  designUpdateOutputs();designUpdateLayerControls();
 }
 function designUpdateOutputs(){
- $("bgAngleValue").textContent=$("bgAngle").value+"°";$("bgOverlayValue").textContent=$("bgOverlay").value+"%";$("bgImageZoomValue").textContent=$("bgImageZoom").value+"%";$("bgImageXValue").textContent=$("bgImageX").value+"%";$("bgImageYValue").textContent=$("bgImageY").value+"%";$("bgTextSizeValue").textContent=$("bgTextSize").value+"px";$("bgTextYValue").textContent=$("bgTextY").value+"%";$("frameSizeValue").textContent=$("frameSize").value+"%";$("frameThicknessValue").textContent=$("frameThickness").value+"px";
+ $("bgAngleValue").textContent=$("bgAngle").value+"°";$("bgOverlayValue").textContent=$("bgOverlay").value+"%";$("bgImageZoomValue").textContent=$("bgImageZoom").value+"%";$("bgImageXValue").textContent=$("bgImageX").value+"%";$("bgImageYValue").textContent=$("bgImageY").value+"%";$("bgTextSizeValue").textContent=$("bgTextSize").value+"px";$("bgTextYValue").textContent=$("bgTextY").value+"%";$("frameSizeValue").textContent=$("frameSize").value+"%";$("frameThicknessValue").textContent=$("frameThickness").value+"px";$("iconImageZoomValue").textContent=$("iconImageZoom").value+"%";$("iconImageXValue").textContent=$("iconImageX").value+"%";$("iconImageYValue").textContent=$("iconImageY").value+"%";
 }
 function designLoadTemplate(id){
  const found=DESIGN_TEMPLATES[designCategory].find(row=>row.id===id);if(!found)return;
  designData={...DESIGN_DEFAULTS[designCategory],...found.data,showBaseFrame:designData.showBaseFrame!==false,sourceImageUrl:designData.sourceImageUrl||"",imageLayers:designClone(designData.imageLayers||[])};
  designApplyFields();designRender();designPushHistory();designScheduleSave();
 }
+function designCategoryLabel(category){
+ return category==="frame"?"フレーム":category==="icon_image"?"アイコン画像":"背景";
+}
+function designNewDraftName(category){
+ return category==="frame"?"新しいフレーム":category==="icon_image"?"新しいアイコン画像":"新しい背景";
+}
 function designSetCategory(category){
- if(!["background","frame"].includes(category))return;
- if(designCategory!==category){designCategory=category;designDraftId=null;selectedImageLayerId=null;designData=designClone(DESIGN_DEFAULTS[category]);if(category==="frame")designData.showBaseFrame=false;$("designDraftName").value="新しい"+(category==="frame"?"フレーム":"背景");}
+ if(!["background","frame","icon_image"].includes(category))return;
+ if(designCategory!==category){designCategory=category;designDraftId=null;selectedImageLayerId=null;designData=designClone(DESIGN_DEFAULTS[category]);if(category==="frame")designData.showBaseFrame=false;$("designDraftName").value=designNewDraftName(category);}
  document.querySelectorAll("[data-design-category]").forEach(node=>node.classList.toggle("active",node.dataset.designCategory===category));
- $("backgroundControls").hidden=category!=="background";$("frameControls").hidden=category!=="frame";
- $("designCanvasLabel").textContent=category==="background"?"背景プレビュー · 16:9":"アイコン枠プレビュー · 1:1";
- $("designCanvas").classList.toggle("is-square",category==="frame");
- $("designTitle").textContent=category==="background"?"プロフィール背景エディター":"アイコンフレームエディター";
- const templates=DESIGN_TEMPLATES[category];$("designTemplate").innerHTML=templates.map(t=>'<option value="'+html(t.id)+'">'+html(t.name)+'</option>').join("");
- $("designDraftName").value=$("designDraftName").value||"新しい"+(category==="frame"?"フレーム":"背景");
+ $("backgroundControls").hidden=category!=="background";$("frameControls").hidden=category!=="frame";$("iconImageControls").hidden=category!=="icon_image";
+ $("designTemplateField").hidden=category==="icon_image";
+ $("designCanvasLabel").textContent=category==="background"?"背景プレビュー · 16:9":category==="icon_image"?"アイコン画像プレビュー · 円形切り抜き":"アイコン枠プレビュー · 1:1";
+ $("designCanvas").classList.toggle("is-square",category!=="background");
+ $("designTitle").textContent=category==="background"?"プロフィール背景エディター":category==="icon_image"?"アイコン画像エディター":"アイコンフレームエディター";
+ const templates=DESIGN_TEMPLATES[category]||[];$("designTemplate").innerHTML=templates.map(t=>'<option value="'+html(t.id)+'">'+html(t.name)+'</option>').join("");
+ $("designDraftName").value=$("designDraftName").value||designNewDraftName(category);
  designApplyFields();designRender();designLoadDraftList();
 }
 function designPushHistory(){
@@ -450,10 +476,10 @@ function designRestoreHistory(nextIndex){
  const snapshot=JSON.parse(designHistory[designHistoryIndex]);
  designCategory=snapshot.category;designData=snapshot.data;
  document.querySelectorAll("[data-design-category]").forEach(node=>node.classList.toggle("active",node.dataset.designCategory===designCategory));
- $("backgroundControls").hidden=designCategory!=="background";$("frameControls").hidden=designCategory!=="frame";
- $("designCanvasLabel").textContent=designCategory==="background"?"背景プレビュー · 16:9":"アイコン枠プレビュー · 1:1";
- $("designCanvas").classList.toggle("is-square",designCategory==="frame");
- $("designTitle").textContent=designCategory==="background"?"プロフィール背景エディター":"アイコンフレームエディター";
+ $("backgroundControls").hidden=designCategory!=="background";$("frameControls").hidden=designCategory!=="frame";$("iconImageControls").hidden=designCategory!=="icon_image";$("designTemplateField").hidden=designCategory==="icon_image";
+ $("designCanvasLabel").textContent=designCategory==="background"?"背景プレビュー · 16:9":designCategory==="icon_image"?"アイコン画像プレビュー · 円形切り抜き":"アイコン枠プレビュー · 1:1";
+ $("designCanvas").classList.toggle("is-square",designCategory!=="background");
+ $("designTitle").textContent=designCategory==="background"?"プロフィール背景エディター":designCategory==="icon_image"?"アイコン画像エディター":"アイコンフレームエディター";
  designApplyFields();designRender();designUpdateHistoryButtons();designScheduleSave();
 }
 function designCanvasContext(){
@@ -628,7 +654,7 @@ function designBindLayerControls(){
   const file=event.target.files&&event.target.files[0];event.target.value="";if(!file)return;
   try{
    designSetState("画像をアップロード中…");
-   const imageUrl=await uploadImage(file),target=designData.showBaseFrame===false?"free":"rim",size=target==="free"?85:35,layer={id:crypto.randomUUID(),name:file.name.replace(/\.[^.]+$/,"").slice(0,40)||"画像",imageUrl,target,allowOverflow:true,x:50,y:50,width:size,height:size,rotation:0,opacity:100,brightness:100,contrast:100,saturation:100,blur:0,grayscale:0,flipX:false,flipY:false,fit:"contain"};
+   const imageUrl=await uploadImage(file),target=designCategory==="frame"?(designData.showBaseFrame===false?"free":"rim"):"free",size=target==="free"?85:35,layer={id:crypto.randomUUID(),name:file.name.replace(/\.[^.]+$/,"").slice(0,40)||"画像",imageUrl,target,allowOverflow:true,x:50,y:50,width:size,height:size,rotation:0,opacity:100,brightness:100,contrast:100,saturation:100,blur:0,grayscale:0,flipX:false,flipY:false,fit:"contain"};
    designImageLayers().push(layer);selectedImageLayerId=layer.id;designUpdateLayerControls();await designRender();designPushHistory();designScheduleSave();
    designSetState("画像を追加しました");
   }catch(error){designSetState("画像を追加できませんでした: "+error.message);}
@@ -654,6 +680,7 @@ function designBindLayerControls(){
  });
  const canvas=$("designCanvas");
  canvas.addEventListener("pointerdown",event=>{
+  if(designCategory==="icon_image"&&designData.sourceImageUrl){iconCropDrag={startX:event.clientX,startY:event.clientY,startXValue:Number(designData.imageX??50),startYValue:Number(designData.imageY??50),rect:canvas.getBoundingClientRect()};canvas.setPointerCapture(event.pointerId);event.preventDefault();return;}
   const point=designCanvasPoint(event),layers=designImageLayers(),width=canvas.width,height=canvas.height;
   const selected=designSelectedImageLayer();
   const handle=selected?designLayerHandleHit(selected,point,width,height):null;
@@ -673,6 +700,7 @@ function designBindLayerControls(){
   canvas.setPointerCapture(event.pointerId);designUpdateLayerControls();designRender();event.preventDefault();
  });
  canvas.addEventListener("pointermove",event=>{
+  if(iconCropDrag){const rect=iconCropDrag.rect;designData.imageX=Math.max(0,Math.min(100,iconCropDrag.startXValue+(event.clientX-iconCropDrag.startX)/Math.max(1,rect.width)*100));designData.imageY=Math.max(0,Math.min(100,iconCropDrag.startYValue+(event.clientY-iconCropDrag.startY)/Math.max(1,rect.height)*100));$("iconImageX").value=designData.imageX;$("iconImageY").value=designData.imageY;designUpdateOutputs();designRender();return;}
   const point=designCanvasPoint(event),width=canvas.width,height=canvas.height;
   if(!imageDrag){
    const selected=designSelectedImageLayer(),handle=selected?designLayerHandleHit(selected,point,width,height):null;
@@ -709,6 +737,7 @@ function designBindLayerControls(){
   designUpdateLayerOutputs();designRender();
  });
  const finishDrag=()=>{
+  if(iconCropDrag){iconCropDrag=null;canvas.style.cursor="grab";designPushHistory();designScheduleSave();return;}
   if(!imageDrag)return;imageDrag=null;canvas.style.cursor="grab";designPushHistory();designScheduleSave();designUpdateLayerControls();
  };
  canvas.addEventListener("pointerup",finishDrag);canvas.addEventListener("pointercancel",finishDrag);
@@ -738,10 +767,25 @@ async function designRender(showSelection=true){
   ctx.save();ctx.fillStyle=designData.textColor||"#ffffff";ctx.textAlign=align;ctx.textBaseline="middle";ctx.font="900 "+Math.max(14,Math.min(84,Number(designData.textSize)||38))+"px system-ui,sans-serif";ctx.shadowColor="#0009";ctx.shadowBlur=13;
   const tx=align==="left"?66:align==="right"?894:480,ty=540*Math.max(.1,Math.min(.95,Number(designData.textY||78)/100));
   ctx.fillText(title,tx,ty,820);ctx.restore();
+ }else if(designCategory==="icon_image"){
+  canvas.width=800;canvas.height=800;ctx.clearRect(0,0,800,800);
+  const img=await designGetImage(designData.sourceImageUrl);
+  if(img){
+   const zoom=Math.max(100,Math.min(400,Number(designData.imageZoom)||100))/100;
+   const scale=Math.max(800/img.width,800/img.height)*zoom,w=img.width*scale,h=img.height*scale;
+   const x=(800-w)*Math.max(0,Math.min(100,Number(designData.imageX??50)))/100;
+   const y=(800-h)*Math.max(0,Math.min(100,Number(designData.imageY??50)))/100;
+   ctx.save();
+   if(designData.circleCrop!==false){ctx.beginPath();ctx.arc(400,400,399,0,Math.PI*2);ctx.clip();}
+   else{ctx.beginPath();ctx.rect(0,0,800,800);ctx.clip();}
+   ctx.drawImage(img,x,y,w,h);ctx.restore();
+  }
+  await designDrawImageLayers(ctx,800,800,showSelection);
+  if(showSelection&&designData.circleCrop!==false){ctx.save();ctx.beginPath();ctx.arc(400,400,398,0,Math.PI*2);ctx.lineWidth=3;ctx.strokeStyle="rgba(255,255,255,.9)";ctx.setLineDash([10,7]);ctx.stroke();ctx.restore();}
  }else{
   canvas.width=800;canvas.height=800;ctx.clearRect(0,0,800,800);
-  // The editor previews an avatar beneath the rim; the PNG export omits this sample, leaving the center transparent.
-  if(showSelection){
+  const drawSampleAvatar=()=>{
+   if(!showSelection)return;
    const ringScale=Math.max(.6,Math.min(1.05,Number(designData.frameSize??100)/100));
    const ringRadius=340*ringScale;
    const ringThickness=Math.max(12,Math.min(68,Number(designData.thickness)||42));
@@ -752,33 +796,42 @@ async function designRender(showSelection=true){
    ctx.fillStyle="#dbeafe";ctx.beginPath();ctx.arc(400,400-avatarRadius*.28,avatarRadius*.26,0,Math.PI*2);ctx.fill();
    ctx.beginPath();ctx.ellipse(400,400+avatarRadius*.8,avatarRadius*.56,avatarRadius*.53,0,Math.PI,Math.PI*2);ctx.fill();
    ctx.restore();
-  }
-  if(designData.showBaseFrame!==false){
-   const style=designData.style||"gradient",c1=designData.color1||"#a78bfa",c2=designData.color2||"#22d3ee",thickness=Math.max(12,Math.min(68,Number(designData.thickness)||42));
-   const ringScale=Math.max(.6,Math.min(1.05,Number(designData.frameSize??100)/100));
-   const ringRadius=340*ringScale;
-   let edge=ctx.createLinearGradient(150,150,650,650);edge.addColorStop(0,c1);edge.addColorStop(1,c2);
-   if(style==="solid")edge=c1;
-   if(style==="gold"){edge=ctx.createLinearGradient(100,100,700,700);edge.addColorStop(0,"#fff1a8");edge.addColorStop(.45,c1);edge.addColorStop(1,"#78350f");}
-   ctx.save();ctx.lineWidth=thickness;ctx.strokeStyle=edge;ctx.shadowColor=designData.glow===false?"transparent":c1;ctx.shadowBlur=designData.glow===false?0:27;ctx.beginPath();ctx.arc(400,400,ringRadius,0,Math.PI*2);ctx.stroke();ctx.restore();
-   if(style==="neon"){ctx.save();ctx.globalAlpha=.65;ctx.strokeStyle=c2;ctx.lineWidth=Math.max(2,thickness/4);ctx.beginPath();ctx.arc(400,400,Math.min(388,ringRadius+thickness*.78),0,Math.PI*2);ctx.stroke();ctx.restore();}
-   const ornament=String(designData.ornament||"").slice(0,4);
-   if(ornament){ctx.save();ctx.font="bold 54px system-ui,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle=c1;ctx.shadowColor=c1;ctx.shadowBlur=14;ctx.fillText(ornament,400,38);ctx.restore();}
-  }
-  await designDrawImageLayers(ctx,800,800,showSelection);
+  };
+  const drawFrameArtwork=async(showHandles)=>{
+   if(designData.showBaseFrame!==false){
+    const style=designData.style||"gradient",c1=designData.color1||"#a78bfa",c2=designData.color2||"#22d3ee",thickness=Math.max(12,Math.min(68,Number(designData.thickness)||42));
+    const ringScale=Math.max(.6,Math.min(1.05,Number(designData.frameSize??100)/100));
+    const ringRadius=340*ringScale;
+    let edge=ctx.createLinearGradient(150,150,650,650);edge.addColorStop(0,c1);edge.addColorStop(1,c2);
+    if(style==="solid")edge=c1;
+    if(style==="gold"){edge=ctx.createLinearGradient(100,100,700,700);edge.addColorStop(0,"#fff1a8");edge.addColorStop(.45,c1);edge.addColorStop(1,"#78350f");}
+    ctx.save();ctx.lineWidth=thickness;ctx.strokeStyle=edge;ctx.shadowColor=designData.glow===false?"transparent":c1;ctx.shadowBlur=designData.glow===false?0:27;ctx.beginPath();ctx.arc(400,400,ringRadius,0,Math.PI*2);ctx.stroke();ctx.restore();
+    if(style==="neon"){ctx.save();ctx.globalAlpha=.65;ctx.strokeStyle=c2;ctx.lineWidth=Math.max(2,thickness/4);ctx.beginPath();ctx.arc(400,400,Math.min(388,ringRadius+thickness*.78),0,Math.PI*2);ctx.stroke();ctx.restore();}
+    const ornament=String(designData.ornament||"").slice(0,4);
+    if(ornament){ctx.save();ctx.font="bold 54px system-ui,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle=c1;ctx.shadowColor=c1;ctx.shadowBlur=14;ctx.fillText(ornament,400,38);ctx.restore();}
+   }
+   await designDrawImageLayers(ctx,800,800,showHandles);
+  };
+  if(showSelection&&designData.frameLayerMode==="under"){await drawFrameArtwork(true);drawSampleAvatar();}
+  else{drawSampleAvatar();await drawFrameArtwork(true);}
  }
  designUpdateMiniPreview();
 }
 function designUpdateMiniPreview(){
  const back=$("miniProfileBackdrop"),avatar=$("miniProfileAvatar");
+ avatar.style.backgroundImage="";avatar.style.backgroundSize="cover";avatar.style.backgroundPosition="center";avatar.style.borderRadius="50%";avatar.style.color="#fff";
  if(designCategory==="background"){
   const image=designData.sourceImageUrl?safeAssetUrl(designData.sourceImageUrl):"";
   back.style.background=image?'linear-gradient(0deg,#08071055,#08071022),url("'+image.replace(/["\\]/g,"")+'") center/cover':"linear-gradient("+Number(designData.angle||135)+"deg,"+(designData.color1||"#5b21b6")+","+(designData.color2||"#0e7490")+")";
   avatar.style.border="7px solid #b79bff";avatar.style.boxShadow="0 0 18px #a78bfa88";
- }else{
+ }else if(designCategory==="icon_image"){
   back.style.background="linear-gradient(135deg,#28213a,#111827)";
-  const c1=designData.color1||"#a78bfa",c2=designData.color2||"#22d3ee";
-  const baseFrame=designData.showBaseFrame!==false;
+  const image=designData.sourceImageUrl?safeAssetUrl(designData.sourceImageUrl):"";
+  avatar.style.border="0";avatar.style.boxShadow="none";avatar.style.backgroundImage=image?'url("'+image.replace(/["\\]/g,"")+'")':"";
+  avatar.style.borderRadius=designData.circleCrop!==false?"50%":"12px";avatar.textContent=image?"":"K";
+ }else{
+  back.style.background="linear-gradient(135deg,#28213a,#111827)";avatar.textContent="K";
+  const c1=designData.color1||"#a78bfa",c2=designData.color2||"#22d3ee",baseFrame=designData.showBaseFrame!==false;
   avatar.style.border=baseFrame?Number(designData.thickness||42)/5+"px solid "+c1:"0 solid transparent";
   avatar.style.transform="scale("+Math.max(.6,Math.min(1.05,Number(designData.frameSize??100)/100))+")";
   avatar.style.boxShadow=!baseFrame||designData.glow===false?"none":"0 0 18px "+c1+"99,0 0 26px "+c2+"55";
@@ -806,14 +859,14 @@ async function designLoadDraftList(refresh=true){
  try{
   const result=await api("studio_list_drafts"),rows=Array.isArray(result.drafts)?result.drafts:[];
   const selected=designDraftId||"";
-  $("designDraftSelect").innerHTML='<option value="">保存した下書きを選択</option>'+rows.map(row=>'<option value="'+html(row.id)+'"'+(row.id===selected?" selected":"")+'>'+html(row.draft_name)+" · "+(row.category==="frame"?"フレーム":"背景")+'</option>').join("");
+  $("designDraftSelect").innerHTML='<option value="">保存した下書きを選択</option>'+rows.map(row=>'<option value="'+html(row.id)+'"'+(row.id===selected?" selected":"")+'>'+html(row.draft_name)+" · "+designCategoryLabel(row.category)+'</option>').join("");
   if(refresh&&rows.length===0)$("designDraftSelect").innerHTML='<option value="">下書きはまだありません</option>';
  }catch(error){$("designDraftSelect").innerHTML='<option value="">下書きを取得できませんでした</option>';designSetState(error.message);}
 }
 async function designStart(category){
  if(designSaveTimer){clearTimeout(designSaveTimer);designSaveTimer=0;}
  if(designSaveDirty)await designPersistDraft();
- designSession++;designDraftId=null;selectedImageLayerId=null;designCategory=category;designData=designClone(DESIGN_DEFAULTS[category]);if(category==="frame")designData.showBaseFrame=false;$("designDraftName").value="新しい"+(category==="frame"?"フレーム":"背景");
+ designSession++;designDraftId=null;selectedImageLayerId=null;designCategory=category;designData=designClone(DESIGN_DEFAULTS[category]);if(category==="frame")designData.showBaseFrame=false;$("designDraftName").value=designNewDraftName(category);
  $("designOverlay").hidden=false;designSetCategory(category);designResetHistory();designSetState("未保存");designScheduleSave();
 }
 async function designLoadSelectedDraft(){
@@ -840,7 +893,7 @@ async function designExportImage(){
  const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));
  designRender();
  if(!blob)throw new Error("画像を書き出せませんでした。");
- const type=designCategory==="frame"?"frame":"background";
+ const type=designCategory==="frame"?"frame":designCategory==="icon_image"?"icon_image":"background";
  const file=new File([blob],"kuro-"+type+"-"+Date.now()+".png",{type:"image/png"});
  return await uploadImage(file);
 }
@@ -849,8 +902,9 @@ async function designCreateItem(){
  try{
   await designPersistDraft();const imageUrl=await designExportImage();
   $("designOverlay").hidden=true;openEditor(null);
-  currentImageUrl=imageUrl;$("itemCategory").value=designCategory;$("itemName").value=$("designDraftName").value.trim()||"新しい"+(designCategory==="frame"?"フレーム":"背景");
-  $("itemDescription").value=designCategory==="frame"?"プロフィールアイコンに重ねて表示するオリジナルフレームです。":"プロフィールを彩るオリジナル背景です。";
+  currentImageUrl=imageUrl;$("itemCategory").value=designCategory;$("itemName").value=$("designDraftName").value.trim()||designNewDraftName(designCategory);
+  $("itemFrameLayerMode").value=designCategory==="frame"?(designData.frameLayerMode||"over"):"over";updateItemFrameLayerModeVisibility();
+  $("itemDescription").value=designCategory==="frame"?"アイコンの上または下に重ねて表示するオリジナルフレームです。":designCategory==="icon_image"?"丸く切り抜いて使えるオリジナルアイコン画像です。":"プロフィールを彩るオリジナル背景です。";
   showPreview(imageUrl,"✦");formNote("デザイン画像をセットしました。価格・説明を確認して商品を保存してください。","success");
  }catch(error){designSetState("書き出しエラー: "+error.message);}
  finally{button.disabled=false;button.textContent="商品登録フォームへ";}
@@ -865,7 +919,10 @@ function designBindInput(id){
  });
 }
 document.querySelectorAll("[data-design-category]").forEach(node=>node.addEventListener("click",async()=>{const next=node.dataset.designCategory,changed=next!==designCategory;if(changed){if(designSaveTimer){clearTimeout(designSaveTimer);designSaveTimer=0;}if(designSaveDirty)await designPersistDraft();}designSetCategory(next);if(changed){designResetHistory();designScheduleSave();}}));
-["bgColor1","bgColor2","bgAngle","bgPattern","bgOverlay","bgImageZoom","bgImageX","bgImageY","bgTitle","bgTextColor","bgTextSize","bgTextAlign","bgTextY","frameBaseEnabled","frameStyle","frameColor1","frameColor2","frameSize","frameThickness","frameGlow","frameOrnament"].forEach(designBindInput);
+["bgColor1","bgColor2","bgAngle","bgPattern","bgOverlay","bgImageZoom","bgImageX","bgImageY","bgTitle","bgTextColor","bgTextSize","bgTextAlign","bgTextY","iconImageZoom","iconImageX","iconImageY","frameBaseEnabled","frameLayerMode","frameStyle","frameColor1","frameColor2","frameSize","frameThickness","frameGlow","frameOrnament"].forEach(designBindInput);
+$("iconImageCircle").addEventListener("change",()=>{designReadFields();designRender();designPushHistory();designScheduleSave();});
+$("iconImageFile").addEventListener("change",async()=>{const file=$("iconImageFile").files&&$("iconImageFile").files[0];$("iconImageFile").value="";if(!file)return;try{designSetState("アイコン画像をアップロード中…");const url=await uploadImage(file);designData.sourceImageUrl=url;designData.imageZoom=100;designData.imageX=50;designData.imageY=50;designApplyFields();await designRender();designPushHistory();designScheduleSave();designSetState("アイコン画像をセットしました");}catch(error){designSetState("画像エラー: "+error.message);}});
+$("resetIconImageCrop").addEventListener("click",()=>{designData.imageZoom=100;designData.imageX=50;designData.imageY=50;designApplyFields();designRender();designPushHistory();designScheduleSave();});
 $("designUndo").addEventListener("click",()=>designRestoreHistory(designHistoryIndex-1));
 $("designRedo").addEventListener("click",()=>designRestoreHistory(designHistoryIndex+1));
 $("designStudioButton").addEventListener("click",()=>designStart("background").catch(error=>designSetState("保存エラー: "+error.message)));
@@ -889,6 +946,7 @@ document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!$("designO
 $("newItem").addEventListener("click",()=>openEditor());
 $("closeEditor").addEventListener("click",closeEditor);$("cancelEditor").addEventListener("click",closeEditor);
 $("editorOverlay").addEventListener("click",event=>{if(event.target===$("editorOverlay"))closeEditor();});
+$("itemCategory").addEventListener("change",updateItemFrameLayerModeVisibility);
 $("itemIcon").addEventListener("input",()=>{if(!$("itemImage").files?.[0]&&!currentImageUrl)showPreview(null,$("itemIcon").value);});
 $("itemImage").addEventListener("change",()=>{
  const file=$("itemImage").files?.[0];if(!file)return;
@@ -905,7 +963,7 @@ $("itemForm").addEventListener("submit",async event=>{
   const payload={
    itemId:$("itemId").value||undefined,itemKey:$("itemKey").value||undefined,
    name:$("itemName").value.trim(),description:$("itemDescription").value.trim(),
-   category:$("itemCategory").value,priceKC:Number($("itemPrice").value),
+   category:$("itemCategory").value,frameLayerMode:$("itemFrameLayerMode").value,priceKC:Number($("itemPrice").value),
    rarity:$("itemRarity").value,icon:$("itemIcon").value.trim()||"✦",
    sortOrder:Number($("itemSort").value),imageUrl
   };
