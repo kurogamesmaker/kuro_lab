@@ -1730,14 +1730,23 @@ img#profileAvatarPreview:not(.hidden) {
             });
         }
         function kuroCloudflarePublicUrl(publicUrl) {
+            const raw = String(publicUrl || '').trim();
+            if (!raw) return '';
             try {
-                const url = new URL(publicUrl);
-                if (url.origin !== SUPABASE_URL) return publicUrl;
-                const resource = url.pathname + url.search;
-                return window.location.origin + KURO_CLOUDFLARE_PROXY_ENDPOINT + '?resource=' + encodeURIComponent(resource);
+                // Support absolute URLs, same-origin relay URLs, relative paths and local blob previews.
+                const url = new URL(raw, window.location.origin);
+                if (url.origin === SUPABASE_URL && url.pathname.startsWith('/storage/v1/object/public/')) {
+                    const resource = url.pathname + url.search;
+                    return window.location.origin + KURO_CLOUDFLARE_PROXY_ENDPOINT + '?resource=' + encodeURIComponent(resource);
+                }
+                return url.href;
             } catch (_) {
-                return publicUrl;
+                return raw;
             }
+        }
+        function kuroSnsAvatarUrl(value) {
+            const raw = String(value || '').trim();
+            return raw ? kuroCloudflarePublicUrl(raw) : '';
         }
         async function checkKuroCloudflareBridge() {
             const panel = document.getElementById('kuroCloudflareStatusPanel');
@@ -1870,7 +1879,7 @@ function kuroRouteCloudflareRealtime(client) {
                 placeholder.classList.remove('hidden'); return;
             }
             if (currentUser.avatarUrl) {
-                image.src = currentUser.avatarUrl; image.classList.remove('hidden'); placeholder.classList.add('hidden');
+                image.src = kuroSnsAvatarUrl(currentUser.avatarUrl); image.classList.remove('hidden'); placeholder.classList.add('hidden');
                 image.onerror = () => { image.classList.add('hidden'); placeholder.classList.remove('hidden'); };
             } else {
                 image.removeAttribute('src'); image.classList.add('hidden'); placeholder.classList.remove('hidden');
@@ -1926,7 +1935,7 @@ function kuroRouteCloudflareRealtime(client) {
             const avatar = document.getElementById('myProfileAvatar');
             const placeholder = document.getElementById('myProfileAvatarPlaceholder');
             if (currentUser.avatarUrl) {
-                avatar.src = currentUser.avatarUrl;
+                avatar.src = kuroSnsAvatarUrl(currentUser.avatarUrl);
                 avatar.classList.remove('hidden');
                 placeholder.classList.add('hidden');
                 avatar.onerror = () => { avatar.classList.add('hidden'); placeholder.classList.remove('hidden'); };
@@ -2000,7 +2009,7 @@ function kuroRouteCloudflareRealtime(client) {
                 kuroSnsBindAvatar(headerAvatar.parentElement,currentUser.id);
 
                 if (currentUser.avatarUrl) {
-                    headerAvatar.src = currentUser.avatarUrl;
+                    headerAvatar.src = kuroSnsAvatarUrl(currentUser.avatarUrl);
                     headerAvatar.classList.remove('hidden');
                     headerPlaceholder.classList.add('hidden');
                     headerAvatar.onerror = () => {
@@ -2658,7 +2667,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             if (!img || !placeholder) return;
 
             if (url) {
-                img.src = url;
+                img.src = kuroSnsAvatarUrl(url);
                 img.classList.remove('hidden');
                 placeholder.classList.add('hidden');
             } else {
@@ -3136,7 +3145,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             feed.innerHTML = list.map(post => {
                 const name = post.username || post.display_name || post.author || 'KUROユーザー';
                 const handle = post.username || post.handle || 'user';
-                const avatarInner = post.avatar_url ? `<img src="${escapeHTML(post.avatar_url)}" alt="" class="w-10 h-10 rounded-full object-cover border border-kuro-700">` : `<span class="w-10 h-10 rounded-full bg-kuro-800 border border-kuro-700 flex items-center justify-center text-gray-300"><i class="fa-regular fa-user"></i></span>`;
+                const avatarInner = post.avatar_url ? `<img src="${escapeHTML(kuroSnsAvatarUrl(post.avatar_url))}" alt="" class="w-10 h-10 rounded-full object-cover border border-kuro-700">` : `<span class="w-10 h-10 rounded-full bg-kuro-800 border border-kuro-700 flex items-center justify-center text-gray-300"><i class="fa-regular fa-user"></i></span>`;
                 const avatar = post.user_id ? `<button type="button" onclick="openPublicProfile('${escapeHTML(post.user_id)}')" data-kuro-sns-avatar-user="${escapeHTML(post.user_id)}" class="kuro-sns-avatar-frame-host w-10 h-10 shrink-0 rounded-full" aria-label="${escapeHTML(name)}のプロフィール">${avatarInner}</button>` : avatarInner;
                 const deleteButton = currentUser && String(post.user_id || '') === String(currentUser.id || '')
                     ? `<button type="button" data-delete-post-id="${escapeHTML(post.id)}" class="text-xs text-gray-500 hover:text-red-400 transition-colors" aria-label="このポストを削除"><i class="fa-regular fa-trash-can mr-1"></i>取り消す</button>` : '';
@@ -3990,7 +3999,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     ? `<button type="button" onclick="toggleFollowFromNotice('${socialEscape(n.actor_id)}')" class="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold bg-white text-black hover:bg-gray-200">フォローバック</button>`
                     : '';
                 const avatar = p.avatar_url
-                    ? `<img src="${socialEscape(p.avatar_url)}" class="w-11 h-11 rounded-full object-cover" alt="">`
+                    ? `<img src="${socialEscape(kuroSnsAvatarUrl(p.avatar_url))}" class="w-11 h-11 rounded-full object-cover" alt="">`
                     : '<i class="fa-regular fa-user text-gray-400"></i>';
                 const mentionAction = n.type === 'mention' && n.group_id
                     ? '<button type="button" onclick="openMentionGroupNotice(\'' + socialEscape(n.group_id) + '\',\'' + socialEscape(n.message_id || '') + '\',\'' + socialEscape(n.id) + '\')" class="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold bg-white text-black hover:bg-gray-200">チャットを開く</button>'
@@ -4068,7 +4077,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 document.getElementById('publicProfileBio').textContent = profile.bio || '自己紹介はまだありません。';
                 const avatar = document.getElementById('publicProfileAvatar');
                 const placeholder = document.getElementById('publicProfileAvatarPlaceholder');
-                if (profile.avatar_url) { avatar.src = profile.avatar_url; avatar.classList.remove('hidden'); placeholder.classList.add('hidden'); }
+                if (profile.avatar_url) { avatar.src = kuroSnsAvatarUrl(profile.avatar_url); avatar.classList.remove('hidden'); placeholder.classList.add('hidden'); }
                 else { avatar.removeAttribute('src'); avatar.classList.add('hidden'); placeholder.classList.remove('hidden'); }
                 kuroSnsBindAvatar(avatar.parentElement,profile.id);
 
@@ -4579,7 +4588,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                         const profile = profileMap[peerId] || {};
                         const handle = profile.username || 'user';
                         const avatar = profile.avatar_url
-                            ? `<img src="${socialEscape(profile.avatar_url)}" alt="" class="w-11 h-11 rounded-full object-cover shrink-0">`
+                            ? `<img src="${socialEscape(kuroSnsAvatarUrl(profile.avatar_url))}" alt="" class="w-11 h-11 rounded-full object-cover shrink-0">`
                             : '<span class="w-11 h-11 rounded-full bg-kuro-800 flex items-center justify-center shrink-0"><i class="fa-regular fa-user"></i></span>';
                         return `<div data-chat-row="${socialEscape(c.id)}" class="w-full flex items-center gap-3 rounded-xl p-3 hover:bg-kuro-900 ${activeChatId === c.id ? 'bg-kuro-900' : ''}"><button type="button" onclick="openPublicProfile('${socialEscape(peerId)}')" aria-label="${socialEscape(handle)}のプロフィール" class="kuro-sns-avatar-frame-host shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-white" data-kuro-sns-avatar-user="${socialEscape(peerId)}">${avatar}</button><button type="button" onclick="selectChat('${socialEscape(c.id)}','${socialEscape(peerId)}','${socialEscape(handle)}')" class="min-w-0 flex-1 text-left"><b class="block text-sm text-gray-100 truncate">${socialEscape(profile.display_name || handle)}</b><span class="block text-xs text-gray-500 truncate">@${socialEscape(handle)}</span><span data-chat-preview class="block text-xs text-gray-400 truncate mt-1">最新メッセージを確認中…</span></button><span data-chat-date class="text-[10px] text-gray-600 shrink-0"></span></div>`;
                     }).join('');
@@ -4857,7 +4866,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 if (activeChatType !== 'group' || !activeChatId) return;
                 const filtered = members.filter(p => !query || (p.username || '').toLocaleLowerCase().includes(query) || (p.display_name || '').toLocaleLowerCase().includes(query));
                 box.innerHTML = filtered.length ? filtered.map(p => {
-                    const avatar = p.avatar_url ? '<img src="' + socialEscape(p.avatar_url) + '" alt="" class="w-9 h-9 rounded-full object-cover">' : '<span class="w-9 h-9 rounded-full bg-kuro-800 flex items-center justify-center"><i class="fa-regular fa-user"></i></span>';
+                    const avatar = p.avatar_url ? '<img src="' + socialEscape(kuroSnsAvatarUrl(p.avatar_url)) + '" alt="" class="w-9 h-9 rounded-full object-cover">' : '<span class="w-9 h-9 rounded-full bg-kuro-800 flex items-center justify-center"><i class="fa-regular fa-user"></i></span>';
                     return '<button type="button" onmousedown="event.preventDefault()" onclick="chooseGroupMention(\'' + socialEscape(p.id) + '\')" class="w-full flex items-center gap-3 p-3 text-left hover:bg-kuro-800 border-b border-kuro-800 last:border-0">' + avatar + '<span class="min-w-0"><b class="block text-sm truncate">' + socialEscape(p.display_name || p.username || 'メンバー') + '</b><span class="block text-xs text-gray-500">@' + socialEscape(p.username || '') + '</span></span></button>';
                 }).join('') : '<p class="p-3 text-sm text-gray-500">メンバーが見つからないよ</p>';
                 box.classList.remove('hidden');
@@ -5013,7 +5022,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     supabaseClient.from('group_conversations').select('created_by').eq('id',activeChatId).single()]);
                 if(me)throw me;if(pe)throw pe;if(ge)throw ge;
                 const mm=Object.fromEntries((members||[]).map(m=>[m.user_id,m]));const admin=(members||[]).some(m=>m.user_id===currentUser.id&&m.role==='admin')||group.created_by===currentUser.id;
-                box.innerHTML=(profiles||[]).map(p=>{const m=mm[p.id],checked=!!m,disabled=checked&&p.id===currentUser.id||checked&&!admin;const label=(p.display_name||p.username||'ユーザー')+' '+(p.username||'');return `<label data-edit-group-user="${socialEscape(label)}" class="flex items-center gap-3 rounded-xl p-3 hover:bg-kuro-900"><input type="checkbox" class="edit-group-member-checkbox accent-violet-400 w-5 h-5" value="${socialEscape(p.id)}" ${checked?'checked':''} ${disabled?'disabled':''}><span class="w-9 h-9 rounded-full bg-kuro-800 overflow-hidden flex items-center justify-center shrink-0">${p.avatar_url?`<img src="${socialEscape(p.avatar_url)}" class="w-full h-full object-cover" alt="">`:'<i class="fa-regular fa-user"></i>'}</span><span class="min-w-0"><b class="block text-sm truncate">${socialEscape(p.display_name||p.username||'ユーザー')}</b><span class="block text-xs text-gray-500">@${socialEscape(p.username||'')}${m?.role==='admin'?' · 管理者':''}</span></span></label>`;}).join('');
+                box.innerHTML=(profiles||[]).map(p=>{const m=mm[p.id],checked=!!m,disabled=checked&&p.id===currentUser.id||checked&&!admin;const label=(p.display_name||p.username||'ユーザー')+' '+(p.username||'');return `<label data-edit-group-user="${socialEscape(label)}" class="flex items-center gap-3 rounded-xl p-3 hover:bg-kuro-900"><input type="checkbox" class="edit-group-member-checkbox accent-violet-400 w-5 h-5" value="${socialEscape(p.id)}" ${checked?'checked':''} ${disabled?'disabled':''}><span class="w-9 h-9 rounded-full bg-kuro-800 overflow-hidden flex items-center justify-center shrink-0">${p.avatar_url?`<img src="${socialEscape(kuroSnsAvatarUrl(p.avatar_url))}" class="w-full h-full object-cover" alt="">`:'<i class="fa-regular fa-user"></i>'}</span><span class="min-w-0"><b class="block text-sm truncate">${socialEscape(p.display_name||p.username||'ユーザー')}</b><span class="block text-xs text-gray-500">@${socialEscape(p.username||'')}${m?.role==='admin'?' · 管理者':''}</span></span></label>`;}).join('');
                 document.getElementById('groupEditStatus').textContent=admin?'管理者としてメンバーを編集できます':'メンバーの追加ができます。削除は管理者のみです。';
             }catch(e){console.warn(e);box.innerHTML='<p class="text-sm text-red-300">メンバーを読み込めませんでした</p>';}
         }
@@ -5099,7 +5108,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     const users = (data || []).filter(p => p.id !== currentUser?.id);
                     box.innerHTML = users.length ? users.map(p => {
                         const avatar = p.avatar_url
-                            ? `<img src="${socialEscape(p.avatar_url)}" alt="" class="w-10 h-10 rounded-full object-cover shrink-0">`
+                            ? `<img src="${socialEscape(kuroSnsAvatarUrl(p.avatar_url))}" alt="" class="w-10 h-10 rounded-full object-cover shrink-0">`
                             : `<span class="w-10 h-10 rounded-full bg-kuro-800 flex items-center justify-center shrink-0"><i class="fa-regular fa-user"></i></span>`;
                         return `<div class="flex items-center gap-3 p-3 border-b border-kuro-800 last:border-0"><button type="button" onclick="openPublicProfile('${socialEscape(p.id)}')" aria-label="プロフィールを開く" class="shrink-0 rounded-full">${avatar}</button><button type="button" onclick="openPublicProfile('${socialEscape(p.id)}')" class="min-w-0 flex-1 text-left"><b class="block text-sm truncate">${socialEscape(p.display_name || p.username || 'KUROユーザー')}</b><small class="block text-gray-500 truncate">@${socialEscape(p.username || 'user')}</small></button><button type="button" onclick="startChatWithUser('${socialEscape(p.id)}')" class="shrink-0 px-3 py-2 rounded-lg bg-white text-black text-xs font-bold hover:bg-gray-200">メッセージする</button></div>`;
                     }).join('') : '<p class="p-3 text-sm text-gray-500">ユーザーが見つからないよ</p>';
