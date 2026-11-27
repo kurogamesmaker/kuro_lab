@@ -14,7 +14,7 @@
   let capturing = true;
   let ready = false;
   let loading = false;
-  let flushBusy = false;
+  let flushPromise = null;
   let flushTimer = 0;
   let lastPresenceAt = 0;
   let lastSentPosition = null;
@@ -25,6 +25,22 @@
 
   function setStatus(message) {
     if (status) status.textContent = String(message || "");
+  }
+
+  // The game's note() helper lives inside its own IIFE and is not visible here.
+  // Update the existing note element directly so a successful connection is not
+  // turned into an apparent offline state by a ReferenceError.
+  let noteTimer = 0;
+  function showNote(message, duration) {
+    const element = document.getElementById("note");
+    if (!element) return;
+    element.textContent = String(message || "");
+    element.hidden = false;
+    if (noteTimer) clearTimeout(noteTimer);
+    noteTimer = setTimeout(() => {
+      element.hidden = true;
+      noteTimer = 0;
+    }, Math.max(500, Number(duration) || 1800));
   }
 
   function blockKey(x, y, z) {
@@ -65,23 +81,53 @@
   }
 
   async function flushBlocks() {
-    if (!ready || !room || flushBusy || !pendingBlocks.size) return;
-    flushBusy = true;
+    if (!ready || !room || !pendingBlocks.size) return;
+    // Callers that arrive during a save share the same promise. The queued
+    // changes are drained by the next scheduled batch, never discarded.
+    if (flushPromise) return flushPromise;
+
     const batch = Array.from(pendingBlocks.entries()).slice(0, 120);
     batch.forEach(([key]) => pendingBlocks.delete(key));
     const changes = batch.map(([key, value]) => ({ key, value }));
+
+    const task = (async () => {
+      try {
+        await KuroGames.world.saveBlocks(changes);
+        await room.send("world-blocks", { changes }).catch(error => {
+          console.warn("[KURO world] broadcast failed; saved data is retained", error);
+        });
+      } catch (error) {
+        batch.forEach(([key, value]) => pendingBlocks.set(key, value));
+        setStatus("地形データを再保存中...");
+        console.warn("[KURO world] block save failed", error);
+      }
+    })();
+
+    flushPromise = task;
     try {
-      await KuroGames.world.saveBlocks(changes);
-      room.send("world-blocks", { changes }).catch(error => {
-        console.warn("[KURO world] broadcast failed; saved data is retained", error);
-      });
-    } catch (error) {
-      batch.forEach(([key, value]) => pendingBlocks.set(key, value));
-      setStatus("地形データを再保存中...");
-      console.warn("[KURO world] block save failed", error);
+      await task;
     } finally {
-      flushBusy = false;
+      if (flushPromise === task) flushPromise = null;
       if (pendingBlocks.size) scheduleFlush();
+    }
+  }
+
+  async function flushAllBlocks() {
+    if (flushTimer) {
+      clearTimeout(flushTimer);
+      flushTimer = 0;
+    }
+    while (pendingBlocks.size && ready && room) {
+      const before = pendingBlocks.size;
+      if (flushPromise) await flushPromise;
+      else await flushBlocks();
+      // A failed batch is restored to the queue. Stop here rather than
+      // spinning forever while the network is unavailable.
+      if (pendingBlocks.size >= before && !flushPromise) break;
+    }
+    if (flushTimer) {
+      clearTimeout(flushTimer);
+      flushTimer = 0;
     }
   }
 
@@ -254,12 +300,12 @@
         x: p.p.x, y: p.p.y, z: p.p.z,
         yaw: p.g.rotation.y || 0, dimension: ctx.dimension,
       }).catch(() => {});
-      note("共有ワールドに接続しました");
+      showNote("共有ワールドに接続しました");
     } catch (error) {
       console.warn("[KURO shared world]", error);
       const message = error && error.message ? error.message : "共有ワールドに接続できませんでした。";
       setStatus("オフライン · " + message);
-      note(message);
+      showNote(message, 2600);
     }
   }
 
@@ -267,10 +313,12 @@
   void start();
   window.addEventListener("pagehide", () => {
     capturing = false;
-    if (flushTimer) { clearTimeout(flushTimer); flushTimer = 0; }
-    if (room) {
-      if (pendingBlocks.size && ready) void flushBlocks().finally(() => room && room.leave());
-      else void room.leave();
-    }
+    // Wait for an in-flight save, then drain queued edits before leaving.
+    // Previously flushBlocks() returned immediately while another flush was
+    // running, allowing room.leave() to race the actual database write.
+    void (async () => {
+      await flushAllBlocks();
+      if (room) await room.leave();
+    })();
   });
 })();
