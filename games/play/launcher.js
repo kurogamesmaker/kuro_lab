@@ -1,5 +1,41 @@
 
 
+function kuroNeedsModuleScript(source) {
+ const original=String(source||"");
+ if(/^\s*\/\*\s*@kuro-module\s*\*\//m.test(original))return true;
+ let code=original.split("");let i=0;
+ while(i<code.length){
+  const ch=code[i],next=code[i+1],tick=String.fromCharCode(96);
+  if(ch==="'"||ch==='"'||ch===tick){
+   const quote=ch;code[i]=" ";i++;
+   while(i<code.length){const c=code[i];if((c==="\n"||c==="\r")&&quote!==tick)break;code[i]=" ";if(c==="\\"){i++;if(i<code.length)code[i]=" ";i++;continue;}if(c===quote){i++;break;}i++;}
+   continue;
+  }
+  if(ch==="/"&&next==="/"){code[i]=code[i+1]=" ";i+=2;while(i<code.length&&code[i]!=="\n"){code[i]=" ";i++;}continue;}
+  if(ch==="/"&&next==="*"){code[i]=code[i+1]=" ";i+=2;while(i<code.length&&!(code[i]==="*"&&code[i+1]==="/")){if(code[i]!=="\n"&&code[i]!=="\r")code[i]=" ";i++;}if(i<code.length){code[i]=code[i+1]=" ";i+=2;}continue;}
+  i++;
+ }
+ const masked=code.join("");
+ if(/^\s*(?:import\s+(?!\()|export\s+)/m.test(masked))return true;
+ const awaits=[...masked.matchAll(/\bawait\b/g)];
+ if(!awaits.length)return false;
+ const ranges=[];
+ function addBodies(pattern){
+  pattern.lastIndex=0;let match;
+  while((match=pattern.exec(masked))){
+   const open=match.index+match[0].lastIndexOf("{");if(open<0)continue;
+   let depth=0,end=-1;
+   for(let p=open;p<masked.length;p++){if(masked[p]==="{")depth++;else if(masked[p]==="}"&&--depth===0){end=p;break;}}
+   if(end>=open)ranges.push([open,end]);
+  }
+ }
+ addBodies(/\basync\s+function(?:\s+[A-Za-z_$][\w$]*)?\s*\([^)]*\)\s*\{/g);
+ addBodies(/\basync\s*(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>\s*\{/g);
+ addBodies(/\basync\s+[A-Za-z_$][\w$]*\s*\([^)]*\)\s*\{/g);
+ const expression=/\basync\s*(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>\s*[^{}\n;,]+/g;
+ let arrow;while((arrow=expression.exec(masked)))ranges.push([arrow.index,arrow.index+arrow[0].length]);
+ return awaits.some(match=>!ranges.some(range=>match.index>=range[0]&&match.index<=range[1]));
+}
 const KURO_CLOUDFLARE_TRANSPORT=true; try{localStorage.setItem("kuro_portal_transport","cloudflare");}catch(_){}
 const KURO_CLOUDFLARE_PROXY_URL="https://kurolab.cc.cd/api/cloudflare-relay";
 function kuroGameCloudflareClientId(){
@@ -50,6 +86,55 @@ kuroRouteCloudflareRealtime(kuroGameAuthClient);
 window.kuroGameAuthClient = kuroGameAuthClient;
 let kuroGameAuthPromise = null;
 const kuroGameRealtimeChannels = new Map();
+
+const KURO_GAME_FRAME_STORAGE_PREFIX="kuro_game_frame_storage_v1:";
+const KURO_GAME_FRAME_SESSION_PREFIX="kuro_game_frame_session_v1:";
+function kuroReadGameFrameStorage(storageType,gameId){
+ const host=storageType==="session"?window.sessionStorage:window.localStorage;
+ const prefix=storageType==="session"?KURO_GAME_FRAME_SESSION_PREFIX:KURO_GAME_FRAME_STORAGE_PREFIX;
+ try{
+  const parsed=JSON.parse(host.getItem(prefix+gameId)||"{}");
+  if(!parsed||typeof parsed!=="object"||Array.isArray(parsed))return Object.create(null);
+  const clean=Object.create(null);
+  Object.keys(parsed).slice(0,5000).forEach(key=>{if(key.length<=4096&&typeof parsed[key]==="string"&&parsed[key].length<=2000000)clean[key]=parsed[key];});
+  return clean;
+ }catch(_){return Object.create(null);}
+}
+function kuroBuildGameFrameStorageBridge(gameId){
+ const safeId=JSON.stringify(String(gameId)).replace(/</g,"\\u003c");
+ const localSeed=JSON.stringify(kuroReadGameFrameStorage("local",gameId)).replace(/</g,"\\u003c");
+ const sessionSeed=JSON.stringify(kuroReadGameFrameStorage("session",gameId)).replace(/</g,"\\u003c");
+ const lines=[
+  "(function(){",
+  '"use strict";',
+  "const GAME_ID="+safeId+",LOCAL_SEED="+localSeed+",SESSION_SEED="+sessionSeed+";",
+  'function notify(type,action,key,value){try{parent.postMessage({type:"kuro-game-storage-write",gameId:GAME_ID,storageType:type,action:action,key:key,value:value},"*");}catch(_){}}',
+  "function makeStorage(type,seed){",
+  ' const data=Object.create(null);if(seed&&typeof seed==="object")Object.keys(seed).forEach(key=>{if(key.length<=4096&&typeof seed[key]==="string")data[key]=seed[key];});',
+  " const api=Object.create(null);",
+  " Object.defineProperties(api,{",
+  '  length:{configurable:true,enumerable:false,get:function(){return Object.keys(data).length;}},',
+  '  key:{configurable:true,enumerable:false,value:function(index){const keys=Object.keys(data),n=Number(index);return Number.isInteger(n)&&n>=0&&n<keys.length?keys[n]:null;}},',
+  '  getItem:{configurable:true,enumerable:false,value:function(key){const k=String(key);return Object.prototype.hasOwnProperty.call(data,k)?data[k]:null;}},',
+  '  setItem:{configurable:true,enumerable:false,value:function(key,value){const k=String(key),v=String(value);if(k.length>4096||v.length>2000000)throw new DOMException("Storage quota exceeded","QuotaExceededError");let total=v.length;Object.keys(data).forEach(existing=>{if(existing!==k)total+=existing.length+data[existing].length;});if(total>3900000)throw new DOMException("Storage quota exceeded","QuotaExceededError");data[k]=v;notify(type,"set",k,v);}},',
+  '  removeItem:{configurable:true,enumerable:false,value:function(key){const k=String(key);if(Object.prototype.hasOwnProperty.call(data,k)){delete data[k];notify(type,"remove",k,"");}}},',
+  '  clear:{configurable:true,enumerable:false,value:function(){Object.keys(data).forEach(key=>delete data[key]);notify(type,"clear","","");}}',
+  " });",
+  " return new Proxy(api,{",
+  '  get:function(target,property,receiver){if(typeof property==="string"&&Object.prototype.hasOwnProperty.call(data,property)&&!(property in target))return data[property];return Reflect.get(target,property,receiver);},',
+  '  set:function(target,property,value,receiver){if(typeof property==="string"&&!(property in target)){target.setItem(property,value);return true;}return Reflect.set(target,property,value,receiver);},',
+  '  deleteProperty:function(target,property){if(typeof property==="string"&&!(property in target)){target.removeItem(property);return true;}return Reflect.deleteProperty(target,property);},',
+  "  ownKeys:function(target){return [...new Set([...Reflect.ownKeys(target),...Object.keys(data)])];},",
+  '  getOwnPropertyDescriptor:function(target,property){if(typeof property==="string"&&Object.prototype.hasOwnProperty.call(data,property))return {configurable:true,enumerable:true,writable:true,value:data[property]};return Reflect.getOwnPropertyDescriptor(target,property);},',
+  '  has:function(target,property){return (typeof property==="string"&&Object.prototype.hasOwnProperty.call(data,property))||Reflect.has(target,property);}',
+  " });",
+  "}",
+  'try{Object.defineProperty(window,"localStorage",{configurable:true,enumerable:true,value:makeStorage("local",LOCAL_SEED)});}catch(e){console.warn("[KURO game storage] localStorage shim unavailable",e);}',
+  'try{Object.defineProperty(window,"sessionStorage",{configurable:true,enumerable:true,value:makeStorage("session",SESSION_SEED)});}catch(e){console.warn("[KURO game storage] sessionStorage shim unavailable",e);}',
+  "})();"
+ ];
+ return "<script>"+lines.join("\n").replace(/<\/script/gi,"<\\/script")+"</script>";
+}
 kuroGameAuthClient.auth.onAuthStateChange((_event, session) => {
  const active = session && !session.user?.is_anonymous && session.access_token ? session : null;
  kuroGameAuthPromise = Promise.resolve(active);
@@ -189,6 +274,36 @@ window.addEventListener("message", async event => {
 window.addEventListener("message", async event => {
  if (!kuroGameFrame || event.source !== kuroGameFrame.contentWindow || !event.data) return;
  const msg = event.data;
+ if(msg.type==="kuro-studio-error"){
+  console.error("[KURO GAMES game runtime error]",{gameId:kuroGameFrameGameId,message:String(msg.message||"Unknown game error").slice(0,500),filename:String(msg.filename||"").slice(0,300),line:Number(msg.line)||0,column:Number(msg.column)||0,stack:String(msg.stack||"").slice(0,2000)});
+  return;
+ }
+ if(msg.type==="kuro-studio-console"){
+  const level=["log","info","warn","error"].includes(msg.level)?msg.level:"log";
+  const values=Array.isArray(msg.values)?msg.values.slice(0,20).map(value=>String(value).slice(0,1000)):[];
+  console[level]("[KURO GAMES game]",...values);
+  return;
+ }
+ if(msg.type==="kuro-game-storage-write"){
+  if(msg.gameId!==kuroGameFrameGameId)return;
+  const storageType=msg.storageType==="session"?"session":msg.storageType==="local"?"local":null;
+  if(!storageType||!["set","remove","clear"].includes(msg.action))return;
+  const prefix=storageType==="session"?KURO_GAME_FRAME_SESSION_PREFIX:KURO_GAME_FRAME_STORAGE_PREFIX;
+  const host=storageType==="session"?window.sessionStorage:window.localStorage;
+  let data=kuroReadGameFrameStorage(storageType,kuroGameFrameGameId);
+  if(msg.action==="clear")data=Object.create(null);
+  else if(typeof msg.key==="string"&&msg.key.length<=4096){
+   if(msg.action==="remove")delete data[msg.key];
+   else if(typeof msg.value==="string"&&msg.value.length<=2000000)data[msg.key]=msg.value;
+   else return;
+  }else return;
+  try{
+   const serialized=JSON.stringify(data);
+   if(serialized.length>3900000){console.warn("[KURO game storage] quota reached for",kuroGameFrameGameId);return;}
+   host.setItem(prefix+kuroGameFrameGameId,serialized);
+  }catch(error){console.warn("[KURO game storage] persistence failed:",error?.message||error);}
+  return;
+ }
 
  if (msg.type === "kuro-games-activity") {
   if (msg.gameId !== kuroGameFrameGameId) return;
@@ -420,7 +535,7 @@ async function loadKuroGameRewards(gameId, db){const bar=document.getElementById
   const combinedGameJs=[sharedGameJs,platformGameJs].filter(value=>String(value||"").trim()).join("\n\n");
   if(combinedGameJs){
    const safeGameJs=combinedGameJs.replace(/<\/script/gi,"<\\/script");
-   const moduleGameJs=/^\s*(?:import|export)\b/m.test(safeGameJs);
+   const moduleGameJs=kuroNeedsModuleScript(safeGameJs);
    const gameScript=(moduleGameJs?'<script type="module">':'<script>')+safeGameJs+"\n//# sourceURL=KURO_GAME_SHARED.js\n</script>";
    if(/<\/body>/i.test(selectedGameHtml))selectedGameHtml=selectedGameHtml.replace(/<\/body>/i,gameScript+"</body>");
    else selectedGameHtml+=gameScript;
@@ -456,7 +571,7 @@ async function loadKuroGameRewards(gameId, db){const bar=document.getElementById
   frame.addEventListener("load",()=>{
    startKuroGameActivity(id);
   },{once:true});
-  kuroGameFrame=frame;kuroGameFrameGameId=id;$("frameWrap").replaceChildren(frame);kuroGameFrameLayout();const kuroBridgeScript='<script>window.KURO_GAMES_PLATFORM='+JSON.stringify("pc")+';window.KURO_GUEST_MODE='+guest+';window.KURO_GAMES_ACTIVITY_GAME_ID='+JSON.stringify(id)+';window.KURO_GAMES_SET_ACTIVITY=function(status,opponentType){window.parent.postMessage({type:"kuro-games-activity",gameId:window.KURO_GAMES_ACTIVITY_GAME_ID,status:status,opponentType:opponentType||"unknown"},"*");};document.addEventListener("click",function(event){var control=event.target&&event.target.closest?event.target.closest("button,[role=button],a"):null;if(!control)return;var label=String(control.innerText||control.textContent||"").trim().toLowerCase();if(label.includes("cpu")||label.includes("bot")||label.includes("ボット")||label.includes("コンピューター")||label.includes("コンピュータ")||label.includes("ai対戦")){window.KURO_GAMES_SET_ACTIVITY("playing","bot");return;}if(label.includes("相手を探す")||label.includes("ランダムマッチ")||label.includes("マッチング")||label.includes("オンライン対戦"))window.KURO_GAMES_SET_ACTIVITY("waiting","human");},true);document.addEventListener("change",function(event){var control=event.target;var label=(String(control&&control.value||"")+" "+String(control&&control.selectedOptions&&control.selectedOptions[0]&&control.selectedOptions[0].textContent||"")).toLowerCase();if(label.includes("cpu")||label.includes("bot")||label.includes("ボット")||label.includes("コンピューター")||label.includes("コンピュータ")||label.includes("ai対戦"))window.KURO_GAMES_SET_ACTIVITY("playing","bot");},true);(function(){var previousMode="";function syncOpponentMode(){var cpu=document.getElementById("modeCpuBtn"),pvp=document.getElementById("modePvpBtn"),game=document.getElementById("gameScreen");if(cpu&&pvp&&game&&!game.classList.contains("hidden")){var mode=cpu.classList.contains("bg-blue-500")?"bot":pvp.classList.contains("bg-blue-500")?"human":"";if(mode&&mode!==previousMode){previousMode=mode;window.KURO_GAMES_SET_ACTIVITY("playing",mode);}}var cpuActors=document.querySelector(".cpu-avatar,.cpu-flight,[data-player-type=bot],[data-opponent=bot]");if(cpuActors&&cpuActors.getClientRects().length){if(previousMode!=="bot"){previousMode="bot";window.KURO_GAMES_SET_ACTIVITY("playing","bot");}}}setInterval(syncOpponentMode,1500);})();window.KURO_GAMES_RECORDS_ENABLED=!window.KURO_GUEST_MODE;window.addEventListener("message",event=>{if(event.source===window.parent&&event.data?.type==="kuro-account-auth-state"){window.KURO_GUEST_MODE=!event.data.authenticated;window.KURO_GAMES_RECORDS_ENABLED=!!event.data.authenticated;}});const isKuroAuthCreation=u=>{const s=String(u);if(s.indexOf("/auth/v1/signup")!==-1)return true;try{const x=new URL(s,location.href);return x.pathname.indexOf("/auth/v1/token")!==-1&&x.searchParams.get("grant_type")==="anonymous";}catch(_){return false;}};const needsKuroAccount=u=>{if(!window.KURO_GUEST_MODE)return false;const s=String(u);return ["/rest/v1/game_scores","/rest/v1/game_saves","/rest/v1/game_online_","/rest/v1/werewolf_rooms","/rest/v1/werewolf_chat_messages","/rest/v1/kuro_game_win_events","/rest/v1/rpc/werewolf_join_room","/rest/v1/rpc/werewolf_update_room","/rest/v1/rpc/kuro_join_online_room","/functions/v1/kurogames-online"].some(p=>s.indexOf(p)!==-1);};const nativeFetch=window.fetch.bind(window);window.fetch=function(input,init){const u=typeof input==="string"?input:(input&&input.url)||"";if(isKuroAuthCreation(u)){try{window.parent.postMessage({type:"kuro-online-login-required",action:"signup"},"*");}catch(_){}return Promise.resolve(new Response(JSON.stringify({error:"ゲーム内で匿名KUROアカウントは作成できません。共通アカウント画面からログインしてください。"}),{status:403,headers:{"Content-Type":"application/json"}}));}if(needsKuroAccount(u)){try{window.parent.postMessage({type:"kuro-online-login-required",action:"online"},"*");}catch(_){}return Promise.resolve(new Response(JSON.stringify({error:"オンライン機能にはKUROアカウントへのログインが必要です。"}),{status:401,headers:{"Content-Type":"application/json"}}));}return nativeFetch(input,init);};const NativeWebSocket=window.WebSocket;window.WebSocket=new Proxy(NativeWebSocket,{construct(target,args,newTarget){if(window.KURO_GUEST_MODE&&String(args[0]||"").indexOf(".supabase.co/realtime/v1")!==-1){try{window.parent.postMessage({type:"kuro-online-login-required",action:"realtime"},"*");}catch(_){}throw new Error("KUROアカウントへのログインが必要です。");}return Reflect.construct(target,args,newTarget);}})<\/script>';const kuroTouchInputCompatibility=kuroGameHasTouchInput?"<style id=\"kuro-touch-input-style\">html,body{touch-action:manipulation!important;-webkit-tap-highlight-color:transparent}button,a[href],[role=button],input[type=button],input[type=submit],select{pointer-events:auto!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent}iframe{pointer-events:auto!important}</style><script>(function(){\"use strict\";var selector=\"button:not([disabled]),a[href],[role=button]:not([aria-disabled=true]),input[type=button]:not([disabled]),input[type=submit]:not([disabled])\";var press=null,fallbackTarget=null,fallbackUntil=0;document.addEventListener(\"pointerdown\",function(event){if(event.pointerType!==\"touch\"||event.isPrimary===false)return;var target=event.target&&event.target.closest?event.target.closest(selector):null;if(!target)return;if(fallbackTarget===target)fallbackTarget=null;press={target:target,pointerId:event.pointerId,x:event.clientX,y:event.clientY};},true);document.addEventListener(\"pointercancel\",function(event){if(press&&press.pointerId===event.pointerId)press=null;},true);document.addEventListener(\"pointerup\",function(event){if(!press||press.pointerId!==event.pointerId)return;var saved=press;press=null;var target=event.target&&event.target.closest?event.target.closest(selector):null;if(target!==saved.target||Math.hypot(event.clientX-saved.x,event.clientY-saved.y)>18)return;var clicked=false;function markClick(clickEvent){var clickedTarget=clickEvent.target&&clickEvent.target.closest?clickEvent.target.closest(selector):null;if(clickedTarget!==target)return;clicked=true;document.removeEventListener(\"click\",markClick,true);}document.addEventListener(\"click\",markClick,true);setTimeout(function(){document.removeEventListener(\"click\",markClick,true);if(clicked||!target.isConnected||target.disabled)return;fallbackTarget=target;fallbackUntil=performance.now()+350;target.click();setTimeout(function(){if(fallbackTarget===target&&performance.now()>=fallbackUntil)fallbackTarget=null;},360);},100);},true);document.addEventListener(\"click\",function(event){if(!event.isTrusted||!fallbackTarget||performance.now()>=fallbackUntil)return;var clickedTarget=event.target&&event.target.closest?event.target.closest(selector):null;if(clickedTarget!==fallbackTarget)return;event.preventDefault();event.stopImmediatePropagation();fallbackTarget=null;},true);})();</script>":'';const htmlWithBridge=/<head\b[^>]*>/i.test(selectedGameHtml)?selectedGameHtml.replace(/<head\b[^>]*>/i,head=>head+kuroBridgeScript+kuroTouchInputCompatibility):'<!doctype html><html lang="ja"><head>'+kuroBridgeScript+kuroTouchInputCompatibility+'</head><body>'+selectedGameHtml+'</body></html>';frame.srcdoc=htmlWithBridge;};
+  kuroGameFrame=frame;kuroGameFrameGameId=id;$("frameWrap").replaceChildren(frame);kuroGameFrameLayout();const kuroGameStorageBridge=kuroBuildGameFrameStorageBridge(id);const kuroBridgeScript='<script>window.KURO_GAMES_PLATFORM='+JSON.stringify("pc")+';window.KURO_GUEST_MODE='+guest+';window.KURO_GAMES_ACTIVITY_GAME_ID='+JSON.stringify(id)+';window.KURO_GAMES_SET_ACTIVITY=function(status,opponentType){window.parent.postMessage({type:"kuro-games-activity",gameId:window.KURO_GAMES_ACTIVITY_GAME_ID,status:status,opponentType:opponentType||"unknown"},"*");};document.addEventListener("click",function(event){var control=event.target&&event.target.closest?event.target.closest("button,[role=button],a"):null;if(!control)return;var label=String(control.innerText||control.textContent||"").trim().toLowerCase();if(label.includes("cpu")||label.includes("bot")||label.includes("ボット")||label.includes("コンピューター")||label.includes("コンピュータ")||label.includes("ai対戦")){window.KURO_GAMES_SET_ACTIVITY("playing","bot");return;}if(label.includes("相手を探す")||label.includes("ランダムマッチ")||label.includes("マッチング")||label.includes("オンライン対戦"))window.KURO_GAMES_SET_ACTIVITY("waiting","human");},true);document.addEventListener("change",function(event){var control=event.target;var label=(String(control&&control.value||"")+" "+String(control&&control.selectedOptions&&control.selectedOptions[0]&&control.selectedOptions[0].textContent||"")).toLowerCase();if(label.includes("cpu")||label.includes("bot")||label.includes("ボット")||label.includes("コンピューター")||label.includes("コンピュータ")||label.includes("ai対戦"))window.KURO_GAMES_SET_ACTIVITY("playing","bot");},true);(function(){var previousMode="";function syncOpponentMode(){var cpu=document.getElementById("modeCpuBtn"),pvp=document.getElementById("modePvpBtn"),game=document.getElementById("gameScreen");if(cpu&&pvp&&game&&!game.classList.contains("hidden")){var mode=cpu.classList.contains("bg-blue-500")?"bot":pvp.classList.contains("bg-blue-500")?"human":"";if(mode&&mode!==previousMode){previousMode=mode;window.KURO_GAMES_SET_ACTIVITY("playing",mode);}}var cpuActors=document.querySelector(".cpu-avatar,.cpu-flight,[data-player-type=bot],[data-opponent=bot]");if(cpuActors&&cpuActors.getClientRects().length){if(previousMode!=="bot"){previousMode="bot";window.KURO_GAMES_SET_ACTIVITY("playing","bot");}}}setInterval(syncOpponentMode,1500);})();window.KURO_GAMES_RECORDS_ENABLED=!window.KURO_GUEST_MODE;window.addEventListener("message",event=>{if(event.source===window.parent&&event.data?.type==="kuro-account-auth-state"){window.KURO_GUEST_MODE=!event.data.authenticated;window.KURO_GAMES_RECORDS_ENABLED=!!event.data.authenticated;}});const isKuroAuthCreation=u=>{const s=String(u);if(s.indexOf("/auth/v1/signup")!==-1)return true;try{const x=new URL(s,location.href);return x.pathname.indexOf("/auth/v1/token")!==-1&&x.searchParams.get("grant_type")==="anonymous";}catch(_){return false;}};const needsKuroAccount=u=>{if(!window.KURO_GUEST_MODE)return false;const s=String(u);return ["/rest/v1/game_scores","/rest/v1/game_saves","/rest/v1/game_online_","/rest/v1/werewolf_rooms","/rest/v1/werewolf_chat_messages","/rest/v1/kuro_game_win_events","/rest/v1/rpc/werewolf_join_room","/rest/v1/rpc/werewolf_update_room","/rest/v1/rpc/kuro_join_online_room","/functions/v1/kurogames-online"].some(p=>s.indexOf(p)!==-1);};const nativeFetch=window.fetch.bind(window);window.fetch=function(input,init){const u=typeof input==="string"?input:(input&&input.url)||"";if(isKuroAuthCreation(u)){try{window.parent.postMessage({type:"kuro-online-login-required",action:"signup"},"*");}catch(_){}return Promise.resolve(new Response(JSON.stringify({error:"ゲーム内で匿名KUROアカウントは作成できません。共通アカウント画面からログインしてください。"}),{status:403,headers:{"Content-Type":"application/json"}}));}if(needsKuroAccount(u)){try{window.parent.postMessage({type:"kuro-online-login-required",action:"online"},"*");}catch(_){}return Promise.resolve(new Response(JSON.stringify({error:"オンライン機能にはKUROアカウントへのログインが必要です。"}),{status:401,headers:{"Content-Type":"application/json"}}));}return nativeFetch(input,init);};const NativeWebSocket=window.WebSocket;window.WebSocket=new Proxy(NativeWebSocket,{construct(target,args,newTarget){if(window.KURO_GUEST_MODE&&String(args[0]||"").indexOf(".supabase.co/realtime/v1")!==-1){try{window.parent.postMessage({type:"kuro-online-login-required",action:"realtime"},"*");}catch(_){}throw new Error("KUROアカウントへのログインが必要です。");}return Reflect.construct(target,args,newTarget);}})<\/script>';const kuroTouchInputCompatibility=kuroGameHasTouchInput?"<style id=\"kuro-touch-input-style\">html,body{touch-action:manipulation!important;-webkit-tap-highlight-color:transparent}button,a[href],[role=button],input[type=button],input[type=submit],select{pointer-events:auto!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent}iframe{pointer-events:auto!important}</style><script>(function(){\"use strict\";var selector=\"button:not([disabled]),a[href],[role=button]:not([aria-disabled=true]),input[type=button]:not([disabled]),input[type=submit]:not([disabled])\";var press=null,fallbackTarget=null,fallbackUntil=0;document.addEventListener(\"pointerdown\",function(event){if(event.pointerType!==\"touch\"||event.isPrimary===false)return;var target=event.target&&event.target.closest?event.target.closest(selector):null;if(!target)return;if(fallbackTarget===target)fallbackTarget=null;press={target:target,pointerId:event.pointerId,x:event.clientX,y:event.clientY};},true);document.addEventListener(\"pointercancel\",function(event){if(press&&press.pointerId===event.pointerId)press=null;},true);document.addEventListener(\"pointerup\",function(event){if(!press||press.pointerId!==event.pointerId)return;var saved=press;press=null;var target=event.target&&event.target.closest?event.target.closest(selector):null;if(target!==saved.target||Math.hypot(event.clientX-saved.x,event.clientY-saved.y)>18)return;var clicked=false;function markClick(clickEvent){var clickedTarget=clickEvent.target&&clickEvent.target.closest?clickEvent.target.closest(selector):null;if(clickedTarget!==target)return;clicked=true;document.removeEventListener(\"click\",markClick,true);}document.addEventListener(\"click\",markClick,true);setTimeout(function(){document.removeEventListener(\"click\",markClick,true);if(clicked||!target.isConnected||target.disabled)return;fallbackTarget=target;fallbackUntil=performance.now()+350;target.click();setTimeout(function(){if(fallbackTarget===target&&performance.now()>=fallbackUntil)fallbackTarget=null;},360);},100);},true);document.addEventListener(\"click\",function(event){if(!event.isTrusted||!fallbackTarget||performance.now()>=fallbackUntil)return;var clickedTarget=event.target&&event.target.closest?event.target.closest(selector):null;if(clickedTarget!==fallbackTarget)return;event.preventDefault();event.stopImmediatePropagation();fallbackTarget=null;},true);})();</script>":'';const htmlWithBridge=/<head\b[^>]*>/i.test(selectedGameHtml)?selectedGameHtml.replace(/<head\b[^>]*>/i,head=>head+kuroGameStorageBridge+kuroBridgeScript+kuroTouchInputCompatibility):'<!doctype html><html lang="ja"><head>'+kuroGameStorageBridge+kuroBridgeScript+kuroTouchInputCompatibility+'</head><body>'+selectedGameHtml+'</body></html>';frame.srcdoc=htmlWithBridge;};
   const session=await getKuroGameAuthSession();launchGame(!session||!!session.user?.is_anonymous);
  }catch(error){fail(error.message||"通信エラーが発生しました。");}
 })();
