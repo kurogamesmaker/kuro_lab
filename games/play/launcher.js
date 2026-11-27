@@ -418,7 +418,7 @@ async function loadKuroGameRewards(gameId, db){const bar=document.getElementById
    return;
   }
   const sharedGameJs=String(data.shared_js_content||"");
-  const platformGameJs=String(kuroGameIsMobileDevice?data.mobile_extension_js_content:data.pc_extension_js_content||"");
+  const platformGameJs=String((kuroGameIsMobileDevice?data.mobile_extension_js_content:data.pc_extension_js_content)||"");
   const combinedGameJs=[sharedGameJs,platformGameJs].filter(value=>String(value||"").trim()).join("\n\n");
   if(combinedGameJs){
    const safeGameJs=combinedGameJs.replace(/<\/script/gi,"<\\/script");
