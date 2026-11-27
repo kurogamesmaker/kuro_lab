@@ -20,7 +20,7 @@
   function storageGet(store, key) { try { return window[store].getItem(key); } catch (_) { return null; } }
   function storageSet(store, key, value) { try { window[store].setItem(key, value); } catch (_) {} }
 
-  var identifiedAuth = null;
+  var identifiedAuth = null, identityCleared = false;
   function decodeJwtPayload(token) {
     try {
       var part = String(token || "").split(".")[1];
@@ -36,6 +36,7 @@
       String(payload.iss || "").indexOf("https://cprvpphlfpmiegjiutjn.supabase.co/auth/v1") === 0);
   }
   function authInfo() {
+    if (identityCleared) return { token: PUBLISHABLE_KEY, userId: null };
     if (identifiedAuth && validKuroSession(identifiedAuth.userId, identifiedAuth.token)) {
       return identifiedAuth;
     }
@@ -57,12 +58,16 @@
   window.__kuroUsageIdentify = function (userId, accessToken, recordActivity) {
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(userId || "")) ||
         !validKuroSession(String(userId), accessToken)) return false;
+    identityCleared = false;
     identifiedAuth = { userId: String(userId), token: String(accessToken) };
     if (recordActivity === true) trackUserActivity(true);
     return true;
   };
   window.__kuroUsageClearIdentity = function () {
+    // Flush the current user's queued events before removing its token.
+    flush();
     identifiedAuth = null;
+    identityCleared = true;
   };
 
   function addEvent(name, extra) {
