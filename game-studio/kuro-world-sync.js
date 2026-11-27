@@ -194,6 +194,9 @@
       if (!active.has(id)) removeRemotePlayer(id);
     });
     setStatus("共有ワールド · " + (players || []).length + "/35人");
+    // When someone joins, existing stationary players must publish their
+    // current position again so the newcomer can render their avatars.
+    if (room && !ctx.titleOpen) lastSentPosition = null;
   }
 
   function receivePresence(event) {
