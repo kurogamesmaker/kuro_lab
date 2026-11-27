@@ -4134,6 +4134,52 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             try { await task; }
             finally { kuroDirectSyncPromises.delete(conversationId); }
         }
+        async function refreshDirectChatPreviewAfterHide(conversationId) {
+            const row = document.querySelector('[data-chat-row="' + String(conversationId).replace(/"/g, '') + '"]');
+            if (!row || !currentUser?.id) return;
+            const {data: recent, error} = await supabaseClient.from('chat_messages').select('id,conversation_id,sender_id,content,created_at').eq('conversation_id',conversationId).order('created_at',{ascending:false}).limit(100);
+            if (error) throw error;
+            const ids = (recent || []).map(message => message.id).filter(Boolean);
+            let hiddenIds = new Set();
+            if (ids.length) {
+                const hiddenResult = await supabaseClient.from('chat_message_hides').select('message_id').eq('user_id',currentUser.id).in('message_id',ids);
+                if (hiddenResult.error) throw hiddenResult.error;
+                hiddenIds = new Set((hiddenResult.data || []).map(item => String(item.message_id)));
+            }
+            const last = (recent || []).find(message => !hiddenIds.has(String(message.id)));
+            const preview = row.querySelector('[data-chat-preview]'), date = row.querySelector('[data-chat-date]');
+            if (preview) preview.textContent = last ? (last.sender_id === currentUser.id ? '自分: ' : '') + (last.content || '写真') : 'メッセージを送ってみよう';
+            if (date) date.textContent = last ? formatPostDate(last.created_at) : '';
+            writeChatCache('list',null,document.getElementById('chatConversationList')?.innerHTML || '');
+        }
+        async function hideDirectChatMessage(messageId,conversationId) {
+            const id = String(messageId || '').trim(), conversation = String(conversationId || '').trim();
+            if (!id || !conversation || activeChatType !== 'direct' || activeChatId !== conversation) return;
+            if (!confirm('このメッセージを自分の画面から非表示にしますか？\n相手の画面には残ります。')) return;
+            try {
+                const {data:authData,error:authError} = await supabaseClient.auth.getUser();
+                if (authError) throw authError;
+                const user = authData?.user;
+                if (!user) throw new Error('ログイン状態を確認できません。再ログインしてください。');
+                const {data:message,error:messageError} = await supabaseClient.from('chat_messages').select('id,conversation_id,sender_id').eq('id',id).eq('conversation_id',conversation).maybeSingle();
+                if (messageError) throw messageError;
+                if (!message) throw new Error('対象のメッセージが見つかりません。');
+                if (String(message.sender_id) !== String(user.id)) throw new Error('自分が送信したメッセージだけ非表示にできます。');
+                const {error:hideError} = await supabaseClient.from('chat_message_hides').insert({message_id:id,user_id:user.id});
+                if (hideError && hideError.code !== '23505') throw hideError;
+                const box = document.getElementById('chatMessages');
+                box?.querySelector('[data-chat-message-id="' + CSS.escape(id) + '"]')?.remove();
+                const seen = kuroDirectMessageSeen.get(conversation) || new Set();
+                seen.add(id); kuroDirectMessageSeen.set(conversation,seen);
+                if (box) writeChatCache('messages',conversation,box.innerHTML);
+                await refreshDirectChatPreviewAfterHide(conversation);
+                showToast('メッセージを自分の画面から非表示にしました');
+            } catch (error) {
+                console.error('KURO hide direct message error:',error);
+                showToast('メッセージを非表示にできませんでした: ' + (error?.message || '通信状態を確認してください'));
+            }
+        }
+
         async function appendDirectChatMessages(conversationId, peerId, incomingMessages) {
             if (activeChatType !== 'direct' || activeChatId !== conversationId || !currentUser?.id) return;
             const box = document.getElementById('chatMessages');
@@ -4146,7 +4192,13 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 if (el.dataset.chatMessageId) existingDomIds.add(el.dataset.chatMessageId);
                 if (el.dataset.serverMessageId) existingDomIds.add(el.dataset.serverMessageId);
             });
-            const rows = (incomingMessages || []).filter(message => message?.id && !seen.has(String(message.id)) && !existingDomIds.has(String(message.id)));
+            const candidates = (incomingMessages || []).filter(message => message?.id && !seen.has(String(message.id)) && !existingDomIds.has(String(message.id)));
+            if (!candidates.length) { advanceDirectChatCursor(conversationId, incomingMessages); return; }
+            const hiddenResult = await supabaseClient.from('chat_message_hides').select('message_id').eq('user_id',currentUser.id).in('message_id',candidates.map(message => message.id));
+            if (hiddenResult.error) throw hiddenResult.error;
+            const hiddenIds = new Set((hiddenResult.data || []).map(item => String(item.message_id)));
+            candidates.filter(message => hiddenIds.has(String(message.id))).forEach(message => seen.add(String(message.id)));
+            const rows = candidates.filter(message => !hiddenIds.has(String(message.id)));
             if (!rows.length) { advanceDirectChatCursor(conversationId, incomingMessages); return; }
 
             const incomingIds = rows.filter(m => m.sender_id !== currentUser.id).map(m => m.id);
@@ -4210,8 +4262,9 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 const item = document.createElement('div');
                 item.dataset.chatMessageId = id;
                 item.className = 'flex items-end ' + (mine ? 'justify-end' : 'justify-start') + ' gap-1.5';
+                const hideAction = mine ? '<button type="button" data-hide-direct-message-id="' + escapeHTML(id) + '" data-hide-direct-conversation-id="' + escapeHTML(conversationId) + '" title="自分の画面から非表示" aria-label="自分の送信メッセージを非表示" class="ml-1 text-gray-500 hover:text-red-400 text-xs px-1">⋯</button>' : '';
                 item.innerHTML = mine
-                    ? '<div class="text-right pb-0.5">' + readLabel + '<span class="block text-[10px] leading-4 text-gray-500 whitespace-nowrap">' + timeLabel + '</span></div>' + bubble
+                    ? '<div class="text-right pb-0.5 flex flex-col items-end">' + hideAction + readLabel + '<span class="block text-[10px] leading-4 text-gray-500 whitespace-nowrap">' + timeLabel + '</span></div>' + bubble
                     : bubble + '<span class="block text-[10px] leading-4 text-gray-500 whitespace-nowrap">' + timeLabel + '</span>';
                 if (pullIndicator?.parentElement === box) box.insertBefore(item, pullIndicator);
                 else box.appendChild(item);
@@ -5039,9 +5092,16 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                         .in('conversation_id', rows.map(c => c.id))
                         .order('created_at', {ascending:false}).limit(200);
                     if (messageError) throw messageError;
+                    const previewIds = (messages || []).map(message => message.id).filter(Boolean);
+                    let hiddenPreviewIds = new Set();
+                    if (previewIds.length) {
+                        const hiddenPreviewResult = await supabaseClient.from('chat_message_hides').select('message_id').eq('user_id',currentUser.id).in('message_id',previewIds);
+                        if (hiddenPreviewResult.error) throw hiddenPreviewResult.error;
+                        hiddenPreviewIds = new Set((hiddenPreviewResult.data || []).map(item => String(item.message_id)));
+                    }
                     const lastMessageByConversation = {};
                     (messages || []).forEach(m => {
-                        if (!lastMessageByConversation[m.conversation_id]) lastMessageByConversation[m.conversation_id] = m;
+                        if (!hiddenPreviewIds.has(String(m.id)) && !lastMessageByConversation[m.conversation_id]) lastMessageByConversation[m.conversation_id] = m;
                     });
                     rows.forEach(c => {
                         const row = box.querySelector(`[data-chat-row="${c.id}"]`);
@@ -5639,11 +5699,22 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             document.getElementById('chatMessageInput').disabled = false;
             document.getElementById('chatSendButton').disabled = false;
             const box = document.getElementById('chatMessages');
+            if (box.dataset.kuroHideDirectMessageHandler !== 'true') {
+                box.addEventListener('click', async event => {
+                    const button = event.target.closest('[data-hide-direct-message-id]');
+                    if (!button || !box.contains(button)) return;
+                    event.preventDefault(); event.stopPropagation();
+                    if (button.disabled) return;
+                    button.disabled = true;
+                    await hideDirectChatMessage(button.dataset.hideDirectMessageId, button.dataset.hideDirectConversationId);
+                    button.disabled = false;
+                });
+                box.dataset.kuroHideDirectMessageHandler = 'true';
+            }
             const token = ++kuroDirectSelectToken;
             kuroDirectMessageSeen.set(conversationId, new Set());
             kuroDirectMessageLatestAt.set(conversationId, '');
-            const cachedMessages = readChatCache('messages', conversationId);
-            box.innerHTML = cachedMessages?.value || '<div class="flex justify-center py-3"><div class="flex items-center gap-2 text-xs text-gray-400"><i class="fa-solid fa-arrow-down animate-spin"></i><span>読み込み中…</span></div></div>';
+            box.innerHTML = '<div class="flex justify-center py-3"><div class="flex items-center gap-2 text-xs text-gray-400"><i class="fa-solid fa-arrow-down animate-spin"></i><span>読み込み中…</span></div></div>';
             const result = await supabaseClient.from('chat_messages')
                 .select('id,sender_id,content,created_at,media').eq('conversation_id', conversationId)
                 .order('created_at', {ascending:false}).limit(50);
@@ -5653,7 +5724,18 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 console.warn(result.error);
                 return;
             }
-            const messages = (result.data || []).reverse();
+            const fetchedMessages = (result.data || []).reverse();
+            let hiddenMessageIds = new Set();
+            if (fetchedMessages.length) {
+                const hiddenResult = await supabaseClient.from('chat_message_hides').select('message_id').eq('user_id',currentUser.id).in('message_id',fetchedMessages.map(message => message.id));
+                if (hiddenResult.error) {
+                    box.innerHTML = '<p class="text-sm text-red-300">非表示メッセージの状態を確認できませんでした。再読み込みしてください。</p>';
+                    console.warn('KURO direct message hide lookup failed:',hiddenResult.error);
+                    return;
+                }
+                hiddenMessageIds = new Set((hiddenResult.data || []).map(item => String(item.message_id)));
+            }
+            const messages = fetchedMessages.filter(message => !hiddenMessageIds.has(String(message.id)));
             const incomingIds = messages.filter(m => m.sender_id !== currentUser.id).map(m => m.id);
             if (incomingIds.length) {
                 const readResult = await supabaseClient.from('chat_message_reads').select('message_id').eq('reader_id', currentUser.id).in('message_id', incomingIds);
@@ -5690,14 +5772,15 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 const timeLabel = date.toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit',hour12:false});
                 const textHTML = message.content ? '<p class="text-sm whitespace-pre-wrap break-words">' + renderSocialText(message.content) + '</p>' : '';
                 const bubble = '<div class="max-w-[78%] rounded-2xl px-3 py-2.5 ' + (mine ? 'bg-white text-black rounded-br-md' : 'bg-kuro-800 text-gray-100 rounded-bl-md') + '">' + textHTML + (privateMediaHTML.get(String(message.id)) || '') + '</div>';
-                rendered.push('<div data-chat-message-id="' + socialEscape(message.id) + '" class="flex items-end ' + (mine ? 'justify-end' : 'justify-start') + ' gap-1.5">' +
-                    (mine ? '<div class="text-right pb-0.5">' + readLabel + '<span class="block text-[10px] leading-4 text-gray-500 whitespace-nowrap">' + timeLabel + '</span></div>' + bubble
+                const hideAction = mine ? '<button type="button" data-hide-direct-message-id="' + socialEscape(message.id) + '" data-hide-direct-conversation-id="' + socialEscape(conversationId) + '" title="自分の画面から非表示" aria-label="自分の送信メッセージを非表示" class="ml-1 text-gray-500 hover:text-red-400 text-xs px-1">⋯</button>' : '';
+                rendered.push('<div data-chat-message-id="' + socialEscape(message.id) + '" data-chat-conversation-id="' + socialEscape(conversationId) + '" class="flex items-end ' + (mine ? 'justify-end' : 'justify-start') + ' gap-1.5">' +
+                    (mine ? '<div class="text-right pb-0.5 flex flex-col items-end">' + hideAction + readLabel + '<span class="block text-[10px] leading-4 text-gray-500 whitespace-nowrap">' + timeLabel + '</span></div>' + bubble
                         : bubble + '<span class="block text-[10px] leading-4 text-gray-500 whitespace-nowrap">' + timeLabel + '</span>') + '</div>');
             });
             box.innerHTML = (rendered.join('') || '<p data-chat-empty class="text-xs text-gray-600 text-center mt-8">最初のメッセージを送ってみよう</p>') +
                 '<div id="chatPullIndicator" class="kuro-pull-indicator" aria-live="polite"><i class="fa-solid fa-arrow-down"></i><span>一番下から上に引っ張って更新</span></div>';
-            kuroDirectMessageSeen.set(conversationId, new Set(messages.map(m => String(m.id))));
-            advanceDirectChatCursor(conversationId, messages);
+            kuroDirectMessageSeen.set(conversationId, new Set(fetchedMessages.map(m => String(m.id))));
+            advanceDirectChatCursor(conversationId, fetchedMessages);
             writeChatCache('messages', conversationId, box.innerHTML);
             box.scrollTop = box.scrollHeight;
             if (!kuroDirectMessageLatestAt.get(conversationId)) kuroDirectMessageLatestAt.set(conversationId, new Date(0).toISOString());
@@ -5831,6 +5914,16 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 optimistic.querySelector('.text-gray-400')?.remove();
                 optimistic.dataset.serverMessageId = sentMessage.id;
                 optimistic.dataset.chatMessageId = sentMessage.id;
+                optimistic.dataset.chatConversationId = conversationId;
+                const hideButton = document.createElement('button');
+                hideButton.type = 'button';
+                hideButton.dataset.hideDirectMessageId = sentMessage.id;
+                hideButton.dataset.hideDirectConversationId = conversationId;
+                hideButton.title = '自分の画面から非表示';
+                hideButton.setAttribute('aria-label', '自分の送信メッセージを非表示');
+                hideButton.className = 'ml-1 text-gray-500 hover:text-red-400 text-xs px-1';
+                hideButton.textContent = '⋯';
+                optimistic.appendChild(hideButton);
                 const sentSeen = kuroDirectMessageSeen.get(conversationId) || new Set();
                 sentSeen.add(String(sentMessage.id));
                 kuroDirectMessageSeen.set(conversationId, sentSeen);
