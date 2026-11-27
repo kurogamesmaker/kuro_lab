@@ -1,69 +1,34 @@
-const CACHE_NAME = "kurogames-mobile-shell-v5";
-const SHELL_URLS = [
-  "/games/mobile/",
-  "/games/mobile/mobile.css?v=20261126mobilefix1",
-  "/games/mobile/mobile.js?v=20261126mobilefix1",
-  "/games/mobile/manifest.webmanifest?v=20261126mobilefix1",
-  "/games/mobile/subpage.css?v=20261126mobilefix1",
-  "/games/mobile/subpage.js?v=20261126mobilefix1"
-];
-
+// One-time cleanup worker for retired KURO GAMES mobile installs.
+// It removes the old cached app, sends open app windows to the common game library,
+// and unregisters itself. This file is intentionally kept until old installs update.
 self.addEventListener("install", event => {
-  event.waitUntil((async () => {
-    const cache = await caches.open(CACHE_NAME);
-    await cache.addAll(SHELL_URLS);
-    await self.skipWaiting();
-  })());
+  event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener("activate", event => {
   event.waitUntil((async () => {
-    const keys = await caches.keys();
-    await Promise.all(keys.filter(key => key.startsWith("kurogames-mobile-shell-") && key !== CACHE_NAME).map(key => caches.delete(key)));
+    const cacheNames = await caches.keys();
+    await Promise.all(
+      cacheNames
+        .filter(name => name.startsWith("kurogames-mobile-shell-"))
+        .map(name => caches.delete(name))
+    );
     await self.clients.claim();
+    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    await Promise.all(windows.map(async client => {
+      try {
+        const pathname = new URL(client.url).pathname;
+        if (pathname === "/games/mobile" || pathname.startsWith("/games/mobile/")) {
+          await client.navigate("/games/");
+        }
+      } catch (_) {}
+    }));
+    await self.registration.unregister();
   })());
 });
 
 self.addEventListener("fetch", event => {
-  const request = event.request;
-  if (request.method !== "GET") return;
-  const url = new URL(request.url);
+  const url = new URL(event.request.url);
   if (url.origin !== self.location.origin || !url.pathname.startsWith("/games/mobile/")) return;
-
-  const isShellAsset = url.pathname === "/games/mobile/" ||
-    url.pathname === "/games/mobile/index.html" ||
-    url.pathname === "/games/mobile/mobile.css" ||
-    url.pathname === "/games/mobile/mobile.js" ||
-    url.pathname === "/games/mobile/manifest.webmanifest" ||
-    url.pathname === "/games/mobile/subpage.css" ||
-    url.pathname === "/games/mobile/subpage.js";
-
-  if (!isShellAsset) return;
-
-  if (request.mode === "navigate") {
-    event.respondWith((async () => {
-      try {
-        const fresh = await fetch(request);
-        if (fresh && fresh.ok && url.pathname === "/games/mobile/") {
-          const cache = await caches.open(CACHE_NAME);
-          cache.put("/games/mobile/", fresh.clone());
-        }
-        return fresh;
-      } catch (_) {
-        return (await caches.match("/games/mobile/")) || Response.error();
-      }
-    })());
-    return;
-  }
-
-  event.respondWith((async () => {
-    const cached = await caches.match(request);
-    if (cached) return cached;
-    const fresh = await fetch(request);
-    if (fresh && fresh.ok) {
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(request, fresh.clone());
-    }
-    return fresh;
-  })());
+  event.respondWith(Response.redirect(new URL("/games/", self.location.origin), 302));
 });
