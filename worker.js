@@ -269,15 +269,16 @@ async function handleWebSearch(request, env) {
 
 const ipBanStatusCache = new Map();
 const IP_BAN_CACHE_MS = 3000;
-async function checkActiveIpBan(ip) {
+async function checkActiveIpBan(ip, edgeKey) {
   const normalized = typeof ip === "string" ? ip.trim() : "";
+  if (!edgeKey) throw new Error("IP BAN edge secret is not configured.");
   if (!normalized || normalized.length > 64 || normalized.includes("/")) return null;
   const cached = ipBanStatusCache.get(normalized);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   const response = await fetch(SUPABASE_URL + "/rest/v1/rpc/kuro_ip_ban_check", {
     method: "POST",
     headers: { apikey: SUPABASE_KEY, authorization: "Bearer " + SUPABASE_KEY, "content-type": "application/json" },
-    body: JSON.stringify({ p_ip: normalized })
+    body: JSON.stringify({ p_ip: normalized, p_edge_key: edgeKey })
   });
   if (!response.ok) throw new Error("IP BAN status lookup failed: " + response.status);
   const result = await response.json();
@@ -318,10 +319,10 @@ function isIpBanAdminPage(pathname) {
   return pathname === "/admin" || pathname === "/admin/" || pathname === "/admin/index.html" ||
     pathname.startsWith("/assets/brand/logo/");
 }
-async function checkIncomingIpBan(request, url) {
+async function checkIncomingIpBan(request, url, edgeKey) {
   const ip = request.headers.get("CF-Connecting-IP");
   if (!ip) return null;
-  const ban = await checkActiveIpBan(ip);
+  const ban = await checkActiveIpBan(ip, edgeKey);
   if (!ban || url.pathname === "/api/cloudflare-relay") return null;
   if (ban.scope === "all" && isIpBanAdminPage(url.pathname)) return null;
   if (url.pathname === "/api/web-search" && ban.scope === "write") return null;
@@ -402,7 +403,7 @@ function isSuspensionAllowedRequest(pathname, method) {
   return false;
 }
 
-async function proxy(payload, clientIp = null) {
+async function proxy(payload, clientIp = null, edgeKey = null) {
   const target = targetFor(payload.path);
   const method = String(payload.method || "GET").toUpperCase();
   if (!METHODS.has(method)) throw Object.assign(new Error("Method not allowed"), { status: 405 });
@@ -410,7 +411,7 @@ async function proxy(payload, clientIp = null) {
   const requestHeaders = headersFor(payload.headers);
   if (clientIp) {
     try {
-      const ipBan = await checkActiveIpBan(clientIp);
+      const ipBan = await checkActiveIpBan(clientIp, edgeKey);
       if (isIpBanBlocked(ipBan, target.pathname, method)) return ipBanBlockedResult(ipBan);
     } catch (error) {
       console.error("KURO IP BAN lookup failed", error?.message || error);
@@ -472,11 +473,11 @@ async function proxy(payload, clientIp = null) {
   };
 }
 
-async function handleRelay(request) {
+async function handleRelay(request, env) {
   const url = new URL(request.url);
   if (request.method === "GET") {
     try {
-      const ipBan = await checkActiveIpBan(request.headers.get("CF-Connecting-IP"));
+      const ipBan = await checkActiveIpBan(request.headers.get("CF-Connecting-IP"), env?.IP_BAN_EDGE_KEY);
       if (isIpBanBlocked(ipBan, "/api/cloudflare-relay", "GET")) {
         const blocked = ipBanBlockedResult(ipBan);
         return new Response(blocked.bodyText, { status: blocked.status, headers: blocked.headers });
@@ -518,7 +519,7 @@ async function handleRelay(request) {
   }
 
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
-  return json(await proxy(await request.json(), request.headers.get("CF-Connecting-IP")));
+  return json(await proxy(await request.json(), request.headers.get("CF-Connecting-IP"), env?.IP_BAN_EDGE_KEY));
 }
 
 async function handleRealtime(request) {
@@ -651,7 +652,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     try {
-      const ipBanResponse = await checkIncomingIpBan(request, url);
+      const ipBanResponse = await checkIncomingIpBan(request, url, env?.IP_BAN_EDGE_KEY);
       if (ipBanResponse) return ipBanResponse;
     } catch (error) {
       console.error("KURO IP BAN lookup failed", error?.message || error);
@@ -693,7 +694,7 @@ export default {
 
     if (url.pathname === "/api/cloudflare-relay") {
       try {
-        return await handleRelay(request);
+        return await handleRelay(request, env);
       } catch (error) {
         return json({
           ok: false,
