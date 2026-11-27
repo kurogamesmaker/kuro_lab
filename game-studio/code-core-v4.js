@@ -458,6 +458,7 @@ async function updatePublishTagPreview(){const preview=$("publishTagPreview"),st
  $("publishStatus").textContent="ログイン状態を確認しています…";$("confirmPublish").disabled=true;publishAllowed=false;
  if(!publishDb){$("publishStatus").textContent="Supabaseに接続できません。ページを再読み込みしてください。";return;}
  try{const {data:{session},error}=await getStudioSession(publishDb);if(error)throw error;if(!session){$("publishStatus").textContent="KURO Labにログインしてください。ログイン後、この画面を再読み込みしてください。";return;}publishUser=session.user;
+  const {data:gateData,error:gateError}=await publishDb.functions.invoke("kuro-security-gate",{body:{action:"check",tool:"admin"}});if(gateError)throw gateError;if(!gateData||gateData.allowed!==true)throw new Error(gateData?.message||"KURO Security Gateでアクセスが拒否されました。");
   const {data:admin,error:adminError}=await publishDb.from("admin_users").select("user_id").eq("user_id",session.user.id).maybeSingle();if(adminError)throw adminError;
   if(!admin){$("publishStatus").textContent="このアカウントには公開権限がありません。KURO Lab管理者アカウントでログインしてください。";return;}
   publishAllowed=true;$("confirmPublish").disabled=false;$("publishStatus").textContent="管理者として認証済み。公開前にタイトル・説明・ジャンルを確認してください。";
