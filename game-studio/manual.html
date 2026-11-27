@@ -76,7 +76,7 @@
   <ol><li>コードエディター上部で「PC版」または「スマホ版」を選択</li><li>選択中の画面のHTML・CSSを編集してプレビュー</li><li>「共通JavaScript」にはゲーム本体のルール・進行・スコア・オンライン処理を記述。PC／スマホを切り替えても同じ内容が表示されます</li><li>マウス・キーボード・タッチなど画面ごとの入力処理だけは「端末別UI・操作JS」に記述</li><li>「公開・更新」でPC／スマホのHTML・CSS、共通JS、端末別JSをそれぞれ保存します</li></ol>
   <p><code>window.KURO_GAMES_PLATFORM</code> は <code>"pc"</code> または <code>"mobile"</code> を返します。各プラットフォームの画面・入力処理の分岐に利用できます。</p>
  </div>
- <div class="callout warn">PC版の <code>html_content</code> とスマホ版の <code>mobile_html_content</code> はどちらも必須です。共通JavaScriptは <code>shared_js_content</code> に1つだけ保存し、端末別の追加処理は <code>pc_extension_js_content</code>／<code>mobile_extension_js_content</code> に保存します。既存移行でPC・モバイルのJSが異なっていた5作品（3Dワールド、UNON、ブロックFPS、大富豪、数字当て）は、動作を変えないよう旧コード全体を端末別領域に一時保持しています。これらは今後、共通ゲームロジックとUI・入力処理を段階的に分離します。選択したプラットフォームの画面コードが空の場合、もう一方を代用せず起動を停止します。</div>
+ <div class="callout warn">PC版の <code>html_content</code> とスマホ版の <code>mobile_html_content</code> はどちらも必須です。共通JavaScriptは <code>shared_js_content</code> に1つだけ保存し、端末別の追加処理は <code>pc_extension_js_content</code>／<code>mobile_extension_js_content</code> に保存します。既存移行でPC・モバイルのJSが異なっていた4作品（3Dワールド、UNON、ブロックFPS、大富豪）は、動作を変えないよう旧コード全体を端末別領域に一時保持しています。これらは今後、共通ゲームロジックとUI・入力処理を段階的に分離します。数字当ては差分が判定しきい値の1行だけだったため、共通JSへ統合し、端末判定をその1行に組み込みました。選択したプラットフォームの画面コードが空の場合、もう一方を代用せず起動を停止します。</div>
 </section>
 
 <section class="section" id="start">
