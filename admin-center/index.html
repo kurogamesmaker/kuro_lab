@@ -8,6 +8,7 @@
 <link rel="icon" type="image/png" sizes="48x48" href="/assets/brand/logo/kurolab_icon_maru_48.png?v=20261122marufavicon2">
 <title>KURO Admin Center</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/security/kuro-security-gate.js?v=20261128gate1"></script>
 <style>
 :root{color-scheme:dark;--bg:#090b13;--panel:#111522;--panel2:#171d2d;--line:#283149;--text:#f2f5fc;--muted:#98a4ba;--purple:#a78bfa;--blue:#76b7ff;--green:#6cddb5;--gold:#f2ce83;--red:#fda4af}
 *{box-sizing:border-box}
@@ -155,6 +156,7 @@ main{padding:32px 0 60px}
     <nav class="filter-list" aria-label="管理ツールのカテゴリ">
      <button class="filter-btn active" type="button" data-filter="all"><span class="filter-icon">▦</span>すべてのツール</button>
      <button class="filter-btn" type="button" data-filter="admin"><span class="filter-icon">◈</span>運営管理</button>
+     <button class="filter-btn" type="button" data-filter="security"><span class="filter-icon">🛡</span>セキュリティ</button>
      <button class="filter-btn" type="button" data-filter="studio"><span class="filter-icon">⌘</span>制作スタジオ</button>
      <button class="filter-btn" type="button" data-filter="shop"><span class="filter-icon">◇</span>ショップ管理</button>
      <button class="filter-btn" type="button" data-filter="favorites"><span class="filter-icon">☆</span>お気に入り</button>
@@ -171,6 +173,12 @@ main{padding:32px 0 60px}
      <div class="card-top"><div class="tool-icon" aria-hidden="true">◈</div><div class="card-title"><div class="card-kicker">CORE MANAGEMENT</div><h3>KURO Admin</h3></div><button class="favorite-btn" type="button" data-favorite="admin" aria-label="KURO Adminをお気に入りに登録">☆</button></div>
      <div class="card-title"><p>ユーザー管理、レベル・XP、ポイント、報酬、通知、ランキングや各サービスの運営管理を行います。</p></div>
      <div class="card-footer"><a class="launch tool-link" data-tool-id="admin" href="/admin/">管理画面を開く <span>↗</span></a><span class="card-meta">ADMIN CONSOLE</span></div>
+    </article>
+
+    <article class="tool-card" data-group="security" data-search="kuro security gate monitor セキュリティ 不正アクセス 監査ログ セッション 侵入 乗っ取り">
+     <div class="card-top"><div class="tool-icon" aria-hidden="true">🛡</div><div class="card-title"><div class="card-kicker">ACCESS PROTECTION</div><h3>KURO Security Monitor</h3></div><button class="favorite-btn" type="button" data-favorite="security-monitor" aria-label="Security Monitorをお気に入りに登録">☆</button></div>
+     <div class="card-title"><p>管理ツールへのアクセス判定、危険度、拒否履歴、検証結果を確認します。</p></div>
+     <div class="card-footer"><a class="launch tool-link" data-tool-id="security-monitor" href="/admin/security.html">監視センターを開く <span>↗</span></a><span class="card-meta">SECURITY MONITOR</span></div>
     </article>
 
     <article class="tool-card" data-group="studio" data-search="game studio ゲームスタジオ 制作 プロジェクト コード エディター html css javascript オンライン ランキング ルーム マニュアル">
@@ -232,13 +240,14 @@ const toolInfo={
  "game-editor":{name:"Game Studio コードエディター",url:"/game-studio/code.html",icon:"✎",group:"studio"},
  "game-online":{name:"Game Studio オンライン設定",url:"/game-studio/online.html",icon:"◎",group:"studio"},
  "game-manual":{name:"Game Studio 制作マニュアル",url:"/game-studio/manual.html",icon:"▤",group:"studio"},
- "shop-studio":{name:"Shop Studio",url:"/shop-studio/",icon:"◇",group:"shop"}
+ "shop-studio":{name:"Shop Studio",url:"/shop-studio/",icon:"◇",group:"shop"},
+ "security-monitor":{name:"KURO Security Monitor",url:"/admin/security.html",icon:"🛡",group:"security"}
 };
-const cardFavoriteMap={"admin":"admin","studio":"game-studio","shop":"shop-studio"};
+const cardFavoriteMap={"admin":"admin","studio":"game-studio","shop":"shop-studio","security":"security-monitor"};
 let activeFilter="all";
 function safeRead(key,fallback){try{const value=JSON.parse(localStorage.getItem(key)||"null");return Array.isArray(value)?value:fallback;}catch(_){return fallback;}}
 function saveArray(key,value){try{localStorage.setItem(key,JSON.stringify(value));}catch(_){}}
-let favorites=safeRead(FAVORITES_KEY,[]).filter(x=>["admin","game-studio","shop-studio"].includes(x));
+let favorites=safeRead(FAVORITES_KEY,[]).filter(x=>["admin","game-studio","shop-studio","security-monitor"].includes(x));
 let recent=safeRead(RECENT_KEY,[]).filter(x=>typeof x==="string"&&toolInfo[x]);
 function esc(value){return String(value??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 function showLogin(message){
@@ -257,7 +266,7 @@ async function checkAdmin(user){
  if(!data)throw new Error("このアカウントには管理者権限がありません。");
 }
 async function enter(user){
- try{await checkAdmin(user);showApp(user);}
+ try{await checkAdmin(user);await window.KuroSecurityGate.verify(db,"center");showApp(user);}
  catch(error){await db.auth.signOut();showLogin(error?.message||"管理者認証に失敗しました。");}
 }
 function recordRecent(id){
@@ -291,7 +300,7 @@ function applyFilter(){
  document.querySelectorAll(".tool-card").forEach(card=>{
   const group=card.dataset.group;
   const favoriteId=cardFavoriteMap[group];
-  const ids=group==="admin"?["admin"]:group==="studio"?["game-projects","game-editor","game-online","game-manual"]:["shop-studio"];
+  const ids=group==="admin"?["admin"]:group==="studio"?["game-projects","game-editor","game-online","game-manual"]:group==="shop"?["shop-studio"]:group==="security"?["security-monitor"]:[];
   const matchQuery=!q||(card.innerText+" "+card.dataset.search).toLocaleLowerCase().includes(q);
   let matchFilter=activeFilter==="all"||activeFilter===group;
   if(activeFilter==="favorites")matchFilter=favorites.includes(favoriteId);
@@ -304,7 +313,7 @@ function applyFilter(){
   const empty=document.createElement("div");empty.className="no-results";empty.id="noResults";empty.textContent="該当する管理ツールがありません。検索語やカテゴリを変更してください。";
   $("#toolGrid").appendChild(empty);
  }
- const descriptions={all:"利用する管理機能を選択してください。",admin:"ユーザー・サービスの運営管理ツールです。",studio:"ゲーム制作に関するツールです。",shop:"ショップ商品を管理するツールです。",favorites:"お気に入りに登録した管理ツールです。",recent:"最近開いた管理ツールです。"};
+ const descriptions={all:"利用する管理機能を選択してください。",admin:"ユーザー・サービスの運営管理ツールです。",security:"アクセス異常と管理ツールのセキュリティ履歴を確認します。",studio:"ゲーム制作に関するツールです。",shop:"ショップ商品を管理するツールです。",favorites:"お気に入りに登録した管理ツールです。",recent:"最近開いた管理ツールです。"};
  $("#catalogDescription").textContent=descriptions[activeFilter]||descriptions.all;
 }
 document.querySelectorAll("[data-filter]").forEach(button=>button.addEventListener("click",()=>{
