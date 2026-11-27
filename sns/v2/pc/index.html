@@ -2078,7 +2078,7 @@ function kuroRouteCloudflareRealtime(client) {
             const ownPosts = textPosts.filter(post => String(post.user_id || '') === String(currentUser.id || '')).sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
             document.getElementById('myProfilePostCount').textContent = String(ownPosts.length);
             const grid = document.getElementById('myProfilePostGrid');
-            grid.innerHTML = ownPosts.map(post => `<button type="button" class="aspect-square text-left overflow-hidden rounded-xl border border-kuro-800 bg-kuro-900 hover:border-kuro-600 p-3 sm:p-4 flex flex-col justify-between transition-colors" onclick="showProfilePost('${escapeHTML(post.id)}')"><span class="text-sm sm:text-base text-gray-200 whitespace-pre-wrap break-words line-clamp-6">${renderPostContent(post.content || '')}</span><span class="flex items-center gap-3 text-[11px] text-gray-500 mt-3"><span><i class="fa-regular fa-heart mr-1"></i>${Number(post.like_count || 0)}</span><span><i class="fa-regular fa-comment mr-1"></i>${(post.replies || []).length}</span><span class="ml-auto">${escapeHTML(formatPostDate(post.created_at))}</span></span></button>`).join('');
+            grid.innerHTML = ownPosts.map(post => `<button type="button" data-profile-post-id="${escapeHTML(post.id)}" class="aspect-square text-left overflow-hidden rounded-xl border border-kuro-800 bg-kuro-900 hover:border-kuro-600 p-3 sm:p-4 flex flex-col justify-between transition-colors" onclick="showProfilePost('${escapeHTML(post.id)}')"><span class="text-sm sm:text-base text-gray-200 whitespace-pre-wrap break-words line-clamp-6">${renderPostContent(post.content || '')}</span><span class="flex items-center gap-3 text-[11px] text-gray-500 mt-3"><span><i class="fa-regular fa-heart mr-1"></i>${Number(post.like_count || 0)}</span><span><i class="fa-regular fa-comment mr-1"></i>${(post.replies || []).length}</span><span class="ml-auto">${escapeHTML(formatPostDate(post.created_at))}</span></span></button>`).join('');
             document.getElementById('myProfileEmpty').classList.toggle('hidden', ownPosts.length > 0);
         }
 
@@ -3617,14 +3617,18 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     .from('post_replies')
                     .select('id, post_id, user_id, content, parent_reply_id, created_at')
                     .eq('id', createdReplyId)
-                    .single();
-                if (replyReadError) throw replyReadError;
-                if (!replyRow || String(replyRow.post_id) !== expectedPostId || String(replyRow.user_id) !== String(user.id)) {
-                    throw new Error('保存した返信を確認できませんでした。ページを更新して確認してください。');
-                }
-
+                    .maybeSingle();
+                // RPC success is authoritative. If the follow-up SELECT is briefly unavailable,
+                // the returned UUID and submitted values are enough to render this committed reply.
+                if (replyReadError) console.warn('KURO reply row readback failed; using RPC result:', replyReadError);
                 const newReply = {
-                    ...replyRow,
+                    ...(replyRow || {}),
+                    id: String(createdReplyId),
+                    post_id: expectedPostId,
+                    user_id: user.id,
+                    content: replyRow?.content ?? content,
+                    parent_reply_id: replyRow?.parent_reply_id ?? parentReplyId,
+                    created_at: replyRow?.created_at || new Date().toISOString(),
                     username: currentUser.handle || '',
                     display_name: currentUser.name || '',
                     avatar_url: currentUser.avatarUrl || ''
@@ -3989,6 +3993,25 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             if (Math.abs(delta) > 1) window.scrollBy(0, delta);
         }
 
+        function captureKuroProfileAnchor() {
+            const view = document.getElementById('myProfileView');
+            const grid = document.getElementById('myProfilePostGrid');
+            if (!view || view.classList.contains('hidden') || !grid) return null;
+            const tile = [...grid.querySelectorAll('[data-profile-post-id]')].find(item => {
+                const rect = item.getBoundingClientRect();
+                return rect.bottom > 0 && rect.top < window.innerHeight;
+            });
+            return tile ? {id: String(tile.dataset.profilePostId), top: tile.getBoundingClientRect().top} : null;
+        }
+
+        function restoreKuroProfileAnchor(anchor) {
+            if (!anchor?.id) return;
+            const tile = document.querySelector('#myProfilePostGrid [data-profile-post-id="' + CSS.escape(anchor.id) + '"]');
+            if (!tile) return;
+            const delta = tile.getBoundingClientRect().top - anchor.top;
+            if (Math.abs(delta) > 1) window.scrollBy(0, delta);
+        }
+
         function createLocalReplyNode(reply, parentLabel = '') {
             const replyName = reply.username || reply.display_name || 'KUROユーザー';
             const replyHandle = reply.username || 'user';
@@ -4116,6 +4139,11 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 } else {
                     // Fallback only if the card cannot be rendered independently.
                     filterPosts();
+                }
+                if (!document.getElementById('myProfileView')?.classList.contains('hidden')) {
+                    const profileAnchor = captureKuroProfileAnchor();
+                    renderMyProfile();
+                    restoreKuroProfileAnchor(profileAnchor);
                 }
                 showToast('ポストを投稿したよ！');
             } catch (error) {
