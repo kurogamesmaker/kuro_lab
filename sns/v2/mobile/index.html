@@ -3129,7 +3129,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                         return;
                     }
                     const replyToButton = event.target.closest('[data-reply-to-id]');
-                    if (replyToButton && feed.contains(replyToButton)) {
+                    if (replyToButton && feed.contains(replyToButton) && replyToButton.dataset.replyHandledInline !== 'true') {
                         event.preventDefault();
                         if (!currentUser) {
                             showToast('返信するにはログインしてください');
@@ -3222,7 +3222,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                         ? `<img src="${escapeHTML(kuroSnsAvatarUrl(reply.avatar_url))}" alt="" class="w-8 h-8 rounded-full object-cover border border-kuro-700">`
                         : `<span class="w-8 h-8 rounded-full bg-kuro-800 border border-kuro-700 flex items-center justify-center text-gray-300"><i class="fa-regular fa-user text-xs"></i></span>`;
                     const replyAvatar = kuroSnsAvatarHostMarkup(reply.user_id,replyAvatarContent,'w-8 h-8 flex-shrink-0 kuro-sns-avatar-small-frame');
-                    return `<div class="flex gap-2 py-2" data-kuro-post-reply-id="${escapeHTML(reply.id || '')}">${replyAvatar}<div class="min-w-0 flex-1"><div class="text-xs text-gray-400"><span class="font-semibold text-gray-200">${escapeHTML(replyName)}</span> <span class="text-gray-600">@${escapeHTML(replyHandle)} · ${escapeHTML(formatPostDate(reply.created_at))}</span></div>${parentLabel ? `<div class="text-[11px] text-violet-300/80 mt-0.5">↳ ${escapeHTML(parentLabel)} への返信</div>` : ''}<p class="mt-1 text-sm text-gray-300 whitespace-pre-wrap break-words">${renderMentionContent(reply.content || '')}</p><button type="button" data-reply-to-id="${escapeHTML(reply.id || '')}" data-reply-to-post-id="${escapeHTML(post.id)}" data-reply-to-handle="${escapeHTML(replyHandle)}" data-reply-to-name="${escapeHTML(replyName)}" class="mt-1 text-xs text-violet-300 hover:text-violet-200">返信</button></div></div>`;
+                    return `<div class="flex gap-2 py-2" data-kuro-post-reply-id="${escapeHTML(reply.id || '')}">${replyAvatar}<div class="min-w-0 flex-1"><div class="text-xs text-gray-400"><span class="font-semibold text-gray-200">${escapeHTML(replyName)}</span> <span class="text-gray-600">@${escapeHTML(replyHandle)} · ${escapeHTML(formatPostDate(reply.created_at))}</span></div>${parentLabel ? `<div class="text-[11px] text-violet-300/80 mt-0.5">↳ ${escapeHTML(parentLabel)} への返信</div>` : ''}<p class="mt-1 text-sm text-gray-300 whitespace-pre-wrap break-words">${renderMentionContent(reply.content || '')}</p><button type="button" data-reply-to-id="${escapeHTML(reply.id || '')}" data-reply-to-post-id="${escapeHTML(post.id)}" data-reply-to-handle="${escapeHTML(replyHandle)}" data-reply-to-name="${escapeHTML(replyName)}" onclick="window.KuroSNSSetReplyTarget(this)" class="mt-1 text-xs text-violet-300 hover:text-violet-200">返信</button></div></div>`;
                 };
                 const renderReplyThread = (root) => {
                     const rootName = root.username || root.display_name || 'KUROユーザー';
@@ -3325,6 +3325,54 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 await refreshSocialFeed();
             }
         }
+
+        // Direct, card-scoped reply target handler. This avoids relying on
+        // a delegated click listener to resolve nested comment buttons.
+        window.KuroSNSSetReplyTarget = function(button) {
+            if (!button) return;
+            button.dataset.replyHandledInline = 'true';
+            if (!currentUser) {
+                showToast('返信するにはログインしてください');
+                openAuthModal('signin');
+                return;
+            }
+            const card = button.closest('[data-post-card]');
+            const postId = String(button.dataset.replyToPostId || '').trim();
+            const cardPostId = String(card?.getAttribute('data-post-card') || '').trim();
+            const replyId = String(button.dataset.replyToId || '').trim();
+            if (!card || !postId || cardPostId !== postId || !replyId) {
+                showToast('返信先を特定できません。投稿を更新してください。');
+                return;
+            }
+            const replyNode = card.querySelector('[data-kuro-post-reply-id="' + CSS.escape(replyId) + '"]');
+            const input = card.querySelector('[data-reply-input]');
+            if (!replyNode || !input || String(input.getAttribute('data-reply-input') || '') !== postId) {
+                showToast('返信先のコメントを確認できません。コメント一覧を更新してください。');
+                return;
+            }
+            const previousHandle = input.dataset.replyToHandle || '';
+            if (previousHandle) {
+                const oldPrefix = '@' + previousHandle + ' ';
+                if (input.value.startsWith(oldPrefix)) input.value = input.value.slice(oldPrefix.length);
+            }
+            const handle = String(button.dataset.replyToHandle || 'user').trim() || 'user';
+            const prefix = '@' + handle + ' ';
+            input.dataset.parentReplyId = replyId;
+            input.dataset.replyToHandle = handle;
+            if (!input.value.trim()) input.value = prefix;
+            else if (!input.value.startsWith(prefix)) input.value = prefix + input.value;
+            const target = card.querySelector('[data-reply-target]');
+            const targetText = target?.querySelector('[data-reply-target-text]');
+            if (targetText) targetText.textContent =
+                (button.dataset.replyToName || handle) + '（@' + handle + '）への返信';
+            target?.classList.remove('hidden');
+            const panel = card.querySelector('[data-replies-panel]');
+            if (panel?.classList.contains('hidden')) {
+                panel.classList.remove('hidden');
+                card.querySelector('[data-reply-post-id]')?.setAttribute('aria-expanded', 'true');
+            }
+            input.focus();
+        };
 
         async function submitReply(postId, sourceCard = null) {
             if (!currentUser) {
