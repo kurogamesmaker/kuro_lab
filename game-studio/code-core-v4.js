@@ -234,7 +234,7 @@ function splitMixedCode(source){
   input=input.replace(/<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi,(_,body)=>{parts.css+=(parts.css?"\n\n":"")+body.trim();return"<!-- CSSをstyle.cssへ分離 -->";});
   input=input.replace(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi,(whole,attrs,body)=>{
    if(/\bsrc\s*=/.test(attrs)){notes.push("外部script読み込みタグはHTML内に保持しました。");return whole;}
-   if(body.trim()){parts.js+=(parts.js?"\n\n":"")+body.trim();if(/\btype\s*=\s*["']module["']/.test(attrs))notes.push("module形式のJavaScriptを検出しました。import文を保持しています。");}
+   if(body.trim()){const isModule=/\btype\s*=\s*["']module["']/.test(attrs);parts.js+=(parts.js?"\n\n":"")+(isModule?"/* @kuro-module */\n":"")+body.trim();if(isModule)notes.push("module形式のJavaScriptを検出しました。import文を保持しています。");}
    return"<!-- JavaScriptをgame.jsへ分離 -->";
   });
   parts.html=input.trim();
@@ -244,7 +244,7 @@ function splitMixedCode(source){
   parts.html=parts.html.replace(/<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi,(_,body)=>{parts.css+=(parts.css?"\n\n":"")+body.trim();return"<!-- CSSをstyle.cssへ分離 -->";});
   parts.html=parts.html.replace(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi,(whole,attrs,body)=>{
    if(/\bsrc\s*=/.test(attrs)){notes.push("外部script読み込みタグはHTML内に保持しました。");return whole;}
-   if(body.trim()){parts.js+=(parts.js?"\n\n":"")+body.trim();if(/\btype\s*=\s*["']module["']/.test(attrs))notes.push("module形式のJavaScriptを検出しました。import文を保持しています。");}
+   if(body.trim()){const isModule=/\btype\s*=\s*["']module["']/.test(attrs);parts.js+=(parts.js?"\n\n":"")+(isModule?"/* @kuro-module */\n":"")+body.trim();if(isModule)notes.push("module形式のJavaScriptを検出しました。import文を保持しています。");}
    return"<!-- JavaScriptをgame.jsへ分離 -->";
   });
  }
@@ -256,6 +256,7 @@ function splitMixedCode(source){
 function safeScript(source){return String(source||"").replace(/<\/script/gi,"<\\/script");}
 function kuroNeedsModuleScript(source) {
  const original=String(source||"");
+ if(/^\s*\/\*\s*@kuro-module\s*\*\//m.test(original))return true;
  let code=original.split("");let i=0;
  while(i<code.length){
   const ch=code[i],next=code[i+1],tick=String.fromCharCode(96);
