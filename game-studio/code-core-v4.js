@@ -254,6 +254,41 @@ function splitMixedCode(source){
  return {parts,notes};
 }
 function safeScript(source){return String(source||"").replace(/<\/script/gi,"<\\/script");}
+function kuroNeedsModuleScript(source) {
+ const original=String(source||"");
+ let code=original.split("");let i=0;
+ while(i<code.length){
+  const ch=code[i],next=code[i+1],tick=String.fromCharCode(96);
+  if(ch==="'"||ch==='"'||ch===tick){
+   const quote=ch;code[i]=" ";i++;
+   while(i<code.length){const c=code[i];if((c==="\n"||c==="\r")&&quote!==tick)break;code[i]=" ";if(c==="\\"){i++;if(i<code.length)code[i]=" ";i++;continue;}if(c===quote){i++;break;}i++;}
+   continue;
+  }
+  if(ch==="/"&&next==="/"){code[i]=code[i+1]=" ";i+=2;while(i<code.length&&code[i]!=="\n"){code[i]=" ";i++;}continue;}
+  if(ch==="/"&&next==="*"){code[i]=code[i+1]=" ";i+=2;while(i<code.length&&!(code[i]==="*"&&code[i+1]==="/")){if(code[i]!=="\n"&&code[i]!=="\r")code[i]=" ";i++;}if(i<code.length){code[i]=code[i+1]=" ";i+=2;}continue;}
+  i++;
+ }
+ const masked=code.join("");
+ if(/^\s*(?:import\s+(?!\()|export\s+)/m.test(masked))return true;
+ const awaits=[...masked.matchAll(/\bawait\b/g)];
+ if(!awaits.length)return false;
+ const ranges=[];
+ function addBodies(pattern){
+  pattern.lastIndex=0;let match;
+  while((match=pattern.exec(masked))){
+   const open=match.index+match[0].lastIndexOf("{");if(open<0)continue;
+   let depth=0,end=-1;
+   for(let p=open;p<masked.length;p++){if(masked[p]==="{")depth++;else if(masked[p]==="}"&&--depth===0){end=p;break;}}
+   if(end>=open)ranges.push([open,end]);
+  }
+ }
+ addBodies(/\basync\s+function(?:\s+[A-Za-z_$][\w$]*)?\s*\([^)]*\)\s*\{/g);
+ addBodies(/\basync\s*(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>\s*\{/g);
+ addBodies(/\basync\s+[A-Za-z_$][\w$]*\s*\([^)]*\)\s*\{/g);
+ const expression=/\basync\s*(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>\s*[^{}\n;,]+/g;
+ let arrow;while((arrow=expression.exec(masked)))ranges.push([arrow.index,arrow.index+arrow[0].length]);
+ return awaits.some(match=>!ranges.some(range=>match.index>=range[0]&&match.index<=range[1]));
+}
 function makeDocument(sourceCode,targetPlatform,includeGameScripts){
  const platform=targetPlatform||activeSurface;
  const source=sourceCode||activeCode();
@@ -266,7 +301,7 @@ function makeDocument(sourceCode,targetPlatform,includeGameScripts){
  let html=code.html||"";
  // HTMLタブ内のインラインscriptにもトップレベルawait対応を適用
  html=html.replace(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi,(whole,attrs,body)=>{
-  if(!/\bawait\b/.test(body))return whole;
+  if(!kuroNeedsModuleScript(body)&&!/\btype\s*=\s*["\']module["\']/i.test(attrs))return whole;
   const cleanAttrs=attrs.replace(/\s+type\s*=\s*(["']).*?\1/i,"");
   return "<scr"+"ipt"+cleanAttrs+' type="module">'+body+"</scr"+"ipt>";
  });
@@ -279,7 +314,7 @@ function makeDocument(sourceCode,targetPlatform,includeGameScripts){
  const viewportMeta=platform==="mobile"&&!/<meta\b(?=[^>]*\bname=["']viewport["'])[^>]*>/i.test(html)?'<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">':"";
  const platformScript='<script>window.KURO_GAMES_PLATFORM='+JSON.stringify(platform)+';</script>';
  const styleBlock="<style>"+css+"</style>";
- const moduleMode=/^\s*(?:import|export)\b/m.test(rawJs)||/\bawait\b/.test(rawJs);
+ const moduleMode=kuroNeedsModuleScript(rawJs);
  const scriptOpen=(moduleMode?"<scr"+"ipt type=\"module\">":"<scr"+"ipt>");
  const scriptClose="<"+"/script>";
  const legacyLogger="const __kuroSend=(level,args)=>{try{parent.postMessage({type:'kuro-studio-console',level:level,values:Array.from(args).map(v=>{try{return typeof v==='string'?v:JSON.stringify(v)}catch(_){return String(v)}})},'*')}catch(_){}};['log','info','warn','error'].forEach(level=>{const base=console[level].bind(console);console[level]=(...args)=>{base(...args);__kuroSend(level,args)}});window.addEventListener('error',function(e){try{parent.postMessage({type:'kuro-studio-error',message:e.message},'*')}catch(_){}});\n";
