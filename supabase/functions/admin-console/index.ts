@@ -118,6 +118,23 @@ Deno.serve(async (req: Request) => {
 
     if (adminCheckError || !adminRecord) return reply({ error: "Administrator access required" }, 403, origin);
 
+    // Server-side Security Gate: the browser overlay is never an authorization boundary.
+    const gateResponse = await fetch(`${url}/functions/v1/kuro-security-gate`, {
+      method: "POST",
+      headers: {
+        "Authorization": authHeader,
+        "apikey": anon,
+        "Content-Type": "application/json",
+        ...(origin ? { "Origin": origin } : {})
+      },
+      body: JSON.stringify({ action: "check", tool: "admin" })
+    });
+    const gateResult = await gateResponse.json().catch(() => ({}));
+    if (!gateResponse.ok || gateResult?.allowed !== true) {
+      const status = gateResponse.status >= 500 ? 503 : (gateResponse.status === 401 ? 401 : 403);
+      return reply({ error: gateResult?.message || "KURO Security Gateでアクセスが拒否されました。" }, status, origin);
+    }
+
     const body = await req.json().catch(() => ({}));
     const action = typeof body?.action === "string" ? body.action : "";
     const retiredPlanActions = new Set(["list_pro_management","review_pro_application","create_pro_invitation","update_pro_invitation","update_pro_membership","set_pro_user_control","set_user_plan"]);
