@@ -341,7 +341,8 @@ async function checkIncomingIpBan(request, url, edgeKey) {
 const PROTECTED_CLIENT_TOOLS = new Map([
   ["admin-console", "admin"],
   ["shop-studio", "shop-studio"],
-  ["kuro-security-monitor", "security-monitor"]
+  ["kuro-security-monitor", "security-monitor"],
+  ["game-studio", "game-studio"]
 ]);
 
 const suspensionStatusCache = new Map();
