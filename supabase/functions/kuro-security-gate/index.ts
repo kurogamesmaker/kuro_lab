@@ -140,11 +140,15 @@ async function checkAccess(
   const reasons: string[] = [];
   let riskScore = 0;
 
-  if (previousRows.length > 0 && ipDigest && !previousRows.some((row) => row.ip_digest === ipDigest)) {
+  const changedIp = previousRows.length > 0 && Boolean(ipDigest) &&
+    !previousRows.some((row) => row.ip_digest === ipDigest);
+  const changedDevice = previousRows.length > 0 && Boolean(deviceDigest) &&
+    !previousRows.some((row) => row.device_digest === deviceDigest);
+  if (changedIp) {
     riskScore += 25;
     reasons.push("以前と異なる接続元を検知しました。");
   }
-  if (previousRows.length > 0 && deviceDigest && !previousRows.some((row) => row.device_digest === deviceDigest)) {
+  if (changedDevice) {
     riskScore += 20;
     reasons.push("以前と異なる端末環境を検知しました。");
   }
@@ -175,7 +179,7 @@ async function checkAccess(
     decision = "block";
     allowed = false;
     message = "安全性を確認できない接続形式のため、管理ツールへのアクセスを停止しました。";
-  } else if (authAgeSeconds > 12 * 60 * 60 || (riskScore >= 35 && authAgeSeconds > 15 * 60)) {
+  } else if (changedIp || changedDevice || authAgeSeconds > 12 * 60 * 60) {
     decision = "reauth";
     allowed = false;
     message = "セキュリティ確認のため、いったんログアウトして再ログインしてください。";
