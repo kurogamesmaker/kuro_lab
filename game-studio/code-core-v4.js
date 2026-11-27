@@ -564,7 +564,7 @@ const codeFileInput=$("codeFileInput");
 $("fileLoadBtn").addEventListener("click",()=>codeFileInput.click());
 codeFileInput.addEventListener("change",async()=>{
  const files=Array.from(codeFileInput.files||[]);codeFileInput.value="";if(!files.length)return;
- const updates={html:[],css:[],js:[]},notes=[],scriptFiles=new Map(),referencedScripts=new Set();
+ const updates={html:[],css:[],js:[],platformjs:[]},notes=[],scriptFiles=new Map(),referencedScripts=new Set();
  try{
   activeCode()[activeTab]=currentValue();
   const normalizeScriptName=value=>{let p=String(value||"").split(/[?#]/)[0];try{p=decodeURIComponent(p);}catch(_){}return p.split(/[\/]/).pop().toLowerCase().replace(/\s*\(\d+\)(?=\.[^.]+$)/,"");};
@@ -592,16 +592,17 @@ codeFileInput.addEventListener("change",async()=>{
     const currentHtml=updates.html.length?updates.html.join("\n\n"):String(activeCode().html||"");
     const updatedHtml=currentHtml.replace(/<script\b([^>]*?)\bsrc\s*=\s*(["'])([^"']+)\2([^>]*)>\s*<\/script\s*>/gi,(whole,before,quote,src,after)=>normalizeScriptName(src)===importedName?(matched=true,""):whole);
     if(updates.html.length)updates.html[updates.html.length-1]=updatedHtml;else activeCode().html=updatedHtml;
-    if(matched){referencedScripts.add(importedName);updates.js.unshift(source);notes.push(name+": HTML参照を除去してJavaScriptへ統合");}else{updates.js.push(source);notes.push(name+": JavaScriptタブへ読み込み");}
-   }else if(["jsx","ts","tsx","json"].includes(ext)){updates.js.push("// "+name+"\n"+source);notes.push(name+": JavaScriptタブへ読み込み");}
+    const targetTab=activeTab==="platformjs"?"platformjs":"js";
+    if(matched){referencedScripts.add(importedName);updates[targetTab].unshift(source);notes.push(name+": HTML参照を除去して"+(targetTab==="platformjs"?"端末別UI・操作JS":"共通JavaScript")+"へ統合");}else{updates[targetTab].push(source);notes.push(name+": "+(targetTab==="platformjs"?"端末別UI・操作JS":"共通JavaScript")+"タブへ読み込み");}
+   }else if(["jsx","ts","tsx","json"].includes(ext)){const targetTab=activeTab==="platformjs"?"platformjs":"js";updates[targetTab].push("// "+name+"\n"+source);notes.push(name+": "+(targetTab==="platformjs"?"端末別UI・操作JS":"共通JavaScript")+"タブへ読み込み");}
    else if(["xml","svg"].includes(ext)){updates.html.push(source);notes.push(name+": HTMLタブへ読み込み");}
-   else if(ext==="md"){updates.js.push("// "+name+"（Markdownテキスト）\n"+source);notes.push(name+": テキストとしてJavaScriptタブへ読み込み");}
+   else if(ext==="md"){const targetTab=activeTab==="platformjs"?"platformjs":"js";updates[targetTab].push("// "+name+"（Markdownテキスト）\n"+source);notes.push(name+": テキストとしてJavaScriptタブへ読み込み");}
    else throw new Error("未対応のファイル形式です: "+name);
   }
   const applied=Object.keys(updates).filter(tab=>updates[tab].length);if(!applied.length)throw new Error("読み込めるコードが見つかりませんでした。");
   activeCode()[activeTab]=currentValue();
   const occupied=applied.filter(tab=>{const value=String(activeCode()[tab]||"").trim();return value&&!["<!-- HTMLをここに追加できます -->","/* CSSをここに追加できます */","// JavaScriptをここに追加できます"].includes(value);});
-  const labels={html:"HTML",css:"CSS",js:"JavaScript"},summary=applied.map(tab=>labels[tab]).join("・");
+  const labels={html:"HTML",css:"CSS",js:"共通JavaScript",platformjs:"端末別UI・操作JS"},summary=applied.map(tab=>labels[tab]).join("・");
   if(occupied.length&&!window.confirm("読み込むファイル: "+files.map(f=>f.name).join("、")+"\n反映先: "+summary+"\n既存コードを上書きします。続行しますか？")){toast("ファイル読み込みをキャンセルしました");return;}
   applied.forEach(tab=>{activeCode()[tab]=updates[tab].join("\n\n");});
   showTab(applied.includes("html")?"html":applied[0]);run();markDirty();$("previewStatus").textContent="複数ファイル読み込み済み";toast(files.length+"個のファイルを読み込みました");if(notes.length)console.info("複数ファイル読み込み:\n"+notes.join("\n"));
