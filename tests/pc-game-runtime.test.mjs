@@ -120,13 +120,14 @@ test("sandbox storage bridge supports localStorage and sessionStorage", () => {
   );
 });
 
+
 test("PC launcher removes mobile-only visual overrides without losing UNON state behavior", () => {
   const start = launcher.indexOf("function kuroPreparePcGameHtml");
   const end = launcher.indexOf("function startKuroGameActivity", start);
   assert.ok(start >= 0 && end > start);
   const context = {};
   vm.runInNewContext(
-    launcher.slice(start, end) + "\\nglobalThis.preparePcHtml = kuroPreparePcGameHtml;",
+    launcher.slice(start, end) + "\nglobalThis.preparePcHtml = kuroPreparePcGameHtml;",
     context
   );
   const prime = '<html><head><style id="base">#timeBar::before{width:var(--bar)}</style><style id="kuro-mobile-layout-patch">#timeBar{background:linear-gradient(red,blue)}</style></head><body></body></html>';
