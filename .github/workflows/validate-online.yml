@@ -6,6 +6,7 @@ on:
       - online-room-worker.js
       - game-studio/kurog-online.js
       - game-studio/code.html
+      - game-studio/code-core-v4.js
       - games/play/index.html
       - games/play/launcher.js
       - games/index.html
@@ -13,12 +14,14 @@ on:
       - supabase/functions/kurogames-online/index.ts
       - supabase/migrations/**
       - tests/online-room-worker.test.mjs
+      - tests/pc-game-runtime.test.mjs
       - .github/workflows/validate-online.yml
   pull_request:
     paths:
       - online-room-worker.js
       - game-studio/kurog-online.js
       - game-studio/code.html
+      - game-studio/code-core-v4.js
       - games/play/index.html
       - games/play/launcher.js
       - games/index.html
@@ -26,6 +29,7 @@ on:
       - supabase/functions/kurogames-online/index.ts
       - supabase/migrations/**
       - tests/online-room-worker.test.mjs
+      - tests/pc-game-runtime.test.mjs
       - .github/workflows/validate-online.yml
 jobs:
   syntax:
@@ -37,8 +41,10 @@ jobs:
           node-version: 22
       - run: node --check online-room-worker.js
       - run: node --test tests/online-room-worker.test.mjs
+      - run: node --test tests/pc-game-runtime.test.mjs
       - run: node --check game-studio/kurog-online.js
       - run: node --check games/play/launcher.js
+      - run: node --check game-studio/code-core-v4.js
       - name: Check embedded game and Studio scripts
         run: |
           node <<'NODE'
