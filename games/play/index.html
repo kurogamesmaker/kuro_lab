@@ -27,71 +27,7 @@ button.back{font-family:inherit;cursor:pointer;background:transparent;border:0}
 .kuro-account-foot{text-align:center;margin-top:15px}
 @media(max-width:600px){.kuro-account-card{padding:25px 18px 18px;border-radius:16px}.kuro-account-card h2{font-size:19px}}
 
-/* Mobile gameplay layout only: portrait-first, full-height play area.
-   Desktop/tablet layout rules above remain unchanged. */
-@media(max-width:600px){
- html,body{
-  width:100%;
-  height:100%;
-  min-height:0;
-  overflow:hidden;
-  overscroll-behavior:none;
- }
- body{
-  padding-top:env(safe-area-inset-top);
-  -webkit-text-size-adjust:100%;
- }
- .top{
-  height:calc(52px + env(safe-area-inset-top));
-  min-height:calc(52px + env(safe-area-inset-top));
-  padding:env(safe-area-inset-top) 9px 0;
-  gap:7px;
- }
- .brand{font-size:16px;letter-spacing:-.4px;white-space:nowrap}
- .back{font-size:10px;padding:7px;white-space:nowrap}
- .game-account-button{padding:7px 8px;font-size:10px}
- #gamePageWrap{
-  width:100%!important;
-  max-width:none!important;
-  height:calc(100dvh - 52px - env(safe-area-inset-top));
-  min-height:0;
-  margin:0;
-  padding:8px 8px calc(8px + env(safe-area-inset-bottom));
-  display:flex;
-  flex-direction:column;
-  gap:8px;
- }
- #gameInfo{flex:0 0 auto;gap:10px;margin:0;min-height:42px}
- #gameInfo .icon{width:46px;height:42px;flex-basis:46px;border-radius:10px;font-size:22px}
- #gameInfo .copy h1{font-size:17px;margin:0}
- #frameWrap{
-  flex:1 1 auto;
-  min-height:0;
-  width:100%;
-  border-radius:12px;
-  box-shadow:0 4px 18px #263d5b12;
- }
- #frameWrap .game-frame{
-  width:100%!important;
-  height:100%!important;
-  max-width:100%!important;
-  max-height:none!important;
-  aspect-ratio:auto!important;
- }
- .game-description{
-  flex:0 1 auto;
-  margin:0;
-  padding:8px 10px;
-  max-height:72px;
-  overflow:auto;
-  font-size:11px;
-  line-height:1.6;
-  border-radius:10px;
- }
- .game-description-label{font-size:9px;margin:0 0 2px}
- .hint{display:none}
-}
-</style><link rel="stylesheet" href="/games/play/mobile-shell.css?v=20261126-mobile-touch-input1"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style id="kuro-game-cosmetics-style">
 .game-cosmetic-avatar{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;overflow:hidden;border:2px solid #cbd5e1;border-radius:50%;background:linear-gradient(145deg,#e8eaff,#dbe7fa);color:#334155;font-size:20px;box-shadow:0 2px 9px #263d5b20}
 .game-cosmetic-avatar[hidden],.game-cosmetic-effects[hidden]{display:none!important}
@@ -194,22 +130,6 @@ header.top.kuro-game-background-legendary{background:linear-gradient(100deg,#4b2
  </section>
 </div>
 <main class="wrap" id="gamePageWrap"><div class="info" id="gameInfo" hidden><div class="icon" id="gameIcon">🎮</div><div class="copy"><h1 id="gameTitle">読み込み中…</h1></div></div><div class="frame-wrap" id="frameWrap"><div class="state" id="state"><strong>ゲームを読み込んでいます</strong>少しお待ちください。</div></div><div id="kuroGameRewardBar" aria-live="polite" hidden><span id="kuroGameRewardTitle">🪙 ポイント報酬</span><div id="kuroGameRewardList"></div></div><section class="game-description" id="gameDescriptionBox" hidden><p class="game-description-label">ゲーム説明</p><div id="gameDescription"></div></section><p class="hint">このゲームは独立したサンドボックス内で実行されます。</p></main>
-<nav class="mobile-game-controls" id="mobileGameControls" aria-label="ゲーム操作" hidden>
- <button id="mobileGameBack" type="button">← 一覧</button><button id="mobileGameAccount" type="button">アカウント</button><button id="mobileGameFullscreen" type="button">⛶ 全画面</button>
-</nav>
-<script>
-(function(){
- const back=document.getElementById("mobileGameBack"),account=document.getElementById("mobileGameAccount"),fullscreen=document.getElementById("mobileGameFullscreen");
- const mobileApp=new URLSearchParams(location.search).get("mobileApp")==="1";
- if(back)back.addEventListener("click",()=>{location.href=mobileApp?"/games/mobile/":"/games/";});
- if(account)account.addEventListener("click",()=>document.getElementById("gameAccountButton")?.click());
- if(fullscreen)fullscreen.addEventListener("click",async()=>{
-  try{if(document.fullscreenElement)await document.exitFullscreen();else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen({navigationUI:"hide"});else fullscreen.textContent="全画面表示中";}
-  catch(error){console.info("[KURO GAMES] Fullscreen API unavailable.",error?.message||error);fullscreen.textContent="アプリ表示中";}
- });
- document.addEventListener("fullscreenchange",()=>{if(fullscreen)fullscreen.textContent=document.fullscreenElement?"⤢ 元に戻す":"⛶ 全画面";});
-})();
-</script>
 
 <script src="/games/play/launcher.js?v=20261127-module-detection-fix1"></script><script src="/games/recommendations.js?v=20261122-retired-rail-guard3"></script><script id="kuro-play-topbar-level">
 (function(){
