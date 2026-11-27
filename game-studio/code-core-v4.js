@@ -609,7 +609,7 @@ codeFileInput.addEventListener("change",async()=>{
    const body=scriptFiles.get(normalizeScriptName(src));if(body==null)return whole;
    referencedScripts.add(normalizeScriptName(src));
    const attrs=(before+" "+after).replace(/\s+(?:src|async|defer|integrity|crossorigin)\s*(?:=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?/gi,"");
-   const moduleMode=/\btype\s*=\s*["']module["']/i.test(attrs)||/\b(?:import|export)\s/.test(body)||/\bawait\b/.test(body)||/\.mjs$/i.test(src);
+   const moduleMode=/\btype\s*=\s*["']module["']/i.test(attrs)||kuroNeedsModuleScript(body)||/\.mjs$/i.test(src);
    const clean=attrs.replace(/\s+type\s*=\s*(["']).*?\1/i,"");
    return "<scr"+"ipt"+clean+(moduleMode?' type="module"':"")+">"+safeScript(body)+"<"+"/script>";
   });
