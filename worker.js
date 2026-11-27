@@ -267,6 +267,75 @@ async function handleWebSearch(request, env) {
   return response;
 }
 
+const ipBanStatusCache = new Map();
+const IP_BAN_CACHE_MS = 3000;
+async function checkActiveIpBan(ip) {
+  const normalized = typeof ip === "string" ? ip.trim() : "";
+  if (!normalized || normalized.length > 64 || normalized.includes("/")) return null;
+  const cached = ipBanStatusCache.get(normalized);
+  if (cached && cached.expiresAt > Date.now()) return cached.value;
+  const response = await fetch(SUPABASE_URL + "/rest/v1/rpc/kuro_ip_ban_check", {
+    method: "POST",
+    headers: { apikey: SUPABASE_KEY, authorization: "Bearer " + SUPABASE_KEY, "content-type": "application/json" },
+    body: JSON.stringify({ p_ip: normalized })
+  });
+  if (!response.ok) throw new Error("IP BAN status lookup failed: " + response.status);
+  const result = await response.json();
+  const value = result && result.blocked === true
+    ? { scope: result.scope === "all" ? "all" : "write", expiresAt: typeof result.expires_at === "string" ? result.expires_at : null }
+    : null;
+  if (ipBanStatusCache.size > 1000) ipBanStatusCache.clear();
+  ipBanStatusCache.set(normalized, { value, expiresAt: Date.now() + IP_BAN_CACHE_MS });
+  return value;
+}
+function isIpBanRecoveryRequest(pathname, method) {
+  const verb = String(method || "GET").toUpperCase();
+  return (pathname === "/auth/v1/token" && verb === "POST") ||
+    (pathname === "/auth/v1/user" && verb === "GET") ||
+    (pathname === "/rest/v1/admin_users" && ["GET", "HEAD"].includes(verb)) ||
+    (pathname.startsWith("/rest/v1/rpc/kuro_ip_ban_admin_") && verb === "POST");
+}
+function isIpBanBlocked(ban, pathname, method, webSocket = false) {
+  if (!ban || isIpBanRecoveryRequest(pathname, method)) return false;
+  if (ban.scope === "all") return true;
+  return webSocket || !["GET", "HEAD", "OPTIONS"].includes(String(method || "GET").toUpperCase());
+}
+function ipBanBlockedResult(ban) {
+  return {
+    status: 403,
+    headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
+    isBinary: false, bodyBase64: "",
+    bodyText: JSON.stringify({
+      code: "IP_BANNED",
+      error: "このネットワークからのアクセスまたは操作は制限されています。",
+      scope: ban?.scope === "all" ? "all" : "write",
+      expires_at: ban?.expiresAt || null
+    }),
+    service: "KURO IP BAN"
+  };
+}
+function isIpBanAdminPage(pathname) {
+  return pathname === "/admin" || pathname === "/admin/" || pathname === "/admin/index.html" ||
+    pathname.startsWith("/assets/brand/logo/");
+}
+async function checkIncomingIpBan(request, url) {
+  const ip = request.headers.get("CF-Connecting-IP");
+  if (!ip) return null;
+  const ban = await checkActiveIpBan(ip);
+  if (!ban || url.pathname === "/api/cloudflare-relay") return null;
+  if (ban.scope === "all" && isIpBanAdminPage(url.pathname)) return null;
+  if (url.pathname === "/api/web-search" && ban.scope === "write") return null;
+  if (isIpBanBlocked(ban, url.pathname, request.method,
+      (request.headers.get("Upgrade") || "").toLowerCase() === "websocket")) {
+    return new Response(JSON.stringify({
+      code: "IP_BANNED",
+      error: "このネットワークからのアクセスまたは操作は制限されています。",
+      scope: ban.scope, expires_at: ban.expiresAt || null
+    }), { status: 403, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
+  }
+  return null;
+}
+
 const suspensionStatusCache = new Map();
 
 async function checkActiveSuspension(headers) {
@@ -333,12 +402,20 @@ function isSuspensionAllowedRequest(pathname, method) {
   return false;
 }
 
-async function proxy(payload) {
+async function proxy(payload, clientIp = null) {
   const target = targetFor(payload.path);
   const method = String(payload.method || "GET").toUpperCase();
   if (!METHODS.has(method)) throw Object.assign(new Error("Method not allowed"), { status: 405 });
 
   const requestHeaders = headersFor(payload.headers);
+  if (clientIp) {
+    try {
+      const ipBan = await checkActiveIpBan(clientIp);
+      if (isIpBanBlocked(ipBan, target.pathname, method)) return ipBanBlockedResult(ipBan);
+    } catch (error) {
+      console.error("KURO IP BAN lookup failed", error?.message || error);
+    }
+  }
   if (
     (target.pathname.startsWith("/rest/v1/") || target.pathname.startsWith("/functions/v1/")) &&
     !isSuspensionAllowedRequest(target.pathname, method)
@@ -397,6 +474,17 @@ async function proxy(payload) {
 
 async function handleRelay(request) {
   const url = new URL(request.url);
+  if (request.method === "GET") {
+    try {
+      const ipBan = await checkActiveIpBan(request.headers.get("CF-Connecting-IP"));
+      if (isIpBanBlocked(ipBan, "/api/cloudflare-relay", "GET")) {
+        const blocked = ipBanBlockedResult(ipBan);
+        return new Response(blocked.bodyText, { status: blocked.status, headers: blocked.headers });
+      }
+    } catch (error) {
+      console.error("KURO IP BAN lookup failed", error?.message || error);
+    }
+  }
   if (request.method === "GET" && url.searchParams.get("health") === "1") {
     return json({
       ready: true,
@@ -430,7 +518,7 @@ async function handleRelay(request) {
   }
 
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
-  return json(await proxy(await request.json()));
+  return json(await proxy(await request.json(), request.headers.get("CF-Connecting-IP")));
 }
 
 async function handleRealtime(request) {
@@ -562,6 +650,12 @@ async function handleOnlineRoom(request) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    try {
+      const ipBanResponse = await checkIncomingIpBan(request, url);
+      if (ipBanResponse) return ipBanResponse;
+    } catch (error) {
+      console.error("KURO IP BAN lookup failed", error?.message || error);
+    }
 
     // The dedicated mobile game app has been retired. Keep only its service-worker
     // cleanup script reachable so installed copies can unregister and clear old caches.
