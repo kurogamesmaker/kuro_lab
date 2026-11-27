@@ -7,11 +7,7 @@ const KEY="kuroGameStudio.v1";
 const SUPABASE_URL="https://cprvpphlfpmiegjiutjn.supabase.co",SUPABASE_KEY="sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
 const KURO_CLOUDFLARE_TRANSPORT=true;
 const KURO_CLOUDFLARE_PROXY_URL="https://kurolab.cc.cd/api/cloudflare-relay";
-function kuroCloudflareClientId(){
- const key="kuro_cloudflare_client_id_studio_v1";
- try{let value=localStorage.getItem(key);if(!value){value=window.crypto&&crypto.randomUUID?crypto.randomUUID():"kuro-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2);localStorage.setItem(key,value);}return value;}
- catch(_){return "kuro-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2);}
-}
+function kuroCloudflareClientId(){return "game-studio";}
 async function kuroCloudflareFetch(input,init){
  const req=new Request(input,init),url=new URL(req.url);
  if(url.origin!=="https://cprvpphlfpmiegjiutjn.supabase.co")return fetch(req);
