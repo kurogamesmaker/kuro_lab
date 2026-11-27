@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.49.1";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) throw new Error("Supabase server environment is not configured.");
 
@@ -49,11 +50,32 @@ async function resolveUser(req: Request, required: boolean) {
   return data.user;
 }
 
-async function requireStudioMember(userId: string) {
+async function requireSecurityGate(req: Request, tool: string) {
+  const authorization = req.headers.get("Authorization") || "";
+  if (!authorization.startsWith("Bearer ")) throw new HttpError(401, "ログイン状態を確認できません。");
+  const gateResponse = await fetch(`${SUPABASE_URL}/functions/v1/kuro-security-gate`, {
+    method: "POST",
+    headers: {
+      "Authorization": authorization,
+      "apikey": req.headers.get("apikey") || SUPABASE_ANON_KEY,
+      "Content-Type": "application/json",
+      "Origin": req.headers.get("Origin") || "https://kurolab.cc.cd"
+    },
+    body: JSON.stringify({ action: "check", tool })
+  });
+  const gateResult = await gateResponse.json().catch(() => ({}));
+  if (!gateResponse.ok || gateResult?.allowed !== true) {
+    throw new HttpError(gateResponse.status >= 500 ? 503 : (gateResponse.status === 401 ? 401 : 403),
+      gateResult?.message || "KURO Security Gateでアクセスが拒否されました。");
+  }
+}
+
+async function requireStudioMember(userId: string, req: Request) {
   const { data, error } = await admin.from("kuro_store_studio_members")
     .select("user_id,role,is_active").eq("user_id", userId).eq("is_active", true).maybeSingle();
   if (error) throw new HttpError(503, "Shop Studioの権限を確認できませんでした。");
   if (!data) throw new HttpError(403, "このアカウントにはShop Studioの利用権限がありません。");
+  await requireSecurityGate(req, "shop-studio");
   return data;
 }
 
@@ -168,7 +190,7 @@ Deno.serve(async (req: Request) => {
 
     if (action === "studio_dashboard") {
       const user = await resolveUser(req, true);
-      const studioMember = await requireStudioMember(user!.id);
+      const studioMember = await requireStudioMember(user!.id, req);
       const canViewSales = studioMember.role === "owner";
       const [itemsResult, salesSummaryResult, recentSalesResult, membersResult] = await Promise.all([
         admin.from("kuro_store_items").select("id,item_key,name,description,category,icon,image_url,rarity,price_kc,is_free,is_active,sort_order,created_at,updated_at,deleted_at").order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
@@ -218,7 +240,7 @@ Deno.serve(async (req: Request) => {
 
     if (action === "studio_list_drafts") {
       const user = await resolveUser(req, true);
-      await requireStudioMember(user!.id);
+      await requireStudioMember(user!.id, req);
       const { data, error } = await admin.from("kuro_store_design_drafts")
         .select("id,draft_name,category,design_data,created_at,updated_at")
         .eq("created_by", user!.id)
@@ -229,7 +251,7 @@ Deno.serve(async (req: Request) => {
 
     if (action === "studio_save_draft") {
       const user = await resolveUser(req, true);
-      await requireStudioMember(user!.id);
+      await requireStudioMember(user!.id, req);
       const draftId = typeof body.draftId === "string" ? body.draftId : "";
       const category = typeof body.category === "string" ? body.category : "";
       const draftName = typeof body.draftName === "string" ? body.draftName.trim() : "";
@@ -259,7 +281,7 @@ Deno.serve(async (req: Request) => {
 
     if (action === "studio_delete_draft") {
       const user = await resolveUser(req, true);
-      await requireStudioMember(user!.id);
+      await requireStudioMember(user!.id, req);
       const draftId = typeof body.draftId === "string" ? body.draftId : "";
       if (!UUID_RE.test(draftId)) throw new HttpError(400, "下書きIDが正しくありません。");
       const { data, error } = await admin.from("kuro_store_design_drafts")
@@ -272,7 +294,7 @@ Deno.serve(async (req: Request) => {
 
     if (action === "studio_save_item") {
       const user = await resolveUser(req, true);
-      await requireStudioMember(user!.id);
+      await requireStudioMember(user!.id, req);
       const itemId = typeof body.itemId === "string" ? body.itemId : "";
       if (itemId && !UUID_RE.test(itemId)) throw new HttpError(400, "商品IDが正しくありません。");
       const name = typeof body.name === "string" ? body.name.trim() : "";
@@ -319,7 +341,7 @@ Deno.serve(async (req: Request) => {
 
     if (action === "studio_set_member") {
       const user = await resolveUser(req, true);
-      const actorMember = await requireStudioMember(user!.id);
+      const actorMember = await requireStudioMember(user!.id, req);
       if (actorMember.role !== "owner") throw new HttpError(403, "メンバー管理はShop Studioのownerのみ実行できます。");
       const kuroId = typeof body.kuroId === "string" ? body.kuroId.trim().toUpperCase() : "";
       const role = typeof body.role === "string" ? body.role : "editor";
@@ -346,7 +368,7 @@ Deno.serve(async (req: Request) => {
     }
     if (action === "studio_delete_item") {
       const user = await resolveUser(req, true);
-      await requireStudioMember(user!.id);
+      await requireStudioMember(user!.id, req);
       const itemId = typeof body.itemId === "string" ? body.itemId : "";
       if (!UUID_RE.test(itemId)) throw new HttpError(400, "商品IDが正しくありません。");
       const { data, error } = await admin.from("kuro_store_items")
@@ -358,7 +380,7 @@ Deno.serve(async (req: Request) => {
     }
     if (action === "studio_restore_item") {
       const user = await resolveUser(req, true);
-      await requireStudioMember(user!.id);
+      await requireStudioMember(user!.id, req);
       const itemId = typeof body.itemId === "string" ? body.itemId : "";
       if (!UUID_RE.test(itemId)) throw new HttpError(400, "商品IDが正しくありません。");
       const { data, error } = await admin.from("kuro_store_items")
@@ -370,7 +392,7 @@ Deno.serve(async (req: Request) => {
     }
     if (action === "studio_set_status") {
       const user = await resolveUser(req, true);
-      await requireStudioMember(user!.id);
+      await requireStudioMember(user!.id, req);
       const itemId = typeof body.itemId === "string" ? body.itemId : "";
       const isActive = body.isActive === true;
       if (!UUID_RE.test(itemId)) throw new HttpError(400, "商品IDが正しくありません。");
