@@ -3246,6 +3246,59 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                         }
                         return;
                     }
+                    const replyToButton = event.target.closest('[data-reply-to-id]');
+                    if (replyToButton && feed.contains(replyToButton)) {
+                        event.preventDefault();
+                        if (!currentUser) {
+                            showToast('返信するにはログインしてください');
+                            openAuthModal('signin');
+                            return;
+                        }
+                        const postId = replyToButton.dataset.replyToPostId;
+                        const card = feed.querySelector(`[data-post-card="${CSS.escape(String(postId))}"]`);
+                        const input = card?.querySelector('[data-reply-input]');
+                        if (!input) return;
+                        const previousHandle = input.dataset.replyToHandle || '';
+                        if (previousHandle) {
+                            const previousPrefix = '@' + previousHandle + ' ';
+                            if (input.value.startsWith(previousPrefix)) input.value = input.value.slice(previousPrefix.length);
+                        }
+                        const handle = replyToButton.dataset.replyToHandle || 'user';
+                        const prefix = '@' + handle + ' ';
+                        input.dataset.parentReplyId = replyToButton.dataset.replyToId;
+                        input.dataset.replyToHandle = handle;
+                        if (!input.value.trim()) input.value = prefix;
+                        else input.value = prefix + input.value;
+                        const target = card.querySelector('[data-reply-target]');
+                        const targetText = target?.querySelector('[data-reply-target-text]');
+                        if (targetText) targetText.textContent = (replyToButton.dataset.replyToName || handle) + '（@' + handle + '）への返信';
+                        target?.classList.remove('hidden');
+                        const panel = card.querySelector('[data-replies-panel]');
+                        if (panel?.classList.contains('hidden')) {
+                            panel.classList.remove('hidden');
+                            card.querySelector('[data-reply-post-id]')?.setAttribute('aria-expanded', 'true');
+                        }
+                        input.focus();
+                        return;
+                    }
+                    const cancelReplyTargetButton = event.target.closest('[data-cancel-reply-target]');
+                    if (cancelReplyTargetButton && feed.contains(cancelReplyTargetButton)) {
+                        event.preventDefault();
+                        const card = cancelReplyTargetButton.closest('[data-post-card]');
+                        const input = card?.querySelector('[data-reply-input]');
+                        const handle = input?.dataset.replyToHandle || '';
+                        if (handle) {
+                            const prefix = '@' + handle + ' ';
+                            if (input.value.startsWith(prefix)) input.value = input.value.slice(prefix.length);
+                        }
+                        if (input) {
+                            delete input.dataset.parentReplyId;
+                            delete input.dataset.replyToHandle;
+                            input.focus();
+                        }
+                        card?.querySelector('[data-reply-target]')?.classList.add('hidden');
+                        return;
+                    }
                     if (deleteButton && feed.contains(deleteButton)) {
                         event.preventDefault();
                         event.stopPropagation();
@@ -3273,16 +3326,26 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 const deleteButton = currentUser && String(post.user_id || '') === String(currentUser.id || '')
                     ? `<button type="button" data-delete-post-id="${escapeHTML(post.id)}" class="text-xs text-gray-500 hover:text-red-400 transition-colors" aria-label="このポストを削除"><i class="fa-regular fa-trash-can mr-1"></i>取り消す</button>` : '';
                 const liked = !!post.liked_by_me;
-                const replies = (post.replies || []).map(reply => {
+                const repliesByParent = new Map();
+                const topLevelReplies = [];
+                (post.replies || []).forEach(reply => {
+                    const parentId = String(reply.parent_reply_id || '');
+                    if (parentId) (repliesByParent.get(parentId) || (repliesByParent.set(parentId, []), repliesByParent.get(parentId))).push(reply);
+                    else topLevelReplies.push(reply);
+                });
+                const renderReplyNode = (reply, depth = 0) => {
                     const replyName = reply.username || reply.display_name || 'KUROユーザー';
                     const replyHandle = reply.username || 'user';
                     const replyAvatarContent = reply.avatar_url
                         ? `<img src="${escapeHTML(kuroCloudflarePublicUrl(reply.avatar_url))}" alt="" class="w-8 h-8 rounded-full object-cover border border-kuro-700">`
                         : `<span class="w-8 h-8 rounded-full bg-kuro-800 border border-kuro-700 flex items-center justify-center text-gray-300"><i class="fa-regular fa-user text-xs"></i></span>`;
                     const replyAvatar = kuroSnsAvatarHostMarkup(reply.user_id,replyAvatarContent,'w-8 h-8 flex-shrink-0 kuro-sns-avatar-small-frame');
-                    return `<div class="mt-3 flex gap-2" data-kuro-post-reply-id="${escapeHTML(reply.id || '')}">${replyAvatar}<div class="min-w-0 flex-1 rounded-xl bg-kuro-950/70 px-3 py-2"><div class="text-xs text-gray-400">${escapeHTML(replyName)} <span class="text-gray-600">@${escapeHTML(replyHandle)} · ${escapeHTML(formatPostDate(reply.created_at))}</span></div><p class="mt-1 text-sm text-gray-300 whitespace-pre-wrap break-words">${renderMentionContent(reply.content || '')}</p></div></div>`;
-                }).join('');
-                return `<article class="bg-kuro-900/80 border border-kuro-800 hover:border-kuro-700 rounded-2xl p-4 sm:p-5" data-post-card="${escapeHTML(post.id)}"><div class="flex gap-3">${avatar}<div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-x-2 gap-y-1">${post.user_id ? `<button type="button" onclick="openPublicProfile('${escapeHTML(post.user_id)}')" class="font-semibold text-white hover:underline text-left">${escapeHTML(name)}</button>` : `<span class="font-semibold text-white">${escapeHTML(name)}</span>`}<button type="button" ${post.user_id ? `onclick="openPublicProfile('${escapeHTML(post.user_id)}')"` : 'disabled'} class="text-xs text-gray-500 hover:text-gray-300 disabled:cursor-default">@${escapeHTML(handle)}</button>${currentUser && post.user_id && post.user_id !== currentUser.id ? `<button type="button" data-follow-user-id="${escapeHTML(post.user_id)}" class="text-[11px] border border-kuro-700 rounded-full px-2 py-1 ${followCache.following.has(post.user_id) ? 'text-gray-400' : 'text-white hover:bg-kuro-800'}">${followCache.following.has(post.user_id) ? 'フォロー中' : 'フォロー'}</button>` : ''}<span class="text-xs text-gray-600">· ${escapeHTML(formatPostDate(post.created_at))}</span><span class="ml-auto">${deleteButton}</span></div><p class="mt-3 text-[15px] leading-7 text-gray-200 whitespace-pre-wrap break-words">${renderPostContent(post.content)}</p>${window.KuroSNSMedia?.renderPublic(post.media) || ''}<div class="mt-4 flex items-center gap-4 border-t border-kuro-800 pt-3"><button type="button" data-like-post-id="${escapeHTML(post.id)}" aria-pressed="${liked}" class="text-sm ${liked ? 'text-pink-400' : 'text-gray-400'} hover:text-pink-300"><i class="${liked ? 'fa-solid' : 'fa-regular'} fa-heart mr-1"></i><span>${Number(post.like_count || 0)}</span><span class="ml-1">いいね</span></button><button type="button" data-reply-post-id="${escapeHTML(post.id)}" aria-expanded="false" class="text-sm text-gray-400 hover:text-white"><i class="fa-regular fa-comment mr-1"></i>${(post.replies || []).length} 返信</button></div><div data-replies-panel class="hidden mt-3 space-y-3"><div class="space-y-1">${replies}</div><div class="space-y-2"><textarea data-reply-input="${escapeHTML(post.id)}" maxlength="130" rows="2" placeholder="返信を書く…（メンションなしでもOK）" class="w-full bg-kuro-950 border border-kuro-800 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-gray-500"></textarea><div class="flex justify-end"><button type="button" data-send-reply-post-id="${escapeHTML(post.id)}" class="px-3 py-1.5 rounded-lg bg-white text-black text-xs font-semibold hover:bg-gray-200">返信する</button></div></div></div></div></div></article>`;
+                    const childHtml = (repliesByParent.get(String(reply.id || '')) || []).map(child => renderReplyNode(child, depth + 1)).join('');
+                    const indentClass = depth > 0 ? 'ml-5 border-l border-kuro-800 pl-3' : '';
+                    return `<div class="mt-3" data-kuro-post-reply-id="${escapeHTML(reply.id || '')}"><div class="flex gap-2 ${indentClass}">${replyAvatar}<div class="min-w-0 flex-1 rounded-xl bg-kuro-950/70 px-3 py-2"><div class="text-xs text-gray-400">${escapeHTML(replyName)} <span class="text-gray-600">@${escapeHTML(replyHandle)} · ${escapeHTML(formatPostDate(reply.created_at))}</span></div><p class="mt-1 text-sm text-gray-300 whitespace-pre-wrap break-words">${renderMentionContent(reply.content || '')}</p><div class="flex justify-end mt-1"><button type="button" data-reply-to-id="${escapeHTML(reply.id || '')}" data-reply-to-post-id="${escapeHTML(post.id)}" data-reply-to-handle="${escapeHTML(replyHandle)}" data-reply-to-name="${escapeHTML(replyName)}" class="text-xs text-violet-300 hover:text-violet-200">返信</button></div></div></div>${childHtml ? `<div class="space-y-1">${childHtml}</div>` : ''}</div>`;
+                };
+                const replies = topLevelReplies.map(reply => renderReplyNode(reply)).join('');
+                return `<article class="bg-kuro-900/80 border border-kuro-800 hover:border-kuro-700 rounded-2xl p-4 sm:p-5" data-post-card="${escapeHTML(post.id)}"><div class="flex gap-3">${avatar}<div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-x-2 gap-y-1">${post.user_id ? `<button type="button" onclick="openPublicProfile('${escapeHTML(post.user_id)}')" class="font-semibold text-white hover:underline text-left">${escapeHTML(name)}</button>` : `<span class="font-semibold text-white">${escapeHTML(name)}</span>`}<button type="button" ${post.user_id ? `onclick="openPublicProfile('${escapeHTML(post.user_id)}')"` : 'disabled'} class="text-xs text-gray-500 hover:text-gray-300 disabled:cursor-default">@${escapeHTML(handle)}</button>${currentUser && post.user_id && post.user_id !== currentUser.id ? `<button type="button" data-follow-user-id="${escapeHTML(post.user_id)}" class="text-[11px] border border-kuro-700 rounded-full px-2 py-1 ${followCache.following.has(post.user_id) ? 'text-gray-400' : 'text-white hover:bg-kuro-800'}">${followCache.following.has(post.user_id) ? 'フォロー中' : 'フォロー'}</button>` : ''}<span class="text-xs text-gray-600">· ${escapeHTML(formatPostDate(post.created_at))}</span><span class="ml-auto">${deleteButton}</span></div><p class="mt-3 text-[15px] leading-7 text-gray-200 whitespace-pre-wrap break-words">${renderPostContent(post.content)}</p>${window.KuroSNSMedia?.renderPublic(post.media) || ''}<div class="mt-4 flex items-center gap-4 border-t border-kuro-800 pt-3"><button type="button" data-like-post-id="${escapeHTML(post.id)}" aria-pressed="${liked}" class="text-sm ${liked ? 'text-pink-400' : 'text-gray-400'} hover:text-pink-300"><i class="${liked ? 'fa-solid' : 'fa-regular'} fa-heart mr-1"></i><span>${Number(post.like_count || 0)}</span><span class="ml-1">いいね</span></button><button type="button" data-reply-post-id="${escapeHTML(post.id)}" aria-expanded="false" class="text-sm text-gray-400 hover:text-white"><i class="fa-regular fa-comment mr-1"></i>${(post.replies || []).length} 返信</button></div><div data-replies-panel class="hidden mt-3 space-y-3"><div class="space-y-1">${replies}</div><div data-reply-target class="hidden flex items-center justify-between gap-3 rounded-lg border border-violet-400/20 bg-violet-500/10 px-3 py-2 text-xs text-violet-200"><span data-reply-target-text></span><button type="button" data-cancel-reply-target class="shrink-0 text-gray-400 hover:text-white">解除</button></div><div class="space-y-2"><textarea data-reply-input="${escapeHTML(post.id)}" maxlength="130" rows="2" placeholder="返信を書く…（メンションなしでもOK）" class="w-full bg-kuro-950 border border-kuro-800 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-gray-500"></textarea><div class="flex justify-end"><button type="button" data-send-reply-post-id="${escapeHTML(post.id)}" class="px-3 py-1.5 rounded-lg bg-white text-black text-xs font-semibold hover:bg-gray-200">返信する</button></div></div></div></div></div></article>`;
             }).join('');
             empty.classList.toggle('hidden', list.length !== 0);
             if (!document.getElementById('myProfileView')?.classList.contains('hidden')) renderMyProfile();
@@ -3294,7 +3357,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             const user = currentUser?.id;
             const [likesResult, repliesResult] = await Promise.all([
                 supabaseClient.from('post_likes').select('post_id, user_id').in('post_id', ids),
-                supabaseClient.from('post_replies').select('id, post_id, user_id, content, created_at').in('post_id', ids).order('created_at', {ascending: true})
+                supabaseClient.from('post_replies').select('id, post_id, parent_reply_id, user_id, content, created_at').in('post_id', ids).order('created_at', {ascending: true})
             ]);
             if (likesResult.error) throw new Error('いいねの読み込みに失敗: ' + likesResult.error.message);
             if (repliesResult.error) throw new Error('返信の読み込みに失敗: ' + repliesResult.error.message);
@@ -3387,8 +3450,17 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 if (authError) throw authError;
                 const user = authData?.user;
                 if (!user) throw new Error('ログイン状態を確認できません。再ログインしてください。');
-                const {error} = await supabaseClient.from('post_replies').insert({post_id: postId, user_id: user.id, content});
+                const parentReplyId = input?.dataset.parentReplyId || null;
+                const replyPayload = {post_id: postId, user_id: user.id, content};
+                if (parentReplyId) replyPayload.parent_reply_id = parentReplyId;
+                const {error} = await supabaseClient.from('post_replies').insert(replyPayload);
                 if (error) throw error;
+                if (input) {
+                    input.value = '';
+                    delete input.dataset.parentReplyId;
+                    delete input.dataset.replyToHandle;
+                }
+                document.querySelector(`[data-post-card="${CSS.escape(String(postId))}"] [data-reply-target]`)?.classList.add('hidden');
                 await refreshSocialFeed();
                 showToast('返信を投稿したよ！');
             } catch (error) {
