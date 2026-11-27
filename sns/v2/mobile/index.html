@@ -3072,17 +3072,17 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             return renderSocialText(content, {mentions:true});
         }
 
-        function renderPosts(list = textPosts) {
-            const feed = document.getElementById('postFeed');
-            const empty = document.getElementById('postEmptyState');
-            if (!feed || !empty) return;
-            if (feed.dataset.initialLoading === 'true' && (!list || list.length === 0)) {
+        function renderPosts(list = textPosts, targetFeed = null) {
+            const feed = targetFeed || document.getElementById('postFeed');
+            const empty = targetFeed ? null : document.getElementById('postEmptyState');
+            if (!feed || (!targetFeed && !empty)) return;
+            if (!targetFeed && feed.dataset.initialLoading === 'true' && (!list || list.length === 0)) {
                 empty.classList.add('hidden');
                 if (!feed.children.length) feed.innerHTML = '<div class="px-5 py-10 text-center text-sm text-gray-500"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>投稿を読み込み中…</div>';
                 return;
             }
 
-            if (!feed.dataset.socialHandlersAttached) {
+            if (!targetFeed && !feed.dataset.socialHandlersAttached) {
                 feed.addEventListener('click', async event => {
                     const likeButton = event.target.closest('[data-like-post-id]');
                     const replyButton = event.target.closest('[data-reply-post-id]');
@@ -3239,10 +3239,10 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     return `<div class="kuro-comment-thread border-b border-kuro-800/70 py-1" data-kuro-comment-thread="${escapeHTML(root.id || '')}">${renderReplyItem(root)}${descendants.length ? `<div class="ml-4 mt-1 pl-3 border-l border-kuro-800/80 space-y-0">${descendants.map(({reply,parentName}) => renderReplyItem(reply,parentName)).join('')}</div>` : ''}</div>`;
                 };
                 const replies = topLevelReplies.map(renderReplyThread).join('');
-                return `<article class="bg-kuro-900/80 border border-kuro-800 hover:border-kuro-700 rounded-2xl p-4 sm:p-5" data-post-card="${escapeHTML(post.id)}"><div class="flex gap-3">${avatar}<div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-x-2 gap-y-1">${post.user_id ? `<button type="button" onclick="openPublicProfile('${escapeHTML(post.user_id)}')" class="font-semibold text-white hover:underline text-left">${escapeHTML(name)}</button>` : `<span class="font-semibold text-white">${escapeHTML(name)}</span>`}<button type="button" ${post.user_id ? `onclick="openPublicProfile('${escapeHTML(post.user_id)}')"` : 'disabled'} class="text-xs text-gray-500 hover:text-gray-300 disabled:cursor-default">@${escapeHTML(handle)}</button>${currentUser && post.user_id && post.user_id !== currentUser.id ? `<button type="button" data-follow-user-id="${escapeHTML(post.user_id)}" class="text-[11px] border border-kuro-700 rounded-full px-2 py-1 ${followCache.following.has(post.user_id) ? 'text-gray-400' : 'text-white hover:bg-kuro-800'}">${followCache.following.has(post.user_id) ? 'フォロー中' : 'フォロー'}</button>` : ''}<span class="text-xs text-gray-600">· ${escapeHTML(formatPostDate(post.created_at))}</span><span class="ml-auto">${deleteButton}</span></div><p class="mt-3 text-[15px] leading-7 text-gray-200 whitespace-pre-wrap break-words">${renderPostContent(post.content)}</p>${window.KuroSNSMedia?.renderPublic(post.media) || ''}<div class="mt-4 flex items-center gap-4 border-t border-kuro-800 pt-3"><button type="button" data-like-post-id="${escapeHTML(post.id)}" aria-pressed="${liked}" class="text-sm ${liked ? 'text-pink-400' : 'text-gray-400'} hover:text-pink-300"><i class="${liked ? 'fa-solid' : 'fa-regular'} fa-heart mr-1"></i><span>${Number(post.like_count || 0)}</span><span class="ml-1">いいね</span></button><button type="button" data-reply-post-id="${escapeHTML(post.id)}" aria-expanded="false" class="text-sm text-gray-400 hover:text-white"><i class="fa-regular fa-comment mr-1"></i >${(post.replies || []).length} コメント</button></div><div data-replies-panel class="hidden mt-3 space-y-3"><div class="space-y-1">${replies}</div><div data-reply-target class="hidden flex items-center justify-between gap-3 rounded-lg border border-violet-400/20 bg-violet-500/10 px-3 py-2 text-xs text-violet-200"><span data-reply-target-text></span><button type="button" data-cancel-reply-target class="shrink-0 text-gray-400 hover:text-white">解除</button></div><div class="space-y-2"><textarea data-reply-input="${escapeHTML(post.id)}" maxlength="130" rows="2" placeholder="返信を書く…（メンションなしでもOK）" class="w-full bg-kuro-950 border border-kuro-800 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-gray-500"></textarea><div class="flex justify-end"><button type="button" data-send-reply-post-id="${escapeHTML(post.id)}" class="px-3 py-1.5 rounded-lg bg-white text-black text-xs font-semibold hover:bg-gray-200">返信する</button></div></div></div></div></div></article>`;
+                return `<article class="bg-kuro-900/80 border border-kuro-800 hover:border-kuro-700 rounded-2xl p-4 sm:p-5" data-post-card="${escapeHTML(post.id)}"><div class="flex gap-3">${avatar}<div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-x-2 gap-y-1">${post.user_id ? `<button type="button" onclick="openPublicProfile('${escapeHTML(post.user_id)}')" class="font-semibold text-white hover:underline text-left">${escapeHTML(name)}</button>` : `<span class="font-semibold text-white">${escapeHTML(name)}</span>`}<button type="button" ${post.user_id ? `onclick="openPublicProfile('${escapeHTML(post.user_id)}')"` : 'disabled'} class="text-xs text-gray-500 hover:text-gray-300 disabled:cursor-default">@${escapeHTML(handle)}</button>${currentUser && post.user_id && post.user_id !== currentUser.id ? `<button type="button" data-follow-user-id="${escapeHTML(post.user_id)}" class="text-[11px] border border-kuro-700 rounded-full px-2 py-1 ${followCache.following.has(post.user_id) ? 'text-gray-400' : 'text-white hover:bg-kuro-800'}">${followCache.following.has(post.user_id) ? 'フォロー中' : 'フォロー'}</button>` : ''}<span class="text-xs text-gray-600">· ${escapeHTML(formatPostDate(post.created_at))}</span><span class="ml-auto">${deleteButton}</span></div><p class="mt-3 text-[15px] leading-7 text-gray-200 whitespace-pre-wrap break-words">${renderPostContent(post.content)}</p>${window.KuroSNSMedia?.renderPublic(post.media) || ''}<div class="mt-4 flex items-center gap-4 border-t border-kuro-800 pt-3"><button type="button" data-like-post-id="${escapeHTML(post.id)}" aria-pressed="${liked}" class="text-sm ${liked ? 'text-pink-400' : 'text-gray-400'} hover:text-pink-300"><i class="${liked ? 'fa-solid' : 'fa-regular'} fa-heart mr-1"></i><span>${Number(post.like_count || 0)}</span><span class="ml-1">いいね</span></button><button type="button" data-reply-post-id="${escapeHTML(post.id)}" aria-expanded="false" class="text-sm text-gray-400 hover:text-white"><i class="fa-regular fa-comment mr-1"></i >${(post.replies || []).length} コメント</button></div><div data-replies-panel class="hidden mt-3 space-y-3"><div class="space-y-1" data-replies-list>${replies}</div><div data-reply-target class="hidden flex items-center justify-between gap-3 rounded-lg border border-violet-400/20 bg-violet-500/10 px-3 py-2 text-xs text-violet-200"><span data-reply-target-text></span><button type="button" data-cancel-reply-target class="shrink-0 text-gray-400 hover:text-white">解除</button></div><div class="space-y-2"><textarea data-reply-input="${escapeHTML(post.id)}" maxlength="130" rows="2" placeholder="返信を書く…（メンションなしでもOK）" class="w-full bg-kuro-950 border border-kuro-800 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-gray-500"></textarea><div class="flex justify-end"><button type="button" data-send-reply-post-id="${escapeHTML(post.id)}" class="px-3 py-1.5 rounded-lg bg-white text-black text-xs font-semibold hover:bg-gray-200">返信する</button></div></div></div></div></div></article>`;
             }).join('');
-            empty.classList.toggle('hidden', list.length !== 0);
-            if (!document.getElementById('myProfileView')?.classList.contains('hidden')) renderMyProfile();
+            if (empty) empty.classList.toggle('hidden', list.length !== 0);
+            if (!targetFeed && !document.getElementById('myProfileView')?.classList.contains('hidden')) renderMyProfile();
         }
 
         async function loadSocialData() {
@@ -3305,6 +3305,9 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
 
         async function togglePostLike(postId, shouldLike) {
             if (!currentUser) return;
+            const likedPost = textPosts.find(post => String(post.id) === String(postId));
+            const previousLiked = !!likedPost?.liked_by_me;
+            const previousCount = Number(likedPost?.like_count || 0);
             try {
                 const userId = currentUser.id;
                 if (shouldLike) {
@@ -3326,12 +3329,27 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                         .eq('post_id', postId).eq('user_id', userId);
                     if (error) throw error;
                 }
-                // Reconcile server state after the immediate visual response.
-                refreshSocialFeed().catch(error => console.warn('KURO like refresh:', error));
+                if (likedPost) {
+                    likedPost.liked_by_me = !!shouldLike;
+                    likedPost.like_count = Math.max(0, previousCount + (shouldLike ? 1 : -1));
+                }
             } catch (error) {
                 console.error('KURO like error:', error);
+                if (likedPost) {
+                    likedPost.liked_by_me = previousLiked;
+                    likedPost.like_count = previousCount;
+                }
+                const button = document.querySelector('#postFeed [data-like-post-id="' + CSS.escape(String(postId)) + '"]');
+                if (button) {
+                    button.setAttribute('aria-pressed', String(previousLiked));
+                    button.classList.toggle('text-pink-400', previousLiked);
+                    button.classList.toggle('text-gray-400', !previousLiked);
+                    const icon = button.querySelector('i');
+                    const count = button.querySelector('span');
+                    if (icon) icon.className = (previousLiked ? 'fa-solid' : 'fa-regular') + ' fa-heart mr-1';
+                    if (count) count.textContent = String(previousCount);
+                }
                 showToast(error?.message || 'いいねに失敗しました。');
-                await refreshSocialFeed();
             }
         }
 
@@ -3417,8 +3435,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                         delete input.dataset.parentReplyId;
                         delete input.dataset.replyToHandle;
                         card?.querySelector('[data-reply-target]')?.classList.add('hidden');
-                        await refreshSocialFeed();
-                        showToast('返信先のコメントが見つかりません。コメント一覧を更新しました。もう一度返信先を選んでください。');
+                        showToast('返信先のコメントが見つかりません。別のコメントを選んでください。');
                         return;
                     }
                 }
@@ -3436,25 +3453,69 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                         delete input.dataset.parentReplyId;
                         delete input.dataset.replyToHandle;
                         card.querySelector('[data-reply-target]')?.classList.add('hidden');
-                        await refreshSocialFeed();
-                        showToast('返信先のコメントは削除されたか、別の投稿に属しています。コメント一覧を更新しました。返信先を選び直してください。');
+                        showToast('返信先のコメントは削除されたか、別の投稿に属しています。返信先を選び直してください。');
                         return;
                     }
                 }
                 // Validate, lock the parent row and insert in one database transaction.
-                const {error} = await supabaseClient.rpc('kuro_create_post_reply', {
+                const {data: createdReplyId, error} = await supabaseClient.rpc('kuro_create_post_reply', {
                     p_post_id: postId,
                     p_content: content,
                     p_parent_reply_id: parentReplyId
                 });
                 if (error) throw error;
+                if (!createdReplyId) throw new Error('返信IDを受け取れませんでした。投稿一覧を更新して確認してください。');
+
+                // The RPC returns the inserted UUID; read only that row, not the whole feed.
+                const {data: replyRow, error: replyReadError} = await supabaseClient
+                    .from('post_replies')
+                    .select('id, post_id, user_id, content, parent_reply_id, created_at')
+                    .eq('id', createdReplyId)
+                    .single();
+                if (replyReadError) throw replyReadError;
+                if (!replyRow || String(replyRow.post_id) !== expectedPostId || String(replyRow.user_id) !== String(user.id)) {
+                    throw new Error('保存した返信を確認できませんでした。ページを更新して確認してください。');
+                }
+
+                const newReply = {
+                    ...replyRow,
+                    username: currentUser.handle || '',
+                    display_name: currentUser.name || '',
+                    avatar_url: currentUser.avatarUrl || ''
+                };
+                const postState = textPosts.find(post => String(post.id) === expectedPostId);
+                if (postState) {
+                    const replies = Array.isArray(postState.replies) ? postState.replies : [];
+                    postState.replies = [...replies.filter(reply => String(reply.id) !== String(newReply.id)), newReply];
+                }
+                const parentReply = parentReplyId
+                    ? (postState?.replies || []).find(reply => String(reply.id) === parentReplyId)
+                    : null;
+                const appended = appendLocalReplyToCard(card, newReply, parentReply);
+
                 if (input) {
                     input.value = '';
                     delete input.dataset.parentReplyId;
                     delete input.dataset.replyToHandle;
                 }
-                document.querySelector(`[data-post-card="${CSS.escape(String(postId))}"] [data-reply-target]`)?.classList.add('hidden');
-                await refreshSocialFeed();
+                card.querySelector('[data-reply-target]')?.classList.add('hidden');
+                const panel = card.querySelector('[data-replies-panel]');
+                panel?.classList.remove('hidden');
+                card.querySelector('[data-reply-post-id]')?.setAttribute('aria-expanded', 'true');
+
+                // If local thread markup was unexpectedly absent, replace this one card only.
+                if (!appended && postState) {
+                    const replacement = renderLocalPostCard(postState);
+                    if (replacement) {
+                        replacement.querySelector('[data-replies-panel]')?.classList.remove('hidden');
+                        replacement.querySelector('[data-reply-post-id]')?.setAttribute('aria-expanded', 'true');
+                        card.replaceWith(replacement);
+                    }
+                }
+                const replyToggle = (appended ? card : document.querySelector('[data-post-card="' + CSS.escape(expectedPostId) + '"]'))?.querySelector('[data-reply-post-id]');
+                if (replyToggle && postState) {
+                    replyToggle.innerHTML = '<i class="fa-regular fa-comment mr-1"></i>' + postState.replies.length + ' コメント';
+                }
                 showToast('返信を投稿したよ！');
             } catch (error) {
                 console.error('KURO reply error:', error);
@@ -3462,8 +3523,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     delete input.dataset.parentReplyId;
                     delete input.dataset.replyToHandle;
                     document.querySelector(`[data-post-card="${CSS.escape(String(postId))}"] [data-reply-target]`)?.classList.add('hidden');
-                    try { await refreshSocialFeed(); } catch (refreshError) { console.warn('KURO reply refresh failed:', refreshError); }
-                    showToast(error?.message || '返信先のコメントが見つからないか、別の投稿に属しています。コメント一覧を更新しました。返信先を選び直してください。');
+                    showToast(error?.message || '返信先のコメントが見つからないか、別の投稿に属しています。返信先を選び直してください。');
                     return;
                 }
                 showToast(error?.message || '返信に失敗しました。もう一度お試しください。');
@@ -3753,6 +3813,94 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
         // インラインの削除ボタンからも呼び出せるようにする
         window.deletePost = deletePost;
 
+
+        // Render one card off-screen without replacing the live feed or its event handlers.
+        function renderLocalPostCard(post) {
+            const staging = document.createElement('div');
+            renderPosts([post], staging);
+            return staging.firstElementChild;
+        }
+
+        // Keep the first visible post at the same viewport coordinate when a new post is prepended.
+        function captureKuroFeedAnchor() {
+            const feed = document.getElementById('postFeed');
+            if (!feed) return null;
+            const card = [...feed.querySelectorAll('[data-post-card]')].find(item => {
+                const rect = item.getBoundingClientRect();
+                return rect.bottom > 0 && rect.top < window.innerHeight;
+            });
+            return card ? {
+                id: String(card.getAttribute('data-post-card') || ''),
+                top: card.getBoundingClientRect().top
+            } : null;
+        }
+
+        function restoreKuroFeedAnchor(anchor) {
+            if (!anchor?.id) return;
+            const card = document.querySelector('#postFeed [data-post-card="' + CSS.escape(anchor.id) + '"]');
+            if (!card) return;
+            const delta = card.getBoundingClientRect().top - anchor.top;
+            if (Math.abs(delta) > 1) window.scrollBy(0, delta);
+        }
+
+        function createLocalReplyNode(reply, parentLabel = '') {
+            const replyName = reply.username || reply.display_name || 'KUROユーザー';
+            const replyHandle = reply.username || 'user';
+            const replyAvatarContent = reply.avatar_url
+                ? '<img src="' + escapeHTML(kuroSnsAvatarUrl(reply.avatar_url)) + '" alt="" class="w-8 h-8 rounded-full object-cover border border-kuro-700">'
+                : '<span class="w-8 h-8 rounded-full bg-kuro-800 border border-kuro-700 flex items-center justify-center text-gray-300"><i class="fa-regular fa-user text-xs"></i></span>';
+            const replyAvatar = kuroSnsAvatarHostMarkup(reply.user_id, replyAvatarContent, 'w-8 h-8 flex-shrink-0 kuro-sns-avatar-small-frame');
+            const parentHtml = parentLabel
+                ? '<div class="text-[11px] text-violet-300/80 mt-0.5">↳ ' + escapeHTML(parentLabel) + ' への返信</div>'
+                : '';
+            const html = '<div class="flex gap-2 py-2" data-kuro-post-reply-id="' + escapeHTML(reply.id || '') + '">' +
+                replyAvatar +
+                '<div class="min-w-0 flex-1"><div class="text-xs text-gray-400"><span class="font-semibold text-gray-200">' +
+                escapeHTML(replyName) + '</span> <span class="text-gray-600">@' + escapeHTML(replyHandle) + ' · ' +
+                escapeHTML(formatPostDate(reply.created_at)) + '</span></div>' + parentHtml +
+                '<p class="mt-1 text-sm text-gray-300 whitespace-pre-wrap break-words">' +
+                renderMentionContent(reply.content || '') + '</p>' +
+                '<button type="button" data-reply-to-id="' + escapeHTML(reply.id || '') +
+                '" data-reply-to-post-id="' + escapeHTML(reply.post_id || '') +
+                '" data-reply-to-handle="' + escapeHTML(replyHandle) +
+                '" data-reply-to-name="' + escapeHTML(replyName) +
+                '" onclick="window.KuroSNSSetReplyTarget(this)" class="mt-1 text-xs text-violet-300 hover:text-violet-200">返信</button></div></div>';
+            const staging = document.createElement('div');
+            staging.innerHTML = html;
+            return staging.firstElementChild;
+        }
+
+        // Update only the reply thread in the existing card; other feed cards remain untouched.
+        function appendLocalReplyToCard(card, reply, parentReply) {
+            const list = card?.querySelector('[data-replies-list]');
+            if (!list) return false;
+            const replyNode = createLocalReplyNode(reply, parentReply
+                ? (parentReply.username || parentReply.display_name || 'KUROユーザー')
+                : '');
+            if (!replyNode) return false;
+
+            if (!parentReply) {
+                const thread = document.createElement('div');
+                thread.className = 'kuro-comment-thread border-b border-kuro-800/70 py-1';
+                thread.dataset.kuroCommentThread = String(reply.id);
+                thread.append(replyNode);
+                list.append(thread);
+                return true;
+            }
+
+            const parentNode = card.querySelector('[data-kuro-post-reply-id="' + CSS.escape(String(parentReply.id)) + '"]');
+            const thread = parentNode?.closest('[data-kuro-comment-thread]');
+            if (!thread) return false;
+            let descendants = thread.querySelector(':scope > .ml-4');
+            if (!descendants) {
+                descendants = document.createElement('div');
+                descendants.className = 'ml-4 mt-1 pl-3 border-l border-kuro-800/80 space-y-0';
+                thread.append(descendants);
+            }
+            descendants.append(replyNode);
+            return true;
+        }
+
         async function handlePostSubmit(event) {
             event.preventDefault();
             if (!currentUser) {
@@ -3796,12 +3944,33 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     throw new Error('保存した投稿のID情報を確認できません。投稿一覧を更新して確認してください。');
                 }
 
-                textPosts.unshift({...data, display_name: currentUser.name, username: currentUser.handle, avatar_url: currentUser.avatarUrl});
+                const newPost = {
+                    ...data,
+                    display_name: currentUser.name,
+                    username: currentUser.handle,
+                    avatar_url: currentUser.avatarUrl,
+                    replies: [],
+                    like_count: 0,
+                    liked_by_me: false
+                };
+                const feedAnchor = captureKuroFeedAnchor();
+                textPosts = [newPost, ...textPosts.filter(post => String(post.id) !== String(newPost.id))];
                 activeHashtag = '';
                 const search = document.getElementById('postSearchInput');
                 if (search) search.value = '';
+                document.getElementById('searchSuggestions')?.classList.add('hidden');
                 closeModal();
-                filterPosts();
+
+                const feed = document.getElementById('postFeed');
+                const card = renderLocalPostCard(newPost);
+                if (feed && card) {
+                    feed.prepend(card);
+                    document.getElementById('postEmptyState')?.classList.add('hidden');
+                    restoreKuroFeedAnchor(feedAnchor);
+                } else {
+                    // Fallback only if the card cannot be rendered independently.
+                    filterPosts();
+                }
                 showToast('ポストを投稿したよ！');
             } catch (error) {
                 console.error('KURO save post error:', error);
