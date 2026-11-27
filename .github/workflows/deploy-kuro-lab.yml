@@ -28,6 +28,7 @@ jobs:
 
       # wrangler.jsonc bundles the repository root as Worker static assets.
       # Therefore HTML/CSS/JS changes must deploy too, not only worker.js changes.
+      # PC game launcher and layout fixes are part of the production static asset bundle.
       - name: Deploy to Cloudflare
         run: npx --yes wrangler@4 deploy --config wrangler.jsonc
         env:
