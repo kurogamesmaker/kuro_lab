@@ -20,22 +20,50 @@
   function storageGet(store, key) { try { return window[store].getItem(key); } catch (_) { return null; } }
   function storageSet(store, key, value) { try { window[store].setItem(key, value); } catch (_) {} }
 
+  var identifiedAuth = null;
+  function decodeJwtPayload(token) {
+    try {
+      var part = String(token || "").split(".")[1];
+      if (!part) return null;
+      var base64 = part.replace(/-/g, "+").replace(/_/g, "/");
+      while (base64.length % 4) base64 += "=";
+      return JSON.parse(atob(base64));
+    } catch (_) { return null; }
+  }
+  function validKuroSession(userId, token) {
+    var payload = decodeJwtPayload(token);
+    return !!(payload && payload.sub === userId &&
+      String(payload.iss || "").indexOf("https://cprvpphlfpmiegjiutjn.supabase.co/auth/v1") === 0);
+  }
   function authInfo() {
-    // Select only KURO Lab's production Supabase session.
+    if (identifiedAuth && validKuroSession(identifiedAuth.userId, identifiedAuth.token)) {
+      return identifiedAuth;
+    }
+    // Also recover the current KURO Lab session when this tracker starts after login.
     try {
       var saved = JSON.parse(localStorage.getItem("sb-cprvpphlfpmiegjiutjn-auth-token") || "null");
       var token = saved && saved.access_token;
-      if (token) {
-        var part = token.split(".")[1];
-        var payload = JSON.parse(atob(part.replace(/-/g, "+").replace(/_/g, "/")));
-        var issuer = String(payload.iss || "");
-        if (payload.sub && issuer.indexOf("https://cprvpphlfpmiegjiutjn.supabase.co/auth/v1") === 0) {
-          return { token: token, userId: payload.sub };
-        }
+      var payload = decodeJwtPayload(token);
+      if (payload && payload.sub && validKuroSession(payload.sub, token)) {
+        identifiedAuth = { token: token, userId: payload.sub };
+        return identifiedAuth;
       }
     } catch (_) {}
     return { token: PUBLISHABLE_KEY, userId: null };
   }
+
+  // The SNS app passes its verified Supabase session directly. This avoids relying
+  // on localStorage key timing when username-auth has just called setSession().
+  window.__kuroUsageIdentify = function (userId, accessToken, recordActivity) {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(userId || "")) ||
+        !validKuroSession(String(userId), accessToken)) return false;
+    identifiedAuth = { userId: String(userId), token: String(accessToken) };
+    if (recordActivity === true) trackUserActivity(true);
+    return true;
+  };
+  window.__kuroUsageClearIdentity = function () {
+    identifiedAuth = null;
+  };
 
   function addEvent(name, extra) {
     if (!visitorId || !sessionId) return;
@@ -160,21 +188,19 @@
   }
   addEvent("page_view");
 
-  // Record foreground interactions, rather than treating an idle open tab as activity.
-  // Throttle to one event per minute to keep telemetry light.
+  // Count actual foreground user input. Do not count mouse movement or returning
+  // to an idle tab as activity. Keep the server timestamp within roughly 10 seconds
+  // of the most recent action without sending a request for every keystroke.
   var lastActivityPingAt = 0;
-  function trackUserActivity() {
+  function trackUserActivity(force) {
     if (document.visibilityState === "hidden") return;
     var now = Date.now();
-    if (now - lastActivityPingAt < 60000) return;
+    if (!force && now - lastActivityPingAt < 10000) return;
     lastActivityPingAt = now;
     addEvent("activity_ping");
   }
-  ["pointerdown", "pointermove", "keydown", "touchstart", "wheel", "scroll", "input", "change"].forEach(function (name) {
-    document.addEventListener(name, trackUserActivity, { capture: true, passive: true });
-  });
-  document.addEventListener("visibilitychange", function () {
-    if (document.visibilityState === "visible") trackUserActivity();
+  ["pointerdown", "keydown", "touchstart", "wheel", "scroll", "input", "change"].forEach(function (name) {
+    document.addEventListener(name, function () { trackUserActivity(false); }, { capture: true, passive: true });
   });
 
   window.addEventListener("error", function (event) {
