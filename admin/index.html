@@ -594,6 +594,7 @@
   <div class="ops-nav-group"><small>05 / MODERATION</small>
    <button data-ops-tab="reports"><b>07</b><span>通報・審査</span></button>
    <button data-ops-tab="suspension-appeals"><b>08</b><span>一時停止の問い合わせ</span></button>
+   <button data-ops-tab="ip-bans"><b>09</b><span>IP BAN管理</span></button>
    <button data-ops-tab="audit"><b>09</b><span>監査ログ</span></button>
   </div>
   <div class="ops-nav-group"><small>06 / CONTENT</small>
@@ -846,6 +847,40 @@
    <div class="toolbar"><div><strong>一時停止に関する問い合わせ</strong><div class="sns-muted">一時停止中の利用者から届いた問い合わせと返信履歴を確認できます。</div></div><button class="btn" id="opsSuspensionAppealsRefresh">更新</button></div>
    <div class="ops-filters"><select id="opsSuspensionAppealsStatus"><option value="all">すべて</option><option value="open">未対応</option><option value="answered">返信済み</option><option value="closed">対応完了</option></select></div>
    <div class="list" id="opsSuspensionAppealsList"><div class="empty">問い合わせを読み込み中…</div></div>
+  </section>
+ </div>
+ <div id="opsIp-bansView" hidden>
+  <div class="ops-overview-head">
+   <div><strong>IP BAN管理</strong><div class="sns-muted">通信元IP・CIDR単位で制限します。Cloudflareが受け取った接続元IPをサーバー側で照合します。</div></div>
+   <div class="ops-overview-tools"><span id="opsIpBansStatus" class="sns-muted" role="status">準備中…</span><button class="btn" id="opsIpBansRefresh" type="button">更新</button></div>
+  </div>
+  <div class="ops-analytics-grid">
+   <article class="ops-metric"><small>有効・開始予定のBAN</small><strong id="opsIpBansActiveCount">—</strong></article>
+   <article class="ops-metric"><small>保存済み履歴</small><strong id="opsIpBansHistoryCount">—</strong></article>
+  </div>
+  <section class="panel" style="margin-bottom:16px">
+   <div class="toolbar"><div><strong>IP BANを追加</strong><div class="sns-muted">IPv4・IPv6・CIDRに対応。解除するまで残るBANは期限を空欄にします。</div></div></div>
+   <form id="opsIpBanForm" class="ops-form">
+    <div class="ops-form-grid">
+     <label>IPアドレス / CIDR<input id="opsIpBanNetwork" type="text" maxlength="80" required placeholder="例：203.0.113.10 または 203.0.113.0/24"></label>
+     <label>制限範囲<select id="opsIpBanScope" required><option value="write">投稿・編集・対戦などの操作を禁止</option><option value="all">サイト全体のアクセスを禁止</option></select></label>
+    </div>
+    <label>BAN理由<textarea id="opsIpBanReason" maxlength="500" rows="3" required placeholder="管理用の理由を入力"></textarea></label>
+    <div class="ops-form-grid">
+     <label>開始日時<input id="opsIpBanStarts" type="datetime-local" required></label>
+     <label>解除予定日時（空欄＝無期限）<input id="opsIpBanExpires" type="datetime-local"></label>
+    </div>
+    <div class="sns-muted">範囲BANは同じネットワークを利用する別の人にも影響します。広い範囲を登録するときは対象を再確認してください。BAN理由は利用者には公開しません。</div>
+    <div class="ops-form-actions"><button class="btn primary" id="opsIpBanSubmit" type="submit">IP BANを登録</button><span id="opsIpBanFormStatus" class="sns-muted" role="status"></span></div>
+   </form>
+  </section>
+  <section class="panel" style="margin-bottom:16px">
+   <div class="toolbar"><div><strong>登録済みIP BAN</strong><div class="sns-muted">期限切れ・解除済みの記録も保持します。</div></div></div>
+   <div class="ops-tablewrap" id="opsIpBanList"><div class="empty">読み込み中…</div></div>
+  </section>
+  <section class="panel">
+   <div class="toolbar"><div><strong>IP BAN操作履歴</strong><div class="sns-muted">登録・解除の実行者と日時を保存します。</div></div></div>
+   <div class="ops-tablewrap" id="opsIpBanLogs"><div class="empty">読み込み中…</div></div>
   </section>
  </div>
  <div id="opsAuditView" hidden>
@@ -2124,10 +2159,10 @@ async function deactivateOpsStoreItem(itemId,button){
 
 function setOpsView(view){
  opsView=view;
- const shellNames={overview:"overview",users:"accounts.users",audit:"moderation.audit",reports:"moderation.reports","suspension-appeals":"accounts.suspension_appeals",announcements:"content.announcements","game-banners":"content.kurogames_home_banners",messages:"content.broadcast",flags:"config.feature_flags",secret:"kurogames.secret",coins:"economy.kuro_coin",levels:"kurogames.levels",store:"kurogames.store",analytics:"analytics.usage",realtime:"system.realtime",logs:"system.logs"}
+ const shellNames={overview:"overview",users:"accounts.users",audit:"moderation.audit",reports:"moderation.reports","suspension-appeals":"accounts.suspension_appeals","ip-bans":"moderation.ip_bans",announcements:"content.announcements","game-banners":"content.kurogames_home_banners",messages:"content.broadcast",flags:"config.feature_flags",secret:"kurogames.secret",coins:"economy.kuro_coin",levels:"kurogames.levels",store:"kurogames.store",analytics:"analytics.usage",realtime:"system.realtime",logs:"system.logs"}
  const shellName=$("#opsShellName");if(shellName)shellName.textContent=shellNames[view]||view;
  const shellClock=$("#opsShellClock");if(shellClock)shellClock.textContent="LOCAL "+new Date().toLocaleTimeString("ja-JP");
- ["overview","users","audit","reports","suspension-appeals","announcements","game-banners","messages","flags","secret","coins","levels","store","analytics","realtime","logs"].forEach(name=>{
+ ["overview","users","audit","reports","suspension-appeals","ip-bans","announcements","game-banners","messages","flags","secret","coins","levels","store","analytics","realtime","logs"].forEach(name=>{
   const target=$("#ops"+name.charAt(0).toUpperCase()+name.slice(1)+"View");
   if(target)target.hidden=name!==view;
   const button=$("#opsTabs [data-ops-tab='"+name+"']");
@@ -2138,6 +2173,7 @@ function setOpsView(view){
  if(view==="audit")loadOpsAudit();
  if(view==="reports")loadOpsReports();
  if(view==="suspension-appeals")loadSuspensionAppeals();
+ if(view==="ip-bans")loadOpsIpBans();
  if(view==="announcements")loadOpsAnnouncements();
  if(view==="game-banners")loadOpsGameBanners();
  if(view==="messages")loadOpsMessages();
@@ -2154,6 +2190,58 @@ async function opsInvoke(body){
  if(error)throw error;
  if(data?.error)throw new Error(data.error);
  return data;
+}
+async function loadOpsIpBans(){
+ const status=$("#opsIpBansStatus"),list=$("#opsIpBanList"),logs=$("#opsIpBanLogs");
+ status.textContent="読み込み中…";list.innerHTML='<div class="empty">読み込み中…</div>';logs.innerHTML='<div class="empty">読み込み中…</div>';
+ try{
+  const [banResult,logResult]=await Promise.all([db.rpc("kuro_ip_ban_admin_list"),db.rpc("kuro_ip_ban_admin_logs",{p_limit:100})]);
+  if(banResult.error)throw banResult.error;if(logResult.error)throw logResult.error;
+  const bans=Array.isArray(banResult.data)?banResult.data:[],history=Array.isArray(logResult.data)?logResult.data:[],now=Date.now();
+  const current=bans.filter(x=>!x.revoked_at&&(!x.expires_at||Date.parse(x.expires_at)>now));
+  $("#opsIpBansActiveCount").textContent=current.length.toLocaleString("ja-JP");
+  $("#opsIpBansHistoryCount").textContent=bans.length.toLocaleString("ja-JP");
+  list.innerHTML=!bans.length?'<div class="empty">IP BANはまだ登録されていません。</div>':
+   '<table class="ops-table"><thead><tr><th>IP / CIDR</th><th>制限</th><th>理由</th><th>開始</th><th>解除予定</th><th>状態</th><th>操作</th></tr></thead><tbody>'+
+   bans.map(b=>{
+    const expired=!!b.expires_at&&Date.parse(b.expires_at)<=now;
+    const state=b.revoked_at?"解除済み":expired?"期限切れ":Date.parse(b.starts_at)>now?"開始予定":"有効";
+    const canRevoke=!b.revoked_at&&!expired;
+    return '<tr><td><code>'+esc(b.network)+'</code></td><td>'+(b.scope==="all"?"全アクセス":"書き込み")+'</td><td>'+esc(b.reason)+'</td><td>'+esc(date(b.starts_at))+'</td><td>'+(b.expires_at?esc(date(b.expires_at)):"無期限")+'</td><td>'+state+'</td><td>'+(canRevoke?'<button class="btn" type="button" data-ip-ban-revoke="'+esc(b.id)+'">解除</button>':"—")+'</td></tr>';
+   }).join("")+'</tbody></table>';
+  logs.innerHTML=!history.length?'<div class="empty">操作履歴はありません。</div>':
+   '<table class="ops-table"><thead><tr><th>日時</th><th>操作</th><th>IP / CIDR</th><th>制限</th><th>理由</th><th>実行者ID</th></tr></thead><tbody>'+
+   history.map(x=>'<tr><td>'+esc(date(x.created_at))+'</td><td>'+(x.action==="created"?"BAN登録":"BAN解除")+'</td><td><code>'+esc(x.network)+'</code></td><td>'+(x.scope==="all"?"全アクセス":"書き込み")+'</td><td>'+esc(x.reason)+'</td><td><small>'+esc(x.actor_user_id||"—")+'</small></td></tr>').join("")+'</tbody></table>';
+  status.textContent="最終更新："+new Date().toLocaleTimeString("ja-JP");
+ }catch(error){status.textContent="取得失敗";list.innerHTML='<div class="error">IP BAN一覧を取得できませんでした：'+esc(error.message||String(error))+'</div>';logs.innerHTML='<div class="error">履歴を取得できませんでした。</div>';}
+}
+async function createOpsIpBan(event){
+ event.preventDefault();
+ const button=$("#opsIpBanSubmit"),status=$("#opsIpBanFormStatus"),network=$("#opsIpBanNetwork").value.trim(),scope=$("#opsIpBanScope").value,reason=$("#opsIpBanReason").value.trim(),startsValue=$("#opsIpBanStarts").value,expiresValue=$("#opsIpBanExpires").value;
+ if(!network||!reason||!startsValue){status.textContent="入力内容を確認してください。";return;}
+ const startsAt=new Date(startsValue),expiresAt=expiresValue?new Date(expiresValue):null;
+ if(Number.isNaN(startsAt.getTime())||(expiresAt&&Number.isNaN(expiresAt.getTime()))||(expiresAt&&expiresAt<=startsAt)){status.textContent="開始日時と解除予定日時を確認してください。";return;}
+ const prefix=network.includes("/")?Number(network.split("/").pop()):(network.includes(":")?128:32),isV6=network.includes(":");
+ if((isV6&&prefix<48)||(!isV6&&prefix<24)){
+  if(!confirm("広いIP範囲を制限します。共有ネットワークの別利用者にも影響する可能性があります。対象を確認して続行しますか？"))return;
+ }
+ if(!confirm((scope==="all"?"このネットワークからサイト全体へのアクセスを制限します。":"このネットワークからの書き込み・対戦などの操作を制限します。")+"\n対象："+network+"\n理由："+reason+"\n続行しますか？"))return;
+ button.disabled=true;status.textContent="登録中…";
+ try{
+  const {error}=await db.rpc("kuro_ip_ban_admin_create",{p_network:network,p_scope:scope,p_reason:reason,p_starts_at:startsAt.toISOString(),p_expires_at:expiresAt?expiresAt.toISOString():null});
+  if(error)throw error;$("#opsIpBanForm").reset();setOpsIpBanDefaultStart();status.textContent="IP BANを登録しました。";await loadOpsIpBans();
+ }catch(error){status.textContent="登録できませんでした："+(error.message||String(error));}
+ finally{button.disabled=false;}
+}
+function setOpsIpBanDefaultStart(){
+ const input=$("#opsIpBanStarts");if(!input)return;
+ const now=new Date(Date.now()-new Date().getTimezoneOffset()*60000);input.value=now.toISOString().slice(0,16);
+}
+async function revokeOpsIpBan(id,button){
+ if(!confirm("このIP BANを解除しますか？"))return;
+ button.disabled=true;
+ try{const {error}=await db.rpc("kuro_ip_ban_admin_revoke",{p_id:id});if(error)throw error;await loadOpsIpBans();}
+ catch(error){alert("BANを解除できませんでした："+(error.message||String(error)));button.disabled=false;}
 }
 async function loadSuspensionAppeals(){
  const box=$("#opsSuspensionAppealsList");
@@ -2909,6 +2997,10 @@ $("#opsSuspensionAppealsList").addEventListener("click",e=>{const send=e.target.
 ["opsStatusFilter","opsCreatedFilter","opsActivityFilter","opsBoardsFilter"].forEach(id=>$("#"+id).addEventListener("change",renderOpsUsers));
 $("#opsUsersList").addEventListener("click",e=>{const b=e.target.closest("button[data-ops-action]");if(b)runOpsUserAction(b);});
 $("#opsTabs").addEventListener("click",e=>{const b=e.target.closest("button[data-ops-tab]");if(b)setOpsView(b.dataset.opsTab);});
+$("#opsIpBansRefresh").addEventListener("click",loadOpsIpBans);
+$("#opsIpBanForm").addEventListener("submit",createOpsIpBan);
+$("#opsIpBanList").addEventListener("click",e=>{const b=e.target.closest("[data-ip-ban-revoke]");if(b)revokeOpsIpBan(b.dataset.ipBanRevoke,b);});
+setOpsIpBanDefaultStart();
 $("#opsAuditRefresh").addEventListener("click",loadOpsAudit);
 $("#opsReportsRefresh").addEventListener("click",loadOpsReports);
 $("#opsReportsStatus").addEventListener("change",loadOpsReports);
