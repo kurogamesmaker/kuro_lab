@@ -432,8 +432,8 @@
       social.filter((row) => row.type !== "coin_reward" && row.type !== "level_up").forEach((row) => {
         const actor = actors.get(row.actor_id) || {};
         const name = actor.display_name || actor.username || "ユーザー";
-        const typeText = { follow: "フォローされました", follow_back: "フォローバックされました", like: "投稿にいいねされました", reply: "投稿に返信がありました", message: "メッセージが届きました", mention: "グループチャットでメンションされました" };
         const details = row.notification_details && typeof row.notification_details === "object" ? row.notification_details : {};
+        const typeText = { follow: "フォローされました", follow_back: "フォローバックされました", like: "投稿にいいねされました", reply: details.parent_reply_id ? "返信にさらに返信がありました" : "投稿に返信がありました", message: "メッセージが届きました", mention: "グループチャットでメンションされました" };
         next.push({
           key: "social:" + row.id, kind: "social", id: row.id, type: row.type, title: name + " さんからの通知",
           body: typeText[row.type] || "新しい通知があります。", created_at: row.created_at, read: !!row.read_at, serviceLabel: "KURO SNS",
