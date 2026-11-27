@@ -67,6 +67,9 @@
       #kuro-service-notification-box .kuro-nb-list{padding:0 12px 14px;overflow:auto;overscroll-behavior:contain;display:grid;gap:8px}
       #kuro-service-notification-box .kuro-nb-item{display:grid;grid-template-columns:36px minmax(0,1fr);gap:10px;padding:12px;border:1px solid #e5eaf1;border-radius:13px;background:#fff;min-width:0}
       #kuro-service-notification-box .kuro-nb-item.is-unread{border-color:#cbdcf3;background:linear-gradient(110deg,#fff,#f7fbff)}
+      #kuro-service-notification-box .kuro-nb-item[data-open-notification]{cursor:pointer;transition:border-color .15s ease,background .15s ease,transform .15s ease}
+      #kuro-service-notification-box .kuro-nb-item[data-open-notification]:hover{border-color:#9bbbe7;background:#f7faff}
+      #kuro-service-notification-box .kuro-nb-item[data-open-notification]:focus-visible{outline:3px solid #82b4f2;outline-offset:2px}
       #kuro-service-notification-box .kuro-nb-icon{width:36px;height:36px;display:grid;place-items:center;border-radius:11px;background:#eef4ff;font-size:17px}
       #kuro-service-notification-box .kuro-nb-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;color:#8793a6;font-size:9px}
       #kuro-service-notification-box .kuro-nb-source{padding:3px 6px;border-radius:99px;background:#f0f3f8;color:#5e6f87;font-weight:900}
@@ -148,7 +151,7 @@
         </nav>
         <div class="kuro-nb-status"><span data-nb-status>通知を読み込んでいます…</span><strong data-nb-count>未読 0 件</strong></div>
         <div class="kuro-nb-list" data-nb-list aria-live="polite"><div class="kuro-nb-state">通知を読み込んでいます…</div></div>
-        <footer class="kuro-nb-footer">通知の閲覧・既読状態はKURO共通アカウントに保存されます。別サービスへ自動移動することはありません。</footer>
+        <footer class="kuro-nb-footer">通知を押すと、該当する投稿・プロフィール・チャットなどを直接開きます。閲覧・既読状態はKURO共通アカウントに保存されます。</footer>
       </section>`;
     document.body.appendChild(root);
     panel = root.querySelector(".kuro-nb-panel");
@@ -185,7 +188,21 @@
         const button = document.querySelector(selector);
         if (button) button.click();
         else if (typeof window.openAuthModal === "function") window.openAuthModal("signin");
+        return;
       }
+      const openCard = event.target.closest("[data-open-notification]");
+      if (openCard) {
+        const item = items.find((entry) => entry.key === openCard.dataset.openNotification);
+        if (item) openNotification(item).catch(showError);
+      }
+    });
+    root.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      const card = event.target.closest("[data-open-notification]");
+      if (!card || event.target !== card) return;
+      event.preventDefault();
+      const item = items.find((entry) => entry.key === card.dataset.openNotification);
+      if (item) openNotification(item).catch(showError);
     });
     markAllButton.addEventListener("click", markAllRead);
     document.addEventListener("keydown", (event) => {
@@ -248,7 +265,11 @@
     list.innerHTML = shown.map((item) => {
       const source = item.kind === "level" ? "レベルアップ" : item.kind === "points" ? "ポイント獲得" : item.kind === "admin" ? "運営のお知らせ" : item.kind === "social" ? "KURO SNS・チャット" : item.kind === "reply" ? "リクエストBOXへの返信" : "サービスのお知らせ";
       const sourceClass = item.kind === "level" ? "level" : item.kind === "points" ? "points" : item.kind === "admin" || item.kind === "announcement" ? "admin" : item.kind === "social" ? "sns" : "reply";
-      return '<article class="kuro-nb-item ' + (item.read ? "" : "is-unread") + '"><div class="kuro-nb-icon">' + iconFor(item) + '</div><div><div class="kuro-nb-meta"><span class="kuro-nb-source ' + sourceClass + '">' + source + '</span><span>' + esc(item.serviceLabel || "") + '</span><time>' + esc(formatDate(item.created_at)) + '</time></div><h3>' + esc(item.title) + '</h3><p>' + esc(item.body || "") + '</p><div class="kuro-nb-actions">' + (!item.read ? '<button class="kuro-nb-action" type="button" data-read="' + esc(item.key) + '">既読にする</button>' : '<span class="kuro-nb-meta">既読</span>') + '<button class="kuro-nb-action" type="button" data-dismiss="' + esc(item.key) + '">非表示</button></div></div></article>';
+      const destination = notificationUrl(item);
+      const openAttributes = destination
+        ? ' data-open-notification="' + esc(item.key) + '" role="link" tabindex="0" aria-label="通知を開く: ' + esc(item.title) + '"'
+        : "";
+      return '<article class="kuro-nb-item ' + (item.read ? "" : "is-unread") + '"' + openAttributes + '><div class="kuro-nb-icon">' + iconFor(item) + '</div><div><div class="kuro-nb-meta"><span class="kuro-nb-source ' + sourceClass + '">' + source + '</span><span>' + esc(item.serviceLabel || "") + '</span><time>' + esc(formatDate(item.created_at)) + '</time></div><h3>' + esc(item.title) + '</h3><p>' + esc(item.body || "") + '</p><div class="kuro-nb-actions">' + (!item.read ? '<button class="kuro-nb-action" type="button" data-read="' + esc(item.key) + '">既読にする</button>' : '<span class="kuro-nb-meta">既読</span>') + '<button class="kuro-nb-action" type="button" data-dismiss="' + esc(item.key) + '">非表示</button></div></div></article>';
     }).join("");
   }
 
@@ -272,6 +293,75 @@
   function activeDb() {
     db = getDb();
     return db;
+  }
+
+  function isUuid(value) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(value || ""));
+  }
+
+  function findNotificationPostId(details) {
+    const keys = ["post_id", "postId", "target_post_id", "targetPostId", "postID", "targetPost", "post"];
+    const queue = [details];
+    const seen = new Set();
+    while (queue.length) {
+      const value = queue.shift();
+      if (!value || typeof value !== "object" || seen.has(value)) continue;
+      seen.add(value);
+      for (const key of keys) {
+        const candidate = value[key];
+        if (typeof candidate === "string" && isUuid(candidate)) return candidate;
+        if (candidate && typeof candidate === "object") queue.push(candidate);
+      }
+      ["target", "data", "details", "payload", "reply", "comment"].forEach((key) => {
+        if (value[key] && typeof value[key] === "object") queue.push(value[key]);
+      });
+    }
+    return "";
+  }
+
+  function notificationUrl(item) {
+    if (!item) return "";
+    if (item.kind === "social") {
+      const actorId = isUuid(item.actor_id) ? item.actor_id : "";
+      if (item.type === "follow" || item.type === "follow_back") {
+        return actorId ? "/sns/v2/?profile=" + encodeURIComponent(actorId) : "";
+      }
+      if (item.type === "message") {
+        return actorId ? "/sns/v2/?chat=" + encodeURIComponent(actorId) : "";
+      }
+      if (item.type === "mention") {
+        if (!isUuid(item.group_id)) return actorId ? "/sns/v2/?profile=" + encodeURIComponent(actorId) : "";
+        const params = new URLSearchParams({ group: item.group_id });
+        if (isUuid(item.message_id)) params.set("message", item.message_id);
+        if (isUuid(item.id)) params.set("notification", item.id);
+        return "/sns/v2/?" + params.toString();
+      }
+      if (item.type === "like" || item.type === "reply") {
+        const postId = findNotificationPostId(item.notification_details);
+        if (postId) return "/sns/v2/?post=" + encodeURIComponent(postId);
+      }
+      return actorId ? "/sns/v2/?profile=" + encodeURIComponent(actorId) : "";
+    }
+    if (!item.href) return "";
+    try {
+      const target = new URL(String(item.href), window.location.origin);
+      if ((target.protocol !== "https:" && target.protocol !== "http:") || target.username || target.password) return "";
+      return target.href;
+    } catch (_) {
+      return "";
+    }
+  }
+
+  async function openNotification(item) {
+    const destination = notificationUrl(item);
+    if (!destination) return;
+    try {
+      await markRead(item);
+    } catch (error) {
+      showError(error);
+    }
+    closeBox();
+    window.location.assign(destination);
   }
 
   async function load() {
@@ -342,9 +432,11 @@
         const actor = actors.get(row.actor_id) || {};
         const name = actor.display_name || actor.username || "ユーザー";
         const typeText = { follow: "フォローされました", follow_back: "フォローバックされました", like: "投稿にいいねされました", reply: "投稿に返信がありました", message: "メッセージが届きました", mention: "グループチャットでメンションされました" };
+        const details = row.notification_details && typeof row.notification_details === "object" ? row.notification_details : {};
         next.push({
           key: "social:" + row.id, kind: "social", id: row.id, type: row.type, title: name + " さんからの通知",
-          body: typeText[row.type] || "新しい通知があります。", created_at: row.created_at, read: !!row.read_at, serviceLabel: "KURO SNS"
+          body: typeText[row.type] || "新しい通知があります。", created_at: row.created_at, read: !!row.read_at, serviceLabel: "KURO SNS",
+          actor_id: row.actor_id, group_id: row.group_id, message_id: row.message_id, notification_details: details
         });
       });
       (repliesResult.data || []).forEach((row) => {
