@@ -3194,6 +3194,13 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                         window.deletePost(deleteButton.dataset.deletePostId);
                         return;
                     }
+                    const deleteReplyButton = event.target.closest('[data-delete-reply-id]');
+                    if (deleteReplyButton && feed.contains(deleteReplyButton)) {
+                        event.preventDefault(); event.stopPropagation();
+                        deleteReplyButton.disabled = true;
+                        await deletePostReply(deleteReplyButton.dataset.deleteReplyId, deleteReplyButton.dataset.deleteReplyPostId);
+                        return;
+                    }
                     const sendReplyButton = event.target.closest('[data-send-reply-post-id]');
                     if (sendReplyButton && feed.contains(sendReplyButton)) {
                         event.preventDefault();
@@ -3221,11 +3228,14 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 const renderReplyItem = (reply, parentLabel = '') => {
                     const replyName = reply.username || reply.display_name || 'KUROユーザー';
                     const replyHandle = reply.username || 'user';
-                    const replyAvatarContent = reply.avatar_url
-                        ? `<img src="${escapeHTML(kuroSnsAvatarUrl(reply.avatar_url))}" alt="" class="w-8 h-8 rounded-full object-cover border border-kuro-700">`
-                        : `<span class="w-8 h-8 rounded-full bg-kuro-800 border border-kuro-700 flex items-center justify-center text-gray-300"><i class="fa-regular fa-user text-xs"></i></span>`;
+                    const replyDeleted = Boolean(reply.deleted_at);
+                    const canDeleteReply = !replyDeleted && currentUser && String(reply.user_id || '') === String(currentUser.id || '');
+                    const deleteAction = canDeleteReply ? `<button type="button" data-delete-reply-id="${escapeHTML(reply.id || '')}" data-delete-reply-post-id="${escapeHTML(post.id)}" class="text-xs text-gray-500 hover:text-red-400">削除</button>` : '';
+                    const replyAvatarContent = reply.avatar_url ? `<img src="${escapeHTML(kuroSnsAvatarUrl(reply.avatar_url))}" alt="" class="w-8 h-8 rounded-full object-cover border border-kuro-700">` : `<span class="w-8 h-8 rounded-full bg-kuro-800 border border-kuro-700 flex items-center justify-center text-gray-300"><i class="fa-regular fa-user text-xs"></i></span>`;
                     const replyAvatar = kuroSnsAvatarHostMarkup(reply.user_id,replyAvatarContent,'w-8 h-8 flex-shrink-0 kuro-sns-avatar-small-frame');
-                    return `<div class="flex gap-2 py-2" data-kuro-post-reply-id="${escapeHTML(reply.id || '')}">${replyAvatar}<div class="min-w-0 flex-1"><div class="text-xs text-gray-400"><span class="font-semibold text-gray-200">${escapeHTML(replyName)}</span> <span class="text-gray-600">@${escapeHTML(replyHandle)} · ${escapeHTML(formatPostDate(reply.created_at))}</span></div>${parentLabel ? `<div class="text-[11px] text-violet-300/80 mt-0.5">↳ ${escapeHTML(parentLabel)} への返信</div>` : ''}<p class="mt-1 text-sm text-gray-300 whitespace-pre-wrap break-words">${renderMentionContent(reply.content || '')}</p><button type="button" data-reply-to-id="${escapeHTML(reply.id || '')}" data-reply-to-post-id="${escapeHTML(post.id)}" data-reply-to-handle="${escapeHTML(replyHandle)}" data-reply-to-name="${escapeHTML(replyName)}" onclick="window.KuroSNSSetReplyTarget(this)" class="mt-1 text-xs text-violet-300 hover:text-violet-200">返信</button></div></div>`;
+                    const replyText = replyDeleted ? 'この返信は削除されました。' : renderMentionContent(reply.content || '');
+                    const replyAction = replyDeleted ? '' : `<button type="button" data-reply-to-id="${escapeHTML(reply.id || '')}" data-reply-to-post-id="${escapeHTML(post.id)}" data-reply-to-handle="${escapeHTML(replyHandle)}" data-reply-to-name="${escapeHTML(replyName)}" onclick="window.KuroSNSSetReplyTarget(this)" class="text-xs text-violet-300 hover:text-violet-200">返信</button>`;
+                    return `<div class="flex gap-2 py-2" data-kuro-post-reply-id="${escapeHTML(reply.id || '')}">${replyAvatar}<div class="min-w-0 flex-1"><div class="text-xs text-gray-400"><span class="font-semibold text-gray-200">${escapeHTML(replyName)}</span> <span class="text-gray-600">@${escapeHTML(replyHandle)} · ${escapeHTML(formatPostDate(reply.created_at))}</span></div>${parentLabel ? `<div class="text-[11px] text-violet-300/80 mt-0.5">↳ ${escapeHTML(parentLabel)} への返信</div>` : ''}<p class="mt-1 text-sm ${replyDeleted ? 'text-gray-500 italic' : 'text-gray-300'} whitespace-pre-wrap break-words">${replyText}</p><div class="mt-1 flex items-center gap-3">${deleteAction}${replyAction}</div></div></div>`;
                 };
                 const renderReplyThread = (root) => {
                     const rootName = root.username || root.display_name || 'KUROユーザー';
@@ -3251,7 +3261,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             const user = currentUser?.id;
             const [likesResult, repliesResult] = await Promise.all([
                 supabaseClient.from('post_likes').select('post_id, user_id').in('post_id', ids),
-                supabaseClient.from('post_replies').select('id, post_id, parent_reply_id, user_id, content, created_at').in('post_id', ids).order('created_at', {ascending: true})
+                supabaseClient.from('post_replies').select('id, post_id, parent_reply_id, user_id, content, created_at, deleted_at').in('post_id', ids).order('created_at', {ascending: true})
             ]);
             if (likesResult.error) throw new Error('いいねの読み込みに失敗: ' + likesResult.error.message);
             if (repliesResult.error) throw new Error('返信の読み込みに失敗: ' + repliesResult.error.message);
@@ -3686,6 +3696,38 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             return kuroPostsLoadPromise;
         }
 
+        async function deletePostReply(replyId, postId) {
+            if (!currentUser) { showToast('返信を削除するにはログインしてください'); return; }
+            const replyKey = String(replyId || '').trim(), postKey = String(postId || '').trim();
+            if (!replyKey || !postKey) { showToast('返信を特定できません。ページを更新してください'); return; }
+            if (!confirm('この返信を削除しますか？\n返信への返信は残ります。')) return;
+            try {
+                const {data: authData, error: authError} = await supabaseClient.auth.getUser();
+                if (authError) throw authError;
+                const user = authData?.user;
+                if (!user) throw new Error('ログイン状態を確認できません。再ログインしてください。');
+                const {data: reply, error: readError} = await supabaseClient.from('post_replies').select('id,post_id,user_id,deleted_at').eq('id',replyKey).eq('post_id',postKey).maybeSingle();
+                if (readError) throw readError;
+                if (!reply) throw new Error('対象の返信が見つかりません。');
+                if (String(reply.user_id) !== String(user.id)) throw new Error('自分の返信だけ削除できます。');
+                if (reply.deleted_at) { showToast('この返信はすでに削除されています'); return; }
+                const deletedAt = new Date().toISOString();
+                const {data: updated, error: updateError} = await supabaseClient.from('post_replies').update({deleted_at:deletedAt}).eq('id',reply.id).eq('user_id',user.id).is('deleted_at',null).select('id');
+                if (updateError) throw updateError;
+                if (!updated?.length) throw new Error('返信を更新できませんでした。権限または通信状態を確認してください。');
+                const post = textPosts.find(item => String(item.id) === String(reply.post_id));
+                const localReply = post?.replies?.find(item => String(item.id) === String(reply.id));
+                if (localReply) localReply.deleted_at = deletedAt;
+                const card = document.querySelector('#postFeed [data-post-card="' + CSS.escape(String(reply.post_id)) + '"]');
+                const node = card?.querySelector('[data-kuro-post-reply-id="' + CSS.escape(String(reply.id)) + '"]');
+                const paragraph = node?.querySelector('p');
+                if (paragraph) { paragraph.textContent = 'この返信は削除されました。'; paragraph.classList.remove('text-gray-300'); paragraph.classList.add('text-gray-500','italic'); }
+                node?.querySelectorAll('[data-reply-to-id], [data-delete-reply-id]').forEach(button => button.remove());
+                if (node) node.dataset.replyDeleted = 'true';
+                showToast('返信を削除しました');
+            } catch (error) { console.error('KURO delete reply error:',error); showToast('返信の削除に失敗しました: ' + (error?.message || '通信状態を確認してください')); }
+        }
+
         async function deletePost(postId) {
             if (!currentUser) {
                 showToast('ポストを取り消すにはログインしてください');
@@ -3883,6 +3925,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 escapeHTML(formatPostDate(reply.created_at)) + '</span></div>' + parentHtml +
                 '<p class="mt-1 text-sm text-gray-300 whitespace-pre-wrap break-words">' +
                 renderMentionContent(reply.content || '') + '</p>' +
+                '<button type="button" data-delete-reply-id="' + escapeHTML(reply.id || '') + '" data-delete-reply-post-id="' + escapeHTML(reply.post_id || '') + '" class="mt-1 mr-3 text-xs text-gray-500 hover:text-red-400">削除</button>' +
                 '<button type="button" data-reply-to-id="' + escapeHTML(reply.id || '') +
                 '" data-reply-to-post-id="' + escapeHTML(reply.post_id || '') +
                 '" data-reply-to-handle="' + escapeHTML(replyHandle) +
