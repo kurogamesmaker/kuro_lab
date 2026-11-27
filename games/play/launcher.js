@@ -132,7 +132,7 @@ function kuroBuildGameFrameStorageBridge(gameId){
   'try{Object.defineProperty(window,"sessionStorage",{configurable:true,enumerable:true,value:makeStorage("session",SESSION_SEED)});}catch(e){console.warn("[KURO game storage] sessionStorage shim unavailable",e);}',
   "})();"
  ];
- return "<script>"+lines.join("\n").replace(/<\\/script/gi,"<\\\\/script")+"</script>";
+ return "<script>"+lines.join("\n").replace(/<\/script/gi,"<\\/script")+"</script>";
 }
 kuroGameAuthClient.auth.onAuthStateChange((_event, session) => {
  const active = session && !session.user?.is_anonymous && session.access_token ? session : null;
