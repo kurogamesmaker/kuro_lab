@@ -201,7 +201,7 @@
     if (!document.getElementById("kuro-service-notification-box-script")) {
       var notificationScript = document.createElement("script");
       notificationScript.id = "kuro-service-notification-box-script";
-      notificationScript.src = "/service-notification-box.js?v=20261127targetnav1";
+      notificationScript.src = "/service-notification-box.js?v=20261127targetnav2";
       document.body.appendChild(notificationScript);
     }
     if (!document.getElementById("portal-toolbox-menu-wrap")) {
