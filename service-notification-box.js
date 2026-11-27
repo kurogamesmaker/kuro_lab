@@ -339,6 +339,7 @@
       if (item.type === "like" || item.type === "reply") {
         const postId = findNotificationPostId(item.notification_details);
         if (postId) return "/sns/v2/?post=" + encodeURIComponent(postId);
+        return isUuid(item.id) ? "/sns/v2/?notice=" + encodeURIComponent(item.id) : "";
       }
       return actorId ? "/sns/v2/?profile=" + encodeURIComponent(actorId) : "";
     }
