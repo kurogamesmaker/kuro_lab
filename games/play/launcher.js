@@ -2,6 +2,7 @@
 
 function kuroNeedsModuleScript(source) {
  const original=String(source||"");
+ if(/^\s*\/\*\s*@kuro-module\s*\*\//m.test(original))return true;
  let code=original.split("");let i=0;
  while(i<code.length){
   const ch=code[i],next=code[i+1],tick=String.fromCharCode(96);
