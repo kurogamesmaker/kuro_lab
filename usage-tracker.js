@@ -21,16 +21,17 @@
   function storageSet(store, key, value) { try { window[store].setItem(key, value); } catch (_) {} }
 
   function authInfo() {
+    // Select only KURO Lab's production Supabase session.
     try {
-      for (var i = 0; i < localStorage.length; i++) {
-        var key = localStorage.key(i);
-        if (!key || !/^sb-.+-auth-token$/.test(key)) continue;
-        var saved = JSON.parse(localStorage.getItem(key) || "null");
-        var token = saved && saved.access_token;
-        if (!token) continue;
+      var saved = JSON.parse(localStorage.getItem("sb-cprvpphlfpmiegjiutjn-auth-token") || "null");
+      var token = saved && saved.access_token;
+      if (token) {
         var part = token.split(".")[1];
         var payload = JSON.parse(atob(part.replace(/-/g, "+").replace(/_/g, "/")));
-        return { token: token, userId: payload.sub || null };
+        var issuer = String(payload.iss || "");
+        if (payload.sub && issuer.indexOf("https://cprvpphlfpmiegjiutjn.supabase.co/auth/v1") === 0) {
+          return { token: token, userId: payload.sub };
+        }
       }
     } catch (_) {}
     return { token: PUBLISHABLE_KEY, userId: null };
@@ -158,6 +159,23 @@
     addEvent("session_start");
   }
   addEvent("page_view");
+
+  // Record foreground interactions, rather than treating an idle open tab as activity.
+  // Throttle to one event per minute to keep telemetry light.
+  var lastActivityPingAt = 0;
+  function trackUserActivity() {
+    if (document.visibilityState === "hidden") return;
+    var now = Date.now();
+    if (now - lastActivityPingAt < 60000) return;
+    lastActivityPingAt = now;
+    addEvent("activity_ping");
+  }
+  ["pointerdown", "pointermove", "keydown", "touchstart", "wheel", "scroll", "input", "change"].forEach(function (name) {
+    document.addEventListener(name, trackUserActivity, { capture: true, passive: true });
+  });
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") trackUserActivity();
+  });
 
   window.addEventListener("error", function (event) {
     if (event && event.message) addEvent("client_error", { error_code: "script_error" });
