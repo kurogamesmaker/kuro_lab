@@ -3158,7 +3158,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                         ? `<img src="${escapeHTML(kuroSnsAvatarUrl(reply.avatar_url))}" alt="" class="w-8 h-8 rounded-full object-cover border border-kuro-700">`
                         : `<span class="w-8 h-8 rounded-full bg-kuro-800 border border-kuro-700 flex items-center justify-center text-gray-300"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg></span>`;
                     const replyAvatar = kuroSnsAvatarHostMarkup(reply.user_id,replyAvatarContent,'w-8 h-8 flex-shrink-0 kuro-sns-avatar-small-frame');
-                    return `<div class="mt-3 flex gap-2">${replyAvatar}<div class="min-w-0 flex-1 rounded-xl bg-kuro-950/70 px-3 py-2"><div class="text-xs text-gray-400">${escapeHTML(replyName)} <span class="text-gray-600">@${escapeHTML(replyHandle)} · ${escapeHTML(formatPostDate(reply.created_at))}</span></div><p class="mt-1 text-sm text-gray-300 whitespace-pre-wrap break-words">${renderMentionContent(reply.content || '')}</p></div></div>`;
+                    return `<div class="mt-3 flex gap-2" data-kuro-post-reply-id="${escapeHTML(reply.id || '')}">${replyAvatar}<div class="min-w-0 flex-1 rounded-xl bg-kuro-950/70 px-3 py-2"><div class="text-xs text-gray-400">${escapeHTML(replyName)} <span class="text-gray-600">@${escapeHTML(replyHandle)} · ${escapeHTML(formatPostDate(reply.created_at))}</span></div><p class="mt-1 text-sm text-gray-300 whitespace-pre-wrap break-words">${renderMentionContent(reply.content || '')}</p></div></div>`;
                 }).join('');
                 return `<article class="bg-kuro-900/80 border border-kuro-800 hover:border-kuro-700 rounded-2xl p-4 sm:p-5" data-post-card="${escapeHTML(post.id)}"><div class="flex gap-3">${avatar}<div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-x-2 gap-y-1">${post.user_id ? `<button type="button" onclick="openPublicProfile('${escapeHTML(post.user_id)}')" class="font-semibold text-white hover:underline text-left">${escapeHTML(name)}</button>` : `<span class="font-semibold text-white">${escapeHTML(name)}</span>`}<button type="button" ${post.user_id ? `onclick="openPublicProfile('${escapeHTML(post.user_id)}')"` : 'disabled'} class="text-xs text-gray-500 hover:text-gray-300 disabled:cursor-default">@${escapeHTML(handle)}</button>${currentUser && post.user_id && post.user_id !== currentUser.id ? `<button type="button" data-follow-user-id="${escapeHTML(post.user_id)}" class="text-[11px] border border-kuro-700 rounded-full px-2 py-1 ${followCache.following.has(post.user_id) ? 'text-gray-400' : 'text-white hover:bg-kuro-800'}">${followCache.following.has(post.user_id) ? 'フォロー中' : 'フォロー'}</button>` : ''}<span class="text-xs text-gray-600">· ${escapeHTML(formatPostDate(post.created_at))}</span><span class="ml-auto">${deleteButton}</span></div><p class="mt-3 text-[15px] leading-7 text-gray-200 whitespace-pre-wrap break-words">${renderPostContent(post.content)}</p>${window.KuroSNSMedia?.renderPublic(post.media) || ''}<div class="mt-4 flex items-center gap-4 border-t border-kuro-800 pt-3"><button type="button" data-like-post-id="${escapeHTML(post.id)}" aria-pressed="${liked}" class="text-sm ${liked ? 'text-pink-400' : 'text-gray-400'} hover:text-pink-300"><i class="${liked ? 'fa-solid' : 'fa-regular'} fa-heart mr-1"></i><span>${Number(post.like_count || 0)}</span><span class="ml-1">いいね</span></button><button type="button" data-reply-post-id="${escapeHTML(post.id)}" aria-expanded="false" class="text-sm text-gray-400 hover:text-white"><i class="fa-regular fa-comment mr-1"></i>${(post.replies || []).length} 返信</button></div><div data-replies-panel class="hidden mt-3 space-y-3"><div class="space-y-1">${replies}</div><div class="space-y-2"><textarea data-reply-input="${escapeHTML(post.id)}" maxlength="130" rows="2" placeholder="返信を書く…（メンションなしでもOK）" class="w-full bg-kuro-950 border border-kuro-800 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-gray-500"></textarea><div class="flex justify-end"><button type="button" data-send-reply-post-id="${escapeHTML(post.id)}" class="px-3 py-1.5 rounded-lg bg-white text-black text-xs font-semibold hover:bg-gray-200">返信する</button></div></div></div></div></div></article>`;
             }).join('');
@@ -5551,20 +5551,134 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
         const kuroInitialGroupMessageId = String(kuroInitialDeepLinkParams.get('message') || '');
         const kuroInitialNotificationId = String(kuroInitialDeepLinkParams.get('notification') || '');
         const kuroInitialPostId = String(kuroInitialDeepLinkParams.get('post') || '');
+        const kuroInitialNoticeId = String(kuroInitialDeepLinkParams.get('notice') || '');
         const kuroInitialUuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         const kuroInitialChatPeerIsValid = kuroInitialUuidPattern.test(kuroInitialChatPeerId);
         const kuroInitialGroupIsValid = kuroInitialUuidPattern.test(kuroInitialGroupId);
         const kuroInitialPostIsValid = kuroInitialUuidPattern.test(kuroInitialPostId);
+        const kuroInitialNoticeIsValid = kuroInitialUuidPattern.test(kuroInitialNoticeId);
+
+        function getKuroNotificationPostId(details) {
+            const keys = ['post_id', 'postId', 'target_post_id', 'targetPostId'];
+            const queue = [details];
+            const seen = new Set();
+            while (queue.length) {
+                const value = queue.shift();
+                if (!value || typeof value !== 'object' || seen.has(value)) continue;
+                seen.add(value);
+                for (const key of keys) {
+                    const candidate = value[key];
+                    if (typeof candidate === 'string' && kuroInitialUuidPattern.test(candidate)) return candidate;
+                }
+                ['data', 'target', 'details', 'payload', 'reply', 'comment'].forEach(key => {
+                    if (value[key] && typeof value[key] === 'object') queue.push(value[key]);
+                });
+            }
+            return '';
+        }
+
+        async function resolveKuroNotificationPost(notificationId) {
+            if (!currentUser?.id || !kuroInitialUuidPattern.test(String(notificationId || ''))) return null;
+            const noticeResult = await supabaseClient.from('notifications')
+                .select('id,type,actor_id,created_at,notification_details')
+                .eq('id', notificationId).eq('recipient_id', currentUser.id).maybeSingle();
+            if (noticeResult.error) throw noticeResult.error;
+            const notice = noticeResult.data;
+            if (!notice || !['like', 'reply'].includes(notice.type) || !notice.actor_id) return null;
+
+            const details = notice.notification_details && typeof notice.notification_details === 'object'
+                ? notice.notification_details : {};
+            let postId = getKuroNotificationPostId(details);
+            let replyId = String(details.reply_id || details.replyId || '');
+            if (!kuroInitialUuidPattern.test(replyId)) replyId = '';
+
+            if (!postId) {
+                const eventTime = Date.parse(notice.created_at);
+                if (!Number.isFinite(eventTime)) return null;
+                const start = new Date(eventTime - 30000).toISOString();
+                const end = new Date(eventTime + 30000).toISOString();
+                const isReply = notice.type === 'reply';
+                const eventResult = await supabaseClient.from(isReply ? 'post_replies' : 'post_likes')
+                    .select(isReply ? 'id,post_id,created_at' : 'post_id,created_at')
+                    .eq('user_id', notice.actor_id)
+                    .gte('created_at', start).lte('created_at', end)
+                    .order('created_at', {ascending: false}).limit(20);
+                if (eventResult.error) throw eventResult.error;
+                const events = eventResult.data || [];
+                if (!events.length) return null;
+
+                const candidateIds = [...new Set(events.map(row => row.post_id).filter(id => kuroInitialUuidPattern.test(String(id || ''))))];
+                if (!candidateIds.length) return null;
+                const ownedResult = await supabaseClient.from('posts').select('id')
+                    .eq('user_id', currentUser.id).in('id', candidateIds);
+                if (ownedResult.error) throw ownedResult.error;
+                const ownedIds = new Set((ownedResult.data || []).map(row => String(row.id)));
+                const matching = events.filter(row => ownedIds.has(String(row.post_id)));
+                if (!matching.length) return null;
+                matching.sort((a, b) => Math.abs(Date.parse(a.created_at) - eventTime) - Math.abs(Date.parse(b.created_at) - eventTime));
+                postId = String(matching[0].post_id);
+                if (isReply && kuroInitialUuidPattern.test(String(matching[0].id || ''))) replyId = String(matching[0].id);
+            }
+            return kuroInitialUuidPattern.test(postId) ? {postId, replyId} : null;
+        }
+
+        async function openKuroNotificationPost(notificationId) {
+            const target = await resolveKuroNotificationPost(notificationId);
+            if (!target) {
+                showToast('対象の投稿が見つからないか、すでに削除されています。');
+                return;
+            }
+            const loaded = await loadPostsFromSupabase();
+            if (!loaded) throw new Error('投稿一覧を読み込めませんでした。');
+            let post = textPosts.find(row => String(row.id) === target.postId);
+            if (!post) {
+                const postResult = await supabaseClient.from('posts')
+                    .select('id,user_id,content,hashtags,created_at,media')
+                    .eq('id', target.postId).eq('user_id', currentUser.id).maybeSingle();
+                if (postResult.error) throw postResult.error;
+                if (!postResult.data) {
+                    showToast('対象の投稿が見つからないか、すでに削除されています。');
+                    return;
+                }
+                const profileResult = await supabaseClient.from('profiles')
+                    .select('id,username,display_name,avatar_url').eq('id', postResult.data.user_id).maybeSingle();
+                if (profileResult.error) console.warn('KURO notification post profile:', profileResult.error);
+                post = {...postResult.data, ...(profileResult.data || {})};
+                textPosts = [post, ...textPosts.filter(row => String(row.id) !== target.postId)];
+                await loadSocialData();
+                filterPosts();
+            }
+            showProfilePost(target.postId);
+            if (target.replyId) {
+                window.setTimeout(() => {
+                    const card = document.querySelector('#postFeed [data-post-card="' + CSS.escape(target.postId) + '"]');
+                    const panel = card?.querySelector('[data-replies-panel]');
+                    const button = card?.querySelector('[data-reply-post-id]');
+                    panel?.classList.remove('hidden');
+                    button?.setAttribute('aria-expanded', 'true');
+                    const reply = card?.querySelector('[data-kuro-post-reply-id="' + CSS.escape(target.replyId) + '"]');
+                    if (reply) {
+                        reply.classList.add('ring-2', 'ring-violet-400/70', 'rounded-lg');
+                        reply.scrollIntoView({behavior: 'smooth', block: 'center'});
+                        window.setTimeout(() => reply.classList.remove('ring-2', 'ring-violet-400/70'), 2600);
+                    } else {
+                        card?.querySelector('[data-reply-input]')?.focus({preventScroll: true});
+                    }
+                }, 180);
+            }
+        }
+
         let kuroInitialChatDeepLinkStarted = false;
         function launchKuroInitialChatDeepLink() {
             if (!currentUser?.id || kuroInitialChatDeepLinkStarted) return;
             const route = kuroInitialChatPeerIsValid ? 'chat'
                 : kuroInitialGroupIsValid ? 'group'
+                : kuroInitialNoticeIsValid ? 'notice'
                 : kuroInitialPostIsValid ? 'post' : '';
             if (!route) return;
             kuroInitialChatDeepLinkStarted = true;
             const cleanUrl = new URL(window.location.href);
-            ['chat', 'group', 'message', 'notification', 'post'].forEach(key => cleanUrl.searchParams.delete(key));
+            ['chat', 'group', 'message', 'notification', 'post', 'notice'].forEach(key => cleanUrl.searchParams.delete(key));
             window.history.replaceState({}, document.title, cleanUrl.pathname + cleanUrl.search + cleanUrl.hash);
             if (route === 'chat') {
                 Promise.resolve(startChatWithUser(kuroInitialChatPeerId)).catch(error => {
@@ -5577,6 +5691,13 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 Promise.resolve(openMentionGroupNotice(kuroInitialGroupId, kuroInitialGroupMessageId, kuroInitialNotificationId)).catch(error => {
                     console.error('KURO group notification deep link failed:', error);
                     showToast('グループチャットを開けませんでした。');
+                });
+                return;
+            }
+            if (route === 'notice') {
+                Promise.resolve(openKuroNotificationPost(kuroInitialNoticeId)).catch(error => {
+                    console.error('KURO notification deep link failed:', error);
+                    showToast('投稿を開けませんでした。');
                 });
                 return;
             }
