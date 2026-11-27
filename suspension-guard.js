@@ -99,7 +99,11 @@
         return;
       }
     } catch (error) {
-      console.warn("KURO global suspension guard check failed:", error);
+      // Fetch may be aborted by the six-second timeout or page navigation.
+      // This check is non-blocking; only report unexpected failures.
+      if (!error || error.name !== "AbortError") {
+        console.warn("KURO global suspension guard check failed:", error);
+      }
     } finally {
       if (requestTimeout) window.clearTimeout(requestTimeout);
       checking = false;
