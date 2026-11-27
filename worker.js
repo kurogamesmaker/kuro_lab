@@ -74,7 +74,8 @@ const ALLOWED_FUNCTIONS = new Set([
   "/functions/v1/kurogames-store",
   "/functions/v1/kuro-public-coin-balance",
   "/functions/v1/change-password",
-  "/functions/v1/delete-account"
+  "/functions/v1/delete-account",
+  "/functions/v1/kuro-security-gate"
 ]);
 const METHODS = new Set(["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"]);
 
@@ -337,6 +338,12 @@ async function checkIncomingIpBan(request, url, edgeKey) {
   return null;
 }
 
+const PROTECTED_CLIENT_TOOLS = new Map([
+  ["admin-console", "admin"],
+  ["shop-studio", "shop-studio"],
+  ["kuro-security-monitor", "security-monitor"]
+]);
+
 const suspensionStatusCache = new Map();
 
 async function checkActiveSuspension(headers) {
@@ -403,12 +410,61 @@ function isSuspensionAllowedRequest(pathname, method) {
   return false;
 }
 
-async function proxy(payload, clientIp = null, edgeKey = null) {
+async function proxy(payload, clientIp = null, edgeKey = null, clientRequest = null) {
   const target = targetFor(payload.path);
   const method = String(payload.method || "GET").toUpperCase();
   if (!METHODS.has(method)) throw Object.assign(new Error("Method not allowed"), { status: 405 });
 
   const requestHeaders = headersFor(payload.headers);
+  const clientId = String(payload.clientId || "");
+  const protectedTool = PROTECTED_CLIENT_TOOLS.get(clientId);
+  const guardedPath = target.pathname.startsWith("/rest/v1/") ||
+    target.pathname.startsWith("/storage/v1/") ||
+    (target.pathname.startsWith("/functions/v1/") && target.pathname !== "/functions/v1/kuro-security-gate");
+  if (protectedTool && guardedPath) {
+    const authorization = requestHeaders.get("authorization") || "";
+    if (!authorization.startsWith("Bearer ")) {
+      return {
+        status: 401,
+        headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
+        isBinary: false,
+        bodyBase64: "",
+        bodyText: JSON.stringify({ error: "KURO Security Gateにはログインが必要です。" }),
+        service: "KURO Security Gate"
+      };
+    }
+    const gateHeaders = new Headers({
+      "authorization": authorization,
+      "apikey": requestHeaders.get("apikey") || SUPABASE_KEY,
+      "content-type": "application/json",
+      "origin": "https://kurolab.cc.cd"
+    });
+    if (clientIp) gateHeaders.set("x-real-ip", clientIp);
+    const userAgent = clientRequest?.headers.get("user-agent") || "";
+    const platform = clientRequest?.headers.get("sec-ch-ua-platform") || "";
+    const language = clientRequest?.headers.get("accept-language") || "";
+    if (userAgent) gateHeaders.set("user-agent", userAgent);
+    if (platform) gateHeaders.set("sec-ch-ua-platform", platform);
+    if (language) gateHeaders.set("accept-language", language);
+
+    const gateResponse = await fetch(SUPABASE_URL + "/functions/v1/kuro-security-gate", {
+      method: "POST",
+      headers: gateHeaders,
+      body: JSON.stringify({ action: "check", tool: protectedTool })
+    });
+    const gateResult = await gateResponse.json().catch(() => ({}));
+    if (!gateResponse.ok || gateResult?.allowed !== true) {
+      const status = gateResponse.status >= 500 ? 503 : (gateResponse.status === 401 ? 401 : 403);
+      return {
+        status,
+        headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
+        isBinary: false,
+        bodyBase64: "",
+        bodyText: JSON.stringify({ error: gateResult?.message || "KURO Security Gateでアクセスが拒否されました。" }),
+        service: "KURO Security Gate"
+      };
+    }
+  }
   if (clientIp) {
     try {
       const ipBan = await checkActiveIpBan(clientIp, edgeKey);
@@ -519,7 +575,7 @@ async function handleRelay(request, env) {
   }
 
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
-  return json(await proxy(await request.json(), request.headers.get("CF-Connecting-IP"), env?.IP_BAN_EDGE_KEY));
+  return json(await proxy(await request.json(), request.headers.get("CF-Connecting-IP"), env?.IP_BAN_EDGE_KEY, request));
 }
 
 async function handleRealtime(request) {
