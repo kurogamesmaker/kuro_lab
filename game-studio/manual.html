@@ -22,7 +22,7 @@
 <nav class="side" aria-label="マニュアル目次">
  <div class="side-title">DEVELOPMENT GUIDE</div>
  <div class="group">基本</div>
- <a href="#principles">01 基本原則</a><a href="#architecture">02 全体構成</a><a href="#platforms">02.5 PC・スマホ別UI</a><a href="#start">03 制作開始・認証</a>
+ <a href="#principles">01 基本原則</a><a href="#architecture">02 全体構成</a><a href="#single-code">02.5 共通ゲームコード</a><a href="#start">03 制作開始・認証</a>
  <div class="group">ゲーム設計</div>
  <a href="#instant">04 即時反応・先行反映</a><a href="#animation">05 演出・パフォーマンス</a><a href="#data">06 データ設計</a>
  <div class="group">オンライン</div>
@@ -64,19 +64,19 @@
  <div class="callout good">原則：ゲーム側は <code>KuroGames</code> SDKを利用する。Supabase URL・独自認証・Service Roleキー・個別のDB書き込み処理を各ゲームへコピーしない。</div>
 </section>
 
-<section class="section" id="platforms">
- <h2><span class="num">02.5</span>PC版・スマホ版の画面分離</h2>
- <p class="section-intro">PC版とスマホ版は画面のHTML・CSSを別々に保存します。ゲームルール・勝敗判定・スコア・通信などのJavaScriptは共通コードとして1つだけ保存し、必要なUI・入力処理だけを端末別に追加できます。アカウント、ランキング、対戦、セーブも共通基盤を利用します。</p>
+<section class="section" id="single-code">
+ <h2><span class="num">02.5</span>全端末共通のゲームコード</h2>
+ <p class="section-intro">KURO GAMESはゲームの画面・ルールを1つのコードとして管理します。PCとスマートフォンで別のゲームを保存・公開する仕組みは使いません。アカウント、ランキング、対戦、セーブも共通基盤を利用します。</p>
  <div class="grid2">
-  <div class="card"><h3>PC版</h3><ul><li><code>html_content</code> にPC用HTML・CSS文書を保存</li><li>マウス・キーボード向けレイアウトと表示を構築</li><li>必要な処理は「端末別UI・操作JS」で追加</li></ul></div>
-  <div class="card"><h3>スマホ版</h3><ul><li><code>mobile_html_content</code> にスマホ用HTML・CSS文書を保存</li><li>タッチ操作・画面サイズ・安全領域に最適化</li><li>必要な処理は「端末別UI・操作JS」で追加</li></ul></div>
+  <div class="card"><h3>HTML・CSS</h3><ul><li><code>html_content</code> に共通の画面を保存</li><li>幅に応じた表示はCSSのメディアクエリで調整</li><li>ボタンや入力欄はタッチ・マウスの両方で扱えるように設計</li></ul></div>
+  <div class="card"><h3>JavaScript</h3><ul><li><code>shared_js_content</code> にゲームルール・進行・スコア・通信処理を保存</li><li>補助処理は <code>pc_extension_js_content</code> に追加</li><li>ゲームの本体コードは1つだけを公開</li></ul></div>
  </div>
  <div class="card">
   <h3>Studioでの編集手順</h3>
-  <ol><li>コードエディター上部で「PC版」または「スマホ版」を選択</li><li>選択中の画面のHTML・CSSを編集してプレビュー</li><li>「共通JavaScript」にはゲーム本体のルール・進行・スコア・オンライン処理を記述。PC／スマホを切り替えても同じ内容が表示されます</li><li>マウス・キーボード・タッチなど画面ごとの入力処理だけは「端末別UI・操作JS」に記述</li><li>「公開・更新」でPC／スマホのHTML・CSS、共通JS、端末別JSをそれぞれ保存します</li></ol>
-  <p><code>window.KURO_GAMES_PLATFORM</code> は <code>"pc"</code> または <code>"mobile"</code> を返します。各プラットフォームの画面・入力処理の分岐に利用できます。</p>
+  <ol><li>HTML・CSSでゲーム画面全体を作成</li><li>「共通JavaScript」にゲームのルール・進行・スコア・オンライン処理を記述</li><li>必要な補助処理だけを「追加JavaScript」に記述</li><li>画面幅を変えながらプレビューし、各サイズで操作できることを確認</li><li>「公開・更新」で共通のHTML・CSSとJavaScriptを保存します</li></ol>
+  <p>端末による表示差はHTML・CSSのレスポンシブ設定で吸収し、ゲームのルールやデータは同じコードを利用します。</p>
  </div>
- <div class="callout warn">PC版の <code>html_content</code> とスマホ版の <code>mobile_html_content</code> はどちらも必須です。共通JavaScriptは <code>shared_js_content</code> に1つだけ保存し、端末別の追加処理は <code>pc_extension_js_content</code>／<code>mobile_extension_js_content</code> に保存します。既存移行でPC・モバイルのJSが異なっていた4作品（3Dワールド、UNON、ブロックFPS、大富豪）は、動作を変えないよう旧コード全体を端末別領域に一時保持しています。これらは今後、共通ゲームロジックとUI・入力処理を段階的に分離します。数字当ては差分が判定しきい値の1行だけだったため、共通JSへ統合し、端末判定をその1行に組み込みました。選択したプラットフォームの画面コードが空の場合、もう一方を代用せず起動を停止します。</div>
+ <div class="callout">ゲームのコードを1つに統一しても、画面サイズに応じたレイアウト調整や、タッチ操作への対応は可能です。ゲーム本体・ランキング・オンライン通信は同じ実装を利用します。</div>
 </section>
 
 <section class="section" id="start">
@@ -426,7 +426,7 @@ const allStats = await KuroGames.stats.getAll({
   <h3>リリースチェックリスト</h3>
   <div class="checklist">
    <label><input type="checkbox">ゲームのルール・勝敗・終了条件が正しい</label>
-   <label><input type="checkbox">PC / スマホで画面が崩れない</label>
+   <label><input type="checkbox">さまざまな画面幅でレイアウトが崩れない</label>
    <label><input type="checkbox">押下時の反応が即時に表示される</label>
    <label><input type="checkbox">演出・アニメーションが意図どおり動く</label>
    <label><input type="checkbox">不要な通信・重複取得がない</label>
