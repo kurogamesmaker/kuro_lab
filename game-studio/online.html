@@ -22,6 +22,7 @@ a{color:inherit;text-decoration:none}.top{height:66px;border-bottom:1px solid va
 <section class="future"><h2>通信機能について</h2><p>現在利用できる機能：ランキング送信・取得、個人クラウドセーブ（キー一覧を含む）、6文字ルームコード、最大35人の参加者同期、ルーム共有状態の保存・更新、リアルタイムイベント。実績・バッジ、フレンド・招待は今後の拡張予定です。</p><div class="future-tags"><span>利用可能：ランキング</span><span>利用可能：クラウドセーブ</span><span>利用可能：ルーム通信</span><span>今後：実績・バッジ</span><span>今後：フレンド・招待</span></div></section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/security/kuro-security-gate.js?v=20261128gate1"></script>
 <script>
 (function(){
 "use strict";
@@ -117,6 +118,7 @@ try{
 const {data:{session},error:sessionError}=await db.auth.getSession();
 if(sessionError)throw sessionError;
 if(!session){setStatus("KUROアカウントでログインしてから、このページを開いてください。ログイン後に再読み込みすると制作ゲームが表示されます。","error");return;}
+await window.KuroSecurityGate.verify(db,"game-studio");
 setStatus("ゲーム一覧を取得しています…");
 const {data:games,error}=await db.from("game_studio_games").select("id,title,slug,status,updated_at").eq("owner_id",session.user.id).order("updated_at",{ascending:false}).limit(100);
 if(error)throw error;
