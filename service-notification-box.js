@@ -336,7 +336,10 @@
         if (isUuid(item.id)) params.set("notification", item.id);
         return "/sns/v2/?" + params.toString();
       }
-      if (item.type === "like" || item.type === "reply") {
+      if (item.type === "reply") {
+        return isUuid(item.id) ? "/sns/v2/?notice=" + encodeURIComponent(item.id) : "";
+      }
+      if (item.type === "like") {
         const postId = findNotificationPostId(item.notification_details);
         if (postId) return "/sns/v2/?post=" + encodeURIComponent(postId);
         return isUuid(item.id) ? "/sns/v2/?notice=" + encodeURIComponent(item.id) : "";
