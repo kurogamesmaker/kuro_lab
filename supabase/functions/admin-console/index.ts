@@ -1715,13 +1715,17 @@ Deno.serve(async (req: Request) => {
       const users = data.users || [];
       const ids = users.map((u) => u.id);
       const nowIso = new Date().toISOString();
-      const [profilesResult, prefsResult, suspensionsResult] = ids.length ? await Promise.all([
+      const [profilesResult, prefsResult, suspensionsResult, activityResult] = ids.length ? await Promise.all([
         admin.from("profiles").select("id,username,display_name").in("id", ids),
         admin.from("portal_preferences").select("user_id,preferences").in("user_id", ids),
         admin.from("account_suspensions").select("id,user_id,starts_at,ends_at,reason")
           .in("user_id", ids).is("revoked_at", null)
-          .gt("ends_at", nowIso).order("starts_at", { ascending: false })
+          .gt("ends_at", nowIso).order("starts_at", { ascending: false }),
+        admin.from("user_last_activity")
+          .select("user_id,last_activity_at,last_page_key,activity_source")
+          .in("user_id", ids)
       ]) : [
+        { data: [], error: null },
         { data: [], error: null },
         { data: [], error: null },
         { data: [], error: null }
@@ -1730,8 +1734,10 @@ Deno.serve(async (req: Request) => {
       if (profilesResult.error) throw profilesResult.error;
       if (prefsResult.error) throw prefsResult.error;
       if (suspensionsResult.error) throw suspensionsResult.error;
+      if (activityResult.error) throw activityResult.error;
 
       const profiles = new Map((profilesResult.data || []).map((p) => [p.id, p]));
+      const activities = new Map((activityResult.data || []).map((row) => [row.user_id, row]));
       const prefs = new Map((prefsResult.data || []).map((p) => [p.user_id, p.preferences || {}]));
       const suspensions = new Map();
       for (const suspension of suspensionsResult.data || []) {
@@ -1752,6 +1758,9 @@ Deno.serve(async (req: Request) => {
           display_name: profile?.display_name || "",
           created_at: u.created_at,
           last_sign_in_at: u.last_sign_in_at || null,
+          last_activity_at: activities.get(u.id)?.last_activity_at || u.last_sign_in_at || null,
+          last_activity_page: activities.get(u.id)?.last_page_key || null,
+          last_activity_source: activities.get(u.id)?.activity_source || (u.last_sign_in_at ? "auth" : null),
           banned_until: u.banned_until || null,
           temporary_suspension: suspensions.get(u.id) || null,
           board_count: boards,
