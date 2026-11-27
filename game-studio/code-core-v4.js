@@ -40,7 +40,7 @@ const fallback={id:"studio-new",name:"新しいゲーム",type:"clicker",backgro
 {id:"score",type:"text",name:"スコア",text:"SCORE  0",x:35,y:32,w:30,h:12,color:"#d8def0",bg:"transparent",size:22,radius:0},
 {id:"main",type:"button",name:"スコアボタン",text:"クリック！",x:34,y:53,w:32,h:17,color:"#ffffff",bg:"#8068ed",size:22,radius:14}
 ]};
-let project,activeTab="html",activeSurface="pc",saveTimer=null,previewTimer=null,toastTimer=null;
+let project,activeTab="html",saveTimer=null,previewTimer=null,toastTimer=null;
 function makeVisualCode(p){
  const objects=Array.isArray(p.objects)?p.objects.filter(o=>o.type!=="group"&&o.visible!==false):[];
  const html='<main id="kuro-game" aria-label="'+escapeHTML(p.name||"KURO Game")+'">\n'+objects.map(o=>{
@@ -111,55 +111,34 @@ if(!project&&requestedLocalProjectId){window.__KURO_STUDIO_REDIRECTING=true;wind
 if(!project&&!new URLSearchParams(location.search).get("publishedId")){window.__KURO_STUDIO_REDIRECTING=true;window.__KURO_STUDIO_BOOT_STAGE__="redirecting-to-project-list";window.__KURO_STUDIO_CORE_READY=true;location.replace("/game-studio/projects.html");return;}
 project=project||clone(fallback);
 if(!project.code||typeof project.code!=="object")project.code=makeVisualCode(project);
-if(!project.mobileCode||typeof project.mobileCode!=="object")project.mobileCode=clone(project.code);
-["html","css"].forEach(k=>{
- if(typeof project.code[k]!=="string")project.code[k]="";
- if(typeof project.mobileCode[k]!=="string")project.mobileCode[k]=project.code[k]||"";
-});
+["html","css"].forEach(k=>{if(typeof project.code[k]!=="string")project.code[k]="";});
 const legacyPcJs=typeof project.code.js==="string"?project.code.js:"";
-const legacyMobileJs=typeof project.mobileCode.js==="string"?project.mobileCode.js:legacyPcJs;
-if(typeof project.sharedJs!=="string"){
- if(legacyPcJs===legacyMobileJs){
-  project.sharedJs=legacyPcJs;
-  if(typeof project.pcExtensionJs!=="string")project.pcExtensionJs="";
-  if(typeof project.mobileExtensionJs!=="string")project.mobileExtensionJs="";
- }else{
-  project.sharedJs="";
-  if(typeof project.pcExtensionJs!=="string")project.pcExtensionJs=legacyPcJs;
-  if(typeof project.mobileExtensionJs!=="string")project.mobileExtensionJs=legacyMobileJs;
- }
-}
+if(typeof project.sharedJs!=="string")project.sharedJs=legacyPcJs;
 if(typeof project.pcExtensionJs!=="string")project.pcExtensionJs="";
-if(typeof project.mobileExtensionJs!=="string")project.mobileExtensionJs="";
 project.code.js="";
-project.mobileCode.js="";
-function codeForSurface(surface){
- const target=surface==="mobile"?project.mobileCode:project.code;
- return new Proxy(target,{
+delete project.mobileCode;
+delete project.mobileExtensionJs;
+function codeForSurface(){
+ return new Proxy(project.code,{
   get(object,key){
    if(key==="js")return project.sharedJs||"";
-   if(key==="platformJs")return surface==="mobile"?(project.mobileExtensionJs||""):(project.pcExtensionJs||"");
+   if(key==="platformJs")return project.pcExtensionJs||"";
    return object[key];
   },
   set(object,key,value){
    if(key==="js"){project.sharedJs=String(value??"");return true;}
-   if(key==="platformJs"){
-    if(surface==="mobile")project.mobileExtensionJs=String(value??"");
-    else project.pcExtensionJs=String(value??"");
-    return true;
-   }
+   if(key==="platformJs"){project.pcExtensionJs=String(value??"");return true;}
    object[key]=value;return true;
   }
  });
 }
-function activeCode(){return codeForSurface(activeSurface);}
+function activeCode(){return codeForSurface();}
 function setActiveCode(value){
  const next=value&&typeof value==="object"?value:{};
- const target=activeSurface==="mobile"?project.mobileCode:project.code;
- target.html=typeof next.html==="string"?next.html:"";
- target.css=typeof next.css==="string"?next.css:"";
+ project.code.html=typeof next.html==="string"?next.html:"";
+ project.code.css=typeof next.css==="string"?next.css:"";
  project.sharedJs=typeof next.js==="string"?next.js:"";
- if(Object.prototype.hasOwnProperty.call(next,"platformJs"))activeCode().platformJs=next.platformJs;
+ if(Object.prototype.hasOwnProperty.call(next,"platformJs"))project.pcExtensionJs=String(next.platformJs??"");
  return activeCode();
 }
 function setStatus(text,color){$("saveStatus").textContent=text;$("saveStatus").style.color=color||"var(--good)"}
@@ -192,7 +171,7 @@ function renderGutter(){
 function showTab(tab){
  activeTab=tab;
  document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
- $("fileTag").textContent=(activeSurface==="mobile"?"mobile/":"pc/")+({html:"index.html",css:"style.css",js:"../shared/game.js",platformjs:"ui-controls.js"}[tab]||"index.html");
+ $("fileTag").textContent=({html:"index.html",css:"style.css",js:"shared.js",platformjs:"extra.js"}[tab]||"index.html");
  $("codeEditor").value=activeCode()[tab]||"";
  renderGutter();
 }
@@ -255,7 +234,7 @@ function splitMixedCode(source){
 }
 function safeScript(source){return String(source||"").replace(/<\/script/gi,"<\\/script");}
 function makeDocument(sourceCode,targetPlatform,includeGameScripts){
- const platform=targetPlatform||activeSurface;
+ const platform="pc";
  const source=sourceCode||activeCode();
  const code={
   html:typeof source.html==="string"?source.html:"",
@@ -272,11 +251,10 @@ function makeDocument(sourceCode,targetPlatform,includeGameScripts){
  });
  const css=String(code.css||"").replace(/<\/style/gi,"<\\/style");
  const rawJs=safeScript([code.js,code.platformJs].filter(value=>String(value||"").trim()).join("\n\n"));
- const frameWidth=platform==="mobile"?390:Math.max(240,Math.min(3840,Number(project.settings&&project.settings.gameFrameWidth)||960));
- const frameHeight=platform==="mobile"?844:Math.max(160,Math.min(2160,Number(project.settings&&project.settings.gameFrameHeight)||540));
- const frameScale=platform==="mobile"?100:Math.max(25,Math.min(300,Number(project.settings&&project.settings.gameFrameScale)||100));
+ const frameWidth=Math.max(240,Math.min(3840,Number(project.settings&&project.settings.gameFrameWidth)||960));
+ const frameHeight=Math.max(160,Math.min(2160,Number(project.settings&&project.settings.gameFrameHeight)||540));
+ const frameScale=Math.max(25,Math.min(300,Number(project.settings&&project.settings.gameFrameScale)||100));
  const frameMeta='<meta name="kuro-game-frame" content="'+frameWidth+'x'+frameHeight+'"><meta name="kuro-game-scale" content="'+frameScale+'">';
- const viewportMeta=platform==="mobile"&&!/<meta\b(?=[^>]*\bname=["']viewport["'])[^>]*>/i.test(html)?'<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">':"";
  const platformScript='<script>window.KURO_GAMES_PLATFORM='+JSON.stringify(platform)+';</script>';
  const styleBlock="<style>"+css+"</style>";
  const moduleMode=/^\s*(?:import|export)\b/m.test(rawJs)||/\bawait\b/.test(rawJs);
@@ -293,19 +271,20 @@ function makeDocument(sourceCode,targetPlatform,includeGameScripts){
  const autoFitScript=project.settings&&project.settings.autoFitOverflow===false?"":"<scr"+"ipt>(function(){try{document.documentElement.style.overflowX='auto';document.body.style.overflowX='auto';document.querySelectorAll('img,video,svg,iframe').forEach(function(el){el.style.maxWidth='100%';});}catch(e){console.warn('KURO responsive fit',e);}})();<"+"/script>";
  if(/<html[\s>]/i.test(html)){
   let doc=html;
-  if(/<head\b[^>]*>/i.test(doc))doc=doc.replace(/<head\b[^>]*>/i,m=>m+errorReporter+authGuard+audioUnlock+viewportMeta+frameMeta+styleBlock+platformScript);
-  else if(/<html[^>]*>/i.test(doc))doc=doc.replace(/<html[^>]*>/i,m=>m+"<head>"+errorReporter+authGuard+audioUnlock+viewportMeta+frameMeta+styleBlock+platformScript+"</head>");
-  else doc="<!doctype html><html lang=\"ja\"><head><meta charset=\"utf-8\">"+errorReporter+authGuard+viewportMeta+frameMeta+styleBlock+platformScript+"</head><body>"+doc+"</body></html>";
+  if(/<head\b[^>]*>/i.test(doc))doc=doc.replace(/<head\b[^>]*>/i,m=>m+errorReporter+authGuard+audioUnlock+frameMeta+styleBlock+platformScript);
+  else if(/<html[^>]*>/i.test(doc))doc=doc.replace(/<html[^>]*>/i,m=>m+"<head>"+errorReporter+authGuard+audioUnlock+frameMeta+styleBlock+platformScript+"</head>");
+  else doc="<!doctype html><html lang=\"ja\"><head><meta charset=\"utf-8\">"+errorReporter+authGuard+frameMeta+styleBlock+platformScript+"</head><body>"+doc+"</body></html>";
   if(/<\/body>/i.test(doc))doc=doc.replace(/<\/body>/i,scriptBlock+autoFitScript+"</body>");
   else doc+=scriptBlock+autoFitScript;
   return doc;
  }
- return '<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+escapeHTML(project.name||"KURO Game")+'</title>'+errorReporter+authGuard+audioUnlock+viewportMeta+frameMeta+styleBlock+platformScript+'</head><body>'+html+scriptBlock+autoFitScript+'</body></html>';
+ return '<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+escapeHTML(project.name||"KURO Game")+'</title>'+errorReporter+authGuard+audioUnlock+frameMeta+styleBlock+platformScript+'</head><body>'+html+scriptBlock+autoFitScript+'</body></html>';
 }
 let previewMode="fit";
 function applyPreviewSize(){
- const w=activeSurface==="mobile"?390:Math.max(240,Math.min(3840,Number(project.settings&&project.settings.gameFrameWidth)||960));
- const h=activeSurface==="mobile"?844:Math.max(160,Math.min(2160,Number(project.settings&&project.settings.gameFrameHeight)||540));const ratio=activeSurface==="mobile"?1:Math.max(25,Math.min(300,Number(project.settings&&project.settings.gameFrameScale)||100))/100,displayW=w*ratio,displayH=h*ratio;
+ const w=Math.max(240,Math.min(3840,Number(project.settings&&project.settings.gameFrameWidth)||960));
+ const h=Math.max(160,Math.min(2160,Number(project.settings&&project.settings.gameFrameHeight)||540));
+ const ratio=Math.max(25,Math.min(300,Number(project.settings&&project.settings.gameFrameScale)||100))/100,displayW=w*ratio,displayH=h*ratio;
  const frame=$("previewFrame"),screen=frame.parentElement;
  frame.style.width=displayW+"px";frame.style.height=displayH+"px";frame.style.maxWidth="none";frame.style.maxHeight="none";frame.style.flex="0 0 auto";
  if(previewMode==="fit"){
@@ -360,13 +339,10 @@ function downloadAllSourceFiles(){
  syncEditorBeforeDownload();
  const base=downloadBaseName();
  const files=[
-  {name:"pc/"+base+".html",data:String(project.code.html||"")},
-  {name:"pc/"+base+".css",data:String(project.code.css||"")},
-  {name:"mobile/"+base+".html",data:String(project.mobileCode.html||"")},
-  {name:"mobile/"+base+".css",data:String(project.mobileCode.css||"")},
-  {name:"shared/"+base+".js",data:String(project.sharedJs||"")},
-  {name:"pc/controls.js",data:String(project.pcExtensionJs||"")},
-  {name:"mobile/controls.js",data:String(project.mobileExtensionJs||"")}
+  {name:base+".html",data:String(project.code.html||"")},
+  {name:base+".css",data:String(project.code.css||"")},
+  {name:base+".js",data:String(project.sharedJs||"")},
+  {name:"extra.js",data:String(project.pcExtensionJs||"")}
  ];
  const enc=new TextEncoder(),parts=[],central=[];let offset=0;
  function crc32(bytes){let c=0xffffffff;for(const b of bytes){c^=b;for(let k=0;k<8;k++)c=(c>>>1)^((c&1)?0xedb88320:0);}return(c^0xffffffff)>>>0;}
@@ -382,14 +358,14 @@ function downloadAllSourceFiles(){
  const centralBytes=join(central),end=join([u32(0x06054b50),u16(0),u16(0),u16(files.length),u16(files.length),u32(centralBytes.length),u32(offset),u16(0)]);
  const blob=new Blob([...parts,centralBytes,end],{type:"application/zip"}),url=URL.createObjectURL(blob),a=document.createElement("a");
  a.href=url;a.download=downloadBaseName()+"-sources.zip";a.style.display="none";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
- closeDownloadModal();toast("PC・モバイルの画面コードと共通／端末別JSをZIPで保存しました");
+ closeDownloadModal();toast("ゲーム画面と共通／追加JavaScriptをZIPで保存しました");
 }
 
 function openDownloadModal(){$("downloadModal").classList.add("open");}
 function closeDownloadModal(){$("downloadModal").classList.remove("open");}
 
 let publishUser=null,publishAllowed=false,publishIconData="";
-let publishedFallbackCode=null,publishedFallbackMobileCode=null,publishedFallbackId="",activePublishedDraft=false,publishedFallbackRecovered=false;
+let publishedFallbackCode=null,publishedFallbackId="";,activePublishedDraft=false,publishedFallbackRecovered=false;
 let cropImage=null,cropObjectUrl="",cropZoom=1,cropX=0,cropY=0,cropDrag=null;
 function showPublishIconPreview(){const img=$("publishIconPreviewImage");if(publishIconData){img.src=publishIconData;img.hidden=false;}else{img.removeAttribute("src");img.hidden=true;}}
 function drawIconCrop(){
@@ -452,10 +428,10 @@ async function publishCurrentGame(){
  if(!publishAllowed||!publishUser||!publishDb)return;
  const title=$("publishTitle").value.trim(),slug=$("publishSlug").value.trim().toLowerCase(),description=$("publishDescription").value.trim(),categories=[...$("publishCategories").querySelectorAll("input:checked")].map(input=>input.value),category=categories[0]==="none"?"other":(categories[0]||"other"),icon=publishIconData||$("publishIcon").value.trim()||"🎮";
  if(!title||! /^[a-z0-9][a-z0-9-]{2,47}$/.test(slug)){toast("タイトルとURL用IDを確認してください");return;}
- activeCode()[activeTab]=currentValue();const html=makeDocument(codeForSurface("pc"),"pc",false),mobileHtml=makeDocument(codeForSurface("mobile"),"mobile",false);if(html.length>1000000||mobileHtml.length>1000000){toast("PC版またはスマホ版のHTMLが大きすぎます（上限約1MB）");return;}
+ activeCode()[activeTab]=currentValue();const html=makeDocument(activeCode(),"pc",false);if(html.length>1000000){toast("HTMLが大きすぎます（上限約1MB）");return;}
  $("confirmPublish").disabled=true;$("publishStatus").textContent="KURO GAMESへ公開中…";
  try{const now=new Date().toISOString();
-  if(!categories.length){toast("ジャンルを1つ以上選択してください");$("confirmPublish").disabled=false;return;}const tagText=$("publishTagText").value.trim().slice(0,18),tagStyle=$("publishTagStyle").value,tagColor=$("publishTagColor").value,tagTextColor=$("publishTagTextColor").value;const searchAliases=readAliasFields();const generatedWidthAliases=[...new Set([title,searchAliases.kanji,searchAliases.hiragana,searchAliases.katakana,searchAliases.romaji,searchAliases.romajiNN,searchAliases.other].flatMap(latinWidthCaseVariants).filter(v=>v&&v!==title))];const otherAliases=[searchAliases.other,...generatedWidthAliases].filter(Boolean).join(" ");const aliasArray=[searchAliases.kanji||null,searchAliases.hiragana||null,searchAliases.katakana||null,searchAliases.romaji||null,searchAliases.romajiNN||null,otherAliases||null];const payload={owner_id:publishUser.id,slug,title,description,category,categories,icon,search_aliases:aliasArray,tag_text:tagText,tag_style:tagStyle,tag_color:tagColor,tag_text_color:tagTextColor,html_content:html,mobile_html_content:mobileHtml,shared_js_content:project.sharedJs||"",pc_extension_js_content:project.pcExtensionJs||"",mobile_extension_js_content:project.mobileExtensionJs||"",status:"published",updated_at:now};
+  if(!categories.length){toast("ジャンルを1つ以上選択してください");$("confirmPublish").disabled=false;return;}const tagText=$("publishTagText").value.trim().slice(0,18),tagStyle=$("publishTagStyle").value,tagColor=$("publishTagColor").value,tagTextColor=$("publishTagTextColor").value;const searchAliases=readAliasFields();const generatedWidthAliases=[...new Set([title,searchAliases.kanji,searchAliases.hiragana,searchAliases.katakana,searchAliases.romaji,searchAliases.romajiNN,searchAliases.other].flatMap(latinWidthCaseVariants).filter(v=>v&&v!==title))];const otherAliases=[searchAliases.other,...generatedWidthAliases].filter(Boolean).join(" ");const aliasArray=[searchAliases.kanji||null,searchAliases.hiragana||null,searchAliases.katakana||null,searchAliases.romaji||null,searchAliases.romajiNN||null,otherAliases||null];const payload={owner_id:publishUser.id,slug,title,description,category,categories,icon,search_aliases:aliasArray,tag_text:tagText,tag_style:tagStyle,tag_color:tagColor,tag_text_color:tagTextColor,html_content:html,shared_js_content:project.sharedJs||"",pc_extension_js_content:project.pcExtensionJs||"",status:"published",updated_at:now};
   let data,error;
   if(project.publishedGameId){
    const result=await publishDb.from("game_studio_games").update(payload).eq("id",project.publishedGameId).eq("owner_id",publishUser.id).select("id,slug").single();data=result.data;error=result.error;
@@ -480,38 +456,22 @@ async function loadPublishedGameFromCloud(){
  try{
   const {data:{session},error:authError}=await getStudioSession(publishDb);if(authError)throw authError;
   if(!session){toast("公開作品を編集するにはログインしてください");return;}
-  const {data,error}=await publishDb.from("game_studio_games").select("id,slug,title,description,category,categories,icon,search_aliases,tag_text,tag_style,tag_color,html_content,mobile_html_content,shared_js_content,pc_extension_js_content,mobile_extension_js_content,updated_at").eq("id",id).eq("owner_id",session.user.id).maybeSingle();
+  const {data,error}=await publishDb.from("game_studio_games").select("id,slug,title,description,category,categories,icon,search_aliases,tag_text,tag_style,tag_color,html_content,shared_js_content,pc_extension_js_content").eq("id",id).eq("owner_id",session.user.id).maybeSingle();
   if(error)throw error;if(!data)throw new Error("作品が見つからないか、編集権限がありません");
   const cleanPublishedHtml=stripStudioInjectedRuntime(data.html_content||"");const parsed=splitMixedCode(cleanPublishedHtml);
-  const mobileDocument=String(data.mobile_html_content||"").trim();
-  if(!mobileDocument)throw new Error("モバイル版コードが保存されていません。PC版コードで代用せず、モバイル版コードを登録してください。");
-  const cleanMobilePublishedHtml=stripStudioInjectedRuntime(mobileDocument);
-  const mobileParsed=splitMixedCode(cleanMobilePublishedHtml);
-  const draftKey="kuroGameStudio.publishedDraft."+data.id;let draft=null;try{draft=JSON.parse(localStorage.getItem(draftKey)||"null");}catch(_){}
+const draftKey="kuroGameStudio.publishedDraft."+data.id;let draft=null;try{draft=JSON.parse(localStorage.getItem(draftKey)||"null");}catch(_){}
   const remoteUpdated=Date.parse(data.updated_at||"")||0;
   let useDraft=!!(draft&&draft.publishedGameId===data.id&&Number(draft.updatedAt||0)>remoteUpdated);
   // CSPで禁止されるnew Functionによる構文検査は行わず、プレビュー側のSyntaxErrorを検知して公開版へ自動復旧する。
   activePublishedDraft=useDraft;
   let remoteSharedJs=String(data.shared_js_content||"");
   let remotePcExtensionJs=String(data.pc_extension_js_content||"");
-  let remoteMobileExtensionJs=String(data.mobile_extension_js_content||"");
   const legacyParsedPcJs=String(parsed.parts.js||"");
-  const legacyParsedMobileJs=String(mobileParsed.parts.js||"");
-  if(!remoteSharedJs&&!remotePcExtensionJs&&!remoteMobileExtensionJs&&(legacyParsedPcJs||legacyParsedMobileJs)){
-   if(legacyParsedPcJs===legacyParsedMobileJs)remoteSharedJs=legacyParsedPcJs;
-   else{remotePcExtensionJs=legacyParsedPcJs;remoteMobileExtensionJs=legacyParsedMobileJs;}
-  }
+  if(!remoteSharedJs&&!remotePcExtensionJs&&legacyParsedPcJs)remoteSharedJs=legacyParsedPcJs;
   let loadedSharedJs=useDraft&&typeof draft.sharedJs==="string"?draft.sharedJs:remoteSharedJs;
   let loadedPcExtensionJs=useDraft&&typeof draft.pcExtensionJs==="string"?draft.pcExtensionJs:remotePcExtensionJs;
-  let loadedMobileExtensionJs=useDraft&&typeof draft.mobileExtensionJs==="string"?draft.mobileExtensionJs:remoteMobileExtensionJs;
-  if(useDraft&&typeof draft.sharedJs!=="string"&&draft.code){
-   const draftPcJs=String(draft.code.js||"");
-   const draftMobileJs=String(draft.mobileCode&&draft.mobileCode.js||draftPcJs);
-   if(draftPcJs===draftMobileJs)loadedSharedJs=draftPcJs;
-   else if(draftPcJs||draftMobileJs){loadedPcExtensionJs=draftPcJs;loadedMobileExtensionJs=draftMobileJs;}
-  }
+  if(useDraft&&typeof draft.sharedJs!=="string"&&draft.code&&String(draft.code.js||"").trim())loadedSharedJs=String(draft.code.js||"");
   publishedFallbackCode=Object.assign({},clone(parsed.parts),{js:remoteSharedJs,platformJs:remotePcExtensionJs});
-  publishedFallbackMobileCode=Object.assign({},clone(mobileParsed.parts),{js:remoteSharedJs,platformJs:remoteMobileExtensionJs});
   publishedFallbackId=data.id;
   publishedFallbackRecovered=false;
   const savedSettings=useDraft&&draft.settings&&typeof draft.settings==="object"?clone(draft.settings):{};
@@ -520,11 +480,7 @@ async function loadPublishedGameFromCloud(){
   const publishedHeight=publishedFrame?Math.max(160,Math.min(2160,Number(publishedFrame[2]))):540;
   const isKuroXoGame=data.id==="2dbd6773-2684-4f00-973e-c46acbc348e7";
   const loadedCode=useDraft&&draft.code?clone(draft.code):clone(parsed.parts);
-  const loadedMobileCode=useDraft&&draft.mobileCode
-   ?Object.assign({},clone(mobileParsed.parts),clone(draft.mobileCode))
-   :clone(mobileParsed.parts);
   loadedCode.js="";
-  loadedMobileCode.js="";
   if(isKuroXoGame){
    // Force Studio to use the current published layout instead of stale 960x540 draft dimensions.
    savedSettings.gameFrameWidth=publishedWidth;
@@ -540,7 +496,7 @@ async function loadPublishedGameFromCloud(){
    if(!Number(savedSettings.gameFrameWidth))savedSettings.gameFrameWidth=publishedWidth;
    if(!Number(savedSettings.gameFrameHeight))savedSettings.gameFrameHeight=publishedHeight;
   }
-  project={id:"published-"+data.id,name:useDraft?(draft.name||data.title||"公開済みゲーム"):(data.title||"公開済みゲーム"),type:data.category==="action"?"platformer":"published",background:"#101522",objects:[],events:[],settings:savedSettings,tilemap:{cols:20,rows:12,cells:Array(240).fill(-1),enabled:false},assets:[],prefabs:[],layers:["Default"],collisionMatrix:{},code:loadedCode,mobileCode:loadedMobileCode,sharedJs:loadedSharedJs,pcExtensionJs:loadedPcExtensionJs,mobileExtensionJs:loadedMobileExtensionJs,publishedGameId:data.id,publishedMeta:{slug:data.slug,title:data.title,description:data.description,category:data.category,categories:data.categories?.length?data.categories:[data.category||"other"],icon:data.icon,searchAliases:(()=>{const a=Array.isArray(data.search_aliases)?data.search_aliases:[];return {kanji:a[0]||"",hiragana:a[1]||"",katakana:a[2]||"",romaji:a[3]||"",other:a[4]||""};})(),tagText:data.tag_text||"KURO STUDIO",tagStyle:data.tag_style||"classic",tagColor:data.tag_color||"#ffffff",tagTextColor:data.tag_text_color||"#df6547"},updatedAt:useDraft?draft.updatedAt:Date.now()};
+  project={id:"published-"+data.id,name:useDraft?(draft.name||data.title||"公開済みゲーム"):(data.title||"公開済みゲーム"),type:data.category==="action"?"platformer":"published",background:"#101522",objects:[],events:[],settings:savedSettings,tilemap:{cols:20,rows:12,cells:Array(240).fill(-1),enabled:false},assets:[],prefabs:[],layers:["Default"],collisionMatrix:{},code:loadedCode,sharedJs:loadedSharedJs,pcExtensionJs:loadedPcExtensionJs,publishedGameId:data.id,publishedMeta:{slug:data.slug,title:data.title,description:data.description,category:data.category,categories:data.categories?.length?data.categories:[data.category||"other"],icon:data.icon,searchAliases:(()=>{const a=Array.isArray(data.search_aliases)?data.search_aliases:[];return {kanji:a[0]||"",hiragana:a[1]||"",katakana:a[2]||"",romaji:a[3]||"",other:a[4]||""};})(),tagText:data.tag_text||"KURO STUDIO",tagStyle:data.tag_style||"classic",tagColor:data.tag_color||"#ffffff",tagTextColor:data.tag_text_color||"#df6547"},updatedAt:useDraft?draft.updatedAt:Date.now()};
   $("projectName").value=project.name;$("publishBtn").textContent="公開内容を更新";
   setStatus(useDraft?"● 下書きから復元":"● 公開作品を読み込み済み","var(--good)");
   showTab("html");run();
@@ -593,8 +549,8 @@ codeFileInput.addEventListener("change",async()=>{
     const updatedHtml=currentHtml.replace(/<script\b([^>]*?)\bsrc\s*=\s*(["'])([^"']+)\2([^>]*)>\s*<\/script\s*>/gi,(whole,before,quote,src,after)=>normalizeScriptName(src)===importedName?(matched=true,""):whole);
     if(updates.html.length)updates.html[updates.html.length-1]=updatedHtml;else activeCode().html=updatedHtml;
     const targetTab=activeTab==="platformjs"?"platformjs":"js";
-    if(matched){referencedScripts.add(importedName);updates[targetTab].unshift(source);notes.push(name+": HTML参照を除去して"+(targetTab==="platformjs"?"端末別UI・操作JS":"共通JavaScript")+"へ統合");}else{updates[targetTab].push(source);notes.push(name+": "+(targetTab==="platformjs"?"端末別UI・操作JS":"共通JavaScript")+"タブへ読み込み");}
-   }else if(["jsx","ts","tsx","json"].includes(ext)){const targetTab=activeTab==="platformjs"?"platformjs":"js";updates[targetTab].push("// "+name+"\n"+source);notes.push(name+": "+(targetTab==="platformjs"?"端末別UI・操作JS":"共通JavaScript")+"タブへ読み込み");}
+    if(matched){referencedScripts.add(importedName);updates[targetTab].unshift(source);notes.push(name+": HTML参照を除去して"+(targetTab==="platformjs"?"追加JavaScript":"共通JavaScript")+"へ統合");}else{updates[targetTab].push(source);notes.push(name+": "+(targetTab==="platformjs"?"追加JavaScript":"共通JavaScript")+"タブへ読み込み");}
+   }else if(["jsx","ts","tsx","json"].includes(ext)){const targetTab=activeTab==="platformjs"?"platformjs":"js";updates[targetTab].push("// "+name+"\n"+source);notes.push(name+": "+(targetTab==="platformjs"?"追加JavaScript":"共通JavaScript")+"タブへ読み込み");}
    else if(["xml","svg"].includes(ext)){updates.html.push(source);notes.push(name+": HTMLタブへ読み込み");}
    else if(ext==="md"){const targetTab=activeTab==="platformjs"?"platformjs":"js";updates[targetTab].push("// "+name+"（Markdownテキスト）\n"+source);notes.push(name+": テキストとしてJavaScriptタブへ読み込み");}
    else throw new Error("未対応のファイル形式です: "+name);
@@ -602,7 +558,7 @@ codeFileInput.addEventListener("change",async()=>{
   const applied=Object.keys(updates).filter(tab=>updates[tab].length);if(!applied.length)throw new Error("読み込めるコードが見つかりませんでした。");
   activeCode()[activeTab]=currentValue();
   const occupied=applied.filter(tab=>{const value=String(activeCode()[tab]||"").trim();return value&&!["<!-- HTMLをここに追加できます -->","/* CSSをここに追加できます */","// JavaScriptをここに追加できます"].includes(value);});
-  const labels={html:"HTML",css:"CSS",js:"共通JavaScript",platformjs:"端末別UI・操作JS"},summary=applied.map(tab=>labels[tab]).join("・");
+  const labels={html:"HTML",css:"CSS",js:"共通JavaScript",platformjs:"追加JavaScript"},summary=applied.map(tab=>labels[tab]).join("・");
   if(occupied.length&&!window.confirm("読み込むファイル: "+files.map(f=>f.name).join("、")+"\n反映先: "+summary+"\n既存コードを上書きします。続行しますか？")){toast("ファイル読み込みをキャンセルしました");return;}
   applied.forEach(tab=>{activeCode()[tab]=updates[tab].join("\n\n");});
   showTab(applied.includes("html")?"html":applied[0]);run();markDirty();$("previewStatus").textContent="複数ファイル読み込み済み";toast(files.length+"個のファイルを読み込みました");if(notes.length)console.info("複数ファイル読み込み:\n"+notes.join("\n"));
@@ -723,12 +679,6 @@ $("projectName").addEventListener("input",()=>{project.name=$("projectName").val
 $("codeEditor").addEventListener("input",editCurrent);
 $("codeEditor").addEventListener("scroll",()=>$("gutter").scrollTop=$("codeEditor").scrollTop);
 document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{activeCode()[activeTab]=currentValue();showTab(b.dataset.tab);}));
-document.querySelectorAll("[data-surface]").forEach(b=>b.addEventListener("click",()=>{
- activeCode()[activeTab]=currentValue();
- activeSurface=b.dataset.surface==="mobile"?"mobile":"pc";
- document.querySelectorAll("[data-surface]").forEach(button=>button.classList.toggle("active",button.dataset.surface===activeSurface));
- showTab(activeTab);run();
-}));
 $("saveBtn").addEventListener("click",()=>{activeCode()[activeTab]=currentValue();persist(false)});
 
 $("runBtn").addEventListener("click",()=>{activeCode()[activeTab]=currentValue();run();});
@@ -841,7 +791,7 @@ window.addEventListener("message",async event=>{
    publishedFallbackRecovered=true;activePublishedDraft=false;
    const draftKey="kuroGameStudio.publishedDraft."+publishedFallbackId;
    try{const brokenDraft=localStorage.getItem(draftKey);if(brokenDraft)localStorage.setItem(draftKey+".syntax-backup",brokenDraft);}catch(backupError){console.warn("KURO Studio: 構文エラー下書きのバックアップを保存できませんでした。",backupError);}
-   setActiveCode(clone(activeSurface==="mobile"?(publishedFallbackMobileCode||publishedFallbackCode):publishedFallbackCode));project.updatedAt=Date.now();
+   setActiveCode(clone(publishedFallbackCode));project.updatedAt=Date.now();
    showTab(activeTab);persist(true);run();
    setStatus("● 公開版に自動復旧済み","var(--warn)");
    toast("下書きの構文エラーを検出したため公開版に復旧しました。元の下書きもバックアップしました。");
