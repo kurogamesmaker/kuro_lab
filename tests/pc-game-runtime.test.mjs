@@ -40,6 +40,23 @@ for (const [name, check] of moduleChecks) {
   });
 }
 
+test("runtime injection preserves the original head setup order", () => {
+  const start = launcher.indexOf("function kuroInsertGameRuntimeMarkup");
+  const end = launcher.indexOf("function startKuroGameActivity", start);
+  assert.ok(start >= 0 && end > start);
+  const context = {};
+  vm.runInNewContext(
+    launcher.slice(start, end) + "\nglobalThis.injectRuntime = kuroInsertGameRuntimeMarkup;",
+    context
+  );
+  const original = '<!doctype html><html><head><meta name="viewport"><style>body{background:red}</style></head><body><main>game</main></body></html>';
+  const result = context.injectRuntime(original, "<script>window.runtimeReady=true;</script>");
+  assert.ok(result.indexOf('<meta name="viewport">') < result.indexOf("<script>"));
+  assert.ok(result.indexOf("<style>") < result.indexOf("<script>"));
+  assert.ok(result.indexOf("</head>") > result.indexOf("<script>"));
+  assert.ok(result.includes("<main>game</main>"));
+});
+
 test("sandbox storage bridge supports localStorage and sessionStorage", () => {
   const bridgeBlock = sourceBlock(
     launcher,
