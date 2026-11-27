@@ -119,3 +119,27 @@ test("sandbox storage bridge supports localStorage and sessionStorage", () => {
     ]
   );
 });
+
+test("PC launcher removes mobile-only visual overrides without losing UNON state behavior", () => {
+  const start = launcher.indexOf("function kuroPreparePcGameHtml");
+  const end = launcher.indexOf("function startKuroGameActivity", start);
+  assert.ok(start >= 0 && end > start);
+  const context = {};
+  vm.runInNewContext(
+    launcher.slice(start, end) + "\\nglobalThis.preparePcHtml = kuroPreparePcGameHtml;",
+    context
+  );
+  const prime = '<html><head><style id="base">#timeBar::before{width:var(--bar)}</style><style id="kuro-mobile-layout-patch">#timeBar{background:linear-gradient(red,blue)}</style></head><body></body></html>';
+  const primeResult = context.preparePcHtml(prime);
+  assert.ok(primeResult.includes('id="base"'));
+  assert.ok(!primeResult.includes('kuro-mobile-layout-patch'));
+  const unon = '<html><head><style id="kuro-mobile-screen-state">#gameRoot{display:none}</style><style id="kuro-mobile-uno-layout">#setup{flex-direction:column}#overlay[style*=flex]{display:grid!important}</style></head><body></body></html>';
+  const unonResult = context.preparePcHtml(unon);
+  assert.ok(unonResult.includes('#gameRoot{display:none}'));
+  assert.ok(!unonResult.includes('#setup{flex-direction:column}'));
+  assert.ok(unonResult.includes('#overlay[style*=flex]{display:grid!important}'));
+  const world = '<html><head></head><body><div id="stick"></div><button id="jump"></button></body></html>';
+  const worldResult = context.preparePcHtml(world);
+  assert.ok(worldResult.includes('kuro-pc-controls-layout'));
+  assert.ok(worldResult.includes('@media (hover: hover) and (pointer: fine)'));
+});
