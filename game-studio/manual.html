@@ -66,17 +66,17 @@
 
 <section class="section" id="platforms">
  <h2><span class="num">02.5</span>PC版・スマホ版の画面分離</h2>
- <p class="section-intro">PC版とスマホ版はHTML・CSS・JavaScriptを含むゲーム文書全体を別々に保存・編集・起動します。共有するのはKUROアカウント、KuroGames SDK、ランキング・対戦・セーブなどのサーバーデータです。</p>
+ <p class="section-intro">PC版とスマホ版は画面のHTML・CSSを別々に保存します。ゲームルール・勝敗判定・スコア・通信などのJavaScriptは共通コードとして1つだけ保存し、必要なUI・入力処理だけを端末別に追加できます。アカウント、ランキング、対戦、セーブも共通基盤を利用します。</p>
  <div class="grid2">
-  <div class="card"><h3>PC版</h3><ul><li><code>html_content</code> にPC用HTMLを保存</li><li>PC用CSSでマウス・キーボード向けレイアウトを構築</li><li>既存のPCデザインと操作を維持</li></ul></div>
-  <div class="card"><h3>スマホ版</h3><ul><li><code>mobile_html_content</code> にスマホ用HTMLを保存</li><li>スマホ用CSSでタッチ操作・画面サイズ・安全領域に最適化</li><li>ゲームプレイ中は全画面のアプリ型シェルを使用</li></ul></div>
+  <div class="card"><h3>PC版</h3><ul><li><code>html_content</code> にPC用HTML・CSS文書を保存</li><li>マウス・キーボード向けレイアウトと表示を構築</li><li>必要な処理は「端末別UI・操作JS」で追加</li></ul></div>
+  <div class="card"><h3>スマホ版</h3><ul><li><code>mobile_html_content</code> にスマホ用HTML・CSS文書を保存</li><li>タッチ操作・画面サイズ・安全領域に最適化</li><li>必要な処理は「端末別UI・操作JS」で追加</li></ul></div>
  </div>
  <div class="card">
   <h3>Studioでの編集手順</h3>
-  <ol><li>コードエディター上部で「PC版」または「スマホ版」を選択</li><li>選択中のプラットフォーム専用HTML・CSS・JavaScriptを編集してプレビュー</li><li>JavaScriptも別々に保存されます。片方の画面コードを変更しても、もう片方のコードは上書きされません</li><li>オンライン通信・ランキング・セーブは両方から同じKuroGames SDKを利用し、サーバーデータを共有します</li><li>「公開・更新」でPC版とスマホ版の文書を別々の保存先へ保存します</li></ol>
+  <ol><li>コードエディター上部で「PC版」または「スマホ版」を選択</li><li>選択中の画面のHTML・CSSを編集してプレビュー</li><li>「共通JavaScript」にはゲーム本体のルール・進行・スコア・オンライン処理を記述。PC／スマホを切り替えても同じ内容が表示されます</li><li>マウス・キーボード・タッチなど画面ごとの入力処理だけは「端末別UI・操作JS」に記述</li><li>「公開・更新」でPC／スマホのHTML・CSS、共通JS、端末別JSをそれぞれ保存します</li></ol>
   <p><code>window.KURO_GAMES_PLATFORM</code> は <code>"pc"</code> または <code>"mobile"</code> を返します。各プラットフォームの画面・入力処理の分岐に利用できます。</p>
  </div>
- <div class="callout warn">PC版の <code>html_content</code> とスマホ版の <code>mobile_html_content</code> はどちらも必須です。選択したプラットフォームのコードが未登録・空の場合、もう一方のコードを代用せず起動を停止します。HTML・CSS・JavaScriptを含む文書全体が独立して保存されます。ブラウザのアドレスバー表示は端末・ブラウザの仕様に依存します。</div>
+ <div class="callout warn">PC版の <code>html_content</code> とスマホ版の <code>mobile_html_content</code> はどちらも必須です。共通JavaScriptは <code>shared_js_content</code> に1つだけ保存し、必要な追加処理は <code>pc_extension_js_content</code>／<code>mobile_extension_js_content</code> に分けます。選択したプラットフォームの画面コードが空の場合、もう一方を代用せず起動を停止します。</div>
 </section>
 
 <section class="section" id="start">
