@@ -209,16 +209,16 @@ function kuroInsertGameRuntimeMarkup(html,markup){
 function kuroPreparePcGameHtml(html){
  let source=String(html||"");
  // These Studio patches were authored for the removed mobile-only layout.
- source=source.replace(/<style\\b(?=[^>]*\\bid=["']kuro-mobile-layout-patch["'])[^>]*>[\\s\\S]*?<\\/style\\s*>/gi,"");
+ source=source.replace(/<style\b(?=[^>]*\bid=["']kuro-mobile-layout-patch["'])[^>]*>[\s\S]*?<\/style\s*>/gi,"");
  // Keep UNON's overlay centering rule, but do not force its PC setup screen into a mobile column.
- source=source.replace(/(<style\\b(?=[^>]*\\bid=["']kuro-mobile-uno-layout["'])[^>]*>)([\\s\\S]*?)(<\\/style\\s*>)/gi,(_,open,css,close)=>{
-  const desktopCss=css.replace(/#setup\\s*\\{\\s*flex-direction\\s*:\\s*column\\s*;?\\s*\\}/gi,"");
+ source=source.replace(/(<style\b(?=[^>]*\bid=["']kuro-mobile-uno-layout["'])[^>]*>)([\s\S]*?)(<\/style\s*>)/gi,(_,open,css,close)=>{
+  const desktopCss=css.replace(/#setup\s*\{\s*flex-direction\s*:\s*column\s*;?\s*\}/gi,"");
   return open+desktopCss+close;
  });
  // 3D World has keyboard/mouse controls on PC; the on-screen joystick and jump pad are touch controls.
- if(/\\bid=["']stick["']/i.test(source)&&/\\bid=["']jump["']/i.test(source)&&/<head\\b/i.test(source)){
+ if(/\bid=["']stick["']/i.test(source)&&/\bid=["']jump["']/i.test(source)&&/<head\b/i.test(source)){
   const desktopControls='<style id="kuro-pc-controls-layout">@media (hover: hover) and (pointer: fine){#stick,#jump{display:none!important}}</style>';
-  source=source.replace(/<\\/head\\s*>/i,desktopControls+"</head>");
+  source=source.replace(/<\/head\s*>/i,desktopControls+"</head>");
  }
  return source;
 }
