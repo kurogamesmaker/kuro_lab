@@ -3326,7 +3326,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             }
         }
 
-        async function submitReply(postId) {
+        async function submitReply(postId, sourceCard = null) {
             if (!currentUser) {
                 showToast('返信するにはログインしてください');
                 openAuthModal('signin');
