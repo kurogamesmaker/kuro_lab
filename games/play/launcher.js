@@ -527,11 +527,11 @@ async function loadKuroGameRewards(gameId, db){const bar=document.getElementById
  if(!id||!/^[0-9a-f-]{36}$/i.test(id)){fail("ゲームIDが正しくありません。");return;}
  if(!window.supabase||!window.supabase.createClient){fail("通信ライブラリを読み込めませんでした。");return;}
  try{const db=kuroGameAuthClient;
-  const {data,error}=await db.from("game_studio_games").select("title,description,icon,html_content,shared_js_content,pc_extension_js_content").eq("id",id).eq("status","published").maybeSingle();if(error)throw error;if(!data){fail("公開が終了したか、URLが正しくありません。");return;}
+  const {data,error}=await db.from("game_studio_games").select("title,description,icon,html_content,shared_js_content,extra_js_content").eq("id",id).eq("status","published").maybeSingle();if(error)throw error;if(!data){fail("公開が終了したか、URLが正しくありません。");return;}
   let selectedGameHtml=String(data.html_content||"").trim();
   if(!selectedGameHtml){fail("ゲームの画面コードが登録されていません。");return;}
   const sharedGameJs=String(data.shared_js_content||"");
-  const platformGameJs=String(data.pc_extension_js_content||"");
+  const platformGameJs=String(data.extra_js_content||"");
   const combinedGameJs=[sharedGameJs,platformGameJs].filter(value=>String(value||"").trim()).join("\n\n");
   if(combinedGameJs){
    const safeGameJs=combinedGameJs.replace(/<\/script/gi,"<\\/script");
@@ -540,10 +540,10 @@ async function loadKuroGameRewards(gameId, db){const bar=document.getElementById
    if(/<\/body>/i.test(selectedGameHtml))selectedGameHtml=selectedGameHtml.replace(/<\/body>/i,gameScript+"</body>");
    else selectedGameHtml+=gameScript;
   }
-  if(!/<meta\\b(?=[^>]*\\bname=["']viewport["'])[^>]*>/i.test(selectedGameHtml)){
+  if(!/<meta\b(?=[^>]*\bname=["']viewport["'])[^>]*>/i.test(selectedGameHtml)){
    const viewportMeta='<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">';
-   if(/<head\\b[^>]*>/i.test(selectedGameHtml))selectedGameHtml=selectedGameHtml.replace(/<head\\b[^>]*>/i,match=>match+viewportMeta);
-   else if(/<html\\b[^>]*>/i.test(selectedGameHtml))selectedGameHtml=selectedGameHtml.replace(/<html\\b[^>]*>/i,match=>match+'<head>'+viewportMeta+'</head>');
+   if(/<head\b[^>]*>/i.test(selectedGameHtml))selectedGameHtml=selectedGameHtml.replace(/<head\b[^>]*>/i,match=>match+viewportMeta);
+   else if(/<html\b[^>]*>/i.test(selectedGameHtml))selectedGameHtml=selectedGameHtml.replace(/<html\b[^>]*>/i,match=>match+'<head>'+viewportMeta+'</head>');
    else selectedGameHtml='<!doctype html><html lang="ja"><head>'+viewportMeta+'</head><body>'+selectedGameHtml+'</body></html>';
   }
   document.documentElement.dataset.kuroGamesPlatform="pc";
