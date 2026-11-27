@@ -3435,7 +3435,13 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             }
             const repliesByPost = {};
             replies.forEach(reply => {
-                (repliesByPost[reply.post_id] ||= []).push({...reply, ...(replyProfiles[reply.user_id] || {})});
+                const profile = replyProfiles[reply.user_id] || {};
+                (repliesByPost[reply.post_id] ||= []).push({
+                    ...reply,
+                    username: profile.username || '',
+                    display_name: profile.display_name || '',
+                    avatar_url: profile.avatar_url || ''
+                });
             });
             textPosts = textPosts.map(post => {
                 const postLikes = likes.filter(like => String(like.post_id) === String(post.id));
