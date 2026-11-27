@@ -336,12 +336,9 @@
         if (isUuid(item.id)) params.set("notification", item.id);
         return "/sns/v2/?" + params.toString();
       }
-      if (item.type === "reply") {
-        return isUuid(item.id) ? "/sns/v2/?notice=" + encodeURIComponent(item.id) : "";
-      }
-      if (item.type === "like") {
-        const postId = findNotificationPostId(item.notification_details);
-        if (postId) return "/sns/v2/?post=" + encodeURIComponent(postId);
+      if (item.type === "like" || item.type === "reply") {
+        // Resolve through the notification row so older posts outside the latest feed
+        // can still be fetched and a reply can be highlighted precisely.
         return isUuid(item.id) ? "/sns/v2/?notice=" + encodeURIComponent(item.id) : "";
       }
       return actorId ? "/sns/v2/?profile=" + encodeURIComponent(actorId) : "";
