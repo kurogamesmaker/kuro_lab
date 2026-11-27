@@ -266,7 +266,7 @@ async function checkAdmin(user){
  if(!data)throw new Error("このアカウントには管理者権限がありません。");
 }
 async function enter(user){
- try{await checkAdmin(user);await window.KuroSecurityGate.verify(db,"center");showApp(user);}
+ try{await window.KuroSecurityGate.verify(db,"center");await checkAdmin(user);showApp(user);}
  catch(error){await db.auth.signOut();showLogin(error?.message||"管理者認証に失敗しました。");}
 }
 function recordRecent(id){
