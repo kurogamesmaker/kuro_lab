@@ -425,10 +425,10 @@ async function loadKuroGameRewards(gameId, db){const bar=document.getElementById
    if(/<\/body>/i.test(selectedGameHtml))selectedGameHtml=selectedGameHtml.replace(/<\/body>/i,gameScript+"</body>");
    else selectedGameHtml+=gameScript;
   }
-  if(!/<meta\\b(?=[^>]*\\bname=["']viewport["'])[^>]*>/i.test(selectedGameHtml)){
+  if(!/<meta\b(?=[^>]*\bname=["']viewport["'])[^>]*>/i.test(selectedGameHtml)){
    const viewportMeta='<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">';
-   if(/<head\\b[^>]*>/i.test(selectedGameHtml))selectedGameHtml=selectedGameHtml.replace(/<head\\b[^>]*>/i,match=>match+viewportMeta);
-   else if(/<html\\b[^>]*>/i.test(selectedGameHtml))selectedGameHtml=selectedGameHtml.replace(/<html\\b[^>]*>/i,match=>match+'<head>'+viewportMeta+'</head>');
+   if(/<head\b[^>]*>/i.test(selectedGameHtml))selectedGameHtml=selectedGameHtml.replace(/<head\b[^>]*>/i,match=>match+viewportMeta);
+   else if(/<html\b[^>]*>/i.test(selectedGameHtml))selectedGameHtml=selectedGameHtml.replace(/<html\b[^>]*>/i,match=>match+'<head>'+viewportMeta+'</head>');
    else selectedGameHtml='<!doctype html><html lang="ja"><head>'+viewportMeta+'</head><body>'+selectedGameHtml+'</body></html>';
   }
   document.documentElement.dataset.kuroGamesPlatform="pc";
