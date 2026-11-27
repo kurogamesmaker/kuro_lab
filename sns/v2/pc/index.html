@@ -3487,7 +3487,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 if (authError) throw authError;
                 const user = authData?.user;
                 if (!user) throw new Error('ログイン状態を確認できません。再ログインしてください。');
-                const card = feed.querySelector(`[data-post-card="${CSS.escape(String(postId))}"]`);
+                const card = document.querySelector(`[data-post-card="${CSS.escape(String(postId))}"]`);
                 const parentReplyId = String(input?.dataset.parentReplyId || '').trim() || null;
                 if (parentReplyId) {
                     const parentInThisPost = card?.querySelector(`[data-kuro-post-reply-id="${CSS.escape(parentReplyId)}"]`);
