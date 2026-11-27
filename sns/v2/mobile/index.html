@@ -5545,18 +5545,50 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
 
 
         // 共通プロフィールからの直接チャットリンク。ログイン復元後にSNS標準の会話画面を開く。
-        const kuroInitialChatPeerId = String(new URLSearchParams(window.location.search).get('chat') || '');
-        const kuroInitialChatPeerIsValid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(kuroInitialChatPeerId);
+        const kuroInitialDeepLinkParams = new URLSearchParams(window.location.search);
+        const kuroInitialChatPeerId = String(kuroInitialDeepLinkParams.get('chat') || '');
+        const kuroInitialGroupId = String(kuroInitialDeepLinkParams.get('group') || '');
+        const kuroInitialGroupMessageId = String(kuroInitialDeepLinkParams.get('message') || '');
+        const kuroInitialNotificationId = String(kuroInitialDeepLinkParams.get('notification') || '');
+        const kuroInitialPostId = String(kuroInitialDeepLinkParams.get('post') || '');
+        const kuroInitialUuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const kuroInitialChatPeerIsValid = kuroInitialUuidPattern.test(kuroInitialChatPeerId);
+        const kuroInitialGroupIsValid = kuroInitialUuidPattern.test(kuroInitialGroupId);
+        const kuroInitialPostIsValid = kuroInitialUuidPattern.test(kuroInitialPostId);
         let kuroInitialChatDeepLinkStarted = false;
         function launchKuroInitialChatDeepLink() {
-            if (!kuroInitialChatPeerIsValid || !currentUser?.id || kuroInitialChatDeepLinkStarted) return;
+            if (!currentUser?.id || kuroInitialChatDeepLinkStarted) return;
+            const route = kuroInitialChatPeerIsValid ? 'chat'
+                : kuroInitialGroupIsValid ? 'group'
+                : kuroInitialPostIsValid ? 'post' : '';
+            if (!route) return;
             kuroInitialChatDeepLinkStarted = true;
             const cleanUrl = new URL(window.location.href);
-            cleanUrl.searchParams.delete('chat');
+            ['chat', 'group', 'message', 'notification', 'post'].forEach(key => cleanUrl.searchParams.delete(key));
             window.history.replaceState({}, document.title, cleanUrl.pathname + cleanUrl.search + cleanUrl.hash);
-            Promise.resolve(startChatWithUser(kuroInitialChatPeerId)).catch(error => {
-                console.error('KURO direct chat deep link failed:', error);
-                showToast('チャットを開けませんでした。チャット一覧から再度お試しください。');
+            if (route === 'chat') {
+                Promise.resolve(startChatWithUser(kuroInitialChatPeerId)).catch(error => {
+                    console.error('KURO direct chat deep link failed:', error);
+                    showToast('チャットを開けませんでした。チャット一覧から再度お試しください。');
+                });
+                return;
+            }
+            if (route === 'group') {
+                Promise.resolve(openMentionGroupNotice(kuroInitialGroupId, kuroInitialGroupMessageId, kuroInitialNotificationId)).catch(error => {
+                    console.error('KURO group notification deep link failed:', error);
+                    showToast('グループチャットを開けませんでした。');
+                });
+                return;
+            }
+            Promise.resolve(loadPostsFromSupabase()).then(loaded => {
+                if (!loaded || !textPosts.some(post => String(post.id) === kuroInitialPostId)) {
+                    showToast('対象の投稿が見つかりませんでした。');
+                    return;
+                }
+                showProfilePost(kuroInitialPostId);
+            }).catch(error => {
+                console.error('KURO post notification deep link failed:', error);
+                showToast('投稿を開けませんでした。');
             });
         }
 
