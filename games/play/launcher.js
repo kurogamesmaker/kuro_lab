@@ -98,7 +98,7 @@ let kuroGameActivityOpponent="unknown";
 let kuroGameActivityTimer=null;
 async function sendKuroGameActivityHeartbeat(){
  const gameId=kuroGameFrameGameId;
- if(!gameId||!kuroGameAuthClient)return;
+ if(!gameId||!kuroGameAuthClient||document.visibilityState==="hidden")return;
  try{
   const {error}=await kuroGameAuthClient.functions.invoke("kurogames-activity",{body:{
    action:"heartbeat",gameId,clientSessionId:kuroGameActivityGuestId,
@@ -121,6 +121,9 @@ function startKuroGameActivity(gameId){
  void sendKuroGameActivityHeartbeat();
  kuroGameActivityTimer=setInterval(sendKuroGameActivityHeartbeat,20000);
 }
+document.addEventListener("visibilitychange",()=>{
+ if(document.visibilityState==="visible")void sendKuroGameActivityHeartbeat();
+});
 
 // Durable Object接続チケット専用ブリッジ。通常のゲームメッセージ処理とは独立させる。
 window.addEventListener("message", async event => {
