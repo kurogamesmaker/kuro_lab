@@ -42,7 +42,7 @@
       }
       if(!blob)throw Error('画像の圧縮に失敗しました。');
       for(const quality of [.74,.66,.58]){
-        if(blob.size<=MAX_UPLOAD)break;
+        if(!blob||blob.size<=MAX_UPLOAD)break;
         blob=await toBlob(format==='image/webp'?canvas:(()=>{const jpg=document.createElement('canvas');jpg.width=canvas.width;jpg.height=canvas.height;const c=jpg.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,jpg.width,jpg.height);c.drawImage(bitmap,0,0,jpg.width,jpg.height);return jpg})(),format,quality);
       }
       if(!blob||blob.size>MAX_UPLOAD)throw Error('圧縮後も画像が大きすぎます。別の画像を選んでください。');
