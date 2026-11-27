@@ -3487,7 +3487,34 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 if (authError) throw authError;
                 const user = authData?.user;
                 if (!user) throw new Error('ログイン状態を確認できません。再ログインしてください。');
-                const parentReplyId = input?.dataset.parentReplyId || null;
+                const card = feed.querySelector(`[data-post-card="${CSS.escape(String(postId))}"]`);
+                const parentReplyId = String(input?.dataset.parentReplyId || '').trim() || null;
+                if (parentReplyId) {
+                    const parentInThisPost = card?.querySelector(`[data-kuro-post-reply-id="${CSS.escape(parentReplyId)}"]`);
+                    if (!parentInThisPost) {
+                        delete input.dataset.parentReplyId;
+                        delete input.dataset.replyToHandle;
+                        card?.querySelector('[data-reply-target]')?.classList.add('hidden');
+                        await refreshSocialFeed();
+                        showToast('返信先のコメントが見つかりません。コメント一覧を更新しました。もう一度返信先を選んでください。');
+                        return;
+                    }
+                    const {data: parentRow, error: parentLookupError} = await supabaseClient
+                        .from('post_replies')
+                        .select('id, post_id')
+                        .eq('id', parentReplyId)
+                        .eq('post_id', postId)
+                        .maybeSingle();
+                    if (parentLookupError) throw parentLookupError;
+                    if (!parentRow) {
+                        delete input.dataset.parentReplyId;
+                        delete input.dataset.replyToHandle;
+                        card?.querySelector('[data-reply-target]')?.classList.add('hidden');
+                        await refreshSocialFeed();
+                        showToast('返信先のコメントが削除されたか、別の投稿に属しています。最新のコメントから選び直してください。');
+                        return;
+                    }
+                }
                 const replyPayload = {post_id: postId, user_id: user.id, content};
                 if (parentReplyId) replyPayload.parent_reply_id = parentReplyId;
                 const {error} = await supabaseClient.from('post_replies').insert(replyPayload);
@@ -3502,7 +3529,15 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 showToast('返信を投稿したよ！');
             } catch (error) {
                 console.error('KURO reply error:', error);
-                showToast(error?.message || '返信に失敗しました。テーブルとRLSを確認してください');
+                if (error?.code === '23503' && input?.dataset.parentReplyId) {
+                    delete input.dataset.parentReplyId;
+                    delete input.dataset.replyToHandle;
+                    document.querySelector(`[data-post-card="${CSS.escape(String(postId))}"] [data-reply-target]`)?.classList.add('hidden');
+                    try { await refreshSocialFeed(); } catch (refreshError) { console.warn('KURO reply refresh failed:', refreshError); }
+                    showToast('返信先のコメントが見つからないか、別の投稿に属しています。コメント一覧を更新しました。返信先を選び直してください。');
+                    return;
+                }
+                showToast(error?.message || '返信に失敗しました。もう一度お試しください。');
             }
         }
 
