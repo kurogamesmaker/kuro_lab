@@ -747,6 +747,7 @@ if($("downloadStandaloneBtn"))$("downloadStandaloneBtn").addEventListener("click
 if($("downloadHtmlSourceBtn"))$("downloadHtmlSourceBtn").addEventListener("click",()=>{syncEditorBeforeDownload();closeDownloadModal();downloadSourceFile("html");});
 if($("downloadCssSourceBtn"))$("downloadCssSourceBtn").addEventListener("click",()=>{syncEditorBeforeDownload();closeDownloadModal();downloadSourceFile("css");});
 if($("downloadJsSourceBtn"))$("downloadJsSourceBtn").addEventListener("click",()=>{syncEditorBeforeDownload();closeDownloadModal();downloadSourceFile("js");});
+if($("downloadPlatformJsSourceBtn"))$("downloadPlatformJsSourceBtn").addEventListener("click",()=>{syncEditorBeforeDownload();closeDownloadModal();downloadSourceFile("platformjs");});
 if($("downloadAllSourceBtn"))$("downloadAllSourceBtn").addEventListener("click",downloadAllSourceFiles);
 
 function clearConsole(){ $("consoleOutput").textContent="";$("consoleCount").textContent="0"; }
