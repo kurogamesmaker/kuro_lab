@@ -118,9 +118,13 @@
       flushTimer = 0;
     }
     while (pendingBlocks.size && ready && room) {
-      const before = pendingBlocks.size;
+      // First wait for the batch already in flight. It has been removed from
+      // pendingBlocks, so do not treat an unchanged queue size as a failure.
       if (flushPromise) await flushPromise;
-      else await flushBlocks();
+      if (!pendingBlocks.size) break;
+
+      const before = pendingBlocks.size;
+      await flushBlocks();
       // A failed batch is restored to the queue. Stop here rather than
       // spinning forever while the network is unavailable.
       if (pendingBlocks.size >= before && !flushPromise) break;
