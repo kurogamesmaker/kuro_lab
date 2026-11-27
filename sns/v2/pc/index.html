@@ -2594,6 +2594,9 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
 
                 if (result.data.session) {
                     const authenticatedUser = result.data.user || result.data.session.user;
+                    if (authenticatedUser?.id && result.data.session.access_token) {
+                        window.__kuroUsageIdentify?.(authenticatedUser.id, result.data.session.access_token, true);
+                    }
                     if (authenticatedUser) {
                         // onAuthStateChange のタイミングに頼らず、ここで画面用ユーザー情報を確定する。
                         try {
