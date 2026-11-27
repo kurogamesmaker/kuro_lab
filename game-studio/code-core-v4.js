@@ -124,12 +124,12 @@ function codeForSurface(){
  return new Proxy(project.code,{
   get(object,key){
    if(key==="js")return project.sharedJs||"";
-   if(key==="platformJs")return project.extraJs||"";
+   if(key==="platformJs"||key==="platformjs")return project.extraJs||"";
    return object[key];
   },
   set(object,key,value){
    if(key==="js"){project.sharedJs=String(value??"");return true;}
-   if(key==="platformJs"){project.extraJs=String(value??"");return true;}
+   if(key==="platformJs"||key==="platformjs"){project.extraJs=String(value??"");return true;}
    object[key]=value;return true;
   }
  });
