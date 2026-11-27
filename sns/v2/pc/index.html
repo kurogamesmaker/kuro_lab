@@ -3318,7 +3318,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     const sendReplyButton = event.target.closest('[data-send-reply-post-id]');
                     if (sendReplyButton && feed.contains(sendReplyButton)) {
                         event.preventDefault();
-                        await submitReply(sendReplyButton.dataset.sendReplyPostId);
+                        await submitReply(sendReplyButton.dataset.sendReplyPostId, sendReplyButton.closest('[data-post-card]'));
                     }
                 });
                 feed.dataset.socialHandlersAttached = 'true';
@@ -3478,7 +3478,19 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 openAuthModal('signin');
                 return;
             }
-            const input = document.querySelector(`[data-reply-input="${CSS.escape(String(postId))}"]`);
+            const expectedPostId = String(postId);
+            const card = sourceCard?.matches('[data-post-card]')
+                ? sourceCard
+                : document.querySelector(`[data-post-card="${CSS.escape(expectedPostId)}"]`);
+            if (!card || String(card.getAttribute('data-post-card') || '') !== expectedPostId) {
+                showToast('対象の投稿を確認できません。ページを更新してください。');
+                return;
+            }
+            const input = card.querySelector('[data-reply-input]');
+            if (!input || String(input.getAttribute('data-reply-input') || '') !== expectedPostId) {
+                showToast('返信欄を確認できません。ページを更新してください。');
+                return;
+            }
             const content = (input?.value || '').trim();
             if (!content) { showToast('返信を入力してね'); input?.focus(); return; }
             if ([...content].length > 130) { showToast('返信は130文字以内にしてね'); return; }
@@ -3487,8 +3499,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 if (authError) throw authError;
                 const user = authData?.user;
                 if (!user) throw new Error('ログイン状態を確認できません。再ログインしてください。');
-                const card = document.querySelector(`[data-post-card="${CSS.escape(String(postId))}"]`);
-                const parentReplyId = String(input?.dataset.parentReplyId || '').trim() || null;
+                const parentReplyId = String(input.dataset.parentReplyId || '').trim() || null;
                 if (parentReplyId) {
                     const parentInThisPost = card?.querySelector(`[data-kuro-post-reply-id="${CSS.escape(parentReplyId)}"]`);
                     if (!parentInThisPost) {
@@ -3497,6 +3508,25 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                         card?.querySelector('[data-reply-target]')?.classList.add('hidden');
                         await refreshSocialFeed();
                         showToast('返信先のコメントが見つかりません。コメント一覧を更新しました。もう一度返信先を選んでください。');
+                        return;
+                    }
+                }
+                // Confirm that the selected reply still belongs to this post before sending.
+                // The RPC repeats this check while holding a row lock to cover deletion races.
+                if (parentReplyId) {
+                    const {data: parentRow, error: parentLookupError} = await supabaseClient
+                        .from('post_replies')
+                        .select('id')
+                        .eq('id', parentReplyId)
+                        .eq('post_id', postId)
+                        .maybeSingle();
+                    if (parentLookupError) throw parentLookupError;
+                    if (!parentRow) {
+                        delete input.dataset.parentReplyId;
+                        delete input.dataset.replyToHandle;
+                        card.querySelector('[data-reply-target]')?.classList.add('hidden');
+                        await refreshSocialFeed();
+                        showToast('返信先のコメントは削除されたか、別の投稿に属しています。コメント一覧を更新しました。返信先を選び直してください。');
                         return;
                     }
                 }
