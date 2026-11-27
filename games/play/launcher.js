@@ -209,6 +209,16 @@ function startKuroGameActivity(gameId){
 // Durable Object接続チケット専用ブリッジ。通常のゲームメッセージ処理とは独立させる。
 window.addEventListener("message", async event => {
  const msg = event.data;
+ if(msg.type==="kuro-studio-error"){
+  console.error("[KURO GAMES game runtime error]",{gameId:kuroGameFrameGameId,message:String(msg.message||"Unknown game error").slice(0,500),filename:String(msg.filename||"").slice(0,300),line:Number(msg.line)||0,column:Number(msg.column)||0,stack:String(msg.stack||"").slice(0,2000)});
+  return;
+ }
+ if(msg.type==="kuro-studio-console"){
+  const level=["log","info","warn","error"].includes(msg.level)?msg.level:"log";
+  const values=Array.isArray(msg.values)?msg.values.slice(0,20).map(value=>String(value).slice(0,1000)):[];
+  console[level]("[KURO GAMES game]",...values);
+  return;
+ }
  if(msg.type==="kuro-game-storage-write"){
   if(msg.gameId!==kuroGameFrameGameId)return;
   const storageType=msg.storageType==="session"?"session":msg.storageType==="local"?"local":null;
