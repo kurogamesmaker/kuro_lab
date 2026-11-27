@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="theme-color" content="#08111d">
+<link rel="icon" type="image/png" sizes="48x48" href="/assets/brand/logo/kurolab_icon_maru_48.png?v=20261122marufavicon2">
+<title>KURO Security Monitor</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/security/kuro-security-gate.js?v=20261128gate1"></script>
+<style>
+:root{color-scheme:dark;--bg:#08111d;--panel:#101d2d;--line:#263b52;--text:#edf6ff;--muted:#94a9c1;--cyan:#70d4ff;--green:#72ddb8;--amber:#f5cb75;--red:#ff9ca8}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 15% 0,#173454 0,transparent 38%),var(--bg);color:var(--text);font:14px/1.6 Inter,"Noto Sans JP",system-ui,sans-serif}button,select{font:inherit}a{color:inherit;text-decoration:none}.wrap{width:min(1200px,calc(100% - 32px));margin:auto}
+header{height:68px;display:flex;align-items:center;border-bottom:1px solid var(--line);background:#0b1523e8;position:sticky;top:0;z-index:10;backdrop-filter:blur(14px)}.nav{display:flex;align-items:center;gap:12px;width:100%}.brand{font-weight:950;letter-spacing:.05em}.brand span{color:var(--cyan)}.spacer{flex:1}.btn{border:1px solid #3b536d;border-radius:9px;background:#14263a;color:#e7f4ff;padding:8px 12px;font-size:11px;font-weight:850;cursor:pointer}.btn:hover{border-color:#68bfe9}.main{padding:28px 0 60px}.eyebrow{color:var(--cyan);font-size:10px;font-weight:950;letter-spacing:.2em}.head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin:7px 0 20px}.head h1{margin:0;font-size:clamp(26px,4vw,38px);letter-spacing:-.04em}.head p{margin:6px 0 0;color:var(--muted);font-size:12px}.actions{display:flex;gap:8px;flex-wrap:wrap}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:18px 0}.metric,.panel{border:1px solid var(--line);border-radius:15px;background:linear-gradient(145deg,#142338,#0e1a2a)}.metric{padding:14px}.metric small{display:block;color:var(--muted);font-size:10px}.metric strong{display:block;font-size:25px;font-variant-numeric:tabular-nums;margin-top:3px}.metric.good strong{color:var(--green)}.metric.warn strong{color:var(--amber)}.metric.bad strong{color:var(--red)}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:14px 16px;border-bottom:1px solid var(--line)}.filters{display:flex;gap:7px;flex-wrap:wrap}.filters select{min-height:35px;padding:0 10px;border:1px solid #364d65;border-radius:8px;background:#0c1928;color:var(--text);font-size:11px}.status{color:var(--muted);font-size:11px}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:780px}th,td{padding:12px 14px;border-bottom:1px solid #24374b;text-align:left;vertical-align:top;font-size:11px}th{color:#a4b9d0;font-size:9px;letter-spacing:.1em}tr:last-child td{border-bottom:0}.pill{display:inline-flex;padding:4px 8px;border-radius:99px;font-size:9px;font-weight:950;white-space:nowrap}.allow{background:#153c34;color:var(--green)}.review{background:#443719;color:var(--amber)}.reauth{background:#3a2b48;color:#d6b8ff}.block,.deny{background:#48232e;color:var(--red)}.error{padding:26px;color:var(--red);text-align:center}.empty{padding:30px;color:var(--muted);text-align:center}.reasons{max-width:460px;color:#b7c8da;line-height:1.7}.muted{color:var(--muted)}footer{padding:20px 0;color:#6f8399;font-size:10px;text-align:center}
+@media(max-width:680px){.wrap{width:calc(100% - 22px)}.head{align-items:flex-start;flex-direction:column}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.nav{gap:7px}.btn{padding:8px 9px}.brand{font-size:12px}}
+</style>
+</head>
+<body>
+<header><div class="wrap nav"><a class="brand" href="/admin-center/">KURO <span>SECURITY</span></a><span class="spacer"></span><a class="btn" href="/admin/">KURO Admin</a><a class="btn" href="/admin-center/">管理ハブ</a><button class="btn" id="logout" type="button">ログアウト</button></div></header>
+<main class="wrap main">
+ <div class="eyebrow">ACCESS PROTECTION / AUDIT CENTER</div>
+ <div class="head"><div><h1>Security Monitor</h1><p>管理ツールのアクセス判定、接続環境の変化、拒否されたアクセスを確認します。</p></div><div class="actions"><button class="btn" id="refresh" type="button">↻ 更新</button></div></div>
+ <section class="metrics">
+  <div class="metric"><small>記録件数（表示中）</small><strong id="total">—</strong></div>
+  <div class="metric good"><small>許可</small><strong id="allowed">—</strong></div>
+  <div class="metric warn"><small>追加確認</small><strong id="review">—</strong></div>
+  <div class="metric bad"><small>拒否・ブロック</small><strong id="blocked">—</strong></div>
+ </section>
+ <section class="panel">
+  <div class="toolbar"><div class="filters">
+   <select id="toolFilter" aria-label="管理ツール"><option value="all">すべてのツール</option><option value="admin">KURO Admin</option><option value="center">Admin Center</option><option value="shop-studio">Shop Studio</option><option value="game-studio">Game Studio</option><option value="security-monitor">Security Monitor</option></select>
+   <select id="decisionFilter" aria-label="判定"><option value="all">すべての判定</option><option value="allow">許可</option><option value="review">追加記録</option><option value="reauth">再認証</option><option value="block">ブロック</option><option value="deny">拒否</option></select>
+  </div><span class="status" id="updated">接続を確認しています…</span></div>
+  <div class="table-wrap"><table><thead><tr><th>日時</th><th>ツール</th><th>判定</th><th>リスク</th><th>理由</th><th>利用者ID</th></tr></thead><tbody id="events"><tr><td colspan="6" class="empty">読み込み中…</td></tr></tbody></table></div>
+ </section>
+ <p class="muted" style="font-size:10px;margin:12px 2px 0">IPアドレス・端末情報は生データで保存せず、照合用のHMACダイジェストとして記録しています。この画面には生の接続情報を表示しません。</p>
+</main>
+<footer>KURO INTERNAL SECURITY · SERVER-VERIFIED ACCESS</footer>
+<script>
+"use strict";
+const SUPABASE_URL="https://cprvpphlfpmiegjiutjn.supabase.co";
+const PUBLISHABLE_KEY="sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
+async function cloudflareFetch(input,init={}){
+ const request=new Request(input,init),target=new URL(request.url);
+ if(target.origin!==SUPABASE_URL)return fetch(request);
+ const bytes=new Uint8Array(["GET","HEAD"].includes(request.method)?new ArrayBuffer(0):await request.clone().arrayBuffer());
+ let binary="";for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode(...bytes.subarray(i,i+0x8000));
+ const headers=Object.fromEntries(request.headers.entries());
+ const proxy=await fetch("/api/cloudflare-relay",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:target.pathname+target.search,method:request.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:"kuro-security-monitor"})});
+ let result;try{result=await proxy.json();}catch{throw new Error("Cloudflare中継サーバーの応答を読み取れませんでした。");}
+ if(!proxy.ok||!result||typeof result.status!=="number")throw new Error(result?.error||"Cloudflare経由の通信に失敗しました。");
+ let body=result.bodyText??"";if(result.isBinary&&result.bodyBase64){const raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);body=out;}
+ return new Response([204,205,304].includes(result.status)?null:body,{status:result.status,headers:result.headers||{}});
+}
+const db=window.supabase.createClient(SUPABASE_URL,PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},global:{fetch:cloudflareFetch}});
+const $=id=>document.getElementById(id);
+let allEvents=[];
+function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function label(tool){return ({admin:"KURO Admin",center:"Admin Center","shop-studio":"Shop Studio","game-studio":"Game Studio","security-monitor":"Security Monitor"})[tool]||tool;}
+function date(v){try{return new Date(v).toLocaleString("ja-JP",{hour12:false});}catch{return String(v||"");}}
+function render(){
+ const tool=$("toolFilter").value,decision=$("decisionFilter").value;
+ const shown=allEvents.filter(e=>(tool==="all"||e.tool===tool)&&(decision==="all"||e.decision===decision));
+ $("total").textContent=shown.length.toLocaleString("ja-JP");
+ $("allowed").textContent=shown.filter(e=>e.decision==="allow").length.toLocaleString("ja-JP");
+ $("review").textContent=shown.filter(e=>["review","reauth"].includes(e.decision)).length.toLocaleString("ja-JP");
+ $("blocked").textContent=shown.filter(e=>["block","deny"].includes(e.decision)).length.toLocaleString("ja-JP");
+ $("events").innerHTML=shown.length?shown.map(e=>'<tr><td>'+esc(date(e.created_at))+'</td><td>'+esc(label(e.tool))+'</td><td><span class="pill '+esc(e.decision)+'">'+esc(({allow:"許可",review:"確認記録",reauth:"再認証",block:"ブロック",deny:"拒否"})[e.decision]||e.decision)+'</span></td><td>'+Number(e.risk_score||0)+'/100</td><td><div class="reasons">'+(Array.isArray(e.reasons)?e.reasons.map(esc).join("<br>"):"")+'</div></td><td class="muted">'+esc(e.user_id?e.user_id.slice(0,8)+"…":"—")+'</td></tr>').join(""):'<tr><td colspan="6" class="empty">該当する記録はありません。</td></tr>';
+}
+async function load(){
+ $("refresh").disabled=true;$("updated").textContent="セキュリティログを取得しています…";
+ try{
+  const {data,error}=await db.functions.invoke("kuro-security-gate",{body:{action:"events",tool:"security-monitor"}});
+  if(error)throw error;
+  if(!data?.allowed)throw new Error(data?.message||"セキュリティログへのアクセスが拒否されました。");
+  allEvents=Array.isArray(data.events)?data.events:[];
+  render();$("updated").textContent="最終更新: "+new Date().toLocaleTimeString("ja-JP",{hour12:false});
+ }catch(error){$("events").innerHTML='<tr><td colspan="6" class="error">'+esc(error?.message||"読み込みに失敗しました。")+'</td></tr>';$("updated").textContent="読み込み失敗";}
+ finally{$("refresh").disabled=false;}
+}
+async function start(){
+ try{
+  const {data,error}=await db.auth.getSession();if(error)throw error;
+  if(!data.session){location.replace("/admin/");return;}
+  await window.KuroSecurityGate.verify(db,"security-monitor");
+  await load();
+ }catch(error){alert(error?.message||"アクセスできません。");location.replace("/admin/");}
+}
+$("refresh").addEventListener("click",load);
+$("toolFilter").addEventListener("change",render);$("decisionFilter").addEventListener("change",render);
+$("logout").addEventListener("click",async()=>{await db.auth.signOut();location.replace("/admin/");});
+start();
+</script>
+</body>
+</html>
