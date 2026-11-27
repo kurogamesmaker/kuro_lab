@@ -401,7 +401,7 @@ function openDownloadModal(){$("downloadModal").classList.add("open");}
 function closeDownloadModal(){$("downloadModal").classList.remove("open");}
 
 let publishUser=null,publishAllowed=false,publishIconData="";
-let publishedFallbackCode=null,publishedFallbackId="";,activePublishedDraft=false,publishedFallbackRecovered=false;
+let publishedFallbackCode=null,publishedFallbackId="",activePublishedDraft=false,publishedFallbackRecovered=false;
 let cropImage=null,cropObjectUrl="",cropZoom=1,cropX=0,cropY=0,cropDrag=null;
 function showPublishIconPreview(){const img=$("publishIconPreviewImage");if(publishIconData){img.src=publishIconData;img.hidden=false;}else{img.removeAttribute("src");img.hidden=true;}}
 function drawIconCrop(){
