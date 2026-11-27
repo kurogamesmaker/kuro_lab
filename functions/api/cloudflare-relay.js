@@ -1,7 +1,7 @@
 const SUPABASE_URL = "https://cprvpphlfpmiegjiutjn.supabase.co";
 const SUPABASE_KEY = "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
 const ALLOWED_PREFIXES = ["/rest/v1/","/auth/v1/","/storage/v1/"];
-const ALLOWED_FUNCTIONS = new Set(["/functions/v1/admin-console","/functions/v1/pro-access","/functions/v1/send-chat-push","/functions/v1/kurogames-online","/functions/v1/kurogames-secret","/functions/v1/username-auth","/functions/v1/kurogames-activity","/functions/v1/change-password"]);
+const ALLOWED_FUNCTIONS = new Set(["/functions/v1/kuro-security-gate","/functions/v1/admin-console","/functions/v1/pro-access","/functions/v1/send-chat-push","/functions/v1/kurogames-online","/functions/v1/kurogames-secret","/functions/v1/username-auth","/functions/v1/kurogames-activity","/functions/v1/change-password"]);
 const ALLOWED_METHODS = new Set(["GET","POST","PUT","PATCH","DELETE","HEAD"]);
 function json(value,status=200) {
   return new Response(JSON.stringify(value),{status,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"}});
@@ -30,6 +30,11 @@ function safeHeaders(input) {
   if(!h.has("apikey"))h.set("apikey",SUPABASE_KEY);if(!h.has("authorization"))h.set("authorization","Bearer "+SUPABASE_KEY);
   return h;
 }
+const PROTECTED_CLIENT_TOOLS = new Map([
+  ["admin-console", "admin"],
+  ["shop-studio", "shop-studio"],
+  ["kuro-security-monitor", "security-monitor"]
+]);
 const suspensionStatusCache = new Map();
 
 async function checkActiveSuspension(headers) {
@@ -71,10 +76,46 @@ function isSuspensionAllowedRequest(pathname,method) {
   if(pathname==="/functions/v1/change-password"&&method==="POST")return true;
   return false;
 }
-async function proxy(payload) {
+async function proxy(payload, clientRequest) {
   const target=validatePath(payload.path),method=String(payload.method||"GET").toUpperCase();
   if(!ALLOWED_METHODS.has(method))throw Object.assign(new Error("Method not allowed"),{status:405});
   const headers=safeHeaders(payload.headers);
+  const clientId=String(payload.clientId||"");
+  const protectedTool=PROTECTED_CLIENT_TOOLS.get(clientId);
+  const guardedPath=target.pathname.startsWith("/rest/v1/")||
+    target.pathname.startsWith("/storage/v1/")||
+    (target.pathname.startsWith("/functions/v1/")&&target.pathname!=="/functions/v1/kuro-security-gate");
+  if(protectedTool&&guardedPath) {
+    const authorization=headers.get("authorization")||"";
+    if(!authorization.startsWith("Bearer ")) {
+      return {status:401,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store"},
+        isBinary:false,bodyBase64:"",bodyText:JSON.stringify({error:"KURO Security Gateにはログインが必要です。"}),service:"KURO Security Gate"};
+    }
+    const gateHeaders=new Headers({
+      "authorization":authorization,
+      "apikey":headers.get("apikey")||SUPABASE_KEY,
+      "content-type":"application/json",
+      "origin":"https://kurolab.cc.cd"
+    });
+    const clientIp=clientRequest?.headers.get("cf-connecting-ip")||"";
+    const userAgent=clientRequest?.headers.get("user-agent")||"";
+    const platform=clientRequest?.headers.get("sec-ch-ua-platform")||"";
+    const language=clientRequest?.headers.get("accept-language")||"";
+    if(clientIp)gateHeaders.set("x-real-ip",clientIp);
+    if(userAgent)gateHeaders.set("user-agent",userAgent);
+    if(platform)gateHeaders.set("sec-ch-ua-platform",platform);
+    if(language)gateHeaders.set("accept-language",language);
+    const gateResponse=await fetch(SUPABASE_URL+"/functions/v1/kuro-security-gate",{
+      method:"POST",headers:gateHeaders,
+      body:JSON.stringify({action:"check",tool:protectedTool})
+    });
+    const gateResult=await gateResponse.json().catch(()=>({}));
+    if(!gateResponse.ok||gateResult?.allowed!==true) {
+      const status=gateResponse.status>=500?503:(gateResponse.status===401?401:403);
+      return {status,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store"},
+        isBinary:false,bodyBase64:"",bodyText:JSON.stringify({error:gateResult?.message||"KURO Security Gateでアクセスが拒否されました。"}),service:"KURO Security Gate"};
+    }
+  }
   if((target.pathname.startsWith("/rest/v1/")||target.pathname.startsWith("/functions/v1/"))&&
      !isSuspensionAllowedRequest(target.pathname,method)) {
     const suspension=await checkActiveSuspension(headers);
@@ -106,6 +147,6 @@ export async function onRequest(context) {
       }});
     }
     if(request.method!=="POST")return json({error:"Method not allowed"},405);
-    return json(await proxy(await request.json()));
+    return json(await proxy(await request.json(),request));
   }catch(error){return json({ok:false,error:error&&error.message||"KURO Cloudflare proxy failed"},Number(error&&error.status)||502);}
 }
