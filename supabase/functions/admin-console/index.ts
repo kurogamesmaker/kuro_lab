@@ -1751,6 +1751,11 @@ Deno.serve(async (req: Request) => {
           ? workspaces.length
           : (workspaces && typeof workspaces === "object" ? Object.keys(workspaces).length : 0);
         const widgets = Array.isArray(pref.dashboardWidgets) ? pref.dashboardWidgets.length : 0;
+        const activity = activities.get(u.id);
+        const storedActivityAt = activity?.last_activity_at || null;
+        const signInAt = u.last_sign_in_at || null;
+        const signInIsNewer = !!signInAt && (!storedActivityAt || Date.parse(signInAt) > Date.parse(storedActivityAt));
+        const lastActivityAt = signInIsNewer ? signInAt : storedActivityAt;
         return {
           id: u.id,
           email: u.email || "",
@@ -1758,9 +1763,9 @@ Deno.serve(async (req: Request) => {
           display_name: profile?.display_name || "",
           created_at: u.created_at,
           last_sign_in_at: u.last_sign_in_at || null,
-          last_activity_at: activities.get(u.id)?.last_activity_at || u.last_sign_in_at || null,
-          last_activity_page: activities.get(u.id)?.last_page_key || null,
-          last_activity_source: activities.get(u.id)?.activity_source || (u.last_sign_in_at ? "auth" : null),
+          last_activity_at: lastActivityAt,
+          last_activity_page: signInIsNewer ? null : (activity?.last_page_key || null),
+          last_activity_source: signInIsNewer ? "auth" : (activity?.activity_source || null),
           banned_until: u.banned_until || null,
           temporary_suspension: suspensions.get(u.id) || null,
           board_count: boards,
