@@ -563,6 +563,20 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    // The dedicated mobile game app has been retired. Keep only its service-worker
+    // cleanup script reachable so installed copies can unregister and clear old caches.
+    if ((url.pathname === "/games/mobile" || url.pathname.startsWith("/games/mobile/")) &&
+        url.pathname !== "/games/mobile/sw.js") {
+      return new Response(null, {
+        status: 302,
+        headers: {
+          "Location": "/games/" + url.search,
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+          "Pragma": "no-cache"
+        }
+      });
+    }
+
     if (url.pathname === "/api/web-search") {
       try {
         return await handleWebSearch(request, env);
