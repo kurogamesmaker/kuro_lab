@@ -422,7 +422,7 @@ async function loadKuroGameRewards(gameId, db){const bar=document.getElementById
   const combinedGameJs=[sharedGameJs,platformGameJs].filter(value=>String(value||"").trim()).join("\n\n");
   if(combinedGameJs){
    const safeGameJs=combinedGameJs.replace(/<\/script/gi,"<\\/script");
-   const moduleGameJs=/^\s*(?:import|export)\b/m.test(safeGameJs)||/\bawait\b/.test(safeGameJs);
+   const moduleGameJs=/^\s*(?:import|export)\b/m.test(safeGameJs);
    const gameScript=(moduleGameJs?'<script type="module">':'<script>')+safeGameJs+"\n//# sourceURL=KURO_GAME_SHARED.js\n</script>";
    if(/<\/body>/i.test(selectedGameHtml))selectedGameHtml=selectedGameHtml.replace(/<\/body>/i,gameScript+"</body>");
    else selectedGameHtml+=gameScript;
