@@ -243,7 +243,7 @@ function makeDocument(sourceCode,targetPlatform,includeGameScripts){
   platformJs:typeof source.platformJs==="string"?source.platformJs:""
  };
  let html=code.html||"";
- const viewportMeta=/<meta\\b(?=[^>]*\\bname=["']viewport["'])[^>]*>/i.test(html)?"":'<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">';
+ const viewportMeta=/<meta\b(?=[^>]*\bname=["']viewport["'])[^>]*>/i.test(html)?"":'<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">';
  // HTMLタブ内のインラインscriptにもトップレベルawait対応を適用
  html=html.replace(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi,(whole,attrs,body)=>{
   if(!/\bawait\b/.test(body))return whole;
