@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   const PUB='kuro-sns-public-media', PRIV='kuro-sns-private-media';
-  const MAX=4, MAX_SOURCE=12*1024*1024, MAX_UPLOAD=5*1024*1024;
+  const MAX=4, MAX_SOURCE=12*1024*1024, MAX_UPLOAD=3*1024*1024;
   const TYPES=new Set(['image/jpeg','image/png','image/webp']);
   const selected={post:[],chat:[],publicChat:[]};
   const db=()=>window.kuroSNSDB||window.kuroGamesDB||null;
@@ -28,15 +28,23 @@
       else bitmap=await new Promise((resolve,reject)=>{const im=new Image(),u=URL.createObjectURL(file);im.onload=()=>{URL.revokeObjectURL(u);resolve(im)};im.onerror=()=>{URL.revokeObjectURL(u);reject(Error('画像を読み込めませんでした。'))};im.src=u});
       const w=bitmap.width||bitmap.naturalWidth,h=bitmap.height||bitmap.naturalHeight;
       if(!w||!h)throw Error('画像サイズを確認できません。');
-      const scale=Math.min(1,1920/Math.max(w,h)),canvas=document.createElement('canvas');
+      const scale=Math.min(1,1600/Math.max(w,h)),canvas=document.createElement('canvas');
       canvas.width=Math.max(1,Math.round(w*scale));canvas.height=Math.max(1,Math.round(h*scale));
-      const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw Error('画像を処理できませんでした。');
-      ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);
-      const toBlob=(type,q)=>new Promise(resolve=>canvas.toBlob(resolve,type,q));
-      let blob=await toBlob('image/webp',.84);
-      if(!blob||blob.type!=='image/webp')blob=await toBlob('image/jpeg',.82);
+      const ctx=canvas.getContext('2d',{alpha:true});if(!ctx)throw Error('画像を処理できませんでした。');
+      ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);
+      const toBlob=(surface,type,q)=>new Promise(resolve=>surface.toBlob(resolve,type,q));
+      let blob=await toBlob(canvas,'image/webp',.82),format='image/webp';
+      if(!blob||blob.type!=='image/webp'){
+        const jpg=document.createElement('canvas');jpg.width=canvas.width;jpg.height=canvas.height;
+        const jpgCtx=jpg.getContext('2d');if(!jpgCtx)throw Error('画像を処理できませんでした。');
+        jpgCtx.fillStyle='#fff';jpgCtx.fillRect(0,0,jpg.width,jpg.height);jpgCtx.drawImage(bitmap,0,0,jpg.width,jpg.height);
+        blob=await toBlob(jpg,'image/jpeg',.82);format='image/jpeg';
+      }
       if(!blob)throw Error('画像の圧縮に失敗しました。');
-      if(blob.size>MAX_UPLOAD)blob=await toBlob('image/jpeg',.65);
+      for(const quality of [.74,.66,.58]){
+        if(blob.size<=MAX_UPLOAD)break;
+        blob=await toBlob(format==='image/webp'?canvas:(()=>{const jpg=document.createElement('canvas');jpg.width=canvas.width;jpg.height=canvas.height;const c=jpg.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,jpg.width,jpg.height);c.drawImage(bitmap,0,0,jpg.width,jpg.height);return jpg})(),format,quality);
+      }
       if(!blob||blob.size>MAX_UPLOAD)throw Error('圧縮後も画像が大きすぎます。別の画像を選んでください。');
       return {blob,width:canvas.width,height:canvas.height};
     }finally{if(bitmap&&typeof bitmap.close==='function')bitmap.close()}
@@ -150,8 +158,8 @@
     '.kuro-sns-attach-menu button:hover{background:#27272a}',
     '.kuro-sns-link{color:inherit!important;text-decoration:underline!important;text-decoration-thickness:1px;text-underline-offset:2px;overflow-wrap:anywhere;cursor:pointer}.kuro-sns-link:hover{opacity:.78}',
     '#chatModal #chatConversationPanel form[onsubmit="sendChatMessage(event)"] .kuro-sns-media-preview{flex:0 0 100%}',
-    '.kuro-sns-media-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:12px;max-width:560px}.kuro-sns-media-grid.kuro-sns-media-count-1{grid-template-columns:minmax(0,1fr);max-width:460px}.kuro-sns-media-tile{display:block;min-width:0;overflow:hidden;padding:0!important;border:0;border-radius:14px;background:#18181b;aspect-ratio:1.2}.kuro-sns-media-count-1 .kuro-sns-media-tile{aspect-ratio:auto;max-height:520px}.kuro-sns-media-tile img{display:block;width:100%;height:100%;max-height:520px;object-fit:contain}.kuro-sns-media-count-1 .kuro-sns-media-tile img{object-fit:contain}',
-    '.kuro-sns-chat-media{width:min(100%,640px);max-width:min(72vw,640px);margin-top:8px;gap:7px}.kuro-sns-chat-media.kuro-sns-media-count-1{width:100%;max-width:min(72vw,640px)}.kuro-sns-chat-media .kuro-sns-media-tile{aspect-ratio:1;max-height:none;border-radius:13px;background:transparent}.kuro-sns-chat-media.kuro-sns-media-count-1 .kuro-sns-media-tile{aspect-ratio:auto;width:100%;max-height:none}.kuro-sns-chat-media .kuro-sns-media-tile img{width:100%;height:100%;max-height:min(72vh,760px);object-fit:contain}.kuro-sns-chat-media.kuro-sns-media-count-1 .kuro-sns-media-tile img{width:100%;height:auto;max-height:min(72vh,760px);object-fit:contain}@media(max-width:640px){.kuro-sns-chat-media,.kuro-sns-chat-media.kuro-sns-media-count-1{max-width:min(76vw,520px)}.kuro-sns-chat-media.kuro-sns-media-count-1 .kuro-sns-media-tile img{max-height:68vh}}',
+    '.kuro-sns-media-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:12px;max-width:min(100%,420px)}.kuro-sns-media-grid.kuro-sns-media-count-1{grid-template-columns:minmax(0,1fr);max-width:min(100%,360px)}.kuro-sns-media-tile{display:block;min-width:0;overflow:hidden;padding:0!important;border:0;border-radius:14px;background:#18181b;aspect-ratio:1.2}.kuro-sns-media-count-1 .kuro-sns-media-tile{aspect-ratio:auto;max-height:320px}.kuro-sns-media-tile img{display:block;width:100%;height:100%;max-height:210px;object-fit:contain}.kuro-sns-media-count-1 .kuro-sns-media-tile img{max-height:320px;object-fit:contain}',
+    '.kuro-sns-chat-media{width:min(100%,280px);max-width:min(68vw,280px);margin-top:8px;gap:7px}.kuro-sns-chat-media.kuro-sns-media-count-1{width:100%;max-width:min(68vw,280px)}.kuro-sns-chat-media .kuro-sns-media-tile{aspect-ratio:1;max-height:none;border-radius:13px;background:transparent}.kuro-sns-chat-media.kuro-sns-media-count-1 .kuro-sns-media-tile{aspect-ratio:auto;width:100%;max-height:320px}.kuro-sns-chat-media .kuro-sns-media-tile img{width:100%;height:100%;max-height:210px;object-fit:contain}.kuro-sns-chat-media.kuro-sns-media-count-1 .kuro-sns-media-tile img{width:100%;height:auto;max-height:320px;object-fit:contain}@media(max-width:640px){.kuro-sns-chat-media,.kuro-sns-chat-media.kuro-sns-media-count-1{max-width:min(72vw,280px)}.kuro-sns-chat-media.kuro-sns-media-count-1 .kuro-sns-media-tile img{max-height:320px}}',
     '#submitForm{flex-wrap:wrap}#chatModal #chatConversationPanel form[onsubmit="sendChatMessage(event)"]{flex-wrap:wrap}#chatModal #chatConversationPanel form[onsubmit="sendChatMessage(event)"] #chatMessageInput{flex:1 1 120px}',
     '#publicChatForm #publicChatImagePreview{display:flex!important}#publicChatForm #publicChatImagePreview.hidden{display:none!important}#publicChatForm>div:not(#publicChatImagePreview){grid-template-columns:minmax(76px,160px) 42px minmax(0,1fr) auto!important;align-items:center!important;gap:8px!important}#publicChatForm #publicChatNickname{grid-column:1!important;grid-row:1!important;width:100%!important;min-width:0!important}#publicChatForm #publicChatInput{grid-column:3!important;grid-row:1!important;min-width:0!important}#publicChatForm .kuro-sns-attach-wrap{grid-column:2!important;grid-row:1!important}#publicChatForm #publicChatSendButton{grid-column:4!important;grid-row:1!important}#publicChatForm #publicChatImageInput{display:none!important}@media(max-width:640px){#publicChatForm>div:not(#publicChatImagePreview){grid-template-columns:minmax(76px,110px) 42px minmax(0,1fr) auto!important;gap:6px!important}}',
     '.kuro-sns-media-viewer{position:fixed;inset:0;z-index:10050;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.92)}.kuro-sns-media-viewer.hidden{display:none!important}.kuro-sns-media-viewer>img{max-width:min(96vw,1400px);max-height:90dvh;object-fit:contain}.kuro-sns-media-viewer-close{position:absolute;right:18px;top:14px;width:44px;height:44px;border-radius:50%;background:#fff;color:#111;font-size:28px;line-height:1}'
