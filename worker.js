@@ -24,7 +24,7 @@ function applyMaruFavicon(html, requestPath = "") {
   const isSuspensionSupportPath = /^\/account\/suspension(?:\/|$)/i.test(String(requestPath || ""));
   const suspensionGuardTag = isSuspensionSupportPath
     ? ""
-    : '<script id="kuro-suspension-guard-loader" src="/suspension-guard.js?v=20261124globalguard1"></script>';
+    : '<script id="kuro-suspension-guard-loader" src="/suspension-guard.js?v=20261127abortfix1"></script>';
   let cleanHtml = String(html || "").replace(iconTags, "");
   cleanHtml = cleanHtml.replace(/<script\b[^>]*\bid=["']kuro-suspension-guard-loader["'][^>]*><\/script>/gi, "");
   if (isGamePlayPath) {
