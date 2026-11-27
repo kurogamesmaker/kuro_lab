@@ -230,7 +230,8 @@
   }
 
   function iconFor(item) {
-    return ({ admin: "📢", social: item.type === "message" || item.type === "mention" ? "💬" : "👤", reply: "✉️", points: "🪙", level: "🏆", announcement: "🔔" })[item.kind] || "🔔";
+    if (item.kind === "social") return ({ like: "❤️", reply: "💬", message: "💬", mention: "@" })[item.type] || "👤";
+    return ({ admin: "📢", reply: "✉️", points: "🪙", level: "🏆", announcement: "🔔" })[item.kind] || "🔔";
   }
 
   function visibleItems() {
@@ -269,7 +270,7 @@
       const openAttributes = destination
         ? ' data-open-notification="' + esc(item.key) + '" role="link" tabindex="0" aria-label="通知を開く: ' + esc(item.title) + '"'
         : "";
-      return '<article class="kuro-nb-item ' + (item.read ? "" : "is-unread") + '"' + openAttributes + '><div class="kuro-nb-icon">' + iconFor(item) + '</div><div><div class="kuro-nb-meta"><span class="kuro-nb-source ' + sourceClass + '">' + source + '</span><span>' + esc(item.serviceLabel || "") + '</span><time>' + esc(formatDate(item.created_at)) + '</time></div><h3>' + esc(item.title) + '</h3><p>' + esc(item.body || "") + '</p><div class="kuro-nb-actions">' + (!item.read ? '<button class="kuro-nb-action" type="button" data-read="' + esc(item.key) + '">既読にする</button>' : '<span class="kuro-nb-meta">既読</span>') + '<button class="kuro-nb-action" type="button" data-dismiss="' + esc(item.key) + '">非表示</button></div></div></article>';
+      return '<article class="kuro-nb-item ' + (item.read ? "" : "is-unread") + '"' + openAttributes + '><div class="kuro-nb-icon">' + iconFor(item) + '</div><div><div class="kuro-nb-meta"><span class="kuro-nb-source ' + sourceClass + '">' + source + '</span><span>' + esc(item.serviceLabel || "") + '</span><time>' + esc(formatDate(item.created_at)) + '</time></div><h3>' + esc(item.title) + '</h3>' + (item.body ? '<p>' + esc(item.body) + '</p>' : '') + '<div class="kuro-nb-actions">' + (!item.read ? '<button class="kuro-nb-action" type="button" data-read="' + esc(item.key) + '">既読にする</button>' : '<span class="kuro-nb-meta">既読</span>') + '<button class="kuro-nb-action" type="button" data-dismiss="' + esc(item.key) + '">非表示</button></div></div></article>';
     }).join("");
   }
 
@@ -433,10 +434,17 @@
         const actor = actors.get(row.actor_id) || {};
         const name = actor.display_name || actor.username || "ユーザー";
         const details = row.notification_details && typeof row.notification_details === "object" ? row.notification_details : {};
-        const typeText = { follow: "フォローされました", follow_back: "フォローバックされました", like: "投稿にいいねされました", reply: details.parent_reply_id ? "返信にさらに返信がありました" : "投稿に返信がありました", message: "メッセージが届きました", mention: "グループチャットでメンションされました" };
+        const socialTitles = {
+          follow: name + "さんがあなたをフォローしました。",
+          follow_back: name + "さんがあなたをフォローバックしました。",
+          like: name + "さんがあなたの投稿にいいねしました。",
+          reply: details.parent_reply_id ? name + "さんがコメントに返信しました。" : name + "さんがあなたの投稿にコメントしました。",
+          message: name + "さんからメッセージが届きました。",
+          mention: name + "さんがグループチャットであなたにメンションしました。"
+        };
         next.push({
-          key: "social:" + row.id, kind: "social", id: row.id, type: row.type, title: name + " さんからの通知",
-          body: typeText[row.type] || "新しい通知があります。", created_at: row.created_at, read: !!row.read_at, serviceLabel: "KURO SNS",
+          key: "social:" + row.id, kind: "social", id: row.id, type: row.type, title: socialTitles[row.type] || name + "さんから通知が届きました。",
+          body: "", created_at: row.created_at, read: !!row.read_at, serviceLabel: "KURO SNS",
           actor_id: row.actor_id, group_id: row.group_id, message_id: row.message_id, notification_details: details
         });
       });
