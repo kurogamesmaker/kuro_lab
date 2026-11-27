@@ -98,6 +98,19 @@ async function heartbeat(req: Request, body: Record<string, unknown>) {
   }, { onConflict: "presence_key" });
   if (error) throw new HttpError(500, "プレイ状況を更新できませんでした。");
 
+  // Preserve account-level activity after short-lived game presence expires.
+  if (user) {
+    const activityAt = new Date().toISOString();
+    const { error: activityError } = await admin.from("user_last_activity").upsert({
+      user_id: user.id,
+      last_activity_at: activityAt,
+      last_page_key: "games",
+      activity_source: "games",
+      updated_at: activityAt,
+    }, { onConflict: "user_id" });
+    if (activityError) throw new HttpError(500, "ユーザーの最終活動時刻を保存できませんでした。");
+  }
+
   return reply(200, {
     ok: true,
     status,
