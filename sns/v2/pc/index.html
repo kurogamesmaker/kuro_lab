@@ -6009,6 +6009,11 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 // Register auth events before any async DB/profile request. Otherwise a startup
                 // failure could leave the page without a listener to update its login state.
                 supabaseClient.auth.onAuthStateChange((event, session) => {
+                    if (session?.user?.id && session?.access_token) {
+                        window.__kuroUsageIdentify?.(session.user.id, session.access_token, event === 'SIGNED_IN');
+                    } else if (event === 'SIGNED_OUT') {
+                        window.__kuroUsageClearIdentity?.();
+                    }
                     // INITIAL_SESSION は getSession() 側で処理。TOKEN_REFRESHED などで
                     // 毎回プロフィール・フォロー・通知を再取得する連鎖を防ぐ。
                     if (!['SIGNED_IN', 'USER_UPDATED'].includes(event)) return;
@@ -6053,6 +6058,9 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
 
                 const { data, error } = await supabaseClient.auth.getSession();
                 if (error) throw error;
+                if (data?.session?.user?.id && data?.session?.access_token) {
+                    window.__kuroUsageIdentify?.(data.session.user.id, data.session.access_token, true);
+                }
                 await syncCurrentUser(data?.session?.user || null);
                 launchKuroInitialChatDeepLink();
                 if (currentUser) {
