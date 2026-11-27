@@ -409,13 +409,23 @@ async function loadKuroGameRewards(gameId, db){const bar=document.getElementById
  if(!id||!/^[0-9a-f-]{36}$/i.test(id)){fail("ゲームIDが正しくありません。");return;}
  if(!window.supabase||!window.supabase.createClient){fail("通信ライブラリを読み込めませんでした。");return;}
  try{const db=kuroGameAuthClient;
-  const {data,error}=await db.from("game_studio_games").select("title,description,icon,html_content,mobile_html_content").eq("id",id).eq("status","published").maybeSingle();if(error)throw error;if(!data){fail("公開が終了したか、URLが正しくありません。");return;}
-  const selectedGameHtml=String((kuroGameIsMobileDevice?data.mobile_html_content:data.html_content)||"").trim();
+  const {data,error}=await db.from("game_studio_games").select("title,description,icon,html_content,mobile_html_content,shared_js_content,pc_extension_js_content,mobile_extension_js_content").eq("id",id).eq("status","published").maybeSingle();if(error)throw error;if(!data){fail("公開が終了したか、URLが正しくありません。");return;}
+  let selectedGameHtml=String((kuroGameIsMobileDevice?data.mobile_html_content:data.html_content)||"").trim();
   if(!selectedGameHtml){
    fail(kuroGameIsMobileDevice
     ?"このゲームのモバイル版はまだ公開されていません。PC版の画面は代わりに開かず、モバイル版の準備ができるまでお待ちください。"
     :"このゲームのPC版コードが登録されていません。");
    return;
+  }
+  const sharedGameJs=String(data.shared_js_content||"");
+  const platformGameJs=String(kuroGameIsMobileDevice?data.mobile_extension_js_content:data.pc_extension_js_content||"");
+  const combinedGameJs=[sharedGameJs,platformGameJs].filter(value=>String(value||"").trim()).join("\n\n");
+  if(combinedGameJs){
+   const safeGameJs=combinedGameJs.replace(/<\/script/gi,"<\\/script");
+   const moduleGameJs=/^\s*(?:import|export)\b/m.test(safeGameJs)||/\bawait\b/.test(safeGameJs);
+   const gameScript=(moduleGameJs?'<script type="module">':'<script>')+safeGameJs+"\n//# sourceURL=KURO_GAME_SHARED.js\n</script>";
+   if(/<\/body>/i.test(selectedGameHtml))selectedGameHtml=selectedGameHtml.replace(/<\/body>/i,gameScript+"</body>");
+   else selectedGameHtml+=gameScript;
   }
   if(kuroGameIsMobileDevice&&!/<meta\b(?=[^>]*\bname=["']viewport["'])[^>]*>/i.test(selectedGameHtml)){
    const mobileViewport='<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">';
