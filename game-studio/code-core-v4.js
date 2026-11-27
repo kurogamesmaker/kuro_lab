@@ -243,6 +243,7 @@ function makeDocument(sourceCode,targetPlatform,includeGameScripts){
   platformJs:typeof source.platformJs==="string"?source.platformJs:""
  };
  let html=code.html||"";
+ const viewportMeta=/<meta\\b(?=[^>]*\\bname=["']viewport["'])[^>]*>/i.test(html)?"":'<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">';
  // HTMLタブ内のインラインscriptにもトップレベルawait対応を適用
  html=html.replace(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi,(whole,attrs,body)=>{
   if(!/\bawait\b/.test(body))return whole;
@@ -271,8 +272,8 @@ function makeDocument(sourceCode,targetPlatform,includeGameScripts){
  const autoFitScript=project.settings&&project.settings.autoFitOverflow===false?"":"<scr"+"ipt>(function(){try{document.documentElement.style.overflowX='auto';document.body.style.overflowX='auto';document.querySelectorAll('img,video,svg,iframe').forEach(function(el){el.style.maxWidth='100%';});}catch(e){console.warn('KURO responsive fit',e);}})();<"+"/script>";
  if(/<html[\s>]/i.test(html)){
   let doc=html;
-  if(/<head\b[^>]*>/i.test(doc))doc=doc.replace(/<head\b[^>]*>/i,m=>m+errorReporter+authGuard+audioUnlock+frameMeta+styleBlock+platformScript);
-  else if(/<html[^>]*>/i.test(doc))doc=doc.replace(/<html[^>]*>/i,m=>m+"<head>"+errorReporter+authGuard+audioUnlock+frameMeta+styleBlock+platformScript+"</head>");
+  if(/<head\b[^>]*>/i.test(doc))doc=doc.replace(/<head\b[^>]*>/i,m=>m+errorReporter+authGuard+audioUnlock+viewportMeta+frameMeta+styleBlock+platformScript);
+  else if(/<html[^>]*>/i.test(doc))doc=doc.replace(/<html[^>]*>/i,m=>m+"<head>"+errorReporter+authGuard+audioUnlock+viewportMeta+frameMeta+styleBlock+platformScript+"</head>");
   else doc="<!doctype html><html lang=\"ja\"><head><meta charset=\"utf-8\">"+errorReporter+authGuard+frameMeta+styleBlock+platformScript+"</head><body>"+doc+"</body></html>";
   if(/<\/body>/i.test(doc))doc=doc.replace(/<\/body>/i,scriptBlock+autoFitScript+"</body>");
   else doc+=scriptBlock+autoFitScript;
@@ -327,7 +328,7 @@ function exportHTML(){
 }
 function downloadBaseName(){const invalid='/\\:*?"<>|';return Array.from(String(project.name||"kuro-game").trim().slice(0,80),ch=>invalid.includes(ch)?"-":ch).join("").replaceAll(" ","-")||"kuro-game";}
 function downloadSourceFile(tab){
- const config={html:{extension:"html",mime:"text/html"},css:{extension:"css",mime:"text/css"},js:{extension:"shared.js",mime:"text/javascript"},platformjs:{extension:"controls.js",mime:"text/javascript"}}[tab];
+ const config={html:{extension:"html",mime:"text/html"},css:{extension:"css",mime:"text/css"},js:{extension:"shared.js",mime:"text/javascript"},platformjs:{extension:"extra.js",mime:"text/javascript"}}[tab];
  if(!config)return;
  const base=downloadBaseName(),content=String(activeCode()[tab]||"");
  const blob=new Blob([content],{type:config.mime+";charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");
@@ -365,7 +366,7 @@ function openDownloadModal(){$("downloadModal").classList.add("open");}
 function closeDownloadModal(){$("downloadModal").classList.remove("open");}
 
 let publishUser=null,publishAllowed=false,publishIconData="";
-let publishedFallbackCode=null,publishedFallbackId="";,activePublishedDraft=false,publishedFallbackRecovered=false;
+let publishedFallbackCode=null,publishedFallbackId="",activePublishedDraft=false,publishedFallbackRecovered=false;
 let cropImage=null,cropObjectUrl="",cropZoom=1,cropX=0,cropY=0,cropDrag=null;
 function showPublishIconPreview(){const img=$("publishIconPreviewImage");if(publishIconData){img.src=publishIconData;img.hidden=false;}else{img.removeAttribute("src");img.hidden=true;}}
 function drawIconCrop(){
