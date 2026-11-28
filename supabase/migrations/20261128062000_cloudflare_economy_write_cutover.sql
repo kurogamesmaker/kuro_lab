@@ -35,9 +35,11 @@ SECURITY DEFINER
 SET search_path TO ''
 AS $function$
 DECLARE
-  v_row jsonb := pg_catalog.to_jsonb(NEW);
-  v_source_id text := v_row ->> 'id';
+  v_row jsonb;
+  v_source_id text;
 BEGIN
+  v_row := pg_catalog.to_jsonb(NEW);
+  v_source_id := v_row ->> 'id';
   IF v_source_id IS NULL OR v_row ->> 'user_id' IS NULL THEN
     RAISE EXCEPTION 'KURO_ECONOMY_EVENT_MISSING_IDENTITY';
   END IF;
@@ -65,6 +67,7 @@ END;
 $function$;
 
 REVOKE ALL ON FUNCTION public.kuro_economy_capture_coin_event() FROM PUBLIC, anon, authenticated;
+GRANT INSERT ON TABLE public.kuro_economy_pending_events TO service_role;
 
 DROP TRIGGER IF EXISTS kuro_coin_reward_from_verified_game_event ON public.kuro_coin_verified_game_events;
 CREATE TRIGGER kuro_economy_capture_verified_game_event
@@ -87,7 +90,8 @@ CREATE TRIGGER kuro_economy_capture_verified_game_event
       AND NEW.mode IN ('werewolf_villager_wins','werewolf_wolf_wins')
     )
   )
-  AND pg_catalog.upper(COALESCE(NEW.cpu_difficulty,'NONE')) = 'NONE'
+    AND pg_catalog.upper(COALESCE(NEW.cpu_difficulty,'NONE')) = 'NONE'
+  )
   EXECUTE FUNCTION public.kuro_economy_capture_coin_event('coin_verified_game');
 
 DROP TRIGGER IF EXISTS kuro_coin_reward_from_verified_win ON public.kuro_game_win_events;
@@ -111,7 +115,8 @@ CREATE TRIGGER kuro_economy_capture_verified_win
       AND NEW.mode IN ('werewolf_villager_wins','werewolf_wolf_wins')
     )
   )
-  AND pg_catalog.upper(COALESCE(NEW.cpu_difficulty,'NONE')) = 'NONE'
+    AND pg_catalog.upper(COALESCE(NEW.cpu_difficulty,'NONE')) = 'NONE'
+  )
   EXECUTE FUNCTION public.kuro_economy_capture_coin_event('coin_verified_win');
 
 DROP TRIGGER IF EXISTS kuro_coin_reward_from_verified_werewolf_score ON public.game_scores;
