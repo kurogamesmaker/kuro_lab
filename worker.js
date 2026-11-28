@@ -1906,7 +1906,7 @@ export default {
       }
     }
 
-    if (url.pathname === "/api/kuro-economy/admin" || url.pathname === "/api/kuro-economy/store" || url.pathname === "/api/kuro-economy/notifications") {
+    if (url.pathname === "/api/kuro-economy/admin" || url.pathname === "/api/kuro-economy/store" || url.pathname === "/api/kuro-economy/notifications" || url.pathname === "/api/kuro-economy/level-activity" || url.pathname === "/api/kuro-economy/public-cosmetics") {
       try {
         return await handleKuroEconomyRequest(request, env);
       } catch (error) {
