@@ -1,3 +1,4 @@
+import { handleKuroEconomyRequest } from "./kuro-economy-d1.js";
 const FORCE_MARU_ICON_VERSION = "20261122forcefavicon3";
 const FORCE_SECURITY_GATE_VERSION = "20261128gate5";
 
@@ -1902,6 +1903,15 @@ export default {
       } catch (error) {
         console.error("KURO D1 migration health handler failed", error?.message || error);
         return json({ error: "D1 migration diagnostics unavailable." }, 503);
+      }
+    }
+
+    if (url.pathname === "/api/kuro-economy/admin" || url.pathname === "/api/kuro-economy/store" || url.pathname === "/api/kuro-economy/notifications" || url.pathname === "/api/kuro-economy/level-activity" || url.pathname === "/api/kuro-economy/public-cosmetics") {
+      try {
+        return await handleKuroEconomyRequest(request, env);
+      } catch (error) {
+        console.error("KURO D1 economy request failed", error?.message || error);
+        return json({ error: "経済処理を完了できませんでした。" }, Number(error?.status) || 502);
       }
     }
 

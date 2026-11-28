@@ -204,23 +204,25 @@ async function getEquippedCosmeticsForUsers(userIds: string[]) {
   const ids = [...new Set(userIds.filter((id) => typeof id === "string" && UUID_RE.test(id)))];
   const byUser = new Map<string, Record<string, unknown>>();
   if (!ids.length) return byUser;
-  const { data, error } = await admin.from("kuro_store_equipped_items")
-    .select("user_id,slot,item:kuro_store_items(item_key,name,category,icon,image_url,rarity)")
-    .in("user_id", ids);
-  if (error) throw new HttpError(500, "装備中アイテムを取得できませんでした。");
-  for (const row of data ?? []) {
-    const item = Array.isArray(row.item) ? row.item[0] : row.item;
-    if (!item || !["avatar", "frame", "background", "theme"].includes(String(row.slot))) continue;
-    const current = byUser.get(row.user_id) ?? {};
-    current[String(row.slot)] = {
-      itemKey: item.item_key ?? "",
-      name: item.name ?? "",
-      category: item.category ?? row.slot,
-      icon: item.icon ?? "✦",
-      imageUrl: item.image_url ?? null,
-      rarity: item.rarity ?? "common",
-    };
-    byUser.set(row.user_id, current);
+  let upstream: Response;
+  try {
+    const query = new URLSearchParams({ userIds: ids.join(",") });
+    upstream = await fetch("https://kurolab.cc.cd/api/kuro-economy/public-cosmetics?" + query.toString(), {
+      headers: { "Accept": "application/json" },
+      signal: AbortSignal.timeout(8000)
+    });
+  } catch (_) {
+    throw new HttpError(503, "装備中アイテムを取得できませんでした。");
+  }
+  const payload = await upstream.json().catch(() => ({}));
+  if (!upstream.ok || !payload?.users || typeof payload.users !== "object") {
+    throw new HttpError(upstream.status >= 500 ? 503 : 500, payload?.error || "装備中アイテムを取得できませんでした。");
+  }
+  for (const [userId, cosmetics] of Object.entries(payload.users as Record<string, Record<string, unknown>>)) {
+    const allowed = Object.fromEntries(Object.entries(cosmetics || {}).filter(([slot]) =>
+      ["avatar", "frame", "background", "theme"].includes(slot)
+    ));
+    byUser.set(userId, allowed);
   }
   return byUser;
 }
@@ -899,27 +901,25 @@ async function handle(req: Request) {
   }
   // KURO COIN is account-wide and does not depend on a particular game ID or ranking flag.
   if (action === "coin_summary") {
-    const user = await getUser(req);
-    const [balanceResult, ledgerResult] = await Promise.all([
-      admin.from("kuro_coin_balances")
-        .select("balance,updated_at")
-        .eq("user_id", user.id)
-        .maybeSingle(),
-      admin.from("kuro_coin_ledger")
-        .select("id,amount,balance_after,transaction_type,source_game_id,source_mode,description,created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(20),
-    ]);
-    if (balanceResult.error || ledgerResult.error) {
-      console.error("[kurogames-online] KURO COIN summary read failed", balanceResult.error || ledgerResult.error);
-      throw new HttpError(500, "KURO COINの残高を取得できませんでした。");
+    await getUser(req);
+    const authorization = req.headers.get("Authorization") || "";
+    let upstream: Response;
+    try {
+      upstream = await fetch("https://kurolab.cc.cd/api/kuro-d1/coin-summary", {
+        headers: { "Authorization": authorization, "Accept": "application/json" },
+        signal: AbortSignal.timeout(10000)
+      });
+    } catch (_) {
+      throw new HttpError(503, "CloudflareからKURO COIN情報を取得できませんでした。");
     }
+    const result = await upstream.json().catch(() => ({}));
+    if (!upstream.ok) throw new HttpError(upstream.status >= 500 ? 503 : upstream.status, result?.error || "KURO COINの残高を取得できませんでした。");
     return reply(200, {
       currency: "KC",
-      balance: Number(balanceResult.data?.balance) || 0,
-      updatedAt: balanceResult.data?.updated_at || null,
-      transactions: ledgerResult.data || [],
+      balance: Number(result.balance) || 0,
+      updatedAt: result.updatedAt || null,
+      transactions: Array.isArray(result.transactions) ? result.transactions : [],
+      source: "cloudflare-d1"
     });
   }
 

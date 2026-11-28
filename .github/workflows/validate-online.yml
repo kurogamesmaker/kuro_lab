@@ -12,6 +12,15 @@ on:
       - games/index.html
       - games/mypage/index.html
       - supabase/functions/kurogames-online/index.ts
+      - worker.js
+      - kuro-data-sync.js
+      - kuro-economy-d1.js
+      - kuro-profile.js
+      - service-notification-box.js
+      - games/notifications/index.html
+      - supabase/functions/admin-console/index.ts
+      - supabase/functions/kurogames-store/index.ts
+      - supabase/functions/kuro-public-coin-balance/index.ts
       - supabase/migrations/**
       - tests/online-room-worker.test.mjs
       - tests/pc-game-runtime.test.mjs
@@ -27,6 +36,15 @@ on:
       - games/index.html
       - games/mypage/index.html
       - supabase/functions/kurogames-online/index.ts
+      - worker.js
+      - kuro-data-sync.js
+      - kuro-economy-d1.js
+      - kuro-profile.js
+      - service-notification-box.js
+      - games/notifications/index.html
+      - supabase/functions/admin-console/index.ts
+      - supabase/functions/kurogames-store/index.ts
+      - supabase/functions/kuro-public-coin-balance/index.ts
       - supabase/migrations/**
       - tests/online-room-worker.test.mjs
       - tests/pc-game-runtime.test.mjs
@@ -40,6 +58,11 @@ jobs:
         with:
           node-version: 22
       - run: node --check online-room-worker.js
+      - run: node --check worker.js
+      - run: node --check kuro-data-sync.js
+      - run: node --check kuro-economy-d1.js
+      - run: node --check kuro-profile.js
+      - run: node --check service-notification-box.js
       - run: node --test tests/online-room-worker.test.mjs
       - run: node --test tests/pc-game-runtime.test.mjs
       - run: node --check game-studio/kurog-online.js
@@ -49,7 +72,7 @@ jobs:
         run: |
           node <<'NODE'
           const fs = require('node:fs');
-          for (const file of ['games/play/index.html', 'games/index.html', 'games/mypage/index.html', 'game-studio/code.html']) {
+          for (const file of ['games/play/index.html', 'games/index.html', 'games/mypage/index.html', 'games/notifications/index.html', 'game-studio/code.html']) {
             const html = fs.readFileSync(file, 'utf8');
             const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)];
             let checked = 0;

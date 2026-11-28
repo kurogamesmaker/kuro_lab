@@ -18,6 +18,19 @@
     button.setAttribute("aria-label", unread ? "未読通知 " + unread + " 件" : "通知");
   }
 
+  async function getEconomyUnreadCount() {
+    const sessionResult = await db.auth.getSession();
+    if (sessionResult?.error) throw sessionResult.error;
+    const token = sessionResult?.data?.session?.access_token;
+    if (!token) throw new Error("ログイン状態を確認できません。");
+    const response = await fetch("/api/kuro-economy/notifications?unread=1&limit=1", {
+      headers: { "Authorization": "Bearer " + token, "Accept": "application/json" }
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result?.error || "通知を読み込めませんでした。");
+    return { count: Number(result.unread_count || 0), error: null };
+  }
+
   async function refresh() {
     const sequence = ++refreshSequence;
     try {
@@ -35,10 +48,7 @@
           .or("audience.eq.all,recipient_id.eq." + user.id)
           .order("created_at", { ascending: false })
           .limit(200),
-        db.from("notifications")
-          .select("id", { count: "exact", head: true })
-          .eq("recipient_id", user.id)
-          .is("read_at", null),
+        getEconomyUnreadCount(),
         db.from("portal_request_notifications")
           .select("id", { count: "exact", head: true })
           .eq("user_id", user.id)

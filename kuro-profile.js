@@ -235,6 +235,16 @@
       '</div>';
   }
 
+  async function loadD1PublicStoreCosmetics(userId) {
+    if (window.kuroLoadPublicStoreCosmetics) return await window.kuroLoadPublicStoreCosmetics(userId);
+    const response = await fetch("/api/kuro-economy/public-cosmetics?userId=" + encodeURIComponent(userId), {
+      method: "GET", credentials: "same-origin", cache: "no-store", headers: { "Accept": "application/json" }
+    });
+    const payload = await response.json().catch(function () { return {}; });
+    if (!response.ok || !payload || !payload.cosmetics) throw new Error(payload && payload.error || "装備情報を取得できませんでした。");
+    return payload.cosmetics;
+  }
+
   async function loadD1PublicPlayerSummary(db, userId) {
     var url = "/api/kuro-d1/public-player-summary?userId=" + encodeURIComponent(String(userId || ""));
     try {
@@ -254,21 +264,17 @@
       // Preserve the previous read path as an automatic rollback/fallback.
       console.warn("KURO D1 public player summary fallback:", d1Error);
       if (!db || !db.functions || typeof db.functions.invoke !== "function") throw d1Error;
-      var fallback = await Promise.all([
-        db.functions.invoke("kuro-public-coin-balance", { body: { userId: userId } }),
-        db.from("kuro_level_users").select("total_xp,current_level").eq("user_id", userId).maybeSingle(),
-        db.from("kuro_level_thresholds").select("level,required_xp").order("level", { ascending: true })
-      ]);
-      fallback.forEach(function (result) { if (result && result.error) throw result.error; });
+      var fallback = await db.functions.invoke("kuro-public-coin-balance", { body: { userId: userId } });
+      if (fallback.error) throw fallback.error;
       return {
         data: {
           currency: "P",
-          balance: fallback[0].data && fallback[0].data.balance,
-          level: fallback[1].data || { total_xp: 0, current_level: 1 },
-          thresholds: Array.isArray(fallback[2].data) ? fallback[2].data : []
+          balance: fallback.data && fallback.data.balance,
+          level: fallback.data && fallback.data.level || { total_xp: 0, current_level: 1 },
+          thresholds: Array.isArray(fallback.data && fallback.data.thresholds) ? fallback.data.thresholds : []
         },
         error: null,
-        source: "supabase-fallback"
+        source: "cloudflare-d1-proxy"
       };
     }
   }
@@ -353,7 +359,7 @@
         getFollowCounts(db, id),
         getSignedInUser(db),
         loadD1PublicPlayerSummary(db, id).catch(function (error) { return { data: null, error: error }; }),
-        safeRpc(db, "kuro_get_public_store_cosmetics", { p_user_id: id }, {})
+        loadD1PublicStoreCosmetics(id).then(function (data) { return { data: data, error: null }; }).catch(function (error) { return { data: {}, error: error }; })
       ]);
       if (thisRequest !== requestId) return;
       var profileResult = results[0], statsResult = results[1], playerSummaryResult = results[4];
@@ -796,19 +802,29 @@
     levelXpPollErrorLogged = false;
   }
 
+  async function loadD1LevelActivity(db) {
+    var sessionResult = await db.auth.getSession();
+    if (sessionResult && sessionResult.error) throw sessionResult.error;
+    var token = sessionResult && sessionResult.data && sessionResult.data.session && sessionResult.data.session.access_token;
+    if (!token) throw new Error("ログイン状態を確認できません。");
+    var response = await fetch("/api/kuro-economy/level-activity", {
+      method: "GET",
+      credentials: "same-origin",
+      cache: "no-store",
+      headers: { "Authorization": "Bearer " + token, "Accept": "application/json" }
+    });
+    var payload = await response.json().catch(function () { return {}; });
+    if (!response.ok) throw new Error(payload && payload.error || "XP履歴を取得できませんでした。");
+    return payload;
+  }
+
   async function pollLevelXpNotifications(db, userId) {
     if (!userId || levelXpPollUserId !== userId || levelXpPollInFlight ||
         document.visibilityState === "hidden") return;
     levelXpPollInFlight = true;
     try {
-      var ledgerResult = await db.from("kuro_level_ledger")
-        .select("id,xp_amount")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(40);
-      if (ledgerResult.error) throw ledgerResult.error;
-
-      var rows = Array.isArray(ledgerResult.data) ? ledgerResult.data : [];
+      var activity = await loadD1LevelActivity(db);
+      var rows = Array.isArray(activity.ledger) ? activity.ledger : [];
       var nextSeen = Object.create(null);
       var newRows = [];
       rows.forEach(function (row) {
@@ -828,13 +844,9 @@
         return total + Math.max(0, Math.floor(Number(row.xp_amount) || 0));
       }, 0);
       if (earnedXp > 0) {
-        var current = await db.from("kuro_level_users")
-          .select("current_level,total_xp")
-          .eq("user_id", userId)
-          .maybeSingle();
-        if (current.error) throw current.error;
-        if (current.data) {
-          var nextLevel = Math.max(1, Number(current.data.current_level) || 1);
+        var current = activity.level;
+        if (current) {
+          var nextLevel = Math.max(1, Number(current.current_level) || 1);
           if (nextLevel > levelXpKnownLevel) {
             showLevelUpEffect(levelXpKnownLevel, nextLevel);
           }
@@ -866,28 +878,16 @@
       if (!user || user.is_anonymous || !UUID_RE.test(String(user.id || ""))) return;
 
       stopLevelXpNotifications();
-      var initial = await db.from("kuro_level_users")
-        .select("current_level").eq("user_id", user.id).maybeSingle();
-      if (initial && !initial.error && initial.data) {
-        levelXpKnownLevel = Math.max(1, Number(initial.data.current_level) || 1);
-      } else {
-        levelXpKnownLevel = 1;
-      }
+      var baseline = await loadD1LevelActivity(db);
+      levelXpKnownLevel = Math.max(1, Number(baseline.level && baseline.level.current_level) || 1);
 
-      // Seed recent ledger IDs so existing history never appears as a new alert.
-      var baseline = await db.from("kuro_level_ledger")
-        .select("id")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(40);
-      if (baseline && !baseline.error && Array.isArray(baseline.data)) {
-        var initialSeen = Object.create(null);
-        baseline.data.forEach(function (row) {
-          if (row && row.id) initialSeen[String(row.id)] = true;
-        });
-        levelXpSeenLedgerIds = initialSeen;
-        levelXpSeenReady = true;
-      }
+      // Seed recent D1 ledger IDs so existing history never appears as a new alert.
+      var initialSeen = Object.create(null);
+      (Array.isArray(baseline.ledger) ? baseline.ledger : []).forEach(function (row) {
+        if (row && row.id) initialSeen[String(row.id)] = true;
+      });
+      levelXpSeenLedgerIds = initialSeen;
+      levelXpSeenReady = true;
 
       levelXpPollUserId = user.id;
       levelXpVisibilityHandler = function () {

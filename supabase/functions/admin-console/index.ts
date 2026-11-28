@@ -73,6 +73,34 @@ async function kuroSecretHmacHex(secret: string, message: string) {
   return Array.from(new Uint8Array(signature), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+async function callD1Economy(req: Request, payload: Record<string, unknown>) {
+  const authorization = req.headers.get("Authorization") || "";
+  if (!authorization.startsWith("Bearer ")) throw new Error("ログイン状態を確認できません。");
+  let upstream: Response;
+  try {
+    upstream = await fetch("https://kurolab.cc.cd/api/kuro-economy/admin", {
+      method: "POST",
+      headers: {
+        "Authorization": authorization,
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        ...(req.headers.get("User-Agent") ? { "User-Agent": req.headers.get("User-Agent")! } : {}),
+        ...(req.headers.get("Sec-CH-UA-Platform") ? { "Sec-CH-UA-Platform": req.headers.get("Sec-CH-UA-Platform")! } : {}),
+        ...(req.headers.get("Accept-Language") ? { "Accept-Language": req.headers.get("Accept-Language")! } : {}),
+        ...(req.headers.get("X-Real-IP") ? { "X-Real-IP": req.headers.get("X-Real-IP")! } : {}),
+        ...(req.headers.get("CF-Connecting-IP") ? { "CF-Connecting-IP": req.headers.get("CF-Connecting-IP")! } : {})
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(12000)
+    });
+  } catch (_) {
+    throw new Error("Cloudflareの経済処理に接続できません。少し時間をおいて再度お試しください。");
+  }
+  const result = await upstream.json().catch(() => ({}));
+  if (!upstream.ok) throw new Error(result?.error || "Cloudflareの経済処理に失敗しました。");
+  return result;
+}
+
 function kuroSecretDate(value: unknown): string | null | undefined {
   if (value === null || value === undefined || value === "") return null;
   const parsed = new Date(String(value));
@@ -125,7 +153,12 @@ Deno.serve(async (req: Request) => {
         "Authorization": authHeader,
         "apikey": anon,
         "Content-Type": "application/json",
-        ...(origin ? { "Origin": origin } : {})
+        ...(origin ? { "Origin": origin } : {}),
+        ...(req.headers.get("User-Agent") ? { "User-Agent": req.headers.get("User-Agent")! } : {}),
+        ...(req.headers.get("Sec-CH-UA-Platform") ? { "Sec-CH-UA-Platform": req.headers.get("Sec-CH-UA-Platform")! } : {}),
+        ...(req.headers.get("Accept-Language") ? { "Accept-Language": req.headers.get("Accept-Language")! } : {}),
+        ...(req.headers.get("X-Real-IP") ? { "X-Real-IP": req.headers.get("X-Real-IP")! } : {}),
+        ...(req.headers.get("CF-Connecting-IP") ? { "CF-Connecting-IP": req.headers.get("CF-Connecting-IP")! } : {})
       },
       body: JSON.stringify({ action: "check", tool: "admin" })
     });
@@ -140,6 +173,66 @@ Deno.serve(async (req: Request) => {
     const retiredPlanActions = new Set(["list_pro_management","review_pro_application","create_pro_invitation","update_pro_invitation","update_pro_membership","set_pro_user_control","set_user_plan"]);
     if (retiredPlanActions.has(action)) {
       return reply({ error: "KURO Labのプラン区分は終了しました。すべての利用者が共通機能を利用できます。" }, 410, origin);
+    }
+
+
+    const d1EconomyActions = new Set([
+      "get_level_system", "save_level_settings", "save_level_game_reward",
+      "save_level_thresholds", "save_level_coin_rewards", "adjust_level_xp",
+      "get_coin_economy", "get_coin_user_detail", "update_coin_reward", "adjust_coin_balance"
+    ]);
+    if (d1EconomyActions.has(action)) {
+      if (action === "get_coin_user_detail") {
+        const userId = typeof body.userId === "string" ? body.userId.trim() : "";
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId)) {
+          return reply({ error: "ユーザーIDが正しくありません。" }, 400, origin);
+        }
+        const { data: userData, error: userError } = await admin.auth.admin.getUserById(userId);
+        if (userError || !userData?.user) return reply({ error: "対象のKUROアカウントが見つかりません。" }, 404, origin);
+        const [economy, profileResult] = await Promise.all([
+          callD1Economy(req, body),
+          admin.from("profiles").select("id,username,display_name,kuro_id,avatar_url").eq("id", userId).maybeSingle()
+        ]);
+        if (profileResult.error) throw profileResult.error;
+        const profile = profileResult.data || {};
+        return reply({
+          user: {
+            id: userData.user.id, email: userData.user.email || "", username: profile.username || "",
+            display_name: profile.display_name || "", kuro_id: profile.kuro_id || "", avatar_url: profile.avatar_url || null
+          },
+          balance: economy.balance,
+          balanceUpdatedAt: economy.balanceUpdatedAt,
+          ledger: economy.ledger || []
+        }, 200, origin);
+      }
+      const result = await callD1Economy(req, body);
+      const auditActions: Record<string, string> = {
+        save_level_settings: "kurogames_level.settings",
+        save_level_game_reward: "kurogames_level.game_reward",
+        save_level_thresholds: "kurogames_level.thresholds",
+        save_level_coin_rewards: "kurogames_level.coin_rewards",
+        adjust_level_xp: "kurogames_level.manual_adjustment",
+        update_coin_reward: "kurogames_coin.reward",
+        adjust_coin_balance: "kurogames_coin.manual_adjustment"
+      };
+      const auditAction = auditActions[action];
+      if (auditAction) {
+        const targetUserId = action === "adjust_level_xp" || action === "adjust_coin_balance"
+          ? String(body.userId || "") : null;
+        const metadata = action === "adjust_level_xp" || action === "adjust_coin_balance"
+          ? { amount: body.amount, reason: body.reason, result: result.result }
+          : { request: body, result };
+        const { error: auditError } = await admin.from("admin_audit_logs").insert({
+          actor_user_id: caller.id,
+          ...(targetUserId ? { target_user_id: targetUserId } : {}),
+          action: auditAction,
+          metadata
+        });
+        if (auditError) {
+          console.error("D1 economy audit log insert failed after committed operation", auditError.message);
+        }
+      }
+      return reply(result, 200, origin);
     }
 
 
