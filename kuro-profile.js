@@ -301,15 +301,64 @@
     }
   }
 
+  async function loadD1PublicProfile(userId, viewerId) {
+    var params = new URLSearchParams({ id: String(userId || "") });
+    if (viewerId) params.set("viewerId", String(viewerId));
+    var response = await fetch("/api/kuro-d1/public-profiles?" + params.toString(), {
+      method: "GET", credentials: "same-origin", cache: "no-store",
+      headers: { accept: "application/json" }
+    });
+    var payload = await response.json().catch(function () { return null; });
+    if (!response.ok || !payload || !payload.profile) {
+      throw new Error(payload && payload.error || "Cloudflare D1 profile read failed");
+    }
+    return payload;
+  }
+
+  async function loadPublicProfile(db, userId) {
+    try {
+      var payload = await loadD1PublicProfile(userId);
+      return { data: payload.profile, error: null, source: "cloudflare-d1" };
+    } catch (d1Error) {
+      console.warn("KURO D1 public profile fallback:", d1Error);
+      if (!db) throw d1Error;
+      return await db.from("profiles")
+        .select("id,username,display_name,kuro_id,avatar_url,bio,created_at")
+        .eq("id", userId).maybeSingle();
+    }
+  }
+
   async function getFollowCounts(db, userId) {
-    var results = await Promise.all([
-      db.from("follows").select("follower_id", { count: "exact", head: true }).eq("following_id", userId),
-      db.from("follows").select("following_id", { count: "exact", head: true }).eq("follower_id", userId)
-    ]);
-    return {
-      followers: results[0].error ? null : Number(results[0].count || 0),
-      following: results[1].error ? null : Number(results[1].count || 0)
-    };
+    try {
+      var payload = await loadD1PublicProfile(userId);
+      return {
+        followers: Number(payload.counts && payload.counts.followers || 0),
+        following: Number(payload.counts && payload.counts.following || 0)
+      };
+    } catch (d1Error) {
+      console.warn("KURO D1 follow-count fallback:", d1Error);
+      var results = await Promise.all([
+        db.from("follows").select("follower_id", { count: "exact", head: true }).eq("following_id", userId),
+        db.from("follows").select("following_id", { count: "exact", head: true }).eq("follower_id", userId)
+      ]);
+      return {
+        followers: results[0].error ? null : Number(results[0].count || 0),
+        following: results[1].error ? null : Number(results[1].count || 0)
+      };
+    }
+  }
+
+  async function getD1FollowState(db, viewerId, targetId) {
+    try {
+      var payload = await loadD1PublicProfile(targetId, viewerId);
+      return Boolean(payload.isFollowing);
+    } catch (d1Error) {
+      console.warn("KURO D1 follow-state fallback:", d1Error);
+      var fallback = await db.from("follows").select("follower_id")
+        .eq("follower_id", viewerId).eq("following_id", targetId).maybeSingle();
+      if (fallback.error) throw fallback.error;
+      return !!fallback.data;
+    }
   }
 
   function renderSocial(profile, counts, isSelf, signedIn) {
@@ -354,7 +403,7 @@
     }
     try {
       var results = await Promise.all([
-        db.from("profiles").select("id,username,display_name,kuro_id,avatar_url,bio,created_at").eq("id", id).maybeSingle(),
+        loadPublicProfile(db, id),
         safeRpc(db, "kuro_get_public_profile_game_stats_precise", { p_user_id: id }, []),
         getFollowCounts(db, id),
         getSignedInUser(db),
@@ -394,8 +443,7 @@
       currentProfile = profile;
       viewerUser = results[3];
       if (viewerUser && viewerUser.id !== id) {
-        var followResult = await db.from("follows").select("follower_id").eq("follower_id", viewerUser.id).eq("following_id", id).maybeSingle();
-        if (!followResult.error) viewerFollowsProfile = !!followResult.data;
+        viewerFollowsProfile = await getD1FollowState(db, viewerUser.id, id);
       }
       if (thisRequest !== requestId) return;
       var isSelf = !!viewerUser && viewerUser.id === id;
@@ -596,21 +644,38 @@
     panel.hidden = false;
     panel.innerHTML = '<div class="kuro-profile-loading">一覧を読み込み中…</div>';
     var isFollowers = kind === "followers";
-    var key = isFollowers ? "follower_id" : "following_id";
-    var filterKey = isFollowers ? "following_id" : "follower_id";
-    var result = await db.from("follows").select("follower_id,following_id,created_at").eq(filterKey, targetId).order("created_at", { ascending: false }).limit(100);
-    if (result.error) throw result.error;
-    var ids = (result.data || []).map(function (row) { return row[key]; });
-    if (!ids.length) {
+    var rows = [];
+    try {
+      var listResponse = await fetch("/api/kuro-d1/public-profiles?id=" + encodeURIComponent(targetId) + "&list=" + encodeURIComponent(kind), {
+        method: "GET", credentials: "same-origin", cache: "no-store",
+        headers: { accept: "application/json" }
+      });
+      var listPayload = await listResponse.json().catch(function () { return null; });
+      if (!listResponse.ok || !listPayload || !Array.isArray(listPayload.rows)) {
+        throw new Error(listPayload && listPayload.error || "Cloudflare D1 follow list failed");
+      }
+      rows = listPayload.rows;
+    } catch (d1Error) {
+      console.warn("KURO D1 follow-list fallback:", d1Error);
+      var key = isFollowers ? "follower_id" : "following_id";
+      var filterKey = isFollowers ? "following_id" : "follower_id";
+      var result = await db.from("follows").select("follower_id,following_id,created_at")
+        .eq(filterKey, targetId).order("created_at", { ascending: false }).limit(100);
+      if (result.error) throw result.error;
+      var ids = (result.data || []).map(function (row) { return row[key]; });
+      if (ids.length) {
+        var profileResult = await db.from("profiles").select("id,username,display_name,avatar_url").in("id", ids);
+        if (profileResult.error) throw profileResult.error;
+        var byId = Object.create(null);
+        (profileResult.data || []).forEach(function (profile) { byId[profile.id] = profile; });
+        rows = ids.map(function (rowId) { return byId[rowId]; }).filter(Boolean);
+      }
+    }
+    if (!rows.length) {
       panel.innerHTML = '<div class="kuro-profile-list-head"><strong>' + (isFollowers ? "フォロワー" : "フォロー中") + '</strong><button type="button" class="kuro-profile-list-close" aria-label="閉じる">×</button></div><p class="kuro-profile-empty">' + (isFollowers ? "まだフォロワーはいません。" : "まだフォローしているユーザーはいません。") + '</p>';
       panel.querySelector(".kuro-profile-list-close").addEventListener("click", function () { panel.hidden = true; });
       return;
     }
-    var profileResult = await db.from("profiles").select("id,username,display_name,avatar_url").in("id", ids);
-    if (profileResult.error) throw profileResult.error;
-    var byId = Object.create(null);
-    (profileResult.data || []).forEach(function (profile) { byId[profile.id] = profile; });
-    var rows = ids.map(function (id) { return byId[id]; }).filter(Boolean);
     panel.innerHTML =
       '<div class="kuro-profile-list-head"><strong>' + (isFollowers ? "フォロワー" : "フォロー中") + '</strong><button type="button" class="kuro-profile-list-close" aria-label="閉じる">×</button></div>' +
       '<div class="kuro-profile-list-items">' + rows.map(function (profile) {
