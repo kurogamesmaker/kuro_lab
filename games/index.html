@@ -2065,7 +2065,7 @@ function initKuroRankingShowcase(){
    const userId=avatar.getAttribute("data-kuro-rank-user-id");
    if(!userId)return;
    if(!rankingCosmeticsCache.has(userId))rankingCosmeticsCache.set(userId,(async()=>{
-    try{const result=await window.kuroGamesDB.rpc("kuro_get_public_store_cosmetics",{p_user_id:userId});if(result.error)throw result.error;return result.data&&typeof result.data==="object"?result.data:{};}
+    try{return await window.kuroLoadPublicStoreCosmetics(userId);}
     catch(error){console.debug("Home ranking cosmetics unavailable:",userId,error);return {};}
    })());
    const cosmetics=await rankingCosmeticsCache.get(userId);
@@ -2225,7 +2225,7 @@ initKuroRankingShowcase();
    const row=avatar.closest(".kuro-level-ranking-row"),userId=row&&row.getAttribute("data-user-id");
    if(!userId)return;
    if(!levelCosmeticsCache.has(userId))levelCosmeticsCache.set(userId,(async()=>{
-    try{const result=await db.rpc("kuro_get_public_store_cosmetics",{p_user_id:userId});if(result.error)throw result.error;return result.data&&typeof result.data==="object"?result.data:{};}
+    try{return await window.kuroLoadPublicStoreCosmetics(userId);}
     catch(error){console.debug("Level ranking cosmetics unavailable:",userId,error);return {};}
    })());
    const cosmetics=await levelCosmeticsCache.get(userId);
