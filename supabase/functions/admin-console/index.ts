@@ -851,19 +851,28 @@ Deno.serve(async (req: Request) => {
         if (!upstream.ok) throw new Error(payload?.error || "Cloudflare D1からSNS集計を取得できませんでした。");
         return payload;
       })();
-      const [profileCount, eventResult, chatRows, chatStatsRows, dmRows, groupChatRows, d1Activity] = await Promise.all([
+      const d1ChatStatsPromise = (async () => {
+        const upstream = await fetch("https://kurolab.cc.cd/api/kuro-d1/chat-admin-stats?since=" + encodeURIComponent(since30), {
+          method: "GET",
+          headers: { "Authorization": authorization, "Accept": "application/json" },
+          signal: AbortSignal.timeout(12000)
+        });
+        const payload = await upstream.json().catch(() => ({}));
+        if (!upstream.ok) throw new Error(payload?.error?.message || "Cloudflare D1からチャット統計を取得できませんでした。");
+        return payload;
+      })();
+      const [profileCount, eventResult, chatRows, chatStatsRows, d1ChatStats, d1Activity] = await Promise.all([
         admin.from("profiles").select("id", { count: "exact", head: true }),
         fetchAllRows((from, to) => admin.from("usage_events").select("user_id,visitor_id,event_name,created_at,widget_key,service_key,status_code,error_code").gte("created_at", since30).order("created_at", { ascending: false }).range(from, to)),
         fetchAllRows((from, to) => admin.from("public_chat_messages").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(from, to)),
         fetchAllRows((from, to) => admin.from("public_chat_daily_stats").select("chat_date,message_count").gte("chat_date", chatStatsSince).order("chat_date", { ascending: true }).range(from, to)),
-        fetchAllRows((from, to) => admin.from("chat_messages").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(from, to)),
-        fetchAllRows((from, to) => admin.from("group_chat_messages").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(from, to)),
+        d1ChatStatsPromise,
         d1ActivityPromise
       ]);
       const postCount = { count: Number(d1Activity?.post_count || 0) };
       const postRows = { data: Array.isArray(d1Activity?.posts) ? d1Activity.posts : [] };
       const replyRows = { data: Array.isArray(d1Activity?.replies) ? d1Activity.replies : [] };
-      for (const result of [profileCount, eventResult, chatRows, chatStatsRows, dmRows, groupChatRows]) {
+      for (const result of [profileCount, eventResult, chatRows, chatStatsRows]) {
         if (result.error) throw result.error;
       }
       const tokyoKey = (value: string | Date) => {
@@ -893,9 +902,15 @@ Deno.serve(async (req: Request) => {
       }
       // Public lobby: combine archived daily totals with rows still in the live table.
       for (const row of chatRows.data || []) { const point = dailyMap.get(tokyoKey(row.created_at)); if (point) { point.chat++; point.public_chat++; } }
-      // Separate individual and group messages for charting.
-      for (const row of dmRows.data || []) { const point = dailyMap.get(tokyoKey(row.created_at)); if (point) { point.chat++; point.dm++; } }
-      for (const row of groupChatRows.data || []) { const point = dailyMap.get(tokyoKey(row.created_at)); if (point) { point.chat++; point.group_chat++; } }
+      // Individual and group chat totals come from Cloudflare D1, the live source of truth.
+      for (const row of d1ChatStats.dm_daily || []) {
+        const point = dailyMap.get(row.chat_date);
+        if (point) { const count = Number(row.count) || 0; point.chat += count; point.dm += count; }
+      }
+      for (const row of d1ChatStats.group_daily || []) {
+        const point = dailyMap.get(row.chat_date);
+        if (point) { const count = Number(row.count) || 0; point.chat += count; point.group_chat += count; }
+      }
       const rows7 = events.filter((e) => e.created_at >= since7);
       const rows24 = events.filter((e) => e.created_at >= since24);
       const pageViews = events.filter((e) => e.event_name === "page_view");
