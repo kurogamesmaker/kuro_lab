@@ -1141,7 +1141,7 @@ async function handleKuroD1Leaderboard(request, env) {
         SELECT
           s.user_id,
           s.wins AS score,
-          COALESCE(s.last_played_at, s.updated_at) AS created_at,
+          COALESCE(NULLIF(s.last_played_at, ''), NULLIF(s.updated_at, '')) AS created_at,
           p.kuro_id,
           p.username,
           p.avatar_url
@@ -1176,7 +1176,7 @@ async function handleKuroD1Leaderboard(request, env) {
           s.user_id,
           s.best_time_us AS score,
           s.mode,
-          COALESCE(s.last_played_at, s.updated_at) AS created_at,
+          COALESCE(NULLIF(s.last_played_at, ''), NULLIF(s.updated_at, '')) AS created_at,
           p.kuro_id,
           p.username,
           p.avatar_url
@@ -1235,7 +1235,7 @@ async function handleKuroD1Leaderboard(request, env) {
         s.user_id,
         s.mode,
         ${canonicalMetric === "wins" ? "s.wins" : canonicalMetric === "time" ? "s.best_time_ms" : "s.best_score"} AS score,
-        COALESCE(s.last_played_at, s.updated_at, s.created_at) AS created_at,
+        COALESCE(NULLIF(s.last_played_at, ''), NULLIF(s.updated_at, ''), s.created_at) AS created_at,
         p.kuro_id,
         p.username,
         p.avatar_url
