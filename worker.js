@@ -1,4 +1,5 @@
 const FORCE_MARU_ICON_VERSION = "20261122forcefavicon3";
+const FORCE_SECURITY_GATE_VERSION = "20261128gate4";
 
 function applyMaruFavicon(html, requestPath = "") {
   const iconTags = /<link\b(?=[^>]*\brel\s*=\s*["'](?:icon|shortcut icon|apple-touch-icon)["'])[^>]*>/gi;
@@ -26,6 +27,9 @@ function applyMaruFavicon(html, requestPath = "") {
     ? ""
     : '<script id="kuro-suspension-guard-loader" src="/suspension-guard.js?v=20261127abortfix1"></script>';
   let cleanHtml = String(html || "").replace(iconTags, "");
+  cleanHtml = cleanHtml.replace(/(["'])\\/security\\/kuro-security-gate\\.js(?:\\?[^"']*)?\\1/gi, (_match, quote) =>
+    quote + "/security/kuro-security-gate.js?v=" + FORCE_SECURITY_GATE_VERSION + quote
+  );
   cleanHtml = cleanHtml.replace(/<script\b[^>]*\bid=["']kuro-suspension-guard-loader["'][^>]*><\/script>/gi, "");
   if (isGamePlayPath) {
     cleanHtml = cleanHtml.replace(
@@ -166,24 +170,46 @@ async function handleTurnstileVerify(request, env) {
  try{body=await request.json()}catch(_){return json({success:false,code:"invalid_json",message:"Invalid JSON"},400)}
  const token=typeof body?.token==="string"?body.token.trim():"";
  if(!token||token.length>2048)return json({success:false,code:"invalid_token_format",message:"Invalid verification token"},400);
- const form=new FormData();form.append("secret",env.TURNSTILE_SECRET);form.append("response",token);
- const ip=request.headers.get("CF-Connecting-IP");if(ip)form.append("remoteip",ip);
+
  try{
-  const upstream=await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify",{method:"POST",body:form});
-  const result=await upstream.json();
+  const upstream=await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify",{
+   method:"POST",
+   headers:{"content-type":"application/json","accept":"application/json"},
+   body:JSON.stringify({secret:env.TURNSTILE_SECRET,response:token})
+  });
+  const responseText=await upstream.text();
+  let result=null;
+  try{result=responseText?JSON.parse(responseText):null;}catch(_){result=null;}
+
+  const knownCodes=new Set(["missing-input-secret","invalid-input-secret","missing-input-response","invalid-input-response","bad-request","timeout-or-duplicate","internal-error"]);
+  const errorCodes=Array.isArray(result?.["error-codes"])?result["error-codes"].filter(code=>knownCodes.has(code)):[];
   if(!upstream.ok){
-   console.error("Turnstile Siteverify HTTP failure",{status:upstream.status});
-   return json({success:false,code:"siteverify_upstream_error",message:"人間確認サービスとの通信に失敗しました。"},502);
+   const code=errorCodes.includes("invalid-input-secret")||errorCodes.includes("missing-input-secret")
+    ?"turnstile_secret_rejected":"siteverify_http_error";
+   console.error("Turnstile Siteverify HTTP failure",{status:upstream.status,errorCodes,responseType:upstream.headers.get("content-type")||"unknown"});
+   return json({
+    success:false,code,upstreamStatus:upstream.status,errorCodes,
+    message:code==="turnstile_secret_rejected"
+     ?"TurnstileのSecret Keyが拒否されました。CloudflareのSecret設定を確認してください。"
+     :"Turnstile検証サービスがリクエストを拒否しました。表示された診断コードを確認してください。"
+   },502);
   }
-  if(result?.success!==true){
-   const allowedCodes=new Set(["missing-input-secret","invalid-input-secret","missing-input-response","invalid-input-response","bad-request","timeout-or-duplicate","internal-error"]);
-   const errorCodes=Array.isArray(result?.["error-codes"])?result["error-codes"].filter(code=>allowedCodes.has(code)):[];
+  if(!result||typeof result!=="object"){
+   console.error("Turnstile Siteverify returned invalid JSON",{status:upstream.status,contentType:upstream.headers.get("content-type")||"unknown"});
+   return json({success:false,code:"siteverify_invalid_response",message:"人間確認サービスから不正な応答が返されました。"},502);
+  }
+  if(result.success!==true){
    console.warn("Turnstile Siteverify rejected token",{errorCodes});
    return json({success:false,code:"turnstile_rejected",errorCodes,message:"人間確認に失敗しました。ページを再読み込みして、もう一度お試しください。"},403);
   }
+  const expectedHostnames=new Set(["kurolab.cc.cd","www.kurolab.cc.cd"]);
+  if(typeof result.hostname!=="string"||!expectedHostnames.has(result.hostname.toLowerCase())){
+   console.warn("Turnstile hostname mismatch",{hostname:typeof result.hostname==="string"?result.hostname:"missing"});
+   return json({success:false,code:"hostname_mismatch",message:"認証元ドメインが一致しません。サイト設定を確認してください。"},403);
+  }
   return json({success:true});
  }catch(error){
-  console.error("Turnstile Siteverify unavailable",error?.message||error);
+  console.error("Turnstile Siteverify unavailable",{name:error?.name||"Error",message:String(error?.message||error).slice(0,180)});
   return json({success:false,code:"siteverify_unavailable",message:"人間確認サービスに接続できません。"},502);
  }
 }
