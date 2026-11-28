@@ -162,6 +162,13 @@ async function runSync(env, scheduledAt) {
       return { processed: 0, acknowledged: 0 };
     }
 
+    // Validate the complete batch before touching D1. Event IDs arrive as
+    // decimal strings from Postgres bigint columns.
+    const ids = events.map(event => String(event?.event_id ?? ""));
+    if (ids.length !== events.length || ids.some(id => !/^\d+$/.test(id))) {
+      throw new Error("Sync queue contains an invalid event id");
+    }
+
     const statements = [];
     for (const event of events) {
       if (!event || typeof event !== "object") throw new Error("Sync queue contains an invalid event");
@@ -183,9 +190,6 @@ async function runSync(env, scheduledAt) {
     // D1 batch is transactional and executes statements in order. The queue is
     // acknowledged only after this succeeds, so a failure is safely retried.
     await db.batch(statements);
-
-    const ids = events.map(event => String(event.event_id || ""));
-    if (ids.some(id => !/^\\d+$/.test(id))) throw new Error("Sync queue contains an invalid event id");
 
     await callSyncRpc(ACK_RPC, env.KURO_SYNC_SECRET, {
       p_event_ids: ids
