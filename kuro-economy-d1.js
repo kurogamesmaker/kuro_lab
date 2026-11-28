@@ -316,15 +316,21 @@ async function handleAdmin(action, body, db, user) {
     const mode = String(body.mode || "").trim();
     const amount = Number(body.rewardAmount);
     const label = String(body.rewardLabel || "").trim();
+    const rewardType = body.rewardType === "fixed" ? "fixed" : "";
+    const cpuDifficulty = body.requiredCpuDifficulty == null || body.requiredCpuDifficulty === ""
+      ? "NONE" : String(body.requiredCpuDifficulty).toUpperCase();
     if (!UUID_RE.test(gameId) || !/^[A-Za-z0-9_-]{1,40}$/.test(mode)) throw new KuroEconomyError(400, "ゲームIDまたはモード指定が正しくありません。");
     if (!Number.isSafeInteger(amount) || amount < 0 || amount > 1000) throw new KuroEconomyError(400, "固定報酬は0〜1000 Pで設定してください。");
+    if (cpuDifficulty !== "NONE" || rewardType !== "fixed") throw new KuroEconomyError(400, "オンライン勝利報酬は固定報酬のみ設定できます。");
     if (!label || label.length > 80) throw new KuroEconomyError(400, "報酬表示名は1〜80文字で入力してください。");
     const isAllowed =
       ((gameId === "faa155cb-2143-4361-9a96-dc759d334e46" || gameId === "2eb37847-1b7e-43e4-ad98-901d5b830ac4") && mode === "wins-online") ||
       (gameId === "4ccccb72-d5db-4098-a7d4-1c28a0755e7b" && mode === "online") ||
       (gameId === "903a4c45-37bb-4a4b-a259-a5a8245de998" && ["werewolf_villager_wins","werewolf_wolf_wins"].includes(mode));
     if (!isAllowed) throw new KuroEconomyError(400, "このゲームまたはモードのオンライン勝利報酬は変更できません。");
-    const existing = await db.prepare("SELECT score_tiers FROM kuro_coin_game_rewards WHERE game_id=? AND mode=? AND required_cpu_difficulty='NONE'").bind(gameId, mode).first();
+    const game = await db.prepare("SELECT id,title,status FROM game_studio_games WHERE id=?").bind(gameId).first();
+    if (!game || game.status !== "published") throw new KuroEconomyError(400, "公開中のゲームだけ報酬設定を変更できます。");
+    const scoreTiers = "[]";
     const now = isoNow();
     const enabled = body.enabled === true ? 1 : 0;
     await db.prepare(
