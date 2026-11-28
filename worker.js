@@ -896,6 +896,121 @@ async function handleMigrationStructure(request, env) {
   }
 }
 
+const KURO_LEVEL_XP_SOURCE_THRESHOLDS = Object.freeze([
+  { level: 1, requiredXp: 0 },
+  { level: 2, requiredXp: 80 },
+  { level: 3, requiredXp: 200 },
+  { level: 4, requiredXp: 500 },
+  { level: 5, requiredXp: 800 },
+  { level: 6, requiredXp: 1200 },
+  { level: 7, requiredXp: 1600 },
+  { level: 8, requiredXp: 2100 },
+  { level: 9, requiredXp: 2600 },
+  { level: 10, requiredXp: 3000 }
+]);
+
+const KURO_LEVEL_XP_SOURCE_CASES = Object.freeze([
+  { xp: 0, expectedLevel: 1 },
+  { xp: 1, expectedLevel: 1 },
+  { xp: 100, expectedLevel: 2 },
+  { xp: 1000, expectedLevel: 5 },
+  { xp: 10000, expectedLevel: 12 },
+  { xp: 50000, expectedLevel: 23 },
+  { xp: 100000, expectedLevel: 32 },
+  { xp: 500000, expectedLevel: 70 },
+  { xp: 1000000, expectedLevel: 99 },
+  { xp: 10000000, expectedLevel: 315 }
+]);
+
+function migrationLevelXpRequired(levelValue, thresholds) {
+  const level = Math.max(1, Math.min(10000, Math.trunc(Number(levelValue) || 1)));
+  const rows = Array.isArray(thresholds) ? thresholds : [];
+  const exact = rows.find(row => Number(row.level) === level);
+  if (exact) return Number(exact.required_xp ?? exact.requiredXp ?? 0);
+
+  const highest = rows.reduce((best, row) => (
+    Number(row.level) > Number(best?.level || 0) ? row : best
+  ), null);
+  const baseLevel = Math.max(1, Math.trunc(Number(highest?.level) || 10));
+  const baseXp = Math.max(0, Number(highest?.required_xp ?? highest?.requiredXp ?? 10000));
+  const n = Math.max(level - baseLevel, 0);
+  return baseXp + 2000 * n + 100 * n * (n + 1);
+}
+
+function migrationLevelForXp(xpValue, thresholds) {
+  const xp = Math.max(0, Math.min(Number.MAX_SAFE_INTEGER, Math.trunc(Number(xpValue) || 0)));
+  const rows = Array.isArray(thresholds) ? thresholds : [];
+  let level = rows.reduce((best, row) => (
+    Number(row.required_xp ?? row.requiredXp) <= xp
+      ? Math.max(best, Number(row.level) || 1)
+      : best
+  ), 1);
+  while (level < 10000 && xp >= migrationLevelXpRequired(level + 1, rows)) {
+    level += 1;
+  }
+  return level;
+}
+
+async function handleMigrationLevelPreview(request, env) {
+  if (request.method !== "GET") return json({ error: "Method not allowed" }, 405);
+
+  const adminError = await requireMigrationAdmin(request);
+  if (adminError) return adminError;
+
+  const database = env?.KURO_MIGRATION_DB;
+  if (!database) return json({ error: "D1 migration database binding is unavailable." }, 503);
+
+  try {
+    const result = await database.prepare(
+      "SELECT level, required_xp FROM kuro_level_thresholds ORDER BY level"
+    ).all();
+    const thresholds = Array.isArray(result?.results) ? result.results : [];
+    if (!thresholds.length || thresholds.length > 10000) {
+      return json({ error: "D1レベル閾値データがありません。" }, 503);
+    }
+
+    const cases = KURO_LEVEL_XP_SOURCE_CASES.map(test => {
+      const actualLevel = migrationLevelForXp(test.xp, thresholds);
+      return {
+        xp: test.xp,
+        expectedLevel: test.expectedLevel,
+        actualLevel,
+        passed: actualLevel === test.expectedLevel
+      };
+    });
+    const requiredCases = [1, 2, 10, 11, 12, 15, 20].map(level => ({
+      level,
+      requiredXp: migrationLevelXpRequired(level, thresholds)
+    }));
+    const thresholdParity = thresholds.length === KURO_LEVEL_XP_SOURCE_THRESHOLDS.length &&
+      KURO_LEVEL_XP_SOURCE_THRESHOLDS.every(expected =>
+        thresholds.some(actual =>
+          Number(actual.level) === expected.level &&
+          Number(actual.required_xp) === expected.requiredXp
+        )
+      );
+    const passed = thresholdParity && cases.every(test => test.passed);
+
+    return json({
+      ready: true,
+      mode: "read-only-level-routine-port-preview",
+      migratedRoutines: ["kuro_level_xp_required", "kuro_level_for_xp"],
+      thresholdCount: thresholds.length,
+      thresholdParity,
+      testCaseCount: cases.length,
+      passedCaseCount: cases.filter(test => test.passed).length,
+      cases,
+      requiredCases,
+      parity: passed,
+      productionRoutingChanged: false,
+      d1WritesPerformed: false
+    });
+  } catch (error) {
+    console.error("KURO D1 level routine preview failed", error?.message || error);
+    return json({ error: "レベル計算の移植検証に失敗しました。" }, 503);
+  }
+}
+
 async function handleRealtime(request) {
   const url = new URL(request.url);
   const prefix = "/api/realtime";
@@ -1068,6 +1183,15 @@ export default {
         return json({
           error: error?.message || "KURO online room proxy failed"
         }, Number(error?.status) || 502);
+      }
+    }
+
+    if (url.pathname === "/api/migration/level-preview") {
+      try {
+        return await handleMigrationLevelPreview(request, env);
+      } catch (error) {
+        console.error("KURO D1 level routine preview handler failed", error?.message || error);
+        return json({ error: "D1 level routine preview unavailable." }, 503);
       }
     }
 
