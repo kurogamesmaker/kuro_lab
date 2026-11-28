@@ -6,6 +6,7 @@
 - Supabase remains the production system for Auth, Postgres/Data API, Realtime, and Edge Functions until each replacement has passed parity and security checks.
 - Supabase Storage remains the source of truth for uploaded file binaries. Existing bucket names, object keys, access modes, and stored URLs are preserved.
 - The Cloudflare D1 database named `kuro-migration-copy` is a migration/staging copy only. It is attached to the production Worker as `KURO_MIGRATION_DB` solely for admin-only, read-only migration diagnostics; regular application API traffic is not routed to it. It is not the live application database.
+- A separate D1 database named `kuro-app-data-mirror` is bound as `KURO_APP_DB`. It is a one-way, read-only mirror of 61 allowlisted Supabase tables, refreshed by the scheduled outbox sync Worker. Only explicit read-only Worker routes use it; Supabase remains authoritative for all writes.
 - Cloudflare R2 is not required for this architecture and must not be enabled by registering a payment card solely for this migration.
 
 ## Storage-only relay
@@ -41,6 +42,12 @@ Do not rename buckets, move files, rewrite object keys, change public/private se
 - No Supabase database or authentication endpoint is moved by this change.
 - No R2 bucket, paid subscription, or payment-card registration is needed.
 - To roll back the routing change, revert the Storage endpoint references and Worker route together; the underlying Supabase objects remain unchanged.
+
+## Active application read mirror (2026-11-28)
+
+The production Worker also has the separate `KURO_APP_DB` binding for the live-current-state mirror. The mirror is updated from Supabase outbox events once per minute. Current read-only application routes include home banners, authenticated portal history, public player XP/level/KC summary, and the public level leaderboard. The data may be briefly behind Supabase.
+
+No XP award, KC award, shop purchase/refund, admin adjustment, game result, or matchmaking write is handled by this D1 read mirror. Their existing Supabase triggers, routines, Edge Functions, and transaction boundaries remain authoritative.
 
 ## D1 read-only diagnostic stage (2026-11-28)
 
