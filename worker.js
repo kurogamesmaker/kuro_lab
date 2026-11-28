@@ -2168,7 +2168,7 @@ export default {
       if (!relative) return ["index.html"];
 
       // Do not expose Worker or deployment configuration source files.
-      if (["worker.js", "online-room-worker.js", "package.json", "vercel.json", "wrangler.jsonc"].includes(relative)) {
+      if (["worker.js", "online-room-worker.js", "kuro-economy-d1.js", "kuro-security-d1.js", "kuro-sns-read-d1.js", "kuro-data-sync.js", "package.json", "vercel.json", "wrangler.jsonc"].includes(relative)) {
         return [];
       }
 
