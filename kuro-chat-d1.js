@@ -699,6 +699,13 @@ export async function handleKuroD1ChatAccountCleanup(request,env) {
   if (request.method !== "POST") return json({error:{message:"POST required",code:"METHOD_NOT_ALLOWED"}},405,origin);
   try {
     const user = await authenticate(request);
+    const rawBody = await request.text();
+    if (encoder.encode(rawBody).byteLength > 4096) throw new KuroChatError(413,"リクエストが大きすぎます。","REQUEST_TOO_LARGE");
+    let body;
+    try { body = rawBody ? JSON.parse(rawBody) : {}; } catch (_) { throw new KuroChatError(400,"JSONが正しくありません。","INVALID_JSON"); }
+    if (body?.intent !== "delete-account" || body?.confirmation !== "削除する") {
+      throw new KuroChatError(400,"アカウント削除の確認が必要です。","CONFIRMATION_REQUIRED");
+    }
     const db = env?.KURO_APP_DB;
     if (!db) throw new KuroChatError(503,"Cloudflare D1に接続できません。","D1_UNAVAILABLE");
     const userId = user.id;
