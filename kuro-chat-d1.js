@@ -179,8 +179,8 @@ async function scopeSql(db, table, userId, operation, payload) {
     values: [userId,userId]
   };
   if (table === "chat_message_reads") return {
-    sql: "EXISTS (SELECT 1 FROM chat_messages AS __cm INNER JOIN chat_conversations AS __cc ON __cc.id=__cm.conversation_id WHERE __cm.id=chat_message_reads.message_id AND (__cc.user_a=? OR __cc.user_b=?))",
-    values: [userId,userId]
+    sql: "reader_id=? AND EXISTS (SELECT 1 FROM chat_messages AS __cm INNER JOIN chat_conversations AS __cc ON __cc.id=__cm.conversation_id WHERE __cm.id=chat_message_reads.message_id AND (__cc.user_a=? OR __cc.user_b=?))",
+    values: [userId,userId,userId]
   };
   if (table === "chat_message_hides") return {
     sql: "user_id=? AND EXISTS (SELECT 1 FROM chat_messages AS __cm INNER JOIN chat_conversations AS __cc ON __cc.id=__cm.conversation_id WHERE __cm.id=chat_message_hides.message_id AND (__cc.user_a=? OR __cc.user_b=?))",
@@ -199,8 +199,8 @@ async function scopeSql(db, table, userId, operation, payload) {
     values: [userId]
   };
   if (table === "group_chat_message_reads") return {
-    sql: "EXISTS (SELECT 1 FROM group_chat_members AS __gm WHERE __gm.group_id=group_chat_message_reads.group_id AND __gm.user_id=?)",
-    values: [userId]
+    sql: "reader_id=? AND EXISTS (SELECT 1 FROM group_chat_members AS __gm WHERE __gm.group_id=group_chat_message_reads.group_id AND __gm.user_id=?)",
+    values: [userId,userId]
   };
   if (table === "group_chat_mentions") return {
     sql: "EXISTS (SELECT 1 FROM group_chat_members AS __gm WHERE __gm.group_id=group_chat_mentions.group_id AND __gm.user_id=?)",
@@ -477,22 +477,66 @@ async function insertRows(db, table, userId, body) {
   return results;
 }
 
+function extractIds(filters, column = "id") {
+  const values = [];
+  for (const filter of Array.isArray(filters) ? filters : []) {
+    if (filter?.column !== column) continue;
+    if (filter.op === "eq" && UUID_RE.test(String(filter.value || ""))) values.push(String(filter.value));
+    if (filter.op === "in" && Array.isArray(filter.value)) {
+      for (const id of filter.value) if (UUID_RE.test(String(id || ""))) values.push(String(id));
+    }
+  }
+  return [...new Set(values)];
+}
+
 async function updateRows(db, table, userId, body) {
   const updates = body.payload;
-  if (!updates || typeof updates !== "object" || Array.isArray(updates)) throw new KuroChatError(400,"更新データが正しくありません。","INVALID_BODY");
-  const keys = Object.keys(updates);
-  if (!keys.length || keys.some(k=>!validColumn(table,k)) || keys.some(k=>["id","user_a","user_b","created_by","sender_id","user_id","reader_id","message_id","conversation_id","group_id","joined_at","created_at"].includes(k))) {
-    throw new KuroChatError(400,"更新項目が正しくありません。","INVALID_COLUMN");
+  if (!updates || typeof updates !== "object" || Array.isArray(updates)) {
+    throw new KuroChatError(400,"更新データが正しくありません。","INVALID_BODY");
   }
+  const allowed = {
+    chat_conversations: ["updated_at"],
+    group_conversations: ["name","icon","updated_at"],
+    chat_messages: ["content"],
+    group_chat_messages: ["content"]
+  };
+  const allowedFields = allowed[table] || [];
+  const keys = Object.keys(updates);
+  if (!keys.length || keys.some(k=>!allowedFields.includes(k))) {
+    throw new KuroChatError(403,"この項目の更新は許可されていません。","INVALID_COLUMN");
+  }
+  if (!body.filters?.length) throw new KuroChatError(400,"更新対象を指定してください。","FILTER_REQUIRED");
+
+  if (table === "chat_messages" || table === "group_chat_messages") {
+    const ids = extractIds(body.filters);
+    if (!ids.length || ids.length !== 1) throw new KuroChatError(400,"メッセージIDを指定してください。","FILTER_REQUIRED");
+    const row = await db.prepare("SELECT sender_id,conversation_id,group_id FROM " + table + " WHERE id=? LIMIT 1").bind(ids[0]).first();
+    if (!row || row.sender_id !== userId) throw new KuroChatError(403,"自分が送信したメッセージだけ編集できます。","FORBIDDEN");
+    if (updates.content != null && String(updates.content).length > 1000) {
+      throw new KuroChatError(400,"メッセージは1000文字以内にしてください。","INVALID_CONTENT");
+    }
+  }
+
+  if (table === "group_conversations") {
+    const groupIds = extractIds(body.filters);
+    if (!groupIds.length) throw new KuroChatError(400,"グループIDを指定してください。","FILTER_REQUIRED");
+    for (const id of groupIds) {
+      if (!await isGroupMember(db,id,userId)) throw new KuroChatError(403,"グループのメンバーではありません。","FORBIDDEN");
+    }
+    if (updates.name != null) {
+      const name = String(updates.name).trim();
+      if (!name || name.length > 60) throw new KuroChatError(400,"グループ名は1〜60文字にしてください。","INVALID_GROUP");
+      updates.name = name;
+    }
+  }
+  if (table === "chat_conversations" && keys.some(k=>k!=="updated_at")) {
+    throw new KuroChatError(403,"会話情報の更新は許可されていません。","FORBIDDEN");
+  }
+
   const scope = await scopeSql(db,table,userId,"update",null);
   const filter = filterSql(table,body.filters);
-  if (!body.filters?.length) throw new KuroChatError(400,"更新対象を指定してください。","FILTER_REQUIRED");
-  if (table === "group_conversations") {
-    const groupIds = (body.filters || []).filter(f=>f.column==="id"&&f.op==="eq").map(f=>String(f.value));
-    for(const id of groupIds) if(!await isGroupMember(db,id,userId)) throw new KuroChatError(403,"グループのメンバーではありません。","FORBIDDEN");
-  }
   const setSql = keys.map(k=>'"'+k+'"=?').join(",");
-  const values = keys.map(k=>k==="icon"||k==="name"||k==="updated_at"?String(updates[k]):updates[k]);
+  const values = keys.map(k=>String(updates[k]));
   try {
     const result = await db.prepare("UPDATE " + table + " SET " + setSql + " WHERE (" + scope.sql + ")" + filter.sql + " RETURNING *")
       .bind(...values,...scope.values,...filter.values).all();
@@ -501,24 +545,83 @@ async function updateRows(db, table, userId, body) {
 }
 
 async function deleteRows(db, table, userId, body) {
-  const scope = table === "group_conversations"
-    ? { sql: "(created_by=? OR EXISTS (SELECT 1 FROM group_chat_members AS __gm WHERE __gm.group_id=group_conversations.id AND __gm.user_id=?))", values: [userId,userId] }
-    : await scopeSql(db,table,userId,"delete",null);
-  const filter = filterSql(table,body.filters);
-  if (!body.filters?.length) throw new KuroChatError(400,"削除対象を指定してください。","FILTER_REQUIRED");
-  if (table === "group_chat_members") {
-    const groupIds = (body.filters || []).filter(f=>f.column==="group_id"&&f.op==="eq").map(f=>String(f.value));
-    for(const id of groupIds) if(!await isGroupAdmin(db,id,userId)) throw new KuroChatError(403,"メンバーを削除できるのは管理者だけです。","FORBIDDEN");
+  const filters = body.filters;
+  if (!Array.isArray(filters) || !filters.length) throw new KuroChatError(400,"削除対象を指定してください。","FILTER_REQUIRED");
+
+  if (table === "chat_conversations") {
+    throw new KuroChatError(403,"会話の削除はまだ利用できません。","FORBIDDEN");
   }
+
   if (table === "group_conversations") {
-    const ids = (body.filters || []).filter(f=>f.column==="id"&&f.op==="eq").map(f=>String(f.value));
-    for(const id of ids) {
-      const group = await db.prepare("SELECT created_by FROM group_conversations WHERE id=?").bind(id).first();
-      if(!group || (group.created_by !== userId && !await isGroupAdmin(db,id,userId))) {
+    const ids = extractIds(filters);
+    if (!ids.length) throw new KuroChatError(400,"グループIDを指定してください。","FILTER_REQUIRED");
+    for (const id of ids) {
+      const group = await db.prepare("SELECT id,created_by FROM group_conversations WHERE id=? LIMIT 1").bind(id).first();
+      if (!group || (group.created_by !== userId && !await isGroupAdmin(db,id,userId))) {
         throw new KuroChatError(403,"グループを削除する権限がありません。","FORBIDDEN");
       }
     }
+    for (const id of ids) {
+      await db.batch([
+        db.prepare("DELETE FROM notifications WHERE group_id=?").bind(id),
+        db.prepare("DELETE FROM group_chat_mentions WHERE group_id=?").bind(id),
+        db.prepare("DELETE FROM group_chat_message_reads WHERE group_id=?").bind(id),
+        db.prepare("DELETE FROM group_chat_messages WHERE group_id=?").bind(id),
+        db.prepare("DELETE FROM group_chat_members WHERE group_id=?").bind(id),
+        db.prepare("DELETE FROM group_conversations WHERE id=?").bind(id)
+      ]);
+    }
+    return [];
   }
+
+  if (table === "group_chat_members") {
+    const groupIds = extractIds(filters,"group_id");
+    if (!groupIds.length) throw new KuroChatError(400,"グループIDを指定してください。","FILTER_REQUIRED");
+    for (const id of groupIds) if (!await isGroupAdmin(db,id,userId)) {
+      throw new KuroChatError(403,"メンバーを削除できるのは管理者だけです。","FORBIDDEN");
+    }
+  }
+
+  if (table === "chat_messages" || table === "group_chat_messages") {
+    const ids = extractIds(filters);
+    if (!ids.length || ids.length !== 1) throw new KuroChatError(400,"メッセージIDを指定してください。","FILTER_REQUIRED");
+    const row = await db.prepare("SELECT id,sender_id,conversation_id,group_id FROM " + table + " WHERE id=? LIMIT 1").bind(ids[0]).first();
+    if (!row || row.sender_id !== userId) throw new KuroChatError(403,"自分が送信したメッセージだけ削除できます。","FORBIDDEN");
+    if (table === "chat_messages") await requireConversation(db,row.conversation_id,userId);
+    else if (!await isGroupMember(db,row.group_id,userId)) throw new KuroChatError(403,"このグループのメンバーではありません。","FORBIDDEN");
+    if (table === "chat_messages") {
+      await db.batch([
+        db.prepare("DELETE FROM notifications WHERE message_id=?").bind(row.id),
+        db.prepare("DELETE FROM chat_message_hides WHERE message_id=?").bind(row.id),
+        db.prepare("DELETE FROM chat_message_reads WHERE message_id=?").bind(row.id),
+        db.prepare("DELETE FROM chat_messages WHERE id=?").bind(row.id)
+      ]);
+    } else {
+      await db.batch([
+        db.prepare("DELETE FROM notifications WHERE message_id=? AND group_id=?").bind(row.id,row.group_id),
+        db.prepare("DELETE FROM group_chat_mentions WHERE message_id=?").bind(row.id),
+        db.prepare("DELETE FROM group_chat_message_reads WHERE message_id=?").bind(row.id),
+        db.prepare("DELETE FROM group_chat_messages WHERE id=?").bind(row.id)
+      ]);
+    }
+    return [];
+  }
+
+  if (table === "chat_message_reads") {
+    const messageIds = extractIds(filters,"message_id");
+    if (!messageIds.length || filters.some(f=>f.column==="reader_id"&&String(f.value)!==userId)) {
+      throw new KuroChatError(403,"自分の既読情報だけ削除できます。","FORBIDDEN");
+    }
+  }
+  if (table === "group_chat_message_reads") {
+    const messageIds = extractIds(filters,"message_id");
+    if (!messageIds.length || filters.some(f=>f.column==="reader_id"&&String(f.value)!==userId)) {
+      throw new KuroChatError(403,"自分の既読情報だけ削除できます。","FORBIDDEN");
+    }
+  }
+
+  const scope = await scopeSql(db,table,userId,"delete",null);
+  const filter = filterSql(table,filters);
   try {
     const result = await db.prepare("DELETE FROM " + table + " WHERE (" + scope.sql + ")" + filter.sql + " RETURNING *")
       .bind(...scope.values,...filter.values).all();
