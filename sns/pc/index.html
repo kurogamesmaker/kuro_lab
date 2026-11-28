@@ -3682,7 +3682,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
         let chatConversationCacheAt = 0;
         let chatConversationLoadPromise = null;
         // 会話一覧とメッセージは、このブラウザのタブ内に一時保存して再表示を速くする。
-        // Supabase側が正本。送受信・再読み込み時にはサーバーの最新データで更新する。
+        // Cloudflare D1がチャットデータの正本。認証と画像保存はSupabaseを利用する。
         function chatCacheKey(kind, id) {
             return currentUser?.id ? `kuro-chat-${kind}-${currentUser.id}-${id || 'list'}` : '';
         }
