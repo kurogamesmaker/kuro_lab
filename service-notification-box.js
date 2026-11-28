@@ -19,10 +19,42 @@
   }
 
   function getDb() {
-    return window.kuroGamesDB || window.kuroSNSDB || window.kuroPortalDB || null;
+    const client = window.kuroGamesDB || window.kuroSNSDB || window.kuroPortalDB || null;
+    if (client && window.KuroD1Chat) window.KuroD1Chat.install(client);
+    return client;
+  }
+
+  function ensureD1ChatAdapter(client) {
+    if (!client) return Promise.resolve(null);
+    if (window.KuroD1Chat) {
+      window.KuroD1Chat.install(client);
+      return Promise.resolve(client);
+    }
+    if (!window.__kuroD1ChatAdapterPromise) {
+      window.__kuroD1ChatAdapterPromise = new Promise((resolve,reject) => {
+        const existing = document.querySelector('script[data-kuro-d1-chat-adapter]');
+        if (existing) {
+          existing.addEventListener('load',resolve,{once:true});
+          existing.addEventListener('error',reject,{once:true});
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = '/kuro-chat-d1-client.js?v=20261128d1';
+        script.async = true;
+        script.dataset.kuroD1ChatAdapter = '1';
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('D1チャットクライアントを読み込めませんでした。'));
+        document.head.appendChild(script);
+      });
+    }
+    return window.__kuroD1ChatAdapterPromise.then(() => {
+      if (window.KuroD1Chat) window.KuroD1Chat.install(client);
+      return client;
+    });
   }
 
   let db = getDb();
+  void ensureD1ChatAdapter(db).catch(error => console.warn('[KURO D1 chat adapter]',error));
   let user = null;
   let items = [];
   let prefs = {};
@@ -388,6 +420,7 @@
       if (list) list.innerHTML = '<div class="kuro-nb-error">通知データベースを初期化できませんでした。ページを再読み込みしてください。</div>';
       return;
     }
+    await ensureD1ChatAdapter(client);
     if (busy) return;
     busy = true;
     const sequence = ++refreshSequence;
