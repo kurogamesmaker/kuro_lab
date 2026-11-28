@@ -1497,11 +1497,30 @@ async function deleteSnsItem(type,id,button){
  if(!config||!config.list.some(x=>x.id===id))return;
  if(!confirm("この"+config.label+"を削除します。元に戻せません。実行しますか？"))return;
  if(button)button.disabled=true;
- const {data,error}=await db.from(config.table).delete().eq("id",id).select("id");
- if(button)button.disabled=false;
- if(error){alert("削除できませんでした："+error.message);return;}
- if(!data||!data.length){alert("削除されませんでした。管理者権限または削除ポリシーを確認してください。");return;}
- await loadSns();
+ try{
+  if(type==="post"||type==="reply"){
+   const session=await db.auth.getSession();
+   if(session?.error)throw session.error;
+   const token=session?.data?.session?.access_token;
+   if(!token)throw new Error("管理者ログインが必要です。");
+   const response=await fetch("/api/kuro-d1/sns-posts",{
+    method:"POST",credentials:"same-origin",cache:"no-store",
+    headers:{Authorization:"Bearer "+token,"Content-Type":"application/json",Accept:"application/json"},
+    body:JSON.stringify({action:type==="post"?"admin-delete-post":"admin-delete-reply",...(type==="post"?{postId:id}:{replyId:id})})
+   });
+   const payload=await response.json().catch(()=>({}));
+   if(!response.ok||payload.deleted!==true)throw new Error(payload?.error||"Cloudflare D1で削除できませんでした。");
+  }else{
+   const {data,error}=await db.from(config.table).delete().eq("id",id).select("id");
+   if(error)throw error;
+   if(!data||!data.length)throw new Error("削除されませんでした。管理者権限または削除ポリシーを確認してください。");
+  }
+  await loadSns();
+ }catch(error){
+  alert("削除できませんでした："+(error?.message||"通信状態を確認してください。"));
+ }finally{
+  if(button)button.disabled=false;
+ }
 }
 
 function opsIsBanned(user){return !!user.banned_until&&new Date(user.banned_until).getTime()>Date.now();}
