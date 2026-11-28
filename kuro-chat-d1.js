@@ -683,6 +683,45 @@ async function handleQuery(request,env,user) {
   return {data,error:null};
 }
 
+export async function handleKuroD1ChatAdminStats(request,env) {
+  const origin = request.headers.get("Origin");
+  if (request.method === "OPTIONS") {
+    if (origin && !ALLOWED_ORIGINS.has(origin)) return new Response(null,{status:403});
+    return new Response(null,{status:204,headers:{"Cache-Control":"no-store"}});
+  }
+  if (origin && !ALLOWED_ORIGINS.has(origin)) return json({error:{message:"Origin not allowed",code:"ORIGIN_NOT_ALLOWED"}},403,origin);
+  if (request.method !== "GET") return json({error:{message:"GET required",code:"METHOD_NOT_ALLOWED"}},405,origin);
+  try {
+    const user = await authenticate(request);
+    const db = env?.KURO_APP_DB;
+    if (!db) throw new KuroChatError(503,"Cloudflare D1に接続できません。","D1_UNAVAILABLE");
+    const admin = await db.prepare("SELECT user_id FROM admin_users WHERE user_id=? LIMIT 1").bind(user.id).first();
+    if (!admin) throw new KuroChatError(403,"管理者権限が必要です。","ADMIN_REQUIRED");
+
+    const url = new URL(request.url);
+    const requestedSince = url.searchParams.get("since") || "";
+    const parsedSince = Date.parse(requestedSince);
+    const minimum = Date.now() - 366 * 24 * 60 * 60 * 1000;
+    const since = new Date(Number.isFinite(parsedSince) ? Math.max(minimum,Math.min(Date.now(),parsedSince)) : Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    const [dm,group] = await Promise.all([
+      db.prepare("SELECT substr(datetime(created_at,'+9 hours'),1,10) AS chat_date,COUNT(*) AS count FROM chat_messages WHERE created_at>=? GROUP BY chat_date ORDER BY chat_date")
+        .bind(since).all(),
+      db.prepare("SELECT substr(datetime(created_at,'+9 hours'),1,10) AS chat_date,COUNT(*) AS count FROM group_chat_messages WHERE created_at>=? GROUP BY chat_date ORDER BY chat_date")
+        .bind(since).all()
+    ]);
+    return json({
+      dm_daily: (dm?.results || []).map(row=>({chat_date:String(row.chat_date),count:Number(row.count)||0})),
+      group_daily: (group?.results || []).map(row=>({chat_date:String(row.chat_date),count:Number(row.count)||0})),
+      source:"cloudflare-d1"
+    },200,origin);
+  } catch(error) {
+    const status = Number(error?.status) || 500;
+    if (status >= 500) console.error("[kuro-chat-d1-admin-stats]",error?.code || "ERROR",error?.message || error);
+    return json({error:{message:error?.message || "チャット統計を取得できませんでした。",code:error?.code || "D1_CHAT_STATS_FAILED"}},status,origin);
+  }
+}
+
 export async function handleKuroD1Chat(request,env) {
   const origin = request.headers.get("Origin");
   if (request.method === "OPTIONS") {
