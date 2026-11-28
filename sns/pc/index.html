@@ -2922,7 +2922,10 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 if (removed && typeof removed.catch === 'function') removed.catch(error => console.warn(label || 'KURO Realtime channel removal failed:', error));
             } catch (error) { console.warn(label || 'KURO Realtime channel removal failed:', error); }
         }
+        let kuroD1DirectChatPollTimer = null;
         function stopChatRealtime() {
+            if (kuroD1DirectChatPollTimer) clearInterval(kuroD1DirectChatPollTimer);
+            kuroD1DirectChatPollTimer = null;
             const channel = kuroChatRealtimeChannel;
             kuroChatRealtimeChannel = null;
             kuroChatRealtimeConversationId = null;
@@ -2966,6 +2969,10 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') console.warn('KURO direct chat Realtime status:', status);
                 });
             kuroChatRealtimeChannel = channel;
+            kuroD1DirectChatPollTimer = window.setInterval(() => {
+                if (document.visibilityState !== "visible" || activeChatType !== "direct" || activeChatId !== conversationId) return;
+                syncDirectChatNewMessages(conversationId, activeChatPeer).catch(error => console.warn("KURO D1 direct chat poll failed:", error));
+            }, 5000);
         }
         async function syncDirectChatNewMessages(conversationId, peerId) {
             if (!conversationId || !supabaseClient || activeChatType !== 'direct' || activeChatId !== conversationId) return;
@@ -4072,7 +4079,10 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
         let kuroGroupMessageSeen = new Map();
         let kuroGroupMessageLatestAt = new Map();
         let kuroGroupSyncPromises = new Map();
+        let kuroD1GroupChatPollTimer = null;
         function stopGroupChatRealtime() {
+            if (kuroD1GroupChatPollTimer) clearInterval(kuroD1GroupChatPollTimer);
+            kuroD1GroupChatPollTimer = null;
             const channel = kuroGroupRealtimeChannel;
             kuroGroupRealtimeChannel = null;
             kuroGroupRealtimeId = null;
@@ -4183,6 +4193,10 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') console.warn('KURO group chat Realtime status:', status);
                 });
             kuroGroupRealtimeChannel = channel;
+            kuroD1GroupChatPollTimer = window.setInterval(() => {
+                if (document.visibilityState !== "visible" || activeChatType !== "group" || activeChatId !== groupId) return;
+                syncGroupChatNewMessages(groupId).catch(error => console.warn("KURO D1 group chat poll failed:", error));
+            }, 5000);
         }
         
         function hideGroupMentionSuggestions() {
