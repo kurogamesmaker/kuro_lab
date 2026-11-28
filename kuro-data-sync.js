@@ -67,7 +67,8 @@ async function ensureEconomySchema(db) {
 
   // Keep mirroring legacy Supabase writes until the explicit D1 authority switch.
   await db.prepare("CREATE TABLE IF NOT EXISTS __kuro_economy_mirror_control (id INTEGER PRIMARY KEY CHECK (id=1), snapshot_ready INTEGER NOT NULL DEFAULT 0, snapshot_at TEXT, d1_write_authority INTEGER NOT NULL DEFAULT 0)").run();
-  const controlColumns = await getAll(db.prepare("PRAGMA table_info('__kuro_economy_mirror_control')"));
+  const controlInfo = await db.prepare("PRAGMA table_info('__kuro_economy_mirror_control')").all();
+  const controlColumns = Array.isArray(controlInfo?.results) ? controlInfo.results : [];
   if (!controlColumns.some(column => column.name === "d1_write_authority")) {
     await db.prepare("ALTER TABLE __kuro_economy_mirror_control ADD COLUMN d1_write_authority INTEGER NOT NULL DEFAULT 0").run();
   }
