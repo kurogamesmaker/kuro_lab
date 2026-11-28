@@ -70,11 +70,12 @@ The following application paths use `KURO_APP_DB` as a read mirror while Supabas
 - `GET /api/kuro-d1/portal-history`: authenticated, user-scoped portal history.
 - `GET /api/kuro-d1/public-player-summary?userId=...`: publicly visible KC balance, XP/level state, and level thresholds for an existing profile. The exposed fields match the existing public balance endpoint and public level read policies.
 - `GET /api/kuro-d1/level-leaderboard`: top 50 public level entries joined to public profile display fields.
+- `GET /api/kuro-d1/leaderboard?gameId=...&mode=...`: public game leaderboard projection gated by published-game status and the game's ranking feature setting. It preserves canonical metric sorting and the existing verified-source filters for Number Guess, Tic-Tac-Toe HARD CPU, Prime Factorization, Sushi Typing, and UNON hard CPU records; Daifugo bot claims remain unavailable.
 
 All endpoints are read-only and return `Cache-Control: no-store`. The active mirror sync cadence is once per minute, so a newly awarded XP/KC balance can appear in D1 with a short delay. The write paths and XP/KC ledger/claim triggers remain on Supabase. In particular, verified wins, level awards, milestone rewards, purchases, refunds, and admin adjustments must not be switched to D1 until their full transactional and idempotency behavior has been reimplemented and verified.
 
 The level-up notification poll continues to read the Supabase ledger so immediate level-up effects are not delayed by the mirror's sync interval.
-Client code retains the previous Supabase read path as an automatic fallback if a D1 projection is temporarily unavailable. A D1 error therefore does not disable profile, KC, or level display.
+Client code retains the previous Supabase read path as an automatic fallback if a D1 projection is temporarily unavailable. A D1 error therefore does not disable profile, KC, or level display. The public ranking page and homepage showcase also use D1 first and fall back to the existing `kurogames-online` leaderboard action. Signed-in viewers on modes requiring pending verified-session reconciliation continue through that original action.
 
 ## Next migration stages
 
