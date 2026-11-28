@@ -212,13 +212,15 @@ async function getFeed(request, db, viewer) {
   if (action === "user-posts") {
     const userId = String(url.searchParams.get("userId") || "");
     if (!UUID_RE.test(userId)) throw new KuroSnsError(400, "ユーザーIDが正しくありません。");
-    const [posts, followers, following] = await Promise.all([
+    const [profile, posts, followers, following] = await Promise.all([
+      db.prepare("SELECT id,username,kuro_id,avatar_url,bio FROM profiles WHERE id=? LIMIT 1").bind(userId).first(),
       loadPostRows(db, { userId, limit: 30, viewerId }),
       db.prepare("SELECT COUNT(*) AS total FROM follows WHERE following_id=?").bind(userId).first(),
       db.prepare("SELECT COUNT(*) AS total FROM follows WHERE follower_id=?").bind(userId).first()
     ]);
     const total = await db.prepare("SELECT COUNT(*) AS total FROM posts WHERE user_id=?").bind(userId).first();
     return {
+      profile: profile || null,
       posts,
       post_count: Number(total?.total || 0),
       followers: Number(followers?.total || 0),
@@ -260,10 +262,10 @@ async function getFeed(request, db, viewer) {
 
 async function createPost(db, user, body) {
   const content = typeof body.content === "string" ? body.content.trim() : "";
-  if (!content || [...content].length > MAX_POST_CHARS) {
-    throw new KuroSnsError(400, "ポストは1〜130文字で入力してください。");
-  }
   const media = parseMedia(body.media, user.id);
+  if ((!content && !media.length) || [...content].length > MAX_POST_CHARS) {
+    throw new KuroSnsError(400, "ポストは文章か写真を追加し、文章は130文字以内で入力してください。");
+  }
   const id = crypto.randomUUID();
   const createdAt = new Date().toISOString();
   const hashtags = parseHashtags(content);
