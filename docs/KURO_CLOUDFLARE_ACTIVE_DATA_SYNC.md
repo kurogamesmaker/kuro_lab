@@ -40,3 +40,12 @@
 - Client reads automatically fall back to the existing Supabase query/function path if an individual D1 read projection fails. The authenticated KuroGames SDK's ranking calls and all ranking submissions remain on the existing Edge Function path; only the public web ranking surfaces are D1-first.
 - If the source schema changes, apply the corresponding D1 schema migration before allowing the Worker to sync those new columns. Schema mismatches deliberately stop and retain the event for retry.
 - A backlog larger than 100 events is processed over multiple Cron runs.
+## Economy and Store write-authority cutover
+
+- The initial snapshot remains a one-way mirror until the explicit D1 authority flag is enabled.
+- `kuro-data-sync` keeps mirroring KC/XP balances, ledgers, reward settings, claims, Store inventory, equipment and transactions while `__kuro_economy_mirror_control.d1_write_authority` is `0`.
+- The D1 economy API rejects all economy and Store mutations with HTTP 503 while the flag is `0`; read endpoints remain available. This is an intentional fail-closed gate during deployment.
+- Only after the new `kuro-lab` Worker and the updated Supabase Edge Functions are deployed, the initial cutover migration is applied, D1 schema version 2 is present, parity and duplicate checks pass, and the Supabase outbox is empty may the final mirror-detachment migration be applied.
+- Before enabling D1 writes, verify the mirror outbox is still empty and the D1 sync worker has no error. Then set `d1_write_authority=1` on the production D1 control row. From that point, the sync worker acknowledges but does not apply old Supabase mutations for the D1-owned economy tables.
+- Do not set the D1 authority flag before every updated client/Edge Function path is ready. Do not re-enable legacy Supabase economy triggers after D1 has accepted live writes; rollback must preserve a single writer.
+- Supabase Auth remains the identity provider. Supabase also retains historical rows as rollback evidence; the live KC/XP/Store write authority moves to Cloudflare D1.
