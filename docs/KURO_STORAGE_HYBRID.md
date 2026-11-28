@@ -67,8 +67,69 @@ PostgreSQL source snapshot captured on 2026-11-28:
 D1 live catalog audit:
 
 - 89 manifest tables exist, with 642 columns and 117 primary-key columns. The per-table column counts were checked against the PostgreSQL base-table inventory and matched.
-- D1 currently reports 82 indexes, zero foreign-key constraints, zero triggers, and zero views.
+- D1 currently reports 82 indexes, zero foreign-key constraints, and zero triggers. The `kuro_public_game_rewards` view has since been created in the staging copy and verified to expose 8 columns and 5 rows, matching the Supabase view's row count at the time of comparison.
 - SQLite/D1 does not provide PostgreSQL Row Level Security policies or PostgreSQL SQL routines as drop-in equivalents. Their required authorization and business logic must be inventoried and implemented in Workers (or another explicitly tested equivalent).
 - Index counts are not expected to be copied one-for-one; all query paths must be reviewed and indexed for the D1 workload.
 
 The dashboard deliberately reports `cutoverAllowed: false`. Matching table/column counts is only a structural checkpoint, not proof of type/default/constraint/transaction/RLS/business-logic parity. Keep all production app traffic on Supabase until every relevant policy, constraint, trigger, view, and routine has been reviewed and replaced, and functional/security parity plus rollback tests pass.
+
+## First PostgreSQL view port (2026-11-28)
+
+The read-only PostgreSQL view `public.kuro_public_game_rewards` was ported to the isolated D1 staging copy as `kuro_public_game_rewards`:
+
+```sql
+CREATE VIEW IF NOT EXISTS kuro_public_game_rewards AS
+SELECT game_id, mode, reward_amount, enabled, required_cpu_difficulty,
+       reward_label, reward_type, score_tiers
+FROM kuro_coin_game_rewards
+WHERE enabled = 1 AND reward_amount > 0;
+```
+
+Verification:
+- PostgreSQL source view: 8 columns and 5 rows at comparison time.
+- D1 staged view: 8 columns and 5 rows.
+- D1 staged view row count equals the qualifying base-table row count (enabled and positive reward amount).
+- The Worker structure endpoint compares the view and column counts. This is a staging migration only; no production API read has been rerouted.
+
+## PostgreSQL routine, trigger, and RLS inventory (2026-11-28)
+
+Read-only catalog inspection identified:
+- 92 public routines: 72 marked `SECURITY DEFINER`, 86 written in PL/pgSQL and 6 in SQL.
+- 119 user-defined triggers across 29 trigger functions.
+- 136 public RLS policies across 41 tables; all 89 public base tables currently have RLS enabled.
+- A single source view was found and has been ported to D1 staging as described above.
+
+High-risk routine groups that need feature-level migration plans:
+- Game state and matchmaking: Daifugo, Sevens, UNON, Werewolf, and online room joins/leaves.
+- Game results and economy: score submission, verified Tic-Tac-Toe/number results, win events, KC awards, level/XP awards, and related ledger updates.
+- Store and entitlements: purchase, free item claim, inventory discard, equipped item changes, and studio membership.
+- Account/security: IP ban administration/checks, username rate limiting, account suspension enforcement, and new-user setup.
+- Notifications and SNS: chat/post notification triggers and reply creation.
+
+Important migration rule:
+- The 72 `SECURITY DEFINER` routines must not be copied as if they were ordinary SQL. Each needs a documented caller, authenticated identity source, authorization check, transaction boundary, idempotency key where needed, and expected side effects before a Worker replacement is enabled.
+- Triggers must be mapped to the operations that currently fire them. In particular, score-to-record synchronization, reward and level ledger writes, notifications, and account-suspension guards must remain atomic with their parent operation.
+- RLS policy migration is per table and action (`SELECT`, `INSERT`, `UPDATE`, `DELETE`), not a single generic authenticated-user check.
+- Pure read-only utilities can be ported separately, but are not production-routed until output parity and authorization behavior are tested.
+
+Recommended sequence:
+1. Finish the routine-to-caller and trigger-to-write-operation map for one feature at a time.
+2. Port low-risk read-only projections and verify result parity.
+3. Implement one feature's Worker handlers with explicit user identity derived from verified sessions, ownership checks, and D1 transactions.
+4. Run functional, negative-authorization, concurrency, and rollback tests in staging.
+5. Only then consider switching that feature's production traffic.
+
+## Read-only level calculation routine port (2026-11-28)
+
+Two deterministic read-only routines have been ported into the admin-only Worker preview:
+- `kuro_level_xp_required`: reads the copied `kuro_level_thresholds` rows and applies the PostgreSQL fallback curve above the highest explicit threshold.
+- `kuro_level_for_xp`: resolves the highest configured level for the supplied total XP, then advances through the same fallback curve.
+
+The admin-only `GET /api/migration/level-preview` route:
+- Reads only the ten copied threshold rows from D1.
+- Checks that those threshold rows match the PostgreSQL source snapshot.
+- Compares ten known XP-to-level cases captured from the live PostgreSQL routines.
+- Returns only the deterministic test values and parity status.
+- Does not write D1 or Supabase data and does not change any production route.
+
+The preview is not a replacement for XP award/ledger routines. Those writes remain on Supabase until their trigger, transaction, and authorization semantics are ported and tested.
