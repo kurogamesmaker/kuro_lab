@@ -251,6 +251,18 @@ async function runSync(env, scheduledAt) {
       }
       if (!SYNC_TABLES.has(tableName)) throw new Error("Sync queue contains a table outside the allowlist");
 
+      if (tableName === "kuro_economy_pending_events") {
+        // Pending economy events are immutable, append-only work items. Never
+        // replace/delete-and-reinsert them: an outbox retry must not replay XP/KC.
+        if (operation === "INSERT" || operation === "UPDATE") {
+          statements.push(makeUpsertStatement(db, tableName, event.row_data));
+        } else if (operation === "DELETE") {
+          statements.push(makeDeleteStatement(db, tableName, event.old_pk));
+        } else {
+          throw new Error("Sync queue contains an unsupported operation");
+        }
+        continue;
+      }
       if (operation === "UPDATE" || operation === "DELETE") {
         statements.push(makeDeleteStatement(db, tableName, event.old_pk));
       }
