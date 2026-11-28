@@ -387,7 +387,7 @@ async function loadForUser(user){
  var results=await Promise.all([
   db.from("profiles").select("username,kuro_id,avatar_url,bio").eq("id",uid).maybeSingle(),
   db.from("kuro_game_user_stats").select("game_id,mode,plays,wins,losses,draws,best_score,best_time_ms,best_time_us,last_played_at,metadata,updated_at").eq("user_id",uid).order("updated_at",{ascending:false}).limit(250),
-  db.rpc("kuro_get_public_store_cosmetics",{p_user_id:uid})
+  window.kuroLoadPublicStoreCosmetics(uid).then(data=>({data,error:null}),error=>({data:{},error}))
  ]);
  if(token!==loadToken)return;
  if(results[0].error)console.warn("profile read failed:",results[0].error);
