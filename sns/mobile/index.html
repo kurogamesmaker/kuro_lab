@@ -3551,6 +3551,25 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             const raw = atob(base64);
             return Uint8Array.from([...raw].map(char => char.charCodeAt(0)));
         }
+        async function kuroD1PushRequest(payload) {
+            const sessionResult = await supabaseClient.auth.getSession();
+            if (sessionResult?.error) throw sessionResult.error;
+            const token = sessionResult?.data?.session?.access_token;
+            if (!token) throw new Error("ログイン状態を確認できません。再ログインしてください。");
+            const response = await fetch("/api/kuro-d1/push", {
+                method: "POST",
+                credentials: "same-origin",
+                cache: "no-store",
+                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token, "Accept": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json().catch(() => null);
+            if (!response.ok || !result || result.error) {
+                throw new Error(result?.error?.message || "Cloudflare D1への通知登録に失敗しました。");
+            }
+            return result;
+        }
+
         async function enableKuroPushNotifications() {
             const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
             const isInstalledPWA = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
@@ -3597,12 +3616,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     if (remainingSubscription) {
                         throw new Error('古い通知登録を解除できなかったため、もう一度お試しください');
                     }
-                    const {error: removeOldError} = await supabaseClient
-                        .from('push_subscriptions')
-                        .delete()
-                        .eq('user_id', currentUser.id)
-                        .eq('endpoint', previousEndpoint);
-                    if (removeOldError) throw removeOldError;
+                    await kuroD1PushRequest({action: "delete", endpoint: previousEndpoint});
                     subscription = null;
                 }
                 if (!subscription) {
@@ -3611,13 +3625,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                         applicationServerKey: urlBase64ToUint8Array(KURO_VAPID_PUBLIC_KEY)
                     });
                 }
-                const {error} = await supabaseClient.from('push_subscriptions').upsert({
-                    user_id: currentUser.id,
-                    endpoint: subscription.endpoint,
-                    subscription: subscription.toJSON(),
-                    updated_at: new Date().toISOString()
-                }, {onConflict:'endpoint'});
-                if (error) throw error;
+                await kuroD1PushRequest({action: "upsert", subscription: subscription.toJSON()});
                 // Run an end-to-end push test so configuration problems are visible immediately.
                 const {data: pushTest, error: pushTestError} = await supabaseClient.functions.invoke('send-chat-push', {
                     body: {type:'test', publicKey: KURO_VAPID_PUBLIC_KEY}
