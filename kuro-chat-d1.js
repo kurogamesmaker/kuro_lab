@@ -178,9 +178,12 @@ async function scopeSql(db, table, userId, operation, payload) {
     sql: "EXISTS (SELECT 1 FROM chat_conversations AS __cc WHERE __cc.id=chat_messages.conversation_id AND (__cc.user_a=? OR __cc.user_b=?))",
     values: [userId,userId]
   };
-  if (table === "chat_message_reads") return {
+  if (table === "chat_message_reads") return operation === "delete" ? {
     sql: "reader_id=? AND EXISTS (SELECT 1 FROM chat_messages AS __cm INNER JOIN chat_conversations AS __cc ON __cc.id=__cm.conversation_id WHERE __cm.id=chat_message_reads.message_id AND (__cc.user_a=? OR __cc.user_b=?))",
     values: [userId,userId,userId]
+  } : {
+    sql: "EXISTS (SELECT 1 FROM chat_messages AS __cm INNER JOIN chat_conversations AS __cc ON __cc.id=__cm.conversation_id WHERE __cm.id=chat_message_reads.message_id AND (__cc.user_a=? OR __cc.user_b=?))",
+    values: [userId,userId]
   };
   if (table === "chat_message_hides") return {
     sql: "user_id=? AND EXISTS (SELECT 1 FROM chat_messages AS __cm INNER JOIN chat_conversations AS __cc ON __cc.id=__cm.conversation_id WHERE __cm.id=chat_message_hides.message_id AND (__cc.user_a=? OR __cc.user_b=?))",
@@ -198,9 +201,12 @@ async function scopeSql(db, table, userId, operation, payload) {
     sql: "EXISTS (SELECT 1 FROM group_chat_members AS __gm WHERE __gm.group_id=group_chat_messages.group_id AND __gm.user_id=?)",
     values: [userId]
   };
-  if (table === "group_chat_message_reads") return {
+  if (table === "group_chat_message_reads") return operation === "delete" ? {
     sql: "reader_id=? AND EXISTS (SELECT 1 FROM group_chat_members AS __gm WHERE __gm.group_id=group_chat_message_reads.group_id AND __gm.user_id=?)",
     values: [userId,userId]
+  } : {
+    sql: "EXISTS (SELECT 1 FROM group_chat_members AS __gm WHERE __gm.group_id=group_chat_message_reads.group_id AND __gm.user_id=?)",
+    values: [userId]
   };
   if (table === "group_chat_mentions") return {
     sql: "EXISTS (SELECT 1 FROM group_chat_members AS __gm WHERE __gm.group_id=group_chat_mentions.group_id AND __gm.user_id=?)",
