@@ -71,14 +71,23 @@ CREATE TRIGGER kuro_economy_capture_verified_game_event
   AFTER INSERT ON public.kuro_coin_verified_game_events
   FOR EACH ROW
   WHEN (
-    (NEW.game_id = '2eb37847-1b7e-43e4-ad98-901d5b830ac4'::uuid
+    (
+      NEW.game_id IN (
+        'faa155cb-2143-4361-9a96-dc759d334e46'::uuid,
+        '2eb37847-1b7e-43e4-ad98-901d5b830ac4'::uuid
+      )
       AND NEW.mode = 'wins-online'
-      AND pg_catalog.upper(COALESCE(NEW.cpu_difficulty,'NONE')) = 'NONE')
-    OR
-    (NEW.game_id = '4ccccb72-d5db-4098-a7d4-1c28a0755e7b'::uuid
+    )
+    OR (
+      NEW.game_id = '4ccccb72-d5db-4098-a7d4-1c28a0755e7b'::uuid
       AND NEW.mode = 'online'
-      AND pg_catalog.upper(COALESCE(NEW.cpu_difficulty,'NONE')) = 'NONE')
+    )
+    OR (
+      NEW.game_id = '903a4c45-37bb-4a4b-a259-a5a8245de998'::uuid
+      AND NEW.mode IN ('werewolf_villager_wins','werewolf_wolf_wins')
+    )
   )
+  AND pg_catalog.upper(COALESCE(NEW.cpu_difficulty,'NONE')) = 'NONE'
   EXECUTE FUNCTION public.kuro_economy_capture_coin_event('coin_verified_game');
 
 DROP TRIGGER IF EXISTS kuro_coin_reward_from_verified_win ON public.kuro_game_win_events;
@@ -86,10 +95,23 @@ CREATE TRIGGER kuro_economy_capture_verified_win
   AFTER INSERT ON public.kuro_game_win_events
   FOR EACH ROW
   WHEN (
-    NEW.game_id = 'faa155cb-2143-4361-9a96-dc759d334e46'::uuid
-    AND NEW.mode = 'wins-online'
-    AND pg_catalog.upper(COALESCE(NEW.cpu_difficulty,'NONE')) = 'NONE'
+    (
+      NEW.game_id IN (
+        'faa155cb-2143-4361-9a96-dc759d334e46'::uuid,
+        '2eb37847-1b7e-43e4-ad98-901d5b830ac4'::uuid
+      )
+      AND NEW.mode = 'wins-online'
+    )
+    OR (
+      NEW.game_id = '4ccccb72-d5db-4098-a7d4-1c28a0755e7b'::uuid
+      AND NEW.mode = 'online'
+    )
+    OR (
+      NEW.game_id = '903a4c45-37bb-4a4b-a259-a5a8245de998'::uuid
+      AND NEW.mode IN ('werewolf_villager_wins','werewolf_wolf_wins')
+    )
   )
+  AND pg_catalog.upper(COALESCE(NEW.cpu_difficulty,'NONE')) = 'NONE'
   EXECUTE FUNCTION public.kuro_economy_capture_coin_event('coin_verified_win');
 
 DROP TRIGGER IF EXISTS kuro_coin_reward_from_verified_werewolf_score ON public.game_scores;
