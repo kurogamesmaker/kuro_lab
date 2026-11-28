@@ -160,7 +160,8 @@ async function kuroRelayFetch(input,init){
  var bytes=new Uint8Array(await req.arrayBuffer()),binary="";
  for(var i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
  var headers={};req.headers.forEach(function(v,k){headers[k]=v;});
- var proxy=await fetch("https://kurolab.cc.cd/api/cloudflare-relay",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers:headers,bodyBase64:bytes.length?btoa(binary):"",clientId:"game-studio"})});
+ var relayUrl=url.pathname.startsWith("/storage/v1/")?"https://kurolab.cc.cd/api/kuro-storage-relay":"https://kurolab.cc.cd/api/cloudflare-relay";
+ var proxy=await fetch(relayUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers:headers,bodyBase64:bytes.length?btoa(binary):"",clientId:"game-studio"})});
  var result;try{result=await proxy.json();}catch(e){throw new Error("Cloudflare中継サーバーの応答を読み取れませんでした");}
  if(!proxy.ok||!result||typeof result.status!=="number")throw new Error(result&&result.error||"Cloudflare中継通信に失敗しました");
  var body=null;
@@ -201,7 +202,7 @@ function addProfile(profile,user,cosmetics){
   if(!value)return "";
   try{
    var parsed=new URL(String(value),location.origin);
-   if(parsed.origin==="https://cprvpphlfpmiegjiutjn.supabase.co"&&parsed.pathname.startsWith("/storage/v1/object/public/"))return location.origin+"/api/cloudflare-relay?resource="+encodeURIComponent(parsed.pathname+parsed.search);
+   if(parsed.origin==="https://cprvpphlfpmiegjiutjn.supabase.co"&&parsed.pathname.startsWith("/storage/v1/object/public/"))return location.origin+"/api/kuro-storage-relay?resource="+encodeURIComponent(parsed.pathname+parsed.search);
    if(parsed.protocol==="https:"||parsed.origin===location.origin)return parsed.href;
   }catch(_){}
   return "";
@@ -216,7 +217,7 @@ function addProfile(profile,user,cosmetics){
   try{
    var parsed=new URL(url,location.origin);
    if(parsed.protocol==="https:"||parsed.origin===location.origin){
-    var img=document.createElement("img");img.src=parsed.origin==="https://cprvpphlfpmiegjiutjn.supabase.co"&&parsed.pathname.startsWith("/storage/v1/object/public/")?location.origin+"/api/cloudflare-relay?resource="+encodeURIComponent(parsed.pathname+parsed.search):parsed.href;img.alt="";img.loading="lazy";
+    var img=document.createElement("img");img.src=parsed.origin==="https://cprvpphlfpmiegjiutjn.supabase.co"&&parsed.pathname.startsWith("/storage/v1/object/public/")?location.origin+"/api/kuro-storage-relay?resource="+encodeURIComponent(parsed.pathname+parsed.search):parsed.href;img.alt="";img.loading="lazy";
     img.onerror=function(){img.remove();if(!avatar.childNodes.length)avatar.innerHTML=avatarFallback;};
     avatar.appendChild(img);
    }
