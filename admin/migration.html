@@ -62,6 +62,12 @@ main{padding:34px 0 70px}.eyebrow{color:var(--accent);font-size:10px;letter-spac
   <div class="rows" id="structureGaps"></div>
   <p class="foot">PostgreSQL側は2026-11-28に取得した構造スナップショットです。D1側は診断実行時の実測値です。列数の一致は、型・既定値・制約・業務動作まで同一であることを意味しません。</p>
  </section>
+ <section class="panel" id="levelPanel" hidden>
+  <h2>レベル計算ルーチンの移植テスト</h2>
+  <p id="levelSummary">—</p>
+  <div class="rows" id="levelRows"></div>
+  <p class="foot">検証対象は読み取り専用の計算関数2件です。XPの付与・ランキング・ユーザー記録の更新処理には接続していません。</p>
+ </section>
  <section class="panel">
   <h2>本番切替の状態</h2>
   <p>Supabase Auth・Postgres・Realtime・Edge Functions・Storageは引き続き本番で使用します。D1は管理者限定の読み取り診断にだけ接続され、通常のアプリ通信先は変更していません。構造監査が「切替不可」と表示している間は、本番機能をD1へ切り替えません。</p>
@@ -78,6 +84,15 @@ const number=value=>Number(value||0).toLocaleString("ja-JP");
 function status(message,kind=""){ $("status").textContent=message;$("status").className="status"+(kind?" "+kind:""); }
 function esc(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 
+
+function renderLevelPreview(data){
+ const tests=Array.isArray(data.cases)?data.cases:[];
+ $("levelSummary").textContent=data.parity
+  ? "成功："+number(data.passedCaseCount)+"/"+number(data.testCaseCount)+"ケース一致。閾値："+number(data.thresholdCount)+"件。"
+  : "不一致あり：閾値一致="+(data.thresholdParity?"はい":"いいえ")+"、計算一致="+number(data.passedCaseCount)+"/"+number(data.testCaseCount);
+ $("levelRows").innerHTML=tests.map(test=>'<div class="check"><span>累計XP '+number(test.xp)+'</span><strong style="color:'+(test.passed?'#71d9a2':'#ff9292')+'">期待 Lv.'+number(test.expectedLevel)+' / D1計算 Lv.'+number(test.actualLevel)+' '+(test.passed?'一致':'不一致')+'</strong></div>').join("");
+ $("levelPanel").hidden=false;
+}
 function renderStructure(data){
  const source=data.sourceSnapshot||{},d1=data.d1||{},parity=data.parity||{};
  const fmt=value=>typeof value==="number"?number(value):String(value??"—");
@@ -116,6 +131,10 @@ async function run(){
   const structureData=await structureResponse.json().catch(()=>({}));
   if(!structureResponse.ok||structureData.ready!==true)throw new Error(structureData.error||"D1構造監査に失敗しました。");
   renderStructure(structureData);
+  const levelResponse=await fetch("/api/migration/level-preview",{method:"GET",headers:{Authorization:"Bearer "+session.access_token,Accept:"application/json"},cache:"no-store"});
+  const levelData=await levelResponse.json().catch(()=>({}));
+  if(!levelResponse.ok||levelData.ready!==true)throw new Error(levelData.error||"レベル計算の移植検証に失敗しました。");
+  renderLevelPreview(levelData);
   $("tables").textContent=number(data.manifestTableCount);
   $("copied").textContent=number(data.manifestCopiedRows);
   $("actual").textContent=number(data.actualCopiedRows);
