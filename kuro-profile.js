@@ -349,7 +349,7 @@
         getFollowCounts(db, id),
         getSignedInUser(db),
         loadD1PublicPlayerSummary(db, id).catch(function (error) { return { data: null, error: error }; }),
-        safeRpc(db, "kuro_get_public_store_cosmetics", { p_user_id: id }, {})
+        (window.kuroLoadPublicStoreCosmetics ? window.kuroLoadPublicStoreCosmetics(id).then(function (data) { return { data: data, error: null }; }).catch(function (error) { return { data: {}, error: error }; }) : safeRpc(db, "kuro_get_public_store_cosmetics", { p_user_id: id }, {}))
       ]);
       if (thisRequest !== requestId) return;
       var profileResult = results[0], statsResult = results[1], playerSummaryResult = results[4];
