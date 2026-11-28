@@ -79,8 +79,12 @@ function validateEndpoint(value) {
   try { url = new URL(endpoint); } catch (_) {
     throw new KuroPushError(400, "通知登録先が正しくありません。", "INVALID_ENDPOINT");
   }
-  if (url.protocol !== "https:" || url.username || url.password || url.hash) {
-    throw new KuroPushError(400, "HTTPSの通知登録先のみ利用できます。", "INVALID_ENDPOINT");
+  const allowedHost = url.hostname === "fcm.googleapis.com" ||
+    url.hostname === "web.push.apple.com" ||
+    url.hostname.endsWith(".push.services.mozilla.com");
+  if (url.protocol !== "https:" || url.username || url.password || url.hash ||
+      !allowedHost || (url.port && url.port !== "443")) {
+    throw new KuroPushError(400, "対応するHTTPS通知サービスの登録先のみ利用できます。", "INVALID_ENDPOINT");
   }
   return url.href;
 }
