@@ -840,18 +840,30 @@ Deno.serve(async (req: Request) => {
         }
         return { data: all, error: null };
       };
-      const [profileCount, postCount, eventResult, postRows, replyRows, chatRows, chatStatsRows, dmRows, groupChatRows] = await Promise.all([
+      const authorization = req.headers.get("Authorization") || "";
+      const d1ActivityPromise = (async () => {
+        const upstream = await fetch("https://kurolab.cc.cd/api/kuro-d1/sns-posts?action=admin-activity&since=" + encodeURIComponent(since30), {
+          method: "GET",
+          headers: { "Authorization": authorization, "Accept": "application/json" },
+          signal: AbortSignal.timeout(12000)
+        });
+        const payload = await upstream.json().catch(() => ({}));
+        if (!upstream.ok) throw new Error(payload?.error || "Cloudflare D1からSNS集計を取得できませんでした。");
+        return payload;
+      })();
+      const [profileCount, eventResult, chatRows, chatStatsRows, dmRows, groupChatRows, d1Activity] = await Promise.all([
         admin.from("profiles").select("id", { count: "exact", head: true }),
-        admin.from("posts").select("id", { count: "exact", head: true }),
         fetchAllRows((from, to) => admin.from("usage_events").select("user_id,visitor_id,event_name,created_at,widget_key,service_key,status_code,error_code").gte("created_at", since30).order("created_at", { ascending: false }).range(from, to)),
-        fetchAllRows((from, to) => admin.from("posts").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(from, to)),
-        fetchAllRows((from, to) => admin.from("post_replies").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(from, to)),
         fetchAllRows((from, to) => admin.from("public_chat_messages").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(from, to)),
         fetchAllRows((from, to) => admin.from("public_chat_daily_stats").select("chat_date,message_count").gte("chat_date", chatStatsSince).order("chat_date", { ascending: true }).range(from, to)),
         fetchAllRows((from, to) => admin.from("chat_messages").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(from, to)),
-        fetchAllRows((from, to) => admin.from("group_chat_messages").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(from, to))
+        fetchAllRows((from, to) => admin.from("group_chat_messages").select("created_at").gte("created_at", since30).order("created_at", { ascending: true }).range(from, to)),
+        d1ActivityPromise
       ]);
-      for (const result of [profileCount, postCount, eventResult, postRows, replyRows, chatRows, chatStatsRows, dmRows, groupChatRows]) {
+      const postCount = { count: Number(d1Activity?.post_count || 0) };
+      const postRows = { data: Array.isArray(d1Activity?.posts) ? d1Activity.posts : [] };
+      const replyRows = { data: Array.isArray(d1Activity?.replies) ? d1Activity.replies : [] };
+      for (const result of [profileCount, eventResult, chatRows, chatStatsRows, dmRows, groupChatRows]) {
         if (result.error) throw result.error;
       }
       const tokyoKey = (value: string | Date) => {
