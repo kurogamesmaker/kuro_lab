@@ -4705,11 +4705,6 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                         const mentionRows = mentionTargets.map(mentioned_user_id => ({message_id:sentGroupMessage.id,group_id:groupId,mentioned_user_id}));
                         const {error: mentionInsertError} = await supabaseClient.from('group_chat_mentions').insert(mentionRows);
                         if (mentionInsertError) console.warn('Group mention records could not be saved:',mentionInsertError);
-                        else {
-                            const notifications = mentionTargets.map(recipient_id => ({recipient_id,actor_id:senderId,type:'mention',group_id:groupId,message_id:sentGroupMessage.id}));
-                            const {error: noticeError} = await supabaseClient.from('notifications').insert(notifications);
-                            if (noticeError) console.warn('Group mention notifications could not be sent:',noticeError);
-                        }
                     }
                     input.value='';
                     window.KuroSNSMedia?.clear('chat');
