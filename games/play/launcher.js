@@ -550,7 +550,21 @@ async function loadKuroGameRewards(gameId, db){const bar=document.getElementById
  if(!id||!/^[0-9a-f-]{36}$/i.test(id)){fail("ゲームIDが正しくありません。");return;}
  if(!window.supabase||!window.supabase.createClient){fail("通信ライブラリを読み込めませんでした。");return;}
  try{const db=kuroGameAuthClient;
-  const {data,error}=await db.from("game_studio_games").select("title,description,icon,html_content,shared_js_content,extra_js_content").eq("id",id).eq("status","published").maybeSingle();if(error)throw error;if(!data){fail("公開が終了したか、URLが正しくありません。");return;}
+  let data=null;
+  try{
+   const endpoint=new URL("/api/kuro-d1/published-game",location.origin);
+   endpoint.searchParams.set("id",id);
+   const response=await fetch(endpoint.toString(),{method:"GET",credentials:"same-origin",cache:"no-store",headers:{accept:"application/json"}});
+   const payload=await response.json().catch(()=>null);
+   if(!response.ok||!payload||!payload.data)throw new Error(payload&&payload.error||"Cloudflareからゲームデータを取得できませんでした。");
+   data=payload.data;
+  }catch(d1Error){
+   console.debug("KURO D1 published game fallback:",d1Error);
+   const fallback=await db.from("game_studio_games").select("title,description,icon,html_content,shared_js_content,extra_js_content").eq("id",id).eq("status","published").maybeSingle();
+   if(fallback.error)throw fallback.error;
+   data=fallback.data;
+  }
+  if(!data){fail("公開が終了したか、URLが正しくありません。");return;}
   let selectedGameHtml=String(data.html_content||"").trim();
   selectedGameHtml=kuroPreparePcGameHtml(selectedGameHtml);
   if(!selectedGameHtml){fail("ゲームの画面コードが登録されていません。");return;}
