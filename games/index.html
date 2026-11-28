@@ -1620,8 +1620,7 @@ window.kuroGamesAvatarDisplayUrl=kuroGamesAvatarDisplayUrl;
  const hostWrap=document.getElementById("kuroHomeTickerHost");
  const viewport=host?.querySelector(".kuro-home-ticker-viewport");
  const track=document.getElementById("kuroHomeTickerTrack");
- const db=window.kuroGamesDB;
- if(!host||!viewport||!track||!db)return;
+ if(!host||!viewport||!track)return;
  let tickerAnimation=null;
  const validHref=value=>{
   const raw=String(value||"").trim();
@@ -1672,13 +1671,17 @@ window.kuroGamesAvatarDisplayUrl=kuroGamesAvatarDisplayUrl;
   }
  };
  async function load(){
-  const {data,error}=await db.from("kurogames_home_banners")
-   .select("id,name,message,href,text_color,background_color,font_size,speed,icon,is_bold,sort_order")
-   .eq("enabled",true)
-   .order("sort_order",{ascending:true})
-   .order("created_at",{ascending:false});
-  if(error)throw error;
-  render(Array.isArray(data)?data.filter(row=>String(row.message||"").trim()):[]);
+  const response=await fetch("/api/kuro-d1/home-banners",{
+   method:"GET",
+   credentials:"same-origin",
+   cache:"no-store",
+   headers:{accept:"application/json"}
+  });
+  const payload=await response.json().catch(()=>null);
+  if(!response.ok||!payload||!Array.isArray(payload.data)){
+   throw new Error(payload?.error||"Cloudflare D1から告知を取得できませんでした。");
+  }
+  render(payload.data.filter(row=>String(row.message||"").trim()));
  }
  load().catch(error=>console.warn("[KuroGames home banners]",error));
 })();
