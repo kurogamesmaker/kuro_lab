@@ -42,7 +42,10 @@ const D1_AUTHORITATIVE_TABLES = new Set([
   "kuro_coin_balances", "kuro_coin_game_rewards", "kuro_coin_ledger",
   "kuro_level_coin_reward_claims", "kuro_level_coin_rewards", "kuro_level_game_rewards",
   "kuro_level_ledger", "kuro_level_system_settings", "kuro_level_thresholds", "kuro_level_users",
-  "kuro_store_equipped_items", "kuro_store_user_inventory", "kuro_store_transactions"
+  "kuro_store_equipped_items", "kuro_store_user_inventory", "kuro_store_transactions",
+  // SNS post data is now written only by the Cloudflare D1 API. Acknowledge but
+  // never replay legacy Postgres outbox rows over the authoritative D1 records.
+  "posts", "post_likes", "post_replies"
 ]);
 
 function json(data, status = 200) {
