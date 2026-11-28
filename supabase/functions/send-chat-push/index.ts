@@ -58,7 +58,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const auth = req.headers.get("Authorization");
-    if (!auth || !/^Bearer\\s+\\S+/i.test(auth)) return json({ error: "Missing authorization" }, 401);
+    if (!auth || !/^Bearer\s+\S+/i.test(auth)) return json({ error: "Missing authorization" }, 401);
 
     // Confirm the caller's Supabase Auth session before forwarding the same user token to D1.
     const client = createClient(url!, anon!, { global: { headers: { Authorization: auth } } });
