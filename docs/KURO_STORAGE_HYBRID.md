@@ -78,7 +78,7 @@ D1 live catalog audit:
 - SQLite/D1 does not provide PostgreSQL Row Level Security policies or PostgreSQL SQL routines as drop-in equivalents. Their required authorization and business logic must be inventoried and implemented in Workers (or another explicitly tested equivalent).
 - Index counts are not expected to be copied one-for-one; all query paths must be reviewed and indexed for the D1 workload.
 
-The dashboard deliberately reports `cutoverAllowed: false`. Matching table/column counts is only a structural checkpoint, not proof of type/default/constraint/transaction/RLS/business-logic parity. Keep all production app traffic on Supabase until every relevant policy, constraint, trigger, view, and routine has been reviewed and replaced, and functional/security parity plus rollback tests pass.
+The dashboard deliberately reports `cutoverAllowed: false` for the isolated migration staging copy. Matching table/column counts is only a structural checkpoint, not proof of type/default/constraint/transaction/RLS/business-logic parity. This status does not disable the separate `KURO_APP_DB` read-only mirror endpoints. Keep all writes and non-migrated reads on Supabase until every relevant policy, constraint, trigger, view, and routine has been reviewed and replaced, and functional/security parity plus rollback tests pass.
 
 ## First PostgreSQL view port (2026-11-28)
 
