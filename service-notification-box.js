@@ -540,7 +540,7 @@
       const operations = [];
       if (admin.length) operations.push(client.from("admin_message_reads").upsert(admin.map((row) => ({ message_id: row.id, user_id: user.id, read_at: now })), { onConflict: "message_id,user_id" }));
       if (social.length) {
-        await callEconomyNotifications(client, "POST", { action: "mark_all_read" });
+        await callEconomyNotifications(client, "POST", { action: "mark_read_many", ids: social.map((row) => row.id) });
         operations.push(client.from("notifications").update({ read_at: now }).eq("recipient_id", user.id).in("id", social.map((row) => row.id)));
       }
       if (replies.length) operations.push(client.from("portal_request_notifications").update({ read_at: now }).eq("user_id", user.id).in("id", replies.map((row) => row.id)));
