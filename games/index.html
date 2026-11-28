@@ -2025,7 +2025,7 @@ function initKuroRankingShowcase(){
    try{
     const url=new URL("/api/kuro-d1/leaderboard",location.origin);
     url.searchParams.set("gameId",game.id);url.searchParams.set("mode",game.mode);url.searchParams.set("limit","5");
-    const response=await fetch(url.toString(),{method:"GET",credentials:"same-origin",cache:"no-store",headers:{accept:"application/json"}});
+    const headers={accept:"application/json"};const auth=await window.kuroGamesDB.auth.getSession();if(auth.error)throw auth.error;const viewer=auth.data&&auth.data.session&&auth.data.session.user,accessToken=auth.data&&auth.data.session&&auth.data.session.access_token;if(viewer&&!viewer.is_anonymous&&accessToken)headers.Authorization="Bearer "+accessToken;const response=await fetch(url.toString(),{method:"GET",credentials:"same-origin",cache:"no-store",headers:headers});
     const payload=await response.json().catch(()=>null);
     if(!response.ok||!payload||!Array.isArray(payload.scores))throw new Error(payload&&payload.error||"Cloudflareからランキングを取得できませんでした。");
     data=payload;
