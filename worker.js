@@ -1080,7 +1080,7 @@ async function handleKuroD1PortalHistory(request, env) {
   if (!authResponse.ok) return json({ error: "unauthorized" }, 401);
   const authUser = await authResponse.json().catch(() => null);
   const userId = typeof authUser?.id === "string" ? authUser.id : "";
-  if (!userId) return json({ error: "unauthorized" }, 401;
+  if (!userId) return json({ error: "unauthorized" }, 401);
 
   const db = env?.KURO_APP_DB;
   if (!db) return json({ error: "Cloudflare D1 unavailable" }, 503);
@@ -1092,7 +1092,7 @@ async function handleKuroD1PortalHistory(request, env) {
       ORDER BY visited_at DESC
       LIMIT 100
     `).bind(userId).all();
-    return json({ data: Array.isArray(result?.results) ? result.results : [], source: "cloudflare-d1" }, 200, { "Cache-Control": "private, no-store" });
+    return json({ data: Array.isArray(result?.results) ? result.results : [], source: "cloudflare-d1" });
   } catch (error) {
     console.error("KURO D1 portal history read failed", error?.message || error);
     return json({ error: "history_unavailable" }, 503);
