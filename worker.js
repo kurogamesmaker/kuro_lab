@@ -1070,6 +1070,82 @@ function parseKuroD1JsonArray(value) {
   }
 }
 
+async function handleKuroD1CoinSummary(request, env) {
+  if (request.method !== "GET") return json({ error: "Method not allowed" }, 405);
+  const authorization = request.headers.get("Authorization") || "";
+  const token = authorization.match(/^Bearer\\s+(.+)$/i)?.[1]?.trim() || "";
+  if (!token || token.length > 8192 || token.split(".").length !== 3) {
+    return json({ error: "unauthorized" }, 401);
+  }
+
+  // Supabase Auth remains the identity authority. Derive the user ID from the
+  // verified access token and never accept a client-supplied user ID.
+  let authUser;
+  try {
+    const response = await fetch(SUPABASE_URL + "/auth/v1/user", {
+      method: "GET",
+      headers: {
+        authorization: "Bearer " + token,
+        apikey: SUPABASE_KEY,
+        accept: "application/json"
+      },
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!response.ok) return json({ error: "unauthorized" }, 401);
+    authUser = await response.json();
+  } catch (_) {
+    return json({ error: "auth_unavailable" }, 503);
+  }
+
+  const userId = typeof authUser?.id === "string" ? authUser.id : "";
+  if (!validKuroPublicUserId(userId) || authUser?.is_anonymous === true) {
+    return json({ error: "unauthorized" }, 401);
+  }
+
+  const database = env?.KURO_APP_DB;
+  if (!database) return json({ error: "Cloudflare D1 is unavailable." }, 503);
+
+  try {
+    // Suspension state is mirrored privately for this read gate. The existing
+    // Supabase Edge Function remains the fallback while the mirror catches up.
+    const suspension = await database.prepare(`
+      SELECT id
+      FROM account_suspensions
+      WHERE user_id = ?
+        AND revoked_at IS NULL
+        AND datetime(starts_at) <= datetime('now')
+        AND datetime(ends_at) > datetime('now')
+      LIMIT 1
+    `).bind(userId).first();
+    if (suspension) return json({ error: "account_suspended" }, 403);
+
+    const [balance, ledger] = await Promise.all([
+      database.prepare(
+        "SELECT balance, updated_at FROM kuro_coin_balances WHERE user_id = ? LIMIT 1"
+      ).bind(userId).first(),
+      database.prepare(`
+        SELECT id, amount, balance_after, transaction_type,
+               source_game_id, source_mode, description, created_at
+        FROM kuro_coin_ledger
+        WHERE user_id = ?
+        ORDER BY created_at DESC, id DESC
+        LIMIT 20
+      `).bind(userId).all()
+    ]);
+
+    return json({
+      currency: "KC",
+      balance: Number(balance?.balance || 0),
+      updatedAt: balance?.updated_at || null,
+      transactions: Array.isArray(ledger?.results) ? ledger.results : [],
+      source: "cloudflare-d1"
+    });
+  } catch (error) {
+    console.error("KURO D1 coin summary read failed", error?.message || error);
+    return json({ error: "coin_summary_unavailable" }, 503);
+  }
+}
+
 async function handleKuroD1PublishedGames(request, env) {
   if (request.method !== "GET") return json({ error: "Method not allowed" }, 405);
   const database = env?.KURO_APP_DB;
@@ -1707,6 +1783,15 @@ export default {
       } catch (error) {
         console.error("KURO web search handler failed", error);
         return json({ code: "SEARCH_INTERNAL_ERROR", message: "検索処理に失敗しました。" }, 500);
+      }
+    }
+
+    if (url.pathname === "/api/kuro-d1/coin-summary") {
+      try {
+        return await handleKuroD1CoinSummary(request, env);
+      } catch (error) {
+        console.error("KURO D1 coin summary endpoint failed", error?.message || error);
+        return json({ error: "coin_summary_unavailable" }, 503);
       }
     }
 
