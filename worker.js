@@ -1,5 +1,5 @@
 const FORCE_MARU_ICON_VERSION = "20261122forcefavicon3";
-const FORCE_SECURITY_GATE_VERSION = "20261128gate4";
+const FORCE_SECURITY_GATE_VERSION = "20261128gate5";
 
 function applyMaruFavicon(html, requestPath = "") {
   const iconTags = /<link\b(?=[^>]*\brel\s*=\s*["'](?:icon|shortcut icon|apple-touch-icon)["'])[^>]*>/gi;
@@ -165,17 +165,26 @@ async function handleTurnstileVerify(request, env) {
  }
  if(request.method!=="POST")return json({success:false,code:"method_not_allowed",message:"POST required"},405);
  if(!allowedOrigins.has(origin))return json({success:false,code:"origin_not_allowed",message:"Origin not allowed"},403);
+ const declaredLength=Number(request.headers.get("content-length")||0);
+ if(Number.isFinite(declaredLength)&&declaredLength>4096)return json({success:false,code:"request_too_large",message:"Request too large"},413);
  if(!env?.TURNSTILE_SECRET)return json({success:false,code:"secret_not_configured",message:"Human verification is not configured"},503);
+ let rawBody="";
+ try{rawBody=await request.text()}catch(_){return json({success:false,code:"invalid_body",message:"Invalid request body"},400)}
+ if(new TextEncoder().encode(rawBody).byteLength>4096)return json({success:false,code:"request_too_large",message:"Request too large"},413);
  let body;
- try{body=await request.json()}catch(_){return json({success:false,code:"invalid_json",message:"Invalid JSON"},400)}
- const token=typeof body?.token==="string"?body.token.trim():"";
+ try{body=rawBody?JSON.parse(rawBody):null}catch(_){return json({success:false,code:"invalid_json",message:"Invalid JSON"},400)}
+ if(!body||typeof body!=="object"||Array.isArray(body))return json({success:false,code:"invalid_json",message:"Invalid JSON body"},400);
+ const token=typeof body.token==="string"?body.token.trim():"";
  if(!token||token.length>2048)return json({success:false,code:"invalid_token_format",message:"Invalid verification token"},400);
 
  try{
+  const siteverifyPayload={secret:env.TURNSTILE_SECRET,response:token};
+  const clientIp=request.headers.get("CF-Connecting-IP")||"";
+  if(clientIp)siteverifyPayload.remoteip=clientIp;
   const upstream=await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify",{
    method:"POST",
    headers:{"content-type":"application/json","accept":"application/json"},
-   body:JSON.stringify({secret:env.TURNSTILE_SECRET,response:token})
+   body:JSON.stringify(siteverifyPayload)
   });
   const responseText=await upstream.text();
   let result=null;
@@ -206,6 +215,10 @@ async function handleTurnstileVerify(request, env) {
   if(typeof result.hostname!=="string"||!expectedHostnames.has(result.hostname.toLowerCase())){
    console.warn("Turnstile hostname mismatch",{hostname:typeof result.hostname==="string"?result.hostname:"missing"});
    return json({success:false,code:"hostname_mismatch",message:"認証元ドメインが一致しません。サイト設定を確認してください。"},403);
+  }
+  if(result.action!=="kuro_admin_gate"){
+   console.warn("Turnstile action mismatch",{action:typeof result.action==="string"?result.action:"missing"});
+   return json({success:false,code:"action_mismatch",message:"認証用途が一致しません。ページを再読み込みしてください。"},403);
   }
   return json({success:true});
  }catch(error){
