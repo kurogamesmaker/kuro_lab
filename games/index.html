@@ -1586,7 +1586,8 @@ async function kuroCloudflareFetch(input,init){
  const bytes=new Uint8Array(await req.arrayBuffer());let binary="";
  for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
  const headers={};req.headers.forEach((v,k)=>{headers[k]=v;});
- const proxy=await fetch(KURO_CLOUDFLARE_PROXY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:"game-studio"})});
+ const relayUrl=url.pathname.startsWith("/storage/v1/")?"https://kurolab.cc.cd/api/kuro-storage-relay":KURO_CLOUDFLARE_PROXY_URL;
+ const proxy=await fetch(relayUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:"game-studio"})});
  let result;try{result=await proxy.json();}catch(e){throw new Error("Cloudflare中継サーバーの応答を読み取れませんでした");}
  if(!proxy.ok||!result||typeof result.status!=="number")throw new Error(result&&result.error||"Cloudflare中継通信に失敗しました");
  let body=null;if(result.isBinary&&result.bodyBase64){const raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);body=out;}else if(result.bodyText!==undefined&&![204,205,304].includes(result.status))body=result.bodyText;
@@ -1608,7 +1609,7 @@ function kuroGamesAvatarDisplayUrl(value){
   if(url.protocol==="blob:"||url.protocol==="data:")return raw;
   if(url.origin==="https://cprvpphlfpmiegjiutjn.supabase.co"&&url.pathname.startsWith("/storage/v1/object/public/")){
    const resource=url.pathname+url.search;
-   return window.location.origin+"/api/cloudflare-relay?resource="+encodeURIComponent(resource);
+   return window.location.origin+"/api/kuro-storage-relay?resource="+encodeURIComponent(resource);
   }
   return url.href;
  }catch(_){return "";}

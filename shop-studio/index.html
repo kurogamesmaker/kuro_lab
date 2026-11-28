@@ -259,13 +259,14 @@ footer{padding:24px 0 34px;border-top:1px solid var(--line);color:#8c829f;font-s
 const SUPABASE_URL="https://cprvpphlfpmiegjiutjn.supabase.co";
 const PUBLISHABLE_KEY="sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
 const RELAY_URL="https://kurolab.cc.cd/api/cloudflare-relay";
+const STORAGE_RELAY_URL="https://kurolab.cc.cd/api/kuro-storage-relay";
 async function shopStudioFetch(input,init){
  const req=new Request(input,init),url=new URL(req.url);
  if(url.origin!==SUPABASE_URL)return fetch(req);
  const bytes=new Uint8Array(await req.arrayBuffer());let binary="";
  for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
  const headers={};req.headers.forEach((v,k)=>{headers[k]=v;});
- const proxy=await fetch(RELAY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:"shop-studio"})});
+ const proxy=await fetch(url.pathname.startsWith("/storage/v1/")?STORAGE_RELAY_URL:RELAY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:url.pathname+url.search,method:req.method,headers,bodyBase64:bytes.length?btoa(binary):"",clientId:"shop-studio"})});
  let result;try{result=await proxy.json();}catch{throw new Error("Cloudflare中継サーバーの応答を読み取れませんでした。");}
  if(!proxy.ok||!result||typeof result.status!=="number")throw new Error(result?.error||"Cloudflare中継通信に失敗しました。");
  let body=null;if(result.isBinary&&result.bodyBase64){const raw=atob(result.bodyBase64),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);body=out;}else if(result.bodyText!==undefined&&![204,205,304].includes(result.status))body=result.bodyText;
@@ -317,7 +318,7 @@ function safeAssetUrl(value){
  try{
   const url=new URL(String(value),location.origin);
   if(url.protocol==="blob:")return url.href;
-  if(url.origin==="https://cprvpphlfpmiegjiutjn.supabase.co"&&url.pathname.startsWith("/storage/v1/object/public/"))return location.origin+"/api/cloudflare-relay?resource="+encodeURIComponent(url.pathname+url.search);
+  if(url.origin==="https://cprvpphlfpmiegjiutjn.supabase.co"&&url.pathname.startsWith("/storage/v1/object/public/"))return location.origin+"/api/kuro-storage-relay?resource="+encodeURIComponent(url.pathname+url.search);
   if(url.protocol==="https:"||url.origin===location.origin)return url.href;
  }catch(_){}
  return "";

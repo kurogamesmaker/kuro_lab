@@ -193,7 +193,7 @@ function safeStoreImage(value){
  if(!value)return "";
  try{
   const url=new URL(String(value),location.origin);
-  if(url.origin==="https://cprvpphlfpmiegjiutjn.supabase.co"&&url.pathname.startsWith("/storage/v1/object/public/"))return location.origin+"/api/cloudflare-relay?resource="+encodeURIComponent(url.pathname+url.search);
+  if(url.origin==="https://cprvpphlfpmiegjiutjn.supabase.co"&&url.pathname.startsWith("/storage/v1/object/public/"))return location.origin+"/api/kuro-storage-relay?resource="+encodeURIComponent(url.pathname+url.search);
   if(url.protocol==="https:"||url.origin===location.origin)return url.href;
  }catch(_){}
  return "";
