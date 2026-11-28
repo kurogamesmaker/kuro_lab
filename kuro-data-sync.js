@@ -58,7 +58,7 @@ async function ensureEconomySchema(db) {
   const current = await db.prepare(
     "SELECT version FROM kuro_economy_schema_meta WHERE id=1"
   ).first();
-  if (Number(current?.version || 0) < 1) {
+  if (Number(current?.version || 0) < 2) {
     const triggerStatements = [
       "DROP TRIGGER IF EXISTS kuro_economy_coin_notification",
       "CREATE TRIGGER kuro_economy_coin_notification AFTER INSERT ON kuro_coin_ledger WHEN NEW.amount > 0 BEGIN INSERT INTO notifications(id,recipient_id,actor_id,type,created_at,notification_details) VALUES(lower(hex(randomblob(4)))||'-'||lower(hex(randomblob(2)))||'-4'||substr(lower(hex(randomblob(2))),2)||'-a'||substr(lower(hex(randomblob(2))),2)||'-'||lower(hex(randomblob(6))),NEW.user_id,NEW.user_id,'coin_reward',NEW.created_at,json_object('ledgerId',NEW.id,'amount',NEW.amount,'balanceAfter',NEW.balance_after,'description',NEW.description,'transactionType',NEW.transaction_type,'gameId',NEW.source_game_id,'mode',NEW.source_mode,'createdAt',NEW.created_at)); END",
@@ -73,7 +73,7 @@ async function ensureEconomySchema(db) {
     ];
     await db.batch(triggerStatements.map(sql => db.prepare(sql)));
     await db.prepare(
-      "INSERT INTO kuro_economy_schema_meta(id,version,updated_at) VALUES(1,1,datetime('now')) ON CONFLICT(id) DO UPDATE SET version=excluded.version,updated_at=excluded.updated_at"
+      "INSERT INTO kuro_economy_schema_meta(id,version,updated_at) VALUES(1,2,datetime('now')) ON CONFLICT(id) DO UPDATE SET version=excluded.version,updated_at=excluded.updated_at"
     ).run();
   }
 }
