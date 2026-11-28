@@ -1024,6 +1024,41 @@ async function handleMigrationLevelPreview(request, env) {
   }
 }
 
+async function handleKuroD1HomeBanners(request, env) {
+  if (request.method !== "GET") {
+    return json({ error: "Method not allowed" }, 405);
+  }
+
+  const database = env?.KURO_APP_DB;
+  if (!database) {
+    return json({ error: "Cloudflare D1 is unavailable." }, 503);
+  }
+
+  try {
+    // This endpoint exposes only the same currently-active, public banner fields
+    // that the Supabase RLS policy previously allowed. No private/admin columns
+    // are selected or returned.
+    const result = await database.prepare(`
+      SELECT
+        id, name, message, href, text_color, background_color,
+        font_size, speed, icon, is_bold, sort_order
+      FROM kurogames_home_banners
+      WHERE enabled = 1
+        AND datetime(starts_at) <= datetime('now')
+        AND (ends_at IS NULL OR datetime(ends_at) > datetime('now'))
+        AND trim(message) <> ''
+      ORDER BY sort_order ASC, datetime(created_at) DESC
+      LIMIT 100
+    `).all();
+
+    const rows = Array.isArray(result?.results) ? result.results : [];
+    return json({ data: rows, source: "cloudflare-d1" });
+  } catch (error) {
+    console.error("KURO D1 public banner read failed", error?.message || error);
+    return json({ error: "お知らせを取得できませんでした。" }, 503);
+  }
+}
+
 async function handleRealtime(request) {
   const url = new URL(request.url);
   const prefix = "/api/realtime";
@@ -1185,6 +1220,15 @@ export default {
       } catch (error) {
         console.error("KURO web search handler failed", error);
         return json({ code: "SEARCH_INTERNAL_ERROR", message: "検索処理に失敗しました。" }, 500);
+      }
+    }
+
+    if (url.pathname === "/api/kuro-d1/home-banners") {
+      try {
+        return await handleKuroD1HomeBanners(request, env);
+      } catch (error) {
+        console.error("KURO D1 public banner endpoint failed", error?.message || error);
+        return json({ error: "お知らせを取得できませんでした。" }, 503);
       }
     }
 
