@@ -693,7 +693,7 @@ const KuroGames = {
       element.replaceChildren();
       if (image && (/^https:\/\//i.test(image) || (image.startsWith("/") && !image.startsWith("//")))) {
         const img = document.createElement("img");
-        img.src = (() => { try { const url = new URL(image, window.location.origin); return url.origin === DEFAULT_URL && url.pathname.startsWith("/storage/v1/object/public/") ? "https://kurolab.cc.cd/api/cloudflare-relay?resource=" + encodeURIComponent(url.pathname + url.search) : url.href; } catch (_) { return image; } })();
+        img.src = (() => { try { const url = new URL(image, window.location.origin); return url.origin === DEFAULT_URL && url.pathname.startsWith("/storage/v1/object/public/") ? "https://kurolab.cc.cd/api/kuro-storage-relay?resource=" + encodeURIComponent(url.pathname + url.search) : url.href; } catch (_) { return image; } })();
         img.alt = "";
         img.loading = "lazy";
         img.style.width = "100%";
