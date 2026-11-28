@@ -27,8 +27,8 @@ function applyMaruFavicon(html, requestPath = "") {
     ? ""
     : '<script id="kuro-suspension-guard-loader" src="/suspension-guard.js?v=20261127abortfix1"></script>';
   let cleanHtml = String(html || "").replace(iconTags, "");
-  cleanHtml = cleanHtml.replace(/(["'])\\/security\\/kuro-security-gate\\.js(?:\\?[^"']*)?\\1/gi, (_match, quote) =>
-    quote + "/security/kuro-security-gate.js?v=" + FORCE_SECURITY_GATE_VERSION + quote
+  cleanHtml = cleanHtml.replace(/\/security\/kuro-security-gate\.js(?:\?[^"'\s]*)?/gi,
+    "/security/kuro-security-gate.js?v=" + FORCE_SECURITY_GATE_VERSION
   );
   cleanHtml = cleanHtml.replace(/<script\b[^>]*\bid=["']kuro-suspension-guard-loader["'][^>]*><\/script>/gi, "");
   if (isGamePlayPath) {
