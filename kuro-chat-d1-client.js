@@ -3,7 +3,7 @@
   const CHAT_TABLES = new Set([
     "chat_conversations","chat_messages","chat_message_reads","chat_message_hides",
     "group_conversations","group_chat_members","group_chat_messages",
-    "group_chat_message_reads","group_chat_mentions"
+    "group_chat_message_reads","group_chat_mentions","notifications"
   ]);
 
   class KuroD1ChatQuery {
