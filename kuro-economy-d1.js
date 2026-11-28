@@ -484,20 +484,27 @@ async function handleStore(action, body, db, user) {
 }
 
 async function handlePublicCosmetics(url, db) {
-  const userId = String(url.searchParams.get("userId") || "").trim();
-  if (!UUID_RE.test(userId)) throw new KuroEconomyError(400, "プロフィールIDが正しくありません。");
-  const profile = await db.prepare("SELECT id FROM profiles WHERE id=? LIMIT 1").bind(userId).first();
-  if (!profile) throw new KuroEconomyError(404, "プロフィールが見つかりません。");
+  const singleUserId = String(url.searchParams.get("userId") || "").trim();
+  const rawUserIds = String(url.searchParams.get("userIds") || "").trim();
+  const userIds = rawUserIds
+    ? Array.from(new Set(rawUserIds.split(",").map(value => value.trim()).filter(value => UUID_RE.test(value))))
+    : (UUID_RE.test(singleUserId) ? [singleUserId] : []);
+  if (!userIds.length || userIds.length > 100 || (rawUserIds && userIds.length !== rawUserIds.split(",").length)) {
+    throw new KuroEconomyError(400, "プロフィールIDが正しくありません。");
+  }
+  const placeholders = userIds.map(() => "?").join(",");
   const items = await getAll(db.prepare(
-    "SELECT e.slot,i.item_key,i.name,i.category,i.icon,i.image_url,i.rarity,i.frame_layer_mode " +
+    "SELECT e.user_id,e.slot,i.item_key,i.name,i.category,i.icon,i.image_url,i.rarity,i.frame_layer_mode " +
     "FROM kuro_store_equipped_items e " +
     "JOIN kuro_store_user_inventory inv ON inv.user_id=e.user_id AND inv.item_id=e.item_id " +
     "JOIN kuro_store_items i ON i.id=e.item_id " +
-    "WHERE e.user_id=? ORDER BY e.slot"
-  ).bind(userId));
-  const cosmetics = {};
+    "JOIN profiles p ON p.id=e.user_id " +
+    "WHERE e.user_id IN (" + placeholders + ") ORDER BY e.user_id,e.slot"
+  ).bind(...userIds));
+  const users = {};
   for (const item of items) {
-    cosmetics[item.slot] = {
+    if (!users[item.user_id]) users[item.user_id] = {};
+    users[item.user_id][item.slot] = {
       itemKey: item.item_key,
       name: item.name,
       category: item.category,
@@ -507,7 +514,12 @@ async function handlePublicCosmetics(url, db) {
       frameLayerMode: item.frame_layer_mode || "over"
     };
   }
-  return { cosmetics, source: "cloudflare-d1" };
+  if (rawUserIds) return { users, source: "cloudflare-d1" };
+  if (!users[singleUserId]) {
+    const profile = await db.prepare("SELECT id FROM profiles WHERE id=? LIMIT 1").bind(singleUserId).first();
+    if (!profile) throw new KuroEconomyError(404, "プロフィールが見つかりません。");
+  }
+  return { cosmetics: users[singleUserId] || {}, source: "cloudflare-d1" };
 }
 
 async function handleNotifications(request, db, user) {
