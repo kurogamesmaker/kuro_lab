@@ -235,6 +235,44 @@
       '</div>';
   }
 
+  async function loadD1PublicPlayerSummary(db, userId) {
+    var url = "/api/kuro-d1/public-player-summary?userId=" + encodeURIComponent(String(userId || ""));
+    try {
+      var response = await fetch(url, {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: { accept: "application/json" }
+      });
+      var payload = await response.json().catch(function () { return null; });
+      if (!response.ok || !payload || !payload.data ||
+          !payload.data.level || !Array.isArray(payload.data.thresholds)) {
+        throw new Error(payload && payload.error || "Cloudflareからプレイヤー情報を取得できませんでした。");
+      }
+      return { data: payload.data, error: null, source: "cloudflare-d1" };
+    } catch (d1Error) {
+      // Preserve the previous read path as an automatic rollback/fallback.
+      console.warn("KURO D1 public player summary fallback:", d1Error);
+      if (!db || !db.functions || typeof db.functions.invoke !== "function") throw d1Error;
+      var fallback = await Promise.all([
+        db.functions.invoke("kuro-public-coin-balance", { body: { userId: userId } }),
+        db.from("kuro_level_users").select("total_xp,current_level").eq("user_id", userId).maybeSingle(),
+        db.from("kuro_level_thresholds").select("level,required_xp").order("level", { ascending: true })
+      ]);
+      fallback.forEach(function (result) { if (result && result.error) throw result.error; });
+      return {
+        data: {
+          currency: "P",
+          balance: fallback[0].data && fallback[0].data.balance,
+          level: fallback[1].data || { total_xp: 0, current_level: 1 },
+          thresholds: Array.isArray(fallback[2].data) ? fallback[2].data : []
+        },
+        error: null,
+        source: "supabase-fallback"
+      };
+    }
+  }
+
   function safeRpc(db, name, args, fallback) {
     try {
       return Promise.resolve(db.rpc(name, args)).catch(function (error) {
@@ -314,18 +352,18 @@
         safeRpc(db, "kuro_get_public_profile_game_stats_precise", { p_user_id: id }, []),
         getFollowCounts(db, id),
         getSignedInUser(db),
-        db.functions.invoke("kuro-public-coin-balance", { body: { userId: id } }).catch(function (error) { return { data: null, error: error }; }),
-        safeRpc(db, "kuro_get_public_store_cosmetics", { p_user_id: id }, {}),
-        db.from("kuro_level_users").select("total_xp,current_level").eq("user_id", id).maybeSingle(),
-        db.from("kuro_level_thresholds").select("level,required_xp").order("level", { ascending: true })      ]);
+        loadD1PublicPlayerSummary(db, id).catch(function (error) { return { data: null, error: error }; }),
+        safeRpc(db, "kuro_get_public_store_cosmetics", { p_user_id: id }, {})
+      ]);
       if (thisRequest !== requestId) return;
-      var profileResult = results[0], statsResult = results[1], coinBalanceResult = results[4];
+      var profileResult = results[0], statsResult = results[1], playerSummaryResult = results[4];
+      var coinBalanceResult = playerSummaryResult;
       var cosmeticsResult = results[5];
-      var levelResult = results[6], levelThresholdsResult = results[7];
-      var levelData = levelResult && !levelResult.error && levelResult.data ? levelResult.data : {};
+      var playerSummary = playerSummaryResult && !playerSummaryResult.error ? playerSummaryResult.data : {};
+      var levelData = playerSummary.level || {};
       var currentLevel = Math.max(1, Math.floor(Number(levelData.current_level) || 1));
       var totalXp = Math.max(0, Math.floor(Number(levelData.total_xp) || 0));
-      var levelThresholds = levelThresholdsResult && !levelThresholdsResult.error && Array.isArray(levelThresholdsResult.data) ? levelThresholdsResult.data : [];
+      var levelThresholds = Array.isArray(playerSummary.thresholds) ? playerSummary.thresholds : [];
       function requiredXpForLevel(level) {
         var match = levelThresholds.find(function (item) { return Number(item.level) === level; });
         if (match) return Number(match.required_xp) || 0;

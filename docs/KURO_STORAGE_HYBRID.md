@@ -6,6 +6,7 @@
 - Supabase remains the production system for Auth, Postgres/Data API, Realtime, and Edge Functions until each replacement has passed parity and security checks.
 - Supabase Storage remains the source of truth for uploaded file binaries. Existing bucket names, object keys, access modes, and stored URLs are preserved.
 - The Cloudflare D1 database named `kuro-migration-copy` is a migration/staging copy only. It is attached to the production Worker as `KURO_MIGRATION_DB` solely for admin-only, read-only migration diagnostics; regular application API traffic is not routed to it. It is not the live application database.
+- A separate D1 database named `kuro-app-data-mirror` is bound as `KURO_APP_DB`. It is a one-way, read-only mirror of 61 allowlisted Supabase tables, refreshed by the scheduled outbox sync Worker. Only explicit read-only Worker routes use it; Supabase remains authoritative for all writes.
 - Cloudflare R2 is not required for this architecture and must not be enabled by registering a payment card solely for this migration.
 
 ## Storage-only relay
@@ -42,6 +43,12 @@ Do not rename buckets, move files, rewrite object keys, change public/private se
 - No R2 bucket, paid subscription, or payment-card registration is needed.
 - To roll back the routing change, revert the Storage endpoint references and Worker route together; the underlying Supabase objects remain unchanged.
 
+## Active application read mirror (2026-11-28)
+
+The production Worker also has the separate `KURO_APP_DB` binding for the live-current-state mirror. The mirror is updated from Supabase outbox events once per minute. Current read-only application routes include home banners, authenticated portal history, public player XP/level/KC summary, and the public level leaderboard. The data may be briefly behind Supabase.
+
+No XP award, KC award, shop purchase/refund, admin adjustment, game result, or matchmaking write is handled by this D1 read mirror. Their existing Supabase triggers, routines, Edge Functions, and transaction boundaries remain authoritative.
+
 ## D1 read-only diagnostic stage (2026-11-28)
 
 - The existing database `kuro-migration-copy` is attached to the production Worker as `KURO_MIGRATION_DB`.
@@ -50,7 +57,7 @@ Do not rename buckets, move files, rewrite object keys, change public/private se
 - The diagnostic returns only counts, table names with count differences, and copy timestamps. It never returns user records or personal data and performs no writes to D1. The live Security Gate may write its normal audit event to Supabase.
 - `/admin/migration.html` displays these checks. It requires an existing admin login.
 - This diagnostic verifies internal D1 copy integrity, not live parity with Supabase. Source row estimates are approximate and are displayed separately from actual D1 count mismatches.
-- No application reads or writes are routed to D1 yet. Supabase Auth, Postgres, Realtime, Edge Functions, and Storage remain production sources of truth.
+- This section describes the isolated `KURO_MIGRATION_DB` diagnostics database only. No application reads or writes are routed to that staging database. The separate `KURO_APP_DB` mirror serves only the explicitly documented read-only projections; Supabase Auth, Postgres writes, Realtime, Edge Functions, and Storage remain production sources of truth.
 - Do not switch any production feature to D1 until per-feature read/write parity, authorization/RLS equivalence, transactional behavior, rollback, and live-data synchronization have been implemented and tested.
 
 ## D1 structural readiness audit (2026-11-28)
@@ -71,7 +78,7 @@ D1 live catalog audit:
 - SQLite/D1 does not provide PostgreSQL Row Level Security policies or PostgreSQL SQL routines as drop-in equivalents. Their required authorization and business logic must be inventoried and implemented in Workers (or another explicitly tested equivalent).
 - Index counts are not expected to be copied one-for-one; all query paths must be reviewed and indexed for the D1 workload.
 
-The dashboard deliberately reports `cutoverAllowed: false`. Matching table/column counts is only a structural checkpoint, not proof of type/default/constraint/transaction/RLS/business-logic parity. Keep all production app traffic on Supabase until every relevant policy, constraint, trigger, view, and routine has been reviewed and replaced, and functional/security parity plus rollback tests pass.
+The dashboard deliberately reports `cutoverAllowed: false` for the isolated migration staging copy. Matching table/column counts is only a structural checkpoint, not proof of type/default/constraint/transaction/RLS/business-logic parity. This status does not disable the separate `KURO_APP_DB` read-only mirror endpoints. Keep all writes and non-migrated reads on Supabase until every relevant policy, constraint, trigger, view, and routine has been reviewed and replaced, and functional/security parity plus rollback tests pass.
 
 ## First PostgreSQL view port (2026-11-28)
 

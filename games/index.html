@@ -1737,15 +1737,26 @@ window.kuroGamesAvatarDisplayUrl=kuroGamesAvatarDisplayUrl;
   if(!user||user.is_anonymous){coinWrap.hidden=true;setCoinPopover(false);return;}
   coinWrap.hidden=false;coinTopbarValue.textContent="—P";if(coinPopoverValue)coinPopoverValue.textContent="—P";
   const db=window.kuroGamesDB;
-  if(!db||!db.functions||typeof db.functions.invoke!=="function")return;
-  db.functions.invoke("kuro-public-coin-balance",{body:{userId:user.id}}).then(({data,error})=>{
-   if(seq!==coinRequestSeq||currentUser?.id!==user.id)return;
-   if(error){console.warn("KURO COIN topbar balance load failed:",error);coinTopbarValue.textContent="—P";if(coinPopoverValue)coinPopoverValue.textContent="—P";return;}
-   const amount=Number(data&&data.balance);
-   const label=(Number.isFinite(amount)?Math.max(0,Math.floor(amount)):0).toLocaleString("ja-JP")+"P";
-   coinTopbarValue.textContent=label;if(coinPopoverValue)coinPopoverValue.textContent=label;
-   coinTopbar.title="KURO COIN残高："+label;
-  }).catch(error=>{if(seq===coinRequestSeq)console.warn("KURO COIN topbar balance load failed:",error);});
+  const url="/api/kuro-d1/public-player-summary?userId="+encodeURIComponent(user.id);
+  fetch(url,{method:"GET",credentials:"same-origin",cache:"no-store",headers:{accept:"application/json"}})
+   .then(async response=>{
+    const payload=await response.json().catch(()=>null);
+    if(!response.ok||!payload||!payload.data)throw new Error(payload&&payload.error||"残高を取得できませんでした。");
+    return payload.data;
+   }).catch(async d1Error=>{
+    if(!db||!db.functions||typeof db.functions.invoke!=="function")throw d1Error;
+    const fallback=await db.functions.invoke("kuro-public-coin-balance",{body:{userId:user.id}});
+    if(fallback.error)throw fallback.error;
+    return fallback.data||{};
+   }).then(data=>{
+    if(seq!==coinRequestSeq||currentUser?.id!==user.id)return;
+    const amount=Number(data&&data.balance);
+    const label=(Number.isFinite(amount)?Math.max(0,Math.floor(amount)):0).toLocaleString("ja-JP")+"P";
+    coinTopbarValue.textContent=label;if(coinPopoverValue)coinPopoverValue.textContent=label;
+    coinTopbar.title="KURO COIN残高："+label;
+   }).catch(error=>{
+    if(seq===coinRequestSeq){console.warn("KURO COIN topbar balance load failed:",error);coinTopbarValue.textContent="—P";if(coinPopoverValue)coinPopoverValue.textContent="—P";}
+   });
  }
  coinTopbar?.addEventListener("click",()=>setCoinPopover(!!coinPopover?.hidden));
  coinPopoverClose?.addEventListener("click",()=>setCoinPopover(false));
@@ -2266,24 +2277,36 @@ initKuroRankingShowcase();
   if(!hasRendered)showMessage("レベルランキングを読み込み中…",false);
   try{
    if(!db){throw new Error("データベースに接続できませんでした。ページを再読み込みしてください。");}
-   const levelResult=await db.from("kuro_level_users")
-    .select("user_id,total_xp,current_level")
-    .order("current_level",{ascending:false})
-    .order("total_xp",{ascending:false})
-    .limit(50);
-   if(levelResult.error)throw levelResult.error;
-   const entries=Array.isArray(levelResult.data)?levelResult.data:[];
+   let entries;
+   try{
+    const rankingResponse=await fetch("/api/kuro-d1/level-leaderboard",{
+     method:"GET",credentials:"same-origin",cache:"no-store",headers:{accept:"application/json"}
+    });
+    const rankingPayload=await rankingResponse.json().catch(()=>null);
+    if(!rankingResponse.ok||!rankingPayload||!Array.isArray(rankingPayload.data)){
+     throw new Error(rankingPayload&&rankingPayload.error||"レベルランキングを取得できませんでした。");
+    }
+    entries=rankingPayload.data;
+   }catch(d1Error){
+    console.warn("KURO D1 level leaderboard fallback:",d1Error);
+    const levelResult=await db.from("kuro_level_users")
+     .select("user_id,total_xp,current_level")
+     .order("current_level",{ascending:false})
+     .order("total_xp",{ascending:false})
+     .limit(50);
+    if(levelResult.error)throw levelResult.error;
+    entries=Array.isArray(levelResult.data)?levelResult.data:[];
+    if(entries.length){
+     const ids=entries.map(row=>row.user_id).filter(Boolean);
+     const profileResult=await db.from("profiles").select("id,username,display_name,avatar_url").in("id",ids);
+     if(profileResult.error)throw profileResult.error;
+     const profiles=Object.create(null);
+     (Array.isArray(profileResult.data)?profileResult.data:[]).forEach(profile=>{profiles[String(profile.id)]=profile;});
+     entries.forEach(row=>{row.profile=profiles[String(row.user_id)]||null;});
+    }
+   }
    if(!entries.length){render([]);return;}
-   const ids=entries.map(row=>row.user_id).filter(Boolean);
-   const profileResult=await db.from("profiles")
-    .select("id,username,display_name,avatar_url")
-    .in("id",ids);
-   if(profileResult.error)throw profileResult.error;
-   const profiles=Object.create(null);
-   (Array.isArray(profileResult.data)?profileResult.data:[]).forEach(profile=>{
-    profiles[String(profile.id)]=profile;
-   });
-   entries.forEach(row=>{row.profile=profiles[String(row.user_id)]||null;});
+   entries.forEach(row=>{row.profile=row.profile||null;});
    entries.sort((a,b)=>{
     const levelDiff=(Number(b.current_level)||1)-(Number(a.current_level)||1);
     if(levelDiff)return levelDiff;
@@ -2406,20 +2429,32 @@ initKuroRankingShowcase();
   if(!userId||userId!==activeUserId)return;
   var thisRequest=++requestId;
   try{
-   var tasks=[
-    db.from("kuro_level_users").select("total_xp,current_level").eq("user_id",userId).maybeSingle()
-   ];
-   if(!thresholds)tasks.push(db.from("kuro_level_thresholds").select("level,required_xp").order("level",{ascending:true}));
-   var results=await Promise.all(tasks);
-   if(thisRequest!==requestId||userId!==activeUserId)return;
-   var levelResult=results[0];
-   if(levelResult.error)throw levelResult.error;
-   if(!thresholds){
-    var thresholdResult=results[1];
-    if(thresholdResult.error)throw thresholdResult.error;
-    thresholds=Array.isArray(thresholdResult.data)?thresholdResult.data:[];
+   var data;
+   try{
+    var response=await fetch("/api/kuro-d1/public-player-summary?userId="+encodeURIComponent(userId),{
+     method:"GET",credentials:"same-origin",cache:"no-store",headers:{accept:"application/json"}
+    });
+    var payload=await response.json().catch(function(){return null;});
+    if(!response.ok||!payload||!payload.data||!payload.data.level||!Array.isArray(payload.data.thresholds)){
+     throw new Error(payload&&payload.error||"Cloudflareからレベル情報を取得できませんでした。");
+    }
+    if(!thresholds)thresholds=payload.data.thresholds;
+    data=payload.data.level||{};
+   }catch(d1Error){
+    console.warn("KURO D1 level summary fallback:",d1Error);
+    var tasks=[db.from("kuro_level_users").select("total_xp,current_level").eq("user_id",userId).maybeSingle()];
+    if(!thresholds)tasks.push(db.from("kuro_level_thresholds").select("level,required_xp").order("level",{ascending:true}));
+    var results=await Promise.all(tasks);
+    var levelResult=results[0];
+    if(levelResult.error)throw levelResult.error;
+    if(!thresholds){
+     var thresholdResult=results[1];
+     if(thresholdResult.error)throw thresholdResult.error;
+     thresholds=Array.isArray(thresholdResult.data)?thresholdResult.data:[];
+    }
+    data=levelResult.data||{};
    }
-   var data=levelResult.data||{};
+   if(thisRequest!==requestId||userId!==activeUserId)return;
    var currentLevel=Math.max(1,Math.floor(Number(data.current_level)||1));
    var totalXp=Math.max(0,Math.floor(Number(data.total_xp)||0));
    var currentLevelXp=requiredXpForLevel(currentLevel);

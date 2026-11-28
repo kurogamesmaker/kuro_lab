@@ -4,7 +4,7 @@
 
 This is the first Cloudflare-side copy of KURO's frequently used operational data. Cloudflare D1 is located in the APAC region and is bound to the existing `kuro-lab` Worker as `KURO_APP_DB`.
 
-This is a **snapshot/mirror only**. The current production application remains connected to Supabase. No application read/write path has been switched to D1, and no ongoing synchronization is configured by this change.
+This is a **read-only application mirror**. Supabase remains authoritative for all writes and business transactions. A scheduled outbox Worker synchronizes the 61 allowlisted active tables into this D1 database every minute. Only explicitly implemented Worker GET endpoints read from the mirror; all other application flows continue to use Supabase.
 
 ## Snapshot
 
@@ -13,7 +13,7 @@ This is a **snapshot/mirror only**. The current production application remains c
 - D1 database ID: `7ed0a9f4-da8b-4e67-b4b5-66480accf080`
 - Primary region: `APAC`
 - Copied active/current-state tables: **61**
-- Copied rows: **1,337**
+- Initial copied rows at snapshot time: **1,337** (the live mirror count changes as outbox events are applied)
 - Public table/view schema copied from the previous schema inventory: **89 tables + 1 view**
 - Secondary indexes added for common feed, notification, chat, matchmaking, leaderboard, profile, store, and portal lookups: **22 indexes**
 
@@ -57,18 +57,33 @@ The D1 schema may contain empty copies of some Supabase public tables because al
 2. Do not expose `KURO_APP_DB` directly to browsers. Browser clients must not receive Cloudflare D1 credentials or bypass Worker authorization.
 3. Before moving any read or write path, port and test the corresponding Supabase RLS ownership rules, constraints, triggers, RPC/function behavior, and any Edge Function authorization into server-side Worker code.
 4. Auth and media/file binaries stay in Supabase for this phase.
-5. The snapshot will become stale as soon as Supabase changes. A controlled sync/outbox process and reconciliation checks are required before D1 can serve live reads or writes.
+5. The outbox Worker synchronizes current-state rows once per minute. D1 reads can therefore lag Supabase briefly; keep Supabase authoritative and reserve D1 reads for explicitly documented projections with a fallback/rollback path.
 6. Do not point the existing migration diagnostics binding `KURO_MIGRATION_DB` at this database. It is a separate diagnostic snapshot.
 7. D1 read replication is currently disabled. Re-evaluate consistency and current plan limits before enabling replicas or relying on this database for global latency-sensitive traffic.
 8. R2 was not enabled as part of this work. No paid Cloudflare product was enabled.
 
+## Active read-only routes (2026-11-28)
+
+The following application paths use `KURO_APP_DB` as a read mirror while Supabase remains the write authority:
+
+- `GET /api/kuro-d1/home-banners`: public active home-banner projection.
+- `GET /api/kuro-d1/portal-history`: authenticated, user-scoped portal history.
+- `GET /api/kuro-d1/public-player-summary?userId=...`: publicly visible KC balance, XP/level state, and level thresholds for an existing profile. The exposed fields match the existing public balance endpoint and public level read policies.
+- `GET /api/kuro-d1/level-leaderboard`: top 50 public level entries joined to public profile display fields.
+
+All endpoints are read-only and return `Cache-Control: no-store`. The active mirror sync cadence is once per minute, so a newly awarded XP/KC balance can appear in D1 with a short delay. The write paths and XP/KC ledger/claim triggers remain on Supabase. In particular, verified wins, level awards, milestone rewards, purchases, refunds, and admin adjustments must not be switched to D1 until their full transactional and idempotency behavior has been reimplemented and verified.
+
+The level-up notification poll continues to read the Supabase ledger so immediate level-up effects are not delayed by the mirror's sync interval.
+Client code retains the previous Supabase read path as an automatic fallback if a D1 projection is temporarily unavailable. A D1 error therefore does not disable profile, KC, or level display.
+
 ## Next migration stages
 
-1. Add a server-side Worker data-access layer using `env.KURO_APP_DB`, initially behind explicit feature flags.
-2. Implement an auditable sync strategy from Supabase to D1 (prefer an outbox/change stream over periodic full-table copies); define conflict handling and deletion propagation.
-3. Port and test per-feature authorization and data integrity rules before moving any table to Cloudflare as the write authority.
-4. Canary read-only paths first (for example public catalogue/configuration or selected leaderboard views), compare results against Supabase, and monitor Worker/D1 usage.
-5. Migrate writes feature by feature only after idempotency, transaction behavior, rollback, and dual-read reconciliation are verified.
+1. Continue moving low-risk public/read-only projections to D1 with source parity checks and a fallback path.
+2. Port XP/level award and KC reward writes as one transactional feature group, including unique event/claim constraints, ledger effects, notifications, and concurrency tests.
+3. Move ranking reads only after ranking-specific filters and visibility rules have been matched.
+4. Port online matchmaking/game state separately using a coordination design appropriate to each game (including durable room ownership, membership, ready state, and cleanup).
+5. Move shop reads and purchases only after inventory, balance, ledger, idempotency, and refund semantics are covered.
+6. Consider R2 separately for file binaries; do not move existing Supabase Storage objects as part of the D1 work.
 
 ## What this change does not do
 
