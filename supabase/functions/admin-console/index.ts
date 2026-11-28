@@ -80,7 +80,16 @@ async function callD1Economy(req: Request, payload: Record<string, unknown>) {
   try {
     upstream = await fetch("https://kurolab.cc.cd/api/kuro-economy/admin", {
       method: "POST",
-      headers: { "Authorization": authorization, "Content-Type": "application/json", "Accept": "application/json" },
+      headers: {
+        "Authorization": authorization,
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        ...(req.headers.get("User-Agent") ? { "User-Agent": req.headers.get("User-Agent")! } : {}),
+        ...(req.headers.get("Sec-CH-UA-Platform") ? { "Sec-CH-UA-Platform": req.headers.get("Sec-CH-UA-Platform")! } : {}),
+        ...(req.headers.get("Accept-Language") ? { "Accept-Language": req.headers.get("Accept-Language")! } : {}),
+        ...(req.headers.get("X-Real-IP") ? { "X-Real-IP": req.headers.get("X-Real-IP")! } : {}),
+        ...(req.headers.get("CF-Connecting-IP") ? { "CF-Connecting-IP": req.headers.get("CF-Connecting-IP")! } : {})
+      },
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(12000)
     });
@@ -144,7 +153,12 @@ Deno.serve(async (req: Request) => {
         "Authorization": authHeader,
         "apikey": anon,
         "Content-Type": "application/json",
-        ...(origin ? { "Origin": origin } : {})
+        ...(origin ? { "Origin": origin } : {}),
+        ...(req.headers.get("User-Agent") ? { "User-Agent": req.headers.get("User-Agent")! } : {}),
+        ...(req.headers.get("Sec-CH-UA-Platform") ? { "Sec-CH-UA-Platform": req.headers.get("Sec-CH-UA-Platform")! } : {}),
+        ...(req.headers.get("Accept-Language") ? { "Accept-Language": req.headers.get("Accept-Language")! } : {}),
+        ...(req.headers.get("X-Real-IP") ? { "X-Real-IP": req.headers.get("X-Real-IP")! } : {}),
+        ...(req.headers.get("CF-Connecting-IP") ? { "CF-Connecting-IP": req.headers.get("CF-Connecting-IP")! } : {})
       },
       body: JSON.stringify({ action: "check", tool: "admin" })
     });
