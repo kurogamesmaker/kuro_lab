@@ -690,6 +690,7 @@ const KURO_POSTGRES_SCHEMA_BASELINE = Object.freeze({
   baseTableColumns: 642,
   views: 1,
   viewColumns: 8,
+  publicGameRewardsView: "kuro_public_game_rewards",
   rlsEnabledTables: 89,
   rlsPolicies: 136,
   indexes: 257,
@@ -840,7 +841,8 @@ async function handleMigrationStructure(request, env) {
         (SELECT COUNT(*) FROM sqlite_master s
           JOIN __kuro_schema_manifest m ON m.table_name = s.tbl_name
           WHERE s.type = 'trigger') AS trigger_count,
-        (SELECT COUNT(*) FROM sqlite_master WHERE type = 'view') AS view_count
+        (SELECT COUNT(*) FROM sqlite_master WHERE type = 'view') AS view_count,
+        (SELECT COUNT(*) FROM pragma_table_info('kuro_public_game_rewards')) AS public_game_rewards_view_columns
     `).first();
 
     if (!result) return json({ error: "D1構造情報を取得できませんでした。" }, 503);
@@ -854,14 +856,17 @@ async function handleMigrationStructure(request, env) {
       indexes: Number(result.index_count || 0),
       foreignKeys: Number(result.foreign_key_count || 0),
       triggers: Number(result.trigger_count || 0),
-      views: Number(result.view_count || 0)
+      views: Number(result.view_count || 0),
+      viewColumns: Number(result.public_game_rewards_view_columns || 0)
     };
 
     const baseline = KURO_POSTGRES_SCHEMA_BASELINE;
     const parity = {
       tablesCountMatch: d1.tables === baseline.baseTables && d1.missingTables === 0,
       columnsCountMatch: d1.columns === baseline.baseTableColumns,
-      primaryKeyColumnCountMatch: d1.primaryKeyColumns === baseline.primaryKeyColumns
+      primaryKeyColumnCountMatch: d1.primaryKeyColumns === baseline.primaryKeyColumns,
+      viewCountMatch: d1.views === baseline.views,
+      viewColumnCountMatch: d1.viewColumns === baseline.viewColumns
     };
 
     return json({
@@ -873,12 +878,11 @@ async function handleMigrationStructure(request, env) {
       migrationReadiness: {
         cutoverAllowed: false,
         status: "not-ready",
-        reason: "テーブル・列・主キー列の件数は一致していますが、認可・外部キー・トリガー・ビュー・SQLルーチンの置換が未完了です。本番アクセスはSupabaseのまま維持してください。",
+        reason: "基本テーブル・列・主キー列と公開ゲーム報酬ビューは確認済みですが、認可・外部キー・トリガー・SQLルーチン・制約の置換が未完了です。本番アクセスはSupabaseのまま維持してください。",
         remainingTasks: [
           "RLSポリシー136件をAPI単位で棚卸しし、Worker側の所有者確認・権限検証へ置き換える",
           "外部キー制約150件をD1で再現するか、Workerのトランザクション内で参照整合性を検証する",
           "ユーザー定義トリガー119件の呼び出し元と副作用を調べ、必要な処理をWorkerへ移植する",
-          "ビュー1件とビュー列8件の利用箇所を確認し、SQLまたはWorkerの読み取り処理へ置き換える",
           "SQLルーチン92件の利用状況を確認し、必要なRPC処理だけをWorkerへ移植する",
           "インデックス257件とD1側82件をクエリ用途ごとに照合し、D1向けに再設計する",
           "UNIQUE制約17件とCHECK制約197件をテーブル定義と照合し、必要な整合性検証をD1またはWorkerで再現する"
