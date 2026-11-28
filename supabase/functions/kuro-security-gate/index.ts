@@ -53,7 +53,9 @@ async function recordEvent(admin: ReturnType<typeof createClient>, values: Recor
 }
 
 async function hasToolPermission(admin: ReturnType<typeof createClient>, tool: string, userId: string): Promise<boolean> {
-  if (tool === "admin" || tool === "center" || tool === "security-monitor") {
+  // All KURO administrative surfaces, including Game Studio, require an
+  // explicit administrator record. A normal authenticated account is not enough.
+  if (tool === "admin" || tool === "center" || tool === "security-monitor" || tool === "game-studio") {
     const { data, error } = await admin.from("admin_users")
       .select("user_id").eq("user_id", userId).maybeSingle();
     if (error) throw new Error("管理者権限を確認できませんでした。");
@@ -65,7 +67,7 @@ async function hasToolPermission(admin: ReturnType<typeof createClient>, tool: s
     if (error) throw new Error("Shop Studio権限を確認できませんでした。");
     return Boolean(data);
   }
-  return tool === "game-studio";
+  return false;
 }
 
 async function checkAccess(
@@ -209,7 +211,9 @@ Deno.serve(async (req: Request) => {
   const origin = req.headers.get("Origin");
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders(origin) });
   if (req.method !== "POST") return reply({ error: "Method not allowed" }, 405, origin);
-  if (origin && !ALLOWED_ORIGINS.has(origin)) return reply({ error: "Origin not allowed" }, 403, origin);
+  // This endpoint is browser-facing and must always have an explicitly allowed origin.
+  // Worker-to-Worker requests set the KURO origin before forwarding.
+  if (!origin || !ALLOWED_ORIGINS.has(origin)) return reply({ error: "Origin not allowed" }, 403, origin);
 
   const authHeader = req.headers.get("Authorization") || "";
   if (!authHeader.startsWith("Bearer ")) return reply({ error: "認証情報がありません。" }, 401, origin);
@@ -231,9 +235,24 @@ Deno.serve(async (req: Request) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    const body = await req.json().catch(() => ({}));
-    const action = typeof body?.action === "string" ? body.action : "check";
-    const tool = typeof body?.tool === "string" ? body.tool : "";
+    const declaredLength = Number(req.headers.get("content-length") || 0);
+    if (Number.isFinite(declaredLength) && declaredLength > 4096) {
+      return reply({ error: "Request too large" }, 413, origin);
+    }
+    const rawBody = await req.text();
+    if (new TextEncoder().encode(rawBody).byteLength > 4096) {
+      return reply({ error: "Request too large" }, 413, origin);
+    }
+    let body: Record<string, unknown>;
+    try {
+      const parsed = rawBody ? JSON.parse(rawBody) : {};
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Invalid body");
+      body = parsed as Record<string, unknown>;
+    } catch (_) {
+      return reply({ error: "Invalid JSON body" }, 400, origin);
+    }
+    const action = typeof body.action === "string" ? body.action : "check";
+    const tool = typeof body.tool === "string" ? body.tool : "";
     if (!TOOL_NAMES.has(tool)) return reply({ error: "保護対象の指定が正しくありません。" }, 400, origin);
 
     const permitted = await hasToolPermission(admin, tool, userId);
