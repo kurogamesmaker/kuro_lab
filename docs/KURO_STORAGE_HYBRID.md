@@ -5,7 +5,7 @@
 - Cloudflare Workers serves KURO Lab and provides the application's API relay.
 - Supabase remains the production system for Auth, Postgres/Data API, Realtime, and Edge Functions until each replacement has passed parity and security checks.
 - Supabase Storage remains the source of truth for uploaded file binaries. Existing bucket names, object keys, access modes, and stored URLs are preserved.
-- The Cloudflare D1 database named `kuro-migration-copy` is a migration/staging copy only. It is not bound to the production Worker and is not the live application database.
+- The Cloudflare D1 database named `kuro-migration-copy` is a migration/staging copy only. It is attached to the production Worker as `KURO_MIGRATION_DB` solely for admin-only, read-only migration diagnostics; regular application API traffic is not routed to it. It is not the live application database.
 - Cloudflare R2 is not required for this architecture and must not be enabled by registering a payment card solely for this migration.
 
 ## Storage-only relay
@@ -52,3 +52,23 @@ Do not rename buckets, move files, rewrite object keys, change public/private se
 - This diagnostic verifies internal D1 copy integrity, not live parity with Supabase. Source row estimates are approximate and are displayed separately from actual D1 count mismatches.
 - No application reads or writes are routed to D1 yet. Supabase Auth, Postgres, Realtime, Edge Functions, and Storage remain production sources of truth.
 - Do not switch any production feature to D1 until per-feature read/write parity, authorization/RLS equivalence, transactional behavior, rollback, and live-data synchronization have been implemented and tested.
+
+## D1 structural readiness audit (2026-11-28)
+
+The admin-only `GET /api/migration/structure` endpoint measures D1 catalog metadata using read-only queries. It returns aggregate schema counts only and does not return user rows or perform D1 writes. Authorization is checked against the live Supabase Security Gate; copied D1 admin records are never trusted for access control.
+
+PostgreSQL source snapshot captured on 2026-11-28:
+
+- 89 public base tables and 642 base-table columns; one view (`kuro_public_game_rewards`) with 8 columns.
+- 89 tables have RLS enabled, with 136 policies.
+- 257 PostgreSQL indexes, 150 foreign-key constraints, 89 primary-key constraints spanning 117 primary-key columns, 17 unique constraints, and 197 check constraints.
+- 119 user-defined triggers and 92 SQL routines.
+
+D1 live catalog audit:
+
+- 89 manifest tables exist, with 642 columns and 117 primary-key columns. The per-table column counts were checked against the PostgreSQL base-table inventory and matched.
+- D1 currently reports 82 indexes, zero foreign-key constraints, zero triggers, and zero views.
+- SQLite/D1 does not provide PostgreSQL Row Level Security policies or PostgreSQL SQL routines as drop-in equivalents. Their required authorization and business logic must be inventoried and implemented in Workers (or another explicitly tested equivalent).
+- Index counts are not expected to be copied one-for-one; all query paths must be reviewed and indexed for the D1 workload.
+
+The dashboard deliberately reports `cutoverAllowed: false`. Matching table/column counts is only a structural checkpoint, not proof of type/default/constraint/transaction/RLS/business-logic parity. Keep all production app traffic on Supabase until every relevant policy, constraint, trigger, view, and routine has been reviewed and replaced, and functional/security parity plus rollback tests pass.
