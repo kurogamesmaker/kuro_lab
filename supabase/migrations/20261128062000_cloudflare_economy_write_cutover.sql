@@ -106,7 +106,7 @@ CREATE TRIGGER kuro_economy_capture_werewolf_win
 
 -- The existing TTT trigger never had an enabled KC reward configuration. Remove
 -- its direct Supabase writer so no economy mutation can bypass the D1 processor.
-DROP TRIGGER IF EXISTS kuro_coin_reward_from_verified_tictactoe ON public.game_tictactoe_verified_events;
+DROP TRIGGER IF EXISTS kuro_coin_reward_from_tictactoe ON public.game_tictactoe_verified_events;
 
 DROP TRIGGER IF EXISTS kuro_level_users_coin_milestone_reward ON public.kuro_level_users;
 DROP TRIGGER IF EXISTS kuro_level_users_notify_level_up ON public.kuro_level_users;
