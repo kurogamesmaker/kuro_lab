@@ -28,8 +28,7 @@ BEGIN
 END;
 $function$;
 
--- A private readiness marker is enqueued last. D1 coin-history reads remain
--- on their Supabase fallback until this marker has been applied.
+-- Private readiness marker: inserted into the outbox after all snapshot rows.
 CREATE TABLE IF NOT EXISTS public.__kuro_economy_mirror_control (
   id integer PRIMARY KEY CHECK (id = 1),
   snapshot_ready boolean NOT NULL DEFAULT false,
