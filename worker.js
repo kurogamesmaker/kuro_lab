@@ -1,6 +1,7 @@
 import { handleKuroEconomyRequest } from "./kuro-economy-d1.js";
 import { handleKuroD1AdminCheck, handleKuroD1SecurityGate } from "./kuro-security-d1.js";
 import { handleKuroD1PublicProfiles } from "./kuro-sns-read-d1.js";
+import { handleKuroD1SnsPosts } from "./kuro-sns-posts-d1.js";
 const FORCE_MARU_ICON_VERSION = "20261122forcefavicon3";
 const FORCE_SECURITY_GATE_VERSION = "20261128gate5";
 
@@ -1795,6 +1796,15 @@ export default {
       } catch (error) {
         console.error("KURO web search handler failed", error);
         return json({ code: "SEARCH_INTERNAL_ERROR", message: "検索処理に失敗しました。" }, 500);
+      }
+    }
+
+    if (url.pathname === "/api/kuro-d1/sns-posts") {
+      try {
+        return await handleKuroD1SnsPosts(request, env);
+      } catch (error) {
+        console.error("KURO D1 SNS post handler failed", error?.message || error);
+        return json({ error: "SNSの処理に失敗しました。" }, Number(error?.status) || 503);
       }
     }
 
