@@ -703,7 +703,13 @@ async function handleMigrationHealth(request, env) {
       origin: "https://kurolab.cc.cd"
     });
     const clientIp = request.headers.get("CF-Connecting-IP");
+    const userAgent = request.headers.get("user-agent") || "";
+    const platform = request.headers.get("sec-ch-ua-platform") || "";
+    const language = request.headers.get("accept-language") || "";
     if (clientIp) gateHeaders.set("x-real-ip", clientIp);
+    if (userAgent) gateHeaders.set("user-agent", userAgent);
+    if (platform) gateHeaders.set("sec-ch-ua-platform", platform);
+    if (language) gateHeaders.set("accept-language", language);
     gateResponse = await fetch(SUPABASE_URL + "/functions/v1/kuro-security-gate", {
       method: "POST",
       headers: gateHeaders,
@@ -777,7 +783,7 @@ async function handleMigrationHealth(request, env) {
       sourceEstimateVariance: estimateVariance,
       firstCopiedAt: copiedAt[0] || null,
       lastCopiedAt: copiedAt[copiedAt.length - 1] || null,
-      writesPerformed: false
+      d1WritesPerformed: false
     });
   } catch (error) {
     console.error("KURO D1 migration diagnostics failed", error?.message || error);
