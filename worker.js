@@ -1069,6 +1069,14 @@ async function handleKuroD1Leaderboard(request, env) {
   if (!validKuroPublicUserId(gameId)) return json({ error: "invalid_game_id" }, 400);
   if (!/^[A-Za-z0-9_-]{1,40}$/.test(mode)) return json({ error: "invalid_mode" }, 400);
 
+  // The legacy ranking action reconciles pending verified sessions for signed-in
+  // viewers on these games. Keep that behavior by asking authenticated clients
+  // to use the existing Supabase action; anonymous/public reads can use D1.
+  const hasBearerToken = /^Bearer\\s+\\S+/i.test(request.headers.get("Authorization") || "");
+  if (hasBearerToken && [KURO_RANKING_TICTACTOE_ID, KURO_RANKING_NUMBER_ID, KURO_RANKING_PRIME_ID].includes(gameId)) {
+    return json({ error: "reconciliation_required" }, 409);
+  }
+
   const database = env?.KURO_APP_DB;
   if (!database) return json({ error: "Cloudflare D1 is unavailable." }, 503);
 
