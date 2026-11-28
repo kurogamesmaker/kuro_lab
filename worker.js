@@ -3,6 +3,7 @@ import { handleKuroD1AdminCheck, handleKuroD1SecurityGate } from "./kuro-securit
 import { handleKuroD1PublicProfiles } from "./kuro-sns-read-d1.js";
 import { handleKuroD1SnsPosts } from "./kuro-sns-posts-d1.js";
 import { handleKuroD1Chat, handleKuroD1ChatAdminStats, handleKuroD1ChatAccountCleanup } from "./kuro-chat-d1.js";
+import { handleKuroD1Push } from "./kuro-push-d1.js";
 const FORCE_MARU_ICON_VERSION = "20261122forcefavicon3";
 const FORCE_SECURITY_GATE_VERSION = "20261128gate5";
 
@@ -1750,6 +1751,20 @@ async function handleOnlineRoom(request) {
   return json({ error: "not_found" }, 404);
 }
 
+
+async function cleanupExpiredReadDmMessages(env) {
+  const db = env?.KURO_APP_DB;
+  if (!db) throw new Error("KURO_APP_DB is not configured for scheduled cleanup.");
+  const expiredMessageIds = "SELECT m.id FROM chat_messages m WHERE EXISTS (SELECT 1 FROM chat_message_reads r WHERE r.message_id=m.id AND datetime(r.read_at)<=datetime('now','-1 day'))";
+  const results = await db.batch([
+    db.prepare("DELETE FROM notifications WHERE message_id IN (" + expiredMessageIds + ")"),
+    db.prepare("DELETE FROM chat_message_hides WHERE message_id IN (" + expiredMessageIds + ")"),
+    db.prepare("DELETE FROM chat_message_reads WHERE message_id IN (" + expiredMessageIds + ")"),
+    db.prepare("DELETE FROM chat_messages WHERE id IN (" + expiredMessageIds + ")")
+  ]);
+  return (results || []).reduce((sum, result) => sum + (Number(result?.meta?.changes) || 0), 0);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -1816,6 +1831,10 @@ export default {
         console.error("KURO D1 chat handler failed", error?.message || error);
         return json({ data: null, error: { message: "チャットの処理に失敗しました。", code: "D1_CHAT_FAILED" } }, Number(error?.status) || 503);
       }
+    }
+
+    if (url.pathname === "/api/kuro-d1/push") {
+      return await handleKuroD1Push(request, env);
     }
 
     if (url.pathname === "/api/kuro-d1/chat-admin-stats") {
@@ -2196,7 +2215,7 @@ export default {
       if (!relative) return ["index.html"];
 
       // Do not expose Worker or deployment configuration source files.
-      if (["worker.js", "online-room-worker.js", "kuro-economy-d1.js", "kuro-security-d1.js", "kuro-sns-read-d1.js", "kuro-sns-posts-d1.js", "kuro-data-sync.js", "kuro-chat-d1.js", "package.json", "vercel.json", "wrangler.jsonc"].includes(relative)) {
+      if (["worker.js", "online-room-worker.js", "kuro-economy-d1.js", "kuro-security-d1.js", "kuro-sns-read-d1.js", "kuro-sns-posts-d1.js", "kuro-data-sync.js", "kuro-chat-d1.js", "kuro-push-d1.js", "package.json", "vercel.json", "wrangler.jsonc"].includes(relative)) {
         return [];
       }
 
@@ -2322,5 +2341,20 @@ export default {
       statusText: assetResponse.statusText,
       headers: fallbackHeaders
     });
+  },
+
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil((async () => {
+      try {
+        const deleted = await cleanupExpiredReadDmMessages(env);
+        console.log("KURO D1 read-DM cleanup completed", {
+          scheduledTime: controller?.scheduledTime || null,
+          deletedRows: deleted
+        });
+      } catch (error) {
+        console.error("KURO D1 read-DM cleanup failed", error?.message || error);
+        throw error;
+      }
+    })());
   }
 };
