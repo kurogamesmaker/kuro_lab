@@ -1072,7 +1072,7 @@ async function handleKuroD1Leaderboard(request, env) {
   // The legacy ranking action reconciles pending verified sessions for signed-in
   // viewers on these games. Keep that behavior by asking authenticated clients
   // to use the existing Supabase action; anonymous/public reads can use D1.
-  const hasBearerToken = /^Bearer\\s+\\S+/i.test(request.headers.get("Authorization") || "");
+  const hasBearerToken = /^Bearer\s+\S+/i.test(request.headers.get("Authorization") || "");
   if (hasBearerToken && [KURO_RANKING_TICTACTOE_ID, KURO_RANKING_NUMBER_ID, KURO_RANKING_PRIME_ID].includes(gameId)) {
     return json({ error: "reconciliation_required" }, 409);
   }
