@@ -3,7 +3,8 @@ const SUPABASE_KEY = "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ALLOWED_ORIGINS = new Set([
   "https://kurolab.cc.cd",
-  "https://www.kurolab.cc.cd"
+  "https://www.kurolab.cc.cd",
+  "https://admin.kurolab.cc.cd"
 ]);
 const MAX_POST_CHARS = 130;
 const MAX_MEDIA_ITEMS = 4;
@@ -260,11 +261,15 @@ async function getFeed(request, db, viewer) {
   throw new KuroSnsError(400, "投稿取得の操作が正しくありません。");
 }
 
-async function getAdminSnsSummary(db, user) {
+async function requireSnsAdmin(db, user) {
   const permission = await db.prepare(
     "SELECT user_id FROM admin_users WHERE user_id=? LIMIT 1"
   ).bind(user.id).first();
   if (!permission) throw new KuroSnsError(403, "このアカウントには管理者権限がありません。");
+}
+
+async function getAdminSnsSummary(db, user) {
+  await requireSnsAdmin(db, user);
 
   const [postCount, replyCount, likeCount, posts, replies] = await Promise.all([
     db.prepare("SELECT COUNT(*) AS total FROM posts").first(),
@@ -283,6 +288,26 @@ async function getAdminSnsSummary(db, user) {
     likes_total: Number(likeCount?.total || 0),
     posts_truncated: Number(postCount?.total || 0) > postRows.length,
     replies_truncated: Number(replyCount?.total || 0) > replyRows.length,
+    source: "cloudflare-d1"
+  };
+}
+
+async function getAdminSnsActivity(db, user, url) {
+  await requireSnsAdmin(db, user);
+  const since = String(url.searchParams.get("since") || "");
+  const sinceDate = new Date(since);
+  if (!since || Number.isNaN(sinceDate.getTime())) {
+    throw new KuroSnsError(400, "集計開始日時が正しくありません。");
+  }
+  const [postCount, posts, replies] = await Promise.all([
+    db.prepare("SELECT COUNT(*) AS total FROM posts").first(),
+    db.prepare("SELECT created_at FROM posts WHERE created_at>=? ORDER BY created_at ASC LIMIT 50000").bind(sinceDate.toISOString()).all(),
+    db.prepare("SELECT created_at FROM post_replies WHERE created_at>=? ORDER BY created_at ASC LIMIT 50000").bind(sinceDate.toISOString()).all()
+  ]);
+  return {
+    post_count: Number(postCount?.total || 0),
+    posts: Array.isArray(posts?.results) ? posts.results : [],
+    replies: Array.isArray(replies?.results) ? replies.results : [],
     source: "cloudflare-d1"
   };
 }
@@ -437,9 +462,11 @@ export async function handleKuroD1SnsPosts(request, env) {
   try {
     if (request.method === "GET") {
       const action = new URL(request.url).searchParams.get("action") || "feed";
-      if (action === "admin-sns-summary") {
+      if (action === "admin-sns-summary" || action === "admin-activity") {
         const admin = await authenticate(request, false);
-        const data = await getAdminSnsSummary(db, admin);
+        const data = action === "admin-sns-summary"
+          ? await getAdminSnsSummary(db, admin)
+          : await getAdminSnsActivity(db, admin, new URL(request.url));
         return json(data, 200, origin);
       }
       const viewer = await authenticate(request, true);
