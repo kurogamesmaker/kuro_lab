@@ -102,8 +102,8 @@ function humanCheck(){
      });
      const result=await response.json().catch(()=>null);
      if(!response.ok||result?.success!==true){
-      const codes=Array.isArray(result?.errorCodes)?result.errorCodes.join(", "):"";
-      const code=result?.code||codes;
+      const codes=Array.isArray(result?.errorCodes)?result.errorCodes.filter(Boolean):[];
+      const code=[result?.code,...codes].filter(Boolean).join(":");
       const message=result?.message||"人間確認に失敗しました。";
       throw new Error(code?message+"（"+code+"）":message);
      }
