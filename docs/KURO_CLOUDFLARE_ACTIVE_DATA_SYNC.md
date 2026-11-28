@@ -11,6 +11,7 @@
 - The KuroGames homepage ticker reads only the public active-banner projection from D1 through `/api/kuro-d1/home-banners`.
 - Authenticated portal history reads use `/api/kuro-d1/portal-history`; the Worker validates the Supabase access token and derives the user ID from Auth before querying D1.
 - Public game/profile read projections use `/api/kuro-d1/public-player-summary` for the existing public KC balance, XP/level state, and thresholds, and `/api/kuro-d1/level-leaderboard` for the top 50 level entries with public profile display fields.
+- Public game rankings use `/api/kuro-d1/leaderboard` from the main ranking page and homepage showcase. The endpoint validates that the game is published and ranking is enabled, then applies the same canonical metric and verified-source conditions as the existing leaderboard handler. Signed-in clients send their session marker; modes requiring pending verified-session reconciliation are deliberately sent back to the existing Supabase action.
 - These endpoints use only `KURO_APP_DB`, are read-only, and return `Cache-Control: no-store`. They preserve the existing public visibility boundary; no private ledger or claim data is exposed.
 
 ## Security
@@ -36,6 +37,6 @@
 
 - This is one-way Supabase → Cloudflare synchronization. Cloudflare D1 is not yet the write authority.
 - Supabase remains the authoritative write source. Only the explicit read-only endpoints listed above use D1; all other app reads and all writes continue to use Supabase until per-feature authorization, triggers, RPCs and integrity rules have been ported and tested.
-- Client reads automatically fall back to the existing Supabase query/function path if an individual D1 read projection fails.
+- Client reads automatically fall back to the existing Supabase query/function path if an individual D1 read projection fails. The authenticated KuroGames SDK's ranking calls and all ranking submissions remain on the existing Edge Function path; only the public web ranking surfaces are D1-first.
 - If the source schema changes, apply the corresponding D1 schema migration before allowing the Worker to sync those new columns. Schema mismatches deliberately stop and retain the event for retry.
 - A backlog larger than 25 events is processed over multiple Cron runs.

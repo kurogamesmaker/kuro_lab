@@ -1029,6 +1029,248 @@ function validKuroPublicUserId(value) {
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
+const KURO_RANKING_TICTACTOE_ID = "2dbd6773-2684-4f00-973e-c46acbc348e7";
+const KURO_RANKING_UNON_ID = "faa155cb-2143-4361-9a96-dc759d334e46";
+const KURO_RANKING_DAIFUGO_ID = "2eb37847-1b7e-43e4-ad98-901d5b830ac4";
+const KURO_RANKING_NUMBER_ID = "bb466662-5423-48e6-bbcc-d19da50ba818";
+const KURO_RANKING_PRIME_ID = "79c9921a-d57a-45b1-8271-1ee7042801dc";
+const KURO_RANKING_SUSHI_ID = "5c1e658b-f6d3-412a-8b97-61d2c0457e95";
+
+function rankingUser(row) {
+  const username = String(row.username || "プレイヤー");
+  return {
+    kuroId: row.kuro_id ? String(row.kuro_id) : null,
+    username,
+    display_name: username,
+    avatar_url: row.avatar_url == null ? null : String(row.avatar_url)
+  };
+}
+
+function rankingScore(row, index, mode, metric, extra = {}) {
+  return {
+    rank: index + 1,
+    userId: String(row.user_id),
+    score: Number(row.score) || 0,
+    mode,
+    metric,
+    createdAt: row.created_at || row.updated_at || null,
+    ...extra,
+    user: rankingUser(row)
+  };
+}
+
+async function handleKuroD1Leaderboard(request, env) {
+  if (request.method !== "GET") return json({ error: "Method not allowed" }, 405);
+  const url = new URL(request.url);
+  const gameId = url.searchParams.get("gameId") || "";
+  const mode = url.searchParams.get("mode") || "default";
+  const requestedLimit = Number(url.searchParams.get("limit") || 20);
+  const limit = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(100, Math.floor(requestedLimit))) : 20;
+  if (!validKuroPublicUserId(gameId)) return json({ error: "invalid_game_id" }, 400);
+  if (!/^[A-Za-z0-9_-]{1,40}$/.test(mode)) return json({ error: "invalid_mode" }, 400);
+
+  // The legacy ranking action reconciles pending verified sessions for signed-in
+  // viewers on these games. Keep that behavior by asking authenticated clients
+  // to use the existing Supabase action; anonymous/public reads can use D1.
+  const hasBearerToken = /^Bearer\s+\S+/i.test(request.headers.get("Authorization") || "");
+  if (hasBearerToken && [KURO_RANKING_TICTACTOE_ID, KURO_RANKING_NUMBER_ID, KURO_RANKING_PRIME_ID].includes(gameId)) {
+    return json({ error: "reconciliation_required" }, 409);
+  }
+
+  const database = env?.KURO_APP_DB;
+  if (!database) return json({ error: "Cloudflare D1 is unavailable." }, 503);
+
+  try {
+    const game = await database.prepare(
+      "SELECT id, status FROM game_studio_games WHERE id = ? LIMIT 1"
+    ).bind(gameId).first();
+    if (!game || game.status !== "published") return json({ error: "game_not_published" }, 404);
+
+    const settingsRow = await database.prepare(
+      "SELECT features FROM game_online_settings WHERE game_id = ? LIMIT 1"
+    ).bind(gameId).first();
+    let features = {};
+    try {
+      const raw = settingsRow?.features;
+      features = raw && typeof raw === "object" ? raw : JSON.parse(String(raw || "{}"));
+    } catch (_) {
+      features = {};
+    }
+    if (features?.ranking !== true) return json({ error: "ranking_disabled" }, 403);
+
+    if (gameId === KURO_RANKING_DAIFUGO_ID && mode === "wins-bot") {
+      return json({
+        mode,
+        scores: [],
+        serverVerified: true,
+        unavailableReason: "CPU戦のサーバー検証移行中です。",
+        source: "cloudflare-d1"
+      });
+    }
+
+    if (gameId === KURO_RANKING_UNON_ID && !["wins-online", "wins-solo"].includes(mode)) {
+      return json({ error: "invalid_mode" }, 400);
+    }
+
+    if (gameId === KURO_RANKING_TICTACTOE_ID) {
+      if (!["normal", "vanish", "gobble", "reverse"].includes(mode)) {
+        return json({ error: "invalid_mode" }, 400);
+      }
+      const result = await database.prepare(`
+        SELECT
+          e.user_id,
+          SUM(CASE WHEN e.result = 'win' THEN 1 ELSE 0 END) AS score,
+          MAX(e.created_at) AS created_at,
+          p.kuro_id,
+          p.username,
+          p.avatar_url
+        FROM game_tictactoe_verified_events e
+        LEFT JOIN profiles p ON p.id = e.user_id
+        WHERE e.game_id = ?
+          AND e.rule = ?
+          AND e.cpu_difficulty = 'HARD'
+        GROUP BY e.user_id
+        HAVING SUM(CASE WHEN e.result = 'win' THEN 1 ELSE 0 END) > 0
+        ORDER BY score DESC, created_at ASC
+        LIMIT ?
+      `).bind(gameId, mode, limit).all();
+      const rows = Array.isArray(result?.results) ? result.results : [];
+      return json({
+        mode,
+        metric: "wins",
+        cpuDifficulty: "HARD",
+        scores: rows.map((row, index) => rankingScore(row, index, mode, "wins", { recordType: "verified-hard-cpu" })),
+        source: "cloudflare-d1"
+      });
+    }
+
+    if (gameId === KURO_RANKING_UNON_ID && mode === "wins-solo") {
+      const result = await database.prepare(`
+        SELECT
+          s.user_id,
+          s.wins AS score,
+          COALESCE(NULLIF(s.last_played_at, ''), NULLIF(s.updated_at, '')) AS created_at,
+          p.kuro_id,
+          p.username,
+          p.avatar_url
+        FROM kuro_game_user_stats s
+        LEFT JOIN profiles p ON p.id = s.user_id
+        WHERE s.game_id = ?
+          AND s.mode = 'wins-solo-hard'
+          AND json_extract(s.metadata, '$.metric') = 'wins'
+          AND json_extract(s.metadata, '$.source') = 'unon-solo-server'
+          AND json_extract(s.metadata, '$.serverVerified') = 'unon-solo-v1'
+          AND json_extract(s.metadata, '$.cpuDifficulty') = 'hard'
+          AND s.wins > 0
+        ORDER BY s.wins DESC, s.updated_at ASC
+        LIMIT ?
+      `).bind(gameId, limit).all();
+      const rows = Array.isArray(result?.results) ? result.results : [];
+      return json({
+        mode,
+        metric: "wins",
+        cpuDifficulty: "hard",
+        scores: rows.map((row, index) => rankingScore(row, index, mode, "wins", { recordType: "hard-cpu" })),
+        source: "cloudflare-d1"
+      });
+    }
+
+    if (gameId === KURO_RANKING_NUMBER_ID) {
+      const known = ["number-time-easy", "number-time-normal", "number-time-hard", "number-time-expert", "number-time-master", "number-time-legend"];
+      // The same whitelist and verified-ranking marker as the server ranking function.
+      if (!known.includes(mode)) return json({ error: "invalid_mode" }, 400);
+      const result = await database.prepare(`
+        SELECT
+          s.user_id,
+          s.best_time_us AS score,
+          s.mode,
+          COALESCE(NULLIF(s.last_played_at, ''), NULLIF(s.updated_at, '')) AS created_at,
+          p.kuro_id,
+          p.username,
+          p.avatar_url
+        FROM kuro_game_user_stats s
+        LEFT JOIN profiles p ON p.id = s.user_id
+        WHERE s.game_id = ?
+          AND s.mode = ?
+          AND json_extract(s.metadata, '$.verifiedRanking') = 'number-guess-v1'
+          AND s.best_time_us >= 400000
+          AND s.best_time_us <= 3600000000
+        ORDER BY s.best_time_us ASC
+        LIMIT ?
+      `).bind(gameId, mode, limit).all();
+      const rows = Array.isArray(result?.results) ? result.results : [];
+      return json({
+        mode,
+        metric: rows[0] ? "time_us" : "time",
+        scores: rows.map((row, index) => rankingScore(row, index, mode, "time_us", { recordType: "verified" })),
+        source: "cloudflare-d1"
+      });
+    }
+
+    let metadataFilter = "";
+    if (gameId === KURO_RANKING_PRIME_ID) {
+      metadataFilter = " AND json_extract(s.metadata, '$.source') = 'prime-factor-server' AND json_extract(s.metadata, '$.serverVerified') = 'prime-breaker-v1'";
+    } else if (gameId === KURO_RANKING_SUSHI_ID) {
+      metadataFilter = " AND json_extract(s.metadata, '$.source') = 'sushi-typing-server' AND json_extract(s.metadata, '$.serverVerified') = 'sushi-typing-v1'";
+    }
+
+    const metricResult = await database.prepare(`
+      SELECT metric, COUNT(*) AS row_count
+      FROM kuro_game_user_stats s
+      WHERE s.game_id = ?
+        AND s.mode = ?
+        AND COALESCE(json_extract(s.metadata, '$.internalRankingMode'), 0) <> 1
+        ${metadataFilter}
+      GROUP BY metric
+      LIMIT 20
+    `).bind(gameId, mode).all();
+    const metricCounts = new Map();
+    for (const row of (Array.isArray(metricResult?.results) ? metricResult.results : [])) {
+      const metric = ["wins", "score", "time"].includes(String(row.metric)) ? String(row.metric) : "score";
+      metricCounts.set(metric, (metricCounts.get(metric) || 0) + Number(row.row_count || 0));
+    }
+    const isTimeRanking = /(^|[_-])(time|duration|elapsed|seconds?|milliseconds?|ms|fastest|clear_time)([_-]|$)/i.test(mode);
+    const canonicalMetric = isTimeRanking ? "time" :
+      Array.from(metricCounts.entries()).sort((a, b) =>
+        b[1] - a[1] || ["score", "wins", "time"].indexOf(a[0]) - ["score", "wins", "time"].indexOf(b[0])
+      )[0]?.[0] || "score";
+    const orderColumn = canonicalMetric === "wins" ? "wins" :
+      canonicalMetric === "time" ? "best_time_ms" : "best_score";
+    const direction = canonicalMetric === "time" ? "ASC" : "DESC";
+    const nonNull = canonicalMetric === "wins" ? "s.wins > 0" : "s." + orderColumn + " IS NOT NULL";
+    const result = await database.prepare(`
+      SELECT
+        s.user_id,
+        s.mode,
+        ${canonicalMetric === "wins" ? "s.wins" : canonicalMetric === "time" ? "s.best_time_ms" : "s.best_score"} AS score,
+        COALESCE(NULLIF(s.last_played_at, ''), NULLIF(s.updated_at, ''), s.created_at) AS created_at,
+        p.kuro_id,
+        p.username,
+        p.avatar_url
+      FROM kuro_game_user_stats s
+      LEFT JOIN profiles p ON p.id = s.user_id
+      WHERE s.game_id = ?
+        AND s.mode = ?
+        AND s.metric = ?
+        AND ${nonNull}
+        AND COALESCE(json_extract(s.metadata, '$.internalRankingMode'), 0) <> 1
+        ${metadataFilter}
+      ORDER BY ${orderColumn} ${direction}, s.updated_at ASC
+      LIMIT ?
+    `).bind(gameId, mode, canonicalMetric, limit).all();
+    const rows = Array.isArray(result?.results) ? result.results : [];
+    return json({
+      mode,
+      metric: rows[0]?.metric || canonicalMetric,
+      scores: rows.map((row, index) => rankingScore(row, index, mode, canonicalMetric)),
+      source: "cloudflare-d1"
+    });
+  } catch (error) {
+    console.error("KURO D1 leaderboard read failed", error?.message || error);
+    return json({ error: "leaderboard_unavailable" }, 503);
+  }
+}
+
 async function handleKuroD1PublicPlayerSummary(request, env) {
   if (request.method !== "GET") return json({ error: "Method not allowed" }, 405);
   const userId = new URL(request.url).searchParams.get("userId") || "";
@@ -1380,6 +1622,15 @@ export default {
       } catch (error) {
         console.error("KURO web search handler failed", error);
         return json({ code: "SEARCH_INTERNAL_ERROR", message: "検索処理に失敗しました。" }, 500);
+      }
+    }
+
+    if (url.pathname === "/api/kuro-d1/leaderboard") {
+      try {
+        return await handleKuroD1Leaderboard(request, env);
+      } catch (error) {
+        console.error("KURO D1 leaderboard endpoint failed", error?.message || error);
+        return json({ error: "leaderboard_unavailable" }, 503);
       }
     }
 

@@ -291,8 +291,33 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   const body={action:"leaderboard",gameId:game.id,mode:mode,limit:5};
   if(level!=="")body.level=Number(level);
   if(useCpuFilter&&cpu!=="")body.cpuDifficulty=cpu;
-  const {data,error}=await db.functions.invoke("kurogames-online",{body:body});
-  if(error)throw error;
+  let data;
+  try{
+   const url=new URL("/api/kuro-d1/leaderboard",location.origin);
+   url.searchParams.set("gameId",game.id);
+   url.searchParams.set("mode",mode);
+   url.searchParams.set("limit","5");
+   const headers={accept:"application/json"};
+   const auth=await db.auth.getSession();
+   if(auth.error)throw auth.error;
+   const viewer=auth.data&&auth.data.session&&auth.data.session.user;
+   const accessToken=auth.data&&auth.data.session&&auth.data.session.access_token;
+   if(viewer&&!viewer.is_anonymous&&accessToken)headers.Authorization="Bearer "+accessToken;
+   const response=await fetch(url.toString(),{
+    method:"GET",credentials:"same-origin",cache:"no-store",headers:headers
+   });
+   const payload=await response.json().catch(()=>null);
+   if(!response.ok||!payload||!Array.isArray(payload.scores)){
+    throw new Error(payload&&payload.error||"Cloudflareからランキングを取得できませんでした。");
+   }
+   data=payload;
+  }catch(d1Error){
+   // Preserve the original feature-gated Supabase handler as the fallback.
+   console.debug("D1 leaderboard fallback:",game.id,mode,d1Error);
+   const fallback=await db.functions.invoke("kurogames-online",{body:body});
+   if(fallback.error)throw fallback.error;
+   data=fallback.data;
+  }
   const rows=(Array.isArray(data&&data.scores)?data.scores:[]).slice(0,5).map((row,index)=>Object.assign({},row,{
    rank:Number(row.rank)||index+1,score:Number(row.score)||0,
    user:row.user||{username:"プレイヤー",display_name:"プレイヤー"}

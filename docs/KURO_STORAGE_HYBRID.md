@@ -45,7 +45,7 @@ Do not rename buckets, move files, rewrite object keys, change public/private se
 
 ## Active application read mirror (2026-11-28)
 
-The production Worker also has the separate `KURO_APP_DB` binding for the live-current-state mirror. The mirror is updated from Supabase outbox events once per minute. Current read-only application routes include home banners, authenticated portal history, public player XP/level/KC summary, and the public level leaderboard. The data may be briefly behind Supabase.
+The production Worker also has the separate `KURO_APP_DB` binding for the live-current-state mirror. The mirror is updated from Supabase outbox events once per minute. Current read-only application routes include home banners, authenticated portal history, public player XP/level/KC summary, the public level leaderboard, and public game leaderboards for the main ranking page/homepage showcase. The data may be briefly behind Supabase.
 
 No XP award, KC award, shop purchase/refund, admin adjustment, game result, or matchmaking write is handled by this D1 read mirror. Their existing Supabase triggers, routines, Edge Functions, and transaction boundaries remain authoritative.
 
