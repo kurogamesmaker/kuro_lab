@@ -88,6 +88,7 @@ function humanCheck(){
   turnstileState.api=api;
   const widgetId=api.render(slot,{
    sitekey:TURNSTILE_SITEKEY,
+   action:"kuro_admin_gate",
    theme:"dark",
    callback:async token=>{
     if(settled||tokenPending)return;
