@@ -1,0 +1,33 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kuro-data-sync",
+  "main": "./kuro-data-sync.js",
+  "compatibility_date": "2026-11-28",
+  "d1_databases": [
+    {
+      "binding": "KURO_APP_DB",
+      "database_name": "kuro-app-data-mirror",
+      "database_id": "7ed0a9f4-da8b-4e67-b4b5-66480accf080"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "* * * * *"
+    ]
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "redact_query_string": true,
+    "logs": {
+      "invocation_logs": true,
+      "head_sampling_rate": 1,
+      "persist": true
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.1,
+      "persist": true
+    }
+  }
+}
