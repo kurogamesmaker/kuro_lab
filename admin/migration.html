@@ -88,7 +88,7 @@ function renderStructure(data){
   {label:"インデックス",source:source.indexes,target:d1.indexes,state:"用途別の照合が必要",ok:false},
   {label:"外部キー",source:source.foreignKeys,target:d1.foreignKeys,state:"D1側の再現・検証が必要",ok:false},
   {label:"トリガー",source:source.userTriggers,target:d1.triggers,state:"Workerへの移植が必要",ok:false},
-  {label:"ビュー",source:source.views,target:d1.views,state:"Workerへの置換が必要",ok:false},
+  {label:"ビュー",source:source.views,target:d1.views+" / "+d1.viewColumns+"列",state:parity.viewCountMatch&&parity.viewColumnCountMatch?"一致（ビュー移植済み）":"移植・検証が必要",ok:!!(parity.viewCountMatch&&parity.viewColumnCountMatch)},
   {label:"RLSポリシー",source:source.rlsPolicies,target:"D1にネイティブRLSなし",state:"Workerで認可を再実装",ok:false},
   {label:"SQLルーチン",source:source.sqlRoutines,target:"Workerへの移植要否を確認",state:"呼び出し元の棚卸しが必要",ok:false},
   {label:"UNIQUE制約",source:source.uniqueConstraints,target:"D1側の照合未実施",state:"同等性の検証が必要",ok:false},
