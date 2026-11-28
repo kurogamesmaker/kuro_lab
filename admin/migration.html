@@ -86,7 +86,7 @@ async function run(){
    ?'<strong style="color:#ff9292">D1内の不一致</strong>'+issues.map(x=>'<div class="check"><span>'+esc(x.table)+'</span><strong>'+number(x.actual)+' / '+number(x.expected)+'</strong></div>').join("")
    :'<div class="check"><span>全テーブルの実データ数とコピー記録</span><strong style="color:#71d9a2">一致</strong></div>';
   if(vars.length)$("mismatchRows").insertAdjacentHTML("beforeend",'<p style="margin-top:8px">元DBの推定値との差（実測不一致ではありません）：'+vars.map(x=>esc(x.table)+" "+number(x.copiedRows)+"/"+number(x.sourceEstimate)).join("、")+'</p>');
-  status("D1へ接続できました。"+number(data.manifestTableCount)+"テーブルを読み取り検査しました。"+(data.writesPerformed===false?" 書き込みは行っていません。":""),"good");
+  status("D1へ接続できました。"+number(data.manifestTableCount)+"テーブルを読み取り検査しました。"+(data.d1WritesPerformed===false?" D1への書き込みは行っていません。":""),"good");
  }catch(error){status(error?.message||"D1診断に失敗しました。","error");}
  finally{button.disabled=false;button.textContent="診断を実行";}
 }
