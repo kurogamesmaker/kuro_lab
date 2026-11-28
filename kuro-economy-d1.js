@@ -72,7 +72,11 @@ async function authenticate(request, db, options = {}) {
           "apikey": SUPABASE_KEY,
           "Authorization": "Bearer " + token,
           "Content-Type": "application/json",
-          "Origin": origin
+          "Origin": origin,
+          ...(request.headers.get("User-Agent") ? { "User-Agent": request.headers.get("User-Agent") } : {}),
+          ...(request.headers.get("Sec-CH-UA-Platform") ? { "Sec-CH-UA-Platform": request.headers.get("Sec-CH-UA-Platform") } : {}),
+          ...(request.headers.get("Accept-Language") ? { "Accept-Language": request.headers.get("Accept-Language") } : {}),
+          ...(request.headers.get("X-Real-IP") ? { "X-Real-IP": request.headers.get("X-Real-IP") } : {})
         },
         body: JSON.stringify({ action: "check", tool }),
         signal: AbortSignal.timeout(10000)
