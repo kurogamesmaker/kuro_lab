@@ -684,16 +684,30 @@ async function handleStorageRelay(request, env) {
 }
 
 
-async function handleMigrationHealth(request, env) {
-  if (request.method !== "GET") return json({ error: "Method not allowed" }, 405);
+const KURO_POSTGRES_SCHEMA_BASELINE = Object.freeze({
+  capturedAt: "2026-11-28",
+  baseTables: 89,
+  baseTableColumns: 642,
+  views: 1,
+  viewColumns: 8,
+  rlsEnabledTables: 89,
+  rlsPolicies: 136,
+  indexes: 257,
+  foreignKeys: 150,
+  primaryKeyConstraints: 89,
+  primaryKeyColumns: 117,
+  uniqueConstraints: 17,
+  checkConstraints: 197,
+  sqlRoutines: 92,
+  userTriggers: 119
+});
 
+async function requireMigrationAdmin(request) {
   const authorization = request.headers.get("authorization") || "";
-  if (!/^Bearer\s+\S+/i.test(authorization)) {
+  if (!/^Bearer\\s+\\S+/i.test(authorization)) {
     return json({ error: "管理者ログインが必要です。" }, 401);
   }
 
-  // Verify the current admin role against the live Supabase security gate.
-  // D1's copied admin_users table is deliberately not used for authorization.
   let gateResponse;
   try {
     const gateHeaders = new Headers({
@@ -724,6 +738,14 @@ async function handleMigrationHealth(request, env) {
     const status = gateResponse.status >= 500 ? 503 : (gateResponse.status === 401 ? 401 : 403);
     return json({ error: gateResult?.message || "管理者権限がありません。" }, status);
   }
+  return null;
+}
+
+async function handleMigrationHealth(request, env) {
+  if (request.method !== "GET") return json({ error: "Method not allowed" }, 405);
+
+  const adminError = await requireMigrationAdmin(request);
+  if (adminError) return adminError;
 
   const database = env?.KURO_MIGRATION_DB;
   if (!database) return json({ error: "D1 migration database binding is unavailable." }, 503);
@@ -788,6 +810,84 @@ async function handleMigrationHealth(request, env) {
   } catch (error) {
     console.error("KURO D1 migration diagnostics failed", error?.message || error);
     return json({ error: "D1コピーの整合性検査に失敗しました。" }, 503);
+  }
+}
+
+async function handleMigrationStructure(request, env) {
+  if (request.method !== "GET") return json({ error: "Method not allowed" }, 405);
+
+  const adminError = await requireMigrationAdmin(request);
+  if (adminError) return adminError;
+
+  const database = env?.KURO_MIGRATION_DB;
+  if (!database) return json({ error: "D1 migration database binding is unavailable." }, 503);
+
+  try {
+    const result = await database.prepare(`
+      SELECT
+        (SELECT COUNT(*) FROM __kuro_schema_manifest) AS manifest_table_count,
+        (SELECT COUNT(*) FROM sqlite_master s
+          JOIN __kuro_schema_manifest m ON m.table_name = s.name
+          WHERE s.type = 'table') AS actual_table_count,
+        (SELECT COUNT(*) FROM __kuro_schema_manifest m, pragma_table_info(m.table_name)) AS column_count,
+        (SELECT COALESCE(SUM(
+          (SELECT COUNT(*) FROM pragma_table_info(m.table_name) WHERE pk > 0)
+        ), 0) FROM __kuro_schema_manifest m) AS primary_key_columns,
+        (SELECT COUNT(*) FROM sqlite_master s
+          JOIN __kuro_schema_manifest m ON m.table_name = s.tbl_name
+          WHERE s.type = 'index') AS index_count,
+        (SELECT COUNT(*) FROM __kuro_schema_manifest m, pragma_foreign_key_list(m.table_name)) AS foreign_key_count,
+        (SELECT COUNT(*) FROM sqlite_master s
+          JOIN __kuro_schema_manifest m ON m.table_name = s.tbl_name
+          WHERE s.type = 'trigger') AS trigger_count,
+        (SELECT COUNT(*) FROM sqlite_master WHERE type = 'view') AS view_count
+    `).first();
+
+    if (!result) return json({ error: "D1構造情報を取得できませんでした。" }, 503);
+
+    const d1 = {
+      tables: Number(result.actual_table_count || 0),
+      manifestTables: Number(result.manifest_table_count || 0),
+      missingTables: Math.max(0, Number(result.manifest_table_count || 0) - Number(result.actual_table_count || 0)),
+      columns: Number(result.column_count || 0),
+      primaryKeyColumns: Number(result.primary_key_columns || 0),
+      indexes: Number(result.index_count || 0),
+      foreignKeys: Number(result.foreign_key_count || 0),
+      triggers: Number(result.trigger_count || 0),
+      views: Number(result.view_count || 0)
+    };
+
+    const baseline = KURO_POSTGRES_SCHEMA_BASELINE;
+    const parity = {
+      tablesCountMatch: d1.tables === baseline.baseTables && d1.missingTables === 0,
+      columnsCountMatch: d1.columns === baseline.baseTableColumns,
+      primaryKeyColumnCountMatch: d1.primaryKeyColumns === baseline.primaryKeyColumns
+    };
+
+    return json({
+      ready: true,
+      mode: "read-only-structure-audit",
+      sourceSnapshot: baseline,
+      d1,
+      parity,
+      migrationReadiness: {
+        cutoverAllowed: false,
+        status: "not-ready",
+        reason: "テーブル・列・主キー列の件数は一致していますが、認可・外部キー・トリガー・ビュー・SQLルーチンの置換が未完了です。本番アクセスはSupabaseのまま維持してください。",
+        remainingTasks: [
+          "RLSポリシー136件をAPI単位で棚卸しし、Worker側の所有者確認・権限検証へ置き換える",
+          "外部キー制約150件をD1で再現するか、Workerのトランザクション内で参照整合性を検証する",
+          "ユーザー定義トリガー119件の呼び出し元と副作用を調べ、必要な処理をWorkerへ移植する",
+          "ビュー1件とビュー列8件の利用箇所を確認し、SQLまたはWorkerの読み取り処理へ置き換える",
+          "SQLルーチン92件の利用状況を確認し、必要なRPC処理だけをWorkerへ移植する",
+          "インデックス257件とD1側82件をクエリ用途ごとに照合し、D1向けに再設計する"
+        ]
+      },
+      d1WritesPerformed: false
+    });
+  } catch (error) {
+    console.error("KURO D1 migration structure audit failed", error?.message || error);
+    return json({ error: "D1構造監査に失敗しました。" }, 503);
   }
 }
 
@@ -963,6 +1063,15 @@ export default {
         return json({
           error: error?.message || "KURO online room proxy failed"
         }, Number(error?.status) || 502);
+      }
+    }
+
+    if (url.pathname === "/api/migration/structure") {
+      try {
+        return await handleMigrationStructure(request, env);
+      } catch (error) {
+        console.error("KURO D1 migration structure handler failed", error?.message || error);
+        return json({ error: "D1 structure audit unavailable." }, 503);
       }
     }
 
