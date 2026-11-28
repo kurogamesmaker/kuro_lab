@@ -104,7 +104,7 @@ function parseMedia(value, userId, scope, entityId) {
     if (!item || typeof item !== "object" || Array.isArray(item) ||
         typeof item.path !== "string" || !item.path.startsWith(expectedPrefix) ||
         item.path.length > 700 || item.path.includes("..") || item.path.includes("\\") ||
-        typeof item.bucket !== "string" || !/^[A-Za-z0-9_-]{1,80}$/.test(item.bucket) ||
+        item.bucket !== "kuro-sns-private-media" || !/^[A-Za-z0-9_-]{1,80}$/.test(item.bucket) ||
         !["image/jpeg","image/png","image/webp"].includes(String(item.content_type || ""))) {
       throw new KuroChatError(400, "添付画像の情報が正しくありません。", "INVALID_MEDIA");
     }
