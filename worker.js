@@ -1250,7 +1250,7 @@ export default {
     }
 
     // The portal favorites feature has been retired. Keep old bookmarks from loading a stale shell.
-    if (/^\\/favorites(?:\\/|$)/.test(url.pathname)) {
+    if (/^\/favorites(?:\/|$)/.test(url.pathname)) {
       return new Response(null, {
         status: 302,
         headers: {
