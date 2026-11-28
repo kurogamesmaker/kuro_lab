@@ -74,9 +74,9 @@ async function humanCheck(){
 async function verify(client,tool,options){
  const opts=options||{};
  if(!client||!client.functions)throw new Error("セキュリティ検証を開始できません。");
- if(opts.overlay!==false)show("人間確認を完了してからアクセス権を検証します。","checking");
+ show("人間確認を完了してからアクセス権を検証します。","checking");
  try{
-  if(opts.overlay!==false)await humanCheck();
+  await humanCheck();
   const {data:sessionData,error:sessionError}=await client.auth.getSession();
   if(sessionError)throw sessionError;
   if(!sessionData.session?.access_token)throw new Error("ログイン状態を確認できません。再ログインしてください。");
@@ -84,13 +84,13 @@ async function verify(client,tool,options){
   if(error)throw new Error(error.message||"セキュリティ検証に失敗しました。");
   if(!data||data.allowed!==true){
    const message=data?.message||"安全性を確認できないため、アクセスを拒否しました。";
-   if(opts.overlay!==false){show(message,"deny");await new Promise(resolve=>setTimeout(resolve,900));hide();}
+   {show(message,"deny");await new Promise(resolve=>setTimeout(resolve,900));hide();}
    throw new Error(message);
   }
-  if(opts.overlay!==false){show(data.message||"セキュリティ検証に合格しました。","ok");await new Promise(resolve=>setTimeout(resolve,280));hide();}
+  {show(data.message||"セキュリティ検証に合格しました。","ok");await new Promise(resolve=>setTimeout(resolve,280));hide();}
   return data;
  }catch(error){
-  if(opts.overlay!==false&&document.getElementById("kuroSecurityGateOverlay"))hide();
+  if(document.getElementById("kuroSecurityGateOverlay"))hide();
   throw error;
  }
 }
