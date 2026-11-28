@@ -155,8 +155,10 @@ Deno.serve(async (req: Request) => {
       method: "POST",
       headers: {
         "Authorization": "Bearer " + token,
+        "Content-Type": "application/json",
         "Accept": "application/json"
       },
+      body: JSON.stringify({ intent: "delete-account", confirmation: "削除する" }),
       signal: AbortSignal.timeout(15000)
     });
     const chatCleanupPayload = await chatCleanupResponse.json().catch(() => null);
