@@ -187,7 +187,8 @@ async function load(){
     like:name+"さんがあなたの投稿にいいねしました。",
     reply:details.parent_reply_id?name+"さんがコメントに返信しました。":name+"さんがあなたの投稿にコメントしました。",
     message:name+"さんからメッセージが届きました。",
-    mention:name+"さんがグループチャットであなたにメンションしました。"
+    mention:name+"さんがグループチャットであなたにメンションしました。",
+    level_up:"🎉 レベルアップしました！"
    };
    next.push({key:"social:"+x.id,kind:"social",id:x.id,type:x.type,title:socialTitles[x.type]||name+"さんから通知が届きました。",body:"",created_at:x.created_at,read:!!x.read_at,serviceLabel:"KURO SNS",actor_id:x.actor_id,group_id:x.group_id,message_id:x.message_id,notification_details:details});
   });
