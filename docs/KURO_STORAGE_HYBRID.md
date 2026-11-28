@@ -47,7 +47,7 @@ Do not rename buckets, move files, rewrite object keys, change public/private se
 - The existing database `kuro-migration-copy` is attached to the production Worker as `KURO_MIGRATION_DB`.
 - The new `GET /api/migration/health` route is admin-only. It verifies the live admin role through the existing Supabase Security Gate, not through the copied `admin_users` table.
 - The route executes only `SELECT COUNT(*)` statements against the D1 schema manifest's validated table names. It compares the actual D1 row count for each of the 89 copied tables with the manifest's copied row count.
-- The diagnostic returns only counts, table names with count differences, and copy timestamps. It never returns user records or personal data and performs no writes.
+- The diagnostic returns only counts, table names with count differences, and copy timestamps. It never returns user records or personal data and performs no writes to D1. The live Security Gate may write its normal audit event to Supabase.
 - `/admin/migration.html` displays these checks. It requires an existing admin login.
 - This diagnostic verifies internal D1 copy integrity, not live parity with Supabase. Source row estimates are approximate and are displayed separately from actual D1 count mismatches.
 - No application reads or writes are routed to D1 yet. Supabase Auth, Postgres, Realtime, Edge Functions, and Storage remain production sources of truth.
