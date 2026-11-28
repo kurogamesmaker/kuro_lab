@@ -254,21 +254,17 @@
       // Preserve the previous read path as an automatic rollback/fallback.
       console.warn("KURO D1 public player summary fallback:", d1Error);
       if (!db || !db.functions || typeof db.functions.invoke !== "function") throw d1Error;
-      var fallback = await Promise.all([
-        db.functions.invoke("kuro-public-coin-balance", { body: { userId: userId } }),
-        db.from("kuro_level_users").select("total_xp,current_level").eq("user_id", userId).maybeSingle(),
-        db.from("kuro_level_thresholds").select("level,required_xp").order("level", { ascending: true })
-      ]);
-      fallback.forEach(function (result) { if (result && result.error) throw result.error; });
+      var fallback = await db.functions.invoke("kuro-public-coin-balance", { body: { userId: userId } });
+      if (fallback.error) throw fallback.error;
       return {
         data: {
           currency: "P",
-          balance: fallback[0].data && fallback[0].data.balance,
-          level: fallback[1].data || { total_xp: 0, current_level: 1 },
-          thresholds: Array.isArray(fallback[2].data) ? fallback[2].data : []
+          balance: fallback.data && fallback.data.balance,
+          level: fallback.data && fallback.data.level || { total_xp: 0, current_level: 1 },
+          thresholds: Array.isArray(fallback.data && fallback.data.thresholds) ? fallback.data.thresholds : []
         },
         error: null,
-        source: "supabase-fallback"
+        source: "cloudflare-d1-proxy"
       };
     }
   }
