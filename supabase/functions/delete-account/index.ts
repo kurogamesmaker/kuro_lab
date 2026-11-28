@@ -149,6 +149,21 @@ Deno.serve(async (req: Request) => {
       .eq("created_by", user.id);
     if (invitationError) throw invitationError;
 
+    // D1 is the live source for direct/group chat data. Clean it before
+    // deleting the Auth user so a failed cleanup can be retried safely.
+    const chatCleanupResponse = await fetch("https://kurolab.cc.cd/api/kuro-d1/chat-account-cleanup", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + token,
+        "Accept": "application/json"
+      },
+      signal: AbortSignal.timeout(15000)
+    });
+    const chatCleanupPayload = await chatCleanupResponse.json().catch(() => null);
+    if (!chatCleanupResponse.ok || !chatCleanupPayload?.success) {
+      throw new Error(chatCleanupPayload?.error?.message || "Cloudflare D1 chat cleanup failed");
+    }
+
     try {
       const { error: revokeError } = await admin.auth.admin.signOut(token, "global");
       if (revokeError) console.warn("account session revocation warning", revokeError.message);
