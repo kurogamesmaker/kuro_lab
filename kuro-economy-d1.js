@@ -483,6 +483,33 @@ async function handleStore(action, body, db, user) {
   throw new KuroEconomyError(400, "ストア操作が正しくありません。");
 }
 
+async function handlePublicCosmetics(url, db) {
+  const userId = String(url.searchParams.get("userId") || "").trim();
+  if (!UUID_RE.test(userId)) throw new KuroEconomyError(400, "プロフィールIDが正しくありません。");
+  const profile = await db.prepare("SELECT id FROM profiles WHERE id=? LIMIT 1").bind(userId).first();
+  if (!profile) throw new KuroEconomyError(404, "プロフィールが見つかりません。");
+  const items = await getAll(db.prepare(
+    "SELECT e.slot,i.item_key,i.name,i.category,i.icon,i.image_url,i.rarity,i.frame_layer_mode " +
+    "FROM kuro_store_equipped_items e " +
+    "JOIN kuro_store_user_inventory inv ON inv.user_id=e.user_id AND inv.item_id=e.item_id " +
+    "JOIN kuro_store_items i ON i.id=e.item_id " +
+    "WHERE e.user_id=? ORDER BY e.slot"
+  ).bind(userId));
+  const cosmetics = {};
+  for (const item of items) {
+    cosmetics[item.slot] = {
+      itemKey: item.item_key,
+      name: item.name,
+      category: item.category,
+      icon: item.icon,
+      imageUrl: item.image_url,
+      rarity: item.rarity,
+      frameLayerMode: item.frame_layer_mode || "over"
+    };
+  }
+  return { cosmetics, source: "cloudflare-d1" };
+}
+
 async function handleNotifications(request, db, user) {
   const url = new URL(request.url);
   if (request.method === "GET") {
@@ -540,7 +567,14 @@ export async function handleKuroEconomyRequest(request, env) {
     const isAdmin = url.pathname === "/api/kuro-economy/admin";
     const isStore = url.pathname === "/api/kuro-economy/store";
     const isNotifications = url.pathname === "/api/kuro-economy/notifications";
-    if (!isAdmin && !isStore && !isNotifications) throw new KuroEconomyError(404, "not_found");
+    const isPublicCosmetics = url.pathname === "/api/kuro-economy/public-cosmetics";
+    if (!isAdmin && !isStore && !isNotifications && !isPublicCosmetics) throw new KuroEconomyError(404, "not_found");
+
+    if (isPublicCosmetics) {
+      if (request.method !== "GET") throw new KuroEconomyError(405, "GET required");
+      const data = await handlePublicCosmetics(url, db);
+      return response(data, 200, origin);
+    }
 
     const user = await authenticate(request, db, {
       adminTool: isAdmin,
