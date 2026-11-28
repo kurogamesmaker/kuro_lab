@@ -38,9 +38,24 @@ function show(message,state){
  if(i)i.textContent=state==="deny"?"!":state==="ok"?"✓":"◈";
  return el;
 }
-function hide(){const el=document.getElementById("kuroSecurityGateOverlay");if(el)el.remove();}
+function removeTurnstileWidget(){
+ const api=turnstileState.api||window.turnstile;
+ const widgetId=turnstileState.widgetId;
+ turnstileState.widgetId=null;
+ turnstileState.api=null;
+ turnstileState.humanPromise=null;
+ if(api&&widgetId!==null&&widgetId!==undefined){
+  try{api.remove(widgetId);}catch(error){console.warn("KURO Turnstile widget cleanup failed",error?.message||error);}
+ }
+}
+function hide(){
+ removeTurnstileWidget();
+ const el=document.getElementById("kuroSecurityGateOverlay");
+ if(el)el.remove();
+}
 const TURNSTILE_SITEKEY="0x4AAAAAAGWa4Op6C-Ci52dN";
 let turnstileLoadPromise=null;
+const turnstileState={widgetId:null,api:null,humanPromise:null,verifyPromise:null};
 function loadTurnstile(){
  if(window.turnstile)return Promise.resolve(window.turnstile);
  if(turnstileLoadPromise)return turnstileLoadPromise;
@@ -48,30 +63,69 @@ function loadTurnstile(){
   const script=document.createElement("script");
   script.src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
   script.async=true;script.defer=true;
-  script.onload=()=>window.turnstile?resolve(window.turnstile):reject(new Error("人間確認を読み込めませんでした。"));
-  script.onerror=()=>reject(new Error("人間確認サービスに接続できません。"));
+  script.onload=()=>{if(window.turnstile)resolve(window.turnstile);else{turnstileLoadPromise=null;script.remove();reject(new Error("人間確認を読み込めませんでした。"));}};
+  script.onerror=()=>{turnstileLoadPromise=null;script.remove();reject(new Error("人間確認サービスに接続できません。"));};
   document.head.appendChild(script);
  });
  return turnstileLoadPromise;
 }
-async function humanCheck(){
+function humanCheck(){
+ if(turnstileState.humanPromise)return turnstileState.humanPromise;
  const slot=document.getElementById("ksgHuman");
- if(!slot)throw new Error("人間確認画面を表示できません。");
- const api=await loadTurnstile();
- return new Promise((resolve,reject)=>{
-  try{
-   api.render(slot,{sitekey:TURNSTILE_SITEKEY,theme:"dark",callback:async token=>{
+ if(!slot)return Promise.reject(new Error("人間確認画面を表示できません。"));
+ let resolveCheck,rejectCheck,settled=false,tokenPending=false;
+ const pending=new Promise((resolve,reject)=>{resolveCheck=resolve;rejectCheck=reject;});
+ turnstileState.humanPromise=pending;
+ const settle=(error,value)=>{
+  if(settled)return;
+  settled=true;
+  if(turnstileState.humanPromise===pending)turnstileState.humanPromise=null;
+  if(error)rejectCheck(error);else resolveCheck(value);
+ };
+ loadTurnstile().then(api=>{
+  if(settled)return;
+  if(!slot.isConnected)throw new Error("人間確認画面が閉じられました。");
+  turnstileState.api=api;
+  const widgetId=api.render(slot,{
+   sitekey:TURNSTILE_SITEKEY,
+   theme:"dark",
+   callback:async token=>{
+    if(settled||tokenPending)return;
+    tokenPending=true;
     try{
-     const response=await fetch("/api/turnstile/verify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token})});
+     const response=await fetch("/api/turnstile/verify",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      cache:"no-store",
+      credentials:"same-origin",
+      body:JSON.stringify({token})
+     });
      const result=await response.json().catch(()=>null);
-     if(!response.ok||result?.success!==true)throw new Error(result?.message||"人間確認に失敗しました。");
-     resolve(result);
-    }catch(error){reject(error);}
-   },"expired-callback":()=>reject(new Error("確認期限が切れました。再試行してください。")),"error-callback":()=>reject(new Error("人間確認に失敗しました。再試行してください。"))});
-  }catch(error){reject(error);}
- });
+     if(!response.ok||result?.success!==true){
+      const codes=Array.isArray(result?.errorCodes)?result.errorCodes.join(", "):"";
+      const code=result?.code||codes;
+      const message=result?.message||"人間確認に失敗しました。";
+      throw new Error(code?message+"（"+code+"）":message);
+     }
+     settle(null,result);
+    }catch(error){
+     settle(error instanceof Error?error:new Error("人間確認に失敗しました。"));
+    }
+   },
+   "expired-callback":()=>settle(new Error("確認期限が切れました。もう一度お試しください。")),
+   "error-callback":code=>settle(new Error("人間確認に失敗しました。再試行してください。"+(code?" ("+code+")":"")))
+  });
+  turnstileState.widgetId=widgetId;
+ }).catch(error=>settle(error instanceof Error?error:new Error("人間確認を開始できませんでした。")));
+ return pending;
 }
-async function verify(client,tool,options){
+function verify(client,tool,options){
+ if(turnstileState.verifyPromise)return turnstileState.verifyPromise;
+ const current=runVerification(client,tool,options);
+ turnstileState.verifyPromise=current.finally(()=>{turnstileState.verifyPromise=null;});
+ return turnstileState.verifyPromise;
+}
+async function runVerification(client,tool,options){
  const opts=options||{};
  if(!client||!client.functions)throw new Error("セキュリティ検証を開始できません。");
  show("人間確認を完了してからアクセス権を検証します。","checking");
