@@ -19,7 +19,8 @@ BEGIN
     'kuro_level_thresholds',
     'kuro_level_users',
     'kuro_store_equipped_items',
-    'kuro_store_user_inventory'
+    'kuro_store_user_inventory',
+    'kuro_store_transactions'
   ] LOOP
     IF pg_catalog.to_regclass(pg_catalog.format('public.%I', v_table)) IS NULL THEN
       RAISE EXCEPTION 'KURO D1-owned table public.% does not exist', v_table;
