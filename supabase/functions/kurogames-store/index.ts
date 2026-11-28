@@ -81,7 +81,12 @@ async function callD1Store(req: Request, payload: Record<string, unknown>, studi
   const headers: Record<string, string> = {
     "Authorization": authorization,
     "Content-Type": "application/json",
-    "Accept": "application/json"
+    "Accept": "application/json",
+    ...(req.headers.get("User-Agent") ? { "User-Agent": req.headers.get("User-Agent")! } : {}),
+    ...(req.headers.get("Sec-CH-UA-Platform") ? { "Sec-CH-UA-Platform": req.headers.get("Sec-CH-UA-Platform")! } : {}),
+    ...(req.headers.get("Accept-Language") ? { "Accept-Language": req.headers.get("Accept-Language")! } : {}),
+    ...(req.headers.get("X-Real-IP") ? { "X-Real-IP": req.headers.get("X-Real-IP")! } : {}),
+    ...(req.headers.get("CF-Connecting-IP") ? { "CF-Connecting-IP": req.headers.get("CF-Connecting-IP")! } : {})
   };
   if (studio) headers["X-KURO-Store-Tool"] = "shop-studio";
   let upstream: Response;
