@@ -1279,27 +1279,37 @@ async function fetchAllAdminRows(makeQuery,pageSize=1000,maxRows=100000){
  }
  return {data:all,count:total??all.length,truncated};
 }
+async function fetchD1AdminSnsSummary(){
+ const session=await db.auth.getSession();
+ if(session?.error)throw session.error;
+ const token=session?.data?.session?.access_token;
+ if(!token)throw new Error("管理者ログインが必要です。");
+ const response=await fetch("/api/kuro-d1/sns-posts?action=admin-sns-summary",{
+  method:"GET",credentials:"same-origin",cache:"no-store",
+  headers:{Authorization:"Bearer "+token,Accept:"application/json"}
+ });
+ const payload=await response.json().catch(()=>({}));
+ if(!response.ok)throw new Error(payload?.error||"Cloudflare D1からSNS管理データを取得できませんでした。");
+ return payload;
+}
 async function loadSns(){
  const panels=["#snsPostsPanel","#snsRepliesPanel","#snsUsersPanel","#snsChatPanel"];
  panels.forEach(s=>$(s).innerHTML='<div class="empty">読み込み中…</div>');
  try{
-  const specs=[
-   ()=>db.from("profiles").select("id,username,display_name,bio,avatar_url,created_at",{count:"exact"}).order("created_at",{ascending:false}),
-   ()=>db.from("posts").select("id,user_id,content,hashtags,created_at",{count:"exact"}).order("created_at",{ascending:false}),
-   ()=>db.from("post_replies").select("id,post_id,user_id,content,created_at",{count:"exact"}).order("created_at",{ascending:false}),
-   ()=>db.from("public_chat_messages").select("id,nickname,content,created_at",{count:"exact"}).order("created_at",{ascending:false})
-  ];
-  const [profiles,posts,replies,chats,likes,follows]=await Promise.all([
-   ...specs.map(make=>fetchAllAdminRows(make)),
-   db.from("post_likes").select("post_id",{count:"exact",head:true}),
+  const [profiles,chats,d1Sns,follows]=await Promise.all([
+   fetchAllAdminRows(()=>db.from("profiles").select("id,username,display_name,bio,avatar_url,created_at",{count:"exact"}).order("created_at",{ascending:false})),
+   fetchAllAdminRows(()=>db.from("public_chat_messages").select("id,nickname,content,created_at",{count:"exact"}).order("created_at",{ascending:false})),
+   fetchD1AdminSnsSummary(),
    db.from("follows").select("follower_id",{count:"exact",head:true})
   ]);
+  const posts={data:Array.isArray(d1Sns.posts)?d1Sns.posts:[],count:Number(d1Sns.post_count||0),truncated:!!d1Sns.posts_truncated};
+  const replies={data:Array.isArray(d1Sns.replies)?d1Sns.replies:[],count:Number(d1Sns.reply_count||0),truncated:!!d1Sns.replies_truncated};
   snsProfiles=profiles.data;snsPosts=posts.data;snsReplies=replies.data;snsChatMessages=chats.data;
-  snsLikesTotal=likes.count||0;snsFollowsTotal=follows.count||0;
+  snsLikesTotal=Number(d1Sns.likes_total||0);snsFollowsTotal=follows.count||0;
   $("#snsUsersCount").textContent=profiles.count;$("#snsPostsCount").textContent=posts.count;
   $("#snsRepliesCount").textContent=replies.count;$("#snsChatCount").textContent=chats.count;
   $("#snsLikesCount").textContent=snsLikesTotal;$("#snsFollowsCount").textContent=snsFollowsTotal;
-  $("#snsConnection").textContent=[profiles,posts,replies,chats].some(x=>x.truncated)?"安全上限まで表示":"全データ取得済み";
+  $("#snsConnection").textContent=[profiles,posts,replies,chats].some(x=>x.truncated)?"安全上限まで表示":"全データ取得済み（投稿・返信・いいねはD1）";
   renderSns();
  }catch(error){
   const message=esc(error.message||"読み込みに失敗しました。");
