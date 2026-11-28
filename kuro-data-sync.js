@@ -152,8 +152,11 @@ function makeUpsertStatement(db, tableName, row) {
   const columns = entries.map(([column]) => quoteIdentifier(column)).join(", ");
   const placeholders = entries.map(() => "?").join(", ");
   const values = entries.map(([, value]) => toD1Value(value));
+  const conflictAction = tableName === "kuro_economy_pending_events"
+    ? "INSERT OR IGNORE INTO "
+    : "INSERT OR REPLACE INTO ";
   return db.prepare(
-    "INSERT OR REPLACE INTO " + quoteIdentifier(tableName) +
+    conflictAction + quoteIdentifier(tableName) +
     " (" + columns + ") VALUES (" + placeholders + ")"
   ).bind(...values);
 }
