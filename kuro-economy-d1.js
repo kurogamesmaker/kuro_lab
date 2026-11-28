@@ -316,7 +316,7 @@ async function handleAdmin(action, body, db, user) {
     const mode = String(body.mode || "").trim();
     const amount = Number(body.rewardAmount);
     const label = String(body.rewardLabel || "").trim();
-    const rewardType = body.rewardType === "fixed" ? "fixed" : "";
+    const rewardType = String(body.rewardType || "fixed");
     const cpuDifficulty = body.requiredCpuDifficulty == null || body.requiredCpuDifficulty === ""
       ? "NONE" : String(body.requiredCpuDifficulty).toUpperCase();
     if (!UUID_RE.test(gameId) || !/^[A-Za-z0-9_-]{1,40}$/.test(mode)) throw new KuroEconomyError(400, "ゲームIDまたはモード指定が正しくありません。");
@@ -334,9 +334,9 @@ async function handleAdmin(action, body, db, user) {
     const now = isoNow();
     const enabled = body.enabled === true ? 1 : 0;
     await db.prepare(
-      "INSERT INTO kuro_coin_game_rewards(game_id,mode,reward_amount,enabled,required_cpu_difficulty,reward_label,updated_by_user_id,updated_at,reward_type,score_tiers) VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(game_id,mode,required_cpu_difficulty) DO UPDATE SET reward_amount=excluded.reward_amount,enabled=excluded.enabled,reward_label=excluded.reward_label,updated_by_user_id=excluded.updated_by_user_id,updated_at=excluded.updated_at,reward_type=excluded.reward_type"
-    ).bind(gameId, mode, amount, enabled, "NONE", label, user.id, now, "fixed", existing?.score_tiers || "[]").run();
-    return { ok: true, reward: { game_id: gameId, mode, reward_amount: amount, enabled: !!enabled, required_cpu_difficulty: "NONE", reward_label: label, reward_type: "fixed", score_tiers: existing?.score_tiers || "[]", updated_at: now } };
+      "INSERT INTO kuro_coin_game_rewards(game_id,mode,reward_amount,enabled,required_cpu_difficulty,reward_label,updated_by_user_id,updated_at,reward_type,score_tiers) VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(game_id,mode,required_cpu_difficulty) DO UPDATE SET reward_amount=excluded.reward_amount,enabled=excluded.enabled,reward_label=excluded.reward_label,updated_by_user_id=excluded.updated_by_user_id,updated_at=excluded.updated_at,reward_type=excluded.reward_type,score_tiers=excluded.score_tiers"
+    ).bind(gameId, mode, amount, enabled, "NONE", label, user.id, now, "fixed", scoreTiers).run();
+    return { ok: true, reward: { game_id: gameId, mode, reward_amount: amount, enabled: !!enabled, required_cpu_difficulty: "NONE", reward_label: label, reward_type: "fixed", score_tiers: scoreTiers, updated_at: now } };
   }
 
   if (action === "adjust_coin_balance") {
