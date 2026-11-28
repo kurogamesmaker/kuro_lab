@@ -26,9 +26,17 @@ main{padding:34px 0 70px}.eyebrow{color:var(--accent);font-size:10px;letter-spac
 .panel{margin-top:16px;padding:18px;border:1px solid var(--line);border-radius:15px;background:#111c2bdd}
 .panel h2{margin:0 0 10px;font-size:15px}.panel p{margin:0;color:var(--muted);font-size:11px;line-height:1.8}
 .rows{display:grid;gap:8px;margin-top:13px}.check{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid #26364a;border-radius:10px;background:#0d1726;font-size:11px}.check strong{font-variant-numeric:tabular-nums}
+.structure-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:14px}
+.structure-card{min-width:0;padding:12px;border:1px solid #293a50;border-radius:11px;background:#0d1726}
+.structure-card>small{display:block;color:var(--muted);font-size:10px;font-weight:900;margin-bottom:8px}
+.structure-pair{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:4px 0;font-size:10px;color:var(--muted)}
+.structure-pair strong{color:var(--text);font-size:14px;font-variant-numeric:tabular-nums;text-align:right}
+.structure-state{display:inline-flex;margin-top:7px;padding:4px 7px;border:1px solid #665638;border-radius:6px;color:var(--warn);font-size:9px;font-weight:900}
+.structure-state.ok{border-color:#2e6a52;color:var(--ok)}
+.status.warn{border-color:#7b6035;color:var(--warn)}
 .foot{margin-top:20px;color:#8293aa;font-size:10px;line-height:1.8}
 [hidden]{display:none!important}
-@media(max-width:760px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.head{align-items:flex-start;flex-direction:column}.actions{width:100%}.actions>*{flex:1}}
+@media(max-width:760px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.structure-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.head{align-items:flex-start;flex-direction:column}.actions{width:100%}.actions>*{flex:1}}
 </style>
 </head>
 <body>
@@ -47,9 +55,16 @@ main{padding:34px 0 70px}.eyebrow{color:var(--accent);font-size:10px;letter-spac
   <h2>コピー状態</h2><p id="snapshotText">—</p>
   <div class="rows" id="mismatchRows"></div>
  </section>
+ <section class="panel" id="structurePanel" hidden>
+  <h2>PostgreSQL と D1 の構造監査</h2>
+  <p id="structureReason">—</p>
+  <div class="structure-grid" id="structureGrid"></div>
+  <div class="rows" id="structureGaps"></div>
+  <p class="foot">PostgreSQL側は2026-11-28に取得した構造スナップショットです。D1側は診断実行時の実測値です。列数の一致は、型・既定値・制約・業務動作まで同一であることを意味しません。</p>
+ </section>
  <section class="panel">
   <h2>本番切替の状態</h2>
-  <p>Supabase Auth・Postgres・Realtime・Edge Functions・Storageは引き続き本番で使用します。D1は読み取り診断だけに接続され、アプリの通常通信先は変更していません。診断処理によるD1への書き込みはありません。</p>
+  <p>Supabase Auth・Postgres・Realtime・Edge Functions・Storageは引き続き本番で使用します。D1は管理者限定の読み取り診断にだけ接続され、通常のアプリ通信先は変更していません。構造監査が「切替不可」と表示している間は、本番機能をD1へ切り替えません。</p>
  </section>
  <div class="foot">注意：この画面のD1内整合性検査は、Supabase本番とのリアルタイム差分検査ではありません。コピー時点のスナップショット検証です。Supabaseの行数推定値は概算のため、実際のコピー行数との差は不一致判定に含めません。</div>
 </main>
@@ -62,6 +77,30 @@ const $=id=>document.getElementById(id);
 const number=value=>Number(value||0).toLocaleString("ja-JP");
 function status(message,kind=""){ $("status").textContent=message;$("status").className="status"+(kind?" "+kind:""); }
 function esc(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+
+function renderStructure(data){
+ const source=data.sourceSnapshot||{},d1=data.d1||{},parity=data.parity||{};
+ const fmt=value=>typeof value==="number"?number(value):String(value??"—");
+ const cards=[
+  {label:"テーブル",source:source.baseTables,target:d1.tables,state:parity.tablesCountMatch?"一致":"差異あり",ok:!!parity.tablesCountMatch},
+  {label:"列数",source:source.baseTableColumns,target:d1.columns,state:parity.columnsCountMatch?"一致":"差異あり",ok:!!parity.columnsCountMatch},
+  {label:"主キー列",source:source.primaryKeyColumns,target:d1.primaryKeyColumns,state:parity.primaryKeyColumnCountMatch?"一致":"差異あり",ok:!!parity.primaryKeyColumnCountMatch},
+  {label:"インデックス",source:source.indexes,target:d1.indexes,state:"用途別の照合が必要",ok:false},
+  {label:"外部キー",source:source.foreignKeys,target:d1.foreignKeys,state:"D1側の再現・検証が必要",ok:false},
+  {label:"トリガー",source:source.userTriggers,target:d1.triggers,state:"Workerへの移植が必要",ok:false},
+  {label:"ビュー",source:source.views,target:d1.views,state:"Workerへの置換が必要",ok:false},
+  {label:"RLSポリシー",source:source.rlsPolicies,target:"D1にネイティブRLSなし",state:"Workerで認可を再実装",ok:false},
+  {label:"SQLルーチン",source:source.sqlRoutines,target:"Workerへの移植要否を確認",state:"呼び出し元の棚卸しが必要",ok:false},
+  {label:"UNIQUE制約",source:source.uniqueConstraints,target:"D1側の照合未実施",state:"同等性の検証が必要",ok:false},
+  {label:"CHECK制約",source:source.checkConstraints,target:"D1側の照合未実施",state:"同等性の検証が必要",ok:false}
+ ];
+ $("structureGrid").innerHTML=cards.map(item=>'<article class="structure-card"><small>'+esc(item.label)+'</small><div class="structure-pair"><span>PostgreSQL</span><strong>'+esc(fmt(item.source))+'</strong></div><div class="structure-pair"><span>D1 / 置換状況</span><strong>'+esc(fmt(item.target))+'</strong></div><span class="structure-state'+(item.ok?' ok':'')+'">'+esc(item.state)+'</span></article>').join("");
+ const readiness=data.migrationReadiness||{};
+ $("structureReason").textContent=readiness.reason||"構造監査結果を取得しました。";
+ const tasks=Array.isArray(readiness.remainingTasks)?readiness.remainingTasks:[];
+ $("structureGaps").innerHTML=tasks.map((task,index)=>'<div class="check"><span>'+(index+1)+'. '+esc(task)+'</span><strong style="color:#f3c878">未完了</strong></div>').join("");
+ $("structurePanel").hidden=false;
+}
 async function run(){
  const button=$("refresh");button.disabled=true;button.textContent="検査中…";
  try{
@@ -73,6 +112,10 @@ async function run(){
   const response=await fetch("/api/migration/health",{method:"GET",headers:{Authorization:"Bearer "+session.access_token,Accept:"application/json"},cache:"no-store"});
   const data=await response.json().catch(()=>({}));
   if(!response.ok||data.ready!==true)throw new Error(data.error||"D1診断に失敗しました。");
+  const structureResponse=await fetch("/api/migration/structure",{method:"GET",headers:{Authorization:"Bearer "+session.access_token,Accept:"application/json"},cache:"no-store"});
+  const structureData=await structureResponse.json().catch(()=>({}));
+  if(!structureResponse.ok||structureData.ready!==true)throw new Error(structureData.error||"D1構造監査に失敗しました。");
+  renderStructure(structureData);
   $("tables").textContent=number(data.manifestTableCount);
   $("copied").textContent=number(data.manifestCopiedRows);
   $("actual").textContent=number(data.actualCopiedRows);
@@ -86,7 +129,8 @@ async function run(){
    ?'<strong style="color:#ff9292">D1内の不一致</strong>'+issues.map(x=>'<div class="check"><span>'+esc(x.table)+'</span><strong>'+number(x.actual)+' / '+number(x.expected)+'</strong></div>').join("")
    :'<div class="check"><span>全テーブルの実データ数とコピー記録</span><strong style="color:#71d9a2">一致</strong></div>';
   if(vars.length)$("mismatchRows").insertAdjacentHTML("beforeend",'<p style="margin-top:8px">元DBの推定値との差（実測不一致ではありません）：'+vars.map(x=>esc(x.table)+" "+number(x.copiedRows)+"/"+number(x.sourceEstimate)).join("、")+'</p>');
-  status("D1へ接続できました。"+number(data.manifestTableCount)+"テーブルを読み取り検査しました。"+(data.d1WritesPerformed===false?" D1への書き込みは行っていません。":""),"good");
+  const mismatchCount=Number(data.mismatchCount||0);
+  status("コピー診断と構造監査が完了しました。"+number(data.manifestTableCount)+"テーブルを確認しました。"+(mismatchCount===0?" コピー行数は一致しています。":" コピー行数に差異があります。")+" 本番切替はまだ不可です。","warn");
  }catch(error){status(error?.message||"D1診断に失敗しました。","error");}
  finally{button.disabled=false;button.textContent="診断を実行";}
 }
