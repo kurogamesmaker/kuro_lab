@@ -219,7 +219,9 @@ async function handleAdmin(action, body, db, user) {
     }
     const now = isoNow();
     const statements = [
-      db.prepare("DELETE FROM kuro_level_coin_rewards WHERE level NOT IN (" + (rewards.length ? rewards.map(() => "?").join(",") : "NULL") + ")").bind(...(rewards.length ? rewards.map(item => item.level) : [])),
+      ...(rewards.length
+        ? [db.prepare("DELETE FROM kuro_level_coin_rewards WHERE level NOT IN (" + rewards.map(() => "?").join(",") + ")").bind(...rewards.map(item => item.level))]
+        : [db.prepare("DELETE FROM kuro_level_coin_rewards")]),
       ...rewards.map(item => db.prepare(
         "INSERT INTO kuro_level_coin_rewards(level, reward_amount, enabled, updated_at, updated_by) VALUES(?, ?, ?, ?, ?) ON CONFLICT(level) DO UPDATE SET reward_amount=excluded.reward_amount, enabled=excluded.enabled, updated_at=excluded.updated_at, updated_by=excluded.updated_by"
       ).bind(item.level, item.rewardAmount, item.enabled, now, user.id))
@@ -430,7 +432,16 @@ async function handleStore(action, body, db, user) {
     const bought = await db.prepare("SELECT item_id,amount_kc,inventory_id FROM kuro_store_transactions WHERE user_id=? AND request_id=?").bind(user.id, requestId).first();
     if (bought) {
       if (bought.item_id !== itemId) throw new KuroEconomyError(409, "購入リクエストが重複しました。ページを再読み込みしてください。");
-      return { result: { ok: true, alreadyOwned: false, charged: true, priceKC: Number(bought.amount_kc), balance: Number((await db.prepare("SELECT balance FROM kuro_coin_balances WHERE user_id=?").bind(user.id).first())?.balance || 0), inventoryId: bought.inventory_id } };
+      const chargedThisRequest = Number(results[1]?.meta?.changes || 0) === 1;
+      return { result: {
+        ok: true,
+        alreadyOwned: !chargedThisRequest,
+        alreadyPurchased: !chargedThisRequest,
+        charged: chargedThisRequest,
+        priceKC: Number(bought.amount_kc),
+        balance: Number((await db.prepare("SELECT balance FROM kuro_coin_balances WHERE user_id=?").bind(user.id).first())?.balance || 0),
+        inventoryId: bought.inventory_id
+      } };
     }
     const latestItem = await db.prepare("SELECT is_active,is_free,price_kc FROM kuro_store_items WHERE id=?").bind(itemId).first();
     if (!latestItem || !latestItem.is_active) throw new KuroEconomyError(404, "このアイテムは現在販売されていません。");
@@ -448,6 +459,7 @@ async function handleStore(action, body, db, user) {
     const item = await db.prepare("SELECT inv.item_id,i.name FROM kuro_store_user_inventory inv JOIN kuro_store_items i ON i.id=inv.item_id WHERE inv.id=? AND inv.user_id=?").bind(inventoryId, user.id).first();
     if (!item) throw new KuroEconomyError(404, "このアイテムは所持品に見つかりません。ページを再読み込みしてください。");
     await db.batch([
+      db.prepare("UPDATE kuro_store_transactions SET inventory_id=NULL WHERE inventory_id=? AND user_id=?").bind(inventoryId, user.id),
       db.prepare("DELETE FROM kuro_store_equipped_items WHERE user_id=? AND item_id=?").bind(user.id, item.item_id),
       db.prepare("DELETE FROM kuro_store_user_inventory WHERE id=? AND user_id=?").bind(inventoryId, user.id)
     ]);
@@ -560,10 +572,19 @@ async function handleNotifications(request, db, user) {
       .bind(isoNow(), id, user.id).run();
     return { ok: true };
   }
+  if (action === "mark_read_many") {
+    const ids = Array.isArray(body.ids) ? Array.from(new Set(body.ids.map(value => String(value || "")).filter(value => UUID_RE.test(value)))) : [];
+    if (!ids.length || ids.length > 200) throw new KuroEconomyError(400, "通知IDを1〜200件で指定してください。");
+    const placeholders = ids.map(() => "?").join(",");
+    const result = await db.prepare(
+      "UPDATE notifications SET read_at=? WHERE recipient_id=? AND read_at IS NULL AND id IN (" + placeholders + ")"
+    ).bind(isoNow(), user.id, ...ids).run();
+    return { ok: true, updated: Number(result?.meta?.changes || 0) };
+  }
   if (action === "mark_all_read") {
-    await db.prepare("UPDATE notifications SET read_at=? WHERE recipient_id=? AND read_at IS NULL")
+    const result = await db.prepare("UPDATE notifications SET read_at=? WHERE recipient_id=? AND read_at IS NULL")
       .bind(isoNow(), user.id).run();
-    return { ok: true };
+    return { ok: true, updated: Number(result?.meta?.changes || 0) };
   }
   throw new KuroEconomyError(400, "通知操作が正しくありません。");
 }
