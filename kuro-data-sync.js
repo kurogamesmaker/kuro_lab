@@ -18,15 +18,25 @@ const SYNC_TABLES = new Set([
   "game_studio_games", "game_tictactoe_verified_events", "game_tictactoe_verified_stats",
   "game_world_blocks", "werewolf_action_receipts", "werewolf_chat_messages",
   "werewolf_private_sessions", "werewolf_rooms",
-  "kuro_coin_verified_game_events", "kuro_game_user_stats", "kuro_game_win_events", "kuro_economy_pending_events",
-  "kuro_store_design_drafts", "kuro_store_items", "kuro_store_studio_members",
+  "kuro_coin_balances", "kuro_coin_game_rewards", "kuro_coin_ledger", "kuro_coin_verified_game_events",
+  "kuro_game_user_stats", "kuro_game_win_events", "kuro_economy_pending_events",
+  "kuro_level_coin_reward_claims", "kuro_level_coin_rewards", "kuro_level_game_rewards",
+  "kuro_level_ledger", "kuro_level_system_settings", "kuro_level_thresholds", "kuro_level_users",
+  "kuro_store_design_drafts", "kuro_store_equipped_items", "kuro_store_items",
+  "kuro_store_studio_members", "kuro_store_user_inventory", "kuro_store_transactions",
   "kurogames_home_banners", "portal_announcements", "portal_history",
   "portal_preferences", "admin_message_reads", "admin_messages", "feature_flags",
   "user_last_activity"
 ]);
 
 // Legacy favorites events are acknowledged without being copied to D1.
-const RETIRED_SYNC_TABLES = new Set(["portal_favorites", "kuro_coin_balances", "kuro_coin_game_rewards", "kuro_coin_ledger", "kuro_level_coin_reward_claims", "kuro_level_coin_rewards", "kuro_level_game_rewards", "kuro_level_ledger", "kuro_level_system_settings", "kuro_level_thresholds", "kuro_level_users", "kuro_store_equipped_items", "kuro_store_user_inventory", "kuro_store_transactions"]);
+const RETIRED_SYNC_TABLES = new Set(["portal_favorites"]);
+const D1_AUTHORITATIVE_TABLES = new Set([
+  "kuro_coin_balances", "kuro_coin_game_rewards", "kuro_coin_ledger",
+  "kuro_level_coin_reward_claims", "kuro_level_coin_rewards", "kuro_level_game_rewards",
+  "kuro_level_ledger", "kuro_level_system_settings", "kuro_level_thresholds", "kuro_level_users",
+  "kuro_store_equipped_items", "kuro_store_user_inventory", "kuro_store_transactions"
+]);
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -54,6 +64,14 @@ async function ensureEconomySchema(db) {
     "CREATE TABLE IF NOT EXISTS kuro_economy_schema_meta (id INTEGER PRIMARY KEY CHECK (id=1), version INTEGER NOT NULL, updated_at TEXT NOT NULL)",
   ];
   await db.batch(statements.map(sql => db.prepare(sql)));
+
+  // Keep mirroring legacy Supabase writes until the explicit D1 authority switch.
+  await db.prepare("CREATE TABLE IF NOT EXISTS __kuro_economy_mirror_control (id INTEGER PRIMARY KEY CHECK (id=1), snapshot_ready INTEGER NOT NULL DEFAULT 0, snapshot_at TEXT, d1_write_authority INTEGER NOT NULL DEFAULT 0)").run();
+  const controlColumns = await getAll(db.prepare("PRAGMA table_info('__kuro_economy_mirror_control')"));
+  if (!controlColumns.some(column => column.name === "d1_write_authority")) {
+    await db.prepare("ALTER TABLE __kuro_economy_mirror_control ADD COLUMN d1_write_authority INTEGER NOT NULL DEFAULT 0").run();
+  }
+  await db.prepare("INSERT OR IGNORE INTO __kuro_economy_mirror_control(id,snapshot_ready,d1_write_authority) VALUES(1,0,0)").run();
 
   const current = await db.prepare(
     "SELECT version FROM kuro_economy_schema_meta WHERE id=1"
@@ -210,12 +228,17 @@ async function runSync(env, scheduledAt) {
       throw new Error("Sync queue contains an invalid event id");
     }
 
+    const authorityRow = await db.prepare(
+      "SELECT d1_write_authority FROM __kuro_economy_mirror_control WHERE id=1"
+    ).first();
+    const d1OwnsEconomy = Number(authorityRow?.d1_write_authority || 0) === 1;
+
     const statements = [];
     for (const event of events) {
       if (!event || typeof event !== "object") throw new Error("Sync queue contains an invalid event");
       const tableName = String(event.table_name || "");
       const operation = String(event.operation || "").toUpperCase();
-      if (RETIRED_SYNC_TABLES.has(tableName)) {
+      if (RETIRED_SYNC_TABLES.has(tableName) || (d1OwnsEconomy && D1_AUTHORITATIVE_TABLES.has(tableName))) {
         if (operation !== "INSERT" && operation !== "UPDATE" && operation !== "DELETE") {
           throw new Error("Sync queue contains an unsupported operation");
         }
