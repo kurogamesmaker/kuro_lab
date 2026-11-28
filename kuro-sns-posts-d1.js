@@ -481,7 +481,7 @@ async function adminDeleteReply(db, user, body) {
   const result = await db.prepare(`
     WITH RECURSIVE descendants(id) AS (
       SELECT id FROM post_replies WHERE id=? AND post_id=?
-      UNION ALL
+      UNION
       SELECT r.id FROM post_replies r
       INNER JOIN descendants d ON r.parent_reply_id=d.id
       WHERE r.post_id=?
