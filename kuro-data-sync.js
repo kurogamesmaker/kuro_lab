@@ -6,7 +6,7 @@ const BATCH_SIZE = 100;
 
 const SYNC_TABLES = new Set([
   "profiles", "posts", "post_likes", "post_replies", "follows", "notifications",
-  "account_suspensions",
+  "account_suspensions", "__kuro_economy_mirror_control",
   "chat_conversations", "chat_messages", "chat_message_reads", "chat_message_hides",
   "group_conversations", "group_chat_members", "group_chat_messages",
   "group_chat_message_reads", "group_chat_mentions",
