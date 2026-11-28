@@ -343,7 +343,7 @@ async function refreshStore(){
     if(!authResult.error&&user&&!user.is_anonymous){
      const [profileResult,cosmeticResult]=await Promise.all([
       storeDb.from("profiles").select("id,username,display_name,kuro_id,avatar_url,bio,created_at").eq("id",user.id).maybeSingle(),
-      storeDb.rpc("kuro_get_public_store_cosmetics",{p_user_id:user.id})
+      window.kuroLoadPublicStoreCosmetics(user.id).then(data=>({data,error:null}),error=>({data:{},error}))
      ]);
      if(request!==storeLoadSerial)return;
      if(!profileResult.error&&profileResult.data)storeProfile=profileResult.data;
