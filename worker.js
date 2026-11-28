@@ -1106,6 +1106,15 @@ async function handleKuroD1CoinSummary(request, env) {
   if (!database) return json({ error: "Cloudflare D1 is unavailable." }, 503);
 
   try {
+    // Do not serve partial historical data while the initial snapshot is still
+    // moving through the outbox. The marker is enqueued after every snapshot row.
+    const mirrorReady = await database.prepare(
+      "SELECT snapshot_ready FROM __kuro_economy_mirror_control WHERE id = 1 LIMIT 1"
+    ).first();
+    if (Number(mirrorReady?.snapshot_ready) !== 1) {
+      return json({ error: "economy_mirror_initializing" }, 503);
+    }
+
     // Suspension state is mirrored privately for this read gate. The existing
     // Supabase Edge Function remains the fallback while the mirror catches up.
     const suspension = await database.prepare(`
