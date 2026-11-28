@@ -25,8 +25,7 @@
       { href: "/sns/", label: "KURO SNS", icon: "💬" },
       { href: "/chat/", label: "チャット", icon: "🗨️" }
     ] },
-    { label: "マイライブラリ", items: [
-      { href: "/favorites/", label: "お気に入り", icon: "☆" },
+    { label: "履歴", items: [
       { href: "/history/", label: "閲覧履歴", icon: "◷" },
     ] },
 
@@ -725,7 +724,6 @@
       ["contact", "お問い合わせ", "KURO Labへのお問い合わせ", "/contact/", "✉️", "問い合わせ サポート"],
       ["privacy", "プライバシー", "個人情報とデータの取り扱い", "/privacy/", "🔒", "プライバシー 個人情報"],
       ["terms", "利用規約", "KURO Labの利用ルール", "/terms/", "📄", "規約 ルール"],
-      ["favorites", "お気に入り", "保存したページやゲーム", "/favorites/", "☆", "お気に入り 保存"],
       ["history", "閲覧履歴", "最近開いたページ", "/history/", "◷", "履歴 最近"],
 
       ["mypage", "マイページ", "アカウントと利用データ", "/mypage/", "◎", "アカウント ログイン"],
