@@ -1292,6 +1292,20 @@ async function fetchD1AdminSnsSummary(){
  if(!response.ok)throw new Error(payload?.error||"Cloudflare D1からSNS管理データを取得できませんでした。");
  return payload;
 }
+async function fetchD1AdminSnsActivity(since){
+ const session=await db.auth.getSession();
+ if(session?.error)throw session.error;
+ const token=session?.data?.session?.access_token;
+ if(!token)throw new Error("管理者ログインが必要です。");
+ const params=new URLSearchParams({action:"admin-activity",since});
+ const response=await fetch("/api/kuro-d1/sns-posts?"+params.toString(),{
+  method:"GET",credentials:"same-origin",cache:"no-store",
+  headers:{Authorization:"Bearer "+token,Accept:"application/json"}
+ });
+ const payload=await response.json().catch(()=>({}));
+ if(!response.ok)throw new Error(payload?.error||"Cloudflare D1からSNS集計を取得できませんでした。");
+ return payload;
+}
 async function loadSns(){
  const panels=["#snsPostsPanel","#snsRepliesPanel","#snsUsersPanel","#snsChatPanel"];
  panels.forEach(s=>$(s).innerHTML='<div class="empty">読み込み中…</div>');
@@ -1327,23 +1341,35 @@ async function loadAnalytics(){
  const start=new Date();start.setHours(0,0,0,0);start.setDate(start.getDate()-(days-1));
  const since=start.toISOString();
  $("#snsAnalyticsUpdated").textContent="集計中…";
- let results;
+ let profiles,follows,chats,snsActivity;
  try{
-  const specs=[
-   ()=>db.from("profiles").select("id,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true}),
-   ()=>db.from("posts").select("id,user_id,hashtags,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true}),
-   ()=>db.from("post_replies").select("id,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true}),
-   ()=>db.from("post_likes").select("post_id,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true}),
-   ()=>db.from("follows").select("follower_id,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true}),
-   ()=>db.from("public_chat_messages").select("id,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true})
-  ];
-  results=await Promise.all(specs.map(make=>fetchAllAdminRows(make)));
+  [profiles,snsActivity,follows,chats]=await Promise.all([
+   fetchAllAdminRows(()=>db.from("profiles").select("id,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true})),
+   fetchD1AdminSnsActivity(since),
+   fetchAllAdminRows(()=>db.from("follows").select("follower_id,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true})),
+   fetchAllAdminRows(()=>db.from("public_chat_messages").select("id,created_at",{count:"exact"}).gte("created_at",since).order("created_at",{ascending:true}))
+  ]);
  }catch(error){
   $("#snsAnalyticsUpdated").textContent="集計に失敗";
   $("#snsActivityChart").innerHTML='<text x="30" y="110">データを取得できませんでした：'+esc(error.message)+'</text>';
   return;
  }
- const data=results.map(q=>q.data),totals=results.map(q=>q.count);
+ const data=[
+  profiles.data,
+  Array.isArray(snsActivity.posts)?snsActivity.posts:[],
+  Array.isArray(snsActivity.replies)?snsActivity.replies:[],
+  [],
+  follows.data,
+  chats.data
+ ];
+ const totals=[
+  profiles.count,
+  Number(snsActivity.posts_in_range||0),
+  Number(snsActivity.replies_in_range||0),
+  Number(snsActivity.likes_in_range||0),
+  follows.count,
+  chats.count
+ ];
  $("#analyticsNewUsers").textContent=totals[0];
  $("#analyticsPosts").textContent=totals[1];
  $("#analyticsReplies").textContent=totals[2];
