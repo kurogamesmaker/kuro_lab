@@ -644,7 +644,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/usage-tracker.js"></script>
 
-    <script>
+    <script src="/kuro-chat-d1-client.js?v=20261128d1"></script>
+<script>
         // Supabase設定（このURL/公開キーはSupabaseダッシュボードと一致していることを確認）
         const SUPABASE_URL = "https://cprvpphlfpmiegjiutjn.supabase.co";
         const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
@@ -786,6 +787,7 @@ function kuroRouteCloudflareRealtime(client) {
             SUPABASE_PUBLISHABLE_KEY,
             { global: { fetch: kuroCloudflareFetch } }
         );
+        window.KuroD1Chat?.install(supabaseClient);
         window.kuroSNSDB = supabaseClient;
         const kuroSnsFrameUuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         const kuroSnsFrameCosmeticsCache=new Map();
