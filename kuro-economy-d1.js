@@ -123,7 +123,7 @@ async function handleAdmin(action, body, db, user) {
     }
     const gameMap = new Map(games.map(item => [item.id, item]));
     return {
-      settings: settings || { enabled: 1, default_win_xp: 100 },
+      settings: { ...(settings || { enabled: 1, default_win_xp: 100 }), enabled: settings ? !!settings.enabled : true },
       rewards: rewards.map(row => ({ ...row, enabled: !!row.enabled, game: gameMap.get(row.game_id) || null })),
       thresholds,
       coinRewards: coinRewards.map(row => ({ ...row, enabled: !!row.enabled })),
@@ -249,6 +249,16 @@ async function handleAdmin(action, body, db, user) {
     if (Number(results[1]?.meta?.changes || 0) !== 1) throw new KuroEconomyError(409, "XPを更新できませんでした。残高を再確認してください。");
     const result = await db.prepare("SELECT user_id,total_xp,current_level,updated_at FROM kuro_level_users WHERE user_id=?").bind(userId).first();
     return { ok: true, result };
+  }
+
+  if (action === "get_coin_user_detail") {
+    const userId = String(body.userId || "").trim();
+    if (!UUID_RE.test(userId)) throw new KuroEconomyError(400, "ユーザーIDが正しくありません。");
+    const [balance, ledger] = await Promise.all([
+      db.prepare("SELECT balance, updated_at FROM kuro_coin_balances WHERE user_id=?").bind(userId).first(),
+      getAll(db.prepare("SELECT id,amount,balance_after,transaction_type,description,created_at,created_by_user_id FROM kuro_coin_ledger WHERE user_id=? ORDER BY created_at DESC LIMIT 10").bind(userId))
+    ]);
+    return { balance: Number(balance?.balance || 0), balanceUpdatedAt: balance?.updated_at || null, ledger };
   }
 
   if (action === "get_coin_economy") {
