@@ -38,6 +38,11 @@ const SYNC_TABLES = new Set([
 
 // Legacy favorites events are acknowledged without being copied to D1.
 const RETIRED_SYNC_TABLES = new Set(["portal_favorites"]);
+const D1_ALWAYS_AUTHORITATIVE_TABLES = new Set([
+  // Push endpoints are now managed by the authenticated Cloudflare D1 API.
+  "push_subscriptions"
+]);
+
 const D1_AUTHORITATIVE_TABLES = new Set([
   "kuro_coin_balances", "kuro_coin_game_rewards", "kuro_coin_ledger",
   "kuro_level_coin_reward_claims", "kuro_level_coin_rewards", "kuro_level_game_rewards",
@@ -252,7 +257,7 @@ async function runSync(env, scheduledAt) {
       if (!event || typeof event !== "object") throw new Error("Sync queue contains an invalid event");
       const tableName = String(event.table_name || "");
       const operation = String(event.operation || "").toUpperCase();
-      if (RETIRED_SYNC_TABLES.has(tableName) || (d1OwnsEconomy && D1_AUTHORITATIVE_TABLES.has(tableName))) {
+      if (RETIRED_SYNC_TABLES.has(tableName) || D1_ALWAYS_AUTHORITATIVE_TABLES.has(tableName) || (d1OwnsEconomy && D1_AUTHORITATIVE_TABLES.has(tableName))) {
         if (operation !== "INSERT" && operation !== "UPDATE" && operation !== "DELETE") {
           throw new Error("Sync queue contains an unsupported operation");
         }
