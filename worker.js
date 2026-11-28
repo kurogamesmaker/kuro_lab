@@ -2,7 +2,7 @@ import { handleKuroEconomyRequest } from "./kuro-economy-d1.js";
 import { handleKuroD1AdminCheck, handleKuroD1SecurityGate } from "./kuro-security-d1.js";
 import { handleKuroD1PublicProfiles } from "./kuro-sns-read-d1.js";
 import { handleKuroD1SnsPosts } from "./kuro-sns-posts-d1.js";
-import { handleKuroD1Chat } from "./kuro-chat-d1.js";
+import { handleKuroD1Chat, handleKuroD1ChatAdminStats } from "./kuro-chat-d1.js";
 const FORCE_MARU_ICON_VERSION = "20261122forcefavicon3";
 const FORCE_SECURITY_GATE_VERSION = "20261128gate5";
 
@@ -1816,6 +1816,10 @@ export default {
         console.error("KURO D1 chat handler failed", error?.message || error);
         return json({ data: null, error: { message: "チャットの処理に失敗しました。", code: "D1_CHAT_FAILED" } }, Number(error?.status) || 503);
       }
+    }
+
+    if (url.pathname === "/api/kuro-d1/chat-admin-stats") {
+      return await handleKuroD1ChatAdminStats(request, env);
     }
 
     if (url.pathname === "/api/kuro-d1/public-profiles") {
