@@ -704,7 +704,7 @@ const KURO_POSTGRES_SCHEMA_BASELINE = Object.freeze({
 
 async function requireMigrationAdmin(request) {
   const authorization = request.headers.get("authorization") || "";
-  if (!/^Bearer\\s+\\S+/i.test(authorization)) {
+  if (!/^Bearer\s+\S+/i.test(authorization)) {
     return json({ error: "管理者ログインが必要です。" }, 401);
   }
 
