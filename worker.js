@@ -1059,6 +1059,46 @@ async function handleKuroD1HomeBanners(request, env) {
   }
 }
 
+async function handleKuroD1PortalHistory(request, env) {
+  if (request.method !== "GET") return json({ error: "Method not allowed" }, 405);
+  const authorization = request.headers.get("Authorization") || "";
+  const apiKey = request.headers.get("apikey") || request.headers.get("x-api-key") || "";
+  if (!authorization.startsWith("Bearer ") || !apiKey) return json({ error: "unauthorized" }, 401);
+  const token = authorization.slice(7).trim();
+  if (!token || token.length > 8192) return json({ error: "unauthorized" }, 401);
+
+  // Validate the access token with Supabase Auth; never trust a user ID supplied by the client.
+  let authResponse;
+  try {
+    authResponse = await fetch("https://cprvpphlfpmiegjiutjn.supabase.co/auth/v1/user", {
+      headers: { authorization: "Bearer " + token, apikey: apiKey, accept: "application/json" },
+      signal: AbortSignal.timeout(8000)
+    });
+  } catch (_) {
+    return json({ error: "auth_unavailable" }, 503);
+  }
+  if (!authResponse.ok) return json({ error: "unauthorized" }, 401);
+  const authUser = await authResponse.json().catch(() => null);
+  const userId = typeof authUser?.id === "string" ? authUser.id : "";
+  if (!userId) return json({ error: "unauthorized" }, 401);
+
+  const db = env?.KURO_APP_DB;
+  if (!db) return json({ error: "Cloudflare D1 unavailable" }, 503);
+  try {
+    const result = await db.prepare(`
+      SELECT user_id, item_key, title, href, visited_at
+      FROM portal_history
+      WHERE user_id = ?
+      ORDER BY visited_at DESC
+      LIMIT 100
+    `).bind(userId).all();
+    return json({ data: Array.isArray(result?.results) ? result.results : [], source: "cloudflare-d1" });
+  } catch (error) {
+    console.error("KURO D1 portal history read failed", error?.message || error);
+    return json({ error: "history_unavailable" }, 503);
+  }
+}
+
 async function handleRealtime(request) {
   const url = new URL(request.url);
   const prefix = "/api/realtime";
@@ -1220,6 +1260,15 @@ export default {
       } catch (error) {
         console.error("KURO web search handler failed", error);
         return json({ code: "SEARCH_INTERNAL_ERROR", message: "検索処理に失敗しました。" }, 500);
+      }
+    }
+
+    if (url.pathname === "/api/kuro-d1/portal-history") {
+      try {
+        return await handleKuroD1PortalHistory(request, env);
+      } catch (error) {
+        console.error("KURO D1 portal history endpoint failed", error?.message || error);
+        return json({ error: "history_unavailable" }, 503);
       }
     }
 
