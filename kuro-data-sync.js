@@ -3,7 +3,7 @@ const SUPABASE_URL = "https://cprvpphlfpmiegjiutjn.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
 const PULL_RPC = "/rest/v1/rpc/kuro_cloudflare_sync_pull";
 const ACK_RPC = "/rest/v1/rpc/kuro_cloudflare_sync_ack";
-const BATCH_SIZE = 250;
+const BATCH_SIZE = 1000;
 
 const SYNC_TABLES = new Set([
   "profiles", "posts", "post_likes", "post_replies", "follows", "notifications",
