@@ -191,7 +191,9 @@ Deno.serve(async (req: Request) => {
           action: auditAction,
           metadata
         });
-        if (auditError) throw auditError;
+        if (auditError) {
+          console.error("D1 economy audit log insert failed after committed operation", auditError.message);
+        }
       }
       return reply(result, 200, origin);
     }
