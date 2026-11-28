@@ -1073,7 +1073,7 @@ function parseKuroD1JsonArray(value) {
 async function handleKuroD1CoinSummary(request, env) {
   if (request.method !== "GET") return json({ error: "Method not allowed" }, 405);
   const authorization = request.headers.get("Authorization") || "";
-  const token = authorization.match(/^Bearer\\s+(.+)$/i)?.[1]?.trim() || "";
+  const token = authorization.match(/^Bearer\s+(.+)$/i)?.[1]?.trim() || "";
   if (!token || token.length > 8192 || token.split(".").length !== 3) {
     return json({ error: "unauthorized" }, 401);
   }
