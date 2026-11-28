@@ -235,6 +235,16 @@
       '</div>';
   }
 
+  async function loadD1PublicStoreCosmetics(userId) {
+    if (window.kuroLoadPublicStoreCosmetics) return await window.kuroLoadPublicStoreCosmetics(userId);
+    const response = await fetch("/api/kuro-economy/public-cosmetics?userId=" + encodeURIComponent(userId), {
+      method: "GET", credentials: "same-origin", cache: "no-store", headers: { "Accept": "application/json" }
+    });
+    const payload = await response.json().catch(function () { return {}; });
+    if (!response.ok || !payload || !payload.cosmetics) throw new Error(payload && payload.error || "装備情報を取得できませんでした。");
+    return payload.cosmetics;
+  }
+
   async function loadD1PublicPlayerSummary(db, userId) {
     var url = "/api/kuro-d1/public-player-summary?userId=" + encodeURIComponent(String(userId || ""));
     try {
@@ -349,7 +359,7 @@
         getFollowCounts(db, id),
         getSignedInUser(db),
         loadD1PublicPlayerSummary(db, id).catch(function (error) { return { data: null, error: error }; }),
-        (window.kuroLoadPublicStoreCosmetics ? window.kuroLoadPublicStoreCosmetics(id).then(function (data) { return { data: data, error: null }; }).catch(function (error) { return { data: {}, error: error }; }) : safeRpc(db, "kuro_get_public_store_cosmetics", { p_user_id: id }, {}))
+        loadD1PublicStoreCosmetics(id).then(function (data) { return { data: data, error: null }; }).catch(function (error) { return { data: {}, error: error }; })
       ]);
       if (thisRequest !== requestId) return;
       var profileResult = results[0], statsResult = results[1], playerSummaryResult = results[4];
