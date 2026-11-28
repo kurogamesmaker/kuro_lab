@@ -135,7 +135,7 @@
           return;
         }
         stopChatRefresh();
-        var chatUrl = new URL("/sns/v2/", window.location.origin);
+        var chatUrl = new URL("/sns/", window.location.origin);
         chatUrl.searchParams.set("chat", targetId);
         window.location.assign(chatUrl.href);
         return;

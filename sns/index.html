@@ -4,15 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
+<meta name="theme-color" content="#000000">
 <title>KURO SNS</title>
 <script>
 (function(){
-  location.replace('/sns/v2/'+location.search+location.hash);
+  var mobile = window.matchMedia('(max-width: 767px)').matches;
+  var destination = mobile ? '/sns/mobile/' : '/sns/pc/';
+  window.location.replace(destination + location.search + location.hash);
 })();
 </script>
 </head>
 <body>
-<p>KURO SNSへ移動しています…</p>
-<p><a href="/sns/v2/">KURO SNSを開く</a></p>
+<main>
+  <p>KURO SNSを開いています…</p>
+  <nav aria-label="KURO SNSの表示を選択">
+    <a href="/sns/pc/">PC版</a>
+    <a href="/sns/mobile/">スマホ版</a>
+  </nav>
+</main>
 </body>
 </html>

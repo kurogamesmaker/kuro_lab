@@ -1,19 +1,19 @@
 <!DOCTYPE html>
-<html lang="ja" class="dark kuro-sns-mobile">
+<html lang="ja" class="dark kuro-sns-pc">
 <head><link rel="icon" type="image/png" sizes="48x48" href="/assets/brand/logo/kurolab_icon_maru_48.png?v=20261122marufavicon2"><link rel="shortcut icon" href="/assets/brand/logo/kurolab_icon_maru_48.png?v=20261122marufavicon2"><link rel="apple-touch-icon" sizes="160x160" href="/assets/brand/logo/kurolab_icon_maru_160.png?v=20261122marufavicon2">
     <meta name="google-site-verification" content="BMArXsjqD0CUAD34vqFv8qDjq1wuOZdtZRPZ-Y_8pIc">
-    <link rel="manifest" href="/sns/v2/manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="/sns/manifest.json">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="KURO SNS">
 <meta charset="UTF-8">
-    <meta name="kuro-build-version" content="2026-11-16-tailwind-prod-02">
+    <meta name="kuro-build-version" content="2026-11-27-reply-submit-fix-cf23d630">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KURO SNS｜KURO Lab公式</title>
     <meta name="description" content="KUROは、短い投稿やハッシュタグで話題を共有し、気になる人をフォローして交流できるSNSです。いいねや返信、チャットでつながれます。">
         <meta name="robots" content="index,follow">
-<link rel="canonical" href="https://kurolab.cc.cd/sns/v2/">
+<link rel="canonical" href="https://kurolab.cc.cd/sns/">
     <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -34,7 +34,7 @@
       "name": "KURO SNS",
       "applicationCategory": "SocialNetworkingApplication",
       "operatingSystem": "Web browser",
-      "url": "https://kurolab.cc.cd/sns/v2/",
+      "url": "https://kurolab.cc.cd/sns/",
       "description": "短い投稿、ハッシュタグ検索、プロフィール、フォロー、いいね、返信、個別チャット、グループチャットを提供するソーシャルネットワークサービス。",
       "creator": {
         "@type": "Person",
@@ -49,7 +49,7 @@
     <meta property="og:site_name" content="KURO Lab">
     <meta property="og:title" content="KURO SNS｜KURO Lab公式">
     <meta property="og:description" content="短い投稿やハッシュタグで話題を共有。フォロー、いいね、返信、チャットで人とつながるSNSです。">
-    <meta property="og:url" content="https://kurolab.cc.cd/sns/v2/">
+    <meta property="og:url" content="https://kurolab.cc.cd/sns/">
     <link rel="stylesheet" href="/tailwind.css?v=20261116-prod-02">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -125,17 +125,17 @@
 
 
 
-<meta name="kuro-layout-version" content="2026-11-16-cloudflare-layout-06">
+<meta name="kuro-layout-version" content="2026-11-21-cloudflare-layout-10">
 <script id="kuro-device-route-guard">
 (function(){
   var mobile=window.matchMedia('(max-width: 767px)').matches;
-  var target=mobile?'/sns/v2/mobile/':'/sns/v2/pc/';
+  var target=mobile?'/sns/mobile/':'/sns/pc/';
   if(location.pathname!==target){
     location.replace(target+location.search+location.hash);
   }
   var mq=window.matchMedia('(max-width: 767px)');
   var onChange=function(e){
-    var next=e.matches?'/sns/v2/mobile/':'/sns/v2/pc/';
+    var next=e.matches?'/sns/mobile/':'/sns/pc/';
     if(location.pathname!==next) location.replace(next+location.search+location.hash);
   };
   if(mq.addEventListener) mq.addEventListener('change',onChange);
@@ -150,10 +150,8 @@
 
 
 
-
-
 <link rel="stylesheet" href="/kuro-profile.css?v=20261126framelayer1">
-<link rel="stylesheet" href="/sns/v2/sns.css?v=20261128-unified1">
+<link rel="stylesheet" href="/sns/pc/sns.css?v=20261128-pc-clean1">
 
 
 
@@ -163,14 +161,39 @@
 <body class="kuro-page kuro-theme-dark">
 
 
-</div>
+<header class="kuro-global-header">
+ <div class="kuro-header-main">
+  <a class="kuro-brand" href="/" aria-label="KURO Lab ホーム">
+   <img src="/assets/brand/logo/kurolab_icon_toumei_160.png?v=20261121brandfix" width="48" height="48" alt="KURO Labのパンダロゴ" decoding="async">
+   <span class="kuro-brand-copy"><strong>KURO Lab</strong><small>IDEAS · TECHNOLOGY · CREATIVITY</small></span>
+  </a>
+  <nav class="kuro-service-links" aria-label="KURO Labのサービス">
+   <a href="/">ホーム</a><a href="/sns/" class="primary">KURO SNS</a>
+   
+   <a href="/games/">KURO GAMES</a>
+   
+  </nav>
+ </div>
+ <div class="kuro-subnav"><nav class="kuro-subnav-inner" aria-label="サイト内ページ">
+ <a href="/about/">KURO SNSについて</a>
+ <a href="/features/">機能紹介</a>
+ <a href="/guide/">使い方ガイド</a>
+ <a href="/faq/">よくある質問</a>
+ <a href="/guidelines/">コミュニティガイド</a>
+ <a href="/developer/">開発者プロフィール</a>
+ <a href="/privacy/">プライバシー</a>
+ <a href="/terms/">利用規約</a>
+ <a href="/security/">セキュリティ</a>
+ <a href="/contact/">お問い合わせ</a>
+ </nav></div>
+</header>
+<div id="kuroCloudflareStatusPanel" class="kuro-cloudflare-status-panel" data-state="checking" role="status" aria-live="polite">
+  <div class="kuro-cloudflare-status-main"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><div><strong>KURO SNS</strong><div id="kuroCloudflareStatusText">SNSへの接続状態を確認しています。</div></div></div>
 
 </div>
 
     
-<button id="kuroTopNotifications" type="button" onclick="openNotifications()" aria-label="通知" title="通知" class="fixed top-3 right-3 z-[95] w-11 h-11 rounded-full border border-white/10 bg-zinc-900/90 backdrop-blur flex items-center justify-center text-gray-200 shadow-lg hover:bg-zinc-800"><i class="fa-regular fa-bell text-lg"></i></button>
-
-    <main id="homeFeedView" class="flex-grow max-w-3xl mx-auto px-4 sm:px-6 py-7 sm:py-10 w-full">
+<main id="homeFeedView" class="flex-grow max-w-3xl mx-auto px-4 sm:px-6 py-7 sm:py-10 w-full">
         <h1 class="sr-only">KURO｜短い投稿でつながるSNS</h1>
         <div id="postPullIndicator" class="kuro-pull-indicator" aria-live="polite"><i class="fa-solid fa-arrow-down"></i><span>下に引っ張って更新</span></div>
         <div class="mb-6">
@@ -197,7 +220,7 @@
                 <div class="w-24 h-24 sm:w-32 sm:h-32 rounded-full p-1 border border-kuro-600 shrink-0 bg-kuro-900" data-kuro-profile-self role="button" tabindex="0" aria-label="自分の共通プロフィールを見る">
                     <div class="w-full h-full rounded-full overflow-hidden bg-kuro-800 flex items-center justify-center">
                         <img id="myProfileAvatar" class="hidden w-full h-full object-cover" alt="プロフィール画像">
-                        <svg id="myProfileAvatarPlaceholder" class="text-gray-500" viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg>
+                        <i id="myProfileAvatarPlaceholder" class="fa-solid fa-user text-3xl text-gray-500"></i>
                     </div>
                 </div>
                 <div class="min-w-0 flex-1">
@@ -361,7 +384,7 @@
                     <div id="profileAvatarPreviewFrameHost" class="kuro-sns-avatar-frame-host w-24 h-24">
                         <div class="kuro-sns-avatar-preview-inner">
                             <img id="profileAvatarPreview" class="hidden w-full h-full object-cover" alt="プロフィール画像プレビュー">
-                            <svg id="profileAvatarPlaceholder" class="text-gray-500" viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg>
+                            <i id="profileAvatarPlaceholder" class="fa-solid fa-user text-3xl text-gray-500"></i>
                         </div>
                     </div>
                     <label for="profileAvatarInput" class="cursor-pointer text-sm bg-kuro-800 hover:bg-kuro-700 border border-kuro-700 rounded-lg px-4 py-2">
@@ -458,7 +481,7 @@
             <div class="w-24 h-24 sm:w-32 sm:h-32 rounded-full p-1 border border-kuro-600 bg-kuro-900 shrink-0">
               <div class="w-full h-full rounded-full overflow-hidden bg-kuro-800 flex items-center justify-center">
                 <img id="publicProfileAvatar" class="hidden w-full h-full object-cover" alt="プロフィール画像">
-                <svg id="publicProfileAvatarPlaceholder" class="text-gray-500" viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg>
+                <i id="publicProfileAvatarPlaceholder" class="fa-solid fa-user text-3xl text-gray-500"></i>
               </div>
             </div>
             <div class="min-w-0 flex-1">
@@ -617,20 +640,13 @@
     
 
     <nav id="kuroBottomNav" aria-label="メインナビゲーション" class="fixed bottom-0 inset-x-0 z-[90] bg-kuro-950/95 backdrop-blur-xl border-t border-kuro-800">
-      <div class="max-w-xl mx-auto grid grid-cols-4 px-1 pt-2">
-        <button type="button" data-tab="home" aria-label="ホーム" aria-current="page" onclick="switchTab('home')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900"><i class="kuro-tab-icon fa-solid fa-house text-xl"></i><span class="text-[10px] font-medium">ホーム</span></button>
-        
-        <button type="button" data-tab="chat" aria-label="個別チャット" onclick="switchTab('chat')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900"><i class="kuro-tab-icon fa-regular fa-comment text-xl"></i><span class="text-[10px] font-medium">チャット</span></button>
-        <button type="button" data-tab="publicChat" aria-label="オープンチャット" onclick="switchTab('publicChat')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900"><i class="kuro-tab-icon fa-solid fa-comments text-xl"></i><span class="text-[10px] font-medium">オプチャ</span></button>
-        
-        
-      <button type="button" data-tab="profile" aria-label="マイページ" title="マイページ" onclick="switchTab('profile')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900">
-          <span id="kuroProfileTabAvatarHost" class="kuro-sns-avatar-frame-host w-7 h-7 flex items-center justify-center kuro-sns-avatar-small-frame">
-            <img id="kuroProfileTabAvatar" class="kuro-profile-tab-avatar-image hidden" alt="" aria-hidden="true">
-            <svg id="kuroProfileTabAvatarFallback" class="kuro-profile-tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="3.25"></circle><path d="M5 20c.9-3.4 3.1-5 7-5s6.1 1.6 7 5"></path></svg>
-          </span>
-          <span class="kuro-tab-label">マイページ</span>
-        </button>
+      <div class="max-w-xl mx-auto grid grid-cols-6 px-1 pt-2">
+        <button type="button" data-tab="home" aria-label="ホーム" aria-current="page" onclick="switchTab('home')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900"><svg class="kuro-tab-icon kuro-inline-nav-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 10.8 12 3l9 7.8"/><path d="M5.5 9.5V21h13V9.5"/><path d="M9.5 21v-7h5v7"/></svg><span class="text-[10px] font-medium">ホーム</span></button>
+        <button type="button" data-tab="search" aria-label="検索" onclick="switchTab('search')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900"><svg class="kuro-tab-icon kuro-inline-nav-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><span class="text-[10px] font-medium">検索</span></button>
+        <button type="button" data-tab="chat" aria-label="個別チャット" onclick="switchTab('chat')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900"><svg class="kuro-tab-icon kuro-inline-nav-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.5 11.3a7.8 7.8 0 0 1-8.2 7.5 9.3 9.3 0 0 1-3.8-.8L3.5 20l1.3-4a7.1 7.1 0 0 1-1.2-4.7 7.8 7.8 0 0 1 8.2-7.5 7.8 7.8 0 0 1 8.7 7.5Z"/></svg><span class="text-[10px] font-medium">チャット</span></button>
+        <button type="button" data-tab="publicChat" aria-label="オープンチャット" onclick="switchTab('publicChat')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900"><svg class="kuro-tab-icon kuro-inline-nav-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 5.5h13a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3h-5l-4 3v-3H7a3 3 0 0 1-3-3Z"/><path d="M4 12.5H3a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h12"/></svg><span class="text-[10px] font-medium">オプチャ</span></button>
+        <button type="button" data-tab="notifications" aria-label="通知" onclick="openNotifications()" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900 relative"><svg class="kuro-tab-icon kuro-inline-nav-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z"/><path d="M10 21h4"/></svg><span class="text-[10px] font-medium">通知</span></button>
+        <button type="button" data-tab="profile" aria-label="マイページ" onclick="switchTab('profile')" class="kuro-bottom-tab flex flex-col items-center justify-center gap-1 py-2 rounded-xl hover:bg-kuro-900"><svg class="kuro-tab-icon kuro-inline-nav-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg><span class="text-[10px] font-medium">マイページ</span></button>
       </div>
     </nav>
 
@@ -770,6 +786,7 @@
                 label.textContent = 'Cloudflare中継に接続できません。時間をおいて再読み込みしてください。';
             }
         }
+        window.KuroSNSCheckCloudflareBridge = checkKuroCloudflareBridge;
 function kuroRouteCloudflareRealtime(client) {
     const realtime = client && client.realtime;
     if (!realtime) return;
@@ -923,35 +940,10 @@ function kuroRouteCloudflareRealtime(client) {
             });
         }
 
-        function updateKuroProfileTabAvatar() {
-            const image = document.getElementById('kuroProfileTabAvatar');
-            const fallback = document.getElementById('kuroProfileTabAvatarFallback');
-            if (!image || !fallback) return;
-            const url = currentUser && currentUser.avatarUrl ? kuroSnsAvatarUrl(currentUser.avatarUrl) : '';
-            if (!url) {
-                image.classList.add('hidden');
-                image.removeAttribute('src');
-                fallback.classList.remove('hidden');
-                if(currentUser?.id)kuroSnsBindAvatar(document.getElementById('kuroProfileTabAvatarHost'),currentUser.id);
-                return;
-            }
-            image.onerror = () => {
-                image.classList.add('hidden');
-                fallback.classList.remove('hidden');
-            };
-            image.onload = () => {
-                image.classList.remove('hidden');
-                fallback.classList.add('hidden');
-            };
-            image.src = url;
-            if(currentUser?.id)kuroSnsBindAvatar(document.getElementById('kuroProfileTabAvatarHost'),currentUser.id);
-        }
-
         function updateKuroHeaderAvatar() {
             const button = document.getElementById('kuroHeaderAvatarButton');
             const image = document.getElementById('kuroHeaderAvatar');
             const placeholder = document.getElementById('kuroHeaderAvatarPlaceholder');
-            updateKuroProfileTabAvatar();
             if (!button || !image || !placeholder) return;
             if (!currentUser) {
                 image.classList.add('hidden'); image.removeAttribute('src');
@@ -1062,7 +1054,7 @@ function kuroRouteCloudflareRealtime(client) {
                     <div class="flex items-center gap-2 bg-kuro-900 border border-kuro-700 pl-3 pr-2 py-1.5 rounded-xl">
                         <div class="w-8 h-8 rounded-full overflow-hidden bg-kuro-800 flex items-center justify-center shrink-0">
                             <img id="headerAvatar" class="hidden w-full h-full object-cover" alt="プロフィール画像">
-                            <svg id="headerAvatarPlaceholder" class="text-gray-500" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg>
+                            <i id="headerAvatarPlaceholder" class="fa-solid fa-user text-gray-500 text-xs"></i>
                         </div>
                         <div class="flex flex-col text-left min-w-0">
                             <span class="text-xs font-bold text-white leading-none"></span>
@@ -1608,7 +1600,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 const { data: officialProfile, error: officialError } = await supabaseClient
                     .from('profiles')
                     .select('id')
-                    .eq('username', 'kuro_admin')
+                    .eq('username', 'kuro_creator')
                     .maybeSingle();
                 if (officialError) throw officialError;
 
@@ -1651,7 +1643,8 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
 
         let kuroTempSuspensionCheckedUserId = null;
         async function redirectIfTemporarilySuspended(user) {
-            if (!user || location.pathname.startsWith('/account/suspension/')) return false;
+            if (!user || location.pathname.startsWith('/account/suspension/') || kuroTempSuspensionCheckedUserId === user.id) return false;
+            kuroTempSuspensionCheckedUserId = user.id;
             try {
                 const now = new Date().toISOString();
                 const { data, error } = await supabaseClient.from('account_suspensions').select('id')
@@ -2286,7 +2279,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             feed.innerHTML = list.map(post => {
                 const name = post.username || post.display_name || post.author || 'KUROユーザー';
                 const handle = post.username || post.handle || 'user';
-                const avatarInner = post.avatar_url ? `<img src="${escapeHTML(kuroSnsAvatarUrl(post.avatar_url))}" alt="" class="w-10 h-10 rounded-full object-cover border border-kuro-700">` : `<span class="w-10 h-10 rounded-full bg-kuro-800 border border-kuro-700 flex items-center justify-center text-gray-300"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg></span>`;
+                const avatarInner = post.avatar_url ? `<img src="${escapeHTML(kuroSnsAvatarUrl(post.avatar_url))}" alt="" class="w-10 h-10 rounded-full object-cover border border-kuro-700">` : `<span class="w-10 h-10 rounded-full bg-kuro-800 border border-kuro-700 flex items-center justify-center text-gray-300"><i class="fa-regular fa-user"></i></span>`;
                 const avatar = post.user_id ? `<button type="button" onclick="openPublicProfile('${escapeHTML(post.user_id)}')" data-kuro-sns-avatar-user="${escapeHTML(post.user_id)}" class="kuro-sns-avatar-frame-host w-10 h-10 shrink-0 rounded-full" aria-label="${escapeHTML(name)}のプロフィール">${avatarInner}</button>` : avatarInner;
                 const deleteButton = currentUser && String(post.user_id || '') === String(currentUser.id || '')
                     ? `<button type="button" data-delete-post-id="${escapeHTML(post.id)}" class="text-xs text-gray-500 hover:text-red-400 transition-colors" aria-label="このポストを削除"><i class="fa-regular fa-trash-can mr-1"></i>取り消す</button>` : '';
@@ -2303,23 +2296,32 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     const replyHandle = reply.username || 'user';
                     const replyDeleted = Boolean(reply.deleted_at);
                     const canDeleteReply = !replyDeleted && currentUser && String(reply.user_id || '') === String(currentUser.id || '');
-                    const deleteAction = canDeleteReply ? `<button type="button" data-delete-reply-id="${escapeHTML(reply.id || '')}" data-delete-reply-post-id="${escapeHTML(post.id)}" class="text-xs text-gray-500 hover:text-red-400">削除</button>` : '';
-                    const replyAvatarContent = reply.avatar_url ? `<img src="${escapeHTML(kuroSnsAvatarUrl(reply.avatar_url))}" alt="" class="w-8 h-8 rounded-full object-cover border border-kuro-700">` : `<span class="w-8 h-8 rounded-full bg-kuro-800 border border-kuro-700 flex items-center justify-center text-gray-300"><i class="fa-regular fa-user text-xs"></i></span>`;
-                    const replyAvatar = kuroSnsAvatarHostMarkup(reply.user_id,replyAvatarContent,'w-8 h-8 flex-shrink-0 kuro-sns-avatar-small-frame');
+                    const deleteAction = canDeleteReply ? '<button type="button" data-delete-reply-id="' + escapeHTML(reply.id || '') + '" data-delete-reply-post-id="' + escapeHTML(post.id) + '" class="text-xs text-gray-500 hover:text-red-400">削除</button>' : '';
+                    const replyAvatarContent = reply.avatar_url ? '<img src="' + escapeHTML(kuroSnsAvatarUrl(reply.avatar_url)) + '" alt="" class="w-8 h-8 rounded-full object-cover border border-kuro-700">' : '<span class="w-8 h-8 rounded-full bg-kuro-800 border border-kuro-700 flex items-center justify-center text-gray-300"><i class="fa-regular fa-user text-xs"></i></span>';
+                    const replyAvatar = kuroSnsAvatarHostMarkup(reply.user_id, replyAvatarContent, 'w-8 h-8 flex-shrink-0 kuro-sns-avatar-small-frame');
+                    const parentHtml = parentLabel ? '<div class="text-[11px] text-violet-300/80 mt-0.5">↳ ' + escapeHTML(parentLabel) + ' への返信</div>' : '';
                     const replyText = replyDeleted ? 'この返信は削除されました。' : renderMentionContent(reply.content || '');
-                    const replyAction = replyDeleted ? '' : `<button type="button" data-reply-to-id="${escapeHTML(reply.id || '')}" data-reply-to-post-id="${escapeHTML(post.id)}" data-reply-to-handle="${escapeHTML(replyHandle)}" data-reply-to-name="${escapeHTML(replyName)}" onclick="window.KuroSNSSetReplyTarget(this)" class="text-xs text-violet-300 hover:text-violet-200">返信</button>`;
-                    return `<div class="flex gap-2 py-2" data-kuro-post-reply-id="${escapeHTML(reply.id || '')}">${replyAvatar}<div class="min-w-0 flex-1"><div class="text-xs text-gray-400"><span class="font-semibold text-gray-200">${escapeHTML(replyName)}</span> <span class="text-gray-600">@${escapeHTML(replyHandle)} · ${escapeHTML(formatPostDate(reply.created_at))}</span></div>${parentLabel ? `<div class="text-[11px] text-violet-300/80 mt-0.5">↳ ${escapeHTML(parentLabel)} への返信</div>` : ''}<p class="mt-1 text-sm ${replyDeleted ? 'text-gray-500 italic' : 'text-gray-300'} whitespace-pre-wrap break-words">${replyText}</p><div class="mt-1 flex items-center gap-3">${deleteAction}${replyAction}</div></div></div>`;
+                    const replyAction = replyDeleted ? '' : '<button type="button" data-reply-to-id="' + escapeHTML(reply.id || '') + '" data-reply-to-post-id="' + escapeHTML(post.id) + '" data-reply-to-handle="' + escapeHTML(replyHandle) + '" data-reply-to-name="' + escapeHTML(replyName) + '" onclick="window.KuroSNSSetReplyTarget(this)" class="text-xs text-violet-300 hover:text-violet-200">返信</button>';
+                    return '<div class="flex gap-2 py-2" data-kuro-post-reply-id="' + escapeHTML(reply.id || '') + '">' + replyAvatar + '<div class="min-w-0 flex-1"><div class="text-xs text-gray-400"><span class="font-semibold text-gray-200">' + escapeHTML(replyName) + '</span> <span class="text-gray-600">@' + escapeHTML(replyHandle) + ' · ' + escapeHTML(formatPostDate(reply.created_at)) + '</span></div>' + parentHtml + '<p class="mt-1 text-sm ' + (replyDeleted ? 'text-gray-500 italic' : 'text-gray-300') + ' whitespace-pre-wrap break-words">' + replyText + '</p><div class="mt-1 flex items-center gap-3">' + deleteAction + replyAction + '</div></div></div>';
                 };
-                const renderReplyThread = (root) => {
-                    const rootName = root.username || root.display_name || 'KUROユーザー';
-                    const directChildren = repliesByParent.get(String(root.id || '')) || [];
+                const renderReplyThread = (rootReply) => {
+                    const directChildren = repliesByParent.get(String(rootReply.id || '')) || [];
                     const descendants = [];
-                    const collectDescendants = (items, parent) => items.forEach(item => {
-                        descendants.push({ reply: item, parentName: parent.username || parent.display_name || 'KUROユーザー' });
+                    const collectDescendants = (children, parent) => children.forEach(item => {
+                        descendants.push({
+                            reply: item,
+                            parentName: parent.username || parent.display_name || 'KUROユーザー'
+                        });
                         collectDescendants(repliesByParent.get(String(item.id || '')) || [], item);
                     });
-                    collectDescendants(directChildren, root);
-                    return `<div class="kuro-comment-thread border-b border-kuro-800/70 py-1" data-kuro-comment-thread="${escapeHTML(root.id || '')}">${renderReplyItem(root)}${descendants.length ? `<div class="ml-4 mt-1 pl-3 border-l border-kuro-800/80 space-y-0">${descendants.map(({reply,parentName}) => renderReplyItem(reply,parentName)).join('')}</div>` : ''}</div>`;
+                    collectDescendants(directChildren, rootReply);
+                    const childHtml = descendants.length
+                        ? '<div class="ml-4 mt-1 pl-3 border-l border-kuro-800/80 space-y-0">' +
+                            descendants.map(entry => renderReplyItem(entry.reply, entry.parentName)).join('') +
+                          '</div>'
+                        : '';
+                    return '<div class="kuro-comment-thread border-b border-kuro-800/70 py-1" data-kuro-comment-thread="' +
+                        escapeHTML(rootReply.id || '') + '">' + renderReplyItem(rootReply) + childHtml + '</div>';
                 };
                 const replies = topLevelReplies.map(renderReplyThread).join('');
                 return `<article class="bg-kuro-900/80 border border-kuro-800 hover:border-kuro-700 rounded-2xl p-4 sm:p-5" data-post-card="${escapeHTML(post.id)}"><div class="flex gap-3">${avatar}<div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-x-2 gap-y-1">${post.user_id ? `<button type="button" onclick="openPublicProfile('${escapeHTML(post.user_id)}')" class="font-semibold text-white hover:underline text-left">${escapeHTML(name)}</button>` : `<span class="font-semibold text-white">${escapeHTML(name)}</span>`}<button type="button" ${post.user_id ? `onclick="openPublicProfile('${escapeHTML(post.user_id)}')"` : 'disabled'} class="text-xs text-gray-500 hover:text-gray-300 disabled:cursor-default">@${escapeHTML(handle)}</button>${currentUser && post.user_id && post.user_id !== currentUser.id ? `<button type="button" data-follow-user-id="${escapeHTML(post.user_id)}" class="text-[11px] border border-kuro-700 rounded-full px-2 py-1 ${followCache.following.has(post.user_id) ? 'text-gray-400' : 'text-white hover:bg-kuro-800'}">${followCache.following.has(post.user_id) ? 'フォロー中' : 'フォロー'}</button>` : ''}<span class="text-xs text-gray-600">· ${escapeHTML(formatPostDate(post.created_at))}</span><span class="ml-auto">${deleteButton}</span></div><p class="mt-3 text-[15px] leading-7 text-gray-200 whitespace-pre-wrap break-words">${renderPostContent(post.content)}</p>${window.KuroSNSMedia?.renderPublic(post.media) || ''}<div class="mt-4 flex items-center gap-4 border-t border-kuro-800 pt-3"><button type="button" data-like-post-id="${escapeHTML(post.id)}" aria-pressed="${liked}" class="text-sm ${liked ? 'text-pink-400' : 'text-gray-400'} hover:text-pink-300"><i class="${liked ? 'fa-solid' : 'fa-regular'} fa-heart mr-1"></i><span>${Number(post.like_count || 0)}</span><span class="ml-1">いいね</span></button><button type="button" data-reply-post-id="${escapeHTML(post.id)}" aria-expanded="false" class="text-sm text-gray-400 hover:text-white"><i class="fa-regular fa-comment mr-1"></i >${(post.replies || []).length} コメント</button></div><div data-replies-panel class="hidden mt-3 space-y-3"><div class="space-y-1" <div data-reply-target class="hidden flex items-center justify-between gap-3 rounded-lg border border-violet-400/20 bg-violet-500/10 px-3 py-2 text-xs text-violet-200"><span data-reply-target-text></span><button type="button" data-cancel-reply-target class="shrink-0 text-gray-400 hover:text-white">解除</button></div><div class="space-y-2"><textarea data-reply-input="${escapeHTML(post.id)}" maxlength="130" rows="2" placeholder="返信を書く…（メンションなしでもOK）" class="w-full bg-kuro-950 border border-kuro-800 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-gray-500"></textarea><div class="flex justify-end"><button type="button" data-send-reply-post-id="${escapeHTML(post.id)}" class="px-3 py-1.5 rounded-lg bg-white text-black text-xs font-semibold hover:bg-gray-200">返信する</button></div></div><div class="space-y-1" data-replies-list>${replies}</div></div></div></div></article>`;
@@ -2642,7 +2644,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 } catch(e) { console.warn('search people', e); }
             }
             const tagHtml = tags.map(t => `<button onclick="filterByHashtag('${socialEscape(t)}');document.getElementById('searchSuggestions').classList.add('hidden')" class="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-kuro-800"><span class="w-9 h-9 rounded-full bg-kuro-800 flex items-center justify-center"><i class="fa-solid fa-hashtag"></i></span><span><b>#${socialEscape(t)}</b><small class="block text-gray-500">ハッシュタグ</small></span></button>`).join('');
-            const peopleHtml = people.map(p => `<button type="button" onclick="document.getElementById('searchSuggestions')?.classList.add('hidden');openPublicProfile('${socialEscape(p.id)}')" class="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-kuro-800">${kuroSnsAvatarHostMarkup(p.id,p.avatar_url ? `<img src="${socialEscape(kuroSnsAvatarUrl(p.avatar_url))}" class="w-10 h-10 rounded-full object-cover" alt="">` : `<span class="w-10 h-10 rounded-full bg-kuro-800 flex items-center justify-center"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg></span>`,'w-10 h-10 kuro-sns-avatar-small-frame')}<span class="min-w-0"><b class="block truncate">${socialEscape(p.display_name||p.username||'KUROユーザー')}</b><small class="block text-gray-500">@${socialEscape(p.username||'user')}</small></span><span class="ml-auto text-xs text-gray-500">プロフィール</span></button>`).join('');
+            const peopleHtml = people.map(p => `<button type="button" onclick="document.getElementById('searchSuggestions')?.classList.add('hidden');openPublicProfile('${socialEscape(p.id)}')" class="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-kuro-800">${kuroSnsAvatarHostMarkup(p.id,p.avatar_url ? `<img src="${socialEscape(kuroCloudflarePublicUrl(p.avatar_url))}" class="w-10 h-10 rounded-full object-cover" alt="">` : `<span class="w-10 h-10 rounded-full bg-kuro-800 flex items-center justify-center"><i class="fa-regular fa-user"></i></span>`,'w-10 h-10 kuro-sns-avatar-small-frame')}<span class="min-w-0"><b class="block truncate">${socialEscape(p.display_name||p.username||'KUROユーザー')}</b><small class="block text-gray-500">@${socialEscape(p.username||'user')}</small></span><span class="ml-auto text-xs text-gray-500">プロフィール</span></button>`).join('');
             box.innerHTML = (tagHtml + peopleHtml) || `<div class="p-4 text-sm text-gray-500">「${socialEscape(raw)}」に一致する候補はないよ</div>`;
             box.classList.remove('hidden');
         }
@@ -2687,7 +2689,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 return;
             }
             const authorDisplay = document.getElementById('authorDisplay');
-            const composerAvatarUrl = currentUser.avatarUrl ? kuroSnsAvatarUrl(currentUser.avatarUrl) : '';
+            const composerAvatarUrl = currentUser.avatarUrl ? kuroCloudflarePublicUrl(currentUser.avatarUrl) : '';
             const composerAvatarInner = composerAvatarUrl
                 ? '<img src="' + escapeHTML(composerAvatarUrl) + '" alt="" class="w-9 h-9 rounded-full object-cover">'
                 : '<span class="w-9 h-9 rounded-full bg-kuro-800 border border-kuro-700 flex items-center justify-center text-gray-300">♙</span>';
@@ -3421,7 +3423,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 if (!ids.length) { box.innerHTML = `<p class="text-sm text-gray-500 text-center py-8">${kind === 'followers' ? 'フォロワーはまだいないよ' : 'まだ誰もフォローしていないよ'}</p>`; return; }
                 const {data: profiles, error: pe} = await supabaseClient.from('profiles').select('id, username, display_name, avatar_url').in('id', ids);
                 if (pe) throw pe;
-                box.innerHTML = (profiles || []).map(p => `<div class="flex items-center gap-3 p-2 rounded-xl hover:bg-kuro-900">${kuroSnsAvatarHostMarkup(p.id,p.avatar_url ? `<img src="${socialEscape(kuroSnsAvatarUrl(p.avatar_url))}" class="w-full h-full object-cover" alt="">` : '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg>','w-10 h-10 kuro-sns-avatar-small-frame')}<div class="min-w-0 flex-1"><p class="text-sm font-semibold truncate">${socialEscape(p.display_name || p.username || 'KUROユーザー')}</p><p class="text-xs text-gray-500 truncate">@${socialEscape(p.username || 'user')}</p></div>${p.id !== currentUser.id ? `<button type="button" onclick="toggleFollow('${socialEscape(p.id)}')" class="px-3 py-2 rounded-lg text-xs font-semibold ${followCache.following.has(p.id) ? 'border border-kuro-700 text-gray-300' : 'bg-white text-black'}">${followCache.following.has(p.id) ? 'フォロー中' : 'フォロー'}</button>` : ''}</div>`).join('');
+                box.innerHTML = (profiles || []).map(p => `<div class="flex items-center gap-3 p-2 rounded-xl hover:bg-kuro-900">${kuroSnsAvatarHostMarkup(p.id,p.avatar_url ? `<img src="${socialEscape(kuroCloudflarePublicUrl(p.avatar_url))}" class="w-full h-full object-cover" alt="">` : '<i class="fa-regular fa-user text-gray-400"></i>','w-10 h-10 kuro-sns-avatar-small-frame')}<div class="min-w-0 flex-1"><p class="text-sm font-semibold truncate">${socialEscape(p.display_name || p.username || 'KUROユーザー')}</p><p class="text-xs text-gray-500 truncate">@${socialEscape(p.username || 'user')}</p></div>${p.id !== currentUser.id ? `<button type="button" onclick="toggleFollow('${socialEscape(p.id)}')" class="px-3 py-2 rounded-lg text-xs font-semibold ${followCache.following.has(p.id) ? 'border border-kuro-700 text-gray-300' : 'bg-white text-black'}">${followCache.following.has(p.id) ? 'フォロー中' : 'フォロー'}</button>` : ''}</div>`).join('');
             } catch(e) { console.error(e); box.innerHTML = '<p class="text-sm text-red-300">一覧を読み込めませんでした。SQL設定を確認してね。</p>'; }
         }
         // Serialize notification refreshes so a stale request cannot redraw deleted rows.
@@ -3562,7 +3564,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     : '';
                 const avatar = p.avatar_url
                     ? `<img src="${socialEscape(kuroSnsAvatarUrl(p.avatar_url))}" class="w-11 h-11 rounded-full object-cover" alt="">`
-                    : '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg>';
+                    : '<i class="fa-regular fa-user text-gray-400"></i>';
                 const mentionAction = n.type === 'mention' && n.group_id
                     ? '<button type="button" onclick="openMentionGroupNotice(\'' + socialEscape(n.group_id) + '\',\'' + socialEscape(n.message_id || '') + '\',\'' + socialEscape(n.id) + '\')" class="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold bg-white text-black hover:bg-gray-200">チャットを開く</button>'
                     : '';
@@ -4151,7 +4153,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                         const handle = profile.username || 'user';
                         const avatar = profile.avatar_url
                             ? `<img src="${socialEscape(kuroSnsAvatarUrl(profile.avatar_url))}" alt="" class="w-11 h-11 rounded-full object-cover shrink-0">`
-                            : '<span class="w-11 h-11 rounded-full bg-kuro-800 flex items-center justify-center shrink-0"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg></span>';
+                            : '<span class="w-11 h-11 rounded-full bg-kuro-800 flex items-center justify-center shrink-0"><i class="fa-regular fa-user"></i></span>';
                         return `<div data-chat-row="${socialEscape(c.id)}" class="w-full flex items-center gap-3 rounded-xl p-3 hover:bg-kuro-900 ${activeChatId === c.id ? 'bg-kuro-900' : ''}"><button type="button" onclick="openPublicProfile('${socialEscape(peerId)}')" aria-label="${socialEscape(handle)}のプロフィール" class="kuro-sns-avatar-frame-host shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-white" data-kuro-sns-avatar-user="${socialEscape(peerId)}">${avatar}</button><button type="button" onclick="selectChat('${socialEscape(c.id)}','${socialEscape(peerId)}','${socialEscape(handle)}')" class="min-w-0 flex-1 text-left"><b class="block text-sm text-gray-100 truncate">${socialEscape(profile.display_name || handle)}</b><span class="block text-xs text-gray-500 truncate">@${socialEscape(handle)}</span><span data-chat-preview class="block text-xs text-gray-400 truncate mt-1">最新メッセージを確認中…</span></button><span data-chat-date class="text-[10px] text-gray-600 shrink-0"></span></div>`;
                     }).join('');
                     box.dataset.loaded = 'true';
@@ -4228,7 +4230,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 const {data,error}=await supabaseClient.from('profiles').select('id,username,display_name,avatar_url').neq('id',currentUser.id).order('display_name').limit(300);
                 if(error) throw error;
                 if(!data?.length){box.innerHTML='<p class="text-sm text-gray-500">選べるユーザーがいません</p>';return;}
-                box.innerHTML=data.map(p=>`<label data-group-user="${socialEscape((p.display_name||'')+' '+(p.username||''))}" class="flex items-center gap-3 rounded-xl p-3 hover:bg-kuro-900 cursor-pointer"><input type="checkbox" class="group-member-checkbox accent-violet-400 w-5 h-5" value="${socialEscape(p.id)}">${kuroSnsAvatarHostMarkup(p.id,p.avatar_url?`<img src="${socialEscape(kuroSnsAvatarUrl(p.avatar_url))}" alt="" class="w-full h-full object-cover">`:'<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg>','w-9 h-9 kuro-sns-avatar-small-frame')}<span class="min-w-0"><b class="block text-sm truncate">${socialEscape(p.display_name||p.username||'ユーザー')}</b><span class="block text-xs text-gray-500">@${socialEscape(p.username||'')}</span></span></label>`).join('');
+                box.innerHTML=data.map(p=>`<label data-group-user="${socialEscape((p.display_name||'')+' '+(p.username||''))}" class="flex items-center gap-3 rounded-xl p-3 hover:bg-kuro-900 cursor-pointer"><input type="checkbox" class="group-member-checkbox accent-violet-400 w-5 h-5" value="${socialEscape(p.id)}">${kuroSnsAvatarHostMarkup(p.id,p.avatar_url?`<img src="${socialEscape(kuroCloudflarePublicUrl(p.avatar_url))}" alt="" class="w-full h-full object-cover">`:'<i class="fa-regular fa-user"></i>','w-9 h-9 kuro-sns-avatar-small-frame')}<span class="min-w-0"><b class="block text-sm truncate">${socialEscape(p.display_name||p.username||'ユーザー')}</b><span class="block text-xs text-gray-500">@${socialEscape(p.username||'')}</span></span></label>`).join('');
             } catch(e) {console.error(e);box.innerHTML='<p class="text-sm text-red-300">ユーザー一覧を読み込めませんでした</p>';}
         }
         function closeGroupCreate(){document.getElementById('groupCreateModal')?.classList.add('hidden');}
@@ -4364,7 +4366,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 if (seen.has(id)) return;
                 const mine = message.sender_id === currentUser.id;
                 const profile = profileMap[message.sender_id] || {};
-                const avatarUrl = profile.avatar_url ? (typeof kuroSnsAvatarUrl === 'function' ? kuroSnsAvatarUrl(profile.avatar_url) : profile.avatar_url) : '';
+                const avatarUrl = profile.avatar_url ? (typeof kuroSnsAvatarUrl === 'function' ? kuroCloudflarePublicUrl(profile.avatar_url) : profile.avatar_url) : '';
                 const avatarContent = avatarUrl
                     ? '<img src="' + socialEscape(avatarUrl) + '" alt="" class="w-8 h-8 rounded-full object-cover">'
                     : '<span class="w-8 h-8 rounded-full bg-kuro-700 text-gray-300 flex items-center justify-center">♙</span>';
@@ -4435,7 +4437,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 if (activeChatType !== 'group' || !activeChatId) return;
                 const filtered = members.filter(p => !query || (p.username || '').toLocaleLowerCase().includes(query) || (p.display_name || '').toLocaleLowerCase().includes(query));
                 box.innerHTML = filtered.length ? filtered.map(p => {
-                    const avatar = p.avatar_url ? '<img src="' + socialEscape(kuroSnsAvatarUrl(p.avatar_url)) + '" alt="" class="w-9 h-9 rounded-full object-cover">' : '<span class="w-9 h-9 rounded-full bg-kuro-800 flex items-center justify-center"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg></span>';
+                    const avatar = p.avatar_url ? '<img src="' + socialEscape(kuroSnsAvatarUrl(p.avatar_url)) + '" alt="" class="w-9 h-9 rounded-full object-cover">' : '<span class="w-9 h-9 rounded-full bg-kuro-800 flex items-center justify-center"><i class="fa-regular fa-user"></i></span>';
                     return '<button type="button" onmousedown="event.preventDefault()" onclick="chooseGroupMention(\'' + socialEscape(p.id) + '\')" class="w-full flex items-center gap-3 p-3 text-left hover:bg-kuro-800 border-b border-kuro-800 last:border-0">' + avatar + '<span class="min-w-0"><b class="block text-sm truncate">' + socialEscape(p.display_name || p.username || 'メンバー') + '</b><span class="block text-xs text-gray-500">@' + socialEscape(p.username || '') + '</span></span></button>';
                 }).join('') : '<p class="p-3 text-sm text-gray-500">メンバーが見つからないよ</p>';
                 box.classList.remove('hidden');
@@ -4553,10 +4555,11 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             box.innerHTML = messages.map(message => {
                 const mine = message.sender_id === currentUser.id;
                 const profile = profileMap[message.sender_id] || {};
-                const avatarUrl = profile.avatar_url ? (typeof kuroSnsAvatarUrl === 'function' ? kuroSnsAvatarUrl(profile.avatar_url) : profile.avatar_url) : '';
-                const avatar = avatarUrl
-                    ? '<img src="' + socialEscape(avatarUrl) + '" alt="" class="w-8 h-8 rounded-full object-cover shrink-0">'
-                    : '<span class="w-8 h-8 rounded-full bg-kuro-700 text-gray-300 flex items-center justify-center shrink-0">♙</span>';
+                const avatarUrl = profile.avatar_url ? (typeof kuroSnsAvatarUrl === 'function' ? kuroCloudflarePublicUrl(profile.avatar_url) : profile.avatar_url) : '';
+                const avatarContent = avatarUrl
+                    ? '<img src="' + socialEscape(avatarUrl) + '" alt="" class="w-8 h-8 rounded-full object-cover">'
+                    : '<span class="w-8 h-8 rounded-full bg-kuro-700 text-gray-300 flex items-center justify-center">♙</span>';
+                const avatar = kuroSnsAvatarHostMarkup(message.sender_id,avatarContent,'w-8 h-8 shrink-0 kuro-sns-avatar-small-frame');
                 const identity = mine ? '' : '<div class="flex items-center gap-2 mb-1">' + avatar + '<span class="text-[10px] text-gray-400">' + socialEscape(names[message.sender_id] || 'メンバー') + '</span></div>';
                 const readCount = reads.filter(r => r.message_id === message.id && r.reader_id !== message.sender_id).length;
                 const receipt = mine && peerCount ? '<span class="text-[10px] text-gray-400 mt-1">' + (readCount ? '既読 ' + readCount : '未読') + '</span>' : '';
@@ -4590,7 +4593,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     supabaseClient.from('group_conversations').select('created_by').eq('id',activeChatId).single()]);
                 if(me)throw me;if(pe)throw pe;if(ge)throw ge;
                 const mm=Object.fromEntries((members||[]).map(m=>[m.user_id,m]));const admin=(members||[]).some(m=>m.user_id===currentUser.id&&m.role==='admin')||group.created_by===currentUser.id;
-                box.innerHTML=(profiles||[]).map(p=>{const m=mm[p.id],checked=!!m,disabled=checked&&p.id===currentUser.id||checked&&!admin;const label=(p.display_name||p.username||'ユーザー')+' '+(p.username||'');return `<label data-edit-group-user="${socialEscape(label)}" class="flex items-center gap-3 rounded-xl p-3 hover:bg-kuro-900"><input type="checkbox" class="edit-group-member-checkbox accent-violet-400 w-5 h-5" value="${socialEscape(p.id)}" ${checked?'checked':''} ${disabled?'disabled':''}><span class="w-9 h-9 rounded-full bg-kuro-800 overflow-hidden flex items-center justify-center shrink-0">${p.avatar_url?`<img src="${socialEscape(kuroSnsAvatarUrl(p.avatar_url))}" class="w-full h-full object-cover" alt="">`:'<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg>'}</span><span class="min-w-0"><b class="block text-sm truncate">${socialEscape(p.display_name||p.username||'ユーザー')}</b><span class="block text-xs text-gray-500">@${socialEscape(p.username||'')}${m?.role==='admin'?' · 管理者':''}</span></span></label>`;}).join('');
+                box.innerHTML=(profiles||[]).map(p=>{const m=mm[p.id],checked=!!m,disabled=checked&&p.id===currentUser.id||checked&&!admin;const label=(p.display_name||p.username||'ユーザー')+' '+(p.username||'');return `<label data-edit-group-user="${socialEscape(label)}" class="flex items-center gap-3 rounded-xl p-3 hover:bg-kuro-900"><input type="checkbox" class="edit-group-member-checkbox accent-violet-400 w-5 h-5" value="${socialEscape(p.id)}" ${checked?'checked':''} ${disabled?'disabled':''}><span class="w-9 h-9 rounded-full bg-kuro-800 overflow-hidden flex items-center justify-center shrink-0">${p.avatar_url?`<img src="${socialEscape(kuroSnsAvatarUrl(p.avatar_url))}" class="w-full h-full object-cover" alt="">`:'<i class="fa-regular fa-user"></i>'}</span><span class="min-w-0"><b class="block text-sm truncate">${socialEscape(p.display_name||p.username||'ユーザー')}</b><span class="block text-xs text-gray-500">@${socialEscape(p.username||'')}${m?.role==='admin'?' · 管理者':''}</span></span></label>`;}).join('');
                 document.getElementById('groupEditStatus').textContent=admin?'管理者としてメンバーを編集できます':'メンバーの追加ができます。削除は管理者のみです。';
             }catch(e){console.warn(e);box.innerHTML='<p class="text-sm text-red-300">メンバーを読み込めませんでした</p>';}
         }
@@ -4677,7 +4680,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     box.innerHTML = users.length ? users.map(p => {
                         const avatar = p.avatar_url
                             ? `<img src="${socialEscape(kuroSnsAvatarUrl(p.avatar_url))}" alt="" class="w-10 h-10 rounded-full object-cover shrink-0">`
-                            : `<span class="w-10 h-10 rounded-full bg-kuro-800 flex items-center justify-center shrink-0"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.2 20c.6-3.2 3-5.2 6.8-5.2s6.2 2 6.8 5.2"></path></svg></span>`;
+                            : `<span class="w-10 h-10 rounded-full bg-kuro-800 flex items-center justify-center shrink-0"><i class="fa-regular fa-user"></i></span>`;
                         return `<div class="flex items-center gap-3 p-3 border-b border-kuro-800 last:border-0"><button type="button" onclick="openPublicProfile('${socialEscape(p.id)}')" aria-label="プロフィールを開く" class="shrink-0 rounded-full">${avatar}</button><button type="button" onclick="openPublicProfile('${socialEscape(p.id)}')" class="min-w-0 flex-1 text-left"><b class="block text-sm truncate">${socialEscape(p.display_name || p.username || 'KUROユーザー')}</b><small class="block text-gray-500 truncate">@${socialEscape(p.username || 'user')}</small></button><button type="button" onclick="startChatWithUser('${socialEscape(p.id)}')" class="shrink-0 px-3 py-2 rounded-lg bg-white text-black text-xs font-bold hover:bg-gray-200">メッセージする</button></div>`;
                     }).join('') : '<p class="p-3 text-sm text-gray-500">ユーザーが見つからないよ</p>';
                     box.classList.remove('hidden');
@@ -5324,7 +5327,6 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
 
                 // Register auth events before any async DB/profile request. Otherwise a startup
                 // failure could leave the page without a listener to update its login state.
-                setInterval(()=>{if(document.visibilityState!=='hidden'&&currentUser)redirectIfTemporarilySuspended(currentUser);},10000);
                 supabaseClient.auth.onAuthStateChange((event, session) => {
                     if (session?.user?.id && session?.access_token) {
                         window.__kuroUsageIdentify?.(session.user.id, session.access_token, event === 'SIGNED_IN');
@@ -5416,7 +5418,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             }
         };
     </script>
-<script>window.addEventListener('pageshow', checkKuroCloudflareBridge);</script>
+<script>window.addEventListener('pageshow', function () { if (typeof window.KuroSNSCheckCloudflareBridge === 'function') window.KuroSNSCheckCloudflareBridge(); });</script>
 
 
 
@@ -5432,6 +5434,17 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
   else window.addEventListener('load',launch,{once:true});
 })();
 </script>
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -5456,7 +5469,6 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
 </script>
 <!-- Direct profile editing entry point from KURO Lab / KURO Games -->
 <script>(function(){if(new URLSearchParams(location.search).get("profile-edit")!=="1")return;function openEditor(){if(typeof window.openProfileModal==="function"){window.openProfileModal();return;}setTimeout(openEditor,350);}window.addEventListener("load",function(){setTimeout(openEditor,900);},{once:true});})();</script>
-<script defer src="/kuro-profile.js?v=20261126framelayer1"></script><script src="/sns/v2/media.js?v=20261127compactimages1"></script>
+<script defer src="/kuro-profile.js?v=20261126framelayer1"></script><script src="/sns/media.js?v=20261127compactimages1"></script>
 </body>
 </html>
-

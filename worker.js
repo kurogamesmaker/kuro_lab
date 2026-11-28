@@ -1745,9 +1745,10 @@ export default {
       return json({ error: "Not found" }, 404);
     }
 
-    // KURO SNS canonical entry: force legacy routes to the V2 experience.
-    if (url.pathname === "/sns" || url.pathname === "/sns/" || url.pathname === "/sns/index.html") {
-      const destination = new URL("/sns/v2/" + url.search + url.hash, url.origin);
+    // KURO SNS canonical entry and legacy route compatibility.
+    // The physical v2 directory is retired; old links are redirected to the root layout.
+    if (url.pathname === "/sns" || url.pathname === "/sns/index.html") {
+      const destination = new URL("/sns/" + url.search, url.origin);
       return new Response(null, {
         status: 302,
         headers: {
@@ -1758,6 +1759,36 @@ export default {
       });
     }
 
+    if (url.pathname === "/sns/v2" || url.pathname === "/sns/v2/" || url.pathname.startsWith("/sns/v2/")) {
+      let destinationPath = "/sns/";
+      if (url.pathname === "/sns/v2/pc" || url.pathname === "/sns/v2/pc/") {
+        destinationPath = "/sns/pc/";
+      } else if (url.pathname === "/sns/v2/mobile" || url.pathname === "/sns/v2/mobile/") {
+        destinationPath = "/sns/mobile/";
+      } else if (url.pathname === "/sns/v2/index.html") {
+        destinationPath = "/sns/";
+      } else if (url.pathname.startsWith("/sns/v2/")) {
+        const relativePath = url.pathname.slice("/sns/v2/".length);
+        if (relativePath === "sns.css") {
+          const userAgent = request.headers.get("user-agent") || "";
+          const mobileHint = request.headers.get("sec-ch-ua-mobile") === "?1";
+          destinationPath = mobileHint || /android|iphone|ipad|ipod|mobile/i.test(userAgent)
+            ? "/sns/mobile/sns.css"
+            : "/sns/pc/sns.css";
+        } else {
+          destinationPath = "/sns/" + relativePath;
+        }
+      }
+      const destination = new URL(destinationPath + url.search, url.origin);
+      return new Response(null, {
+        status: 302,
+        headers: {
+          "Location": destination.href,
+          "Cache-Control": "no-store, max-age=0, must-revalidate",
+          "Pragma": "no-cache"
+        }
+      });
+    }
     if (url.pathname === "/favicon.ico") {
       return new Response(null, {
         status: 302,

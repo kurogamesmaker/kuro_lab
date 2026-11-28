@@ -325,24 +325,24 @@
     if (item.kind === "social") {
       const actorId = isUuid(item.actor_id) ? item.actor_id : "";
       if (item.type === "follow" || item.type === "follow_back") {
-        return actorId ? "/sns/v2/?profile=" + encodeURIComponent(actorId) : "";
+        return actorId ? "/sns/?profile=" + encodeURIComponent(actorId) : "";
       }
       if (item.type === "message") {
-        return actorId ? "/sns/v2/?chat=" + encodeURIComponent(actorId) : "";
+        return actorId ? "/sns/?chat=" + encodeURIComponent(actorId) : "";
       }
       if (item.type === "mention") {
-        if (!isUuid(item.group_id)) return actorId ? "/sns/v2/?profile=" + encodeURIComponent(actorId) : "";
+        if (!isUuid(item.group_id)) return actorId ? "/sns/?profile=" + encodeURIComponent(actorId) : "";
         const params = new URLSearchParams({ group: item.group_id });
         if (isUuid(item.message_id)) params.set("message", item.message_id);
         if (isUuid(item.id)) params.set("notification", item.id);
-        return "/sns/v2/?" + params.toString();
+        return "/sns/?" + params.toString();
       }
       if (item.type === "like" || item.type === "reply") {
         // Resolve through the notification row so older posts outside the latest feed
         // can still be fetched and a reply can be highlighted precisely.
-        return isUuid(item.id) ? "/sns/v2/?notice=" + encodeURIComponent(item.id) : "";
+        return isUuid(item.id) ? "/sns/?notice=" + encodeURIComponent(item.id) : "";
       }
-      return actorId ? "/sns/v2/?profile=" + encodeURIComponent(actorId) : "";
+      return actorId ? "/sns/?profile=" + encodeURIComponent(actorId) : "";
     }
     if (!item.href) return "";
     try {

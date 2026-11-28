@@ -1,12 +1,12 @@
 {
-  "id": "/sns/v2/mobile/",
+  "id": "/sns/mobile/",
   "name": "KURO SNS",
   "short_name": "KURO SNS",
   "description": "KURO SNS social app",
   "lang": "ja",
   "dir": "ltr",
-  "start_url": "/sns/v2/mobile/",
-  "scope": "/sns/v2/",
+  "start_url": "/sns/mobile/",
+  "scope": "/sns/",
   "display": "standalone",
   "display_override": [
     "standalone",

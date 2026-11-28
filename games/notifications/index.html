@@ -100,17 +100,17 @@ function isUuid(value){return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-
 function destination(item){
  if(item.kind==="social"){
   const actorId=isUuid(item.actor_id)?item.actor_id:"";
-  if(item.type==="follow"||item.type==="follow_back")return actorId?"/sns/v2/?profile="+encodeURIComponent(actorId):"";
-  if(item.type==="message")return actorId?"/sns/v2/?chat="+encodeURIComponent(actorId):"";
+  if(item.type==="follow"||item.type==="follow_back")return actorId?"/sns/?profile="+encodeURIComponent(actorId):"";
+  if(item.type==="message")return actorId?"/sns/?chat="+encodeURIComponent(actorId):"";
   if(item.type==="mention"){
-   if(!isUuid(item.group_id))return actorId?"/sns/v2/?profile="+encodeURIComponent(actorId):"";
+   if(!isUuid(item.group_id))return actorId?"/sns/?profile="+encodeURIComponent(actorId):"";
    const params=new URLSearchParams({group:item.group_id});
    if(isUuid(item.message_id))params.set("message",item.message_id);
    if(isUuid(item.id))params.set("notification",item.id);
-   return "/sns/v2/?"+params.toString();
+   return "/sns/?"+params.toString();
   }
-  if(item.type==="like"||item.type==="reply")return isUuid(item.id)?"/sns/v2/?notice="+encodeURIComponent(item.id):"";
-  return actorId?"/sns/v2/?profile="+encodeURIComponent(actorId):"";
+  if(item.type==="like"||item.type==="reply")return isUuid(item.id)?"/sns/?notice="+encodeURIComponent(item.id):"";
+  return actorId?"/sns/?profile="+encodeURIComponent(actorId):"";
  }
  if(item.kind==="reply")return "/request/";
  if(item.kind==="points")return "/games/store/";

@@ -1,13 +1,10 @@
-/* KURO SNS — unified stylesheet
-   PC and mobile share one file. Page-specific rules are scoped to
-   html.kuro-sns-pc or html.kuro-sns-mobile.
-   Keep global site styles in /site.css and shared profile styles in /kuro-profile.css.
+/* KURO SNS Mobile stylesheet
+   Independent platform-specific stylesheet. Original cascade order preserved.
 */
 
-/* ==========================================================================
-   Shared foundation and visual system
-   ========================================================================== */
-
+/* --------------------------------------------------------------------------
+   style-block-1
+   -------------------------------------------------------------------------- */
 body {
             font-family: 'Inter', sans-serif;
         }
@@ -229,6 +226,9 @@ body {
         #postFeed .kuro-comment-thread > .flex { border-radius: .75rem; }
         #postFeed .kuro-comment-thread > div > div > p { line-height: 1.55; }
 
+/* --------------------------------------------------------------------------
+   kuro-visual-refresh
+   -------------------------------------------------------------------------- */
 :root {
             color-scheme: dark;
             --kuro-bg: #0b0b0e;
@@ -440,6 +440,9 @@ body {
             #kuroBottomNav [data-tab] { border-radius: 13px !important; }
         }
 
+/* --------------------------------------------------------------------------
+   kuro-x-inspired-layout
+   -------------------------------------------------------------------------- */
 body { background:#000 !important; color:#e7e9ea !important; }
         header.sticky { background:rgba(0,0,0,.94) !important; border-bottom:1px solid #2f3336 !important; box-shadow:none !important; }
         header.sticky > div { min-height:4rem !important; }
@@ -467,12 +470,11 @@ body { background:#000 !important; color:#e7e9ea !important; }
         #kuroBottomNav { background:rgba(0,0,0,.96) !important; border-top:1px solid #2f3336 !important; box-shadow:none !important; padding-bottom:env(safe-area-inset-bottom) !important; }
         #kuroBottomNav > div { max-width:680px !important; padding:.25rem .4rem .35rem !important; gap:.1rem; }
         #kuroBottomNav [data-tab] { min-height:52px !important; color:#e7e9ea !important; border-radius:999px !important; }
-        html.kuro-sns-pc #kuroBottomNav [data-tab] span { display:none !important; }
-        html.kuro-sns-mobile #kuroBottomNav [data-tab]:not([data-tab="profile"]) span { display:none !important; }
+        #kuroBottomNav [data-tab]:not([data-tab="profile"]) span { display:none !important; }
         #kuroBottomNav [data-tab] .kuro-tab-icon { font-size:1.35rem !important; color:#e7e9ea !important; }
         #kuroBottomNav [data-tab][aria-current="page"] { background:transparent !important; }
         #kuroBottomNav [data-tab][aria-current="page"] .kuro-tab-icon { color:#fff !important; }
-        html.kuro-sns-pc #kuroBottomNav [data-tab="profile"] { display:none !important; }
+        /* profile tab is intentionally visible on mobile */
         #submitModal, #authModal, #profileModal, #notificationsModal, #followListModal, #publicProfileModal, #chatModal { background:rgba(0,0,0,.78) !important; }
         #submitModal > div, #authModal > div, #profileModal > div, #notificationsModal > section, #followListModal > section, #publicProfileModal > section, #chatModal > section { background:#000 !important; border:1px solid #2f3336 !important; border-radius:18px !important; }
         #chatModal #chatListPanel, #chatModal #chatConversationPanel { background:#000 !important; }
@@ -490,13 +492,15 @@ body { background:#000 !important; color:#e7e9ea !important; }
             #kuroComposeFloat { width:58px; height:58px; right:1rem; bottom:calc(5.3rem + env(safe-area-inset-bottom)); }
         }
 
+/* --------------------------------------------------------------------------
+   kuro-header-profile-refinement
+   -------------------------------------------------------------------------- */
 #kuroTopHeader { transition:transform .2s ease,opacity .2s ease; }
         #kuroTopHeader.kuro-header-scrolled { transform:translateY(-105%); opacity:0; pointer-events:none; }
         #kuroHeaderAvatarButton { display:inline-flex !important; }
         #kuroBottomNav [data-tab="profile"] { display:flex !important; }
         #kuroBottomNav [data-tab] span { display:none !important; }
-        html.kuro-sns-pc #kuroBottomNav > div { grid-template-columns:repeat(5,minmax(0,1fr)) !important; }
-        html.kuro-sns-mobile #kuroBottomNav > div { grid-template-columns:repeat(4,minmax(0,1fr)) !important; }
+        #kuroBottomNav > div { grid-template-columns:repeat(4,minmax(0,1fr)) !important; }
         #kuroBottomNav [data-tab] { min-height:56px !important; }
         #kuroBottomNav [data-tab] .kuro-tab-icon { font-size:1.45rem !important; }
         #kuroBottomNav [data-tab][aria-current="page"] { background:transparent !important; }
@@ -506,6 +510,9 @@ body { background:#000 !important; color:#e7e9ea !important; }
             #kuroHeaderAvatarButton { width:34px !important;height:34px !important; }
         }
 
+/* --------------------------------------------------------------------------
+   ios-safari-input-zoom-fix
+   -------------------------------------------------------------------------- */
 /* iOS Safari may zoom on focus if any form control computes below 16px. */
         @media screen and (max-width: 768px) {
             html body input,
@@ -517,11 +524,17 @@ body { background:#000 !important; color:#e7e9ea !important; }
             }
         }
 
+/* --------------------------------------------------------------------------
+   kuro-cloudflare-version-button-style
+   -------------------------------------------------------------------------- */
 .kuro-version-link{display:inline-flex!important;align-items:center;justify-content:center;gap:7px;padding:9px 14px!important;border:1px solid #67b8e8!important;border-radius:999px!important;background:linear-gradient(135deg,#12324a,#075985)!important;color:#fff!important;font-size:12px!important;font-weight:900!important;letter-spacing:.01em;white-space:nowrap;text-decoration:none!important;box-shadow:0 4px 16px rgba(14,165,233,.18);transition:transform .18s ease,box-shadow .18s ease,background .18s ease}
 .kuro-version-link:hover{transform:translateY(-1px);box-shadow:0 7px 20px rgba(14,165,233,.28);background:linear-gradient(135deg,#164e70,#0369a1)!important}
 .kuro-version-label{display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;border-radius:5px;background:#bae6fd;color:#082f49;font-size:9px;font-weight:950;letter-spacing:.08em}
 @media(max-width:760px){.kuro-version-link{padding:8px 11px!important;font-size:11px!important}}
 
+/* --------------------------------------------------------------------------
+   kuro-cloudflare-version-style
+   -------------------------------------------------------------------------- */
 .kuro-cloudflare-status-panel{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:980px;margin:16px auto 0;padding:11px 15px;border:1px solid #334155;border-radius:13px;background:#101820;color:#dbeafe;font-size:12px}
 .kuro-cloudflare-status-panel .kuro-cloudflare-status-main{display:flex;align-items:center;gap:9px;min-width:0}
 .kuro-cloudflare-status-panel #kuroCloudflareStatusText{color:#aebed0}
@@ -532,6 +545,9 @@ body { background:#000 !important; color:#e7e9ea !important; }
 .kuro-cloudflare-status-panel a{flex:none;color:#bae6fd;text-decoration:underline;text-underline-offset:3px;font-weight:800}
 @media(max-width:640px){.kuro-cloudflare-status-panel{margin:10px 12px 0;align-items:flex-start;font-size:11px}.kuro-cloudflare-status-panel .kuro-cloudflare-status-main{align-items:flex-start}.kuro-cloudflare-status-panel a{white-space:nowrap}}
 
+/* --------------------------------------------------------------------------
+   kuro-responsive-device-layout
+   -------------------------------------------------------------------------- */
 /* KURO SNS responsive layout: adapt automatically to the available screen width. */
   @media (min-width: 900px) {
     body.kuro-page { padding-bottom: 24px !important; }
@@ -597,6 +613,9 @@ body { background:#000 !important; color:#e7e9ea !important; }
     #chatModal > section { width: 100% !important; max-width: 720px !important; height: min(88dvh, 820px) !important; border-radius: 18px !important; }
   }
 
+/* --------------------------------------------------------------------------
+   kuro-desktop-app-only
+   -------------------------------------------------------------------------- */
 @media (min-width:900px) {
   html,body.kuro-page{width:100%;height:100%;min-height:100%;overflow:hidden!important}
   body.kuro-page{padding:0!important;margin:0!important}
@@ -639,6 +658,9 @@ body { background:#000 !important; color:#e7e9ea !important; }
 }
 @media(max-width:899px){#kuroDesktopVersionSwitch{display:none!important}}
 
+/* --------------------------------------------------------------------------
+   kuro-public-chat-fullscreen
+   -------------------------------------------------------------------------- */
 #chatModal:not(.hidden){
     position:fixed!important;inset:0!important;z-index:9999!important;
     display:flex!important;align-items:stretch!important;justify-content:stretch!important;
@@ -669,6 +691,9 @@ body { background:#000 !important; color:#e7e9ea !important; }
     #chatModal #publicChatNickname{grid-column:1/-1!important}
   }
 
+/* --------------------------------------------------------------------------
+   kuro-chat-line-theme
+   -------------------------------------------------------------------------- */
 #chatModal #publicChatMessages{display:flex!important;flex-direction:column!important;gap:12px!important;border:0!important;border-radius:0!important;background:transparent!important;padding:12px clamp(12px,3vw,42px)!important}
   #chatModal .kuro-chat-row{display:flex;width:100%;margin:0!important;padding:0!important;border:0!important;background:transparent!important}
   #chatModal .kuro-chat-row.is-mine{justify-content:flex-end}
@@ -702,6 +727,9 @@ body { background:#000 !important; color:#e7e9ea !important; }
   #chatModal[data-chat-theme="light"] header button{border-color:#d1d5db!important;color:#374151!important}
   @media(max-width:640px){#chatModal .kuro-chat-bubble-wrap{max-width:88%}#chatModal #publicChatMessages{padding:10px 8px!important}}
 
+/* --------------------------------------------------------------------------
+   kuro-chat-theme-complete
+   -------------------------------------------------------------------------- */
 #chatModal{color-scheme:dark}
   #chatModal[data-chat-theme="dark"]{color-scheme:dark!important;background:#0b0b0e!important;color:#f5f5f7!important}
   #chatModal[data-chat-theme="dark"]>section,
@@ -746,177 +774,29 @@ body { background:#000 !important; color:#e7e9ea !important; }
   #chatModal[data-chat-theme="light"] #publicChatThemeSelect option{background:#fff!important;color:#20212a!important}
   @media(prefers-reduced-motion:no-preference){#chatModal[data-chat-theme] *{transition:background-color .16s ease,color .16s ease,border-color .16s ease}}
 
+/* --------------------------------------------------------------------------
+   kuro-cloudflare-layout-final
+   -------------------------------------------------------------------------- */
+/* Mobile-only shell: full-width document flow and bottom navigation. */
+html,body.kuro-page{width:100%!important;min-width:0!important;max-width:100%!important;height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important}
+body.kuro-page{margin:0!important;padding:0 0 calc(66px + env(safe-area-inset-bottom))!important}
+body.kuro-page>.kuro-global-header{display:block!important}
+#kuroDesktopVersionSwitch{display:none!important}
+#kuroBottomNav{position:fixed!important;top:auto!important;right:0!important;bottom:0!important;left:0!important;display:flex!important;flex-direction:row!important;width:100%!important;min-width:0!important;height:calc(62px + env(safe-area-inset-bottom))!important;max-height:none!important;margin:0!important;padding:0 8px env(safe-area-inset-bottom)!important;transform:none!important;border:0!important;border-top:1px solid #2f3336!important;border-radius:0!important;background:#000!important;box-shadow:none!important;z-index:300!important}
+#kuroBottomNav>div{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;width:100%!important;max-width:none!important;margin:0!important;padding:3px 0 0!important;gap:0!important}
+#kuroBottomNav [data-tab]{display:flex!important;width:100%!important;min-width:0!important;height:52px!important;min-height:52px!important;margin:0!important;padding:0!important;align-items:center!important;justify-content:center!important}
+#kuroBottomNav [data-tab]:not([data-tab="profile"]) span{display:none!important}
+#kuroBottomNav .kuro-tab-icon,#kuroBottomNav [data-tab] i{font-size:19px!important}
+#homeFeedView,#myProfileView{position:relative!important;inset:auto!important;display:block!important;width:100%!important;min-width:0!important;max-width:none!important;height:auto!important;min-height:0!important;max-height:none!important;margin:0!important;padding:14px 0 28px!important;overflow:visible!important;box-sizing:border-box!important}
+#homeFeedView>.mb-6{width:100%!important;max-width:none!important;margin:0!important;padding:0 14px 10px!important;box-sizing:border-box!important}
+#homeFeedView>.mb-6>div,#postSearchInput,#postFeed,#postFeed>*,#postFeed [data-post-card]{width:100%!important;min-width:0!important;max-width:none!important;box-sizing:border-box!important}
+#postFeed [data-post-card]{padding:16px 14px!important;border-radius:0!important;box-shadow:none!important;animation:none!important}
+#kuroComposeFloat{right:16px!important;bottom:calc(4.6rem + env(safe-area-inset-bottom))!important;width:52px!important;height:52px!important;font-size:18px!important}
+#homeFeedView.hidden,#myProfileView.hidden{display:none!important}
 
-/* ==========================================================================
-   PC and mobile page shells
-   ========================================================================== */
-
-/* PC: fixed left navigation rail and desktop content shell. */
-/* PC layout: fixed navigation rail and an independent, responsive content area. */
-@media (min-width:768px) {html.kuro-sns-pc, html.kuro-sns-pc body.kuro-page{
-    width:100% !important;
-    min-width:0 !important;
-    max-width:100% !important;
-    height:100% !important;
-    min-height:100% !important;
-    margin:0 !important;
-    padding:0 !important;
-    overflow:hidden !important;
-    background:#000 !important;
-  }html.kuro-sns-pc body.kuro-page{ display:block !important; position:relative !important; }html.kuro-sns-pc body.kuro-page > .kuro-global-header, html.kuro-sns-pc body.kuro-page > #kuroCloudflareStatusPanel{ display:none !important; }html.kuro-sns-pc body.kuro-page #kuroBottomNav{
-    display:flex !important;
-    position:fixed !important;
-    inset:0 auto 0 0 !important;
-    z-index:300 !important;
-    width:88px !important;
-    min-width:88px !important;
-    max-width:88px !important;
-    height:100vh !important;
-    height:100dvh !important;
-    margin:0 !important;
-    padding:24px 8px 16px !important;
-    box-sizing:border-box !important;
-    flex-direction:column !important;
-    align-items:center !important;
-    justify-content:flex-start !important;
-    gap:0 !important;
-    overflow-x:hidden !important;
-    overflow-y:auto !important;
-    overscroll-behavior:contain !important;
-    border:0 !important;
-    border-right:1px solid #2f3336 !important;
-    border-radius:0 !important;
-    background:#000 !important;
-    box-shadow:none !important;
-    transform:none !important;
-  }html.kuro-sns-pc body.kuro-page #kuroBottomNav > div{
-    display:flex !important;
-    flex:0 0 auto !important;
-    width:100% !important;
-    max-width:none !important;
-    margin:0 !important;
-    padding:0 !important;
-    flex-direction:column !important;
-    align-items:center !important;
-    justify-content:flex-start !important;
-    gap:8px !important;
-  }html.kuro-sns-pc body.kuro-page #kuroBottomNav [data-tab]{
-    display:flex !important;
-    flex:0 0 48px !important;
-    width:48px !important;
-    min-width:48px !important;
-    height:48px !important;
-    min-height:48px !important;
-    margin:0 !important;
-    padding:0 !important;
-    align-items:center !important;
-    justify-content:center !important;
-    gap:0 !important;
-    border:0 !important;
-    border-radius:50% !important;
-    background:transparent !important;
-    color:#e7e9ea !important;
-    transform:none !important;
-  }html.kuro-sns-pc body.kuro-page #kuroBottomNav [data-tab] span{ display:none !important; }html.kuro-sns-pc body.kuro-page #kuroBottomNav [data-tab] i{
-    display:inline-block !important;
-    width:auto !important;
-    height:auto !important;
-    font-size:19px !important;
-    line-height:1 !important;
-    color:inherit !important;
-  }html.kuro-sns-pc body.kuro-page #kuroBottomNav [data-tab]:hover{ background:#181818 !important; }html.kuro-sns-pc body.kuro-page #kuroBottomNav [data-tab][aria-current=page]{
-    background:#16181c !important;
-    color:#fff !important;
-  }html.kuro-sns-pc body.kuro-page #homeFeedView, html.kuro-sns-pc body.kuro-page #myProfileView{
-    display:block !important;
-    position:fixed !important;
-    inset:0 0 0 88px !important;
-    z-index:1 !important;
-    width:auto !important;
-    min-width:0 !important;
-    max-width:none !important;
-    height:100vh !important;
-    height:100dvh !important;
-    min-height:0 !important;
-    max-height:100dvh !important;
-    margin:0 !important;
-    padding:64px clamp(16px,3vw,40px) 36px !important;
-    box-sizing:border-box !important;
-    overflow-x:hidden !important;
-    overflow-y:auto !important;
-    overscroll-behavior:contain !important;
-    scrollbar-width:thin !important;
-    border:0 !important;
-    border-left:0 !important;
-    border-radius:0 !important;
-    background:#000 !important;
-    transform:none !important;
-  }html.kuro-sns-pc body.kuro-page #homeFeedView.hidden, html.kuro-sns-pc body.kuro-page #myProfileView.hidden{ display:none !important; }html.kuro-sns-pc /* Size content columns without forcing profile flex/grid rows into block layout. */
-  body.kuro-page #homeFeedView > .mb-6, html.kuro-sns-pc body.kuro-page #homeFeedView > .flex.justify-between.items-center, html.kuro-sns-pc body.kuro-page #myProfileView > *{
-    width:100% !important;
-    min-width:0 !important;
-    max-width:820px !important;
-    margin-left:auto !important;
-    margin-right:auto !important;
-    box-sizing:border-box !important;
-  }html.kuro-sns-pc body.kuro-page #homeFeedView > .mb-6{
-    padding:12px 0 8px !important;
-    margin-bottom:20px !important;
-  }html.kuro-sns-pc body.kuro-page #homeFeedView > .mb-6 > div{
-    width:100% !important;
-    min-width:0 !important;
-    max-width:none !important;
-    margin:0 !important;
-  }html.kuro-sns-pc body.kuro-page #homeFeedView > .flex.justify-between.items-center{
-    display:flex !important;
-    align-items:center !important;
-    justify-content:space-between !important;
-    gap:12px !important;
-    padding:0 !important;
-    margin-bottom:16px !important;
-  }html.kuro-sns-pc #postSearchInput{
-    display:block !important;
-    width:100% !important;
-    min-width:0 !important;
-    max-width:none !important;
-    box-sizing:border-box !important;
-  }html.kuro-sns-pc #postFeed, html.kuro-sns-pc #postEmptyState{
-    display:block !important;
-    width:100% !important;
-    min-width:0 !important;
-    max-width:820px !important;
-    margin-left:auto !important;
-    margin-right:auto !important;
-    padding:0 !important;
-    box-sizing:border-box !important;
-  }html.kuro-sns-pc #postFeed > *, html.kuro-sns-pc #postFeed [data-post-card]{
-    width:100% !important;
-    min-width:0 !important;
-    max-width:100% !important;
-    box-sizing:border-box !important;
-  }html.kuro-sns-pc #kuroComposeFloat{
-    position:fixed !important;
-    right:24px !important;
-    bottom:24px !important;
-    z-index:250 !important;
-  }html.kuro-sns-pc #kuroDesktopVersionSwitch{
-    display:flex !important;
-    position:fixed !important;
-    top:12px !important;
-    right:16px !important;
-    z-index:400 !important;
-  }
-}
-
-/* Mobile: full-width document flow and bottom navigation. */
-html.kuro-sns-mobile /* Mobile-only shell: full-width document flow and bottom navigation. */
-html, html.kuro-sns-mobile body.kuro-page{width:100%!important;min-width:0!important;max-width:100%!important;height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important}html.kuro-sns-mobile body.kuro-page{margin:0!important;padding:0 0 calc(66px + env(safe-area-inset-bottom))!important}html.kuro-sns-mobile body.kuro-page>.kuro-global-header{display:block!important}html.kuro-sns-mobile #kuroDesktopVersionSwitch{display:none!important}html.kuro-sns-mobile #kuroBottomNav{position:fixed!important;top:auto!important;right:0!important;bottom:0!important;left:0!important;display:flex!important;flex-direction:row!important;width:100%!important;min-width:0!important;height:calc(62px + env(safe-area-inset-bottom))!important;max-height:none!important;margin:0!important;padding:0 8px env(safe-area-inset-bottom)!important;transform:none!important;border:0!important;border-top:1px solid #2f3336!important;border-radius:0!important;background:#000!important;box-shadow:none!important;z-index:300!important}html.kuro-sns-mobile #kuroBottomNav>div{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;width:100%!important;max-width:none!important;margin:0!important;padding:3px 0 0!important;gap:0!important}html.kuro-sns-mobile #kuroBottomNav [data-tab]{display:flex!important;width:100%!important;min-width:0!important;height:52px!important;min-height:52px!important;margin:0!important;padding:0!important;align-items:center!important;justify-content:center!important}html.kuro-sns-mobile #kuroBottomNav [data-tab]:not([data-tab="profile"]) span{display:none!important}html.kuro-sns-mobile #kuroBottomNav .kuro-tab-icon, html.kuro-sns-mobile #kuroBottomNav [data-tab] i{font-size:19px!important}html.kuro-sns-mobile #homeFeedView, html.kuro-sns-mobile #myProfileView{position:relative!important;inset:auto!important;display:block!important;width:100%!important;min-width:0!important;max-width:none!important;height:auto!important;min-height:0!important;max-height:none!important;margin:0!important;padding:14px 0 28px!important;overflow:visible!important;box-sizing:border-box!important}html.kuro-sns-mobile #homeFeedView>.mb-6{width:100%!important;max-width:none!important;margin:0!important;padding:0 14px 10px!important;box-sizing:border-box!important}html.kuro-sns-mobile #homeFeedView>.mb-6>div, html.kuro-sns-mobile #postSearchInput, html.kuro-sns-mobile #postFeed, html.kuro-sns-mobile #postFeed>*, html.kuro-sns-mobile #postFeed [data-post-card]{width:100%!important;min-width:0!important;max-width:none!important;box-sizing:border-box!important}html.kuro-sns-mobile #postFeed [data-post-card]{padding:16px 14px!important;border-radius:0!important;box-shadow:none!important;animation:none!important}html.kuro-sns-mobile #kuroComposeFloat{right:16px!important;bottom:calc(4.6rem + env(safe-area-inset-bottom))!important;width:52px!important;height:52px!important;font-size:18px!important}html.kuro-sns-mobile #homeFeedView.hidden, html.kuro-sns-mobile #myProfileView.hidden{display:none!important}
-
-
-/* ==========================================================================
-   Avatars, profile, and responsive navigation
-   ========================================================================== */
-
+/* --------------------------------------------------------------------------
+   kuro-default-avatar-style
+   -------------------------------------------------------------------------- */
 /* Keep the original gradient on visible fallback icons only. Uploaded profile images get a neutral backing so transparent pixels never reveal the gradient. */
 .rounded-full:has(.fa-user:not(.hidden)),
 .rounded-full:has([id*="AvatarPlaceholder"]:not(.hidden)),
@@ -936,6 +816,9 @@ html, html.kuro-sns-mobile body.kuro-page{width:100%!important;min-width:0!impor
  text-shadow:0 1px 4px rgba(24,24,80,.25) !important;
 }
 
+/* --------------------------------------------------------------------------
+   kuro-profile-avatar-transparency-fix
+   -------------------------------------------------------------------------- */
 /* Profile-only fix: uploaded transparent PNG pixels must reveal a neutral backing, not the fallback gradient. */
 .rounded-full:has(> img#publicProfileAvatar:not(.hidden)),
 .rounded-full:has(> img#myProfileAvatar:not(.hidden)),
@@ -952,6 +835,9 @@ img#profileAvatarPreview:not(.hidden) {
   object-fit: cover !important;
 }
 
+/* --------------------------------------------------------------------------
+   kuro-avatar-position-fix
+   -------------------------------------------------------------------------- */
 /* Correct the visible left-shift by nudging avatar image content right */
 #myProfileAvatar, #publicProfileAvatar, #profileAvatarPreview {
  object-position: 50% 50% !important;
@@ -962,37 +848,55 @@ img#profileAvatarPreview:not(.hidden) {
  transform: translateX(2px) !important;
 }
 
-/* Mobile profile-tab visibility and label repair. */
+/* --------------------------------------------------------------------------
+   kuro-mobile-profile-visibility-fix
+   -------------------------------------------------------------------------- */
 /* Keep the My Page control visible and legible even when icon-font CSS is blocked. */
-@media (max-width: 767px) {html.kuro-sns-mobile body.kuro-page{ padding-bottom:calc(72px + env(safe-area-inset-bottom)) !important; }html.kuro-sns-mobile #kuroBottomNav{
+@media (max-width: 767px) {
+  body.kuro-page { padding-bottom:calc(72px + env(safe-area-inset-bottom)) !important; }
+  #kuroBottomNav {
     position:fixed !important; top:auto !important; right:0 !important; bottom:0 !important; left:0 !important;
     display:flex !important; width:100% !important; height:calc(64px + env(safe-area-inset-bottom)) !important;
     margin:0 !important; padding:0 8px env(safe-area-inset-bottom) !important; transform:none !important;
     z-index:999 !important; box-sizing:border-box !important;
-  }html.kuro-sns-mobile #kuroBottomNav > div{
+  }
+  #kuroBottomNav > div {
     display:grid !important; grid-template-columns:repeat(4,minmax(0,1fr)) !important;
     width:100% !important; max-width:none !important; margin:0 !important; padding:3px 0 0 !important; gap:0 !important;
-  }html.kuro-sns-mobile #kuroBottomNav [data-tab="profile"]{
+  }
+  #kuroBottomNav [data-tab="profile"] {
     display:flex !important; visibility:visible !important; opacity:1 !important; pointer-events:auto !important;
     position:relative !important; grid-column:4 !important; order:4 !important;
     flex-direction:column !important; align-items:center !important; justify-content:center !important;
     gap:3px !important; width:100% !important; min-width:0 !important; height:54px !important; min-height:54px !important;
     margin:0 !important; padding:0 !important; color:#e7e9ea !important; background:transparent !important;
-  }html.kuro-sns-mobile #kuroBottomNav [data-tab="profile"] .kuro-profile-tab-icon, html.kuro-sns-mobile #kuroBottomNav [data-tab="profile"] .kuro-profile-tab-avatar-image{
+  }
+  #kuroBottomNav [data-tab="profile"] .kuro-profile-tab-icon,
+  #kuroBottomNav [data-tab="profile"] .kuro-profile-tab-avatar-image {
     display:block !important; width:20px !important; height:20px !important; flex:none !important;
-  }html.kuro-sns-mobile #kuroBottomNav [data-tab="profile"] .kuro-profile-tab-avatar-image{ border-radius:50%; object-fit:cover; overflow:hidden; }html.kuro-sns-mobile #kuroBottomNav [data-tab="profile"] .kuro-profile-tab-avatar-image.hidden{ display:none !important; }html.kuro-sns-mobile #kuroBottomNav [data-tab="profile"] .kuro-profile-tab-icon{
+  }
+  #kuroBottomNav [data-tab="profile"] .kuro-profile-tab-avatar-image { border-radius:50%; object-fit:cover; overflow:hidden; }
+  #kuroBottomNav [data-tab="profile"] .kuro-profile-tab-avatar-image.hidden { display:none !important; }
+  #kuroBottomNav [data-tab="profile"] .kuro-profile-tab-icon {
     fill:none !important; stroke:currentColor !important; stroke-width:1.8 !important;
     stroke-linecap:round !important; stroke-linejoin:round !important;
-  }html.kuro-sns-mobile #kuroBottomNav [data-tab="profile"] .kuro-tab-label{
+  }
+  #kuroBottomNav [data-tab="profile"] .kuro-tab-label {
     display:block !important; visibility:visible !important; opacity:1 !important;
     color:inherit !important; font-family:system-ui,sans-serif !important; font-size:10px !important;
     font-weight:600 !important; line-height:1.2 !important; white-space:nowrap !important;
   }
 }
 
+/* --------------------------------------------------------------------------
+   kuro-chat-peer-profile-button-style
+   -------------------------------------------------------------------------- */
 .kuro-chat-peer-profile:not(.hidden){display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:40px}
 @media(max-width:640px){.kuro-chat-peer-profile:not(.hidden){width:42px;height:42px;padding:0;flex:0 0 42px}.kuro-chat-peer-profile:not(.hidden) span{display:none}}
 
+/* --------------------------------------------------------------------------
+   kuro-sns-equipped-frame-style
+   -------------------------------------------------------------------------- */
 .kuro-sns-avatar-frame-host{position:relative!important;display:inline-flex!important;align-items:center;justify-content:center;overflow:visible!important;isolation:isolate;flex-shrink:0}
 .kuro-sns-avatar-frame-host>img{border-radius:50%}
 .kuro-sns-avatar-frame-host .kuro-sns-avatar-frame{position:absolute;inset:-5px;z-index:12;display:block;pointer-events:none;background-position:center;background-repeat:no-repeat;background-size:100% 100%}
@@ -1012,11 +916,9 @@ img#profileAvatarPreview:not(.hidden) {
 #profileAvatarPreviewFrameHost .kuro-sns-avatar-preview-inner{width:6rem;height:6rem;overflow:hidden;border-radius:50%;border:1px solid #374151;background:#030712;display:flex;align-items:center;justify-content:center}
 #profileAvatarPreviewFrameHost .kuro-sns-avatar-preview-inner>img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 
-
-/* ==========================================================================
-   Authentication and chat
-   ========================================================================== */
-
+/* --------------------------------------------------------------------------
+   kuro-sns-auth-viewport-layout-v1
+   -------------------------------------------------------------------------- */
 /* Separate the fixed title bar from the scrollable authentication form. */
 #authModal {
   box-sizing: border-box;
@@ -1070,8 +972,14 @@ img#profileAvatarPreview:not(.hidden) {
   #authModal #authForm { padding-left: 16px !important; padding-right: 16px !important; }
 }
 
+/* --------------------------------------------------------------------------
+   style-block-21
+   -------------------------------------------------------------------------- */
 body:has(#chatModal:not(.hidden)) #kuroComposeFloat { display:none !important; }
 
+/* --------------------------------------------------------------------------
+   kuro-chat-layout-restored
+   -------------------------------------------------------------------------- */
 #chatModal .chat-layout-grid{display:flex;flex:1 1 auto;min-height:0;overflow:hidden}
       #chatModal #chatListPanel{flex:0 0 340px;width:340px;min-width:0;overflow:hidden;background:#111116}
       #chatModal #chatConversationPanel{display:flex;flex:1 1 auto;min-width:0;min-height:0;background:#111116}
@@ -1088,6 +996,9 @@ body:has(#chatModal:not(.hidden)) #kuroComposeFloat { display:none !important; }
         #chatModal #chatMessages{flex:1 1 auto;min-height:0;overflow-y:auto}
       }
 
+/* --------------------------------------------------------------------------
+   kuro-public-chat-fullscreen-fix
+   -------------------------------------------------------------------------- */
 /* 公開チャット：入力欄を画面下中央の1段レイアウトに統一 */
   #chatModal:not(.hidden){position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;display:flex!important;align-items:stretch!important;justify-content:stretch!important;overflow:hidden!important;border:0!important;border-radius:0!important;z-index:9999!important}
   #chatModal:not(.hidden)>section{position:relative!important;display:flex!important;flex-direction:column!important;flex:1 1 auto!important;width:100%!important;max-width:none!important;height:100%!important;min-height:0!important;max-height:none!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden!important}
@@ -1110,6 +1021,9 @@ body:has(#chatModal:not(.hidden)) #kuroComposeFloat { display:none !important; }
     #chatModal #publicChatSendButton{height:42px!important;min-height:42px!important;min-width:58px!important;padding:0 9px!important;font-size:12px!important}
   }
 
+/* --------------------------------------------------------------------------
+   kuro-chat-standalone-mode
+   -------------------------------------------------------------------------- */
 body.kuro-chat-standalone>header,
   body.kuro-chat-standalone>#kuroCloudflareStatusPanel,
   body.kuro-chat-standalone>#homeFeedView,
@@ -1117,82 +1031,12 @@ body.kuro-chat-standalone>header,
   body.kuro-chat-standalone>footer{display:none!important}
   body.kuro-chat-standalone{margin:0!important;padding:0!important;overflow:hidden!important;background:#f4f5f8!important}
 
-
-/* ==========================================================================
-   Desktop navigation refinements and shared post fixes
-   ========================================================================== */
-
-/* Desktop icon sizing. */
-@media (min-width:768px) {html.kuro-sns-pc body.kuro-page #kuroBottomNav [data-tab] .kuro-tab-icon, html.kuro-sns-pc body.kuro-page #kuroBottomNav [data-tab] .kuro-tab-icon::before, html.kuro-sns-pc body.kuro-page #kuroBottomNav [data-tab] > i{
-    display:inline-block !important;
-    box-sizing:content-box !important;
-    width:auto !important;
-    min-width:0 !important;
-    max-width:none !important;
-    height:auto !important;
-    min-height:0 !important;
-    max-height:none !important;
-    font-size:16px !important;
-    line-height:16px !important;
-    transform:none !important;
-  }html.kuro-sns-pc body.kuro-page #kuroBottomNav [data-tab]{
-    width:48px !important;
-    min-width:48px !important;
-    max-width:48px !important;
-    height:48px !important;
-    min-height:48px !important;
-    max-height:48px !important;
-    flex:0 0 48px !important;
-    padding:0 !important;
-    overflow:hidden !important;
-  }
-}
-
+/* --------------------------------------------------------------------------
+   kuro-post-bottom-line-fix
+   -------------------------------------------------------------------------- */
 /* 投稿カードの下線だけを明示的に無効化（他のUIの区切り線は維持） */
 body.kuro-page #postFeed article[data-post-card] {
   border-bottom: 0 !important;
   border-block-end: 0 !important;
   box-shadow: none !important;
-}
-
-/* Desktop icon visibility. */
-/* Fix invisible black navigation glyphs: keep rail unchanged, force visible icon color. */
-@media (min-width:768px) {html.kuro-sns-pc body.kuro-page #kuroBottomNav [data-tab] .kuro-tab-icon, html.kuro-sns-pc body.kuro-page #kuroBottomNav [data-tab] .kuro-tab-icon::before, html.kuro-sns-pc body.kuro-page #kuroBottomNav [data-tab] > i, html.kuro-sns-pc body.kuro-page #kuroBottomNav [data-tab] svg{
-    color:#f4f4f5 !important;
-    fill:#f4f4f5 !important;
-    stroke:#f4f4f5 !important;
-    opacity:1 !important;
-    filter:none !important;
-  }html.kuro-sns-pc body.kuro-page #kuroBottomNav [data-tab][aria-current=page] .kuro-tab-icon, html.kuro-sns-pc body.kuro-page #kuroBottomNav [data-tab][aria-current=page] .kuro-tab-icon::before, html.kuro-sns-pc body.kuro-page #kuroBottomNav [data-tab][aria-current=page] > i, html.kuro-sns-pc body.kuro-page #kuroBottomNav [data-tab][aria-current=page] svg{ color:#a78bfa !important; fill:#a78bfa !important; stroke:#a78bfa !important; }
-}
-
-/* Desktop inline SVG navigation icons. */
-/* Use inline SVGs so the desktop navigation does not depend on an external icon font. */
-@media (min-width:768px) {html.kuro-sns-pc body.kuro-page #kuroBottomNav [data-tab] .kuro-inline-nav-svg{
-    display:block !important;
-    width:22px !important;
-    height:22px !important;
-    min-width:22px !important;
-    min-height:22px !important;
-    max-width:none !important;
-    max-height:none !important;
-    overflow:visible !important;
-    color:#f4f4f5 !important;
-    fill:none !important;
-    stroke:currentColor !important;
-    opacity:1 !important;
-    visibility:visible !important;
-    filter:none !important;
-    transform:none !important;
-    flex:0 0 22px !important;
-  }html.kuro-sns-pc body.kuro-page #kuroBottomNav [data-tab] .kuro-inline-nav-svg path, html.kuro-sns-pc body.kuro-page #kuroBottomNav [data-tab] .kuro-inline-nav-svg circle, html.kuro-sns-pc body.kuro-page #kuroBottomNav [data-tab] .kuro-inline-nav-svg line, html.kuro-sns-pc body.kuro-page #kuroBottomNav [data-tab] .kuro-inline-nav-svg polyline{
-    fill:none !important;
-    stroke:currentColor !important;
-    stroke-width:1.8 !important;
-    stroke-linecap:round !important;
-    stroke-linejoin:round !important;
-    vector-effect:non-scaling-stroke;
-  }html.kuro-sns-pc body.kuro-page #kuroBottomNav [data-tab][aria-current=page] .kuro-inline-nav-svg{
-    color:#a78bfa !important;
-  }
 }
