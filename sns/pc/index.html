@@ -2331,61 +2331,8 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
         }
 
         async function loadSocialData() {
-            const ids = textPosts.map(post => post.id).filter(Boolean);
-            if (!ids.length) return;
-            const user = currentUser?.id;
-            const [likesResult, repliesResult] = await Promise.all([
-                supabaseClient.from('post_likes').select('post_id, user_id').in('post_id', ids),
-                supabaseClient.from('post_replies').select('id, post_id, parent_reply_id, user_id, content, created_at, deleted_at').in('post_id', ids).order('created_at', {ascending: true})
-            ]);
-            if (likesResult.error) throw new Error('いいねの読み込みに失敗: ' + likesResult.error.message);
-            if (repliesResult.error) throw new Error('返信の読み込みに失敗: ' + repliesResult.error.message);
-            const likes = likesResult.data || [];
-            const replies = repliesResult.data || [];
-            const replyUserIds = [...new Set(replies.map(reply => reply.user_id).filter(Boolean))];
-            // 投稿一覧で取得済みのプロフィール情報も返信に再利用する。
-            // 自分の返信は currentUser をフォールバックにして、アイコンが欠けないようにする。
-            let replyProfiles = {};
-            textPosts.forEach(post => {
-                if (post.user_id && (post.avatar_url || post.username || post.display_name)) {
-                    replyProfiles[post.user_id] = {
-                        id: post.user_id,
-                        username: post.username || post.handle || '',
-                        display_name: post.display_name || post.author || '',
-                        avatar_url: post.avatar_url || ''
-                    };
-                }
-            });
-            if (currentUser?.id) {
-                replyProfiles[currentUser.id] = {
-                    id: currentUser.id,
-                    username: currentUser.handle || '',
-                    display_name: currentUser.name || '',
-                    avatar_url: currentUser.avatarUrl || ''
-                };
-            }
-            if (replyUserIds.length) {
-                const {data, error} = await supabaseClient.from('profiles').select('id, username, display_name, avatar_url').in('id', replyUserIds);
-                if (!error) (data || []).forEach(profile => {
-                    // DBの最新プロフィールを優先する。
-                    replyProfiles[profile.id] = profile;
-                });
-                else console.warn('KURO reply profiles could not be loaded:', error.message);
-            }
-            const repliesByPost = {};
-            replies.forEach(reply => {
-                const profile = replyProfiles[reply.user_id] || {};
-                (repliesByPost[reply.post_id] ||= []).push({
-                    ...reply,
-                    username: profile.username || '',
-                    display_name: profile.display_name || '',
-                    avatar_url: profile.avatar_url || ''
-                });
-            });
-            textPosts = textPosts.map(post => {
-                const postLikes = likes.filter(like => String(like.post_id) === String(post.id));
-                return {...post, like_count: postLikes.length, liked_by_me: !!user && postLikes.some(like => like.user_id === user), replies: repliesByPost[post.id] || []};
-            });
+            // Cloudflare D1のfeed APIが投稿・いいね・返信とプロフィールを一括で返します。
+            return true;
         }
 
         async function togglePostLike(postId, shouldLike) {
@@ -2393,33 +2340,25 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             const likedPost = textPosts.find(post => String(post.id) === String(postId));
             const previousLiked = !!likedPost?.liked_by_me;
             const previousCount = Number(likedPost?.like_count || 0);
+            const nextLiked = typeof shouldLike === 'boolean' ? shouldLike : !previousLiked;
             try {
-                const userId = currentUser.id;
-                if (shouldLike) {
-                    // Optimistic UI already updated; insert directly instead of waiting for a lookup.
-                    const {error} = await supabaseClient.from('post_likes').upsert(
-                        {post_id: postId, user_id: userId},
-                        {onConflict: 'post_id,user_id', ignoreDuplicates: true}
-                    );
-                    if (error) throw error;
-                    // Push通知は投稿者本人にだけ送る。Edge Function側でもいいねの存在を検証する。
-                    const likedPost = textPosts.find(post => String(post.id) === String(postId));
-                    if (likedPost && likedPost.user_id !== userId) {
-                        supabaseClient.functions.invoke('send-chat-push', {body:{type:'like',targetUserId:likedPost.user_id,postId}})
-                            .then(({error: pushError, data}) => { if (pushError) console.warn('KURO like push failed:', pushError); else if (data?.sent === 0) console.warn('KURO like push not delivered:', data); })
-                            .catch(pushError => console.warn('KURO like push invoke failed:', pushError));
-                    }
-                } else {
-                    const {error} = await supabaseClient.from('post_likes').delete()
-                        .eq('post_id', postId).eq('user_id', userId);
-                    if (error) throw error;
-                }
+                const result = await kuroSNSD1Request('like', { postId: String(postId), liked: nextLiked }, 'POST');
                 if (likedPost) {
-                    likedPost.liked_by_me = !!shouldLike;
-                    likedPost.like_count = Math.max(0, previousCount + (shouldLike ? 1 : -1));
+                    likedPost.liked_by_me = !!result.liked;
+                    likedPost.like_count = Number(result.like_count || 0);
+                }
+                const button = document.querySelector('#postFeed [data-like-post-id="' + CSS.escape(String(postId)) + '"]');
+                if (button) {
+                    button.setAttribute('aria-pressed', String(!!result.liked));
+                    button.classList.toggle('text-pink-400', !!result.liked);
+                    button.classList.toggle('text-gray-400', !result.liked);
+                    const icon = button.querySelector('i');
+                    const count = button.querySelector('span');
+                    if (icon) icon.className = (result.liked ? 'fa-solid' : 'fa-regular') + ' fa-heart mr-1';
+                    if (count) count.textContent = String(result.like_count || 0);
                 }
             } catch (error) {
-                console.error('KURO like error:', error);
+                console.error('KURO D1 like error:', error);
                 if (likedPost) {
                     likedPost.liked_by_me = previousLiked;
                     likedPost.like_count = previousCount;
@@ -2505,73 +2444,25 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 showToast('返信欄を確認できません。ページを更新してください。');
                 return;
             }
-            const content = (input?.value || '').trim();
-            if (!content) { showToast('返信を入力してね'); input?.focus(); return; }
+            const content = (input.value || '').trim();
+            if (!content) { showToast('返信を入力してね'); input.focus(); return; }
             if ([...content].length > 130) { showToast('返信は130文字以内にしてね'); return; }
+            const parentReplyId = String(input.dataset.parentReplyId || '').trim() || null;
+            if (parentReplyId && !card.querySelector(`[data-kuro-post-reply-id="${CSS.escape(parentReplyId)}"]`)) {
+                delete input.dataset.parentReplyId;
+                delete input.dataset.replyToHandle;
+                card.querySelector('[data-reply-target]')?.classList.add('hidden');
+                showToast('返信先のコメントが見つかりません。別のコメントを選んでください。');
+                return;
+            }
             try {
-                const {data: authData, error: authError} = await supabaseClient.auth.getUser();
-                if (authError) throw authError;
-                const user = authData?.user;
-                if (!user) throw new Error('ログイン状態を確認できません。再ログインしてください。');
-                const parentReplyId = String(input.dataset.parentReplyId || '').trim() || null;
-                if (parentReplyId) {
-                    const parentInThisPost = card?.querySelector(`[data-kuro-post-reply-id="${CSS.escape(parentReplyId)}"]`);
-                    if (!parentInThisPost) {
-                        delete input.dataset.parentReplyId;
-                        delete input.dataset.replyToHandle;
-                        card?.querySelector('[data-reply-target]')?.classList.add('hidden');
-                        showToast('返信先のコメントが見つかりません。別のコメントを選んでください。');
-                        return;
-                    }
-                }
-                // Confirm that the selected reply still belongs to this post before sending.
-                // The RPC repeats this check while holding a row lock to cover deletion races.
-                if (parentReplyId) {
-                    const {data: parentRow, error: parentLookupError} = await supabaseClient
-                        .from('post_replies')
-                        .select('id')
-                        .eq('id', parentReplyId)
-                        .eq('post_id', postId)
-                        .maybeSingle();
-                    if (parentLookupError) throw parentLookupError;
-                    if (!parentRow) {
-                        delete input.dataset.parentReplyId;
-                        delete input.dataset.replyToHandle;
-                        card.querySelector('[data-reply-target]')?.classList.add('hidden');
-                        showToast('返信先のコメントは削除されたか、別の投稿に属しています。返信先を選び直してください。');
-                        return;
-                    }
-                }
-                // Validate, lock the parent row and insert in one database transaction.
-                const {data: createdReplyId, error} = await supabaseClient.rpc('kuro_create_post_reply', {
-                    p_post_id: postId,
-                    p_content: content,
-                    p_parent_reply_id: parentReplyId
-                });
-                if (error) throw error;
-                if (!createdReplyId) throw new Error('返信IDを受け取れませんでした。投稿一覧を更新して確認してください。');
-
-                // The RPC returns the inserted UUID; read only that row, not the whole feed.
-                const {data: replyRow, error: replyReadError} = await supabaseClient
-                    .from('post_replies')
-                    .select('id, post_id, user_id, content, parent_reply_id, created_at')
-                    .eq('id', createdReplyId)
-                    .maybeSingle();
-                // RPC success is authoritative. If the follow-up SELECT is briefly unavailable,
-                // the returned UUID and submitted values are enough to render this committed reply.
-                if (replyReadError) console.warn('KURO reply row readback failed; using RPC result:', replyReadError);
-                const newReply = {
-                    ...(replyRow || {}),
-                    id: String(createdReplyId),
-                    post_id: expectedPostId,
-                    user_id: user.id,
-                    content: replyRow?.content ?? content,
-                    parent_reply_id: replyRow?.parent_reply_id ?? parentReplyId,
-                    created_at: replyRow?.created_at || new Date().toISOString(),
-                    username: currentUser.handle || '',
-                    display_name: currentUser.name || '',
-                    avatar_url: currentUser.avatarUrl || ''
-                };
+                const result = await kuroSNSD1Request('create-reply', {
+                    postId: expectedPostId,
+                    content,
+                    parentReplyId
+                }, 'POST');
+                const newReply = result.reply;
+                if (!newReply || !newReply.id) throw new Error('返信の保存結果を確認できませんでした。');
                 const postState = textPosts.find(post => String(post.id) === expectedPostId);
                 if (postState) {
                     const replies = Array.isArray(postState.replies) ? postState.replies : [];
@@ -2581,18 +2472,12 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     ? (postState?.replies || []).find(reply => String(reply.id) === parentReplyId)
                     : null;
                 const appended = appendLocalReplyToCard(card, newReply, parentReply);
-
-                if (input) {
-                    input.value = '';
-                    delete input.dataset.parentReplyId;
-                    delete input.dataset.replyToHandle;
-                }
+                input.value = '';
+                delete input.dataset.parentReplyId;
+                delete input.dataset.replyToHandle;
                 card.querySelector('[data-reply-target]')?.classList.add('hidden');
-                const panel = card.querySelector('[data-replies-panel]');
-                panel?.classList.remove('hidden');
+                card.querySelector('[data-replies-panel]')?.classList.remove('hidden');
                 card.querySelector('[data-reply-post-id]')?.setAttribute('aria-expanded', 'true');
-
-                // If local thread markup was unexpectedly absent, replace this one card only.
                 if (!appended && postState) {
                     const replacement = renderLocalPostCard(postState);
                     if (replacement) {
@@ -2601,19 +2486,18 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                         card.replaceWith(replacement);
                     }
                 }
-                const replyToggle = (appended ? card : document.querySelector('[data-post-card="' + CSS.escape(expectedPostId) + '"]'))?.querySelector('[data-reply-post-id]');
+                const liveCard = document.querySelector('[data-post-card="' + CSS.escape(expectedPostId) + '"]');
+                const replyToggle = liveCard?.querySelector('[data-reply-post-id]');
                 if (replyToggle && postState) {
                     replyToggle.innerHTML = '<i class="fa-regular fa-comment mr-1"></i>' + postState.replies.length + ' コメント';
                 }
                 showToast('返信を投稿したよ！');
             } catch (error) {
-                console.error('KURO reply error:', error);
-                if (error?.code === '23503' && input?.dataset.parentReplyId) {
+                console.error('KURO D1 reply error:', error);
+                if (parentReplyId && (error?.status === 409 || /返信先/.test(error?.message || ''))) {
                     delete input.dataset.parentReplyId;
                     delete input.dataset.replyToHandle;
-                    document.querySelector(`[data-post-card="${CSS.escape(String(postId))}"] [data-reply-target]`)?.classList.add('hidden');
-                    showToast(error?.message || '返信先のコメントが見つからないか、別の投稿に属しています。返信先を選び直してください。');
-                    return;
+                    card.querySelector('[data-reply-target]')?.classList.add('hidden');
                 }
                 showToast(error?.message || '返信に失敗しました。もう一度お試しください。');
             }
@@ -2720,53 +2604,68 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             counter.classList.toggle('text-gray-400', length <= 130);
         }
 
+        async function kuroSNSD1Request(action, payload = {}, method = 'GET') {
+            const headers = { accept: 'application/json' };
+            try {
+                const sessionResult = await supabaseClient.auth.getSession();
+                const token = sessionResult?.data?.session?.access_token;
+                if (token) headers.Authorization = 'Bearer ' + token;
+            } catch (_) {}
+            let url = '/api/kuro-d1/sns-posts';
+            const options = {
+                method,
+                credentials: 'same-origin',
+                cache: 'no-store',
+                headers
+            };
+            if (method === 'GET') {
+                const params = new URLSearchParams({ action: String(action || 'feed') });
+                Object.entries(payload || {}).forEach(([key, value]) => {
+                    if (value !== undefined && value !== null) params.set(key, String(value));
+                });
+                url += '?' + params.toString();
+            } else {
+                headers['Content-Type'] = 'application/json';
+                options.body = JSON.stringify({ ...(payload || {}), action: String(action || '') });
+            }
+            const response = await fetch(url, options);
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(result?.error || 'Cloudflare D1の処理に失敗しました。');
+            return result;
+        }
+
         let kuroPostsLoadPromise = null;
         async function loadPostsFromSupabase() {
             if (kuroPostsLoadPromise) return kuroPostsLoadPromise;
             const feed = document.getElementById('postFeed');
             if (feed) feed.dataset.initialLoading = 'true';
             kuroPostsLoadPromise = (async () => {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('posts')
-                    .select('id, user_id, content, hashtags, created_at, media')
-                    .order('created_at', { ascending: false })
-                    .limit(100);
-                if (error) throw error;
-
-                const rows = data || [];
-                const userIds = [...new Set(rows.map(row => row.user_id).filter(Boolean))];
-                let profileMap = {};
-                if (userIds.length) {
-                    const { data: profiles, error: profileError } = await supabaseClient
-                        .from('profiles').select('id, display_name, username, avatar_url').in('id', userIds);
-                    if (!profileError) (profiles || []).forEach(profile => profileMap[profile.id] = profile);
+                try {
+                    const result = await kuroSNSD1Request('feed', {}, 'GET');
+                    const rows = Array.isArray(result.posts) ? result.posts : [];
+                    textPosts = rows.map(row => ({
+                        ...row,
+                        hashtags: Array.isArray(row.hashtags) ? row.hashtags : extractHashtags(row.content || ''),
+                        media: Array.isArray(row.media) ? row.media : [],
+                        replies: Array.isArray(row.replies) ? row.replies : [],
+                        like_count: Number(row.like_count || 0),
+                        liked_by_me: !!row.liked_by_me
+                    }));
+                    if (feed) delete feed.dataset.initialLoading;
+                    filterPosts();
+                    return true;
+                } catch (error) {
+                    console.error('KURO D1 load posts error:', error);
+                    if (feed) delete feed.dataset.initialLoading;
+                    const empty = document.getElementById('postEmptyState');
+                    if (empty && (!textPosts || textPosts.length === 0)) {
+                        empty.classList.remove('hidden');
+                        empty.innerHTML = '<div class="text-center py-8"><p class="text-sm text-gray-300">投稿を読み込めなかったよ</p><p class="text-xs text-gray-500 mt-2">通信を確認して、もう一度試してね。</p><button type="button" onclick="loadPostsFromSupabase()" class="mt-4 rounded-full border border-gray-700 px-4 py-2 text-sm text-gray-200">再読み込み</button></div>';
+                    }
+                    return false;
+                } finally {
+                    kuroPostsLoadPromise = null;
                 }
-                textPosts = rows.map(row => ({
-                    ...row,
-                    ...(profileMap[row.user_id] || {}),
-                    // プロフィールの id で投稿 id が上書きされないよう、投稿側の ID を最後に確定する。
-                    id: row.id,
-                    user_id: row.user_id,
-                    hashtags: Array.isArray(row.hashtags) ? row.hashtags : extractHashtags(row.content || '')
-                }));
-                await loadSocialData();
-                if (feed) delete feed.dataset.initialLoading;
-                filterPosts();
-                return true;
-            } catch (error) {
-                console.error('KURO load posts error:', error);
-                if (feed) delete feed.dataset.initialLoading;
-                // 読み込み失敗時は「投稿がない」と誤解させず、再試行できる表示にする。
-                const empty = document.getElementById('postEmptyState');
-                if (empty && (!textPosts || textPosts.length === 0)) {
-                    empty.classList.remove('hidden');
-                    empty.innerHTML = '<div class="text-center py-8"><p class="text-sm text-gray-300">投稿を読み込めなかったよ</p><p class="text-xs text-gray-500 mt-2">通信を確認して、もう一度試してね。</p><button type="button" onclick="loadPostsFromSupabase()" class="mt-4 rounded-full border border-gray-700 px-4 py-2 text-sm text-gray-200">再読み込み</button></div>';
-                }
-                return false;
-            } finally {
-                kuroPostsLoadPromise = null;
-            }
             })();
             return kuroPostsLoadPromise;
         }
@@ -2777,30 +2676,26 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             if (!replyKey || !postKey) { showToast('返信を特定できません。ページを更新してください'); return; }
             if (!confirm('この返信を削除しますか？\n返信への返信は残ります。')) return;
             try {
-                const {data: authData, error: authError} = await supabaseClient.auth.getUser();
-                if (authError) throw authError;
-                const user = authData?.user;
-                if (!user) throw new Error('ログイン状態を確認できません。再ログインしてください。');
-                const {data: reply, error: readError} = await supabaseClient.from('post_replies').select('id,post_id,user_id,deleted_at').eq('id',replyKey).eq('post_id',postKey).maybeSingle();
-                if (readError) throw readError;
-                if (!reply) throw new Error('対象の返信が見つかりません。');
-                if (String(reply.user_id) !== String(user.id)) throw new Error('自分の返信だけ削除できます。');
-                if (reply.deleted_at) { showToast('この返信はすでに削除されています'); return; }
-                const deletedAt = new Date().toISOString();
-                const {data: updated, error: updateError} = await supabaseClient.from('post_replies').update({deleted_at:deletedAt}).eq('id',reply.id).eq('user_id',user.id).is('deleted_at',null).select('id');
-                if (updateError) throw updateError;
-                if (!updated?.length) throw new Error('返信を更新できませんでした。権限または通信状態を確認してください。');
-                const post = textPosts.find(item => String(item.id) === String(reply.post_id));
-                const localReply = post?.replies?.find(item => String(item.id) === String(reply.id));
+                const result = await kuroSNSD1Request('delete-reply', { replyId: replyKey, postId: postKey }, 'POST');
+                const deletedAt = result.deleted_at || new Date().toISOString();
+                const post = textPosts.find(item => String(item.id) === postKey);
+                const localReply = post?.replies?.find(item => String(item.id) === replyKey);
                 if (localReply) localReply.deleted_at = deletedAt;
-                const card = document.querySelector('#postFeed [data-post-card="' + CSS.escape(String(reply.post_id)) + '"]');
-                const node = card?.querySelector('[data-kuro-post-reply-id="' + CSS.escape(String(reply.id)) + '"]');
+                const card = document.querySelector('#postFeed [data-post-card="' + CSS.escape(postKey) + '"]');
+                const node = card?.querySelector('[data-kuro-post-reply-id="' + CSS.escape(replyKey) + '"]');
                 const paragraph = node?.querySelector('p');
-                if (paragraph) { paragraph.textContent = 'この返信は削除されました。'; paragraph.classList.remove('text-gray-300'); paragraph.classList.add('text-gray-500','italic'); }
+                if (paragraph) {
+                    paragraph.textContent = 'この返信は削除されました。';
+                    paragraph.classList.remove('text-gray-300');
+                    paragraph.classList.add('text-gray-500', 'italic');
+                }
                 node?.querySelectorAll('[data-reply-to-id], [data-delete-reply-id]').forEach(button => button.remove());
                 if (node) node.dataset.replyDeleted = 'true';
                 showToast('返信を削除しました');
-            } catch (error) { console.error('KURO delete reply error:',error); showToast('返信の削除に失敗しました: ' + (error?.message || '通信状態を確認してください')); }
+            } catch (error) {
+                console.error('KURO D1 delete reply error:', error);
+                showToast('返信の削除に失敗しました: ' + (error?.message || '通信状態を確認してください'));
+            }
         }
 
         async function deletePost(postId) {
@@ -2808,126 +2703,23 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 showToast('ポストを取り消すにはログインしてください');
                 return;
             }
-
-            const requestedPostId = String(postId ?? '').trim();
+            const requestedPostId = String(postId || '').trim();
             if (!requestedPostId) {
                 showToast('ポストIDが見つかりません。ページを更新してください');
                 return;
             }
-
             if (!confirm('このポストを取り消しますか？\nこの操作は元に戻せません。')) return;
-
-            const buildVersion = '2026-10-12-auth-debug-03';
-            const localItemBeforeSync = textPosts.find(item => String(item.id ?? '').trim() === requestedPostId) || null;
-
             try {
-                // ブラウザ内のユーザー情報だけに頼らず、Supabase認証を取り直す。
-                const { data: authData, error: authError } = await supabaseClient.auth.getUser();
-                if (authError) throw authError;
-                const user = authData?.user;
-                if (!user) {
-                    currentUser = null;
-                    renderUserProfile();
-                    throw new Error('ログイン状態を確認できません。再ログインしてください。');
+                const result = await kuroSNSD1Request('delete-post', { postId: requestedPostId }, 'POST');
+                if (result.media?.length) {
+                    await window.KuroSNSMedia?.remove(supabaseClient, result.media);
                 }
-
-                console.info('KURO delete diagnostic: before sync', {
-                    buildVersion,
-                    requestedPostId,
-                    requestedPostIdType: typeof postId,
-                    currentUserId: currentUser?.id || null,
-                    authenticatedUserId: user.id,
-                    sameLoggedInUser: String(currentUser?.id || '') === String(user.id || ''),
-                    localItemBeforeSync,
-                    loadedPostCountBeforeSync: textPosts.length,
-                    supabaseUrl: SUPABASE_URL
-                });
-
-                // 削除直前に一覧を再取得し、端末に残った古い一覧を同期する。
-                const syncSucceeded = await loadPostsFromSupabase();
-                if (!syncSucceeded) {
-                    throw new Error('削除前の最新投稿一覧を取得できませんでした。通信状態を確認して再試行してください。');
-                }
-                const localItemAfterSync = textPosts.find(item => String(item.id ?? '').trim() === requestedPostId) || null;
-
-                console.info('KURO delete diagnostic: after sync', {
-                    buildVersion,
-                    requestedPostId,
-                    localItemBeforeSync,
-                    localItemAfterSync,
-                    loadedPostCountAfterSync: textPosts.length
-                });
-
-                // 最新DBに対象IDがあるか照合してから削除する。
-                const { data: dbPost, error: readError } = await supabaseClient
-                    .from('posts')
-                    .select('id, user_id, media')
-                    .eq('id', requestedPostId)
-                    .maybeSingle();
-                if (readError) throw readError;
-                if (!dbPost) {
-                    console.error('KURO delete lookup mismatch:', {
-                        buildVersion,
-                        requestedPostId,
-                        localItemBeforeSync,
-                        localItemAfterSync,
-                        loadedPostCountAfterSync: textPosts.length,
-                        authenticatedUserId: user.id,
-                        supabaseUrl: SUPABASE_URL,
-                        explanation: '再同期後もID検索が0件。IDの取り違え、接続先、SELECTポリシーを切り分ける必要があります。'
-                    });
-                    throw new Error(localItemAfterSync
-                        ? '診断：最新一覧には投稿があるのに、同じIDでSupabaseを検索すると見つかりません。接続先またはSELECT権限を確認してください。'
-                        : '診断：削除ボタンのIDが、再取得した最新一覧にもDB検索結果にもありません。公開版コードまたは投稿IDの受け渡しを確認してください。');
-                }
-
-                if (String(dbPost.user_id || '') !== String(user.id || '')) {
-                    console.error('KURO delete owner mismatch:', {
-                        buildVersion,
-                        requestedPostId,
-                        dbPostId: dbPost.id,
-                        dbPostUserId: dbPost.user_id,
-                        authenticatedUserId: user.id
-                    });
-                    throw new Error('このポストの投稿者とログイン中のユーザーが一致しません。投稿したアカウントでログインしてください。');
-                }
-
-                const { data: deletedRows, error: deleteError } = await supabaseClient
-                    .from('posts')
-                    .delete()
-                    .eq('id', dbPost.id)
-                    .eq('user_id', user.id)
-                    .select('id');
-                if (deleteError) throw deleteError;
-
-                if (!deletedRows || deletedRows.length === 0) {
-                    console.error('KURO delete returned no rows:', {
-                        buildVersion,
-                        requestedPostId,
-                        verifiedDbPostId: dbPost.id,
-                        authenticatedUserId: user.id,
-                        rowCount: deletedRows?.length ?? 0
-                    });
-                    throw new Error('投稿は検索できましたが、削除結果は0件でした。DELETEのRLSポリシーと投稿者IDを確認してください。');
-                }
-
-                await window.KuroSNSMedia?.remove(supabaseClient, dbPost.media || []);
-                textPosts = textPosts.filter(item => String(item.id) !== String(dbPost.id));
+                textPosts = textPosts.filter(item => String(item.id) !== requestedPostId);
                 filterPosts();
                 showToast('ポストを取り消しました');
             } catch (error) {
-                console.error('KURO delete post error:', {
-                    buildVersion,
-                    message: error?.message,
-                    code: error?.code,
-                    details: error?.details,
-                    hint: error?.hint,
-                    requestedPostId,
-                    currentUserId: currentUser?.id || null,
-                    supabaseUrl: SUPABASE_URL,
-                    error
-                });
-                showToast('削除失敗: ' + (error?.message || '原因不明。コンソールのKURO delete diagnosticを確認してください'));
+                console.error('KURO D1 delete post error:', error);
+                showToast('削除失敗: ' + (error?.message || '通信状態を確認してください'));
             }
         }
 
@@ -3059,40 +2851,23 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             button.textContent = '投稿中…';
             let uploadedMedia = [];
             try {
-                const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-                if (userError || !user) throw new Error('ログイン状態を確認できません。再ログインしてください。');
+                const authResult = await supabaseClient.auth.getUser();
+                const user = authResult?.data?.user;
+                if (authResult?.error || !user) throw new Error('ログイン状態を確認できません。再ログインしてください。');
                 uploadedMedia = await window.KuroSNSMedia.upload(supabaseClient, 'post', null, imageFiles);
-                const hashtags = extractHashtags(content);
-
-                // IDは必ず別々に扱う：
-                // id      = postsテーブルが自動生成する「投稿ID」。insert時に指定しない。
-                // user_id = Supabase Authが返す「投稿者のユーザーID」。
-                // 投稿IDをuser_idに代入したり、user.idをidに代入したりしない。
-                const { data, error } = await supabaseClient
-                    .from('posts')
-                    .insert({
-                        user_id: user.id,
-                        content,
-                        hashtags,
-                        media: uploadedMedia
-                    })
-                    .select('id, user_id, content, hashtags, created_at, media')
-                    .single();
-                if (error) throw error;
-
-                // DBから返った所有者IDがログイン中のユーザーと一致することを確認
+                const result = await kuroSNSD1Request('create-post', { content, media: uploadedMedia }, 'POST');
+                const data = result.post;
                 if (!data || !data.id || data.user_id !== user.id) {
                     throw new Error('保存した投稿のID情報を確認できません。投稿一覧を更新して確認してください。');
                 }
-
                 const newPost = {
                     ...data,
                     display_name: currentUser.name,
                     username: currentUser.handle,
                     avatar_url: currentUser.avatarUrl,
-                    replies: [],
-                    like_count: 0,
-                    liked_by_me: false
+                    replies: Array.isArray(data.replies) ? data.replies : [],
+                    like_count: Number(data.like_count || 0),
+                    liked_by_me: !!data.liked_by_me
                 };
                 const feedAnchor = captureKuroFeedAnchor();
                 textPosts = [newPost, ...textPosts.filter(post => String(post.id) !== String(newPost.id))];
@@ -3101,7 +2876,7 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 if (search) search.value = '';
                 document.getElementById('searchSuggestions')?.classList.add('hidden');
                 closeModal();
-
+                window.KuroSNSMedia?.clear('post');
                 const feed = document.getElementById('postFeed');
                 const card = renderLocalPostCard(newPost);
                 if (feed && card) {
@@ -3109,7 +2884,6 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     document.getElementById('postEmptyState')?.classList.add('hidden');
                     restoreKuroFeedAnchor(feedAnchor);
                 } else {
-                    // Fallback only if the card cannot be rendered independently.
                     filterPosts();
                 }
                 if (!document.getElementById('myProfileView')?.classList.contains('hidden')) {
@@ -3119,9 +2893,9 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 }
                 showToast('ポストを投稿したよ！');
             } catch (error) {
-                console.error('KURO save post error:', error);
+                console.error('KURO D1 save post error:', error);
                 if (uploadedMedia.length) await window.KuroSNSMedia.remove(supabaseClient, uploadedMedia);
-                showToast(error.message || '投稿に失敗しました。postsテーブルとRLS設定を確認してね。');
+                showToast(error.message || '投稿に失敗しました。');
             } finally {
                 button.disabled = false;
                 button.textContent = 'ポストする';
@@ -3631,9 +3405,14 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             modal.classList.remove('hidden');
             box.innerHTML = '<p class="text-sm text-gray-500">投稿を読み込み中…</p>';
             try {
-                const {data: profile, error: profileError} = await supabaseClient.from('profiles')
-                    .select('id, username, kuro_id, avatar_url, bio').eq('id', userId).maybeSingle();
-                if (profileError) throw profileError;
+                const data = await kuroSNSD1Request('user-posts', { userId: String(userId) }, 'GET');
+                let profile = data.profile;
+                if (!profile) {
+                    const fallback = await supabaseClient.from('profiles')
+                        .select('id, username, kuro_id, avatar_url, bio').eq('id', userId).maybeSingle();
+                    if (fallback.error) throw fallback.error;
+                    profile = fallback.data;
+                }
                 if (!profile) { box.innerHTML = '<p class="text-sm text-gray-500">プロフィールが見つかりません。</p>'; return; }
                 publicProfileUser = profile;
                 document.getElementById('publicProfileName').textContent = '@' + (profile.username || 'user');
@@ -3641,10 +3420,16 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 document.getElementById('publicProfileBio').textContent = profile.bio || '自己紹介はまだありません。';
                 const avatar = document.getElementById('publicProfileAvatar');
                 const placeholder = document.getElementById('publicProfileAvatarPlaceholder');
-                if (profile.avatar_url) { avatar.src = kuroSnsAvatarUrl(profile.avatar_url); avatar.classList.remove('hidden'); placeholder.classList.add('hidden'); }
-                else { avatar.removeAttribute('src'); avatar.classList.add('hidden'); placeholder.classList.remove('hidden'); }
-                kuroSnsBindAvatar(avatar.parentElement,profile.id);
-
+                if (profile.avatar_url) {
+                    avatar.src = kuroSnsAvatarUrl(profile.avatar_url);
+                    avatar.classList.remove('hidden');
+                    placeholder.classList.add('hidden');
+                } else {
+                    avatar.removeAttribute('src');
+                    avatar.classList.add('hidden');
+                    placeholder.classList.remove('hidden');
+                }
+                kuroSnsBindAvatar(avatar.parentElement, profile.id);
                 const isOwn = !!currentUser && currentUser.id === profile.id;
                 const reportArea = document.getElementById('publicProfileReportArea');
                 if (reportArea) reportArea.classList.toggle('hidden', isOwn || !currentUser);
@@ -3657,40 +3442,26 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                 if (currentUser?.id) await refreshFollowCounts();
                 followButton.textContent = followCache.following.has(profile.id) ? 'フォロー中' : 'フォロー';
 
-                const [postsResult, followersResult, followingResult] = await Promise.all([
-                    supabaseClient.from('posts').select('id, user_id, content, created_at, media').eq('user_id', profile.id).order('created_at', {ascending:false}).limit(30),
-                    supabaseClient.from('follows').select('follower_id', {count:'exact', head:true}).eq('following_id', profile.id),
-                    supabaseClient.from('follows').select('following_id', {count:'exact', head:true}).eq('follower_id', profile.id)
-                ]);
-                if (postsResult.error) throw postsResult.error;
-                if (followersResult.error) console.warn('KURO public profile follower count:', followersResult.error.message);
-                if (followingResult.error) console.warn('KURO public profile following count:', followingResult.error.message);
-                const posts = postsResult.data || [];
-                document.getElementById('publicProfilePostCount').textContent = String(posts.length);
-                document.getElementById('publicProfileFollowerCount').textContent = String(followersResult.count || 0);
-                document.getElementById('publicProfileFollowingCount').textContent = String(followingResult.count || 0);
+                const posts = Array.isArray(data.posts) ? data.posts : [];
+                document.getElementById('publicProfilePostCount').textContent = String(data.post_count || 0);
+                document.getElementById('publicProfileFollowerCount').textContent = String(data.followers || 0);
+                document.getElementById('publicProfileFollowingCount').textContent = String(data.following || 0);
                 if (!posts.length) {
                     box.innerHTML = '<p class="text-sm text-gray-500 text-center py-10">まだポストはありません。</p>';
                     return;
                 }
-                const postIds = posts.map(post => post.id);
-                const [{data: likes, error: likesError}, {data: replies, error: repliesError}] = await Promise.all([
-                    supabaseClient.from('post_likes').select('post_id, user_id').in('post_id', postIds),
-                    supabaseClient.from('post_replies').select('post_id').in('post_id', postIds)
-                ]);
-                if (likesError) console.warn('KURO public profile likes:', likesError.message);
-                if (repliesError) console.warn('KURO public profile replies:', repliesError.message);
                 box.innerHTML = posts.map(post => {
-                    const postLikes = (likes || []).filter(item => String(item.post_id) === String(post.id));
-                    const replyCount = (replies || []).filter(item => String(item.post_id) === String(post.id)).length;
-                    const likedByMe = !!currentUser && postLikes.some(item => item.user_id === currentUser.id);
-                    return `<article class="rounded-2xl border border-kuro-800 bg-kuro-900/70 p-4 sm:p-5"><p class="text-[15px] leading-7 text-gray-200 whitespace-pre-wrap break-words">${renderPostContent(post.content || '')}</p><p class="text-xs text-gray-500 mt-3">${socialEscape(formatPostDate(post.created_at))}</p><div class="flex items-center gap-5 border-t border-kuro-800 pt-3 mt-3"><button type="button" onclick="togglePublicProfileLike('${socialEscape(post.id)}')" class="text-sm ${likedByMe ? 'text-pink-400' : 'text-gray-400'} hover:text-pink-300"><i class="${likedByMe ? 'fa-solid' : 'fa-regular'} fa-heart mr-1"></i>${postLikes.length} いいね</button><button type="button" onclick="togglePublicProfileReply('${socialEscape(post.id)}')" class="text-sm text-gray-400 hover:text-white"><i class="fa-regular fa-comment mr-1"></i>${replyCount} 返信</button></div><div id="publicProfileReplyPanel_${socialEscape(post.id)}" class="hidden mt-3"><textarea id="publicProfileReplyInput_${socialEscape(post.id)}" maxlength="130" rows="2" placeholder="返信を書く…（130文字まで）" class="w-full bg-kuro-950 border border-kuro-800 rounded-xl px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-gray-500"></textarea><div class="flex justify-end mt-2"><button type="button" onclick="submitPublicProfileReply('${socialEscape(post.id)}')" class="rounded-lg bg-white text-black px-3 py-2 text-xs font-semibold">返信する</button></div></div></article>`;
+                    const likeCount = Number(post.like_count || 0);
+                    const replyCount = Array.isArray(post.replies) ? post.replies.length : 0;
+                    const likedByMe = !!post.liked_by_me;
+                    return `<article class="rounded-2xl border border-kuro-800 bg-kuro-900/70 p-4 sm:p-5"><p class="text-[15px] leading-7 text-gray-200 whitespace-pre-wrap break-words">${renderPostContent(post.content || '')}</p>${window.KuroSNSMedia?.renderPublic(post.media || [], 'post') || ''}<p class="text-xs text-gray-500 mt-3">${socialEscape(formatPostDate(post.created_at))}</p><div class="flex items-center gap-5 border-t border-kuro-800 pt-3 mt-3"><button type="button" data-public-profile-like="${socialEscape(post.id)}" data-liked-by-me="${likedByMe ? 'true' : 'false'}" onclick="togglePublicProfileLike('${socialEscape(post.id)}')" class="text-sm ${likedByMe ? 'text-pink-400' : 'text-gray-400'} hover:text-pink-300"><i class="${likedByMe ? 'fa-solid' : 'fa-regular'} fa-heart mr-1"></i><span>${likeCount}</span> いいね</button><button type="button" onclick="togglePublicProfileReply('${socialEscape(post.id)}')" class="text-sm text-gray-400 hover:text-white"><i class="fa-regular fa-comment mr-1"></i>${replyCount} 返信</button></div><div id="publicProfileReplyPanel_${socialEscape(post.id)}" class="hidden mt-3"><textarea id="publicProfileReplyInput_${socialEscape(post.id)}" maxlength="130" rows="2" placeholder="返信を書く…（130文字まで）" class="w-full bg-kuro-950 border border-kuro-800 rounded-xl px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-gray-500"></textarea><div class="flex justify-end mt-2"><button type="button" onclick="submitPublicProfileReply('${socialEscape(post.id)}')" class="rounded-lg bg-white text-black px-3 py-2 text-xs font-semibold">返信する</button></div></div></article>`;
                 }).join('');
             } catch (error) {
-                console.error('KURO public profile error:', error);
-                box.innerHTML = '<p class="text-sm text-red-300">プロフィールを読み込めませんでした。profiles・posts・followsのRLS設定を確認してください。</p>';
+                console.error('KURO D1 public profile error:', error);
+                box.innerHTML = '<p class="text-sm text-red-300">プロフィールを読み込めませんでした。通信状態を確認して、もう一度お試しください。</p>';
             }
         }
+
         async function openPublicProfile(userId) {
             if (window.KuroProfile && typeof window.KuroProfile.open === 'function') {
                 return window.KuroProfile.open(userId, { onSnsMore: function () { return openPublicProfileLegacy(userId); } });
@@ -3717,8 +3488,15 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
         async function togglePublicProfileLike(postId) {
             if (!currentUser && !await requireSocialLogin()) return;
             const userId = publicProfileUser?.id;
-            await togglePostLike(postId);
-            if (userId) await openPublicProfileLegacy(userId);
+            const button = document.querySelector('[data-public-profile-like="' + CSS.escape(String(postId)) + '"]');
+            const wasLiked = button?.getAttribute('data-liked-by-me') === 'true';
+            try {
+                await kuroSNSD1Request('like', { postId: String(postId), liked: !wasLiked }, 'POST');
+                if (userId) await openPublicProfileLegacy(userId);
+            } catch (error) {
+                console.error('KURO D1 public profile like failed:', error);
+                showToast(error?.message || 'いいねに失敗しました。');
+            }
         }
         function togglePublicProfileReply(postId) {
             if (!currentUser) { showToast('返信するにはログインしてください'); openAuthModal('signin'); return; }
@@ -3734,20 +3512,17 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             if (!content) { showToast('返信を入力してね'); input?.focus(); return; }
             if ([...content].length > 130) { showToast('返信は130文字以内にしてね'); return; }
             try {
-                const {data: authData, error: authError} = await supabaseClient.auth.getUser();
-                if (authError) throw authError;
-                if (!authData?.user) throw new Error('ログイン状態を確認できません。再ログインしてください。');
-                const {error} = await supabaseClient.from('post_replies').insert({post_id:postId, user_id:authData.user.id, content});
-                if (error) throw error;
+                await kuroSNSD1Request('create-reply', { postId: String(postId), content, parentReplyId: null }, 'POST');
                 const userId = publicProfileUser?.id;
                 await refreshSocialFeed();
                 if (userId) await openPublicProfileLegacy(userId);
                 showToast('返信を投稿したよ！');
             } catch (error) {
-                console.error('KURO public profile reply error:', error);
+                console.error('KURO D1 public profile reply error:', error);
                 showToast(error?.message || '返信に失敗しました。');
             }
         }
+
         const KURO_VAPID_PUBLIC_KEY = 'BENPzDO3dvAx14t6C49CCNrsnTMDHXMPmQsyK69OnbxbxBeysiCwxaI18wX8eTQsIksxn2bdWgHhWGk3VkSYHMI';
         let kuroServiceWorkerRegistration = null;
         function kuroSubscriptionUsesCurrentVapidKey(subscription) {
@@ -5183,47 +4958,8 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
 
         async function resolveKuroNotificationPost(notificationId) {
             if (!currentUser?.id || !kuroInitialUuidPattern.test(String(notificationId || ''))) return null;
-            const noticeResult = await supabaseClient.from('notifications')
-                .select('id,type,actor_id,created_at,notification_details')
-                .eq('id', notificationId).eq('recipient_id', currentUser.id).maybeSingle();
-            if (noticeResult.error) throw noticeResult.error;
-            const notice = noticeResult.data;
-            if (!notice || !['like', 'reply'].includes(notice.type) || !notice.actor_id) return null;
-
-            const details = notice.notification_details && typeof notice.notification_details === 'object'
-                ? notice.notification_details : {};
-            let postId = getKuroNotificationPostId(details);
-            let replyId = String(details.reply_id || details.replyId || '');
-            if (!kuroInitialUuidPattern.test(replyId)) replyId = '';
-
-            if (!postId) {
-                const eventTime = Date.parse(notice.created_at);
-                if (!Number.isFinite(eventTime)) return null;
-                const start = new Date(eventTime - 30000).toISOString();
-                const end = new Date(eventTime + 30000).toISOString();
-                const isReply = notice.type === 'reply';
-                const eventResult = await supabaseClient.from(isReply ? 'post_replies' : 'post_likes')
-                    .select(isReply ? 'id,post_id,created_at' : 'post_id,created_at')
-                    .eq('user_id', notice.actor_id)
-                    .gte('created_at', start).lte('created_at', end)
-                    .order('created_at', {ascending: false}).limit(20);
-                if (eventResult.error) throw eventResult.error;
-                const events = eventResult.data || [];
-                if (!events.length) return null;
-
-                const candidateIds = [...new Set(events.map(row => row.post_id).filter(id => kuroInitialUuidPattern.test(String(id || ''))))];
-                if (!candidateIds.length) return null;
-                const ownedResult = await supabaseClient.from('posts').select('id')
-                    .eq('user_id', currentUser.id).in('id', candidateIds);
-                if (ownedResult.error) throw ownedResult.error;
-                const ownedIds = new Set((ownedResult.data || []).map(row => String(row.id)));
-                const matching = events.filter(row => ownedIds.has(String(row.post_id)));
-                if (!matching.length) return null;
-                matching.sort((a, b) => Math.abs(Date.parse(a.created_at) - eventTime) - Math.abs(Date.parse(b.created_at) - eventTime));
-                postId = String(matching[0].post_id);
-                if (isReply && kuroInitialUuidPattern.test(String(matching[0].id || ''))) replyId = String(matching[0].id);
-            }
-            return kuroInitialUuidPattern.test(postId) ? {postId, replyId} : null;
+            const result = await kuroSNSD1Request('notification-target', { notificationId: String(notificationId) }, 'GET');
+            return result.target || null;
         }
 
         async function openKuroNotificationPost(notificationId) {
@@ -5236,20 +4972,13 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
             if (!loaded) throw new Error('投稿一覧を読み込めませんでした。');
             let post = textPosts.find(row => String(row.id) === target.postId);
             if (!post) {
-                const postResult = await supabaseClient.from('posts')
-                    .select('id,user_id,content,hashtags,created_at,media')
-                    .eq('id', target.postId).eq('user_id', currentUser.id).maybeSingle();
-                if (postResult.error) throw postResult.error;
-                if (!postResult.data) {
+                const postResult = await kuroSNSD1Request('post', { id: target.postId }, 'GET');
+                if (!postResult.post || String(postResult.post.user_id) !== String(currentUser.id)) {
                     showToast('対象の投稿が見つからないか、すでに削除されています。');
                     return;
                 }
-                const profileResult = await supabaseClient.from('profiles')
-                    .select('id,username,display_name,avatar_url').eq('id', postResult.data.user_id).maybeSingle();
-                if (profileResult.error) console.warn('KURO notification post profile:', profileResult.error);
-                post = {...postResult.data, ...(profileResult.data || {})};
+                post = postResult.post;
                 textPosts = [post, ...textPosts.filter(row => String(row.id) !== target.postId)];
-                await loadSocialData();
                 filterPosts();
             }
             showProfilePost(target.postId);
@@ -5263,10 +4992,10 @@ async function handleAuthSubmit(e, mode = currentAuthMode) {
                     const reply = card?.querySelector('[data-kuro-post-reply-id="' + CSS.escape(target.replyId) + '"]');
                     if (reply) {
                         reply.classList.add('ring-2', 'ring-violet-400/70', 'rounded-lg');
-                        reply.scrollIntoView({behavior: 'smooth', block: 'center'});
+                        reply.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         window.setTimeout(() => reply.classList.remove('ring-2', 'ring-violet-400/70'), 2600);
                     } else {
-                        card?.querySelector('[data-reply-input]')?.focus({preventScroll: true});
+                        card?.querySelector('[data-reply-input]')?.focus({ preventScroll: true });
                     }
                 }, 180);
             }
