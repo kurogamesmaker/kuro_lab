@@ -18,19 +18,15 @@ const SYNC_TABLES = new Set([
   "game_studio_games", "game_tictactoe_verified_events", "game_tictactoe_verified_stats",
   "game_world_blocks", "werewolf_action_receipts", "werewolf_chat_messages",
   "werewolf_private_sessions", "werewolf_rooms",
-  "kuro_coin_balances", "kuro_coin_game_rewards", "kuro_coin_ledger",
   "kuro_coin_verified_game_events", "kuro_game_user_stats", "kuro_game_win_events", "kuro_economy_pending_events",
-  "kuro_level_coin_reward_claims", "kuro_level_coin_rewards", "kuro_level_game_rewards",
-  "kuro_level_ledger", "kuro_level_system_settings", "kuro_level_thresholds", "kuro_level_users",
-  "kuro_store_design_drafts", "kuro_store_equipped_items", "kuro_store_items",
-  "kuro_store_studio_members", "kuro_store_user_inventory",
+  "kuro_store_design_drafts", "kuro_store_items", "kuro_store_studio_members",
   "kurogames_home_banners", "portal_announcements", "portal_history",
   "portal_preferences", "admin_message_reads", "admin_messages", "feature_flags",
   "user_last_activity"
 ]);
 
 // Legacy favorites events are acknowledged without being copied to D1.
-const RETIRED_SYNC_TABLES = new Set(["portal_favorites"]);
+const RETIRED_SYNC_TABLES = new Set(["portal_favorites", "kuro_coin_balances", "kuro_coin_game_rewards", "kuro_coin_ledger", "kuro_level_coin_reward_claims", "kuro_level_coin_rewards", "kuro_level_game_rewards", "kuro_level_ledger", "kuro_level_system_settings", "kuro_level_thresholds", "kuro_level_users", "kuro_store_equipped_items", "kuro_store_user_inventory", "kuro_store_transactions"]);
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
