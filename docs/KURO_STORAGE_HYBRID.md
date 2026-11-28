@@ -118,3 +118,18 @@ Recommended sequence:
 3. Implement one feature's Worker handlers with explicit user identity derived from verified sessions, ownership checks, and D1 transactions.
 4. Run functional, negative-authorization, concurrency, and rollback tests in staging.
 5. Only then consider switching that feature's production traffic.
+
+## Read-only level calculation routine port (2026-11-28)
+
+Two deterministic read-only routines have been ported into the admin-only Worker preview:
+- `kuro_level_xp_required`: reads the copied `kuro_level_thresholds` rows and applies the PostgreSQL fallback curve above the highest explicit threshold.
+- `kuro_level_for_xp`: resolves the highest configured level for the supplied total XP, then advances through the same fallback curve.
+
+The admin-only `GET /api/migration/level-preview` route:
+- Reads only the ten copied threshold rows from D1.
+- Checks that those threshold rows match the PostgreSQL source snapshot.
+- Compares ten known XP-to-level cases captured from the live PostgreSQL routines.
+- Returns only the deterministic test values and parity status.
+- Does not write D1 or Supabase data and does not change any production route.
+
+The preview is not a replacement for XP award/ledger routines. Those writes remain on Supabase until their trigger, transaction, and authorization semantics are ported and tested.
