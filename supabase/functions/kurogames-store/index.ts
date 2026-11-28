@@ -70,6 +70,31 @@ async function requireSecurityGate(req: Request, tool: string) {
   }
 }
 
+async function callD1Store(req: Request, payload: Record<string, unknown>, studio = false) {
+  const authorization = req.headers.get("Authorization") || "";
+  if (!authorization.startsWith("Bearer ")) throw new HttpError(401, "ログイン状態を確認できません。");
+  const headers: Record<string, string> = {
+    "Authorization": authorization,
+    "Content-Type": "application/json",
+    "Accept": "application/json"
+  };
+  if (studio) headers["X-KURO-Store-Tool"] = "shop-studio";
+  let upstream: Response;
+  try {
+    upstream = await fetch("https://kurolab.cc.cd/api/kuro-economy/store", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(12000)
+    });
+  } catch (_) {
+    throw new HttpError(503, "Cloudflareのストア処理に接続できません。少し時間をおいて再度お試しください。");
+  }
+  const result = await upstream.json().catch(() => ({}));
+  if (!upstream.ok) throw new HttpError(upstream.status >= 500 ? 503 : upstream.status, result?.error || "Cloudflareのストア処理に失敗しました。");
+  return result;
+}
+
 async function requireStudioMember(userId: string, req: Request) {
   const { data, error } = await admin.from("kuro_store_studio_members")
     .select("user_id,role,is_active").eq("user_id", userId).eq("is_active", true).maybeSingle();
@@ -99,20 +124,15 @@ Deno.serve(async (req: Request) => {
       let profile: Record<string, unknown> | null = null;
       let coinBalance: number | null = null;
       if (user) {
-        const [inventoryResult, equippedResult, profileResult, balanceResult] = await Promise.all([
-          admin.from("kuro_store_user_inventory").select("id,item_id,source,acquired_at,item:kuro_store_items(id,item_key,name,description,category,icon,image_url,rarity,price_kc,is_free,sort_order)").eq("user_id", user.id).order("acquired_at", { ascending: false }),
-          admin.from("kuro_store_equipped_items").select("slot,item_id,updated_at,item:kuro_store_items(item_key,name,category,icon,image_url,rarity)").eq("user_id", user.id),
+        const [economy, profileResult] = await Promise.all([
+          callD1Store(req, { action: "catalog" }),
           admin.from("profiles").select("username,display_name,kuro_id").eq("id", user.id).maybeSingle(),
-          admin.from("kuro_coin_balances").select("balance").eq("user_id", user.id).maybeSingle(),
         ]);
-        if (inventoryResult.error) throw inventoryResult.error;
-        if (equippedResult.error) throw equippedResult.error;
         if (profileResult.error) throw profileResult.error;
-        if (balanceResult.error) throw balanceResult.error;
-        inventory = inventoryResult.data ?? [];
-        equipped = equippedResult.data ?? [];
+        inventory = economy.inventory ?? [];
+        equipped = economy.equipped ?? [];
         profile = profileResult.data ?? null;
-        coinBalance = Number(balanceResult.data?.balance ?? 0);
+        coinBalance = Number(economy.coinBalance ?? 0);
       }
       return reply(200, { items: items ?? [], inventory, equipped, profile, isLoggedIn: !!user, coinBalance });
     }
@@ -121,16 +141,8 @@ Deno.serve(async (req: Request) => {
       const user = await resolveUser(req, true);
       const itemId = typeof body.itemId === "string" ? body.itemId : "";
       if (!UUID_RE.test(itemId)) throw new HttpError(400, "商品IDが正しくありません。");
-      const { data, error } = await admin.rpc("kuro_store_claim_free_item", {
-        p_user_id: user!.id, p_item_id: itemId,
-      });
-      if (error) {
-        const message = error.message || "";
-        if (message.includes("STORE_ITEM_NOT_AVAILABLE")) throw new HttpError(404, "このアイテムは現在取得できません。");
-        if (message.includes("STORE_ITEM_NOT_FREE")) throw new HttpError(400, "このアイテムは無料取得の対象ではありません。");
-        throw error;
-      }
-      return reply(200, { result: data });
+      const result = await callD1Store(req, { action: "claim_free", itemId });
+      return reply(200, result);
     }
 
 
@@ -139,34 +151,15 @@ Deno.serve(async (req: Request) => {
       const itemId = typeof body.itemId === "string" ? body.itemId : "";
       const requestId = typeof body.requestId === "string" ? body.requestId : "";
       if (!UUID_RE.test(itemId) || !UUID_RE.test(requestId)) throw new HttpError(400, "購入リクエストが正しくありません。");
-      const { data, error } = await admin.rpc("kuro_store_purchase_item", {
-        p_user_id: user!.id, p_item_id: itemId, p_request_id: requestId,
-      });
-      if (error) {
-        const message = error.message || "";
-        if (message.includes("STORE_ITEM_NOT_AVAILABLE")) throw new HttpError(404, "このアイテムは現在販売されていません。");
-        if (message.includes("STORE_ITEM_NOT_PAID")) throw new HttpError(400, "この商品は無料アイテムです。");
-        if (message.includes("STORE_INSUFFICIENT_KC")) throw new HttpError(409, "KURO COINが不足しています。");
-        if (message.includes("STORE_REQUEST_ID_REUSED")) throw new HttpError(409, "購入リクエストが重複しました。ページを再読み込みしてください。");
-        throw error;
-      }
-      return reply(200, { result: data });
+      const result = await callD1Store(req, { action: "purchase", itemId, requestId });
+      return reply(200, result);
     }
     if (action === "discard_item") {
       const user = await resolveUser(req, true);
       const inventoryId = typeof body.inventoryId === "string" ? body.inventoryId : "";
       if (!UUID_RE.test(inventoryId)) throw new HttpError(400, "所持アイテムIDが正しくありません。");
-      const { data, error } = await admin.rpc("kuro_store_discard_inventory_item", {
-        p_user_id: user!.id,
-        p_inventory_id: inventoryId,
-      });
-      if (error) {
-        const message = error.message || "";
-        if (message.includes("STORE_INVENTORY_ITEM_NOT_FOUND")) throw new HttpError(404, "このアイテムは所持品に見つかりません。ページを再読み込みしてください。");
-        if (message.includes("STORE_INVALID_DISCARD_REQUEST")) throw new HttpError(400, "削除リクエストが正しくありません。");
-        throw error;
-      }
-      return reply(200, { result: data });
+      const result = await callD1Store(req, { action: "discard_item", inventoryId });
+      return reply(200, result);
     }
 
     if (action === "equip") {
@@ -175,16 +168,8 @@ Deno.serve(async (req: Request) => {
       const itemId = body.itemId === null || body.itemId === undefined ? null : String(body.itemId);
       if (!["avatar", "frame", "background", "theme", "nameplate", "banner"].includes(slot)) throw new HttpError(400, "装備スロットが正しくありません。");
       if (itemId !== null && !UUID_RE.test(itemId)) throw new HttpError(400, "アイテムIDが正しくありません。");
-      const { data, error } = await admin.rpc("kuro_store_set_equipped_item", {
-        p_user_id: user!.id, p_slot: slot, p_item_id: itemId,
-      });
-      if (error) {
-        if ((error.message || "").includes("STORE_ITEM_NOT_OWNED_OR_SLOT_MISMATCH")) {
-          throw new HttpError(403, "このスロットに装備できる所持アイテムではありません。");
-        }
-        throw error;
-      }
-      return reply(200, { result: data });
+      const result = await callD1Store(req, { action: "equip", slot, itemId });
+      return reply(200, result);
     }
 
 
@@ -192,21 +177,16 @@ Deno.serve(async (req: Request) => {
       const user = await resolveUser(req, true);
       const studioMember = await requireStudioMember(user!.id, req);
       const canViewSales = studioMember.role === "owner";
-      const [itemsResult, salesSummaryResult, recentSalesResult, membersResult] = await Promise.all([
+      const [itemsResult, salesD1, membersResult] = await Promise.all([
         admin.from("kuro_store_items").select("id,item_key,name,description,category,icon,image_url,rarity,price_kc,is_free,is_active,sort_order,created_at,updated_at,deleted_at").order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
         canViewSales
-          ? admin.rpc("kuro_store_studio_sales_summary")
-          : Promise.resolve({ data: { purchaseCount: 0, totalKC: 0 }, error: null }),
-        canViewSales
-          ? admin.from("kuro_store_transactions").select("id,amount_kc,created_at,item:kuro_store_items(name,item_key)").eq("transaction_type", "shop_purchase").eq("status", "completed").order("created_at", { ascending: false }).limit(20)
-          : Promise.resolve({ data: [], error: null }),
+          ? callD1Store(req, { action: "studio_sales" }, true)
+          : Promise.resolve({ summary: { purchaseCount: 0, totalKC: 0 }, recentSales: [] }),
         canViewSales
           ? admin.from("kuro_store_studio_members").select("user_id,role,is_active,created_at").order("created_at", { ascending: true })
           : Promise.resolve({ data: [], error: null }),
       ]);
       if (itemsResult.error) throw itemsResult.error;
-      if (salesSummaryResult.error) throw salesSummaryResult.error;
-      if (recentSalesResult.error) throw recentSalesResult.error;
       if (membersResult.error) throw membersResult.error;
       const items = itemsResult.data ?? [];
       let studioMembers: Record<string, unknown>[] = [];
@@ -222,10 +202,10 @@ Deno.serve(async (req: Request) => {
           profile: profileById.get(member.user_id) ?? null,
         }));
       }
-      const salesSummary = salesSummaryResult.data ?? {};
+      const salesSummary = salesD1.summary ?? {};
       return reply(200, {
         items,
-        recentSales: canViewSales ? recentSalesResult.data ?? [] : [],
+        recentSales: canViewSales ? salesD1.recentSales ?? [] : [],
         members: studioMembers,
         canViewSales,
         member: { role: studioMember.role },
