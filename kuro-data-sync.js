@@ -1,3 +1,4 @@
+// Deployment note: D1 economy writes remain blocked until the explicit authority flag is enabled.
 const SUPABASE_URL = "https://cprvpphlfpmiegjiutjn.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
 const PULL_RPC = "/rest/v1/rpc/kuro_cloudflare_sync_pull";
