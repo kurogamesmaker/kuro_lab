@@ -688,7 +688,7 @@ async function handleMigrationHealth(request, env) {
   if (request.method !== "GET") return json({ error: "Method not allowed" }, 405);
 
   const authorization = request.headers.get("authorization") || "";
-  if (!/^Bearer\\s+\\S+/i.test(authorization)) {
+  if (!/^Bearer\s+\S+/i.test(authorization)) {
     return json({ error: "管理者ログインが必要です。" }, 401);
   }
 
