@@ -260,6 +260,33 @@ async function getFeed(request, db, viewer) {
   throw new KuroSnsError(400, "投稿取得の操作が正しくありません。");
 }
 
+async function getAdminSnsSummary(db, user) {
+  const permission = await db.prepare(
+    "SELECT user_id FROM admin_users WHERE user_id=? LIMIT 1"
+  ).bind(user.id).first();
+  if (!permission) throw new KuroSnsError(403, "このアカウントには管理者権限がありません。");
+
+  const [postCount, replyCount, likeCount, posts, replies] = await Promise.all([
+    db.prepare("SELECT COUNT(*) AS total FROM posts").first(),
+    db.prepare("SELECT COUNT(*) AS total FROM post_replies").first(),
+    db.prepare("SELECT COUNT(*) AS total FROM post_likes").first(),
+    db.prepare("SELECT id,user_id,content,hashtags,created_at FROM posts ORDER BY created_at DESC LIMIT 10000").all(),
+    db.prepare("SELECT id,post_id,user_id,content,created_at FROM post_replies ORDER BY created_at DESC LIMIT 10000").all()
+  ]);
+  const postRows = Array.isArray(posts?.results) ? posts.results : [];
+  const replyRows = Array.isArray(replies?.results) ? replies.results : [];
+  return {
+    posts: postRows.map(row => ({ ...row, hashtags: parseJson(row.hashtags, []) })),
+    replies: replyRows,
+    post_count: Number(postCount?.total || 0),
+    reply_count: Number(replyCount?.total || 0),
+    likes_total: Number(likeCount?.total || 0),
+    posts_truncated: Number(postCount?.total || 0) > postRows.length,
+    replies_truncated: Number(replyCount?.total || 0) > replyRows.length,
+    source: "cloudflare-d1"
+  };
+}
+
 async function createPost(db, user, body) {
   const content = typeof body.content === "string" ? body.content.trim() : "";
   const media = parseMedia(body.media, user.id);
@@ -409,6 +436,12 @@ export async function handleKuroD1SnsPosts(request, env) {
 
   try {
     if (request.method === "GET") {
+      const action = new URL(request.url).searchParams.get("action") || "feed";
+      if (action === "admin-sns-summary") {
+        const admin = await authenticate(request, false);
+        const data = await getAdminSnsSummary(db, admin);
+        return json(data, 200, origin);
+      }
       const viewer = await authenticate(request, true);
       const data = await getFeed(request, db, viewer);
       return json(data, 200, origin);
