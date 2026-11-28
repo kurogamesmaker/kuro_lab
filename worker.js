@@ -683,6 +683,114 @@ async function handleStorageRelay(request, env) {
   return json(await proxy(payload, request.headers.get("CF-Connecting-IP"), env?.IP_BAN_EDGE_KEY, request));
 }
 
+
+async function handleMigrationHealth(request, env) {
+  if (request.method !== "GET") return json({ error: "Method not allowed" }, 405);
+
+  const authorization = request.headers.get("authorization") || "";
+  if (!/^Bearer\s+\S+/i.test(authorization)) {
+    return json({ error: "管理者ログインが必要です。" }, 401);
+  }
+
+  // Verify the current admin role against the live Supabase security gate.
+  // D1's copied admin_users table is deliberately not used for authorization.
+  let gateResponse;
+  try {
+    const gateHeaders = new Headers({
+      authorization,
+      apikey: SUPABASE_KEY,
+      "content-type": "application/json",
+      origin: "https://kurolab.cc.cd"
+    });
+    const clientIp = request.headers.get("CF-Connecting-IP");
+    const userAgent = request.headers.get("user-agent") || "";
+    const platform = request.headers.get("sec-ch-ua-platform") || "";
+    const language = request.headers.get("accept-language") || "";
+    if (clientIp) gateHeaders.set("x-real-ip", clientIp);
+    if (userAgent) gateHeaders.set("user-agent", userAgent);
+    if (platform) gateHeaders.set("sec-ch-ua-platform", platform);
+    if (language) gateHeaders.set("accept-language", language);
+    gateResponse = await fetch(SUPABASE_URL + "/functions/v1/kuro-security-gate", {
+      method: "POST",
+      headers: gateHeaders,
+      body: JSON.stringify({ action: "check", tool: "admin" })
+    });
+  } catch (_) {
+    return json({ error: "管理者権限の確認サービスに接続できません。" }, 503);
+  }
+
+  const gateResult = await gateResponse.json().catch(() => ({}));
+  if (!gateResponse.ok || gateResult?.allowed !== true) {
+    const status = gateResponse.status >= 500 ? 503 : (gateResponse.status === 401 ? 401 : 403);
+    return json({ error: gateResult?.message || "管理者権限がありません。" }, status);
+  }
+
+  const database = env?.KURO_MIGRATION_DB;
+  if (!database) return json({ error: "D1 migration database binding is unavailable." }, 503);
+
+  try {
+    const manifestResult = await database.prepare(
+      "SELECT table_name, copied_rows, source_row_estimate, copied_at FROM __kuro_schema_manifest ORDER BY table_name"
+    ).all();
+    const manifest = Array.isArray(manifestResult?.results) ? manifestResult.results : [];
+    if (!manifest.length || manifest.length > 120) {
+      return json({ error: "D1 migration manifest is missing or invalid." }, 503);
+    }
+
+    let actualRows = 0;
+    const mismatches = [];
+    for (let offset = 0; offset < manifest.length; offset += 20) {
+      const batch = manifest.slice(offset, offset + 20);
+      const statements = batch.map(row => {
+        const tableName = String(row.table_name || "");
+        if (!/^[a-z][a-z0-9_]*$/.test(tableName)) {
+          throw new Error("Invalid table name in migration manifest");
+        }
+        return database.prepare('SELECT COUNT(*) AS row_count FROM "' + tableName + '"');
+      });
+      const results = await database.batch(statements);
+      for (let index = 0; index < batch.length; index++) {
+        const expected = Number(batch[index].copied_rows || 0);
+        const actual = Number(results[index]?.results?.[0]?.row_count || 0);
+        actualRows += actual;
+        if (actual !== expected) {
+          mismatches.push({ table: batch[index].table_name, expected, actual });
+        }
+      }
+    }
+
+    const copiedRows = manifest.reduce((sum, row) => sum + Number(row.copied_rows || 0), 0);
+    const estimateVariance = manifest
+      .filter(row => Number(row.source_row_estimate || 0) !== Number(row.copied_rows || 0))
+      .map(row => ({
+        table: row.table_name,
+        sourceEstimate: Number(row.source_row_estimate || 0),
+        copiedRows: Number(row.copied_rows || 0)
+      }));
+    const copiedAt = manifest.map(row => String(row.copied_at || "")).filter(Boolean).sort();
+
+    return json({
+      ready: true,
+      database: "kuro-migration-copy",
+      mode: "read-only-diagnostics",
+      productionDatabaseUnchanged: true,
+      manifestTableCount: manifest.length,
+      manifestCopiedRows: copiedRows,
+      actualCopiedRows: actualRows,
+      mismatchCount: mismatches.length,
+      mismatches: mismatches.slice(0, 20),
+      sourceEstimateVarianceCount: estimateVariance.length,
+      sourceEstimateVariance: estimateVariance,
+      firstCopiedAt: copiedAt[0] || null,
+      lastCopiedAt: copiedAt[copiedAt.length - 1] || null,
+      d1WritesPerformed: false
+    });
+  } catch (error) {
+    console.error("KURO D1 migration diagnostics failed", error?.message || error);
+    return json({ error: "D1コピーの整合性検査に失敗しました。" }, 503);
+  }
+}
+
 async function handleRealtime(request) {
   const url = new URL(request.url);
   const prefix = "/api/realtime";
@@ -855,6 +963,15 @@ export default {
         return json({
           error: error?.message || "KURO online room proxy failed"
         }, Number(error?.status) || 502);
+      }
+    }
+
+    if (url.pathname === "/api/migration/health") {
+      try {
+        return await handleMigrationHealth(request, env);
+      } catch (error) {
+        console.error("KURO D1 migration health handler failed", error?.message || error);
+        return json({ error: "D1 migration diagnostics unavailable." }, 503);
       }
     }
 

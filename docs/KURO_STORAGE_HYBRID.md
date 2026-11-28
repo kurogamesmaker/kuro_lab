@@ -41,3 +41,14 @@ Do not rename buckets, move files, rewrite object keys, change public/private se
 - No Supabase database or authentication endpoint is moved by this change.
 - No R2 bucket, paid subscription, or payment-card registration is needed.
 - To roll back the routing change, revert the Storage endpoint references and Worker route together; the underlying Supabase objects remain unchanged.
+
+## D1 read-only diagnostic stage (2026-11-28)
+
+- The existing database `kuro-migration-copy` is attached to the production Worker as `KURO_MIGRATION_DB`.
+- The new `GET /api/migration/health` route is admin-only. It verifies the live admin role through the existing Supabase Security Gate, not through the copied `admin_users` table.
+- The route executes only `SELECT COUNT(*)` statements against the D1 schema manifest's validated table names. It compares the actual D1 row count for each of the 89 copied tables with the manifest's copied row count.
+- The diagnostic returns only counts, table names with count differences, and copy timestamps. It never returns user records or personal data and performs no writes to D1. The live Security Gate may write its normal audit event to Supabase.
+- `/admin/migration.html` displays these checks. It requires an existing admin login.
+- This diagnostic verifies internal D1 copy integrity, not live parity with Supabase. Source row estimates are approximate and are displayed separately from actual D1 count mismatches.
+- No application reads or writes are routed to D1 yet. Supabase Auth, Postgres, Realtime, Edge Functions, and Storage remain production sources of truth.
+- Do not switch any production feature to D1 until per-feature read/write parity, authorization/RLS equivalence, transactional behavior, rollback, and live-data synchronization have been implemented and tested.
