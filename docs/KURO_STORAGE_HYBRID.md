@@ -57,7 +57,7 @@ No XP award, KC award, shop purchase/refund, admin adjustment, game result, or m
 - The diagnostic returns only counts, table names with count differences, and copy timestamps. It never returns user records or personal data and performs no writes to D1. The live Security Gate may write its normal audit event to Supabase.
 - `/admin/migration.html` displays these checks. It requires an existing admin login.
 - This diagnostic verifies internal D1 copy integrity, not live parity with Supabase. Source row estimates are approximate and are displayed separately from actual D1 count mismatches.
-- No application reads or writes are routed to D1 yet. Supabase Auth, Postgres, Realtime, Edge Functions, and Storage remain production sources of truth.
+- This section describes the isolated `KURO_MIGRATION_DB` diagnostics database only. No application reads or writes are routed to that staging database. The separate `KURO_APP_DB` mirror serves only the explicitly documented read-only projections; Supabase Auth, Postgres writes, Realtime, Edge Functions, and Storage remain production sources of truth.
 - Do not switch any production feature to D1 until per-feature read/write parity, authorization/RLS equivalence, transactional behavior, rollback, and live-data synchronization have been implemented and tested.
 
 ## D1 structural readiness audit (2026-11-28)
