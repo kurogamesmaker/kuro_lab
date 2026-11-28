@@ -759,7 +759,12 @@ export default {
       });
     }
 
-    if (url.pathname === "/api/turnstile/verify") {\n      try { return await handleTurnstileVerify(request, env); }\n      catch (error) { console.error("Turnstile verify handler failed", error); return json({ success: false, message: "Human verification failed" }, 500); }\n    }\n\n    if (url.pathname === "/api/web-search") {
+    if (url.pathname === "/api/turnstile/verify") {
+      try { return await handleTurnstileVerify(request, env); }
+      catch (error) { console.error("Turnstile verify handler failed", error); return json({ success: false, message: "Human verification failed" }, 500); }
+    }
+
+    if (url.pathname === "/api/web-search") {
       try {
         return await handleWebSearch(request, env);
       } catch (error) {
