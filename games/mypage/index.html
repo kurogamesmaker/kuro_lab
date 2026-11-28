@@ -349,11 +349,24 @@ async function loadCoinSummary(loadId,userId){
  try{
   var auth=await db.auth.getUser();
   if(auth.error||!auth.data||!auth.data.user||auth.data.user.id!==userId)return;
-  var result=await db.functions.invoke("kurogames-online",{body:{action:"coin_summary"}});
-  if(result.error)throw result.error;
-  if(!result.data||result.data.error)throw new Error(result.data&&result.data.error||"KURO COINを取得できませんでした。");
+  var data=null;
+  try{
+   var sessionResult=await db.auth.getSession();
+   var accessToken=sessionResult.data&&sessionResult.data.session&&sessionResult.data.session.access_token;
+   if(!accessToken)throw new Error("ログインセッションを取得できませんでした。");
+   var d1=await fetch("/api/kuro-d1/coin-summary",{method:"GET",credentials:"same-origin",cache:"no-store",headers:{accept:"application/json",Authorization:"Bearer "+accessToken}});
+   var payload=await d1.json().catch(function(){return null;});
+   if(!d1.ok||!payload||typeof payload.balance!=="number")throw new Error(payload&&payload.error||"Cloudflareから残高を取得できませんでした。");
+   data=payload;
+  }catch(d1Error){
+   console.warn("KURO D1 coin summary fallback:",d1Error);
+   var fallback=await db.functions.invoke("kurogames-online",{body:{action:"coin_summary"}});
+   if(fallback.error)throw fallback.error;
+   if(!fallback.data||fallback.data.error)throw new Error(fallback.data&&fallback.data.error||"KURO COINを取得できませんでした。");
+   data=fallback.data;
+  }
   if(loadId!==loadToken)return;
-  $("myCoinBalance").textContent=Math.max(0,number(result.data.balance)).toLocaleString("ja-JP")+" KC";
+  $("myCoinBalance").textContent=Math.max(0,number(data.balance)).toLocaleString("ja-JP")+" KC";
   $("myCoinStatus").textContent="KURO Lab全体で共通して使える残高です。";
  }catch(error){
   console.warn("KURO COIN summary unavailable:",error);
