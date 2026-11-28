@@ -8,7 +8,10 @@
 - Each run requests up to 25 oldest outbox events, applies them to the APAC D1 database `kuro-app-data-mirror`, then acknowledges those exact event IDs.
 - If a D1 batch fails, the events are not acknowledged and will be retried. If the acknowledgement RPC fails after the D1 commit, replay is idempotent because D1 uses primary-key upserts/deletes.
 - The queue is acknowledged by event IDs rather than a maximum-ID cursor, avoiding skipped events when concurrent Postgres transactions commit out of sequence.
-- The KuroGames homepage ticker reads only the public active-banner projection from D1 through `/api/kuro-d1/home-banners`. The endpoint returns the same allowlisted display fields and applies the same active-window filter as the former public Supabase RLS read. Supabase remains the write authority for banners; D1 read freshness follows the one-minute sync schedule.
+- The KuroGames homepage ticker reads only the public active-banner projection from D1 through `/api/kuro-d1/home-banners`.
+- Authenticated portal history reads use `/api/kuro-d1/portal-history`; the Worker validates the Supabase access token and derives the user ID from Auth before querying D1.
+- Public game/profile read projections use `/api/kuro-d1/public-player-summary` for the existing public KC balance, XP/level state, and thresholds, and `/api/kuro-d1/level-leaderboard` for the top 50 level entries with public profile display fields.
+- These endpoints use only `KURO_APP_DB`, are read-only, and return `Cache-Control: no-store`. They preserve the existing public visibility boundary; no private ledger or claim data is exposed.
 
 ## Security
 
@@ -32,6 +35,6 @@
 ## Scope and limitations
 
 - This is one-way Supabase → Cloudflare synchronization. Cloudflare D1 is not yet the write authority.
-- The current KURO app remains routed to Supabase. Do not change app reads/writes until per-feature authorization, triggers, RPCs and integrity rules have been ported and tested.
+- Supabase remains the authoritative write source. Only the explicit read-only endpoints listed above use D1; all other app reads and all writes continue to use Supabase until per-feature authorization, triggers, RPCs and integrity rules have been ported and tested.
 - If the source schema changes, apply the corresponding D1 schema migration before allowing the Worker to sync those new columns. Schema mismatches deliberately stop and retain the event for retry.
 - A backlog larger than 25 events is processed over multiple Cron runs.
