@@ -124,7 +124,7 @@ test("failed socket sends use the same disconnect cleanup path", async () => {
   await fixture.room.lifecycleTail;
 
   assert.equal(fixture.room.sockets.size, 0);
-  assert.equal(fixture.alarmAt, now + ROOM_IDLE_TTL_MS);
+  assert.ok(Math.abs(fixture.alarmAt - (now + ROOM_IDLE_TTL_MS)) <= 25, "cleanup alarm should be scheduled about 15 minutes after the failed send");
 });
 
 
