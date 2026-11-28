@@ -252,7 +252,7 @@ async function handleAdmin(action, body, db, user) {
     ]);
     if (Number(results[1]?.meta?.changes || 0) !== 1) throw new KuroEconomyError(409, "XPを更新できませんでした。残高を再確認してください。");
     const result = await db.prepare("SELECT user_id,total_xp,current_level,updated_at FROM kuro_level_users WHERE user_id=?").bind(userId).first();
-    return { ok: true, result };
+    return { ok: true, balance: Number(result?.balance || 0), notificationSent: true, result };
   }
 
   if (action === "get_coin_user_detail") {
@@ -328,7 +328,7 @@ async function handleAdmin(action, body, db, user) {
     await db.prepare(
       "INSERT INTO kuro_coin_game_rewards(game_id,mode,reward_amount,enabled,required_cpu_difficulty,reward_label,updated_by_user_id,updated_at,reward_type,score_tiers) VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(game_id,mode,required_cpu_difficulty) DO UPDATE SET reward_amount=excluded.reward_amount,enabled=excluded.enabled,reward_label=excluded.reward_label,updated_by_user_id=excluded.updated_by_user_id,updated_at=excluded.updated_at,reward_type=excluded.reward_type"
     ).bind(gameId, mode, amount, enabled, "NONE", label, user.id, now, "fixed", existing?.score_tiers || "[]").run();
-    return { reward: { game_id: gameId, mode, reward_amount: amount, enabled: !!enabled, required_cpu_difficulty: "NONE", reward_label: label, reward_type: "fixed", score_tiers: existing?.score_tiers || "[]", updated_at: now } };
+    return { ok: true, reward: { game_id: gameId, mode, reward_amount: amount, enabled: !!enabled, required_cpu_difficulty: "NONE", reward_label: label, reward_type: "fixed", score_tiers: existing?.score_tiers || "[]", updated_at: now } };
   }
 
   if (action === "adjust_coin_balance") {
