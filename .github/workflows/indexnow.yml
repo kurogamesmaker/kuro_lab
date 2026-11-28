@@ -50,7 +50,6 @@ jobs:
           // Notify IndexNow about account pages changed to noindex as well.
           const noindexUrls = [
             '/mypage/',
-            '/favorites/',
             '/history/',
             '/achievements/',
             '/settings/'
