@@ -141,6 +141,17 @@ function render(){
   return '<article class="item '+(unread?"unread":"")+'"><div class="icon">'+iconFor(item)+'</div><div class="item-main"><div class="meta"><span class="source '+sourceClass+'">'+source+'</span><span>'+esc(item.serviceLabel||"")+'</span><time>'+esc(fmt(item.created_at))+'</time></div><h2>'+esc(item.title)+(unread?'<i class="unread-dot" aria-label="未読"></i>':"")+'</h2>'+(item.body?'<p>'+esc(item.body)+'</p>':"")+'<div class="actions">'+(action?'<button class="action primary" type="button" data-open="'+esc(item.key)+'">開く</button>':'<button class="action" type="button" data-read="'+esc(item.key)+'">'+(unread?"既読にする":"確認済み")+'</button>')+(unread&&action?'<button class="action" type="button" data-read="'+esc(item.key)+'">既読にする</button>':"")+'</div></div></article>';
  }).join("");
 }
+async function callEconomyNotifications(method="GET",payload=null){
+ const sessionResult=await db.auth.getSession();if(sessionResult?.error)throw sessionResult.error;
+ const token=sessionResult?.data?.session?.access_token;if(!token)throw new Error("ログイン状態を確認できません。");
+ const response=await fetch("/api/kuro-economy/notifications"+(method==="GET"?"?limit=100":""),{
+  method,headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json","Accept":"application/json"},
+  ...(payload?{body:JSON.stringify(payload)}:{})
+ });
+ const result=await response.json().catch(()=>({}));
+ if(!response.ok)throw new Error(result?.error||"通知を読み込めませんでした。");
+ return result;
+}
 async function load(){
  if(!db){list.innerHTML='<div class="error">認証システムを読み込めませんでした。ページを再読み込みしてください。</div>';status.textContent="接続エラー";return;}
  if(refreshing)return;refreshing=true;status.textContent="通知を更新中…";
