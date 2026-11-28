@@ -299,13 +299,20 @@ async function getAdminSnsActivity(db, user, url) {
   if (!since || Number.isNaN(sinceDate.getTime())) {
     throw new KuroSnsError(400, "集計開始日時が正しくありません。");
   }
-  const [postCount, posts, replies] = await Promise.all([
+  const sinceIso = sinceDate.toISOString();
+  const [postCount, postRangeCount, replyRangeCount, likeRangeCount, posts, replies] = await Promise.all([
     db.prepare("SELECT COUNT(*) AS total FROM posts").first(),
-    db.prepare("SELECT created_at FROM posts WHERE created_at>=? ORDER BY created_at ASC LIMIT 50000").bind(sinceDate.toISOString()).all(),
-    db.prepare("SELECT created_at FROM post_replies WHERE created_at>=? ORDER BY created_at ASC LIMIT 50000").bind(sinceDate.toISOString()).all()
+    db.prepare("SELECT COUNT(*) AS total FROM posts WHERE created_at>=?").bind(sinceIso).first(),
+    db.prepare("SELECT COUNT(*) AS total FROM post_replies WHERE created_at>=?").bind(sinceIso).first(),
+    db.prepare("SELECT COUNT(*) AS total FROM post_likes WHERE created_at>=?").bind(sinceIso).first(),
+    db.prepare("SELECT created_at FROM posts WHERE created_at>=? ORDER BY created_at ASC LIMIT 50000").bind(sinceIso).all(),
+    db.prepare("SELECT created_at FROM post_replies WHERE created_at>=? ORDER BY created_at ASC LIMIT 50000").bind(sinceIso).all()
   ]);
   return {
     post_count: Number(postCount?.total || 0),
+    posts_in_range: Number(postRangeCount?.total || 0),
+    replies_in_range: Number(replyRangeCount?.total || 0),
+    likes_in_range: Number(likeRangeCount?.total || 0),
     posts: Array.isArray(posts?.results) ? posts.results : [],
     replies: Array.isArray(replies?.results) ? replies.results : [],
     source: "cloudflare-d1"
