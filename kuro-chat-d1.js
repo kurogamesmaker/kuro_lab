@@ -689,6 +689,51 @@ async function handleQuery(request,env,user) {
   return {data,error:null};
 }
 
+export async function handleKuroD1ChatAccountCleanup(request,env) {
+  const origin = request.headers.get("Origin");
+  if (request.method === "OPTIONS") {
+    if (origin && !ALLOWED_ORIGINS.has(origin)) return new Response(null,{status:403});
+    return new Response(null,{status:204,headers:{"Cache-Control":"no-store"}});
+  }
+  if (origin && !ALLOWED_ORIGINS.has(origin)) return json({error:{message:"Origin not allowed",code:"ORIGIN_NOT_ALLOWED"}},403,origin);
+  if (request.method !== "POST") return json({error:{message:"POST required",code:"METHOD_NOT_ALLOWED"}},405,origin);
+  try {
+    const user = await authenticate(request);
+    const db = env?.KURO_APP_DB;
+    if (!db) throw new KuroChatError(503,"Cloudflare D1に接続できません。","D1_UNAVAILABLE");
+    const userId = user.id;
+    const conversations = await db.prepare("SELECT id FROM chat_conversations WHERE user_a=? OR user_b=?")
+      .bind(userId,userId).all();
+    const conversationIds = (conversations?.results || []).map(row=>String(row.id));
+
+    const results = await db.batch([
+      db.prepare("DELETE FROM notifications WHERE message_id IN (SELECT id FROM chat_messages WHERE conversation_id IN (SELECT id FROM chat_conversations WHERE user_a=? OR user_b=?))").bind(userId,userId),
+      db.prepare("DELETE FROM chat_message_hides WHERE message_id IN (SELECT id FROM chat_messages WHERE conversation_id IN (SELECT id FROM chat_conversations WHERE user_a=? OR user_b=?))").bind(userId,userId),
+      db.prepare("DELETE FROM chat_message_reads WHERE message_id IN (SELECT id FROM chat_messages WHERE conversation_id IN (SELECT id FROM chat_conversations WHERE user_a=? OR user_b=?))").bind(userId,userId),
+      db.prepare("DELETE FROM chat_messages WHERE conversation_id IN (SELECT id FROM chat_conversations WHERE user_a=? OR user_b=?)").bind(userId,userId),
+      db.prepare("DELETE FROM chat_conversations WHERE user_a=? OR user_b=?").bind(userId,userId),
+      db.prepare("UPDATE group_conversations SET created_by=NULL WHERE created_by=?").bind(userId),
+      db.prepare("DELETE FROM group_chat_message_reads WHERE reader_id=?").bind(userId),
+      db.prepare("DELETE FROM group_chat_mentions WHERE mentioned_user_id=?").bind(userId),
+      db.prepare("DELETE FROM group_chat_members WHERE user_id=?").bind(userId),
+      db.prepare("DELETE FROM notifications WHERE recipient_id=? OR actor_id=?").bind(userId,userId),
+      db.prepare("DELETE FROM push_subscriptions WHERE user_id=?").bind(userId)
+    ]);
+    const deleted = (results || []).reduce((sum,result)=>sum+(Number(result?.meta?.changes)||0),0);
+    return json({
+      success:true,
+      direct_conversations:conversationIds.length,
+      affected_rows:deleted,
+      group_messages_preserved:true,
+      source:"cloudflare-d1"
+    },200,origin);
+  } catch(error) {
+    const status = Number(error?.status) || 500;
+    if (status >= 500) console.error("[kuro-chat-d1-account-cleanup]",error?.code || "ERROR",error?.message || error);
+    return json({error:{message:error?.message || "チャットデータを整理できませんでした。",code:error?.code || "D1_CHAT_CLEANUP_FAILED"}},status,origin);
+  }
+}
+
 export async function handleKuroD1ChatAdminStats(request,env) {
   const origin = request.headers.get("Origin");
   if (request.method === "OPTIONS") {
