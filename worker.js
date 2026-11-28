@@ -880,7 +880,8 @@ async function handleMigrationStructure(request, env) {
           "ユーザー定義トリガー119件の呼び出し元と副作用を調べ、必要な処理をWorkerへ移植する",
           "ビュー1件とビュー列8件の利用箇所を確認し、SQLまたはWorkerの読み取り処理へ置き換える",
           "SQLルーチン92件の利用状況を確認し、必要なRPC処理だけをWorkerへ移植する",
-          "インデックス257件とD1側82件をクエリ用途ごとに照合し、D1向けに再設計する"
+          "インデックス257件とD1側82件をクエリ用途ごとに照合し、D1向けに再設計する",
+          "UNIQUE制約17件とCHECK制約197件をテーブル定義と照合し、必要な整合性検証をD1またはWorkerで再現する"
         ]
       },
       d1WritesPerformed: false
