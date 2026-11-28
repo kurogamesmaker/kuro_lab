@@ -1759,8 +1759,9 @@ async function cleanupExpiredReadDmMessages(env) {
   const results = await db.batch([
     db.prepare("DELETE FROM notifications WHERE message_id IN (" + expiredMessageIds + ")"),
     db.prepare("DELETE FROM chat_message_hides WHERE message_id IN (" + expiredMessageIds + ")"),
-    db.prepare("DELETE FROM chat_message_reads WHERE message_id IN (" + expiredMessageIds + ")"),
-    db.prepare("DELETE FROM chat_messages WHERE id IN (" + expiredMessageIds + ")")
+    // Delete messages while their read receipts still exist; then remove orphaned receipts.
+    db.prepare("DELETE FROM chat_messages WHERE id IN (" + expiredMessageIds + ")"),
+    db.prepare("DELETE FROM chat_message_reads WHERE message_id NOT IN (SELECT id FROM chat_messages)")
   ]);
   return (results || []).reduce((sum, result) => sum + (Number(result?.meta?.changes) || 0), 0);
 }
