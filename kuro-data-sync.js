@@ -1,9 +1,9 @@
-// Deployment note: D1 economy writes remain blocked until the explicit authority flag is enabled.
+// KURO cross-service database mirror. Economy authority is active in production D1.
 const SUPABASE_URL = "https://cprvpphlfpmiegjiutjn.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
 const PULL_RPC = "/rest/v1/rpc/kuro_cloudflare_sync_pull";
 const ACK_RPC = "/rest/v1/rpc/kuro_cloudflare_sync_ack";
-const BATCH_SIZE = 100;
+const BATCH_SIZE = 250;
 
 const SYNC_TABLES = new Set([
   "profiles", "posts", "post_likes", "post_replies", "follows", "notifications",
@@ -19,6 +19,12 @@ const SYNC_TABLES = new Set([
   "game_studio_games", "game_tictactoe_verified_events", "game_tictactoe_verified_stats",
   "game_world_blocks", "werewolf_action_receipts", "werewolf_chat_messages",
   "werewolf_private_sessions", "werewolf_rooms",
+  "admin_users", "admin_audit_logs", "admin_email_logs",
+  "account_suspension_appeals", "account_suspension_appeal_messages",
+  "game_tictactoe_events_archive", "game_tictactoe_stats_archive", "game_verification_sessions",
+  "kuro_game_play_events", "kuro_ip_ban_logs", "kuro_ip_bans", "kuro_security_events",
+  "portal_request_notifications", "portal_requests", "pro_applications", "pro_invitations", "pro_user_controls",
+  "push_subscriptions", "sns_user_reports", "usage_events",
   "kuro_coin_balances", "kuro_coin_game_rewards", "kuro_coin_ledger", "kuro_coin_verified_game_events",
   "kuro_game_user_stats", "kuro_game_win_events", "kuro_economy_pending_events",
   "kuro_level_coin_reward_claims", "kuro_level_coin_rewards", "kuro_level_game_rewards",
