@@ -119,7 +119,7 @@ Deno.serve(async (req: Request) => {
           row.subscription as webpush.PushSubscription,
           JSON.stringify({ title, body: message, url: "/sns/v2/mobile/", tag })
         );
-        return { id: String(row.id), ok: true };
+        return { id: String(row.id), ok: true, statusCode: undefined, message: undefined, stale: false };
       } catch (error) {
         const code = (error as { statusCode?: number })?.statusCode;
         const failureMessage = String((error as Error)?.message || "push failed").slice(0, 180);
