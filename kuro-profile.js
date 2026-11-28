@@ -14,7 +14,38 @@
   var chatSending = false;
 
   function getDb() {
-    return window.kuroSNSDB || window.kuroGamesDB || window.kuroPortalDB || null;
+    var client = window.kuroSNSDB || window.kuroGamesDB || window.kuroPortalDB || null;
+    if (client && window.KuroD1Chat) window.KuroD1Chat.install(client);
+    return client;
+  }
+
+  function ensureD1ChatAdapter(client) {
+    if (!client) return Promise.resolve(null);
+    if (window.KuroD1Chat) {
+      window.KuroD1Chat.install(client);
+      return Promise.resolve(client);
+    }
+    if (!window.__kuroD1ChatAdapterPromise) {
+      window.__kuroD1ChatAdapterPromise = new Promise(function(resolve,reject) {
+        var existing = document.querySelector('script[data-kuro-d1-chat-adapter]');
+        if (existing) {
+          existing.addEventListener('load',resolve,{once:true});
+          existing.addEventListener('error',reject,{once:true});
+          return;
+        }
+        var script = document.createElement('script');
+        script.src = '/kuro-chat-d1-client.js?v=20261128d1';
+        script.async = true;
+        script.dataset.kuroD1ChatAdapter = '1';
+        script.onload = resolve;
+        script.onerror = function(){ reject(new Error('D1チャットクライアントを読み込めませんでした。')); };
+        document.head.appendChild(script);
+      });
+    }
+    return window.__kuroD1ChatAdapterPromise.then(function(){
+      if (window.KuroD1Chat) window.KuroD1Chat.install(client);
+      return client;
+    });
   }
 
   function escapeHtml(value) {
@@ -692,6 +723,7 @@
   async function openDirectChat() {
     var db = getDb();
     if (!db || !currentProfile) return;
+    await ensureD1ChatAdapter(db);
     var user = await getSignedInUser(db);
     if (!user) {
       setSocialStatus("チャットを使うにはKUROアカウントでログインしてください。");
