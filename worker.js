@@ -1,4 +1,5 @@
 import { handleKuroEconomyRequest } from "./kuro-economy-d1.js";
+import { handleKuroD1AdminCheck, handleKuroD1SecurityGate } from "./kuro-security-d1.js";
 const FORCE_MARU_ICON_VERSION = "20261122forcefavicon3";
 const FORCE_SECURITY_GATE_VERSION = "20261128gate5";
 
@@ -1793,6 +1794,24 @@ export default {
       } catch (error) {
         console.error("KURO web search handler failed", error);
         return json({ code: "SEARCH_INTERNAL_ERROR", message: "検索処理に失敗しました。" }, 500);
+      }
+    }
+
+    if (url.pathname === "/api/kuro-d1/admin-check") {
+      try {
+        return await handleKuroD1AdminCheck(request, env);
+      } catch (error) {
+        console.error("KURO D1 admin check failed", error?.message || error);
+        return json({ error: "管理者権限を確認できませんでした。" }, 503);
+      }
+    }
+
+    if (url.pathname === "/api/kuro-d1/security-gate") {
+      try {
+        return await handleKuroD1SecurityGate(request, env);
+      } catch (error) {
+        console.error("KURO D1 Security Gate failed", error?.message || error);
+        return json({ allowed: false, decision: "error", message: "セキュリティ検証を完了できませんでした。" }, 503);
       }
     }
 
