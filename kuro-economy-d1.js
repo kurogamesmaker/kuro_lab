@@ -107,6 +107,26 @@ async function requireDb(env) {
   return env.KURO_APP_DB;
 }
 
+const ADMIN_WRITE_ACTIONS = new Set([
+  "save_level_settings", "save_level_game_reward", "save_level_thresholds",
+  "save_level_coin_rewards", "adjust_level_xp", "update_coin_reward", "adjust_coin_balance"
+]);
+const STORE_WRITE_ACTIONS = new Set(["claim_free", "purchase", "discard_item", "equip"]);
+
+async function requireD1WriteAuthority(db) {
+  let control;
+  try {
+    control = await db.prepare(
+      "SELECT d1_write_authority FROM __kuro_economy_mirror_control WHERE id=1"
+    ).first();
+  } catch (_) {
+    throw new KuroEconomyError(503, "Cloudflareへの切り替え準備中です。少し時間をおいて再度お試しください。");
+  }
+  if (Number(control?.d1_write_authority || 0) !== 1) {
+    throw new KuroEconomyError(503, "Cloudflareへの切り替え準備中です。少し時間をおいて再度お試しください。");
+  }
+}
+
 async function handleAdmin(action, body, db, user) {
   if (action === "get_level_system") {
     const [settings, rewards, thresholds, coinRewards, games, users, ledger] = await Promise.all([
@@ -645,6 +665,8 @@ export async function handleKuroEconomyRequest(request, env) {
     try { body = raw ? JSON.parse(raw) : {}; } catch (_) { throw new KuroEconomyError(400, "JSONが正しくありません。"); }
     if (!body || typeof body !== "object" || Array.isArray(body)) throw new KuroEconomyError(400, "JSONが正しくありません。");
     const action = typeof body.action === "string" ? body.action : "";
+    const requiresD1Authority = (isAdmin && ADMIN_WRITE_ACTIONS.has(action)) || (isStore && STORE_WRITE_ACTIONS.has(action));
+    if (requiresD1Authority) await requireD1WriteAuthority(db);
     const data = isAdmin
       ? await handleAdmin(action, body, db, user)
       : await handleStore(action, body, db, user);
