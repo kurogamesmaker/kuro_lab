@@ -73,6 +73,25 @@ async function kuroSecretHmacHex(secret: string, message: string) {
   return Array.from(new Uint8Array(signature), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+async function callD1Economy(req: Request, payload: Record<string, unknown>) {
+  const authorization = req.headers.get("Authorization") || "";
+  if (!authorization.startsWith("Bearer ")) throw new Error("ログイン状態を確認できません。");
+  let upstream: Response;
+  try {
+    upstream = await fetch("https://kurolab.cc.cd/api/kuro-economy/admin", {
+      method: "POST",
+      headers: { "Authorization": authorization, "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(12000)
+    });
+  } catch (_) {
+    throw new Error("Cloudflareの経済処理に接続できません。少し時間をおいて再度お試しください。");
+  }
+  const result = await upstream.json().catch(() => ({}));
+  if (!upstream.ok) throw new Error(result?.error || "Cloudflareの経済処理に失敗しました。");
+  return result;
+}
+
 function kuroSecretDate(value: unknown): string | null | undefined {
   if (value === null || value === undefined || value === "") return null;
   const parsed = new Date(String(value));
@@ -140,6 +159,41 @@ Deno.serve(async (req: Request) => {
     const retiredPlanActions = new Set(["list_pro_management","review_pro_application","create_pro_invitation","update_pro_invitation","update_pro_membership","set_pro_user_control","set_user_plan"]);
     if (retiredPlanActions.has(action)) {
       return reply({ error: "KURO Labのプラン区分は終了しました。すべての利用者が共通機能を利用できます。" }, 410, origin);
+    }
+
+
+    const d1EconomyActions = new Set([
+      "get_level_system", "save_level_settings", "save_level_game_reward",
+      "save_level_thresholds", "save_level_coin_rewards", "adjust_level_xp",
+      "get_coin_economy", "update_coin_reward", "adjust_coin_balance"
+    ]);
+    if (d1EconomyActions.has(action)) {
+      const result = await callD1Economy(req, body);
+      const auditActions: Record<string, string> = {
+        save_level_settings: "kurogames_level.settings",
+        save_level_game_reward: "kurogames_level.game_reward",
+        save_level_thresholds: "kurogames_level.thresholds",
+        save_level_coin_rewards: "kurogames_level.coin_rewards",
+        adjust_level_xp: "kurogames_level.manual_adjustment",
+        update_coin_reward: "kurogames_coin.reward",
+        adjust_coin_balance: "kurogames_coin.manual_adjustment"
+      };
+      const auditAction = auditActions[action];
+      if (auditAction) {
+        const targetUserId = action === "adjust_level_xp" || action === "adjust_coin_balance"
+          ? String(body.userId || "") : null;
+        const metadata = action === "adjust_level_xp" || action === "adjust_coin_balance"
+          ? { amount: body.amount, reason: body.reason, result: result.result }
+          : { request: body, result };
+        const { error: auditError } = await admin.from("admin_audit_logs").insert({
+          actor_user_id: caller.id,
+          ...(targetUserId ? { target_user_id: targetUserId } : {}),
+          action: auditAction,
+          metadata
+        });
+        if (auditError) throw auditError;
+      }
+      return reply(result, 200, origin);
     }
 
 
