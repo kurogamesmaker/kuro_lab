@@ -39,7 +39,7 @@
           return;
         }
         const script = document.createElement('script');
-        script.src = '/kuro-chat-d1-client.js?v=20261128d1';
+        script.src = '/kuro-chat-d1-client.js?v=20261128d2';
         script.async = true;
         script.dataset.kuroD1ChatAdapter = '1';
         script.onload = resolve;
