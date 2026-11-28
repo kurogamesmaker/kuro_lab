@@ -36,5 +36,6 @@
 
 - This is one-way Supabase → Cloudflare synchronization. Cloudflare D1 is not yet the write authority.
 - Supabase remains the authoritative write source. Only the explicit read-only endpoints listed above use D1; all other app reads and all writes continue to use Supabase until per-feature authorization, triggers, RPCs and integrity rules have been ported and tested.
+- Client reads automatically fall back to the existing Supabase query/function path if an individual D1 read projection fails.
 - If the source schema changes, apply the corresponding D1 schema migration before allowing the Worker to sync those new columns. Schema mismatches deliberately stop and retain the event for retry.
 - A backlog larger than 25 events is processed over multiple Cron runs.
