@@ -149,6 +149,36 @@ async function webSearchCacheKey(request, query, mode) {
   return new Request(url.toString(), { method: "GET" });
 }
 
+async function handleTurnstileVerify(request, env) {
+ const origin=request.headers.get("Origin")||"";
+ const allowedOrigins=new Set(["https://kurolab.cc.cd","https://www.kurolab.cc.cd"]);
+ if(request.method==="OPTIONS"){
+  return new Response(null,{status:allowedOrigins.has(origin)?204:403,headers:{
+   "access-control-allow-origin":allowedOrigins.has(origin)?origin:"null",
+   "access-control-allow-methods":"POST, OPTIONS","access-control-allow-headers":"content-type",
+   "access-control-max-age":"600","vary":"Origin"
+  }});
+ }
+ if(request.method!=="POST")return json({success:false,message:"POST required"},405);
+ if(!allowedOrigins.has(origin))return json({success:false,message:"Origin not allowed"},403);
+ if(!env?.TURNSTILE_SECRET)return json({success:false,message:"Human verification is not configured"},503);
+ let body;
+ try{body=await request.json()}catch(_){return json({success:false,message:"Invalid JSON"},400)}
+ const token=typeof body?.token==="string"?body.token.trim():"";
+ if(!token||token.length>2048)return json({success:false,message:"Invalid verification token"},400);
+ const form=new FormData();form.append("secret",env.TURNSTILE_SECRET);form.append("response",token);
+ const ip=request.headers.get("CF-Connecting-IP");if(ip)form.append("remoteip",ip);
+ try{
+  const upstream=await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify",{method:"POST",body:form});
+  const result=await upstream.json();
+  if(!upstream.ok||result?.success!==true)return json({success:false,message:"Human verification failed"},403);
+  return json({success:true});
+ }catch(error){
+  console.error("Turnstile Siteverify unavailable",error?.message||error);
+  return json({success:false,message:"Human verification service unavailable"},502);
+ }
+}
+
 async function handleWebSearch(request, env) {
   if (request.method !== "POST") return json({ code: "METHOD_NOT_ALLOWED", message: "POST required" }, 405);
   const length = Number(request.headers.get("content-length") || 0);
@@ -729,7 +759,7 @@ export default {
       });
     }
 
-    if (url.pathname === "/api/web-search") {
+    if (url.pathname === "/api/turnstile/verify") {\n      try { return await handleTurnstileVerify(request, env); }\n      catch (error) { console.error("Turnstile verify handler failed", error); return json({ success: false, message: "Human verification failed" }, 500); }\n    }\n\n    if (url.pathname === "/api/web-search") {
       try {
         return await handleWebSearch(request, env);
       } catch (error) {
