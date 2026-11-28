@@ -15,23 +15,24 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" }
   });
 
-const CHAT_D1_ENDPOINT = "https://kurolab.cc.cd/api/kuro-d1/chat";
+const PUSH_D1_ENDPOINT = "https://kurolab.cc.cd/api/kuro-d1/push";
 
-async function chatD1Query(auth: string, body: Record<string, unknown>) {
-  const response = await fetch(CHAT_D1_ENDPOINT, {
+async function d1PushRequest(
+  auth: string,
+  body: Record<string, unknown>
+): Promise<{ response: Response; payload: Record<string, unknown> | null }> {
+  const response = await fetch(PUSH_D1_ENDPOINT, {
     method: "POST",
     headers: {
       "Authorization": auth,
       "Content-Type": "application/json",
       "Accept": "application/json"
     },
-    body: JSON.stringify({ ...body, operation: "select", limit: body.limit || 200 })
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(10000)
   });
-  const payload = await response.json().catch(() => null);
-  if (!response.ok || !payload || payload.error) {
-    throw new Error(payload?.error?.message || "Cloudflare D1 chat lookup failed (" + response.status + ")");
-  }
-  return payload.data;
+  const payload = await response.json().catch(() => null) as Record<string, unknown> | null;
+  return { response, payload };
 }
 
 Deno.serve(async (req: Request) => {
@@ -42,7 +43,6 @@ Deno.serve(async (req: Request) => {
 
   const url = Deno.env.get("SUPABASE_URL");
   const anon = Deno.env.get("SUPABASE_ANON_KEY");
-  const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const pub = Deno.env.get("VAPID_PUBLIC_KEY");
   const priv = Deno.env.get("VAPID_PRIVATE_KEY");
   const subject = Deno.env.get("VAPID_SUBJECT");
@@ -50,7 +50,6 @@ Deno.serve(async (req: Request) => {
   const missing = [
     !url && "SUPABASE_URL",
     !anon && "SUPABASE_ANON_KEY",
-    !service && "SUPABASE_SERVICE_ROLE_KEY",
     !pub && "VAPID_PUBLIC_KEY",
     !priv && "VAPID_PRIVATE_KEY",
     !subject && "VAPID_SUBJECT"
@@ -59,12 +58,12 @@ Deno.serve(async (req: Request) => {
 
   try {
     const auth = req.headers.get("Authorization");
-    if (!auth || !/^Bearer\s+\S+/i.test(auth)) return json({ error: "Missing authorization" }, 401);
+    if (!auth || !/^Bearer\\s+\\S+/i.test(auth)) return json({ error: "Missing authorization" }, 401);
 
-    // JWT verification is performed here so OPTIONS preflight can pass the gateway.
+    // Confirm the caller's Supabase Auth session before forwarding the same user token to D1.
     const client = createClient(url!, anon!, { global: { headers: { Authorization: auth } } });
     const { data: { user }, error: authErr } = await client.auth.getUser();
-    if (authErr || !user) return json({ error: "Unauthorized" }, 401);
+    if (authErr || !user || user.is_anonymous) return json({ error: "Unauthorized" }, 401);
 
     let body: Record<string, unknown>;
     try {
@@ -77,134 +76,104 @@ Deno.serve(async (req: Request) => {
       return json({ error: "Invalid JSON body" }, 400);
     }
 
-    const admin = createClient(url!, service!);
-    let recipientIds: string[] = [], title = "KURO", message = "", tag = "kuro-notification";
-
-    if (body.type === "test") {
-      if (typeof body.publicKey !== "string" || body.publicKey !== pub) {
-        return json({ error: "VAPID public key mismatch", publicKeyMatches: false }, 409);
-      }
-      recipientIds = [user.id];
-      message = "KUROのプッシュ通知テストだよ";
-      tag = "kuro-push-test-" + Date.now();
-    } else if (typeof body.groupMessageId === "string" && body.groupMessageId) {
-      const m = await chatD1Query(auth, {
-        table: "group_chat_messages",
-        columns: "id,group_id,sender_id,content",
-        filters: [{ column: "id", op: "eq", value: body.groupMessageId }],
-        cardinality: "maybeSingle",
-        limit: 1
-      });
-      if (!m || m.sender_id !== user.id) return json({ error: "Group message not found or not sent by current user" }, 403);
-
-      const members = await chatD1Query(auth, {
-        table: "group_chat_members",
-        columns: "user_id",
-        filters: [{ column: "group_id", op: "eq", value: m.group_id }],
-        limit: 200
-      });
-      if (!members?.some((member) => member.user_id === user.id)) {
-        return json({ error: "Group membership verification failed" }, 403);
-      }
-
-      recipientIds = [...new Set((members || []).map((member) => member.user_id).filter((id) => id !== user.id))];
-      if (!recipientIds.length) return json({ sent: 0, registered: 0, error: "No other group members" }, 409);
-
-      const group = await chatD1Query(auth, {
-        table: "group_conversations",
-        columns: "name",
-        filters: [{ column: "id", op: "eq", value: m.group_id }],
-        cardinality: "maybeSingle",
-        limit: 1
-      });
-      title = group?.name ? String(group.name).slice(0, 80) : "KURO グループチャット";
-      message = String(m.content || "新しいグループメッセージが届いたよ").slice(0, 160);
-      tag = "kuro-group-" + m.group_id;
-    } else if (typeof body.messageId === "string" && body.messageId) {
-      const m = await chatD1Query(auth, {
-        table: "chat_messages",
-        columns: "id,conversation_id,sender_id,content",
-        filters: [{ column: "id", op: "eq", value: body.messageId }],
-        cardinality: "maybeSingle",
-        limit: 1
-      });
-      if (!m || m.sender_id !== user.id) return json({ error: "Message not found or not sent by current user" }, 403);
-      const c = await chatD1Query(auth, {
-        table: "chat_conversations",
-        columns: "user_a,user_b",
-        filters: [{ column: "id", op: "eq", value: m.conversation_id }],
-        cardinality: "maybeSingle",
-        limit: 1
-      });
-      if (!c || ![c.user_a, c.user_b].includes(user.id)) return json({ error: "Conversation access denied" }, 403);
-      recipientIds = [c.user_a === user.id ? c.user_b : c.user_a];
-      message = String(m.content || "新しいメッセージが届いたよ").slice(0, 160);
-      tag = "kuro-message-" + m.conversation_id;
-    } else {
-      const target = typeof body.targetUserId === "string" ? body.targetUserId : "";
-      const type = body.type === "like" ? "like" : body.type === "follow" ? "follow" : "";
-      if (!target || !type || target === user.id) return json({ error: "Invalid notification" }, 400);
-      if (type === "follow") {
-        const { data } = await admin.from("follows").select("follower_id")
-          .eq("follower_id", user.id).eq("following_id", target).maybeSingle();
-        if (!data) return json({ error: "Follow action not found" }, 403);
-        message = "あなたをフォローしました";
-      } else {
-        const postId = typeof body.postId === "string" ? body.postId : "";
-        const { data: post } = await admin.from("posts").select("id,user_id").eq("id", postId).maybeSingle();
-        if (!post || post.user_id !== target) return json({ error: "Post recipient mismatch" }, 403);
-        const { data: like } = await admin.from("post_likes").select("post_id")
-          .eq("post_id", postId).eq("user_id", user.id).maybeSingle();
-        if (!like) return json({ error: "Like action not found" }, 403);
-        message = "あなたの投稿にいいねしました";
-      }
-      recipientIds = [target];
-      tag = "kuro-" + type + "-" + user.id;
+    if (body.type === "test" && (typeof body.publicKey !== "string" || body.publicKey !== pub)) {
+      return json({ error: "VAPID public key mismatch", publicKeyMatches: false }, 409);
     }
 
-    const { data: subs, error: subErr } = await admin.from("push_subscriptions")
-      .select("id,subscription").in("user_id", recipientIds);
-    if (subErr) throw subErr;
-    if (!subs?.length) return json({
-      sent: 0,
-      registered: 0,
-      skipped: "No push subscription for recipient",
-      hint: "Enable notifications from the installed home-screen app."
-    }, 200);
+    const { response: targetResponse, payload: targetPayload } = await d1PushRequest(auth, {
+      action: "targets",
+      event: body
+    });
+    if (!targetResponse.ok || !targetPayload || targetPayload.success !== true) {
+      const error = targetPayload?.error as Record<string, unknown> | undefined;
+      return json({
+        error: String(error?.message || "Cloudflare D1 could not resolve push targets"),
+        code: String(error?.code || "D1_PUSH_TARGETS_FAILED"),
+        upstreamStatus: targetResponse.status
+      }, targetResponse.status >= 400 && targetResponse.status < 500 ? targetResponse.status : 502);
+    }
+
+    const subscriptions = Array.isArray(targetPayload.subscriptions)
+      ? targetPayload.subscriptions.filter((row): row is Record<string, unknown> =>
+          !!row && typeof row === "object" && typeof row.id === "string" &&
+          !!row.subscription && typeof row.subscription === "object")
+      : [];
+    if (!subscriptions.length) {
+      return json({
+        sent: 0,
+        registered: 0,
+        skipped: "No push subscription for recipient",
+        source: "cloudflare-d1",
+        hint: "通知を利用する端末で「スマホ通知をオンにする」を実行してください。"
+      }, 200);
+    }
+
+    const title = String(targetPayload.title || "KURO").slice(0, 80);
+    const message = String(targetPayload.message || "新しい通知が届きました").slice(0, 160);
+    const tag = String(targetPayload.tag || "kuro-notification").slice(0, 120);
 
     webpush.setVapidDetails(subject!, pub!, priv!);
-    const results = await Promise.all(subs.map(async (sub) => {
+    const results = await Promise.all(subscriptions.map(async (row) => {
       try {
         await webpush.sendNotification(
-          sub.subscription as webpush.PushSubscription,
+          row.subscription as webpush.PushSubscription,
           JSON.stringify({ title, body: message, url: "/sns/v2/mobile/", tag })
         );
-        return { ok: true };
-      } catch (e) {
-        const code = (e as { statusCode?: number })?.statusCode;
-        if (code === 404 || code === 410) await admin.from("push_subscriptions").delete().eq("id", sub.id);
-        const failureMessage = String((e as Error)?.message || "push failed").slice(0, 180);
+        return { id: String(row.id), ok: true };
+      } catch (error) {
+        const code = (error as { statusCode?: number })?.statusCode;
+        const failureMessage = String((error as Error)?.message || "push failed").slice(0, 180);
         console.warn("Web Push delivery failed", { statusCode: code, message: failureMessage });
         return {
-          ok: false, statusCode: code,
-          message: failureMessage
+          id: String(row.id),
+          ok: false,
+          statusCode: code,
+          message: failureMessage,
+          stale: code === 404 || code === 410
         };
       }
     }));
 
-    const sent = results.filter(x => x.ok).length;
-    const failures = results.filter(x => !x.ok).map(x => ({ statusCode: x.statusCode, message: x.message }));
+    const staleIds = results.filter(row => !row.ok && row.stale).map(row => row.id);
+    let pruned = 0;
+    if (staleIds.length) {
+      try {
+        const { response: pruneResponse, payload: prunePayload } = await d1PushRequest(auth, {
+          action: "prune",
+          event: body,
+          subscriptionIds: staleIds
+        });
+        if (pruneResponse.ok && prunePayload?.success === true) {
+          pruned = Number(prunePayload.deleted) || 0;
+        } else {
+          console.warn("Stale D1 push subscriptions could not be removed", {
+            status: pruneResponse.status,
+            code: (prunePayload?.error as Record<string, unknown> | undefined)?.code || "UNKNOWN"
+          });
+        }
+      } catch (pruneError) {
+        console.warn("Stale D1 push subscription cleanup skipped", String((pruneError as Error)?.message || pruneError));
+      }
+    }
+
+    const sent = results.filter(row => row.ok).length;
+    const failures = results.filter(row => !row.ok).map(row => ({
+      statusCode: row.statusCode,
+      message: row.message
+    }));
     return json({
       sent,
       registered: results.length,
       failures,
+      pruned,
+      source: "cloudflare-d1",
       ok: sent > 0
     }, sent === 0 && results.length > 0 ? 502 : 200);
-  } catch (e) {
-    console.error("send-chat-push error", e);
+  } catch (error) {
+    console.error("send-chat-push error", error);
     return json({
       error: "Internal push notification error",
-      detail: String((e as Error)?.message || e).slice(0, 200)
+      detail: String((error as Error)?.message || error).slice(0, 200)
     }, 500);
   }
 });
