@@ -22,10 +22,13 @@ const SYNC_TABLES = new Set([
   "kuro_level_system_settings", "kuro_level_thresholds", "kuro_level_users",
   "kuro_store_design_drafts", "kuro_store_equipped_items", "kuro_store_items",
   "kuro_store_studio_members", "kuro_store_user_inventory",
-  "kurogames_home_banners", "portal_announcements", "portal_favorites", "portal_history",
+  "kurogames_home_banners", "portal_announcements", "portal_history",
   "portal_preferences", "admin_message_reads", "admin_messages", "feature_flags",
   "user_last_activity"
 ]);
+
+// Legacy favorites events are acknowledged without being copied to D1.
+const RETIRED_SYNC_TABLES = new Set(["portal_favorites"]);
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -173,8 +176,14 @@ async function runSync(env, scheduledAt) {
     for (const event of events) {
       if (!event || typeof event !== "object") throw new Error("Sync queue contains an invalid event");
       const tableName = String(event.table_name || "");
-      if (!SYNC_TABLES.has(tableName)) throw new Error("Sync queue contains a table outside the allowlist");
       const operation = String(event.operation || "").toUpperCase();
+      if (RETIRED_SYNC_TABLES.has(tableName)) {
+        if (operation !== "INSERT" && operation !== "UPDATE" && operation !== "DELETE") {
+          throw new Error("Sync queue contains an unsupported operation");
+        }
+        continue;
+      }
+      if (!SYNC_TABLES.has(tableName)) throw new Error("Sync queue contains a table outside the allowlist");
 
       if (operation === "UPDATE" || operation === "DELETE") {
         statements.push(makeDeleteStatement(db, tableName, event.old_pk));
@@ -189,7 +198,7 @@ async function runSync(env, scheduledAt) {
 
     // D1 batch is transactional and executes statements in order. The queue is
     // acknowledged only after this succeeds, so a failure is safely retried.
-    await db.batch(statements);
+    if (statements.length) await db.batch(statements);
 
     await callSyncRpc(ACK_RPC, env.KURO_SYNC_SECRET, {
       p_event_ids: ids
