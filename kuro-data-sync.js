@@ -2,10 +2,11 @@ const SUPABASE_URL = "https://cprvpphlfpmiegjiutjn.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_BYPUfB0lrh26jV8_6ZQnpQ_wfAKOVyn";
 const PULL_RPC = "/rest/v1/rpc/kuro_cloudflare_sync_pull";
 const ACK_RPC = "/rest/v1/rpc/kuro_cloudflare_sync_ack";
-const BATCH_SIZE = 25;
+const BATCH_SIZE = 100;
 
 const SYNC_TABLES = new Set([
   "profiles", "posts", "post_likes", "post_replies", "follows", "notifications",
+  "account_suspensions",
   "chat_conversations", "chat_messages", "chat_message_reads", "chat_message_hides",
   "group_conversations", "group_chat_members", "group_chat_messages",
   "group_chat_message_reads", "group_chat_mentions",
@@ -17,9 +18,10 @@ const SYNC_TABLES = new Set([
   "game_studio_games", "game_tictactoe_verified_events", "game_tictactoe_verified_stats",
   "game_world_blocks", "werewolf_action_receipts", "werewolf_chat_messages",
   "werewolf_private_sessions", "werewolf_rooms",
-  "kuro_coin_balances", "kuro_coin_game_rewards", "kuro_game_user_stats",
-  "kuro_game_win_events", "kuro_level_coin_rewards", "kuro_level_game_rewards",
-  "kuro_level_system_settings", "kuro_level_thresholds", "kuro_level_users",
+  "kuro_coin_balances", "kuro_coin_game_rewards", "kuro_coin_ledger",
+  "kuro_coin_verified_game_events", "kuro_game_user_stats", "kuro_game_win_events",
+  "kuro_level_coin_reward_claims", "kuro_level_coin_rewards", "kuro_level_game_rewards",
+  "kuro_level_ledger", "kuro_level_system_settings", "kuro_level_thresholds", "kuro_level_users",
   "kuro_store_design_drafts", "kuro_store_equipped_items", "kuro_store_items",
   "kuro_store_studio_members", "kuro_store_user_inventory",
   "kurogames_home_banners", "portal_announcements", "portal_history",
