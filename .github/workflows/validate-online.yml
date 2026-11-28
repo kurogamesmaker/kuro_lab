@@ -36,6 +36,15 @@ on:
       - games/index.html
       - games/mypage/index.html
       - supabase/functions/kurogames-online/index.ts
+      - worker.js
+      - kuro-data-sync.js
+      - kuro-economy-d1.js
+      - kuro-profile.js
+      - service-notification-box.js
+      - games/notifications/index.html
+      - supabase/functions/admin-console/index.ts
+      - supabase/functions/kurogames-store/index.ts
+      - supabase/functions/kuro-public-coin-balance/index.ts
       - supabase/migrations/**
       - tests/online-room-worker.test.mjs
       - tests/pc-game-runtime.test.mjs
