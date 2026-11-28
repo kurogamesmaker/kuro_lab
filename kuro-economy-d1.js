@@ -522,6 +522,14 @@ async function handlePublicCosmetics(url, db) {
   return { cosmetics: users[singleUserId] || {}, source: "cloudflare-d1" };
 }
 
+async function handleLevelActivity(db, user) {
+  const [level, ledger] = await Promise.all([
+    db.prepare("SELECT current_level,total_xp,updated_at FROM kuro_level_users WHERE user_id=?").bind(user.id).first(),
+    getAll(db.prepare("SELECT id,xp_amount,total_xp_after,source_game_id,source_mode,created_at FROM kuro_level_ledger WHERE user_id=? ORDER BY created_at DESC LIMIT 40").bind(user.id))
+  ]);
+  return { level: level || null, ledger };
+}
+
 async function handleNotifications(request, db, user) {
   const url = new URL(request.url);
   if (request.method === "GET") {
@@ -579,8 +587,9 @@ export async function handleKuroEconomyRequest(request, env) {
     const isAdmin = url.pathname === "/api/kuro-economy/admin";
     const isStore = url.pathname === "/api/kuro-economy/store";
     const isNotifications = url.pathname === "/api/kuro-economy/notifications";
+    const isLevelActivity = url.pathname === "/api/kuro-economy/level-activity";
     const isPublicCosmetics = url.pathname === "/api/kuro-economy/public-cosmetics";
-    if (!isAdmin && !isStore && !isNotifications && !isPublicCosmetics) throw new KuroEconomyError(404, "not_found");
+    if (!isAdmin && !isStore && !isNotifications && !isLevelActivity && !isPublicCosmetics) throw new KuroEconomyError(404, "not_found");
 
     if (isPublicCosmetics) {
       if (request.method !== "GET") throw new KuroEconomyError(405, "GET required");
@@ -593,6 +602,11 @@ export async function handleKuroEconomyRequest(request, env) {
       studioTool: isStore && request.method === "POST" && (request.headers.get("X-KURO-Store-Tool") === "shop-studio")
     });
 
+    if (isLevelActivity) {
+      if (request.method !== "GET") throw new KuroEconomyError(405, "GET required");
+      const data = await handleLevelActivity(db, user);
+      return response(data, 200, origin);
+    }
     if (isNotifications) {
       const data = await handleNotifications(request, db, user);
       return response(data, 200, origin);
