@@ -15,6 +15,11 @@
       "binding": "KURO_MIGRATION_DB",
       "database_name": "kuro-migration-copy",
       "database_id": "40a4610e-548c-4e02-b7b0-53c25d0de8c0"
+    },
+    {
+      "binding": "KURO_APP_DB",
+      "database_name": "kuro-app-data-mirror",
+      "database_id": "7ed0a9f4-da8b-4e67-b4b5-66480accf080"
     }
   ],
   "observability": {
