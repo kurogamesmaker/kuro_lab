@@ -296,6 +296,21 @@
     return db;
   }
 
+  async function callEconomyNotifications(client, method = "GET", payload = null) {
+    const sessionResult = await client.auth.getSession();
+    if (sessionResult?.error) throw sessionResult.error;
+    const token = sessionResult?.data?.session?.access_token;
+    if (!token) throw new Error("ログイン状態を確認できません。");
+    const response = await fetch("/api/kuro-economy/notifications" + (method === "GET" ? "?limit=100" : ""), {
+      method,
+      headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json", "Accept": "application/json" },
+      ...(payload ? { body: JSON.stringify(payload) } : {})
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result?.error || "通知を読み込めませんでした。");
+    return result;
+  }
+
   function isUuid(value) {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(value || ""));
   }
@@ -390,7 +405,7 @@
       }
       const [messagesResult, socialResult, repliesResult, announcementsResult, preferencesResult] = await Promise.all([
         client.from("admin_messages").select("id,title,body,href,audience,recipient_id,created_at,service_scope,portal_announcement_id").eq("published", true).or("audience.eq.all,recipient_id.eq." + user.id).order("created_at", { ascending: false }).limit(200),
-        client.from("notifications").select("id,type,actor_id,created_at,read_at,group_id,message_id,notification_details").eq("recipient_id", user.id).order("created_at", { ascending: false }).limit(100),
+        callEconomyNotifications(client).then((result) => ({ data: result.notifications || [], error: null })),
         client.from("portal_request_notifications").select("id,request_id,created_at,read_at,request:portal_requests(message,admin_reply,replied_at)").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50),
         client.from("portal_announcements").select("id,title,body,href,created_at").eq("published", true).order("created_at", { ascending: false }).limit(100),
         client.from("portal_preferences").select("preferences").eq("user_id", user.id).maybeSingle()
@@ -483,6 +498,7 @@
     if (item.kind === "admin") {
       result = await client.from("admin_message_reads").upsert({ message_id: item.id, user_id: user.id, read_at: now }, { onConflict: "message_id,user_id" });
     } else if (item.kind === "social" || item.kind === "points" || item.kind === "level") {
+      await callEconomyNotifications(client, "POST", { action: "mark_read", id: item.id });
       result = await client.from("notifications").update({ read_at: now }).eq("id", item.id).eq("recipient_id", user.id);
     } else if (item.kind === "reply") {
       result = await client.from("portal_request_notifications").update({ read_at: now }).eq("id", item.id).eq("user_id", user.id);
@@ -523,7 +539,10 @@
       const announcements = items.filter((row) => row.kind === "announcement" && !row.read);
       const operations = [];
       if (admin.length) operations.push(client.from("admin_message_reads").upsert(admin.map((row) => ({ message_id: row.id, user_id: user.id, read_at: now })), { onConflict: "message_id,user_id" }));
-      if (social.length) operations.push(client.from("notifications").update({ read_at: now }).eq("recipient_id", user.id).in("id", social.map((row) => row.id)));
+      if (social.length) {
+        await callEconomyNotifications(client, "POST", { action: "mark_all_read" });
+        operations.push(client.from("notifications").update({ read_at: now }).eq("recipient_id", user.id).in("id", social.map((row) => row.id)));
+      }
       if (replies.length) operations.push(client.from("portal_request_notifications").update({ read_at: now }).eq("user_id", user.id).in("id", replies.map((row) => row.id)));
       if (announcements.length) {
         const ids = Array.isArray(prefs.readAnnouncements) ? prefs.readAnnouncements.slice() : [];
