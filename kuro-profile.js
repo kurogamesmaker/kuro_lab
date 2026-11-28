@@ -235,6 +235,22 @@
       '</div>';
   }
 
+  async function loadD1PublicPlayerSummary(userId) {
+    var url = "/api/kuro-d1/public-player-summary?userId=" + encodeURIComponent(String(userId || ""));
+    var response = await fetch(url, {
+      method: "GET",
+      credentials: "same-origin",
+      cache: "no-store",
+      headers: { accept: "application/json" }
+    });
+    var payload = await response.json().catch(function () { return null; });
+    if (!response.ok || !payload || !payload.data ||
+        !payload.data.level || !Array.isArray(payload.data.thresholds)) {
+      throw new Error(payload && payload.error || "Cloudflareからプレイヤー情報を取得できませんでした。");
+    }
+    return { data: payload.data, error: null };
+  }
+
   function safeRpc(db, name, args, fallback) {
     try {
       return Promise.resolve(db.rpc(name, args)).catch(function (error) {
@@ -314,18 +330,18 @@
         safeRpc(db, "kuro_get_public_profile_game_stats_precise", { p_user_id: id }, []),
         getFollowCounts(db, id),
         getSignedInUser(db),
-        db.functions.invoke("kuro-public-coin-balance", { body: { userId: id } }).catch(function (error) { return { data: null, error: error }; }),
-        safeRpc(db, "kuro_get_public_store_cosmetics", { p_user_id: id }, {}),
-        db.from("kuro_level_users").select("total_xp,current_level").eq("user_id", id).maybeSingle(),
-        db.from("kuro_level_thresholds").select("level,required_xp").order("level", { ascending: true })      ]);
+        loadD1PublicPlayerSummary(id).catch(function (error) { return { data: null, error: error }; }),
+        safeRpc(db, "kuro_get_public_store_cosmetics", { p_user_id: id }, {})
+      ]);
       if (thisRequest !== requestId) return;
-      var profileResult = results[0], statsResult = results[1], coinBalanceResult = results[4];
+      var profileResult = results[0], statsResult = results[1], playerSummaryResult = results[4];
+      var coinBalanceResult = playerSummaryResult;
       var cosmeticsResult = results[5];
-      var levelResult = results[6], levelThresholdsResult = results[7];
-      var levelData = levelResult && !levelResult.error && levelResult.data ? levelResult.data : {};
+      var playerSummary = playerSummaryResult && !playerSummaryResult.error ? playerSummaryResult.data : {};
+      var levelData = playerSummary.level || {};
       var currentLevel = Math.max(1, Math.floor(Number(levelData.current_level) || 1));
       var totalXp = Math.max(0, Math.floor(Number(levelData.total_xp) || 0));
-      var levelThresholds = levelThresholdsResult && !levelThresholdsResult.error && Array.isArray(levelThresholdsResult.data) ? levelThresholdsResult.data : [];
+      var levelThresholds = Array.isArray(playerSummary.thresholds) ? playerSummary.thresholds : [];
       function requiredXpForLevel(level) {
         var match = levelThresholds.find(function (item) { return Number(item.level) === level; });
         if (match) return Number(match.required_xp) || 0;
