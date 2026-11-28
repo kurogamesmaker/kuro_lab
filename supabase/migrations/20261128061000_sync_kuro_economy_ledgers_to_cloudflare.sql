@@ -28,6 +28,16 @@ BEGIN
 END;
 $function$;
 
+-- A private readiness marker is enqueued last. D1 coin-history reads remain
+-- on their Supabase fallback until this marker has been applied.
+CREATE TABLE IF NOT EXISTS public.__kuro_economy_mirror_control (
+  id integer PRIMARY KEY CHECK (id = 1),
+  snapshot_ready boolean NOT NULL DEFAULT false,
+  snapshot_at timestamptz
+);
+ALTER TABLE public.__kuro_economy_mirror_control ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.__kuro_economy_mirror_control FROM PUBLIC, anon, authenticated, service_role;
+
 DO $block$
 DECLARE
   v_table text;
@@ -77,3 +87,15 @@ FROM public.kuro_level_ledger AS t;
 INSERT INTO public.kuro_cloudflare_sync_outbox (table_name, operation, row_data)
 SELECT 'kuro_level_coin_reward_claims', 'INSERT', pg_catalog.to_jsonb(t)
 FROM public.kuro_level_coin_reward_claims AS t;
+
+-- This must remain the final initial-snapshot event so D1 can expose a
+-- complete-history read only after all of the rows above have been applied.
+INSERT INTO public.__kuro_economy_mirror_control (id, snapshot_ready, snapshot_at)
+VALUES (1, true, pg_catalog.now())
+ON CONFLICT (id) DO UPDATE
+SET snapshot_ready = EXCLUDED.snapshot_ready,
+    snapshot_at = EXCLUDED.snapshot_at;
+
+INSERT INTO public.kuro_cloudflare_sync_outbox (table_name, operation, row_data)
+SELECT '__kuro_economy_mirror_control', 'INSERT', pg_catalog.to_jsonb(t)
+FROM public.__kuro_economy_mirror_control AS t;
