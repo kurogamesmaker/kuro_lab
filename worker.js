@@ -1024,6 +1024,114 @@ async function handleMigrationLevelPreview(request, env) {
   }
 }
 
+function validKuroPublicUserId(value) {
+  return typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+async function handleKuroD1PublicPlayerSummary(request, env) {
+  if (request.method !== "GET") return json({ error: "Method not allowed" }, 405);
+  const userId = new URL(request.url).searchParams.get("userId") || "";
+  if (!validKuroPublicUserId(userId)) return json({ error: "invalid_user_id" }, 400);
+
+  const database = env?.KURO_APP_DB;
+  if (!database) return json({ error: "Cloudflare D1 is unavailable." }, 503);
+
+  try {
+    // Mirrors the existing public coin-balance Edge Function and the public
+    // SELECT policies for level users/thresholds. Only display-safe fields leave D1.
+    const player = await database.prepare(`
+      SELECT
+        p.id AS user_id,
+        COALESCE(b.balance, 0) AS balance,
+        COALESCE(l.total_xp, 0) AS total_xp,
+        COALESCE(l.current_level, 1) AS current_level
+      FROM profiles p
+      LEFT JOIN kuro_coin_balances b ON b.user_id = p.id
+      LEFT JOIN kuro_level_users l ON l.user_id = p.id
+      WHERE p.id = ?
+      LIMIT 1
+    `).bind(userId).first();
+
+    if (!player) return json({ error: "profile_not_found" }, 404);
+
+    const balance = Number(player.balance ?? 0);
+    const totalXp = Number(player.total_xp ?? 0);
+    const currentLevel = Number(player.current_level ?? 1);
+    if (!Number.isSafeInteger(balance) || balance < 0 ||
+        !Number.isSafeInteger(totalXp) || totalXp < 0 ||
+        !Number.isSafeInteger(currentLevel) || currentLevel < 1) {
+      return json({ error: "player_summary_invalid" }, 503);
+    }
+
+    const thresholdResult = await database.prepare(
+      "SELECT level, required_xp FROM kuro_level_thresholds ORDER BY level ASC LIMIT 10000"
+    ).all();
+    const thresholds = (Array.isArray(thresholdResult?.results) ? thresholdResult.results : [])
+      .map(row => ({ level: Number(row.level), required_xp: Number(row.required_xp) }));
+    if (!thresholds.length || thresholds.some(row =>
+      !Number.isSafeInteger(row.level) || row.level < 1 ||
+      !Number.isSafeInteger(row.required_xp) || row.required_xp < 0
+    )) {
+      return json({ error: "level_thresholds_unavailable" }, 503);
+    }
+
+    return json({
+      data: {
+        currency: "P",
+        balance,
+        level: { total_xp: totalXp, current_level: currentLevel },
+        thresholds
+      },
+      source: "cloudflare-d1"
+    });
+  } catch (error) {
+    console.error("KURO D1 public player summary read failed", error?.message || error);
+    return json({ error: "player_summary_unavailable" }, 503);
+  }
+}
+
+async function handleKuroD1LevelLeaderboard(request, env) {
+  if (request.method !== "GET") return json({ error: "Method not allowed" }, 405);
+  const database = env?.KURO_APP_DB;
+  if (!database) return json({ error: "Cloudflare D1 is unavailable." }, 503);
+
+  try {
+    // These fields and public profile columns were already readable through
+    // the existing public level/profile queries; this is a read-only projection.
+    const result = await database.prepare(`
+      SELECT
+        l.user_id,
+        l.total_xp,
+        l.current_level,
+        p.id AS profile_id,
+        p.username,
+        p.display_name,
+        p.avatar_url
+      FROM kuro_level_users l
+      LEFT JOIN profiles p ON p.id = l.user_id
+      ORDER BY l.current_level DESC, l.total_xp DESC, l.user_id ASC
+      LIMIT 50
+    `).all();
+
+    const rows = (Array.isArray(result?.results) ? result.results : []).map(row => ({
+      user_id: String(row.user_id || ""),
+      total_xp: Number(row.total_xp || 0),
+      current_level: Number(row.current_level || 1),
+      profile: row.profile_id ? {
+        id: String(row.profile_id),
+        username: row.username == null ? null : String(row.username),
+        display_name: row.display_name == null ? null : String(row.display_name),
+        avatar_url: row.avatar_url == null ? null : String(row.avatar_url)
+      } : null
+    }));
+    return json({ data: rows, source: "cloudflare-d1" });
+  } catch (error) {
+    console.error("KURO D1 public level leaderboard read failed", error?.message || error);
+    return json({ error: "level_leaderboard_unavailable" }, 503);
+  }
+}
+
 async function handleKuroD1HomeBanners(request, env) {
   if (request.method !== "GET") {
     return json({ error: "Method not allowed" }, 405);
@@ -1272,6 +1380,24 @@ export default {
       } catch (error) {
         console.error("KURO web search handler failed", error);
         return json({ code: "SEARCH_INTERNAL_ERROR", message: "検索処理に失敗しました。" }, 500);
+      }
+    }
+
+    if (url.pathname === "/api/kuro-d1/public-player-summary") {
+      try {
+        return await handleKuroD1PublicPlayerSummary(request, env);
+      } catch (error) {
+        console.error("KURO D1 public player summary endpoint failed", error?.message || error);
+        return json({ error: "player_summary_unavailable" }, 503);
+      }
+    }
+
+    if (url.pathname === "/api/kuro-d1/level-leaderboard") {
+      try {
+        return await handleKuroD1LevelLeaderboard(request, env);
+      } catch (error) {
+        console.error("KURO D1 public level leaderboard endpoint failed", error?.message || error);
+        return json({ error: "level_leaderboard_unavailable" }, 503);
       }
     }
 
