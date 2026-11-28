@@ -204,23 +204,25 @@ async function getEquippedCosmeticsForUsers(userIds: string[]) {
   const ids = [...new Set(userIds.filter((id) => typeof id === "string" && UUID_RE.test(id)))];
   const byUser = new Map<string, Record<string, unknown>>();
   if (!ids.length) return byUser;
-  const { data, error } = await admin.from("kuro_store_equipped_items")
-    .select("user_id,slot,item:kuro_store_items(item_key,name,category,icon,image_url,rarity)")
-    .in("user_id", ids);
-  if (error) throw new HttpError(500, "装備中アイテムを取得できませんでした。");
-  for (const row of data ?? []) {
-    const item = Array.isArray(row.item) ? row.item[0] : row.item;
-    if (!item || !["avatar", "frame", "background", "theme"].includes(String(row.slot))) continue;
-    const current = byUser.get(row.user_id) ?? {};
-    current[String(row.slot)] = {
-      itemKey: item.item_key ?? "",
-      name: item.name ?? "",
-      category: item.category ?? row.slot,
-      icon: item.icon ?? "✦",
-      imageUrl: item.image_url ?? null,
-      rarity: item.rarity ?? "common",
-    };
-    byUser.set(row.user_id, current);
+  let upstream: Response;
+  try {
+    const query = new URLSearchParams({ userIds: ids.join(",") });
+    upstream = await fetch("https://kurolab.cc.cd/api/kuro-economy/public-cosmetics?" + query.toString(), {
+      headers: { "Accept": "application/json" },
+      signal: AbortSignal.timeout(8000)
+    });
+  } catch (_) {
+    throw new HttpError(503, "装備中アイテムを取得できませんでした。");
+  }
+  const payload = await upstream.json().catch(() => ({}));
+  if (!upstream.ok || !payload?.users || typeof payload.users !== "object") {
+    throw new HttpError(upstream.status >= 500 ? 503 : 500, payload?.error || "装備中アイテムを取得できませんでした。");
+  }
+  for (const [userId, cosmetics] of Object.entries(payload.users as Record<string, Record<string, unknown>>)) {
+    const allowed = Object.fromEntries(Object.entries(cosmetics || {}).filter(([slot]) =>
+      ["avatar", "frame", "background", "theme"].includes(slot)
+    ));
+    byUser.set(userId, allowed);
   }
   return byUser;
 }
