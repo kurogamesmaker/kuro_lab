@@ -456,6 +456,42 @@ async function deletePost(db, user, body) {
   return { deleted: true, media: parseJson(post.media, []) };
 }
 
+async function adminDeletePost(db, user, body) {
+  await requireSnsAdmin(db, user);
+  const postId = String(body.postId || "");
+  if (!UUID_RE.test(postId)) throw new KuroSnsError(400, "投稿IDが正しくありません。");
+  const post = await db.prepare("SELECT id,media FROM posts WHERE id=? LIMIT 1").bind(postId).first();
+  if (!post) throw new KuroSnsError(404, "対象の投稿が見つかりません。");
+  await db.batch([
+    db.prepare("DELETE FROM post_likes WHERE post_id=?").bind(postId),
+    db.prepare("DELETE FROM post_replies WHERE post_id=?").bind(postId),
+    db.prepare("DELETE FROM posts WHERE id=?").bind(postId)
+  ]);
+  return { deleted: true, media: parseJson(post.media, []) };
+}
+
+async function adminDeleteReply(db, user, body) {
+  await requireSnsAdmin(db, user);
+  const replyId = String(body.replyId || "");
+  if (!UUID_RE.test(replyId)) throw new KuroSnsError(400, "返信IDが正しくありません。");
+  const reply = await db.prepare("SELECT id,post_id FROM post_replies WHERE id=? LIMIT 1").bind(replyId).first();
+  if (!reply) throw new KuroSnsError(404, "対象の返信が見つかりません。");
+  // Match the legacy Postgres FK behavior: deleting a parent reply cascades
+  // through all nested replies belonging to the same post.
+  const result = await db.prepare(`
+    WITH RECURSIVE descendants(id) AS (
+      SELECT id FROM post_replies WHERE id=? AND post_id=?
+      UNION ALL
+      SELECT r.id FROM post_replies r
+      INNER JOIN descendants d ON r.parent_reply_id=d.id
+      WHERE r.post_id=?
+    )
+    DELETE FROM post_replies WHERE id IN (SELECT id FROM descendants)
+  `).bind(replyId, String(reply.post_id), String(reply.post_id)).run();
+  if (Number(result?.meta?.changes || 0) < 1) throw new KuroSnsError(409, "返信を削除できませんでした。");
+  return { deleted: true };
+}
+
 export async function handleKuroD1SnsPosts(request, env) {
   const origin = request.headers.get("Origin");
   if (request.method === "OPTIONS") {
@@ -497,6 +533,8 @@ export async function handleKuroD1SnsPosts(request, env) {
     else if (action === "like") data = await toggleLike(db, user, body);
     else if (action === "create-reply") data = await createReply(db, user, body);
     else if (action === "delete-reply") data = await deleteReply(db, user, body);
+    else if (action === "admin-delete-post") data = await adminDeletePost(db, user, body);
+    else if (action === "admin-delete-reply") data = await adminDeleteReply(db, user, body);
     else throw new KuroSnsError(400, "投稿操作が正しくありません。");
     return json({ ...data, source: "cloudflare-d1" }, 200, origin);
   } catch (error) {
