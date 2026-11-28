@@ -21,7 +21,7 @@
 - Supabase stores only the SHA-256 hash of that secret in a table with RLS enabled and no client grants.
 - Pull/ack RPCs are SECURITY DEFINER with an empty search path and require the shared secret.
 - The outbox table has RLS enabled and no direct client grants.
-- The Worker has an explicit 61-table allowlist and validates SQL identifiers before generating prepared D1 statements.
+- The Worker has an explicit 66-table allowlist (including the retired portal-favorites acknowledgement and the private economy snapshot marker) and validates SQL identifiers before generating prepared D1 statements.
 - Auth identities/passwords/sessions, Storage binaries, audit/security/transaction ledgers, analytics history and archives are not part of the sync allowlist.
 
 ## Operational behavior
@@ -39,4 +39,4 @@
 - Supabase remains the authoritative write source. Only the explicit read-only endpoints listed above use D1; all other app reads and all writes continue to use Supabase until per-feature authorization, triggers, RPCs and integrity rules have been ported and tested.
 - Client reads automatically fall back to the existing Supabase query/function path if an individual D1 read projection fails. The authenticated KuroGames SDK's ranking calls and all ranking submissions remain on the existing Edge Function path; only the public web ranking surfaces are D1-first.
 - If the source schema changes, apply the corresponding D1 schema migration before allowing the Worker to sync those new columns. Schema mismatches deliberately stop and retain the event for retry.
-- A backlog larger than 25 events is processed over multiple Cron runs.
+- A backlog larger than 100 events is processed over multiple Cron runs.
