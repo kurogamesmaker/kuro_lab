@@ -28,7 +28,7 @@
     try {
       var url = new URL(String(value), window.location.origin);
       if (url.origin === "https://cprvpphlfpmiegjiutjn.supabase.co" && url.pathname.indexOf("/storage/v1/object/public/") === 0) {
-        return window.location.origin + "/api/cloudflare-relay?resource=" + encodeURIComponent(url.pathname + url.search);
+        return window.location.origin + "/api/kuro-storage-relay?resource=" + encodeURIComponent(url.pathname + url.search);
       }
       if (url.protocol === "https:" || (url.protocol === "http:" && url.origin === window.location.origin)) return url.href;
     } catch (_) {}
