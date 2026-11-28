@@ -1249,6 +1249,18 @@ export default {
       });
     }
 
+    // The portal favorites feature has been retired. Keep old bookmarks from loading a stale shell.
+    if (/^\\/favorites(?:\\/|$)/.test(url.pathname)) {
+      return new Response(null, {
+        status: 302,
+        headers: {
+          "Location": "/",
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+          "Pragma": "no-cache"
+        }
+      });
+    }
+
     if (url.pathname === "/api/turnstile/verify") {
       try { return await handleTurnstileVerify(request, env); }
       catch (error) { console.error("Turnstile verify handler failed", error); return json({ success: false, message: "Human verification failed" }, 500); }
@@ -1412,9 +1424,6 @@ export default {
       ["/search", "search/index.html"],
       ["/search/", "search/index.html"],
       ["/search/index.html", "search/index.html"],
-      ["/favorites", "favorites/index.html"],
-      ["/favorites/", "favorites/index.html"],
-      ["/favorites/index.html", "favorites/index.html"],
       ["/history", "history/index.html"],
       ["/history/", "history/index.html"],
       ["/history/index.html", "history/index.html"],
