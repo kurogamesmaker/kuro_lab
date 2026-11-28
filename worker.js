@@ -159,23 +159,32 @@ async function handleTurnstileVerify(request, env) {
    "access-control-max-age":"600","vary":"Origin"
   }});
  }
- if(request.method!=="POST")return json({success:false,message:"POST required"},405);
- if(!allowedOrigins.has(origin))return json({success:false,message:"Origin not allowed"},403);
- if(!env?.TURNSTILE_SECRET)return json({success:false,message:"Human verification is not configured"},503);
+ if(request.method!=="POST")return json({success:false,code:"method_not_allowed",message:"POST required"},405);
+ if(!allowedOrigins.has(origin))return json({success:false,code:"origin_not_allowed",message:"Origin not allowed"},403);
+ if(!env?.TURNSTILE_SECRET)return json({success:false,code:"secret_not_configured",message:"Human verification is not configured"},503);
  let body;
- try{body=await request.json()}catch(_){return json({success:false,message:"Invalid JSON"},400)}
+ try{body=await request.json()}catch(_){return json({success:false,code:"invalid_json",message:"Invalid JSON"},400)}
  const token=typeof body?.token==="string"?body.token.trim():"";
- if(!token||token.length>2048)return json({success:false,message:"Invalid verification token"},400);
+ if(!token||token.length>2048)return json({success:false,code:"invalid_token_format",message:"Invalid verification token"},400);
  const form=new FormData();form.append("secret",env.TURNSTILE_SECRET);form.append("response",token);
  const ip=request.headers.get("CF-Connecting-IP");if(ip)form.append("remoteip",ip);
  try{
   const upstream=await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify",{method:"POST",body:form});
   const result=await upstream.json();
-  if(!upstream.ok||result?.success!==true)return json({success:false,message:"Human verification failed"},403);
+  if(!upstream.ok){
+   console.error("Turnstile Siteverify HTTP failure",{status:upstream.status});
+   return json({success:false,code:"siteverify_upstream_error",message:"人間確認サービスとの通信に失敗しました。"},502);
+  }
+  if(result?.success!==true){
+   const allowedCodes=new Set(["missing-input-secret","invalid-input-secret","missing-input-response","invalid-input-response","bad-request","timeout-or-duplicate","internal-error"]);
+   const errorCodes=Array.isArray(result?.["error-codes"])?result["error-codes"].filter(code=>allowedCodes.has(code)):[];
+   console.warn("Turnstile Siteverify rejected token",{errorCodes});
+   return json({success:false,code:"turnstile_rejected",errorCodes,message:"人間確認に失敗しました。ページを再読み込みして、もう一度お試しください。"},403);
+  }
   return json({success:true});
  }catch(error){
   console.error("Turnstile Siteverify unavailable",error?.message||error);
-  return json({success:false,message:"Human verification service unavailable"},502);
+  return json({success:false,code:"siteverify_unavailable",message:"人間確認サービスに接続できません。"},502);
  }
 }
 
@@ -1100,7 +1109,7 @@ export default {
           headers.delete("Content-Security-Policy-Report-Only");
 
           if (liveContentType.startsWith("text/html")) {
-            headers.set("Content-Security-Policy", "default-src 'self' https: data:; script-src 'self' 'unsafe-inline' https:; worker-src 'self' blob:; child-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; connect-src 'self' https: wss:; frame-src 'self' https:; object-src 'none'; base-uri 'self'");
+            headers.set("Content-Security-Policy", "default-src 'self' https: data:; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https:; worker-src 'self' blob:; child-src 'self' blob:; style-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://fonts.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com https: wss:; frame-src 'self' https://challenges.cloudflare.com https:; object-src 'none'; base-uri 'self'");
             const liveHtml = applyMaruFavicon(await liveAssetResponse.text(), url.pathname);
             return new Response(liveHtml, {
               status: liveAssetResponse.status,
