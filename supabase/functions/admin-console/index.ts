@@ -165,9 +165,32 @@ Deno.serve(async (req: Request) => {
     const d1EconomyActions = new Set([
       "get_level_system", "save_level_settings", "save_level_game_reward",
       "save_level_thresholds", "save_level_coin_rewards", "adjust_level_xp",
-      "get_coin_economy", "update_coin_reward", "adjust_coin_balance"
+      "get_coin_economy", "get_coin_user_detail", "update_coin_reward", "adjust_coin_balance"
     ]);
     if (d1EconomyActions.has(action)) {
+      if (action === "get_coin_user_detail") {
+        const userId = typeof body.userId === "string" ? body.userId.trim() : "";
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId)) {
+          return reply({ error: "ユーザーIDが正しくありません。" }, 400, origin);
+        }
+        const { data: userData, error: userError } = await admin.auth.admin.getUserById(userId);
+        if (userError || !userData?.user) return reply({ error: "対象のKUROアカウントが見つかりません。" }, 404, origin);
+        const [economy, profileResult] = await Promise.all([
+          callD1Economy(req, body),
+          admin.from("profiles").select("id,username,display_name,kuro_id,avatar_url").eq("id", userId).maybeSingle()
+        ]);
+        if (profileResult.error) throw profileResult.error;
+        const profile = profileResult.data || {};
+        return reply({
+          user: {
+            id: userData.user.id, email: userData.user.email || "", username: profile.username || "",
+            display_name: profile.display_name || "", kuro_id: profile.kuro_id || "", avatar_url: profile.avatar_url || null
+          },
+          balance: economy.balance,
+          balanceUpdatedAt: economy.balanceUpdatedAt,
+          ledger: economy.ledger || []
+        }, 200, origin);
+      }
       const result = await callD1Economy(req, body);
       const auditActions: Record<string, string> = {
         save_level_settings: "kurogames_level.settings",
