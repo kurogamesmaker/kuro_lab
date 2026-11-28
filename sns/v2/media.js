@@ -13,7 +13,7 @@
       const url=new URL(String(value),STORAGE_ORIGIN);
       if(url.origin!==STORAGE_ORIGIN)return url.href;
       const resource=url.pathname+url.search;
-      return window.location.origin+'/api/cloudflare-relay?resource='+encodeURIComponent(resource);
+      return window.location.origin+'/api/kuro-storage-relay?resource='+encodeURIComponent(resource);
     }catch(_){return String(value)}
   }
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
