@@ -8,6 +8,7 @@
 - Each run requests up to 25 oldest outbox events, applies them to the APAC D1 database `kuro-app-data-mirror`, then acknowledges those exact event IDs.
 - If a D1 batch fails, the events are not acknowledged and will be retried. If the acknowledgement RPC fails after the D1 commit, replay is idempotent because D1 uses primary-key upserts/deletes.
 - The queue is acknowledged by event IDs rather than a maximum-ID cursor, avoiding skipped events when concurrent Postgres transactions commit out of sequence.
+- The KuroGames homepage ticker reads only the public active-banner projection from D1 through `/api/kuro-d1/home-banners`. The endpoint returns the same allowlisted display fields and applies the same active-window filter as the former public Supabase RLS read. Supabase remains the write authority for banners; D1 read freshness follows the one-minute sync schedule.
 
 ## Security
 
