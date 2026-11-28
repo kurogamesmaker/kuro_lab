@@ -80,17 +80,18 @@ CREATE TRIGGER kuro_economy_capture_verified_game_event
         '2eb37847-1b7e-43e4-ad98-901d5b830ac4'::uuid
       )
       AND NEW.mode = 'wins-online'
+      AND pg_catalog.upper(COALESCE(NEW.cpu_difficulty,'NONE')) = 'NONE'
     )
     OR (
       NEW.game_id = '4ccccb72-d5db-4098-a7d4-1c28a0755e7b'::uuid
       AND NEW.mode = 'online'
+      AND pg_catalog.upper(COALESCE(NEW.cpu_difficulty,'NONE')) = 'NONE'
     )
     OR (
       NEW.game_id = '903a4c45-37bb-4a4b-a259-a5a8245de998'::uuid
       AND NEW.mode IN ('werewolf_villager_wins','werewolf_wolf_wins')
+      AND pg_catalog.upper(COALESCE(NEW.cpu_difficulty,'NONE')) = 'NONE'
     )
-  )
-    AND pg_catalog.upper(COALESCE(NEW.cpu_difficulty,'NONE')) = 'NONE'
   )
   EXECUTE FUNCTION public.kuro_economy_capture_coin_event('coin_verified_game');
 
@@ -105,17 +106,18 @@ CREATE TRIGGER kuro_economy_capture_verified_win
         '2eb37847-1b7e-43e4-ad98-901d5b830ac4'::uuid
       )
       AND NEW.mode = 'wins-online'
+      AND pg_catalog.upper(COALESCE(NEW.cpu_difficulty,'NONE')) = 'NONE'
     )
     OR (
       NEW.game_id = '4ccccb72-d5db-4098-a7d4-1c28a0755e7b'::uuid
       AND NEW.mode = 'online'
+      AND pg_catalog.upper(COALESCE(NEW.cpu_difficulty,'NONE')) = 'NONE'
     )
     OR (
       NEW.game_id = '903a4c45-37bb-4a4b-a259-a5a8245de998'::uuid
       AND NEW.mode IN ('werewolf_villager_wins','werewolf_wolf_wins')
+      AND pg_catalog.upper(COALESCE(NEW.cpu_difficulty,'NONE')) = 'NONE'
     )
-  )
-    AND pg_catalog.upper(COALESCE(NEW.cpu_difficulty,'NONE')) = 'NONE'
   )
   EXECUTE FUNCTION public.kuro_economy_capture_coin_event('coin_verified_win');
 
