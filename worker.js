@@ -1059,6 +1059,91 @@ function rankingScore(row, index, mode, metric, extra = {}) {
   };
 }
 
+function parseKuroD1JsonArray(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value !== "string" || !value.trim()) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+async function handleKuroD1PublishedGames(request, env) {
+  if (request.method !== "GET") return json({ error: "Method not allowed" }, 405);
+  const database = env?.KURO_APP_DB;
+  if (!database) return json({ error: "Cloudflare D1 is unavailable." }, 503);
+
+  try {
+    const result = await database.prepare(`
+      SELECT
+        id, title, description, category, categories, icon,
+        search_aliases, tag_text, tag_style, tag_color,
+        tag_text_color, published_at
+      FROM game_studio_games
+      WHERE status = 'published'
+      ORDER BY COALESCE(NULLIF(published_at, ''), created_at) DESC
+      LIMIT 60
+    `).all();
+
+    const rows = (Array.isArray(result?.results) ? result.results : []).map(row => ({
+      id: String(row.id || ""),
+      title: String(row.title || ""),
+      description: String(row.description || ""),
+      category: String(row.category || "other"),
+      categories: parseKuroD1JsonArray(row.categories),
+      icon: String(row.icon || ""),
+      search_aliases: parseKuroD1JsonArray(row.search_aliases),
+      tag_text: String(row.tag_text || ""),
+      tag_style: String(row.tag_style || "classic"),
+      tag_color: String(row.tag_color || "#ffffff"),
+      tag_text_color: String(row.tag_text_color || "#df6547"),
+      published_at: row.published_at == null ? null : String(row.published_at)
+    })).filter(row => row.id && row.title);
+
+    return json({ data: rows, source: "cloudflare-d1" });
+  } catch (error) {
+    console.error("KURO D1 published game catalog read failed", error?.message || error);
+    return json({ error: "published_games_unavailable" }, 503);
+  }
+}
+
+async function handleKuroD1PublishedGame(request, env) {
+  if (request.method !== "GET") return json({ error: "Method not allowed" }, 405);
+  const gameId = new URL(request.url).searchParams.get("id") || "";
+  if (!validKuroPublicUserId(gameId)) return json({ error: "invalid_game_id" }, 400);
+
+  const database = env?.KURO_APP_DB;
+  if (!database) return json({ error: "Cloudflare D1 is unavailable." }, 503);
+
+  try {
+    const game = await database.prepare(`
+      SELECT id, title, description, icon, html_content, shared_js_content, extra_js_content
+      FROM game_studio_games
+      WHERE id = ? AND status = 'published'
+      LIMIT 1
+    `).bind(gameId).first();
+
+    if (!game) return json({ error: "game_not_published" }, 404);
+    return json({
+      data: {
+        id: String(game.id || ""),
+        title: String(game.title || ""),
+        description: String(game.description || ""),
+        icon: String(game.icon || ""),
+        html_content: String(game.html_content || ""),
+        shared_js_content: String(game.shared_js_content || ""),
+        extra_js_content: String(game.extra_js_content || "")
+      },
+      source: "cloudflare-d1"
+    });
+  } catch (error) {
+    console.error("KURO D1 published game content read failed", error?.message || error);
+    return json({ error: "published_game_unavailable" }, 503);
+  }
+}
+
 async function handleKuroD1Leaderboard(request, env) {
   if (request.method !== "GET") return json({ error: "Method not allowed" }, 405);
   const url = new URL(request.url);
@@ -1622,6 +1707,24 @@ export default {
       } catch (error) {
         console.error("KURO web search handler failed", error);
         return json({ code: "SEARCH_INTERNAL_ERROR", message: "検索処理に失敗しました。" }, 500);
+      }
+    }
+
+    if (url.pathname === "/api/kuro-d1/published-games") {
+      try {
+        return await handleKuroD1PublishedGames(request, env);
+      } catch (error) {
+        console.error("KURO D1 published game catalog endpoint failed", error?.message || error);
+        return json({ error: "published_games_unavailable" }, 503);
+      }
+    }
+
+    if (url.pathname === "/api/kuro-d1/published-game") {
+      try {
+        return await handleKuroD1PublishedGame(request, env);
+      } catch (error) {
+        console.error("KURO D1 published game endpoint failed", error?.message || error);
+        return json({ error: "published_game_unavailable" }, 503);
       }
     }
 
