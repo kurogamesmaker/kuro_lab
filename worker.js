@@ -609,6 +609,45 @@ async function handleRelay(request, env) {
   return json(await proxy(await request.json(), request.headers.get("CF-Connecting-IP"), env?.IP_BAN_EDGE_KEY, request));
 }
 
+
+async function handleStorageRelay(request, env) {
+  const url = new URL(request.url);
+  if (request.method === "GET" && url.searchParams.get("health") === "1") {
+    return json({ ready: true, service: "KURO Supabase Storage Relay", onlyStorage: true });
+  }
+  if (request.method === "GET") {
+    const resource = url.searchParams.get("resource");
+    let target;
+    try {
+      target = targetFor(resource);
+    } catch (_) {
+      return json({ error: "Storage resource is required" }, 400);
+    }
+    if (!target.pathname.startsWith("/storage/v1/")) {
+      return json({ error: "Only Supabase Storage resources are allowed" }, 403);
+    }
+    // handleRelay enforces public-object or token-signed KURO SNS private-media reads.
+    return handleRelay(request, env);
+  }
+  if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  let payload;
+  try {
+    payload = await request.json();
+  } catch (_) {
+    return json({ error: "Invalid JSON" }, 400);
+  }
+  let target;
+  try {
+    target = targetFor(payload?.path);
+  } catch (_) {
+    return json({ error: "Storage path is invalid" }, 400);
+  }
+  if (!target.pathname.startsWith("/storage/v1/")) {
+    return json({ error: "Only Supabase Storage operations are allowed" }, 403);
+  }
+  return json(await proxy(payload, request.headers.get("CF-Connecting-IP"), env?.IP_BAN_EDGE_KEY, request));
+}
+
 async function handleRealtime(request) {
   const url = new URL(request.url);
   const prefix = "/api/realtime";
@@ -780,6 +819,17 @@ export default {
         console.error("KURO online room proxy failed", error);
         return json({
           error: error?.message || "KURO online room proxy failed"
+        }, Number(error?.status) || 502);
+      }
+    }
+
+    if (url.pathname === "/api/kuro-storage-relay") {
+      try {
+        return await handleStorageRelay(request, env);
+      } catch (error) {
+        return json({
+          ok: false,
+          error: error?.message || "KURO Supabase Storage relay failed"
         }, Number(error?.status) || 502);
       }
     }
