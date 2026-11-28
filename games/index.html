@@ -1806,7 +1806,7 @@ window.kuroGamesAvatarDisplayUrl=kuroGamesAvatarDisplayUrl;
    const userId=currentUser.id;
    if(window.kuroGamesDB)Promise.all([
     window.kuroGamesDB.from("profiles").select("username,kuro_id,avatar_url,bio").eq("id",userId).maybeSingle(),
-    window.kuroGamesDB.rpc("kuro_get_public_store_cosmetics",{p_user_id:userId})
+    window.kuroLoadPublicStoreCosmetics(userId).then(data=>({data,error:null}),error=>({data:{},error}))
    ]).then(([profileResult,cosmeticResult])=>{
     const {data,error}=profileResult;
     if(error||!data||currentUser?.id!==userId)return;
