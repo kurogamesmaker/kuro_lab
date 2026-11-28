@@ -482,7 +482,9 @@ async function updateRows(db, table, userId, body) {
 }
 
 async function deleteRows(db, table, userId, body) {
-  const scope = await scopeSql(db,table,userId,"delete",null);
+  const scope = table === "group_conversations"
+    ? { sql: "(created_by=? OR EXISTS (SELECT 1 FROM group_chat_members AS __gm WHERE __gm.group_id=group_conversations.id AND __gm.user_id=?))", values: [userId,userId] }
+    : await scopeSql(db,table,userId,"delete",null);
   const filter = filterSql(table,body.filters);
   if (!body.filters?.length) throw new KuroChatError(400,"削除対象を指定してください。","FILTER_REQUIRED");
   if (table === "group_chat_members") {
