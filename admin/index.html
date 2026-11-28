@@ -1179,7 +1179,8 @@ async function cloudflareFetch(input,init={}){
  for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode(...bytes.subarray(i,i+0x8000));
  const bodyBase64=bytes.length?btoa(binary):"";
  const headers=Object.fromEntries(request.headers.entries());
- const proxyResponse=await fetch("/api/cloudflare-relay",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:target.pathname+target.search,method:request.method,headers,bodyBase64,clientId:"admin-console"})});
+ const relayPath=target.pathname.startsWith("/storage/v1/")?"/api/kuro-storage-relay":"/api/cloudflare-relay";
+ const proxyResponse=await fetch(relayPath,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:target.pathname+target.search,method:request.method,headers,bodyBase64,clientId:"admin-console"})});
  let result;
  try{result=await proxyResponse.json();}catch{throw new Error("CloudflareプロキシからJSON以外の応答が返されました。");}
  if(!proxyResponse.ok||!result||typeof result.status!=="number"){
@@ -1866,7 +1867,7 @@ function renderOpsCoinAdjustHistory(rows){
   return '<tr><td>'+esc(row.created_at?date(row.created_at):"—")+'</td><td>'+esc(labels[row.transaction_type]||row.transaction_type||"取引")+'</td><td>'+esc(row.description||"—")+'</td><td style="font-weight:850;color:'+(amount>=0?"#46c69a":"#ef7777")+'">'+signed+' P</td><td>'+coinFormat(row.balance_after)+' P</td></tr>';
  }).join("")+'</tbody></table>';
 }
-function opsAvatarImageUrl(value){try{const url=new URL(String(value||""),location.origin);if(url.origin==="https://cprvpphlfpmiegjiutjn.supabase.co"&&url.pathname.indexOf("/storage/v1/object/public/")===0)return location.origin+"/api/cloudflare-relay?resource="+encodeURIComponent(url.pathname+url.search);return url.href;}catch(_){return "";}}
+function opsAvatarImageUrl(value){try{const url=new URL(String(value||""),location.origin);if(url.origin==="https://cprvpphlfpmiegjiutjn.supabase.co"&&url.pathname.indexOf("/storage/v1/object/public/")===0)return location.origin+"/api/kuro-storage-relay?resource="+encodeURIComponent(url.pathname+url.search);return url.href;}catch(_){return "";}}
 async function loadOpsCoinAdjustUser(userId,quiet=false){
  const requestId=++opsCoinAdjustSelectionRequest;
  const selected=$("#opsCoinAdjustSelected"),status=$("#opsCoinAdjustStatus");
