@@ -382,9 +382,7 @@ if(window.supabase&&typeof window.supabase.createClient==="function"){
   if(!userId||!db)return;
   if(!rankCosmeticsCache.has(userId))rankCosmeticsCache.set(userId,(async()=>{
    try{
-    const {data,error}=await db.rpc("kuro_get_public_store_cosmetics",{p_user_id:userId});
-    if(error)throw error;
-    return data&&typeof data==="object"?data:{};
+    return await window.kuroLoadPublicStoreCosmetics(userId);
    }catch(error){console.debug("Ranking public cosmetics unavailable",error);return {};}
   })());
   const cosmetics=await rankCosmeticsCache.get(userId);
