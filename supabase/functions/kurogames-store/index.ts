@@ -59,7 +59,12 @@ async function requireSecurityGate(req: Request, tool: string) {
       "Authorization": authorization,
       "apikey": req.headers.get("apikey") || SUPABASE_ANON_KEY,
       "Content-Type": "application/json",
-      "Origin": req.headers.get("Origin") || "https://kurolab.cc.cd"
+      "Origin": req.headers.get("Origin") || "https://kurolab.cc.cd",
+      ...(req.headers.get("User-Agent") ? { "User-Agent": req.headers.get("User-Agent")! } : {}),
+      ...(req.headers.get("Sec-CH-UA-Platform") ? { "Sec-CH-UA-Platform": req.headers.get("Sec-CH-UA-Platform")! } : {}),
+      ...(req.headers.get("Accept-Language") ? { "Accept-Language": req.headers.get("Accept-Language")! } : {}),
+      ...(req.headers.get("X-Real-IP") ? { "X-Real-IP": req.headers.get("X-Real-IP")! } : {}),
+      ...(req.headers.get("CF-Connecting-IP") ? { "CF-Connecting-IP": req.headers.get("CF-Connecting-IP")! } : {})
     },
     body: JSON.stringify({ action: "check", tool })
   });
