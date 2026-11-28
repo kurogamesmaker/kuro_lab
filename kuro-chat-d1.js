@@ -15,7 +15,8 @@ const TABLES = {
   group_chat_members: ["group_id","user_id","role","joined_at"],
   group_chat_messages: ["id","group_id","sender_id","content","created_at","media"],
   group_chat_message_reads: ["message_id","group_id","reader_id","read_at"],
-  group_chat_mentions: ["message_id","group_id","mentioned_user_id","created_at"]
+  group_chat_mentions: ["message_id","group_id","mentioned_user_id","created_at"],
+  notifications: ["id","recipient_id","actor_id","type","created_at","read_at","group_id","message_id","notification_details"]
 };
 const encoder = new TextEncoder();
 
@@ -129,6 +130,9 @@ function parseJsonColumns(rows, table) {
     if (["chat_messages","group_chat_messages"].includes(table) && typeof copy.media === "string") {
       try { copy.media = JSON.parse(copy.media); } catch (_) { copy.media = []; }
     }
+    if (table === "notifications" && typeof copy.notification_details === "string") {
+      try { copy.notification_details = JSON.parse(copy.notification_details); } catch (_) { copy.notification_details = {}; }
+    }
     return copy;
   });
 }
@@ -206,6 +210,7 @@ async function scopeSql(db, table, userId, operation, payload) {
     sql: "EXISTS (SELECT 1 FROM group_chat_members AS __gm WHERE __gm.group_id=group_chat_mentions.group_id AND __gm.user_id=?)",
     values: [userId]
   };
+  if (table === "notifications") return { sql: "recipient_id=?", values: [userId] };
   throw new KuroChatError(400, "未対応のチャットテーブルです。", "INVALID_TABLE");
 }
 
@@ -296,6 +301,15 @@ function normalizePayload(table, item, userId) {
       throw new KuroChatError(400, "メンション情報が正しくありません。", "INVALID_MENTION");
     }
     out.created_at = out.created_at || now;
+  } else if (table === "notifications") {
+    if (!UUID_RE.test(String(out.recipient_id || "")) || String(out.actor_id || "") !== userId ||
+        !/^[a-z_]{1,40}$/i.test(String(out.type || ""))) {
+      throw new KuroChatError(400, "通知情報が正しくありません。", "INVALID_NOTIFICATION");
+    }
+    out.id = UUID_RE.test(String(out.id || "")) ? out.id : crypto.randomUUID();
+    out.created_at = out.created_at || now;
+    const details = out.notification_details == null ? {} : out.notification_details;
+    out.notification_details = JSON.stringify(typeof details === "string" ? (()=>{ try{return JSON.parse(details);}catch(_){return {};} })() : details);
   }
   return out;
 }
@@ -390,6 +404,28 @@ async function authorizeWrite(db, table, op, payload, userId) {
     }
     return;
   }
+  if (table === "notifications") {
+    for (const item of items) {
+      const row = normalizePayload(table,item,userId);
+      if (row.recipient_id === userId) throw new KuroChatError(400,"自分自身への通知は作成できません。","INVALID_NOTIFICATION");
+      const recipient = await db.prepare("SELECT id FROM profiles WHERE id=? LIMIT 1").bind(row.recipient_id).first();
+      if (!recipient) throw new KuroChatError(404,"通知先ユーザーが見つかりません。","NOT_FOUND");
+      if (row.type === "mention") {
+        if (!row.group_id || !row.message_id || !await isGroupMember(db,row.group_id,userId) || !await isGroupMember(db,row.group_id,row.recipient_id)) {
+          throw new KuroChatError(403,"メンション通知を作成できません。","FORBIDDEN");
+        }
+        const message = await db.prepare("SELECT sender_id,group_id FROM group_chat_messages WHERE id=? LIMIT 1").bind(row.message_id).first();
+        if (!message || message.sender_id !== userId || message.group_id !== row.group_id) throw new KuroChatError(403,"メンション通知の対象が正しくありません。","FORBIDDEN");
+      } else if (row.type === "message" && row.message_id) {
+        const message = await db.prepare("SELECT sender_id,conversation_id FROM chat_messages WHERE id=? LIMIT 1").bind(row.message_id).first();
+        const conversation = message ? await db.prepare("SELECT user_a,user_b FROM chat_conversations WHERE id=? LIMIT 1").bind(message.conversation_id).first() : null;
+        if (!message || message.sender_id !== userId || !conversation || (conversation.user_a !== row.recipient_id && conversation.user_b !== row.recipient_id)) {
+          throw new KuroChatError(403,"メッセージ通知の対象が正しくありません。","FORBIDDEN");
+        }
+      }
+    }
+    return;
+  }
 }
 
 function mapSqlError(error) {
@@ -454,6 +490,13 @@ async function insertRows(db, table, userId, body) {
       saved = await db.prepare("SELECT * FROM " + table + " WHERE " + where + " LIMIT 1").bind(...Object.values(primary)).first() || row;
     }
     results.push(...parseJsonColumns([saved],table));
+    if (table === "chat_messages") {
+      const conversation = await requireConversation(db,row.conversation_id,userId);
+      const recipientId = conversation.user_a === userId ? conversation.user_b : conversation.user_a;
+      const noticeId = crypto.randomUUID();
+      await db.prepare("INSERT INTO notifications (id,recipient_id,actor_id,type,created_at,read_at,group_id,message_id,notification_details) VALUES (?,?,?,?,?,NULL,NULL,?,?)")
+        .bind(noticeId,recipientId,userId,"message",row.created_at,row.id,JSON.stringify({conversation_id:row.conversation_id})).run();
+    }
   }
   return results;
 }
